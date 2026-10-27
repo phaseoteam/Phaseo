@@ -28,6 +28,8 @@ const saved: SlackAgentSettings = {
 	monthly_cap_usd: 12.5,
 	answers_per_person_hour: 60,
 	model: "phaseo/auto",
+	model_choice_enabled: false,
+	allowed_models: [],
 	instructions: null,
 	access_mode: "everyone",
 	usage_data_mode: "dm",
@@ -194,6 +196,29 @@ describe("Slack agent settings patch", () => {
 		}
 		expect(settingsPatch({ ...base, instructions: "x".repeat(8_001) }, base)).toMatchObject({ ok: false, problem: { field: "instructions" } });
 		expect(parseChannelIds("")).toEqual([]);
+	});
+
+	it("sends model choice and the allowed models only when they change, in the admin's order", () => {
+		const base = settingsDraftFrom({ ...saved, allowed_models: ["openai/gpt-6-luna"] });
+		expect(base).toMatchObject({ modelChoiceEnabled: false, allowedModels: ["openai/gpt-6-luna"] });
+		expect(settingsPatch({ ...base, modelChoiceEnabled: true }, base)).toEqual({ ok: true, value: { model_choice_enabled: true } });
+		expect(settingsPatch({ ...base, allowedModels: ["phaseo/auto", "openai/gpt-6-luna"] }, base)).toEqual({ ok: true, value: { allowed_models: ["phaseo/auto", "openai/gpt-6-luna"] } });
+		expect(settingsPatch({ ...base, allowedModels: ["openai/gpt-6-luna"] }, base)).toEqual({ ok: true, value: {} });
+		// Off, the list may be empty.
+		expect(settingsPatch({ ...base, allowedModels: [] }, base)).toEqual({ ok: true, value: { allowed_models: [] } });
+	});
+
+	it("needs a model while model choice is on, and at most 10", () => {
+		const base = settingsDraftFrom(saved);
+		expect(settingsPatch({ ...base, modelChoiceEnabled: true }, base)).toEqual({ ok: false, problem: { field: "allowedModels", code: "allowedModelsEmpty" } });
+		const eleven = Array.from({ length: 11 }, (_, index) => `acme/model-${index}`);
+		expect(settingsPatch({ ...base, modelChoiceEnabled: true, allowedModels: eleven }, base)).toEqual({ ok: false, problem: { field: "allowedModels", code: "tooManyModels", values: { max: 10 } } });
+	});
+
+	it("maps the model choice errors", () => {
+		expect(slackErrorKey("unknown_models")).toBe("unknownModels");
+		expect(slackErrorKey("model_choice_needs_models")).toBe("modelChoiceNeedsModels");
+		expect(slackErrorKey("too_many_models")).toBe("tooManyModels");
 	});
 });
 

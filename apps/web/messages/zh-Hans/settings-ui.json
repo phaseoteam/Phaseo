@@ -6849,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "智能体",
+			"modelChoice": "模型选择",
 			"access": "谁可以使用",
 			"usageData": "用量数据",
 			"limits": "限制",
@@ -6869,6 +6870,20 @@
 			"label": "指令",
 			"help": "智能体在每次回答中都会遵循的额外说明，例如语气或重点。",
 			"placeholder": "回答尽量简短。需要时附上我们的员工手册链接。"
+		},
+		"modelChoice": {
+			"description": "让成员在你允许的模型中，为单条消息选择模型。其他消息使用智能体的模型。",
+			"enable": "允许按消息选择模型",
+			"enableHelp": "成员以 {prefix} 开头发送消息，并用名称或 ID 指定一个允许的模型。如果该模型不在允许范围内，对方会私下收到可选模型列表，这条消息不会得到回答。",
+			"models": "可选模型（{count}/{max}）",
+			"add": "添加模型",
+			"remove": "移除 {model}",
+			"auto": "自动",
+			"full": "最多可允许 {max} 个模型。请先移除一个，再添加其他模型。",
+			"includeAuto": "包含“自动”",
+			"includeAutoHelp": "成员可以选择“自动”，由 Phaseo 为这条消息挑选合适的模型。",
+			"autoUnavailable": "此工作区无法使用“自动”，因此选择它的消息无法得到回答。请关闭“包含自动”。",
+			"help": "无论由哪个模型回答，每次回答的 {cost} 费用上限和 {steps} 步上限都不变。回答的页脚会显示作答的模型。"
 		},
 		"access": {
 			"everyone": "Slack 中的所有人",
@@ -7002,6 +7017,8 @@
 			"answersPerHour": "请输入 1 到 {max} 之间的整数。",
 			"tokenLimit": "请输入不超过 {max} 的金额，或留空表示不限制。",
 			"model": "请选择一个模型。",
+			"allowedModelsEmpty": "请至少添加一个模型，或关闭模型选择。",
+			"tooManyModels": "最多允许 {max} 个模型。",
 			"instructions": "指令最多 {max} 个字符。",
 			"channelIds": "请输入 Slack 频道 ID，例如 C0123ABCD，用逗号分隔。",
 			"tooManyChannels": "最多列出 {max} 个频道。",
@@ -7037,6 +7054,9 @@
 			"sessionMismatch": "请使用发起安装的管理员账户完成安装。",
 			"installFailed": "安装未完成，也没有进行任何设置。请重试。",
 			"autoUnavailable": "此工作区无法使用“自动”。请选择指定模型。",
+			"unknownModels": "其中一些模型已不在 Phaseo 目录中。请移除它们后重新保存。",
+			"modelChoiceNeedsModels": "请至少添加一个可选模型，或关闭模型选择。",
+			"tooManyModels": "最多可允许 {max} 个模型。",
 			"invalid": "请检查设置后重试。",
 			"invalidWithMessage": "请检查设置后重试：{message}",
 			"unavailable": "Phaseo 暂时无法完成此操作。请稍后再试。",

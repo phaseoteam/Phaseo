@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { INCLUDED_ANSWERS_PER_PERSON } from "@/lib/slack-agent/pricing";
 import { startSlackInstall, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { AccessField, Choice, FieldProblem, LimitsFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
+import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
 import {
 	MAX_INSTRUCTIONS_CHARS,
@@ -273,6 +273,18 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 					<Textarea id="slack-instructions" value={draft.instructions} rows={4} maxLength={MAX_INSTRUCTIONS_CHARS} disabled={busy} placeholder={t("instructions.placeholder")} aria-invalid={problem?.field === "instructions" || undefined} aria-describedby="slack-instructions-help" onChange={(event) => set("instructions", event.target.value)} />
 					<FieldProblem id="slack-instructions-help" problem={problem} field="instructions" help={t("instructions.help")} />
 				</div>
+			</Section>
+
+			<Section title={t("sections.modelChoice")} description={t("modelChoice.description")}>
+				<ModelChoiceFields
+					enabled={draft.modelChoiceEnabled}
+					models={draft.allowedModels}
+					autoAvailable={view.auto_routing === true}
+					disabled={busy}
+					problem={problem}
+					onEnabledChange={(enabled) => set("modelChoiceEnabled", enabled)}
+					onModelsChange={(models) => set("allowedModels", models)}
+				/>
 			</Section>
 
 			<Section title={t("sections.access")}>

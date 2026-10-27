@@ -1,8 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
 import { Callout, type CalloutTone } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +22,9 @@ import {
 	DEFAULT_SLACK_AGENT_MODEL,
 	formatUsd,
 	isAutoModel,
+	MAX_ALLOWED_MODELS,
+	TURN_COST_LIMIT_USD,
+	TURN_STEP_LIMIT,
 	parseWhole,
 	planPriceUsd,
 	type SlackAccessMode,
@@ -59,7 +65,7 @@ export function SlackError({ error }: { error: { key: SlackErrorKey; message?: s
 	const t = useTranslations("SettingsUI.slack");
 	return (
 		<Notice tone="error" role="alert">
-			{error.key === "invalid" && error.message ? t("errors.invalidWithMessage", { message: error.message }) : t(`errors.${error.key}`)}
+			{error.key === "invalid" && error.message ? t("errors.invalidWithMessage", { message: error.message }) : t(`errors.${error.key}`, { max: MAX_ALLOWED_MODELS })}
 			{error.key === "privacyReview" ? <> <Link href="/chat" className="underline underline-offset-4">{t("openChat")}</Link></> : null}
 			{error.key === "paymentDue" ? <> <Link href="/settings/credits" className="underline underline-offset-4">{t("addCredits")}</Link></> : null}
 		</Notice>
@@ -154,6 +160,85 @@ export function ModelField({ value, autoAvailable, disabled, problem, onChange }
 				</>
 			)}
 			<FieldProblem id="slack-model-help" problem={problem} field="model" help={t("model.help")} />
+		</div>
+	);
+}
+
+/** How a message chooses its model; not translated, since people type it as is. */
+const MODEL_PREFIX = "with <model>:";
+
+/**
+ * Model choice: whether people may start a message with `with <model>:`, and the
+ * models they may name, from the gateway catalogue (and Auto, where the workspace
+ * has Auto Routing). The agent's model above stays the default.
+ */
+export function ModelChoiceFields({ enabled, models, autoAvailable, disabled, problem, onEnabledChange, onModelsChange }: {
+	enabled: boolean;
+	models: string[];
+	autoAvailable: boolean;
+	disabled?: boolean;
+	problem: SlackDraftProblem | null;
+	onEnabledChange: (enabled: boolean) => void;
+	onModelsChange: (models: string[]) => void;
+}) {
+	const t = useTranslations("SettingsUI.slack.modelChoice");
+	const catalogue = useGatewayModelOptions();
+	const byId = new Map(catalogue.options.map((option) => [option.id, option]));
+	const auto = models.some(isAutoModel);
+	const full = models.length >= MAX_ALLOWED_MODELS;
+	const remove = (id: string) => onModelsChange(models.filter((model) => model !== id));
+	return (
+		<div className="space-y-4">
+			<SwitchField label={t("enable")} help={t("enableHelp", { prefix: MODEL_PREFIX })} checked={enabled} disabled={disabled} onChange={onEnabledChange} />
+			{enabled ? (
+				<div className="space-y-3">
+					<p id="slack-allowed-models" className="text-sm font-medium">{t("models", { count: models.length, max: MAX_ALLOWED_MODELS })}</p>
+					{models.length ? (
+						<ul className="divide-y rounded-md border" aria-labelledby="slack-allowed-models">
+							{models.map((id) => {
+								const option = byId.get(id);
+								const label = isAutoModel(id) ? t("auto") : option ? `${option.organisationName}: ${option.label}` : id;
+								return (
+									<li key={id} className="flex items-center gap-3 px-3 py-2">
+										{option ? <Logo id={option.organisationId} alt={option.organisationName} width={20} height={20} className="size-5 shrink-0 object-contain" /> : <Sparkles className="size-5 shrink-0 text-muted-foreground" aria-hidden />}
+										<span className="min-w-0 flex-1">
+											<span className="block truncate text-sm font-medium">{label}</span>
+											<span className="block truncate text-[11px] text-muted-foreground">{id}</span>
+										</span>
+										<Button type="button" variant="ghost" size="icon-sm" disabled={disabled} aria-label={t("remove", { model: label })} onClick={() => remove(id)}>
+											<X />
+										</Button>
+									</li>
+								);
+							})}
+						</ul>
+					) : null}
+					{full ? <p className="text-xs text-muted-foreground">{t("full", { max: MAX_ALLOWED_MODELS })}</p> : (
+						<GatewayModelCombobox
+							value=""
+							onChange={(id) => { if (id && !models.includes(id)) onModelsChange([...models, id]); }}
+							options={catalogue.options}
+							excludedIds={models}
+							filter={(option) => option.capabilities.includes(TEXT_MODEL_CAPABILITY)}
+							ariaLabel={t("add")}
+							loading={catalogue.loading}
+							error={catalogue.error}
+						/>
+					)}
+					{autoAvailable || auto ? (
+						<SwitchField
+							label={t("includeAuto")}
+							help={t("includeAutoHelp")}
+							checked={auto}
+							disabled={disabled || (!auto && (full || !autoAvailable))}
+							onChange={(checked) => onModelsChange(checked ? [...models, AUTO_SLACK_AGENT_MODEL] : models.filter((model) => !isAutoModel(model)))}
+						/>
+					) : null}
+					{/* Allowed before Auto Routing was checked here: asking with Auto fails until it is removed. */}
+					{auto && !autoAvailable ? <Notice tone="warning" role="status">{t("autoUnavailable")}</Notice> : null}
+					<FieldProblem id="slack-allowed-models-help" problem={problem} field="allowedModels" help={t("help", { cost: formatUsd(TURN_COST_LIMIT_USD), steps: TURN_STEP_LIMIT })} />
+				</div>
+			) : null}
 		</div>
 	);
 }

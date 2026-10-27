@@ -6849,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "Agent",
+			"modelChoice": "Modellwahl",
 			"access": "Wer ihn nutzen kann",
 			"usageData": "Nutzungsdaten",
 			"limits": "Limits",
@@ -6869,6 +6870,20 @@
 			"label": "Anweisungen",
 			"help": "Zusätzliche Vorgaben, die der Agent in jeder Antwort befolgt, etwa zum Ton oder Schwerpunkt.",
 			"placeholder": "Antworte kurz. Verlinke unser Handbuch, wenn es hilft."
+		},
+		"modelChoice": {
+			"description": "Lass Personen für eine einzelne Nachricht das Modell wählen, aus den Modellen, die du erlaubst. Andere Nachrichten nutzen das Modell des Agenten.",
+			"enable": "Modellwahl pro Nachricht erlauben",
+			"enableHelp": "Personen beginnen eine Nachricht mit {prefix} und nennen ein erlaubtes Modell mit Namen oder ID. Ist das Modell nicht erlaubt, bekommen sie privat eine Liste der erlaubten Modelle, und die Nachricht wird nicht beantwortet.",
+			"models": "Wählbare Modelle ({count} von {max})",
+			"add": "Modell hinzufügen",
+			"remove": "{model} entfernen",
+			"auto": "Automatisch",
+			"full": "Du kannst bis zu {max} Modelle erlauben. Entferne eines, um ein anderes hinzuzufügen.",
+			"includeAuto": "„Automatisch“ einbeziehen",
+			"includeAutoHelp": "Personen können „Automatisch“ wählen. Dann sucht Phaseo ein passendes Modell für diese Nachricht aus.",
+			"autoUnavailable": "„Automatisch“ ist für diesen Workspace nicht verfügbar, daher können Nachrichten, die es wählen, nicht beantwortet werden. Schalte „Automatisch“ einbeziehen aus.",
+			"help": "Jede Antwort behält ihr Kostenlimit von {cost} und ihr Limit von {steps} Schritten, egal welches Modell antwortet. In ihrer Fußzeile steht das Modell, das geantwortet hat."
 		},
 		"access": {
 			"everyone": "Alle in Slack",
@@ -7002,6 +7017,8 @@
 			"answersPerHour": "Gib eine ganze Zahl von 1 bis {max} ein.",
 			"tokenLimit": "Gib einen Betrag bis {max} ein oder lass das Feld leer für kein Limit.",
 			"model": "Wähle ein Modell.",
+			"allowedModelsEmpty": "Füge mindestens ein Modell hinzu oder schalte die Modellwahl aus.",
+			"tooManyModels": "Erlaube höchstens {max} Modelle.",
 			"instructions": "Halte die Anweisungen bei höchstens {max} Zeichen.",
 			"channelIds": "Gib Slack-Channel-IDs wie C0123ABCD ein, getrennt durch Kommas.",
 			"tooManyChannels": "Gib höchstens {max} Channels an.",
@@ -7037,6 +7054,9 @@
 			"sessionMismatch": "Schließe die Installation mit dem Admin-Konto ab, das sie gestartet hat.",
 			"installFailed": "Die Installation wurde nicht abgeschlossen, und nichts wurde eingerichtet. Versuche es erneut.",
 			"autoUnavailable": "„Automatisch“ ist für diesen Workspace nicht verfügbar. Wähle ein bestimmtes Modell.",
+			"unknownModels": "Einige dieser Modelle sind nicht mehr im Phaseo-Katalog. Entferne sie und speichere erneut.",
+			"modelChoiceNeedsModels": "Füge mindestens ein wählbares Modell hinzu oder schalte die Modellwahl aus.",
+			"tooManyModels": "Du kannst höchstens {max} Modelle erlauben.",
 			"invalid": "Prüfe die Einstellungen und versuche es erneut.",
 			"invalidWithMessage": "Prüfe die Einstellungen und versuche es erneut: {message}",
 			"unavailable": "Phaseo konnte das gerade nicht erledigen. Versuche es gleich noch einmal.",
