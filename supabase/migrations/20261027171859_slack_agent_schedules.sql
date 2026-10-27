@@ -273,6 +273,12 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
     title           text,
     prompt          text,
     created_by      text,
+    frequency       text,
+    hour            smallint,
+    minute          smallint,
+    day_of_week     smallint,
+    day_of_month    smallint,
+    timezone        text,
     run_at          timestamp with time zone
   )
   LANGUAGE sql
@@ -320,9 +326,11 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
     from due, public.slack_installations installation
     where schedule.id = due.id and installation.id = schedule.installation_id
     returning schedule.id, schedule.installation_id, schedule.channel_id, schedule.title, schedule.prompt, schedule.created_by,
+      schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
       schedule.last_run_at, schedule.status, schedule.last_result
   )
-  select claimed.id, claimed.installation_id, claimed.channel_id, claimed.title, claimed.prompt, claimed.created_by, claimed.last_run_at
+  select claimed.id, claimed.installation_id, claimed.channel_id, claimed.title, claimed.prompt, claimed.created_by,
+    claimed.frequency, claimed.hour, claimed.minute, claimed.day_of_week, claimed.day_of_month, claimed.timezone, claimed.last_run_at
   from claimed
   where claimed.status = 'active' and claimed.last_result is null
   order by claimed.last_run_at;

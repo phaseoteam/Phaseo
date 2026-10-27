@@ -191,7 +191,7 @@ try {
   const weeklyDue = await makeDue(weekly.schedule.id, 3);
   const claimed = await claim();
   assert.deepEqual(claimed.map((row) => row.schedule_id), [weekly.schedule.id, hourly.schedule.id], 'oldest first');
-  assert.deepEqual(Object.keys(claimed[0]).sort(), ['channel_id', 'created_by', 'installation_id', 'prompt', 'run_at', 'schedule_id', 'title']);
+  assert.deepEqual(Object.keys(claimed[0]).sort(), ['channel_id', 'created_by', 'day_of_month', 'day_of_week', 'frequency', 'hour', 'installation_id', 'minute', 'prompt', 'run_at', 'schedule_id', 'timezone', 'title']);
   assert.equal(claimed[1].run_at.getTime(), hourlyDue.getTime(), 'run_at is when it was due');
   assert.equal(claimed[0].prompt, 'Summarise last week\'s Phaseo spend by model.');
   assert.deepEqual(await claim(), [], 'and is claimed once');
