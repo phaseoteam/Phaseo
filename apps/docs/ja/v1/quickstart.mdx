@@ -60,6 +60,26 @@ API キーはパスワードと同じように扱ってください。クライ�
 
 最初のリクエストには `POST /v1/responses` を使用します。新しいテキスト生成の実装に推奨されるエンドポイントです。
 
+### SDK をインストールする
+
+cURL と JavaScript の例では何もインストールする必要はありません。TypeScript SDK または Python SDK を使う場合は、先にインストールします。
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+実行環境の要件やその他の SDK については、[TypeScript](./sdk-reference/typescript/installation) と [Python](./sdk-reference/python/installation) のインストールページを参照してください。
+
 ### リクエスト
 
 <CodeGroup>
@@ -320,6 +340,43 @@ console.log(result.text);
 Responses API を直接呼び出す場合は、`output[].content[]` の `type` が `output_text` である項目からアシスタントの返答を読み取ります。
 
 Vercel AI SDK を使用する場合は、`result.text` から返答を読み取ります。
+
+### 返答をストリーミングする
+
+生成と同時に返答を表示するには、ストリーミングを使います。各チャンクの `text` には新しいテキストだけが入るため、このループは回答を 1 回だけ表示します。`response.output_text.done` などの終了イベントでは `text` は空で、全文は `fullText`（TypeScript）または `full_text`（Python）に入ります。
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+回答が 2 回表示される場合は SDK を更新してください。古いリリースでは終了イベントにも全文が入っていました。
 
 ---
 
