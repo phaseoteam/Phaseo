@@ -22,6 +22,10 @@ export type SlackAgentSettings = {
 	allowed_models: string[];
 	/** The agent's notes, pins and to-dos. Off: it saves and sees none, saved ones are kept, and skills still work. */
 	memory_enabled: boolean;
+	/** Recurring tasks (slackAgentSchedules.ts): on or off, the most per workspace, and who can set them up. */
+	schedules_enabled?: boolean;
+	schedules_max?: number;
+	schedule_creators?: "everyone" | "linked";
 	instructions: string | null;
 	access_mode: SlackAccessMode;
 	usage_data_mode: SlackUsageDataMode;
