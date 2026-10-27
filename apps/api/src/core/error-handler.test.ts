@@ -159,6 +159,66 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
 
+	it("keeps a key spend cap Retry-After longer than a day", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "embeddings",
+			res: new Response(JSON.stringify({
+				error: "key_limit_exceeded",
+				reason: "monthly_cost_limit_reached",
+				description: "This API key has reached its monthly spend limit ($0.0117 of $0.01).",
+			}), { status: 429, headers: { "Retry-After": "388800" } }),
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("388800");
+		const payload = await response.json();
+		expect(payload.error).toMatchObject({ type: "rate_limit_error", metadata: { retry_after_seconds: 388800 } });
+	});
+
+	it("still drops a provider Retry-After longer than a day", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "all_candidates_failed",
+				failed_statuses: [429],
+			}), { status: 429, headers: { "Retry-After": "388800" } }),
+			ctx: { requestId: "G-LONG-429", workspaceId: "workspace", model: "openai/gpt-oss-120b", meta: {}, providers: [{ providerId: "deepinfra" }] } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBeNull();
+	});
+
+	it("returns a provider rejection of the request as an invalid_request_error", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "embeddings",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "upstream_rejected_request",
+				description: "The provider rejected the request (HTTP 400): Invalid type for 'input'.",
+				attempt_count: 1,
+				failed_providers: ["openai"],
+				failed_statuses: [400],
+				failure_sample: [{ provider: "openai", status: 400, upstream_error_message: "Invalid type for 'input'.", upstream_error_param: "input" }],
+			}), { status: 400 }),
+			ctx: { requestId: "G-REJECTED-400", workspaceId: "workspace", model: "openai/text-embedding-3-small", meta: {}, providers: [{ providerId: "openai" }] } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(400);
+		const payload = await response.json();
+		expect(payload).toMatchObject({
+			status_code: 400,
+			code: "upstream_error",
+			reason: "upstream_rejected_request",
+			error: { type: "invalid_request_error", param: "input" },
+		});
+		expect(String(payload.error.message)).toContain("Invalid type for 'input'.");
+	});
+
 	it("keeps BYOK upstream quota headers and the throttling status when every provider returned 429", async () => {
 		const response = await handleError({
 			stage: "execute",

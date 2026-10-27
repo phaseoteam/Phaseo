@@ -94,6 +94,27 @@ function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDia
     };
 }
 
+const NANOS_PER_USD = 1_000_000_000;
+
+/**
+ * Cost limits and usage are stored in nanos (1e-9 USD). Formats them as US
+ * dollars: two decimals from $1 up, and below $1 up to three significant
+ * digits so tiny amounts stay readable (11,660,720 nanos is "$0.0117").
+ */
+export function formatUsdFromNanos(nanos: number): string {
+	const dollars = nanos / NANOS_PER_USD;
+	const magnitude = Math.abs(dollars);
+	const maximumFractionDigits = magnitude >= 1 || magnitude === 0
+		? 2
+		: Math.min(9, Math.max(2, Math.ceil(-Math.log10(magnitude)) + 2));
+	return dollars.toLocaleString("en-US", {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits,
+	});
+}
+
 function describeKeyLimitExceeded(args: {
 	reason: string | null;
 	limitWindow?: "daily" | "weekly" | "monthly" | "lifetime" | null;
@@ -130,7 +151,10 @@ function describeKeyLimitExceeded(args: {
 		Number.isFinite(args.limitValue) &&
 		args.limitValue > 0
 	) {
-		return `This ${subject} has reached its ${windowLabel} ${metricLabel} (${args.currentValue}/${args.limitValue}).`;
+		const usage = args.limitMetric === "cost"
+			? `${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)}`
+			: `${args.currentValue}/${args.limitValue}`;
+		return `This ${subject} has reached its ${windowLabel} ${metricLabel} (${usage}).`;
 	}
 
 	return `This ${subject} has reached its ${windowLabel} ${metricLabel}.`;

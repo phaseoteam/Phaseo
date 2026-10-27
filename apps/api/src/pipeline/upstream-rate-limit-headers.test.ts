@@ -73,4 +73,10 @@ describe("upstream rate-limit response headers", () => {
 			"X-Phaseo-Upstream-RateLimit-Reset-Requests": "7s",
 		});
 	});
+	it("drops a Retry-After over 24 hours unless the limit is gateway-originated", () => {
+		const headers = new Headers({ "Retry-After": "388800" });
+		expect(readDownstreamRateLimitHeaders(headers)).toEqual({});
+		expect(readDownstreamRateLimitHeaders(headers, { gatewayOriginated: true })).toEqual({ "Retry-After": "388800" });
+		expect(extractDownstreamRateLimitHeaders(headers, { includeQuotaDetails: false })).toEqual({});
+	});
 });
