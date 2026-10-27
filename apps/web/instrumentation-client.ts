@@ -17,6 +17,7 @@ import {
 	type ClientErrorPayload,
 	isAnalyticsCaptureAllowed,
 } from "@/lib/clientErrorReporting";
+import { matchClientErrorNoise } from "@/lib/clientErrorNoise";
 import {
 	PRODUCT_ANALYTICS_EVENT,
 	type ProductAnalyticsPayload,
@@ -129,6 +130,11 @@ function captureClientError(payloadInput: ClientErrorPayload) {
 	const payload = normalizeErrorPayload(payloadInput);
 
 	if (!isAnalyticsCaptureAllowed()) {
+		return;
+	}
+
+	// Third-party noise (wallets, extensions, opaque cross-origin errors).
+	if (matchClientErrorNoise(payload)) {
 		return;
 	}
 
