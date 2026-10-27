@@ -50,7 +50,7 @@ import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
-import { captureCheckpoint } from "./gitCheckpoints";
+import { captureCheckpoint, checkpointChanges, restoreCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
@@ -694,6 +694,15 @@ export class WorkspaceRuntime {
 			const execution = this.steer(command).finally(() => this.steeringExecutions.delete(command.id));
 			this.steeringExecutions.set(command.id, execution); return execution;
 		}
+		if (command.type === "rewind") {
+			if (this.executions.has(command.id) || this.steeringExecutions.has(command.id)) throw new Error("Stop this chat before rewinding it.");
+			if (command.restoreFiles) {
+				const { project, before } = this.turnSnapshot(command.id, command.messageId);
+				// Other chats working in the same folder would lose their edits too.
+				if (this.store.getOverview().tasks.some(task => task.id !== command.id && task.projectId === project.id && this.executions.has(task.id))) throw new Error("Another chat is working in this project. Wait for it to finish before restoring files.");
+				await this.mutateProject(project.id, () => restoreCheckpoint(project.directory, before));
+			}
+		}
 		if (command.type === "add-agent") {
 			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
 			this.broadcast(); return this.store.getOverview();
@@ -826,7 +835,7 @@ export class WorkspaceRuntime {
 		if (command.type === "update-task" && command.archived === true) this.phaseo.background?.stopTask(command.id);
 		if (command.type === "update-task" && command.archived === true)
 			for (const child of this.store.getOverview().tasks.filter(value => value.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(value.status))) await this.command({ type: "cancel", id: child.id });
-		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
+		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue" || (command.type === "rewind" && command.resend)) this.start(task.id);
 		if (firstMessage) void this.nameChat(task.id, false);
 		return this.store.getOverview();
 	}
@@ -844,12 +853,31 @@ export class WorkspaceRuntime {
 		if (this.running.get(id)?.steer && ["running", "waiting"].includes(this.store.getTask(id).status)) return this.command({ type: "steer", id, text });
 		return this.command({ type: "send", id, text });
 	}
+	/** The project and the snapshot taken before this message's turn began. */
+	private turnSnapshot(id: string, messageId: string) {
+		const task = this.store.getTask(id), project = this.store.getProjects().find(value => value.id === task.projectId);
+		if (!project) throw new Error("This chat has no project files to restore.");
+		this.assertProjectAvailable(project.id);
+		const before = task.messages.find(message => message.id === messageId && message.role === "user")?.checkpoint?.before;
+		if (!before) throw new Error("This turn has no saved snapshot of the project's files.");
+		return { project, before };
+	}
+	/** What Edit from here would revert in the project: files changed since the turn's snapshot. */
+	async checkpointChanges(id: string, messageId: string) {
+		const { project, before } = this.turnSnapshot(id, messageId);
+		return checkpointChanges(project.directory, before);
+	}
 	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<WorkspaceOverview> {
 		const task = this.store.getTask(command.id); const adapter = this.running.get(task.id);
 		if (task.archived || !adapter?.steer || !["running", "waiting"].includes(task.status)) throw new Error("This task is not ready for live steering.");
 		if ((task.steering?.length ?? 0) >= 10) throw new Error("Resolve the outstanding steering instructions first.");
-		const attachments = command.attachments?.map(id => { const value = this.store.getAttachment(id); if (!value || value.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return value; });
-		const message = { id: randomUUID(), text: command.text, attachments, createdAt: new Date().toISOString() };
+		// A queued message leaves the queue as it is sent, so the turn ending meanwhile cannot also start it.
+		const position = command.queuedId ? task.queue.findIndex(value => value.id === command.queuedId) : -1, queued = task.queue[position];
+		if (command.queuedId && !queued) throw new Error("This message is no longer queued.");
+		if (queued?.notice || queued?.sourceTaskId) throw new Error("Only your own queued messages can be sent into the turn.");
+		const attachments = queued ? queued.attachments : command.attachments?.map(id => { const value = this.store.getAttachment(id); if (!value || value.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return value; });
+		const message = { id: queued?.id ?? randomUUID(), text: queued?.text ?? command.text, attachments, createdAt: new Date().toISOString() };
+		if (queued) task.queue.splice(position, 1);
 		task.steering ??= []; task.steering.push({ ...message, status: "sending" }); this.store.saveTask(task); this.broadcast();
 		let sending = false;
 		try {
@@ -860,7 +888,17 @@ export class WorkspaceRuntime {
 			current.messages.push({ ...message, role: "user", delivery: "steer" }); this.store.saveTask(current);
 		} catch (error) {
 			const current = this.store.getTask(task.id); const pending = current.steering?.find(value => value.id === message.id);
-			if (pending) { pending.status = !sending || error instanceof AgentInputRejectedError ? "rejected" : "unconfirmed"; pending.error = error instanceof Error ? error.message : "Steering delivery failed."; this.store.saveTask(current); }
+			const refused = !sending || error instanceof AgentInputRejectedError;
+			// A refused queued message goes back to its place in the queue rather than waiting for a decision.
+			if (pending && queued && refused) {
+				current.steering = current.steering?.filter(value => value.id !== message.id);
+				if (!current.archived) current.queue.splice(Math.min(position, current.queue.length), 0, queued);
+				this.store.saveTask(current); this.broadcast();
+				// The turn may have ended meanwhile; then the queue needs starting again.
+				if (!["interrupted", "failed", "limited"].includes(current.status)) this.start(task.id);
+				throw new Error("The agent could not take the message mid-turn, so it stays in the queue.", { cause: error });
+			}
+			if (pending) { pending.status = refused ? "rejected" : "unconfirmed"; pending.error = error instanceof Error ? error.message : "Steering delivery failed."; this.store.saveTask(current); }
 		}
 		this.broadcast(); return this.store.getOverview();
 	}

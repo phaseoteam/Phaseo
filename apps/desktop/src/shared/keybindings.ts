@@ -16,6 +16,13 @@ export const keybindingCommands = [
 	{ command: "thread.settle", label: "Settle or un-settle chat", group: "Chats", keys: ["mod+shift+s"], when: "codeMode && chatOpen" },
 	{ command: "thread.undo", label: "Undo settle, snooze, unpin or archive", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
+	// The message box's own keys (T3's composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
+	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
+	{ command: "composer.editQueued", label: "Edit the last queued message", group: "Composer", keys: ["alt+arrowup"], when: "composerFocused" },
+	{ command: "composer.sendAndNewChat", label: "Send and start a new chat", group: "Composer", keys: ["mod+alt+enter"], when: "composerFocused" },
+	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
+	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
+	{ command: "composer.stash", label: "Stash the draft, or bring back the last stashed", group: "Composer", keys: ["mod+s"], when: "chatOpen && !terminalFocused" },
 	{ command: "rightPanel.toggle", label: "Toggle right pane", group: "Panes", keys: ["mod+alt+b"] },
 	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen && !terminalFocused" },
 	{ command: "terminal.toggle", label: "Toggle terminal", group: "Panes", keys: ["mod+j"] },
@@ -54,7 +61,7 @@ export type CommandInfo = { command: KeybindingCommand; label: string; group: st
 const commandList: readonly CommandInfo[] = keybindingCommands;
 export type KeybindingEntry = { command: KeybindingCommand; key: string; when?: string };
 export type KeybindingRow = KeybindingEntry & { id: string; label: string; group: string; source: "Default" | "Custom"; defaultKeys: readonly string[]; defaultWhen?: string };
-export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "Pull requests", "View", "Project actions"] as const;
+export const keybindingGroups = ["General", "Chats", "Composer", "Panes", "Browser", "Pull requests", "View", "Project actions"] as const;
 
 const scriptCommandPattern = /^script\.([A-Za-z0-9_-]{1,200})\.([A-Za-z0-9_-]{1,100})\.run$/;
 export const scriptCommand = (projectId: string, actionId: string): ScriptCommand => `script.${projectId}.${actionId}.run`;
@@ -69,6 +76,7 @@ export const whenVariables = {
 	paneOpen: "The right pane is open",
 	settingsOpen: "Settings are open",
 	textFocused: "A text field or the composer has focus",
+	composerFocused: "The message box has focus",
 	terminalFocused: "A terminal has focus",
 	browserFocused: "A browser page or its address bar has focus",
 } as const;

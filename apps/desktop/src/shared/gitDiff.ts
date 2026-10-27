@@ -7,6 +7,10 @@ export type GitDiffResult = { patch: string; hash: string; truncated: boolean; h
 export type GitRefs = { local: string[]; remote: string[]; current: string };
 /** Working-tree snapshots taken before and after a turn, as Git tree ids. */
 export type TurnCheckpoint = { before: string; after?: string };
+/** A file restoring a snapshot would change: added since (it goes), modified or deleted since (it comes back). */
+export type CheckpointChange = { path: string; status: "added" | "modified" | "deleted" };
+/** A file one turn changed, with lines added and removed; -1 for a binary file. */
+export type TurnFileChange = { path: string; additions: number; deletions: number };
 
 const treeId = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 export const isTreeId = (value: unknown): value is string => typeof value === "string" && treeId.test(value);

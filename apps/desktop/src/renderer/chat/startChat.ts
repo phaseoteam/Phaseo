@@ -44,9 +44,9 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	if (!id) return;
 	known.add(id);
 	const attachments: string[] = [];
-	for (const file of input.images ?? []) attachments.push((await api.pasteImage(id, file.name, new Uint8Array(await file.arrayBuffer()))).id);
+	for (const file of input.images ?? []) attachments.push((await api.pasteFile(id, file.name || "Pasted file", new Uint8Array(await file.arrayBuffer()))).id);
 	rememberModel(selection);
-	const text = input.nativeAction ? input.text : input.text.trim() || "Please review the attached images.";
+	const text = input.nativeAction ? input.text : input.text.trim() || "Please review the attached files.";
 	// A failed first send leaves the message in the new chat's composer so it can be retried.
 	const sent = await command({ type: "send", id, text, attachments,
 		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });

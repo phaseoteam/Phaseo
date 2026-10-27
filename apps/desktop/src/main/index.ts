@@ -48,6 +48,8 @@ import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { turnChanges } from "./gitCheckpoints";
+import { isTreeId } from "../shared/gitDiff";
 import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { UsageHubs, usageHubFile } from "./usageHubs";
@@ -617,6 +619,7 @@ ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, st
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:turn-changes", (event, id: unknown, from: unknown, to: unknown) => { const root = projectRoot(event, id); if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot."); return turnChanges(root, from, to); });
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
@@ -677,6 +680,10 @@ ipcMain.handle("workspace:task-history", (event, query: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.taskHistory(query);
+});
+ipcMain.handle("workspace:checkpoint-changes", (event, taskId: unknown, messageId: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof taskId !== "string" || typeof messageId !== "string" || !taskId || !messageId || taskId.length > 200 || messageId.length > 200) throw new Error("Invalid checkpoint request.");
+	return workspaceRuntime.checkpointChanges(taskId, messageId);
 });
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (shutdownStarted) return;
@@ -739,6 +746,14 @@ ipcMain.handle("workspace:paste-image", async (event, id: unknown, name: unknown
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before attaching images.");
 	const bytes = Buffer.from(data); if (!imageMime(bytes)) throw new Error("Paste a PNG, JPEG, GIF or WebP image.");
 	const attachment = await workspaceRuntime.attachments.prepare(id, name || "Pasted image.png", bytes);
+	try { if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw new Error("This chat is unavailable."); workspaceRuntime.store.saveAttachment(attachment); return attachment; }
+	catch (error) { await workspaceRuntime.attachments.discard(attachment); throw error; }
+});
+ipcMain.handle("workspace:paste-file", async (event, id: unknown, name: unknown, data: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || typeof name !== "string" || !name.trim() || name.length > 200 || !(data instanceof Uint8Array) || data.byteLength > 10 * 1024 * 1024 || shutdownStarted) throw new Error("Invalid file.");
+	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before adding files.");
+	// prepare accepts what Attach files does: images, PDFs and UTF-8 text.
+	const attachment = await workspaceRuntime.attachments.prepare(id, name, Buffer.from(data));
 	try { if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw new Error("This chat is unavailable."); workspaceRuntime.store.saveAttachment(attachment); return attachment; }
 	catch (error) { await workspaceRuntime.attachments.discard(attachment); throw error; }
 });

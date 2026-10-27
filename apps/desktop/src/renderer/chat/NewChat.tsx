@@ -146,10 +146,10 @@ export function NewChat() {
 	}
 
 	function addImages(files: File[]) {
-		const added = files.filter(file => file.type.startsWith("image/"));
-		if (added.length < files.length) setError("Add other files once the chat has started.");
+		// Images, PDFs and text upload once the chat exists; the main process checks each then.
+		const added = files.filter(file => file.size > 0 || file.type);
 		if (!added.length) return;
-		if (added.some(file => file.size > 10 * 1024 * 1024) || added.length + attached.length > 10) { setError("Attach up to 10 images, each under 10 MB."); return; }
+		if (added.some(file => file.size > 10 * 1024 * 1024) || added.length + attached.length > 10) { setError("Attach up to 10 files, each under 10 MB."); return; }
 		const entries = added.map(file => [crypto.randomUUID(), file] as const);
 		setImages(current => ({ ...current, ...Object.fromEntries(entries) }));
 		editor.insert(entries.map(([id, file]) => ({ kind: "image", ref: id, label: file.name })));

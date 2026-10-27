@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -17,6 +17,8 @@ import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
+import { QuoteToolbar } from "./QuoteToolbar";
+import { TurnChanges } from "./TurnChanges";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -40,7 +42,7 @@ function CopyButton({ text }: { text: string }) {
 	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
 }
 
-function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; canBranch: boolean }) {
+function UserMessage({ message, projectId, onAttachment, onBranch, onRewind, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean }) {
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
 		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageText text={message.text} projectId={projectId} />
@@ -49,6 +51,7 @@ function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: 
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
 			<span className="mr-1 text-[11px] text-muted-foreground">{new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
 			<CopyButton text={mentionPlainText(message.text)} />
+			{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
 			<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
 		</div>
 	</div>;
@@ -121,7 +124,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
 				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
-				: <div key={entry.value.id} data-selectable className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
+				: <div key={entry.value.id} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
 	</div>;
@@ -137,13 +140,13 @@ function AssistantHeader({ task }: { task: Task }) {
 }
 
 const noActivities: AgentActivity[] = [];
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; compact?: boolean };
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
  * renders those turns alone. The callbacks are stable (see Conversation).
  */
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, compact }: TurnProps) {
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -157,7 +160,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
-		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
+		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
@@ -166,21 +169,24 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			</ProposedPlan>)}
 			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
-			{final?.kind === "message" && <div data-selectable data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
+			{final?.kind === "message" && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
 				<CopyButton text={final.value.text} />
+				{onRegenerate && user && <ActionButton label="Regenerate" disabled={!canBranch} onClick={() => onRegenerate(user)}><RotateCcw /></ActionButton>}
 				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
 				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{new Intl.NumberFormat(undefined, { notation: "compact" }).format(usage.Total)} tokens</span>}
 				{usage.Cost !== undefined && usage.Cost > 0 && <span title="What this answer cost, as the Phaseo gateway priced it." className="font-mono text-[11px] text-muted-foreground">· {formatCost(usage.Cost)}</span>}
 				{context !== undefined && <span title="How much of the model's context window the conversation used at the end of this turn. Phaseo compacts it automatically when it nears the limit." className={cn("font-mono text-[11px]", context >= 0.8 ? "text-warning" : "text-muted-foreground")}>· {Math.round(context * 100)}% of context</span>}
 			</div>}
 		</div>}
+		{/* Code turns that changed files say so under the answer, with the way into the Diff pane. */}
+		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 	</div>;
-}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
+}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
-	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness);
+	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
-export function Conversation({ task, onAttachment, onBranch, children, compact, className }: { task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; children?: ReactNode; compact?: boolean; className?: string }) {
+export function Conversation({ task, onAttachment, onBranch, onRewind, onRegenerate, children, compact, className }: { task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; onRegenerate?: (message: Message) => void; children?: ReactNode; compact?: boolean; className?: string }) {
 	const host = useRef<HTMLDivElement>(null);
 	const content = useRef<HTMLDivElement>(null);
 	const following = useRef(true);
@@ -192,8 +198,9 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
 	// Turns are memoised, so they get stable callbacks that always call the latest ones.
-	const handlers = useRef({ onAttachment, onBranch }); handlers.current = { onAttachment, onBranch };
+	const handlers = useRef({ onAttachment, onBranch, onRewind, onRegenerate }); handlers.current = { onAttachment, onBranch, onRewind, onRegenerate };
 	const attach = useCallback((id: string) => handlers.current.onAttachment(id), []), branchFrom = useCallback((id: string) => handlers.current.onBranch(id), []);
+	const rewindTo = useCallback((message: Message) => handlers.current.onRewind?.(message), []), regenerate = useCallback((message: Message) => handlers.current.onRegenerate?.(message), []);
 	const usageByTurn = useMemo(() => {
 		const byTurn = new Map<string, AgentActivity[]>();
 		for (const activity of activityEntries) if (activity.type === "usage") { const owner = activity.id.slice(0, Math.max(0, activity.id.indexOf(":"))); byTurn.set(owner, [...byTurn.get(owner) ?? [], activity]); }
@@ -265,6 +272,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
 				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact}
+					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}
 				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
@@ -272,6 +280,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 			</div>
 		</ScrollArea>
 		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
+		<QuoteToolbar root={content} />
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}
