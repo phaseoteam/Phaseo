@@ -51,7 +51,7 @@ export async function ArtificialAnalysisOverview({
 
 	return (
 		<div className="pb-12">
-			{benchmark.suite ? <div className="border-b px-4 py-2 lg:px-6"><ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} /></div> : null}
+			{benchmark.suite ? <div className="border-b px-4 py-2 lg:px-6"><ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} currentLabel={latestVersion === "Unspecified" ? undefined : `v${latestVersion}`} /></div> : null}
 			{richData ? <ArtificialAnalysisDashboard rows={dashboardRows(richData.models)} footer={footer} /> : <ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />}
 			<div className="border-b px-4 lg:px-6">
 				{richData ? <ArtificialAnalysisDeferredExplorer title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")} points={points} /> : null}

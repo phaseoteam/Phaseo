@@ -51,7 +51,6 @@ export interface ArtificialAnalysisSuite {
 	current_version: number;
 	selected_version: number;
 	versions: number[];
-	version_labels?: Record<number, string>;
 	metrics: ArtificialAnalysisMetric[];
 	other_evaluations: { id: string; name: string }[];
 }

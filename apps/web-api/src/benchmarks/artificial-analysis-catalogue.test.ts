@@ -78,7 +78,6 @@ describe("Artificial Analysis catalogue", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(String(input));
 			if (url.pathname.endsWith("/rpc/get_artificial_analysis_coverage")) return Response.json(coverage);
-			if (url.pathname.endsWith("/artificial_analysis_snapshots")) return Response.json({ methodology_version: "4.3.2", payload: { results: coverage.filter((row) => row.benchmark_id.endsWith("-v4")).map((row) => ({ benchmark_id: row.benchmark_id })) } });
 			if (url.pathname.endsWith("/v2_benchmarks")) {
 				if (url.searchParams.get("select")?.includes("results:v2_benchmark_results")) {
 					return Response.json(rows.map((row) => ({ benchmark_id: row.benchmark_id, results: [] })));
