@@ -260,6 +260,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -382,6 +387,11 @@ public final class Operations {
 
 	public static Object deleteWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -612,6 +622,11 @@ public final class Operations {
 
 	public static Object getWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -892,6 +907,11 @@ public final class Operations {
 
 	public static Object listWebhookEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listWorkloadIdentityPolicies(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1212,6 +1232,11 @@ public final class Operations {
 
 	public static Object updateWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

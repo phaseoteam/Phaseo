@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -356,7 +356,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -638,7 +638,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -992,7 +992,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -1274,7 +1274,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1628,7 +1628,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -1910,7 +1910,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2264,7 +2264,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -2546,7 +2546,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2900,7 +2900,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -3182,7 +3182,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3536,7 +3536,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -3818,7 +3818,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4172,7 +4172,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",
@@ -4454,7 +4454,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "819793b0a271b10f8566a641bb5d7ff0a3594e6b662b01a9062e1bc9d1c9cb43",
+      "@openapi": "f8b3d68ef21979b00757a8a468d24b5c909214b245a1cf11c732cf8890275696",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4808,7 +4808,7 @@
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
       "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
-      "guides/slack-agent.mdx": "8683192ba4135776982ff1ef0556bdfb814637da68480f81daa9fad9f8c3881f",
+      "guides/slack-agent.mdx": "7413ac91c2903b65ac2fb82fb6818089e6660142dcf803964d87aaa31f6b4cc6",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
       "guides/streaming.mdx": "be23b5765d7d15cf91237ac96ef4fceef33aded826ce8f6a6bcae32383a21cc7",

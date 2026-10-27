@@ -63,7 +63,7 @@ While it answers:
   - When Slack doesn't let it read the thread just then, it works from its own earlier replies in the thread.
 - It answers one message at a time in each thread. Up to 5 more messages wait their turn; after that it asks you to wait for the earlier answers.
 - Slack's stop button stops the answer it's working on.
-- Each answer ends with the model and what the answer cost in model tokens, such as `Auto → GPT-6 Luna · $0.0031`. With **Auto**, the model it picked follows an arrow. A model's name links to its page on Phaseo, and the cost links to that answer's requests in **Logs**, which members of the Phaseo workspace can open.
+- Each answer ends with the model and what the answer cost in model tokens, such as `Auto → GPT-6 Luna · $0.0031`. With **Auto**, the model it picked follows an arrow, and other models the answer used follow a +. A model's name links to its page on Phaseo, and the cost links to that answer's requests in **Logs**, which members of the Phaseo workspace can open.
 
 ## Choosing a model per message
 
@@ -81,6 +81,34 @@ with openai/gpt-6-luna: draft a reply to this customer
 - If you name a catalogue model that isn't on the list, or the name fits more than one, the agent replies privately with the models you can choose and doesn't answer. That message isn't counted as an answer. A message that starts with "With …:" but names no model, such as "With regards to the invoice: …", is answered as usual.
 - Each answer keeps the same [limits](#limits-on-each-answer), $0.50 and 12 steps, whichever model answers. The model's tokens are billed at its own price.
 - The **Slack agent** guardrail still applies. If no provider of the chosen model meets it, the agent says so instead of answering.
+
+### Asking another model
+
+While model choice is on, the agent can also ask one of the allowed models for a second opinion as it answers, for example when you ask what another model thinks:
+
+```text
+@Phaseo draft a reply to this customer, then ask Claude Opus 5.5 to check it
+```
+
+- The other model only sees what the agent sends it. It doesn't see the Slack thread, and it can't search the web or use tools.
+- The agent can ask other models up to 3 times in one answer. Their cost counts toward the same [$0.50 limit](#limits-on-each-answer), and the agent stops asking when too little is left to finish its answer.
+- The footer names every model used, such as `GPT-6 Luna + Claude Opus 5.5 · $0.0123`, and the cost includes them.
+- If a model can't be used, for example because none of its providers meets the **Slack agent** guardrail, the agent is told why and answers without it.
+
+### Comparing models
+
+To see how 2 or 3 allowed models answer the same question, start the message with `compare`, the models separated by commas, and a colon:
+
+```text
+@Phaseo compare GPT-6 Luna, Claude Opus 5.5: what are the risks of moving our database to another region?
+compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
+```
+
+- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer. A message that names no model at all, such as `compare the two plans, then pick one: …`, is ordinary text and the agent answers it as usual.
+- Each model gets your question, not the rest of the thread, and can search the web and read web pages. They answer at the same time.
+- The reply has a section for each model: its name, linked to its page on Phaseo, what it cost, and its answer. Each model is asked to keep its answer short, and long answers are cut so they all fit in one Slack message.
+- If a model fails, its section says why, and the other answers are still shown.
+- A comparison counts as one answer. The [$0.50 limit](#limits-on-each-answer) is split evenly between the models, and the footer names them all and shows the total. The split only decides whether a model is asked: one isn't asked when its share is under $0.02. An answer isn't stopped at its share, so it can cost more; each model's reply is capped in length instead.
 
 ### Questions with buttons
 
@@ -200,7 +228,7 @@ The **Agent** section sets the model and **Instructions**: extra guidance the ag
 
 ### Limits on each answer
 
-Each answer stops after 12 steps or $0.50 of model spend, whichever comes first. A step is one model call and the tools it runs, such as a web search. When a limit stops an answer, the agent says so, and you can ask it to continue. These limits are the same for every workspace.
+Each answer stops after 12 steps or $0.50 of model spend, whichever comes first. A step is one model call and the tools it runs, such as a web search. Other models the agent asks, and the models in a comparison, count toward the same $0.50. When a limit stops an answer, the agent says so, and you can ask it to continue. These limits are the same for every workspace.
 
 ## Pricing
 
@@ -404,6 +432,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "The model chosen for this agent isn't available to the Slack agent." | The gateway can't use the agent's model with its key: **Auto** without Auto Routing, or no provider of the model meets the **Slack agent** guardrail. | Choose another model in **Settings → Slack**. |
 | "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
+| "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
 
 If the agent doesn't reply at all:
 

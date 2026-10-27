@@ -40,7 +40,7 @@ const MAX_MESSAGE_CHARS = 40_000;
 const MAX_PAUSED_RUN_BYTES = 1_500_000;
 
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
-	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
+	/** The person's message, without a `with <model>:` or `compare <models>:` that chose its models. Kept only until the turn ends. */
 	text: string;
 };
 
@@ -108,6 +108,8 @@ type TurnRow = {
 	kind: "mention" | "dm";
 	model: string | null;
 	external: number | null;
+	/** A Compare's models, as JSON. */
+	compare: string | null;
 	status: "queued" | "running";
 	started_at: number | null;
 	/** Since when the turn has been going again after a question: posted (until it expires), answered or closed. */
@@ -135,10 +137,11 @@ function turnRef(row: TurnRow): TurnRef {
 		kind: row.kind,
 		...(row.model ? { model: row.model } : {}),
 		...(row.external ? { external: true } : {}),
+		...(row.compare ? { compare: JSON.parse(row.compare) as string[] } : {}),
 	};
 }
 
-const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, status, started_at, waiting_until";
+const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, status, started_at, waiting_until";
 
 /** Columns added after the first release, created on objects that predate them. */
 const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
@@ -151,6 +154,7 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "external", "INTEGER"],
 	["memory", "ts", "TEXT"],
 	["turns", "waiting_until", "INTEGER"],
+	["turns", "compare", "TEXT"],
 ];
 
 /** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
@@ -258,10 +262,11 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, text, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, text, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
-				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0, request.text.slice(0, MAX_MESSAGE_CHARS), now,
+				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0,
+				request.compare?.length ? JSON.stringify(request.compare) : null, request.text.slice(0, MAX_MESSAGE_CHARS), now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});

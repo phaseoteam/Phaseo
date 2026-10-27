@@ -3,11 +3,11 @@ import {
 	createAgent,
 	createGatewayAgentClient,
 	isAgentGatewayError,
-	maxCost,
 	stepCountIs,
 	type AgentModelClient,
 	type AgentModelResponse,
 	type AgentRunResult,
+	type AgentStopCondition,
 	type AgentTool,
 	type AgentToolOutput,
 	type AgentUsageSummary,
@@ -47,6 +47,8 @@ export type AgentTurnRequest = {
 	tools: AgentTool<any, any>[];
 	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
 	maxCostUsd: number;
+	/** What the run's tools spent on their own gateway requests (other models it asked), counted against maxCostUsd and in its cost. */
+	otherCostUsd?: () => number;
 	signal: AbortSignal;
 	/** Continues a run that paused for the person's answer (ask_question), with its paused tool call's output. */
 	resume?: { run: PausedRun; toolOutputs: AgentToolOutput[] };
@@ -64,7 +66,20 @@ export type AgentTurnHooks = {
 	onText(delta: string): Promise<void>;
 	/** After each agent step, with what the run has spent so far; the turn stages its reply and cost and checks its cancel flag here. */
 	onStep(progress: { costUsd: number }): Promise<void>;
+	/** After each of the run's own model responses, with what they have cost so far (without otherCostUsd). */
+	onCost?(modelCostUsd: number): void;
 };
+
+/** One non-streaming gateway request: a model asked mid-answer (ask_model), or one model of a Compare. */
+export type AskRequest = Pick<AgentTurnRequest, "gatewayKey" | "model" | "endUser" | "sessionId" | "labels" | "signal"> & {
+	instructions: string;
+	prompt: string;
+	/** Lets the gateway search the web and read pages for this request. */
+	webTools: boolean;
+	maxOutputTokens: number;
+};
+
+export type AskOutput = { text: string; costUsd: number };
 
 export type AgentTurnOutput = {
 	costUsd: number;
@@ -98,6 +113,8 @@ export function pausedRun(result: AgentRunResult<unknown, unknown, unknown>): Pa
 
 export interface AgentRunner {
 	run(request: AgentTurnRequest, hooks: AgentTurnHooks): Promise<AgentTurnOutput>;
+	/** Throws the gateway's error, like run. */
+	ask(request: AskRequest): Promise<AskOutput>;
 }
 
 /** The x-phaseo-metadata labels every Slack agent request carries (filterable in Logs and Usage). */
@@ -180,27 +197,42 @@ function lastModel(result: AgentRunResult<unknown, unknown, unknown>): string | 
 	return null;
 }
 
+/**
+ * The gateway client for one answer's requests: the installation's key, its
+ * Slack labels, app title, end user and session (the Responses API takes the
+ * session from the body only).
+ */
+function gatewayClient(options: { fetchImpl: typeof fetch; baseUrl: string }, request: Pick<AgentTurnRequest, "gatewayKey" | "model" | "endUser" | "sessionId" | "labels">, webTools: boolean): AgentModelClient {
+	return createGatewayAgentClient({
+		clientOptions: {
+			apiKey: request.gatewayKey,
+			baseUrl: options.baseUrl,
+			fetchImpl: options.fetchImpl,
+			devtools: { enabled: false },
+			// No deprecation warnings in Worker logs.
+			enableDeprecationWarnings: false,
+			headers: { "x-title": APP_TITLE, "x-phaseo-metadata": requestLabelsHeader(request.labels) },
+		},
+		model: request.model,
+		user: request.endUser,
+		...(webTools ? { gatewayTools: GATEWAY_TOOLS } : {}),
+		requestOptions: { session_id: request.sessionId },
+	});
+}
+
+/** Stops the run once its own spend and its tools' together reach the limit, the way the SDK's maxCost stops it on its own. */
+function maxTurnCost(limit: number, otherCostUsd: () => number): AgentStopCondition {
+	return ({ usage }) => usage.cost + otherCostUsd() >= Math.max(0, limit) ? `max_cost:${limit}` : false;
+}
+
 export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl: string }): AgentRunner {
 	return {
 		async run(request, hooks) {
 			let spentUsd = 0;
-			const client = meteredClient(createGatewayAgentClient({
-				clientOptions: {
-					apiKey: request.gatewayKey,
-					baseUrl: options.baseUrl,
-					fetchImpl: options.fetchImpl,
-					devtools: { enabled: false },
-					// No deprecation warnings in Worker logs.
-					enableDeprecationWarnings: false,
-					headers: { "x-title": APP_TITLE, "x-phaseo-metadata": requestLabelsHeader(request.labels) },
-				},
-				model: request.model,
-				user: request.endUser,
-				gatewayTools: GATEWAY_TOOLS,
-				// The Responses API takes the session from the body only.
-				requestOptions: { session_id: request.sessionId },
-			}), (usd) => {
+			const otherCostUsd = () => request.otherCostUsd?.() ?? 0;
+			const client = meteredClient(gatewayClient(options, request, true), (usd) => {
 				spentUsd += usd;
+				hooks.onCost?.(spentUsd);
 			});
 			const agent = createAgent({
 				id: AGENT_ID,
@@ -208,7 +240,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				instructions: request.instructions,
 				tools: request.tools,
 				maxSteps: MAX_STEPS,
-				stopWhen: [stepCountIs(MAX_STEPS), maxCost(request.maxCostUsd)],
+				stopWhen: [stepCountIs(MAX_STEPS), maxTurnCost(request.maxCostUsd, otherCostUsd)],
 			});
 			// A continued run starts from its paused record, whose steps carry no cost: its usage is this run's alone.
 			const stream = request.resume
@@ -217,16 +249,29 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			let result: AgentRunResult<unknown, unknown, unknown> | null = null;
 			for await (const event of stream.getFullStream()) {
 				if (event.type === "response.output_text.delta") await hooks.onText(event.delta);
-				else if (event.type === "step.completed") await hooks.onStep({ costUsd: spentUsd });
+				else if (event.type === "step.completed") await hooks.onStep({ costUsd: spentUsd + otherCostUsd() });
 				else if (event.type === "result") result = event.result;
 			}
 			result ??= await stream.getResult();
 			return {
-				costUsd: result.usage?.cost ?? spentUsd,
+				costUsd: (result.usage?.cost ?? spentUsd) + otherCostUsd(),
 				model: lastModel(result),
 				stopReason: result.run.status === "stopped" ? result.run.stopReason ?? null : null,
 				...(result.run.status === "waiting_for_human" ? { paused: pausedRun(result) } : {}),
 			};
+		},
+		async ask(request) {
+			const response = await gatewayClient(options, request, request.webTools).generate({
+				agentId: AGENT_ID,
+				model: request.model,
+				instructions: request.instructions,
+				messages: [{ role: "user", content: request.prompt }],
+				tools: [],
+				context: undefined,
+				signal: request.signal,
+				maxOutputTokens: request.maxOutputTokens,
+			});
+			return { text: response.message.content.trim(), costUsd: responseCost(response) };
 		},
 	};
 }

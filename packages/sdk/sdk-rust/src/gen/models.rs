@@ -3841,6 +3841,54 @@ pub struct WebSearchPlugin {
 	pub search_context_size: Option<String>,
 }
 
+pub struct WorkloadIdentityPolicy {
+	pub audience: String,
+	pub claim_conditions: HashMap<String, String>,
+	pub created_at: String,
+	pub created_by: Option<String>,
+	pub id: String,
+	pub issuer: String,
+	pub key_id: String,
+	pub last_used_at: Option<String>,
+	pub max_token_lifetime_seconds: i64,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+	pub status: String,
+	pub updated_at: String,
+}
+
+pub struct WorkloadIdentityPolicyDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub issuer: Option<String>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+}
+
+pub struct WorkloadIdentityPolicyListResponse {
+	pub audience: String,
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct WorkloadIdentityPolicyResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyUpdateInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: Option<String>,
+	pub status: Option<String>,
+}
+
+pub type WorkloadIdentityProvider = JsonValue;
+
 pub struct Workspace {
 	pub created_at: Option<String>,
 	pub created_by: Option<String>,

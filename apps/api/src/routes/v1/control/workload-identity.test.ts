@@ -4,6 +4,7 @@ type Row = Record<string, any>;
 
 const mocks = vi.hoisted(() => ({
 	session: null as unknown,
+	management: { ok: false, response: new Response(null, { status: 401 }) } as any,
 	gate: true,
 	policies: [] as Row[],
 	keys: [] as Row[],
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./dashboard-session", () => ({ authenticateDashboardSession: async () => mocks.session }));
+vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => mocks.management }));
 vi.mock("@core/feature-flags", () => ({ isWorkloadIdentityAccessEnabled: async () => mocks.gate }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({
 	recordWorkspaceAuditEvent: async (_client: unknown, event: Record<string, unknown>) => void mocks.audits.push(event),
@@ -95,6 +97,7 @@ import { workloadIdentityRoutes } from "./workload-identity";
 
 const WS = "00000000-0000-4000-8000-000000000001";
 const session = (role: string) => ({ role, auth: { workspaceId: WS, userId: "user-1" } });
+const managementKey = (scopes: string[]) => ({ ok: true, value: { workspaceId: WS, authMethod: "api_key", scopes } });
 
 function call(method: string, path: string, body?: unknown) {
 	return workloadIdentityRoutes.request(`https://api.phaseo.test${path}`, {
@@ -114,6 +117,7 @@ const vercelPolicy = {
 
 beforeEach(() => {
 	mocks.session = session("owner");
+	mocks.management = { ok: false, response: new Response(null, { status: 401 }) };
 	mocks.gate = true;
 	mocks.policies.length = 0;
 	mocks.keys.length = 0;
@@ -206,12 +210,47 @@ describe("workload identity policy routes", () => {
 		expect(mocks.audits.at(-1)).toMatchObject({ action: "workload_identity_policy.deleted" });
 	});
 
-	it("is only for owners and admins of workspaces in the rollout, from the dashboard", async () => {
+	it("is only for owners and admins of workspaces in the rollout", async () => {
 		mocks.session = session("member");
 		expect((await call("GET", "/policies")).status).toBe(403);
+		// No dashboard session and no management credential.
 		mocks.session = null;
-		expect((await call("GET", "/policies")).status).toBe(403);
+		expect((await call("GET", "/policies")).status).toBe(401);
 		mocks.session = session("admin");
+		mocks.gate = false;
+		expect((await call("GET", "/policies")).status).toBe(404);
+		expect((await call("POST", "/policies", vercelPolicy)).status).toBe(404);
+		expect(mocks.rpcCalls).toHaveLength(0);
+	});
+
+	it("lets management keys manage policies with the keys scope for each method", async () => {
+		mocks.session = null;
+		mocks.management = managementKey(["keys:read", "keys:write", "keys:delete"]);
+		const created = await call("POST", "/policies", vercelPolicy);
+		expect(created.status).toBe(201);
+		expect(mocks.rpcCalls[0]).toMatchObject({ p_workspace_id: WS, p_created_by: null });
+		expect(mocks.audits.at(-1)).toMatchObject({ workspaceId: WS, actorUserId: null, action: "workload_identity_policy.created" });
+		const id = mocks.policies[0].id;
+		expect((await call("PATCH", `/policies/${id}`, { name: "Renamed" })).status).toBe(200);
+		expect((await call("GET", `/policies/${id}`)).status).toBe(200);
+
+		mocks.management = managementKey(["keys:read"]);
+		expect((await call("GET", "/policies")).status).toBe(200);
+		for (const [method, path, body] of [["POST", "/policies", vercelPolicy], ["PATCH", `/policies/${id}`, { name: "x" }], ["DELETE", `/policies/${id}`, undefined]] as const) {
+			const response = await call(method, path, body);
+			expect(response.status).toBe(403);
+			expect(await response.json()).toMatchObject({ error: "insufficient_scope" });
+		}
+		expect(mocks.policies[0]).toMatchObject({ name: "Renamed" });
+
+		mocks.management = managementKey(["keys:delete"]);
+		expect((await call("DELETE", `/policies/${id}`)).status).toBe(200);
+		expect(mocks.keys[0]).toMatchObject({ status: "revoked" });
+	});
+
+	it("keeps the rollout gate for management keys", async () => {
+		mocks.session = null;
+		mocks.management = managementKey(["keys:read", "keys:write"]);
 		mocks.gate = false;
 		expect((await call("GET", "/policies")).status).toBe(404);
 		expect((await call("POST", "/policies", vercelPolicy)).status).toBe(404);

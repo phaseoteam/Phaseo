@@ -6883,7 +6883,8 @@
 			"includeAuto": "„Automatisch“ einbeziehen",
 			"includeAutoHelp": "Personen können „Automatisch“ wählen. Dann sucht Phaseo ein passendes Modell für diese Nachricht aus.",
 			"autoUnavailable": "„Automatisch“ ist für diesen Workspace nicht verfügbar, daher können Nachrichten, die es wählen, nicht beantwortet werden. Schalte „Automatisch“ einbeziehen aus.",
-			"help": "Jede Antwort behält ihr Kostenlimit von {cost} und ihr Limit von {steps} Schritten, egal welches Modell antwortet. In ihrer Fußzeile steht das Modell, das geantwortet hat."
+			"help": "Jede Antwort behält ihr Kostenlimit von {cost} und ihr Limit von {steps} Schritten, egal welches Modell antwortet. In ihrer Fußzeile steht das Modell, das geantwortet hat.",
+			"askAndCompare": "Der Agent kann diese Modelle beim Antworten auch um eine zweite Meinung bitten, und Personen können 2 oder 3 davon vergleichen, indem sie eine Nachricht mit {prefix} beginnen. Beides zählt zum Kostenlimit der Antwort von {cost}, und die Fußzeile nennt jedes genutzte Modell."
 		},
 		"access": {
 			"everyone": "Alle in Slack",

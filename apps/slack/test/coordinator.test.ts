@@ -222,7 +222,7 @@ describe("ThreadCoordinator", () => {
 		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
 		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
-		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external"]));
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external", "compare"]));
 		expect(columns("memory")).toContain("ts");
 		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");

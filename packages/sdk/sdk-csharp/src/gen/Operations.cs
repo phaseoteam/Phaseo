@@ -618,6 +618,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> CreateWorkloadIdentityPolicyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/workload-identity/policies";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> CreateWorkspaceAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -934,6 +946,19 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> DeleteWorkloadIdentityPolicyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/workload-identity/policies/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -1523,6 +1548,19 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> GetWorkloadIdentityPolicyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/workload-identity/policies/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -2207,6 +2245,18 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/webhook-endpoints";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListWorkloadIdentityPoliciesAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/workload-identity/policies";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -3025,6 +3075,19 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> UpdateWorkloadIdentityPolicyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/workload-identity/policies/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
 

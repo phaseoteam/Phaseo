@@ -9289,6 +9289,116 @@ public sealed class WebSearchPlugin
 
 }
 
+public sealed class WorkloadIdentityPolicy
+{
+	[JsonPropertyName("audience")]
+	public string Audience { get; set; }
+
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object> ClaimConditions { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("issuer")]
+	public string Issuer { get; set; }
+
+	[JsonPropertyName("key_id")]
+	public string KeyId { get; set; }
+
+	[JsonPropertyName("last_used_at")]
+	public string? LastUsedAt { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("owner_id")]
+	public string OwnerId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string Provider { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyInput
+{
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object>? ClaimConditions { get; set; }
+
+	[JsonPropertyName("issuer")]
+	public string? Issuer { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long? MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("owner_id")]
+	public string OwnerId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string Provider { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyListResponse
+{
+	[JsonPropertyName("audience")]
+	public string Audience { get; set; }
+
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyUpdateInput
+{
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object>? ClaimConditions { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long? MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
+public sealed class WorkloadIdentityProvider { }
+
 public sealed class Workspace
 {
 	[JsonPropertyName("created_at")]

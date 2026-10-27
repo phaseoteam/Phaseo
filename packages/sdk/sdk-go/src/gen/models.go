@@ -5511,6 +5511,60 @@ type WebSearchPlugin struct {
 	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
 
+type WorkloadIdentityPolicy struct {
+	Audience string `json:"audience"`
+	ClaimConditions map[string]interface{} `json:"claim_conditions"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Id string `json:"id"`
+	Issuer string `json:"issuer"`
+	KeyId string `json:"key_id"`
+	LastUsedAt *string `json:"last_used_at"`
+	MaxTokenLifetimeSeconds int `json:"max_token_lifetime_seconds"`
+	Name string `json:"name"`
+	OwnerId string `json:"owner_id"`
+	Provider string `json:"provider"`
+	Status string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type WorkloadIdentityPolicyDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyInput struct {
+	ClaimConditions *map[string]interface{} `json:"claim_conditions,omitempty"`
+	Issuer *string `json:"issuer,omitempty"`
+	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
+	Name string `json:"name"`
+	OwnerId string `json:"owner_id"`
+	Provider string `json:"provider"`
+}
+
+type WorkloadIdentityPolicyListResponse struct {
+	Audience string `json:"audience"`
+	Data []map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyUpdateInput struct {
+	ClaimConditions *map[string]interface{} `json:"claim_conditions,omitempty"`
+	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type WorkloadIdentityProvider string
+
+const (
+	WorkloadIdentityProviderVercel WorkloadIdentityProvider = "vercel"
+	WorkloadIdentityProviderGithubActions WorkloadIdentityProvider = "github_actions"
+)
+
+
 type Workspace struct {
 	CreatedAt *string `json:"created_at"`
 	CreatedBy *string `json:"created_by"`

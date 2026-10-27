@@ -3880,6 +3880,55 @@ public final class Models {
 		public Object search_context_size;
 	}
 
+	public static class WorkloadIdentityPolicy {
+		public String audience;
+		public Object claim_conditions;
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String issuer;
+		public String key_id;
+		public String last_used_at;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+		public Object status;
+		public String updated_at;
+	}
+
+	public static class WorkloadIdentityPolicyDeleteResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyInput {
+		public Object claim_conditions;
+		public String issuer;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+	}
+
+	public static class WorkloadIdentityPolicyListResponse {
+		public String audience;
+		public java.util.List<Object> data;
+	}
+
+	public static class WorkloadIdentityPolicyResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyUpdateInput {
+		public Object claim_conditions;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public Object status;
+	}
+
+	public static class WorkloadIdentityProvider {
+	}
+
 	public static class Workspace {
 		public String created_at;
 		public String created_by;

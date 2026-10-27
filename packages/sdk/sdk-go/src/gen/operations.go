@@ -765,6 +765,21 @@ func CreateWebhookEndpoint(client *Client, path map[string]string, query map[str
 	return out, nil
 }
 
+func CreateWorkloadIdentityPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workload-identity/policies"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/workspaces"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -1146,6 +1161,22 @@ func DeleteVideoAlias(client *Client, path map[string]string, query map[string]s
 func DeleteWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteWorkloadIdentityPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/workload-identity/policies/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -1868,6 +1899,22 @@ func GetVideoContentAlias(client *Client, path map[string]string, query map[stri
 func GetWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetWorkloadIdentityPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/workload-identity/policies/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -2720,6 +2767,21 @@ func ListVideosAlias(client *Client, path map[string]string, query map[string]st
 
 func ListWebhookEndpoints(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/webhook-endpoints"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListWorkloadIdentityPolicies(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/workload-identity/policies"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -3720,6 +3782,22 @@ func UpdateSpendRule(client *Client, path map[string]string, query map[string]st
 func UpdateWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateWorkloadIdentityPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/workload-identity/policies/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

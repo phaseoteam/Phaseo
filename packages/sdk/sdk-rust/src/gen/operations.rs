@@ -265,6 +265,11 @@ pub fn createWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<St
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createWorkloadIdentityPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/workload-identity/policies");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createWorkspace<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/workspaces");
 	client.request("POST", &resolved_path, body)
@@ -387,6 +392,11 @@ pub fn deleteVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 
 pub fn deleteWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/webhook-endpoints/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
+pub fn deleteWorkloadIdentityPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/workload-identity/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -617,6 +627,11 @@ pub fn getVideoContentAlias<T: Transport>(client: &Client<T>, path: &HashMap<Str
 
 pub fn getWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/webhook-endpoints/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getWorkloadIdentityPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/workload-identity/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -897,6 +912,11 @@ pub fn listVideosAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 
 pub fn listWebhookEndpoints<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/webhook-endpoints");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listWorkloadIdentityPolicies<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/workload-identity/policies");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -1217,6 +1237,11 @@ pub fn updateSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 
 pub fn updateWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/webhook-endpoints/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateWorkloadIdentityPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/workload-identity/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("PATCH", &resolved_path, body)
 }
 
