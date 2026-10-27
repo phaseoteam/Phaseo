@@ -242,6 +242,51 @@ describe("Realtime relay lifecycle", () => {
 			estimate_basis: "openai_response_usage_missing" });
 	});
 
+	it("estimates a usage-less response without billing a turn committed after it twice", async () => {
+		const object = relay();
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.speech_started", audio_start_ms: 1000 }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.speech_stopped", audio_end_ms: 2700 }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.committed" }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.created", response: { id: "resp_a" } }));
+		// The caller speaks again while the first reply is still in flight.
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.speech_started", audio_start_ms: 3000 }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.speech_stopped", audio_end_ms: 4000 }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.committed" }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "resp_a", status: "completed" } }));
+		// Only the first turn (1.7 s + 0.3 s prefix) is estimated; the second stays pending.
+		expect(object.usage).toMatchObject({ input_audio_tokens: 20, estimated_input_audio_tokens: 20, input_audio_pending: true });
+		expect(object.inputSinceLastResponse).toBe(true);
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.created", response: { id: "resp_b" } }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "resp_b", usage: { input_token_details: { audio_tokens: 13 } } } }));
+		expect(object.usage.input_audio_tokens).toBe(33);
+		expect(object.inputSinceLastResponse).toBe(false);
+		expect(object.usage.pending_vad_input_audio_ms).toBeUndefined();
+	});
+
+	it("does not forward a billing event whose journal write failed", async () => {
+		const order: string[] = [];
+		const object = relay("openai", { order });
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.created", response: { id: "resp_j" } }));
+		order.length = 0;
+		object.state.storage.put.mockRejectedValueOnce(new Error("storage unavailable"));
+		await expect(object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "resp_j", usage: { output_token_details: { audio_tokens: 9 } } } }))).rejects.toThrow("storage unavailable");
+		expect(order).not.toContain("forward:response.done");
+		// The in-memory usage the queue's error handler settles from still has the event.
+		expect(object.usage.output_audio_tokens).toBe(9);
+	});
+
+	it("restores the completed-response flag after eviction", async () => {
+		const object = relay();
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.created", response: { id: "resp_e" } }));
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "resp_e", usage: { output_token_details: { audio_tokens: 4 } } } }));
+		const storage = object.state.storage;
+		const restored = new RealtimeRelayDurableObject({ waitUntil: vi.fn(), storage } as any, {} as any) as any;
+		mocks.getRealtimeSessionForInternal.mockResolvedValueOnce(object.session);
+		await restored.restoreStateIfEvicted("rt_test");
+		expect(restored.providerCompletedResponseSeen).toBe(true);
+		expect(restored.pendingSettlementStatus({ status: "cancelled", reason: "client_disconnected", statusFromResponses: true })).toBe("completed");
+	});
+
 	it("settles an interrupted turn from confirmed usage plus an estimate instead of opening a review", async () => {
 		const object = relay("openai", { realSettle: true });
 		object.usage = { input_audio_tokens: 100, output_audio_tokens: 50 };
