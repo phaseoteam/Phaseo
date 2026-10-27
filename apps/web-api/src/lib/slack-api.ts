@@ -10,7 +10,8 @@
  * permissions, which runs the install again; slack_installations.bot_scopes
  * records what Slack granted).
  */
-export const SLACK_AGENT_BOT_SCOPES = [
+/** The scopes every installation had before bot_scopes was recorded (a null bot_scopes). The Worker keeps the same list (ORIGINAL_BOT_SCOPES). */
+export const SLACK_AGENT_ORIGINAL_BOT_SCOPES = [
 	"app_mentions:read",
 	"assistant:write",
 	"chat:write",
@@ -18,13 +19,14 @@ export const SLACK_AGENT_BOT_SCOPES = [
 	"channels:history",
 	"groups:history",
 	"users:read",
+] as const;
+
+export const SLACK_AGENT_BOT_SCOPES = [
+	...SLACK_AGENT_ORIGINAL_BOT_SCOPES,
 	// Charts and generated images are uploaded to the thread; images and PDFs shared in it are read.
 	"files:read",
 	"files:write",
 ] as const;
-
-/** The scopes every installation had before bot_scopes was recorded (a null bot_scopes). */
-export const SLACK_AGENT_ORIGINAL_BOT_SCOPES = SLACK_AGENT_BOT_SCOPES.slice(0, 7);
 
 export const SLACK_AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";
 const SLACK_API_ORIGIN = "https://slack.com/api";
