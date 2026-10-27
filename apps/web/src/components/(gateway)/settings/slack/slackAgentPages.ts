@@ -9,7 +9,7 @@ export const SLACK_PAGE_ACCESS: readonly SlackPageAccess[] = ["link", "workspace
 
 export type SlackAgentPage = {
 	id: string;
-	/** The page's link; owners and admins may open any page. */
+	/** The page's link; opening it follows the page's access (a workspace page needs a Slack sign-in). */
 	url: string;
 	title: string;
 	access: SlackPageAccess;

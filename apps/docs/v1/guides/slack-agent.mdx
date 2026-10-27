@@ -312,7 +312,7 @@ A page is one HTML file the agent writes, with text, tables and charts. Pages ar
 | Who can view a page | How |
 | --- | --- |
 | **Anyone with the link** (default) | Anyone who has the link, without signing in. The link is long and random, so it can't be guessed. |
-| **People in this Slack workspace** | Members of your Slack workspace, after they sign in with Slack. Guests can only while **Allow guests** is on, and people from other companies can't. A sign-in lasts 8 hours. |
+| **People in this Slack workspace** | Members of your Slack workspace, after they sign in with Slack. Guests can view it only while **Allow guests** is on, and people from other companies can't. A sign-in lasts 8 hours. |
 
 The agent uses your admins' default unless someone asks for the other, for example `@Phaseo make it a page only our Slack workspace can see`.
 
@@ -332,7 +332,7 @@ Under **Shared pages** in **Settings → Slack**:
 - **Keep new pages for** 7, 30 or 90 days.
 - **Anyone with the link can view pages** (on by default). Turned off, every page needs a Slack sign-in, including pages already published.
 - **New pages are open to** sets the default when both options are available.
-- The list shows each page's title, who asked for it, when it was published and when it expires, and how often it was opened. Owners and admins can open any page and delete it; its link stops working at once. The workspace activity log records deletions without the title.
+- The list shows each page's title, who asked for it, when it was published and when it expires, and how often it was opened. Owners and admins can delete any page, and its link stops working at once. They can open a page when its access lets them: a page for the Slack workspace needs them to sign in with Slack as a member. The workspace activity log records deletions without the title.
 
 **People in this Slack workspace** needs Sign in with Slack for the Slack app the agent uses. Until it's set up, **Settings → Slack** says so, and pages are open to anyone with the link. With your own Slack app, its manifest must include the redirect URL `https://slack.phaseo.app/p/signin`, as Phaseo's manifest does (see [Use your own Slack app](#use-your-own-slack-app)).
 ## Limits

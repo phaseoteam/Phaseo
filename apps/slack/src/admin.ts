@@ -46,7 +46,7 @@ export async function listPages(env: Env, db: Db, installationId: string, now = 
 		limit: MAX_LIVE_PAGES,
 		pages: pages.map((page) => ({
 			id: page.id,
-			// Owners and admins may open any page of their installation.
+			// Owners and admins see every page of their installation; opening one follows its access, like anyone's.
 			url: origin ? pageUrl(origin, storeKey, page.id) : "",
 			title: page.title,
 			access: page.access,

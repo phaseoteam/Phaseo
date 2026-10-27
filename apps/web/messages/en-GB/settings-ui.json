@@ -7210,7 +7210,7 @@
 				"link": "Anyone with the link",
 				"workspace": "People in this Slack workspace"
 			},
-			"workspaceHelp": "People sign in with Slack to view a workspace page. Guests only can when guests may use the agent. The agent uses this unless someone asks for the other.",
+			"workspaceHelp": "People sign in with Slack to view a workspace page. Guests can view it only when guests may use the agent. The agent uses this unless someone asks for the other.",
 			"noSignIn": "Sign in with Slack isn't set up for this Slack app, so pages are open to anyone with the link.",
 			"noWay": "With link sharing off and Sign in with Slack not set up, the agent can't publish pages.",
 			"listTitle": "Published pages",
