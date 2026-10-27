@@ -23,7 +23,7 @@ Los propietarios y administradores lo añaden desde **Ajustes → Slack**, elige
 <Steps>
 <Step title="Elige cómo funciona">
 
-Abre **Ajustes → Slack**. En **Añadir a Slack**, elige el modelo, quién puede usar el agente, dónde puede compartir datos de uso y sus límites (consulta «Límites» más abajo). Con **Automático**, Phaseo elige un modelo adecuado para cada pregunta. Puedes cambiar todo esto más adelante.
+Abre **Ajustes → Slack**. En **Añadir a Slack**, elige el modelo, quién puede usar el agente, dónde puede compartir datos de uso y sus límites (consulta «Límites» más abajo). Si tu espacio de trabajo tiene enrutamiento automático, con **Automático** Phaseo elige un modelo adecuado para cada pregunta; si no, elige un modelo concreto. Puedes cambiar todo esto más adelante.
 
 </Step>
 
@@ -43,7 +43,7 @@ En Slack, abre el agente desde tus aplicaciones y envíale un mensaje. Para usar
 La instalación crea dos cosas en tu espacio de trabajo de Phaseo:
 
 - **Una clave de API para el agente.** Phaseo la gestiona, así que no aparece en tu lista de claves de API. Los tokens de modelo del agente se facturan a través de ella.
-- **Un guardrail llamado Slack agent** en esa clave, que mantiene los mensajes de Slack fuera del entrenamiento y de los registros (consulta «Datos y privacidad» más abajo).
+- **Un guardrail llamado Slack agent** en esa clave, que mantiene los mensajes de Slack fuera del entrenamiento (consulta «Datos y privacidad» más abajo).
 
 Un espacio de trabajo de Slack puede tener el agente de un solo espacio de trabajo de Phaseo a la vez.
 
@@ -173,10 +173,10 @@ Los rechazos de invitados, de personas de otras empresas y por el límite por ho
 
 ## Datos y privacidad
 
-Las condiciones de la API de Slack no permiten entrenar con datos de Slack ni conservarlos, así que el agente está configurado así:
+Las condiciones de la API de Slack no permiten entrenar con datos de Slack ni archivarlos, así que el agente está configurado así:
 
 - **Sin contenido de mensajes en los registros de Phaseo.** La clave de API del agente nunca guarda el contenido de las solicitudes ni de las respuestas, ni en registros ni en cachés ni en telemetría, sea cual sea la configuración de tu espacio de trabajo. Sus solicitudes siguen apareciendo en tu uso y tus registros sin contenido, con las [etiquetas de solicitud](./request-labels.mdx) `app=slack-agent`, `slack_team` y `slack_channel` y el [título de aplicación](./app-attribution.mdx) `Phaseo Slack agent`.
-- **Sin entrenamiento ni proveedores que registren datos.** El [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desactiva el entrenamiento con modelos de pago y gratuitos, la publicación de prompts y los proveedores que registran entradas y salidas.
+- **Ningún proveedor que entrene con prompts.** El [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desactiva el entrenamiento con modelos de pago y gratuitos y la publicación de prompts, así que nunca se usan proveedores que entrenan con prompts. Pueden responder proveedores que guardan registros sin entrenar con ellos, y pueden conservar el contenido de los mensajes en esos registros según sus propias políticas; los registros, cachés y telemetría de Phaseo siguen sin guardar el contenido de los mensajes.
 - **Memoria de trabajo breve.** Para cada hilo, el agente guarda sus respuestas recientes, notas breves sobre las herramientas que usó, los mensajes que esperan su turno, los ID (no el texto) de los mensajes recientes del hilo para saber desde dónde leer, y a quién ha enviado el botón para conectar la cuenta. Se eliminan 7 días después de la última actividad del hilo.
 - **Nada archivado.** Phaseo no archiva nada de Slack. Los registros propios del agente solo guardan ID y estados de Slack.
 - **Secretos cifrados.** Los tokens de bot y los secretos de tu aplicación de Slack se guardan cifrados y no se vuelven a mostrar.
@@ -223,7 +223,7 @@ En **Ajustes → Slack**, elige **Tu aplicación de Slack** en **Aplicación de 
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -326,6 +326,7 @@ Cuando el agente no puede responder a alguien, le contesta en privado en Slack:
 | "Connect your Phaseo account to use the Phaseo agent here." | El acceso es **Solo cuentas vinculadas**. | Vincula la cuenta de Slack (consulta «Vincular una cuenta de Slack» más arriba). |
 | "I'm still working through earlier messages in this thread." | Ya hay 5 mensajes esperando en este hilo. | Espera a esas respuestas. |
 | "Sorry, I couldn't check your Slack account just now." | Slack no respondió a una consulta. | Vuelve a intentarlo en un minuto. |
+| "The model chosen for this agent isn't available to the Slack agent." | El gateway no puede usar el modelo del agente con su clave: **Automático** sin enrutamiento automático, o ningún proveedor del modelo cumple el guardrail **Slack agent**. | Elige otro modelo en **Ajustes → Slack**. |
 
 Si el agente no responde en absoluto:
 

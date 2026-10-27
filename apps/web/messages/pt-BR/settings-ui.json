@@ -6860,6 +6860,7 @@
 			"auto": "Automático",
 			"specific": "Um modelo específico",
 			"autoHelp": "A Phaseo escolhe um modelo adequado para cada pergunta.",
+			"autoUnavailable": "“Automático” não está disponível neste workspace, então o agente não consegue responder até você escolher um modelo específico.",
 			"help": "Os tokens do modelo são cobrados como outras requisições do gateway, pela própria chave de API do agente."
 		},
 		"instructions": {
@@ -7033,6 +7034,7 @@
 			"signInRequired": "Entre na Phaseo neste navegador e depois comece a instalação de novo.",
 			"sessionMismatch": "Conclua a instalação conectado como o administrador que a começou.",
 			"installFailed": "A instalação não foi concluída e nada foi configurado. Tente de novo.",
+			"autoUnavailable": "“Automático” não está disponível neste workspace. Escolha um modelo específico.",
 			"invalid": "Confira as configurações e tente de novo.",
 			"invalidWithMessage": "Confira as configurações e tente de novo: {message}",
 			"unavailable": "A Phaseo não conseguiu fazer isso agora. Tente de novo daqui a pouco.",

@@ -25,12 +25,14 @@ const env = {
 	PHASEO_CONTROL_KEY: "control-key",
 	PHASEO_CONTROL_SECRET: "control-secret",
 	GATEWAY_API_ORIGIN: "https://gateway-control.test",
+	STATSIG_SERVER_KEY: "statsig-server-key",
 };
 const background: Promise<unknown>[] = [];
 const executionCtx = { waitUntil: (promise: Promise<unknown>) => { background.push(promise); }, passThroughOnException: () => undefined, props: {} } as any;
 /** Waits for the work the routes handed to waitUntil (gateway invalidation, alerts). */
 const settle = () => Promise.allSettled(background.splice(0));
 const ALERT_WEBHOOK = "https://discord.test/api/webhooks/1/alerts";
+const KEY_KID = "kidAAAA00001";
 const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b" };
 
 function installationRow(overrides: Record<string, unknown> = {}) {
@@ -74,6 +76,10 @@ type Fixture = {
 	customAppInsertError?: { status: number; body: Record<string, unknown> };
 	/** The internal alert webhook's answer: a status (default 204) or a function. */
 	alert?: number | ((request: Request) => Response | Promise<Response>);
+	/** Statsig's answer for the Auto Routing gate (default: closed), or "error" for a failed check. */
+	autoRouting?: boolean | "error";
+	/** The agent key's created_by (default user-a, the installer). */
+	keyCreatedBy?: string | null;
 };
 
 function parse(text: string): any {
@@ -101,6 +107,10 @@ function database(fixture: Fixture = {}) {
 		if (url.hostname === "discord.test") {
 			if (typeof fixture.alert === "function") return fixture.alert(request);
 			return new Response(null, { status: fixture.alert ?? 204 });
+		}
+		if (url.hostname === "api.statsig.com") {
+			if (fixture.autoRouting === "error") return new Response("unavailable", { status: 503 });
+			return Response.json({ name: "gateway_auto_routing", value: fixture.autoRouting ?? false });
 		}
 		if (path.endsWith("/auth/v1/user")) {
 			const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
@@ -135,7 +145,7 @@ function database(fixture: Fixture = {}) {
 			if (request.method === "PATCH") return rows([{ id: KEY_ID }]);
 			if (request.method === "DELETE") return new Response(null, { status: 204 });
 			if (url.searchParams.get("id") === `eq.${KEY_ID}` && fixture.keyById) return rows([fixture.keyById]);
-			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0 }]);
+			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0, created_by: fixture.keyCreatedBy === undefined ? "user-a" : fixture.keyCreatedBy, kid: KEY_KID }]);
 		}
 		if (path.endsWith("/slack_apps")) {
 			if (request.method === "GET") return rows(fixture.customApp ? [fixture.customApp] : []);
@@ -183,7 +193,7 @@ function callback(query: Record<string, string>, cookieToken: string | null = "t
 	}, { ...env, ...overrides }, executionCtx);
 }
 
-const validInstall = { workspaceId: WORKSPACE, plan_people: 10, over_plan: "refuse", monthly_cap_usd: 25, token_monthly_limit_usd: 40, model: "phaseo/auto", access_mode: "everyone", usage_data_mode: "dm" };
+const validInstall = { workspaceId: WORKSPACE, plan_people: 10, over_plan: "refuse", monthly_cap_usd: 25, token_monthly_limit_usd: 40, model: "openai/gpt-6-luna", access_mode: "everyone", usage_data_mode: "dm" };
 
 async function installState(overrides: Record<string, unknown> = {}, now = Date.now()) {
 	const { workspaceId: _ignored, ...settings } = validInstall;
@@ -195,6 +205,7 @@ async function installState(overrides: Record<string, unknown> = {}, now = Date.
 
 const find = (requests: Recorded[], method: string, suffix: string) =>
 	requests.filter((entry) => entry.method === method && entry.url.pathname.endsWith(suffix));
+const gateChecks = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "api.statsig.com");
 
 function location(response: Response) {
 	return new URL(response.headers.get("location") ?? "");
@@ -311,6 +322,46 @@ describe("Slack agent settings reads", () => {
 		expect((await call(`/slack?workspaceId=${WORKSPACE}`)).status).toBe(200);
 		expect(find(empty, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(0);
 	});
+
+	it("says whether Auto is open to the agent's key, asking Statsig as the gateway does", async () => {
+		const requests = database({ role: "admin", installation: {}, autoRouting: true });
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`, {}, "token-b")).json() as any;
+		expect(body.auto_routing).toBe(true);
+		const checks = gateChecks(requests);
+		expect(checks).toHaveLength(1);
+		expect(checks[0].headers.get("statsig-api-key")).toBe("statsig-server-key");
+		// The key's creator, not the admin looking, with the key's ids: what the gateway sends for the agent's requests.
+		expect(checks[0].body).toEqual({
+			gateName: "gateway_auto_routing",
+			user: {
+				userID: "user-a",
+				customIDs: { workspaceID: WORKSPACE, apiKeyID: KEY_ID, apiKeyKid: KEY_KID },
+				custom: { workspace_id: WORKSPACE, api_key_id: KEY_ID, api_key_ref: `kid_${KEY_KID}`, api_key_kid: KEY_KID, is_internal: false, surface: "gateway_auto_routing" },
+				statsigEnvironment: { tier: "production" },
+			},
+		});
+	});
+
+	it("decides Auto for the admin about to install, the workspace owner for a key without a creator, and no when Statsig fails", async () => {
+		let requests = database({ role: "admin", autoRouting: true });
+		expect(((await (await call(`/slack?workspaceId=${WORKSPACE}`, {}, "token-b")).json()) as any).auto_routing).toBe(true);
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-b", customIDs: { workspaceID: WORKSPACE } });
+		expect(gateChecks(requests)[0].body.user.custom.api_key_id).toBeNull();
+
+		requests = database({ role: "admin", installation: {}, autoRouting: true, keyCreatedBy: null });
+		await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(gateChecks(requests)[0].body.user.userID).toBe("owner");
+
+		database({ role: "admin", installation: {}, autoRouting: "error" });
+		const failed = await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(failed.status).toBe(200);
+		expect(((await failed.json()) as any).auto_routing).toBe(false);
+
+		// Members never trigger the check.
+		requests = database({ role: "member", installation: {}, autoRouting: true });
+		await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(gateChecks(requests)).toHaveLength(0);
+	});
 });
 
 describe("Slack agent install", () => {
@@ -391,7 +442,7 @@ describe("Slack agent install", () => {
 			expect(verified.payload).toMatchObject({
 				workspace_id: WORKSPACE, user_id: "user-a",
 				settings: {
-					plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "phaseo/auto", slack_app_id: null,
+					plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "openai/gpt-6-luna", slack_app_id: null,
 					// The table's defaults when the install doesn't choose them.
 					answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
 				},
@@ -399,6 +450,31 @@ describe("Slack agent install", () => {
 			expect(verified.payload.exp - before).toBeGreaterThanOrEqual(599);
 			expect(verified.payload.exp - before).toBeLessThanOrEqual(601);
 		}
+	});
+
+	it("refuses Auto where the gateway would refuse it, and checks nothing for a specific model", async () => {
+		let requests = database({ role: "admin", autoRouting: false });
+		const refused = await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "Phaseo/Auto" }) });
+		expect(refused.status).toBe(400);
+		expect(await refused.json()).toMatchObject({ error: "auto_routing_unavailable", message: "Auto isn't available to this workspace. Choose a specific model" });
+		// Decided for the admin installing, who becomes the key's creator.
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-a", customIDs: { workspaceID: WORKSPACE } });
+
+		database({ role: "admin", autoRouting: "error" });
+		expect((await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "phaseo/auto" }) })).status).toBe(400);
+
+		database({ role: "admin", autoRouting: true });
+		const allowed = await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "phaseo/auto" }) });
+		expect(allowed.status).toBe(200);
+
+		requests = database({ role: "admin" });
+		const { model: _model, ...withoutModel } = validInstall;
+		const defaulted = await call("/slack/install", { method: "POST", body: JSON.stringify(withoutModel) });
+		expect(defaulted.status).toBe(200);
+		const state = await verifySlackToken<{ settings: { model: string } }>(env as never, "install", new URL(((await defaulted.json()) as any).url).searchParams.get("state"));
+		// Without a choice, the agent gets a model every workspace can use.
+		expect(state.ok && state.payload.settings.model).toBe("openai/gpt-6-luna");
+		expect(gateChecks(requests)).toHaveLength(0);
 	});
 
 	it("uses the workspace's own Slack app when one is chosen, even without the hosted app", async () => {
@@ -448,7 +524,7 @@ describe("Slack OAuth callback", () => {
 		expect(find(requests, "POST", "/keys")).toHaveLength(0);
 	});
 
-	it("installs: managed key, no-training no-logging guardrail, key link and encrypted installation", async () => {
+	it("installs: managed key that stores no content, no-training guardrail, key link and encrypted installation", async () => {
 		const requests = database({ role: "admin" });
 		const response = await callback({ code: "123.456.abc", state: await installState() });
 		expect(response.status).toBe(302);
@@ -472,18 +548,21 @@ describe("Slack OAuth callback", () => {
 		expect(key.kid).toMatch(/^[A-Za-z0-9]{12}$/);
 		expect(key.hash).toMatch(/^[0-9a-f]{64}$/);
 
+		// Training and prompt publishing are off. Providers that keep logs may answer, or most
+		// models would have no route; Phaseo's own storage is off through never_store_content.
 		const guardrail = find(requests, "POST", "/workspace_guardrails")[0].body;
 		expect(guardrail).toMatchObject({
 			workspace_id: WORKSPACE, name: "Slack agent", enabled: true,
+			description: "Managed by the Slack agent. Slack's API terms do not allow training on Slack data, so training and prompt publishing are off.",
 			privacy_enable_paid_may_train: false, privacy_enable_free_may_train: false,
-			privacy_enable_free_may_publish_prompts: false, privacy_enable_input_output_logging: false,
+			privacy_enable_free_may_publish_prompts: false, privacy_enable_input_output_logging: true,
 		});
 		expect(find(requests, "POST", "/key_guardrails")[0].body).toEqual({ key_id: KEY_ID, guardrail_id: GUARDRAIL_ID });
 
 		const installation = find(requests, "POST", "/slack_installations")[0].body;
 		expect(installation).toMatchObject({
 			workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
-			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", access_mode: "everyone",
+			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "openai/gpt-6-luna", access_mode: "everyone",
 			usage_data_mode: "dm", plan_people: 10, over_plan: "refuse", max_people: null, monthly_cap_nanos: 25_000_000_000, installed_by: "user-a",
 			answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
 		});
@@ -692,6 +771,26 @@ describe("Slack agent settings changes", () => {
 
 		database({ role: "admin", installation: { status: "paused" }, charges: [] });
 		expect((await patch({ status: "active" })).status).toBe(200);
+	});
+
+	it("switches to Auto only where the agent's key has access to it", async () => {
+		let requests = database({ role: "admin", installation: { model: "openai/gpt-6-luna" }, autoRouting: false });
+		const refused = await patch({ model: "phaseo/auto", instructions: "Be brief." });
+		expect(refused.status).toBe(400);
+		expect(await refused.json()).toMatchObject({ error: "auto_routing_unavailable" });
+		expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-a", customIDs: { apiKeyID: KEY_ID, apiKeyKid: KEY_KID } });
+
+		requests = database({ role: "admin", installation: { model: "openai/gpt-6-luna" }, autoRouting: true });
+		expect((await patch({ model: "phaseo/auto" })).status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ model: "phaseo/auto" });
+
+		// Other changes, and an agent already on Auto, don't ask.
+		for (const body of [{ model: "anthropic/claude-sonnet-5-5" }, { instructions: "Be brief." }]) {
+			requests = database({ role: "admin", installation: {}, autoRouting: false });
+			expect((await patch(body)).status, JSON.stringify(body)).toBe(200);
+			expect(gateChecks(requests)).toHaveLength(0);
+		}
 	});
 
 	it("is for admins, and 404s without an installation", async () => {

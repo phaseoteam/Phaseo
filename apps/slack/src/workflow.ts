@@ -252,10 +252,11 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const team = turn.teamId ?? installation.team_id ?? installation.enterprise_id ?? "unknown";
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
+	const model = installation.model || DEFAULT_MODEL;
 	try {
 		output = await deps.agent.run({
 			gatewayKey: secrets.gateway_key,
-			model: installation.model || DEFAULT_MODEL,
+			model,
 			instructions: buildInstructions(installation, load, deps.now()),
 			prompt: buildPrompt(input, turn, installation.bot_user_id, context.source),
 			endUser: `slack:${team}:${turn.slackUserId}`,
@@ -279,7 +280,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	} catch (caught) {
 		controller.abort();
 		if (!cancelled) {
-			error = classifyTurnError(caught);
+			error = classifyTurnError(caught, model);
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
 		}
 	}

@@ -23,7 +23,7 @@ Phaseo एजेंट Slack में सवालों के जवाब �
 <Steps>
 <Step title="चुनें कि यह कैसे काम करे">
 
-**सेटिंग्स → Slack** खोलें। **Slack में जोड़ें** के नीचे मॉडल चुनें, यह चुनें कि एजेंट को कौन इस्तेमाल कर सकता है, वह उपयोग डेटा कहाँ साझा कर सकता है, और उसकी सीमाएँ (नीचे "सीमाएँ" देखें)। **स्वचालित** चुनने पर Phaseo हर सवाल के लिए उपयुक्त मॉडल चुनता है। यह सब आप बाद में बदल सकते हैं।
+**सेटिंग्स → Slack** खोलें। **Slack में जोड़ें** के नीचे मॉडल चुनें, यह चुनें कि एजेंट को कौन इस्तेमाल कर सकता है, वह उपयोग डेटा कहाँ साझा कर सकता है, और उसकी सीमाएँ (नीचे "सीमाएँ" देखें)। अगर आपके वर्कस्पेस में ऑटो रूटिंग है, तो **स्वचालित** चुनने पर Phaseo हर सवाल के लिए उपयुक्त मॉडल चुनता है; नहीं तो कोई खास मॉडल चुनें। यह सब आप बाद में बदल सकते हैं।
 
 </Step>
 
@@ -43,7 +43,7 @@ Slack में अपने ऐप्स से एजेंट खोलें
 इंस्टॉल करने से आपके Phaseo वर्कस्पेस में दो चीज़ें बनती हैं:
 
 - **एजेंट के लिए एक API कुंजी।** इसे Phaseo संभालता है, इसलिए यह आपकी API कुंजियों की सूची में नहीं दिखती। एजेंट के मॉडल टोकन का बिल इसी से बनता है।
-- **उस कुंजी पर Slack agent नाम का एक गार्डरेल**, जो Slack मैसेज को ट्रेनिंग और लॉग से बाहर रखता है (नीचे "डेटा और निजता" देखें)।
+- **उस कुंजी पर Slack agent नाम का एक गार्डरेल**, जो Slack मैसेज को ट्रेनिंग से बाहर रखता है (नीचे "डेटा और निजता" देखें)।
 
 एक Slack वर्कस्पेस में एक समय पर केवल एक Phaseo वर्कस्पेस का एजेंट हो सकता है।
 
@@ -173,10 +173,10 @@ Slack में अपने ऐप्स से एजेंट खोलें
 
 ## डेटा और निजता
 
-Slack की API शर्तें Slack डेटा पर ट्रेनिंग या उसे रखने की अनुमति नहीं देतीं, इसलिए एजेंट इस तरह सेट किया गया है:
+Slack की API शर्तें Slack डेटा पर ट्रेनिंग या उसे आर्काइव करने की अनुमति नहीं देतीं, इसलिए एजेंट इस तरह सेट किया गया है:
 
 - **Phaseo के लॉग में मैसेज की सामग्री नहीं।** एजेंट की API कुंजी आपके वर्कस्पेस की सेटिंग्स चाहे जो हों, अनुरोध या प्रतिक्रिया की सामग्री कभी लॉग, कैश या टेलीमेट्री में नहीं रखती। इसके अनुरोध फिर भी बिना सामग्री के आपके उपयोग और लॉग में दिखते हैं, [अनुरोध लेबल](./request-labels.mdx) `app=slack-agent`, `slack_team` और `slack_channel` और [ऐप शीर्षक](./app-attribution.mdx) `Phaseo Slack agent` के साथ।
-- **न ट्रेनिंग, न लॉग रखने वाले प्रदाता।** **Slack agent** [गार्डरेल](../cookbook/guardrails-for-api-keys.mdx) पेड और फ़्री मॉडलों पर ट्रेनिंग, प्रॉम्प्ट प्रकाशन, और इनपुट व आउटपुट लॉग करने वाले प्रदाताओं को बंद करता है।
+- **प्रॉम्प्ट पर ट्रेनिंग करने वाले कोई प्रदाता नहीं।** **Slack agent** [गार्डरेल](../cookbook/guardrails-for-api-keys.mdx) पेड और फ़्री मॉडलों पर ट्रेनिंग और प्रॉम्प्ट प्रकाशन को बंद करता है, इसलिए प्रॉम्प्ट पर ट्रेनिंग करने वाले प्रदाता कभी इस्तेमाल नहीं होते। जो प्रदाता लॉग रखते हैं पर उन पर ट्रेनिंग नहीं करते, वे जवाब दे सकते हैं, और अपनी नीतियों के अनुसार उन लॉग में मैसेज का कंटेंट रख सकते हैं; Phaseo के अपने लॉग, कैश और टेलीमेट्री में अब भी मैसेज का कोई कंटेंट नहीं रखा जाता।
 - **छोटी कार्य-स्मृति।** हर थ्रेड के लिए एजेंट अपने हाल के जवाब, इस्तेमाल किए गए टूल के बारे में छोटे नोट, अपनी बारी का इंतज़ार कर रहे मैसेज, थ्रेड के हाल के मैसेज के ID (उनका टेक्स्ट नहीं) ताकि उसे पता रहे कि कहाँ से पढ़ना है, और यह कि उसने खाता जोड़ने का बटन किसे भेजा है, रखता है। ये थ्रेड की आखिरी गतिविधि के 7 दिन बाद हटा दिए जाते हैं।
 - **कुछ भी संग्रहित नहीं।** Phaseo Slack से कुछ भी संग्रहित नहीं करता। एजेंट के अपने लॉग में केवल Slack ID और स्थितियाँ रहती हैं।
 - **एन्क्रिप्टेड सीक्रेट।** बॉट टोकन और आपके Slack ऐप के सीक्रेट एन्क्रिप्ट करके रखे जाते हैं और फिर कभी नहीं दिखाए जाते।
@@ -223,7 +223,7 @@ Slack में ऐप का **App Manifest** पेज खोलें। द�
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -326,6 +326,7 @@ Slack में ऐप का **App Manifest** पेज खोलें। द�
 | "Connect your Phaseo account to use the Phaseo agent here." | ऐक्सेस **केवल जुड़े हुए खाते** पर है। | Slack खाता जोड़ें (ऊपर "Slack खाता जोड़ें" देखें)। |
 | "I'm still working through earlier messages in this thread." | इस थ्रेड में पहले से 5 मैसेज इंतज़ार कर रहे हैं। | उन जवाबों का इंतज़ार करें। |
 | "Sorry, I couldn't check your Slack account just now." | Slack ने एक जाँच का जवाब नहीं दिया। | एक मिनट में फिर कोशिश करें। |
+| "The model chosen for this agent isn't available to the Slack agent." | गेटवे एजेंट की कुंजी से उसका मॉडल इस्तेमाल नहीं कर सकता: ऑटो रूटिंग के बिना **स्वचालित**, या मॉडल का कोई भी प्रदाता **Slack agent** गार्डरेल की शर्तें पूरी नहीं करता। | **सेटिंग्स → Slack** में कोई दूसरा मॉडल चुनें। |
 
 अगर एजेंट बिल्कुल जवाब नहीं देता:
 

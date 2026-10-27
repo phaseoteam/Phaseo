@@ -24,7 +24,7 @@ Owners and admins add it from **Settings → Slack**, choose who can use it and 
 <Steps>
 <Step title="Choose how it works">
 
-Open **Settings → Slack**. Under **Add to Slack**, choose the model, who can use the agent, where it can share usage data, and its [limits](#limits). **Auto** lets Phaseo pick a suitable model for each question. You can change all of this later.
+Open **Settings → Slack**. Under **Add to Slack**, choose the model, who can use the agent, where it can share usage data, and its [limits](#limits). If your workspace has Auto Routing, **Auto** lets Phaseo pick a suitable model for each question; otherwise choose a specific model. You can change all of this later.
 
 </Step>
 
@@ -44,7 +44,7 @@ In Slack, open the agent from your apps and send it a message. To use it in a ch
 Installing creates two things in your Phaseo workspace:
 
 - **An API key for the agent.** Phaseo manages it, so it doesn't appear on the Keys page. The agent's model tokens are billed through it.
-- **A guardrail called Slack agent** on that key, which keeps Slack messages out of training and logs (see [Data and privacy](#data-and-privacy)).
+- **A guardrail called Slack agent** on that key, which keeps Slack messages out of training (see [Data and privacy](#data-and-privacy)).
 
 A Slack workspace can have the agent from one Phaseo workspace at a time.
 
@@ -174,10 +174,10 @@ Refusals of guests, people from other companies and the hourly limit aren't emai
 
 ## Data and privacy
 
-Slack's API terms don't allow training on Slack data or keeping it, so the agent is set up this way:
+Slack's API terms don't allow training on Slack data or archiving it, so the agent is set up this way:
 
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
-- **No training or logging providers.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models, prompt publishing, and providers that log inputs and outputs.
+- **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, and who it has sent the Connect button. They're deleted 7 days after the thread's last activity.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
@@ -224,7 +224,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -328,6 +328,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "Connect your Phaseo account to use the Phaseo agent here." | Access is **Linked accounts only**. | [Link the Slack account](#link-a-slack-account). |
 | "I'm still working through earlier messages in this thread." | 5 messages are already waiting in this thread. | Wait for those answers. |
 | "Sorry, I couldn't check your Slack account just now." | Slack didn't answer a lookup. | Try again in a minute. |
+| "The model chosen for this agent isn't available to the Slack agent." | The gateway can't use the agent's model with its key: **Auto** without Auto Routing, or no provider of the model meets the **Slack agent** guardrail. | Choose another model in **Settings → Slack**. |
 
 If the agent doesn't reply at all:
 

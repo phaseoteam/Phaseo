@@ -70,6 +70,8 @@ export type SlackAgentManagerView = {
 	configured: { hosted_app: boolean; custom_app: boolean };
 	redirect_url: string;
 	scopes: string[];
+	/** Whether the agent may use Auto (phaseo/auto): the gateway refuses it without Auto Routing access. */
+	auto_routing: boolean;
 	installed: boolean;
 	installation: SlackAgentInstallation | null;
 	custom_app: SlackCustomApp | null;
@@ -85,7 +87,9 @@ export type SlackAgentMemberView = {
 
 export type SlackAgentView = SlackAgentManagerView | SlackAgentMemberView;
 
-export const DEFAULT_SLACK_AGENT_MODEL = "phaseo/auto";
+export const AUTO_SLACK_AGENT_MODEL = "phaseo/auto";
+/** The model preselected where Auto isn't available, or once an admin chooses a specific model. */
+export const DEFAULT_SLACK_AGENT_MODEL = "openai/gpt-6-luna";
 export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
 export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
 export const MAX_MONTHLY_USD = 100_000;
@@ -106,6 +110,11 @@ const SLACK_APP_SECRET_PATTERN = /^[A-Za-z0-9]{16,128}$/;
 /** US-format dollars, always with cents: $12.50. */
 export function formatUsd(value: number): string {
 	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
+
+/** Whether a model id is Auto, compared as the gateway does. */
+export function isAutoModel(model: string): boolean {
+	return model.trim().toLowerCase() === AUTO_SLACK_AGENT_MODEL;
 }
 
 /** The plan's monthly price in dollars, from the shared price list. */
@@ -190,7 +199,8 @@ export type SlackDraftProblem = {
 
 type Built<T> = { ok: true; value: T } | { ok: false; problem: SlackDraftProblem };
 
-export function installDraftDefaults(useCustomApp = false): SlackInstallDraft {
+/** Auto where the workspace may use it, otherwise a model every workspace can use. */
+export function installDraftDefaults(useCustomApp = false, autoRouting = false): SlackInstallDraft {
 	return {
 		plan: "10",
 		customPlanPeople: "",
@@ -201,7 +211,7 @@ export function installDraftDefaults(useCustomApp = false): SlackInstallDraft {
 		allowGuests: true,
 		allowExternalUsers: false,
 		tokenLimitUsd: "",
-		model: DEFAULT_SLACK_AGENT_MODEL,
+		model: autoRouting ? AUTO_SLACK_AGENT_MODEL : DEFAULT_SLACK_AGENT_MODEL,
 		accessMode: "everyone",
 		useCustomApp,
 	};
@@ -371,7 +381,7 @@ export type SlackErrorKey =
 	| "notAvailable" | "forbidden" | "privacyReview" | "paymentDue" | "appConflict" | "appTaken" | "appInUse" | "appNotFound"
 	| "appMissing" | "appUnavailable" | "alreadyInstalled" | "teamInUse" | "notInstalled" | "conflict" | "keyMissing"
 	| "slackDenied" | "slackError" | "slackResponseInvalid" | "stateExpired" | "stateInvalid" | "signInRequired"
-	| "sessionMismatch" | "installFailed" | "invalid" | "unavailable" | "generic";
+	| "sessionMismatch" | "installFailed" | "autoUnavailable" | "invalid" | "unavailable" | "generic";
 
 // Every error code the Slack settings routes return, including the OAuth
 // callback's ?error= values.
@@ -402,6 +412,7 @@ const ERROR_KEYS: Record<string, SlackErrorKey> = {
 	unauthorized: "signInRequired",
 	session_mismatch: "sessionMismatch",
 	install_failed: "installFailed",
+	auto_routing_unavailable: "autoUnavailable",
 	bad_request: "invalid",
 	settings_unavailable: "unavailable",
 	settings_write_failed: "unavailable",

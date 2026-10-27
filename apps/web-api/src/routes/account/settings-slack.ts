@@ -7,6 +7,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
+import { autoRoutingAvailable, isAutoRoutingModel } from "@/lib/auto-routing-access";
 import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { sendSlackAgentAlert } from "@/lib/slack-agent-alerts";
 import {
@@ -36,10 +37,11 @@ import {
 // any member can see whether the agent is installed and link their own account.
 //
 // Each installation gets a managed gateway key (hidden from the Keys page) that
-// bills model tokens as normal requests, with a guardrail that turns off training,
-// prompt publishing and logging providers, because Slack's API terms forbid
-// training on Slack data and keeping it. Bot tokens, the gateway key and custom
-// app secrets are stored encrypted and never returned.
+// bills model tokens as normal requests. Slack's API terms forbid training on
+// Slack data and keeping it: the key's guardrail turns off training and prompt
+// publishing (providers that keep logs but don't train may answer), and the key
+// itself stores no content (never_store_content). Bot tokens, the gateway key
+// and custom app secrets are stored encrypted and never returned.
 //
 // The OAuth redirect is https://phaseo.app/api/account/settings/slack/oauth/callback
 // (PHASEO_WEB_ORIGIN changes the origin). In production that path goes straight
@@ -56,7 +58,7 @@ const CALLBACK_PATH = "/api/account/settings/slack/oauth/callback";
 const SETTINGS_PATH = "/settings/slack";
 const DEFAULT_WEB_ORIGIN = "https://phaseo.app";
 const GUARDRAIL_NAME = "Slack agent";
-const GUARDRAIL_DESCRIPTION = "Managed by the Slack agent. Slack's API terms do not allow training on Slack data or keeping it, so training, prompt publishing and providers that log prompts are off.";
+const GUARDRAIL_DESCRIPTION = "Managed by the Slack agent. Slack's API terms do not allow training on Slack data, so training and prompt publishing are off.";
 const CHARGE_HISTORY_MONTHS = 6;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SLACK_USER_PATTERN = /^[UW][A-Z0-9]{2,31}$/;
@@ -229,6 +231,30 @@ function modelSpendFor(spend: Map<string, ModelSpend> | null, installationId: st
 	return spend ? spend.get(`${installationId}:${periodStart}`) ?? { requests: 0, cost_usd: 0 } : null;
 }
 
+/**
+ * Whether the agent may answer with Auto (phaseo/auto). The gateway decides it
+ * for the user who created the calling key (the workspace owner if none), so an
+ * installed agent is checked for its key, and a new install for the admin
+ * installing it, who becomes the key's creator.
+ */
+async function agentAutoRouting(env: Env, context: AccountWorkspaceContext, installation: Pick<InstallationRow, "key_id"> | null): Promise<boolean> {
+	const { client, workspaceId } = context;
+	if (!installation?.key_id) return autoRoutingAvailable(env, { workspaceId, userId: context.user.id });
+	const key = await client.from("keys").select("created_by,kid").eq("id", installation.key_id).eq("workspace_id", workspaceId).maybeSingle();
+	if (key.error || !key.data) return false;
+	let userId = key.data.created_by ? String(key.data.created_by) : null;
+	if (!userId) {
+		const workspace = await client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle();
+		userId = workspace.data?.owner_user_id ? String(workspace.data.owner_user_id) : null;
+	}
+	if (!userId) return false;
+	return autoRoutingAvailable(env, { workspaceId, userId, key: { id: installation.key_id, kid: key.data.kid ? String(key.data.kid) : null } });
+}
+
+function autoRoutingUnavailable(c: any) {
+	return json(c, { error: "auto_routing_unavailable", message: "Auto isn't available to this workspace. Choose a specific model" }, 400);
+}
+
 function settingsView(row: InstallationRow, keyLimitNanos: number) {
 	return {
 		plan_people: row.plan_people,
@@ -315,7 +341,7 @@ accountSettingsSlackRouter.get("/slack", async (c) => {
 	// the model spend can wait on it without the query builder sending it twice.
 	const chargesRead = Promise.resolve(context.client.from("slack_agent_charges").select("installation_id,period_start,people,answers,amount_nanos,status,charged_at")
 		.eq("workspace_id", workspaceId).order("period_start", { ascending: false }).limit(CHARGE_HISTORY_MONTHS));
-	const [customApp, charges, usage, keyLimit, modelSpend] = await Promise.all([
+	const [customApp, charges, usage, keyLimit, modelSpend, autoRouting] = await Promise.all([
 		context.client.from("slack_apps").select(CUSTOM_APP_COLUMNS).eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: true }).limit(1).maybeSingle(),
 		chargesRead,
@@ -328,6 +354,7 @@ accountSettingsSlackRouter.get("/slack", async (c) => {
 			...(installation ? [periodStart] : []),
 			...(result.data ?? []).map((row: any) => String(row.period_start)),
 		])),
+		agentAutoRouting(c.env, context, installation).catch(() => false),
 	]);
 	if (customApp.error || charges.error || usage.error || keyLimit.error) return json(c, { error: "settings_unavailable" }, 503);
 	const usageRow = (Array.isArray(usage.data) ? usage.data[0] : usage.data) as { people?: unknown; answers?: unknown } | null | undefined;
@@ -344,6 +371,8 @@ accountSettingsSlackRouter.get("/slack", async (c) => {
 		configured: { hosted_app: slackCoreConfigured(c.env) && hostedCredentials(c.env) !== null, custom_app: slackCoreConfigured(c.env) },
 		redirect_url: slackRedirectUri(c.env),
 		scopes: SLACK_AGENT_BOT_SCOPES,
+		// Whether the model picker offers Auto: the gateway refuses phaseo/auto without access.
+		auto_routing: autoRouting,
 		installed: Boolean(installation),
 		installation: installation
 			? {
@@ -399,6 +428,7 @@ accountSettingsSlackRouter.post("/slack/install", bodyLimit({ maxSize: 8 * 1024 
 	const live = await liveInstallation(context.client, context.workspaceId, "id");
 	if (live.error) return json(c, { error: "settings_unavailable" }, 503);
 	if (live.row) return json(c, { error: "already_installed", message: "The Slack agent is already installed in this workspace" }, 409);
+	if (isAutoRoutingModel(parsed.value.model) && !(await agentAutoRouting(c.env, context, null))) return autoRoutingUnavailable(c);
 	const state = await signSlackToken(c.env, "install", {
 		workspace_id: context.workspaceId,
 		user_id: context.user.id,
@@ -468,7 +498,9 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 			privacy_enable_paid_may_train: false,
 			privacy_enable_free_may_train: false,
 			privacy_enable_free_may_publish_prompts: false,
-			privacy_enable_input_output_logging: false,
+			// Providers that keep logs but don't train may answer; without them most models
+			// have no route. Phaseo's own storage is the key's never_store_content, not this.
+			privacy_enable_input_output_logging: true,
 			updated_at: new Date().toISOString(),
 		}).select("id").maybeSingle();
 		if (guardrail.error || !guardrail.data?.id) throw new Error("install_failed");
@@ -646,6 +678,11 @@ accountSettingsSlackRouter.patch("/slack", bodyLimit({ maxSize: 128 * 1024 }), a
 		monthly_cap_nanos: update.monthly_cap_nanos ?? Number(current.monthly_cap_nanos),
 	});
 	if (problem) return badRequest(c, problem);
+	// Switching to Auto needs access to it; an agent already on Auto is left as it is.
+	if (update.model !== undefined && isAutoRoutingModel(update.model) && !isAutoRoutingModel(current.model)
+		&& !(await agentAutoRouting(c.env, context, current))) {
+		return autoRoutingUnavailable(c);
+	}
 
 	let keyLimit: number;
 	if (keyMonthlyLimitNanos !== undefined) {
