@@ -4,6 +4,7 @@ import type { Env } from "./env";
 import { defaultDeps, isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
 import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
+import { runDueSchedules } from "./scheduled-runs";
 import { verifySlackSignature } from "./signature";
 
 export { ThreadCoordinator } from "./coordinator";
@@ -24,6 +25,9 @@ export { defaultDeps };
 // (X-Slack-Retry-Num) are acknowledged too and deduped by event id. The app being
 // removed in Slack is the exception: it is handled before the answer, so Slack
 // retries it if the database is unavailable.
+//
+// The cron trigger (every minute, production only) starts the recurring tasks
+// that are due (scheduled-runs.ts).
 
 const MAX_BODY_BYTES = 512 * 1024;
 
@@ -122,4 +126,11 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 	return app;
 }
 
-export default createApp();
+const app = createApp();
+
+export default {
+	fetch: app.fetch,
+	async scheduled(_controller, env) {
+		await runDueSchedules(defaultDeps(env));
+	},
+} satisfies ExportedHandler<Env>;

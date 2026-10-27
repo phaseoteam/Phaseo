@@ -27,6 +27,8 @@ import { loadTurnMemory, memoryInstructions, memoryPromptLines, memoryTools, not
 import { modelChoiceOn, withoutMention } from "./model-choice";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
+import { reportScheduledRun, skippedTurnOutcome } from "./scheduled-runs";
+import { scheduleInstructions, scheduleMode, scheduleTools, type ScheduleMode } from "./schedules";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import { answerEventType, turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
@@ -68,6 +70,10 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 // An unanswered question ends the answer there, and the answer is still counted
 // (the person saw it). Stopping the thread while it waits ends it uncounted. The
 // whole thing is one answer in the meter.
+//
+// A run of a recurring task (turn.schedule, scheduled-runs.ts) is the same turn,
+// answering the "Scheduled:" message for the person who set it up, without the
+// question or schedule tools. Its skip or finish step records what became of it.
 //
 // Step outputs are kept with the instance (for a day), so they hold ids and
 // statuses only. Slack text lives in the coordinator, which deletes it within 7
@@ -180,18 +186,23 @@ export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, 
 		]);
 	}
 	if (source === "memory") lines.push(`(You couldn't read this Slack thread's messages just now${memory.length ? ", so only your own earlier replies are shown" : ""}.)`, "");
-	lines.push(`New message from <@${turn.slackUserId}>:`, withoutMention(input.text, botUserId) || "(no text)");
+	lines.push(
+		turn.schedule ? `A scheduled run of a recurring task <@${turn.slackUserId}> set up. Do it now:` : `New message from <@${turn.slackUserId}>:`,
+		withoutMention(input.text, botUserId) || "(no text)",
+	);
 	return lines.join("\n");
 }
 
-export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false): string {
+/** schedules: what the turn may do with recurring tasks (scheduleMode); a scheduled run can't ask questions. */
+export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, schedules?: ScheduleMode): string {
 	const lines = [
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
 		"Write for Slack: be brief, use short paragraphs, and use Markdown lists or tables when they help. Show money in US dollars, like $12.50.",
 		"You can search the web and read web pages with your web search and web fetch tools.",
-		"When you can't sensibly go on without the person choosing between a few options or approving something, call ask_question: they answer with a button, and you continue from their answer. Don't use it for anything you can decide or answer yourself.",
+		...(schedules === "run" ? [] : ["When you can't sensibly go on without the person choosing between a few options or approving something, call ask_question: they answer with a button, and you continue from their answer. Don't use it for anything you can decide or answer yourself."]),
 		...memoryInstructions(access, external),
+		...(schedules ? scheduleInstructions(schedules) : []),
 	];
 	if (offered.usageTools) {
 		lines.push("You can look up this Phaseo workspace's spend, credit balance, API key usage and models with your tools. Dates are UTC and weeks start on Monday. Use the tools instead of guessing numbers.");
@@ -246,9 +257,15 @@ async function offerConnect(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	return sent ? "sent" : "not_delivered";
 }
 
-/** The usage tools or the Connect button where they apply, then the note tools the turn's access allows and the skill tools. */
-function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess) {
-	const memory = memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes, access, external: turn.external === true });
+/**
+ * The usage tools or the Connect button where they apply, then the note tools the turn's access allows, the skill
+ * tools and the recurring task tools (none in a scheduled run).
+ */
+function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess, schedules: ScheduleMode, leg: number) {
+	const memory = [
+		...memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes, access, external: turn.external === true }),
+		...(schedules === "run" ? [] : scheduleTools({ db: deps.db, slack, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, canCreate: schedules === "create", runKey: `${turn.eventId}:${leg}`, notes })),
+	];
 	if (offered.usageTools) return [...usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }), ...memory];
 	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack)), ...memory];
 	return memory;
@@ -406,13 +423,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	// another organisation) and the saved skills go before the conversation.
 	const access = noteAccess(installation, turn);
 	const memory = await loadTurnMemory(deps.db, installation.id, turn.channel, access);
+	const schedules = scheduleMode(installation, turn);
 	try {
 		output = await deps.agent.run({
 			...gateway,
 			model,
-			instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true),
+			instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, schedules),
 			prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source)].join("\n"),
-			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), askQuestion, ...askTools],
+			// Nobody waits in a scheduled run's thread to answer a question.
+			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg), ...(schedules === "run" ? [] : [askQuestion]), ...askTools],
 			maxCostUsd: budgetUsd,
 			otherCostUsd: consultedUsd,
 			signal: controller.signal,
@@ -673,6 +692,7 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		console.log("[slack-agent] turn skipped", { turnId: turn.turnId, installationId: turn.installationId, reason: load.reason });
 		await step.do("skip", FINISH_STEP, async () => {
 			await coordinator.finishTurn(turn.turnId, { status: "failed" }, deps.now());
+			if (turn.schedule) await reportScheduledRun(deps, { scheduleId: turn.schedule.id, runAt: turn.schedule.runAt, installationId: turn.installationId }, skippedTurnOutcome(load.reason));
 			return { status: "skipped" };
 		});
 		return { status: "skipped" };
@@ -786,6 +806,11 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 			await meterFor(deps.env, turn.installationId).recordAnswer({ eventId: turn.eventId, slackUserId: turn.slackUserId, now: deps.now() });
 		}
 		await coordinator.finishTurn(turn.turnId, { status: answered ? "done" : run.status === "cancelled" ? "cancelled" : "failed" }, deps.now());
+		// Recorded once per run, so a retried step changes nothing.
+		if (turn.schedule) {
+			await reportScheduledRun(deps, { scheduleId: turn.schedule.id, runAt: turn.schedule.runAt, installationId: turn.installationId },
+				answered ? { result: "answered" } : { result: "failed", reason: run.error ?? run.status });
+		}
 		console.log("[slack-agent] turn finished", { turnId: turn.turnId, installationId: turn.installationId, status: run.status, questions: asked, costNanos: run.costNanos });
 		return { status: run.status };
 	});
