@@ -3808,6 +3808,54 @@ struct WebSearchPlugin {
 	std::any search_context_size;
 };
 
+struct WorkloadIdentityPolicy {
+	std::string audience;
+	std::map<std::string, std::any> claim_conditions;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string issuer;
+	std::string key_id;
+	std::optional<std::string> last_used_at;
+	int max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+	std::any status;
+	std::string updated_at;
+};
+
+struct WorkloadIdentityPolicyDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::string issuer;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+};
+
+struct WorkloadIdentityPolicyListResponse {
+	std::string audience;
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct WorkloadIdentityPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyUpdateInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::any status;
+};
+
+using WorkloadIdentityProvider = std::any;
+
 struct Workspace {
 	std::optional<std::string> created_at;
 	std::optional<std::string> created_by;
