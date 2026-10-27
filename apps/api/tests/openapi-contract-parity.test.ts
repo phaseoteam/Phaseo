@@ -50,6 +50,9 @@ const INTERNAL_DATA_OPERATIONS = new Set([
 	"POST /audio/realtime/sessions/{param}/finalize",
 	"POST /audio/realtime/sessions/{param}/usage",
 	"POST /security/report-leaked-key",
+	// Dashboard sessions only (the workspace owner raising its own rate limit); keys are refused.
+	"GET /rate-limits/tier",
+	"POST /rate-limits/tier/raise",
 ]);
 
 const SPEC_PATH = path.resolve(

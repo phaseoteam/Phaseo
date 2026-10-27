@@ -169,6 +169,7 @@ describe("spend rules management API", () => {
 				[{ name: "x", metric: "budget_percent", period: "month", base_kind: "amount", base_amount_usd: 100, threshold_percents: [50, 120], action: "block" }, "block_at_percent must be at least the highest of threshold_percents"],
 				[{ name: "x", metric: "budget_percent", period: "month", base_kind: "previous_period", threshold_percents: [150], action: "block", block_at_percent: 200 }, "Rules with a previous_period base cannot block"],
 				[{ name: "x", metric: "forecast", period: "month", threshold_amount_usd: 5, action: "block" }, "Only spend and budget_percent rules can block"],
+				[{ name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, action: "block", block_at_amount_usd: 6 }, "action block is not available yet; use notify"],
 				[{ name: "x", metric: "forecast", period: "rolling", window_hours: 2, threshold_amount_usd: 5 }, "forecast rules need a day, week or month period"],
 				[{ name: "x", metric: "forecast", period: "month" }, "forecast rules need either threshold_amount, or base_kind with threshold_percents"],
 				[{ name: "x", metric: "spike", period: "day" }, "spike rules need the rolling period (window_hours is the spike window)"],
@@ -214,9 +215,11 @@ describe("spend rules management API", () => {
 		});
 
 		it("takes amounts in USD or exact nanos, and creates with no destinations by default", async () => {
-			await call("/", "POST", { name: "x", metric: "spend", period: "month", threshold_amount_nanos: "12345678901", action: "block", block_at_amount_usd: 20.5 });
+			await call("/", "POST", { name: "x", metric: "spend", period: "month", threshold_amount_nanos: "12345678901" });
+			await call("/", "POST", { name: "y", metric: "spend", period: "month", threshold_amount_usd: 20.5 });
 			const args = state.rpc.mock.calls[0][1];
-			expect(args.p_rule).toMatchObject({ threshold_amount_nanos: 12_345_678_901, block_at_amount_nanos: 20_500_000_000 });
+			expect(args.p_rule).toMatchObject({ threshold_amount_nanos: 12_345_678_901 });
+			expect(state.rpc.mock.calls[1][1].p_rule).toMatchObject({ threshold_amount_nanos: 20_500_000_000 });
 			expect(args.p_destination_ids).toEqual([]);
 		});
 

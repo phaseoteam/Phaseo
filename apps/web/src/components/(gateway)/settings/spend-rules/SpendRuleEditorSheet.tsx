@@ -65,7 +65,7 @@ import {
 	type SpendRuleDraft,
 	type SpendRulePrefill,
 } from "./spendRuleDraft";
-import { MAX_SPEND_RULE_THRESHOLDS, SPEND_RULE_METRICS, SPEND_RULE_SCOPES, type SpendRule } from "./spendRules";
+import { MAX_SPEND_RULE_THRESHOLDS, SPEND_RULE_BLOCKS_AVAILABLE, SPEND_RULE_METRICS, SPEND_RULE_SCOPES, type SpendRule } from "./spendRules";
 
 export type SpendRuleEditorTarget = { mode: "create"; prefill: SpendRulePrefill; key: number } | { mode: "edit"; rule: SpendRule };
 
@@ -75,9 +75,9 @@ const WORKSPACE_ZONE = "__workspace__";
 export function useSpendActionError() {
 	const t = useTranslations("SettingsUI.spendAlerts");
 	return (result: SpendRuleActionError, maxRules: number) => {
-		if (result.code === "spend_rule_limit_reached" || (result.status === 409 && !result.code)) return t("errors.limit", { max: maxRules });
-		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.code === "no_notification_destinations" || result.code === "no_active_destinations") return t("errors.noDestinations");
+		if (result.code === "spend_rule_limit_reached") return t("errors.limit", { max: maxRules });
+		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.status === 401 || result.status === 403) return t("errors.forbidden");
 		if (result.status === 404) return t("errors.notFound");
 		if (result.status === 400) return result.message ?? t("errors.invalid");
@@ -437,7 +437,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 							</div>
 						</Section>
 
-						{canBlock(draft) ? (
+						{SPEND_RULE_BLOCKS_AVAILABLE && canBlock(draft) ? (
 							<Section title={t("editor.sectionAction")}>
 								<OptionTiles
 									label={t("editor.sectionAction")}

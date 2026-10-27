@@ -5,6 +5,7 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
+import { compilePromptTemplate } from "@core/prompt-templates";
 import {
 	type ManagementRouteAuth,
 	internalServerError,
@@ -94,6 +95,15 @@ function normalizeConfig(value: unknown): Record<string, unknown> {
 function boundedConfig(value: unknown): Record<string, unknown> | null {
 	const config = normalizeConfig(value);
 	return JSON.stringify(config).length <= 60_000 ? config : null;
+}
+
+/** A 400 for a config whose prompt template is invalid, or null. */
+function promptTemplateError(config: unknown): Response | null {
+	const template = normalizeConfig(config).prompt;
+	if (template === undefined || template === null) return null;
+	const compiled = compilePromptTemplate(template);
+	if (compiled.ok !== false) return null;
+	return json({ error: "invalid_prompt_template", message: compiled.issues[0]?.message ?? "Invalid prompt template", issues: compiled.issues }, 400, { "Cache-Control": "no-store" });
 }
 
 function formatPreset(row: PresetRow) {
@@ -245,6 +255,7 @@ async function handleCreatePreset(req: Request) {
 		if (visibility === "public" && !publisher) return json({ error: "publisher_handle_required", message: "Configure a workspace publisher handle before publishing a preset" }, 409, { "Cache-Control": "no-store" });
 		const config = boundedConfig(body.config);
 		if (!config) return json({ error: "bad_request", message: "config must be a bounded object" }, 400, { "Cache-Control": "no-store" });
+		const templateError = promptTemplateError(config); if (templateError) return templateError;
 		const slugQuery = getSupabaseAdmin().from("presets").select("id").eq("workspace_id", auth.value.workspaceId).eq("slug", slug);
 		const { data: slugDuplicate, error: slugError } = await slugQuery.maybeSingle();
 		if (slugError) throw new Error(slugError.message || "Failed to check preset slug");
@@ -360,6 +371,7 @@ async function handleUpdatePreset(req: Request) {
 				? boundedConfig(body.config)
 				: boundedConfig({ ...normalizeConfig(existing.draft_config ?? existing.config), ...normalizeConfig(body.config) });
 			if (!nextConfig) return json({ error: "bad_request", message: "config must be a bounded object" }, 400, { "Cache-Control": "no-store" });
+			const templateError = promptTemplateError(nextConfig); if (templateError) return templateError;
 			updatePayload.draft_config = nextConfig;
 		}
 		if (body.visibility !== undefined) updatePayload.draft_visibility = normalizeVisibility(body.visibility);
@@ -437,6 +449,7 @@ async function handlePublishPresetVersion(req: Request) {
 			|| JSON.stringify(preset.draft_config) !== JSON.stringify(preset.config)
 			|| preset.draft_visibility !== preset.visibility;
 		if (!hasDraftChanges) return json({ error: "conflict", message: "No draft changes to publish" }, 409, { "Cache-Control": "no-store" });
+		const templateError = promptTemplateError(preset.draft_config ?? preset.config); if (templateError) return templateError;
 		const result = await getSupabaseAdmin().rpc("publish_preset_version", { target_preset_id: preset.id, actor_user_id: auth.value.userId, notes: String(body.release_notes ?? "").slice(0, 1000), requested_label: body.version_label ? String(body.version_label).slice(0, 100) : null });
 		if (result.error) {
 			const message = result.error.message ?? "";

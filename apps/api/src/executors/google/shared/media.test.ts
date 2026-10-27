@@ -72,4 +72,35 @@ describe("google shared media mapping", () => {
 			},
 		});
 	});
+	it.each([
+		"https://www.youtube.com/watch?v=9hE5-98ZeCg",
+		"https://youtu.be/9hE5-98ZeCg",
+		"https://m.youtube.com/shorts/abc123",
+	])("sends YouTube link %s as file_data without downloading the page", async (url) => {
+		globalThis.fetch = vi.fn() as any;
+
+		const part = await irPartToGeminiPart({ type: "video", source: "url", url });
+
+		expect(globalThis.fetch).not.toHaveBeenCalled();
+		expect(part).toEqual({ file_data: { mime_type: "video/mp4", file_uri: url } });
+	});
+
+	it("does not inline a web page served for an image URL", async () => {
+		globalThis.fetch = vi.fn().mockImplementation(async () => new Response("<html>login</html>", {
+			status: 200,
+			headers: { "content-type": "text/html; charset=utf-8" },
+		})) as any;
+
+		const part = await irPartToGeminiPart({ type: "image", source: "url", data: "https://cdn.example.com/photo.jpg" });
+
+		expect(part).toEqual({ file_data: { mime_type: "image/jpeg", file_uri: "https://cdn.example.com/photo.jpg" } });
+	});
+
+	it("sends a Gemini Files API image reference as file_data and refuses other file ids", async () => {
+		expect(await irPartToGeminiPart({ type: "image", source: "id", data: "files/img123", mimeType: "image/png" }))
+			.toEqual({ file_data: { mime_type: "image/png", file_uri: "files/img123" } });
+		await expect(irPartToGeminiPart({ type: "image", source: "id", data: "file-abc" }))
+			.rejects.toMatchObject({ code: "unsupported_parameter" });
+	});
 });
+

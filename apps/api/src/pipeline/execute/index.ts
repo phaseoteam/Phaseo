@@ -4,7 +4,7 @@
 // How: Ranks candidates, attempts providers with failover, and records timing/usage.
 
 import type { GatewayResponsePayload } from "@core/types";
-import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog } from "../before/types";
+import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog, ProviderCandidate } from "../before/types";
 import { recordLifecycleEvent, recordProviderResult } from "../lifecycle";
 import { Timer } from "../telemetry/timer";
 import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from "@/runtime/env";
@@ -40,7 +40,13 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err, json } from "./http";
-import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs } from "./utils";
+import {
+	canUseManagedCredential,
+	filterCandidatesByCredential,
+	managedCredentialUnavailableResponse,
+	recordManagedPaymentRequired,
+} from "./managedCredentials";
+import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs, longThinkingMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
 import {
@@ -103,7 +109,8 @@ import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize
 import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
-import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
+import { isSynchronousMediaCapability } from "@core/synchronous-media";
+import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities, routeUploadedFileIds } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
@@ -129,6 +136,12 @@ const ATTEMPT_PREVIEW_LIMIT = 320;
 const MAX_UPSTREAM_ERROR_BODY_BYTES = 32 * 1024;
 const MAX_RETRYABLE_EXECUTOR_RETRIES = 0;
 const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
+// Synchronous media operations bill per call and have no cross-provider idempotency. Once a
+// provider has answered 2xx (and so charged), the request must not move to another provider,
+// even if mapping or pricing the answer then fails.
+export function stopsFallbackAfterProviderCharge(capability: string, providerSuccessCount: number): boolean {
+	return isSynchronousMediaCapability(normalizeCapability(capability)) && providerSuccessCount > 0;
+}
 // Matches the database's per-workspace/provider storage limit. A configured
 // credential must not be silently retained while being impossible to attempt.
 export const MAX_BYOK_CREDENTIAL_ATTEMPTS = BYOK_KEYS_PER_PROVIDER_LIMIT;
@@ -165,7 +178,12 @@ export type CredentialAttemptPhase = "priority_byok" | "balanced_byok" | "gatewa
 
 export function buildCredentialAttemptPlan(
 	rankedProviders: any[],
-	options: { includeFallbackByok?: boolean; allowManagedFallback?: boolean } = {},
+	options: {
+		includeFallbackByok?: boolean;
+		allowManagedFallback?: boolean;
+		/** False for a candidate whose managed key is missing or whose account is out of credit. */
+		canUseManagedCredential?: (candidate: ProviderCandidate) => boolean;
+	} = {},
 ): Array<{
 	routed: any;
 	phase: CredentialAttemptPhase;
@@ -198,7 +216,10 @@ export function buildCredentialAttemptPlan(
 
 	const balancedAttempts = rankedProviders.flatMap((routed) => {
 		const keys = keysForMode(routed, "balanced");
-		return keys.length ? keys : routed.candidate.credentialMode === "byok_only" ? [] : [{
+		if (keys.length) return keys;
+		if (routed.candidate.credentialMode === "byok_only") return [];
+		if (options.canUseManagedCredential && !options.canUseManagedCredential(routed.candidate)) return [];
+		return [{
 			routed,
 			phase: "gateway" as const,
 			credential: { kind: "gateway" as const },
@@ -547,9 +568,23 @@ export async function doRequestWithIR(
 	);
 	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
 	let candidates = candidatesGuard.value;
+	const normalizedCapability = normalizeCapability(ctx.capability);
+
+	// 1.1) Drop providers this request cannot authenticate to: no managed key in the
+	// Worker (or a managed account out of credit) and no BYOK key of the customer's.
+	const credentialFilter = filterCandidatesByCredential(candidates, normalizedCapability);
+	if (credentialFilter.skipped.length > 0) {
+		(ctx as any).routingDiagnostics = {
+			...((ctx as any).routingDiagnostics ?? {}),
+			managedCredentialSkipped: credentialFilter.skipped,
+		};
+		if (!credentialFilter.candidates.length) {
+			return managedCredentialUnavailableResponse(ctx, credentialFilter.skipped);
+		}
+		candidates = credentialFilter.candidates;
+	}
 
 	// 1.5) Filter providers by requested input/output modalities
-	const normalizedCapability = normalizeCapability(ctx.capability);
 	if (normalizedCapability === "extraction.extract" && (ir as IRExtractionRequest).images?.length) {
 		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
 		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports image input.", request_id: ctx.requestId }, { status: 400 });
@@ -585,7 +620,7 @@ export async function doRequestWithIR(
 	}
 	if (normalizedCapability === "text.generate") {
 		const filtered = await timing.timer.span("execute_filter_modalities", () =>
-			filterCandidatesByModalities(candidates, ir as IRChatRequest),
+			filterCandidatesByModalities(candidates, ir as IRChatRequest, { protocol: ctx.protocol }),
 		);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
@@ -595,7 +630,18 @@ export async function doRequestWithIR(
 				reason: "unsupported_modalities",
 			});
 		}
-		candidates = filtered;
+		const fileIdRouting = routeUploadedFileIds(filtered, ir as IRChatRequest);
+		if (fileIdRouting.ok === false) {
+			return err("unsupported_modalities", {
+				model: ctx.model,
+				endpoint: ctx.endpoint,
+				request_id: ctx.requestId,
+				reason: "file_id_provider_required",
+				description: `An uploaded file_id can be read only by the provider account that issued it, and this request could go to ${fileIdRouting.providers.join(", ")}. Pin the provider that holds the file with provider.only, or send the file as data or a URL.`,
+				providers: fileIdRouting.providers,
+			});
+		}
+		candidates = fileIdRouting.candidates;
 
 		// `instant` is a valid public Responses value, but only providers whose
 		// capability metadata (or explicit provider profile) advertises it may
@@ -684,6 +730,7 @@ export async function doRequestWithIR(
 	const credentialPlan = preferPinnedCredential(buildCredentialAttemptPlan(rankedProviders, {
 		includeFallbackByok: true,
 		allowManagedFallback: ctx.teamSettings?.byokFallbackEnabled === true,
+		canUseManagedCredential: (candidate) => canUseManagedCredential(candidate, normalizedCapability),
 	}), (ctx as any).routingDiagnostics?.stickyRouting);
 	if (credentialPlan.length === 0 && rankedProviders.some((entry) => entry.candidate.credentialMode === "byok_only")) {
 		return err("byok_credentials_required", {
@@ -706,6 +753,10 @@ export async function doRequestWithIR(
 
 	for (let attempt = 0; attempt < credentialPlan.length; attempt++) {
 		const choice = credentialPlan[attempt];
+		// An earlier attempt in this request may have found the managed account unpaid.
+		if (choice.credential.kind === "gateway" && !canUseManagedCredential(choice.routed.candidate, normalizedCapability)) {
+			continue;
+		}
 
 		// Use IR-aware attempt function
 		const result = await attemptProviderWithIR(
@@ -927,9 +978,13 @@ async function attemptProviderWithIR(
 	// The headers deadline is only safe when the provider streams (see the tracker).
 	// Google Flex queues work before returning headers; give it the documented
 	// ten-minute wait while retaining caller cancellation and a bounded deadline.
+	// Long-thinking models get the longer wait their provider documents.
 	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, {
 		applyHeadersDeadline: ctx.stream === true,
-		minimumHeadersTimeoutMs: googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body),
+		minimumHeadersTimeoutMs: Math.max(
+			googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body) ?? 0,
+			longThinkingMinimumHeadersTimeoutMs(candidate.providerId, providerModelSlug || baseModel) ?? 0,
+		) || undefined,
 	});
 	let providerRateLimitReservation: ProviderQuotaCharge | null = null;
 	try {
@@ -1322,6 +1377,11 @@ async function attemptProviderWithIR(
 				executorResult.upstream.headers,
 			);
 			const effectiveKeySource = executorResult.keySource ?? credentialLog.key_source;
+			// 402 on the gateway's own key: the provider account is out of credit, so later
+			// managed requests skip the provider for a while. A BYOK 402 is the customer's own.
+			if (executorResult.upstream.status === 402 && effectiveKeySource === "gateway" && !candidate.privateEndpoint) {
+				recordManagedPaymentRequired(candidate.providerId);
+			}
 			const upstreamRateLimitHeaders = extractDownstreamRateLimitHeaders(
 				executorResult.upstream.headers,
 				{
@@ -1394,12 +1454,12 @@ async function attemptProviderWithIR(
 			}
 			return {
 				ok: false,
-				stopFallback: normalizedCapability === "video.generate" && (
+				stopFallback: (normalizedCapability === "video.generate" && (
 					// A dispatched create owns a durable job and reservation lifecycle.
 					// Do not reuse that job for a second provider after rejection either.
 					upstreamTracker.snapshot().upstreamRequestCount > 0 ||
 					executorResult.upstream.status >= 500 || executorResult.upstream.status === 408
-				),
+				)) || stopsFallbackAfterProviderCharge(normalizedCapability, upstreamTracker.providerSuccessCount()),
 			};
 		}
 
@@ -1554,6 +1614,15 @@ async function attemptProviderWithIR(
 				await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 			}
 		});
-		return { ok: false, stopFallback: ctx.capability === "video.generate" };
+		const chargedMediaFailure = stopsFallbackAfterProviderCharge(ctx.capability, upstreamTracker.providerSuccessCount());
+		if (chargedMediaFailure) {
+			console.error("[gateway] media request failed after the provider answered; not retrying elsewhere", {
+				requestId: ctx.requestId,
+				provider: candidate.providerId,
+				capability: ctx.capability,
+				message,
+			});
+		}
+		return { ok: false, stopFallback: ctx.capability === "video.generate" || chargedMediaFailure };
 	}
 }

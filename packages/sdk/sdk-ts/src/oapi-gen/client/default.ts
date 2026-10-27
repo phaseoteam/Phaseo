@@ -872,32 +872,49 @@ export type CreateAnthropicMessageParams = {
     };
     echo_upstream_request?: boolean;
     max_tokens: number;
-    messages: {
-      content:
-        | string
-        | {
-            cache_control?: {
-              scope?: string;
-              ttl?: string;
-              type?: string;
-              [key: string]: unknown;
-            };
-            content?: string;
-            id?: string;
-            input?: {};
-            name?: string;
-            source?: {
-              data?: string;
-              media_type?: string;
-              type?: string;
-              url?: string;
-            };
-            text?: string;
-            tool_use_id?: string;
-            type?: "text" | "image" | "tool_use" | "tool_result";
-          }[];
-      role: "user" | "assistant";
-    }[];
+    messages: (
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                content?: string;
+                id?: string;
+                input?: {};
+                name?: string;
+                source?: {
+                  data?: string;
+                  media_type?: string;
+                  type?: string;
+                  url?: string;
+                };
+                text?: string;
+                tool_use_id?: string;
+                type?: "text" | "image" | "tool_use" | "tool_result";
+              }[];
+          role: "user" | "assistant";
+        }
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                text: string;
+                type: "text";
+              }[];
+          role: "system";
+        }
+    )[];
     meta?: boolean;
     metadata?: {
       [key: string]: unknown;
@@ -938,6 +955,13 @@ export type CreateAnthropicMessageParams = {
           mode?: "safe" | "strict";
         }
     )[];
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
+    prompt_cache_key?: string | null;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -1265,6 +1289,7 @@ export type CreateApiKeyParams = {
     name: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[];
     workspace_id?: string;
   };
 };
@@ -1311,6 +1336,7 @@ export async function createApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -1376,6 +1402,7 @@ export async function createApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -2114,6 +2141,9 @@ export type CreateChatCompletionParams = {
     max_tokens?: number;
     max_tool_calls?: number;
     messages: {
+      audio?: {
+        id: string;
+      } | null;
       audios?: {
         audio_url: {
           url: string;
@@ -2266,6 +2296,12 @@ export type CreateChatCompletionParams = {
       type: "content";
     };
     presence_penalty?: number;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -2536,6 +2572,12 @@ export async function createChatCompletion(
     finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
     index?: number;
     message?: {
+      audio?: {
+        data?: string;
+        expires_at?: number;
+        id?: string;
+        transcript?: string;
+      };
       audios?: {
         audio_url: {
           url: string;
@@ -2690,6 +2732,12 @@ export async function createChatCompletion(
       finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
       index?: number;
       message?: {
+        audio?: {
+          data?: string;
+          expires_at?: number;
+          id?: string;
+          transcript?: string;
+        };
         audios?: {
           audio_url: {
             url: string;
@@ -3033,6 +3081,75 @@ export async function createDataContributionClassifier(
       slug: string;
       updated_at?: string | null;
       [key: string]: unknown;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateDepartmentBudgetParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    department_id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+  };
+};
+
+/**
+ * Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+ */
+export async function createDepartmentBudget(
+  client: Client,
+  args: CreateDepartmentBudgetParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "POST",
@@ -4554,7 +4671,31 @@ export type CreateObservabilityDestinationParams = {
       }[];
     }[];
     sampling_rate?: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
   };
 };
 
@@ -4612,7 +4753,31 @@ export async function createObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -4667,7 +4832,31 @@ export async function createObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -5060,6 +5249,44 @@ export type CreatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -5081,6 +5308,44 @@ export async function createPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -5105,6 +5370,44 @@ export async function createPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -5400,7 +5703,7 @@ export type CreateRateLimitAssignmentParams = {
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -5456,7 +5759,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -5835,6 +6138,12 @@ export type CreateResponseParams = {
         }
     )[];
     previous_response_id?: string;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -7909,8 +8218,11 @@ export async function createWorkspaceNotificationDestination(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -7928,8 +8240,11 @@ export async function createWorkspaceNotificationDestination(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -8099,6 +8414,45 @@ export async function deleteDataContributionClassifier(
   return client.request<{
     data: {
       deleted: true;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a department budget and its alerts.
+ */
+export async function deleteDepartmentBudget(
+  client: Client,
+  args: DeleteDepartmentBudgetParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
     };
   }>({
     method: "DELETE",
@@ -8395,7 +8749,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -8434,7 +8788,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -9032,6 +9386,44 @@ export async function forkPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -9057,6 +9449,44 @@ export async function forkPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -9544,6 +9974,7 @@ export async function getApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -9609,6 +10040,7 @@ export async function getApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -9833,6 +10265,7 @@ export async function getCurrentApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -9896,6 +10329,7 @@ export async function getCurrentApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -10019,6 +10453,75 @@ export async function getDataContributionSettings(
       starterCategories: {
         [key: string]: string[];
       };
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one department budget with the department's spend so far.
+ */
+export async function getDepartmentBudget(
+  client: Client,
+  args: GetDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "GET",
@@ -10867,7 +11370,31 @@ export async function getObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -10924,7 +11451,31 @@ export async function getObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -11003,6 +11554,44 @@ export async function getPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -11028,6 +11617,44 @@ export async function getPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -11396,7 +12023,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -11449,7 +12076,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -12944,6 +13571,7 @@ export async function listApiKeys(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -13008,6 +13636,7 @@ export async function listApiKeys(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -14273,6 +14902,7 @@ export type ListDataModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -14394,6 +15024,7 @@ export type ListDataModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -14565,6 +15196,73 @@ export async function listDataModels(
     offset?: number;
     ok?: boolean;
     total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListDepartmentBudgetsParams = {
+  path?: Record<string, never>;
+  query?: {
+    department_id?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ */
+export async function listDepartmentBudgets(
+  client: Client,
+  args: ListDepartmentBudgetsParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -15698,6 +16396,7 @@ export type ListModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -15819,6 +16518,7 @@ export type ListModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -16430,7 +17130,31 @@ export async function listObservabilityDestinations(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   }[];
@@ -16486,7 +17210,31 @@ export async function listObservabilityDestinations(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     }[];
@@ -16573,6 +17321,44 @@ export async function listPresets(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -16597,6 +17383,44 @@ export async function listPresets(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -16714,6 +17538,44 @@ export async function listPresetVersions(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -16737,6 +17599,44 @@ export async function listPresetVersions(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -17018,7 +17918,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -17072,7 +17972,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -17460,6 +18360,7 @@ export type ListTeamModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -17581,6 +18482,7 @@ export type ListTeamModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -19376,8 +20278,11 @@ export async function listWorkspaceNotificationDestinations(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -19395,8 +20300,11 @@ export async function listWorkspaceNotificationDestinations(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -19433,6 +20341,7 @@ export async function listWorkspaceNotificationRoutes(
 ): Promise<{
   data: {
     auto_top_up_failed: string[];
+    broadcast_destination_failing: string[];
     low_balance: string[];
     model_deprecation: string[];
     model_substitution: string[];
@@ -19448,6 +20357,7 @@ export async function listWorkspaceNotificationRoutes(
   return client.request<{
     data: {
       auto_top_up_failed: string[];
+      broadcast_destination_failing: string[];
       low_balance: string[];
       model_deprecation: string[];
       model_substitution: string[];
@@ -19944,7 +20854,7 @@ export async function makeDecision(
               right: number;
               top: number;
             };
-            confidence: number;
+            confidence: number | null;
             name: string | null;
             type: "box";
           }
@@ -20032,7 +20942,7 @@ export async function makeDecision(
                 right: number;
                 top: number;
               };
-              confidence: number;
+              confidence: number | null;
               name: string | null;
               type: "box";
             }
@@ -20265,6 +21175,44 @@ export async function publishPresetVersion(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -20288,6 +21236,44 @@ export async function publishPresetVersion(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -21498,6 +22484,7 @@ export async function rotateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -21565,6 +22552,7 @@ export async function rotateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -21646,6 +22634,73 @@ export async function rotateWebhookEndpointSecret(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RotateWorkspaceNotificationDestinationSecretParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Generates a new signing secret for a custom webhook destination and returns it once. Destinations created before signing get their first secret this way. Later deliveries are signed with the new secret and the previous secret stops being used.
+ */
+export async function rotateWorkspaceNotificationDestinationSecret(
+  client: Client,
+  args: RotateWorkspaceNotificationDestinationSecretParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    has_signing_secret?: boolean;
+    id: string;
+    name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
+    status: "active" | "disabled";
+    target_preview: string;
+    type:
+      | "email"
+      | "discord"
+      | "discord_webhook"
+      | "slack"
+      | "microsoft_teams"
+      | "custom_webhook";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}/rotate-secret`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      has_signing_secret?: boolean;
+      id: string;
+      name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
+      status: "active" | "disabled";
+      target_preview: string;
+      type:
+        | "email"
+        | "discord"
+        | "discord_webhook"
+        | "slack"
+        | "microsoft_teams"
+        | "custom_webhook";
+      updated_at?: string | null;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -21991,6 +23046,7 @@ export type UpdateApiKeyParams = {
     name?: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[] | null;
   };
 };
 
@@ -22035,6 +23091,7 @@ export async function updateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -22100,6 +23157,7 @@ export async function updateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -22367,6 +23425,78 @@ export async function updateDataContributionConsent(
       enabled: boolean;
       policyVersion: string;
       sampleRateBps: number;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    interval?: "daily" | "weekly" | "monthly";
+    limit?: number;
+  };
+};
+
+/**
+ * Changes the period or USD amount of a department budget.
+ */
+export async function updateDepartmentBudget(
+  client: Client,
+  args: UpdateDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "PATCH",
@@ -23030,7 +24160,31 @@ export async function updateObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -23087,7 +24241,31 @@ export async function updateObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -23159,6 +24337,44 @@ export type UpdatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -23180,6 +24396,44 @@ export async function updatePreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -23205,6 +24459,44 @@ export async function updatePreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -23541,7 +24833,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -23601,7 +24893,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitPolicy(
   client: Client,
@@ -24340,6 +25632,7 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
+      | "broadcast_destination_failing"
       | "spend_alert"
       | "spend_blocked"
       | "spend_report";
@@ -24367,6 +25660,7 @@ export async function updateWorkspaceNotificationRoute(
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
+      | "broadcast_destination_failing"
       | "spend_alert"
       | "spend_blocked"
       | "spend_report";
@@ -24386,6 +25680,7 @@ export async function updateWorkspaceNotificationRoute(
         | "model_deprecation"
         | "model_substitution"
         | "rate_limit_throttled"
+        | "broadcast_destination_failing"
         | "spend_alert"
         | "spend_blocked"
         | "spend_report";

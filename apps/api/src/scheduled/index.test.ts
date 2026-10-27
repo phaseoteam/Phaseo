@@ -20,6 +20,7 @@ const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
+const runDepartmentBudgetAlertSweepMock = vi.fn();
 const publishSweepSpendBlockEntriesMock = vi.fn();
 const reconcileSpendBlockEntriesMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
@@ -99,6 +100,7 @@ vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
 
 vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
 	runSpendLimitWarningSweep: (...args: unknown[]) => runSpendLimitWarningSweepMock(...args),
+	runDepartmentBudgetAlertSweep: (...args: unknown[]) => runDepartmentBudgetAlertSweepMock(...args),
 }));
 
 vi.mock("@/pipeline/notifications/spend-rules", () => ({
@@ -176,6 +178,7 @@ describe("handleScheduledEvent", () => {
 		runMobilePushJobMock.mockReset().mockResolvedValue({ captured: 0, sent: 0 });
 		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
+		runDepartmentBudgetAlertSweepMock.mockReset().mockResolvedValue({ budgets: 0, alerted: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
 		publishSweepSpendBlockEntriesMock.mockReset().mockResolvedValue({ published: 0, failed: 0 });
@@ -447,16 +450,24 @@ describe("handleScheduledEvent", () => {
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(runSpendLimitWarningSweepMock).not.toHaveBeenCalled();
+			expect(runDepartmentBudgetAlertSweepMock).not.toHaveBeenCalled();
 
 			runMobilePushJobMock.mockClear();
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(runSpendLimitWarningSweepMock).toHaveBeenCalledTimes(1);
+			expect(runDepartmentBudgetAlertSweepMock).toHaveBeenCalledTimes(1);
 			expect(runSpendLimitWarningSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(runDepartmentBudgetAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(log).not.toHaveBeenCalledWith("spend_limit_warnings_swept", expect.anything());
+			expect(log).not.toHaveBeenCalledWith("department_budget_alerts_swept", expect.anything());
 
 			runSpendLimitWarningSweepMock.mockResolvedValueOnce({ budgets: 1, limitedKeys: 3, warned: 2 });
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:30:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 2 });
+
+			runDepartmentBudgetAlertSweepMock.mockResolvedValueOnce({ budgets: 2, alerted: 1 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:00:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("department_budget_alerts_swept", { budgets: 2, alerted: 1 });
 
 			// A failed sweep does not stop the pushes.
 			runMobilePushJobMock.mockClear();
@@ -465,6 +476,14 @@ describe("handleScheduledEvent", () => {
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
 			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+
+			// Nor does it hold back the other sweep's alerts.
+			error.mockClear();
+			runSpendLimitWarningSweepMock.mockResolvedValueOnce({ budgets: 1, limitedKeys: 3, warned: 1 });
+			runDepartmentBudgetAlertSweepMock.mockRejectedValueOnce(new Error("department timeout"));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T11:00:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 1 });
+			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
 			error.mockRestore();
 		} finally {
 			log.mockRestore();

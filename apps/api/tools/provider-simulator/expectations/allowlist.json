@@ -297,6 +297,30 @@
 			}
 		},
 		{
+			"id": "by-design-google-vertex-cached-content-byok",
+			"finding": "N35",
+			"fixGroup": "docs",
+			"justification": "provider_options.google.cached_content returns 400 on Vertex AI without a customer Vertex AI credential (executors/google-vertex/text-generate/index.ts), since a cachedContents name is resolved in the project of the credential that serves the request. Documented in the prompt-caching guide.",
+			"match": {
+				"provider": "google-vertex",
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "re:\\.param\\.provider_options$"
+			}
+		},
+		{
+			"id": "by-design-google-vertex-eu-cached-content-byok",
+			"finding": "N35",
+			"fixGroup": "docs",
+			"justification": "As by-design-google-vertex-cached-content-byok, for the EU Vertex AI provider.",
+			"match": {
+				"provider": "google-vertex-eu",
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "re:\\.param\\.provider_options$"
+			}
+		},
+		{
 			"id": "by-design-openai-request-id",
 			"finding": "N19",
 			"fixGroup": "by-design",

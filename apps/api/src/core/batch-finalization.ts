@@ -228,6 +228,7 @@ async function emitBatchFinalizationTelemetry(args: {
 		costNanos: args.costNanos,
 		currency: "USD",
 		linkContext: args.meta.otelSubmissionContext ?? null,
+		metadata: args.meta.otelMetadata ?? null,
 	}).catch((error) => console.error("batch_otel_finalize_failed", {
 		batchId: args.batchId,
 		error: error instanceof Error ? error.message : String(error),

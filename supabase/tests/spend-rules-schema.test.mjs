@@ -218,6 +218,7 @@ try {
   await rejects(block, /workspace_spend_blocks_active_rule_uidx/, 'one active block per rule', [ws, created[3].id]);
   await rejects(`update public.workspace_spend_blocks set lifted_at = now() where id = $1`, /workspace_spend_blocks_lift_check/, 'a lift needs a reason', [blockId]);
   await rejects(`update public.workspace_spend_blocks set lifted_at = now(), lift_reason = 'period_reset', lifted_by = $2 where id = $1`, /workspace_spend_blocks_lift_check/, 'only manual lifts have a lifter', [blockId, alice]);
+  await rejects(`update public.workspace_spend_blocks set lifted_by = $2 where id = $1`, /workspace_spend_blocks_lift_check/, 'an active block has no lifter', [blockId, alice]);
   await db.query(`update public.workspace_spend_blocks set lifted_at = now(), lift_reason = 'manual', lifted_by = $2 where id = $1`, [blockId, alice]);
   await rows(block, [ws, created[3].id]);
   await rejects(`insert into public.workspace_spend_blocks (workspace_id, scope_type, scope_id, period_start, spend_nanos, limit_nanos) values ($1, 'key', null, now(), 1, 1)`, /workspace_spend_blocks_scope_check/, 'block scopes match rule scopes', [ws]);

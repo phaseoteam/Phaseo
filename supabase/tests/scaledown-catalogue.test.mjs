@@ -22,10 +22,15 @@ try {
   // Standard is seeded by an earlier post-baseline migration in full replay.
   await db.exec("insert into public.v2_service_tiers (service_tier_slug, display_name) values ('standard', 'Standard');");
   const migration = await read('../migrations/20261015102058_add_scaledown_task_models.sql');
+  // The latest migration redefining the page projection, which the ScaleDown
+  // migration also replaced; it must match the desired definition.
+  const projectionMigration = await read('../migrations/20261027124548_catalogue_active_matches_gateway_routing.sql');
   const projection = await read('../schemas/public/functions/get_v2_public_models_page_rows_without_lifecycle.sql');
-  assert.ok(migration.replace(/\r\n/g, '\n').includes(projection.replace(/\r\n/g, '\n')));
+  const projectionBody = projection.replace(/\r\n/g, '\n').slice(0, projection.replace(/\r\n/g, '\n').indexOf('$function$;') + 11);
+  assert.ok(projectionMigration.replace(/\r\n/g, '\n').includes(projectionBody));
   for (let run = 0; run < 2; run++) {
     await db.exec(migration);
+    await db.exec(projectionMigration);
     const { rows: providers } = await db.query('select provider_slug, status, routing_enabled, routable from public.v2_providers');
     assert.deepEqual(providers, [{ provider_slug: 'scaledown', status: 'not_ready', routing_enabled: false, routable: false }]);
     const { rows: models } = await db.query('select model_slug, hidden, status from public.v2_models order by model_slug');

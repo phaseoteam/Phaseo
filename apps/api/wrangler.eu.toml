@@ -37,7 +37,12 @@ GATEWAY_PUBLIC_BASE_URL = "https://eu.api.phaseo.app"
 MODEL_DISCOVERY_ENABLED = "false"
 VIDEO_RECONCILIATION_ENABLED = "false"
 BATCH_RECONCILIATION_ENABLED = "false"
-OTEL_EXPORT_ENABLED = "false"
+# Broadcast: requests served here are sent to the workspace's destinations
+# through BROADCAST_QUEUE, which phaseo-gateway consumes. This worker has no
+# I/O log bucket, so an event too large for a queue message goes to the
+# outbox instead, which phaseo-gateway drains.
+OTEL_EXPORT_ENABLED = "true"
+BROADCAST_QUEUE_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_ENABLED = "false"
 FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
 MOBILE_PUSH_ENABLED = "false"
@@ -52,6 +57,11 @@ region = "gcp:europe-west1"
 [[routes]]
 pattern = "eu.api.phaseo.app"
 custom_domain = true
+
+# Producer only: the queue is consumed by phaseo-gateway (wrangler.toml).
+[[queues.producers]]
+binding = "BROADCAST_QUEUE"
+queue = "phaseo-broadcast"
 
 [observability]
 [[r2_buckets]]

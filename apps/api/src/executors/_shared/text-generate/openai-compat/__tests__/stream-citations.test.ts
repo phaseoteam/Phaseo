@@ -351,3 +351,78 @@ describe("tool calls in the Responses snapshot", () => {
 		expect(completed.output.find((item: any) => item.type === "function_call")).toMatchObject({ call_id: "call_1", name: "lookup" });
 	});
 });
+
+describe("Venice web search billing", () => {
+	// Venice bills web search per request and reports no counter; citations arrive on the first
+	// chunk, usage on the last (https://docs.venice.ai/api-reference/endpoint/chat/completions).
+	function veniceUpstream(): Frame[] {
+		const citations = [{ title: "Cite one", url: URL_1 }];
+		return [
+			{ data: { ...chunk({ role: "assistant", content: "" }).data, venice_parameters: { enable_web_search: "auto", web_search_citations: citations } } },
+			chunk({ content: "Hello world" }),
+			chunk({}, { finish_reason: "stop" }),
+			{ data: { id: "chatcmpl-1", object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 } } },
+			"[DONE]",
+		];
+	}
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"] as const)(
+		"carries one web search request into the streamed %s usage",
+		async (protocol) => {
+			const frames = parseFrames(await clientStream(veniceUpstream(), protocol, "chat", "venice"));
+			const usage = frames.map((frame) => frame.data?.usage ?? frame.data?.response?.usage).filter(Boolean).at(-1);
+			expect(usage?.server_tool_use).toEqual({ web_search_requests: 1 });
+		},
+	);
+
+	it("counts a search on a buffered response with citations, and none without", () => {
+		const response = (veniceParameters: Record<string, unknown>) => ({
+			id: "chatcmpl-1",
+			object: "chat.completion",
+			choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
+			usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 },
+			venice_parameters: veniceParameters,
+		});
+		const searched = openAIChatToIR(response({ enable_web_search: "auto", web_search_citations: [{ title: "t", url: URL_1 }] }), "req_1", "m", "venice");
+		expect(searched.usage?._ext?.serverToolUse?.web_search_requests).toBe(1);
+		const skipped = openAIChatToIR(response({ enable_web_search: "auto", web_search_citations: [] }), "req_1", "m", "venice");
+		expect(skipped.usage?._ext?.serverToolUse).toBeUndefined();
+	});
+});
+
+describe("Meta web search billing on native Responses streams", () => {
+	// Meta reports searches only as web_search_call output items (https://dev.meta.ai/docs/search-grounding).
+	function metaUpstream(): Frame[] {
+		const response = {
+			id: "resp_meta",
+			object: "response",
+			status: "completed",
+			output: [
+				{ id: "ws_1", type: "web_search_call", status: "completed" },
+				{ id: "ws_2", type: "web_search_call", status: "completed" },
+				{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] },
+			],
+			usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+		};
+		return [
+			{ event: "response.created", data: { type: "response.created", response: { ...response, status: "in_progress", output: [], usage: null } } },
+			{ event: "response.output_text.delta", data: { type: "response.output_text.delta", output_index: 2, content_index: 0, delta: "ok" } },
+			{ event: "response.completed", data: { type: "response.completed", response } },
+		];
+	}
+
+	it.each(["openai.responses", "anthropic.messages", "openai.chat.completions"] as const)(
+		"carries the completed searches into the streamed %s usage",
+		async (protocol) => {
+			const frames = parseFrames(await clientStream(metaUpstream(), protocol, "responses", "meta"));
+			const usage = frames.map((frame) => frame.data?.usage ?? frame.data?.response?.usage ?? frame.data?.message?.usage).filter(Boolean).at(-1);
+			expect(usage?.server_tool_use?.web_search_requests).toBe(2);
+		},
+	);
+
+	it("forwards a provider's other Responses frames byte for byte", async () => {
+		const upstream = metaUpstream().slice(0, 2);
+		const forwarded = await clientStream(upstream, "openai.responses", "responses", "meta");
+		expect(forwarded).toBe(await sse(upstream).text());
+	});
+});

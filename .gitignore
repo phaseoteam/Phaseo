@@ -9,6 +9,8 @@ build
 .env*
 apps/mcp/.dev.vars
 apps/mcp/.wrangler/
+apps/slack/.dev.vars
+apps/slack/.wrangler/
 pnpm-debug.log
 .turbo/
 **/.turbo/
@@ -36,7 +38,8 @@ guides/private/
 .playwright-cli/
 .tools/
 .codex/tmp/
-/.claude/
+/.claude/*
+!/.claude/skills/
 /.codex/remote-control*.log
 /design-audit/
 /design-qa*

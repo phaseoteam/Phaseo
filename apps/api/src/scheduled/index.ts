@@ -21,7 +21,7 @@ import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
-import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
+import { runDepartmentBudgetAlertSweep, runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { hasSpendRuleSweepActivity, publishSweepSpendBlockEntries, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
 import { reconcileSpendBlockEntries } from "@core/spend-blocks";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
@@ -31,7 +31,7 @@ import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhoo
 import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 import { runDataContributionClassifierJob } from "@/pipeline/classification/classifier-worker";
 import { pruneExpiredDataContributions } from "@/pipeline/classification/data-contribution";
-import { drainGatewayOtlpOutbox, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { drainGatewayOtlpOutbox, pruneBroadcastDeliveryHourly, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { pruneBroadcastSpill } from "@/observability/broadcast-event";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
@@ -411,8 +411,12 @@ async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promis
 	if (env.MOBILE_PUSH_ENABLED !== "true") return;
 	configureRuntime(env);
 	try {
-		const summary = await runSpendLimitWarningSweep();
-		if (summary.warned > 0) console.log("spend_limit_warnings_swept", summary);
+		// Independent sweeps: one failing must not hold back the other's alerts.
+		const [spend, departments] = await Promise.allSettled([runSpendLimitWarningSweep(), runDepartmentBudgetAlertSweep()]);
+		if (spend.status === "fulfilled" && spend.value.warned > 0) console.log("spend_limit_warnings_swept", spend.value);
+		if (departments.status === "fulfilled" && departments.value.alerted > 0) console.log("department_budget_alerts_swept", departments.value);
+		const failed = [spend, departments].find((result): result is PromiseRejectedResult => result.status === "rejected");
+		if (failed) throw failed.reason;
 	} finally {
 		clearRuntime();
 	}
@@ -603,6 +607,19 @@ async function handleOtelExportScheduledEvent(env: GatewayBindings): Promise<voi
 	}
 }
 
+// Queues alerts for failing Broadcast destinations; the notification delivery job
+// later in this tick sends them.
+async function handleBroadcastDestinationAlertsScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("enqueue_broadcast_destination_alerts");
+		if (error) throw new Error(error.message || "Failed to queue Broadcast destination alerts");
+		if (Number(data ?? 0) > 0) console.log("broadcast_destination_alerts_queued", { events: Number(data) });
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promise<void> {
 	configureRuntime(env);
 	try {
@@ -613,6 +630,8 @@ async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promis
 		if (spilled > 0) console.log("broadcast_spill_pruned", { deleted: spilled });
 		const receipts = await pruneBroadcastEventReceipts();
 		if (receipts > 0) console.log("broadcast_event_receipts_pruned", { deleted: receipts });
+		const hourly = await pruneBroadcastDeliveryHourly();
+		if (hourly > 0) console.log("broadcast_delivery_hourly_pruned", { deleted: hourly });
 	} finally {
 		clearRuntime();
 	}
@@ -812,6 +831,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleOtelExportPruneScheduledEvent(env);
 		} catch (error) {
 			console.error("otel_export_prune_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleBroadcastDestinationAlertsScheduledEvent(env);
+		} catch (error) {
+			console.error("broadcast_destination_alerts_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleEmailOutboxScheduledEvent(event, env);

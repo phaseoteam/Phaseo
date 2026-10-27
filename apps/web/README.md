@@ -6,6 +6,18 @@ The Next.js website, dashboard, and internal catalog editor.
 
 From the repository root, run `pnpm install`, then `pnpm --filter @phaseo/web dev`. The local site runs at http://localhost:3100. Configure the required local environment and backend services before using authenticated features; never commit credentials.
 
+## Error source maps
+
+Production builds upload source maps to PostHog so error stacks show the original file and line. The upload runs only when these build-time variables are set, and never for Vercel preview builds:
+
+| Variable | Value |
+| --- | --- |
+| `POSTHOG_SOURCEMAPS_API_KEY` | PostHog personal API key with the error tracking write scope. Secret. |
+| `POSTHOG_SOURCEMAPS_PROJECT_ID` | PostHog project ID. |
+| `POSTHOG_SOURCEMAPS_HOST` | Optional. Defaults to `https://eu.posthog.com`. |
+
+The browser maps are uploaded as release `phaseo-web` at the deployment's commit. They are then deleted from the build output with their `sourceMappingURL` comments, so the site never serves or links to them. If the upload fails, the build logs a warning, removes the maps the same way and continues. Without the variables the build makes no browser maps and skips the upload.
+
 ## Catalog management
 
 The database is the catalog source of truth. Admins use `/internal/data` to manage models, organisations, providers, routes, prices, and benchmark results. `/internal/data/registries` manages supporting catalog settings, and `/internal/data/imports` reviews provider price proposals.

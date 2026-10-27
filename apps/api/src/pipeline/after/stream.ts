@@ -5,6 +5,7 @@
 
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
+import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -50,6 +51,8 @@ import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } f
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -71,17 +74,32 @@ function getStreamTerminalPayload(frame: any): any | null {
 }
 
 const INPUT_MODALITY_TOKEN_METERS = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"] as const;
+// Raw OpenAI Chat usage names its audio token counts inside the details objects
+// (https://platform.openai.com/docs/api-reference/chat/object).
+const OPENAI_CHAT_AUDIO_TOKEN_PATHS = [
+    ["input_audio_tokens", "prompt_tokens_details"],
+    ["output_audio_tokens", "completion_tokens_details"],
+] as const;
 
 /**
  * Client shaping keeps modality counts only inside input_tokens_details, where they can also
- * be counts of media parts. Carry the executor's token meters to pricing as meters.
+ * be counts of media parts. Carry the executor's token meters to pricing as meters, and the
+ * audio token counts of raw OpenAI Chat usage (a passed-through stream has no executor meters).
+ * Claude's `inference_geo` is carried too: price rows for US-only inference match on it.
  */
 function withInputModalityTokenMeters(shaped: any, raw: any): any {
     if (!shaped || typeof shaped !== "object" || !raw || typeof raw !== "object") return shaped;
-    const meters: Record<string, number> = {};
+    const meters: Record<string, number | string> = {};
+    if (typeof raw.inference_geo === "string" && shaped.inference_geo == null) meters.inference_geo = raw.inference_geo;
     for (const key of INPUT_MODALITY_TOKEN_METERS) {
         const value = raw[key];
         if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[key] == null) meters[key] = value;
+    }
+    for (const [meter, detailsKey] of OPENAI_CHAT_AUDIO_TOKEN_PATHS) {
+        const value = raw[meter] ?? raw[detailsKey]?.audio_tokens;
+        if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[meter] == null && meters[meter] == null) {
+            meters[meter] = value;
+        }
     }
     return Object.keys(meters).length ? { ...shaped, ...meters } : shaped;
 }
@@ -199,6 +217,11 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
+    const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const auditGatewayResponse = () =>
+        chatChunkAccumulator
+            ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
+            : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -309,7 +332,7 @@ export async function handleStreamResponse(
     let messagesStreamUsage: Record<string, unknown> | null = null;
     const accumulateMessagesStreamUsage = (usage: any) => {
         if (!usage || typeof usage !== "object") return;
-        messagesStreamUsage = { ...(messagesStreamUsage ?? {}), ...usage };
+        messagesStreamUsage = mergeMessagesStreamUsage(messagesStreamUsage, usage);
     };
     // Messages usage frames are not otherwise priced for the client: add only the cost
     // fields, priced the same way as the Chat and Responses usage frames.
@@ -361,6 +384,7 @@ export async function handleStreamResponse(
         priceCard: card,
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
+            chatChunkAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
@@ -401,7 +425,7 @@ export async function handleStreamResponse(
                     next.usage = normalizeAnthropicUsage(next.usage);
                     if (costFields) Object.assign(next.usage, costFields);
                 } else if (card) {
-                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.usage));
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.usage), next.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
                             requestId: ctx.requestId,
@@ -431,7 +455,7 @@ export async function handleStreamResponse(
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.response.usage = normalizeAnthropicUsage(next.response.usage);
                 } else if (card) {
-                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.response.usage));
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.response.usage), next.response.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
                             requestId: ctx.requestId,
@@ -624,7 +648,7 @@ export async function handleStreamResponse(
             }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = attachToolUsageMetrics(
-                shapeStreamUsageForClient(usageForShaping),
+                withInputModalityTokenMeters(shapeStreamUsageForClient(usageForShaping), usageForShaping),
                 buildToolUsage()
             );
             // Preserve metering even if pricing fails before a bill can be assigned.
@@ -752,6 +776,7 @@ export async function handleStreamResponse(
                     totalNanosOverride = repriced.totalNanos;
                     currencyHint = repriced.currency ?? currencyHint;
                 }
+                alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: totalNanosOverride });
 
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
@@ -814,7 +839,7 @@ export async function handleStreamResponse(
                     normalizedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
 
                 return true;
@@ -890,7 +915,7 @@ export async function handleStreamResponse(
                     cachedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
                 return;
             }
@@ -903,6 +928,7 @@ export async function handleStreamResponse(
                 tier,
                 ctx.meta
             );
+            alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
                     requestId: ctx.requestId,
@@ -970,7 +996,7 @@ export async function handleStreamResponse(
                 cachedFinishReason,
                 upstreamStatus,
                 result.bill.upstream_id ?? null,
-                latestGatewaySnapshot,
+                auditGatewayResponse(),
             );
 
             } catch (error) {
@@ -995,7 +1021,7 @@ export async function handleStreamResponse(
                     },
                     null,
                     {
-                        gatewayResponse: latestGatewaySnapshot,
+                        gatewayResponse: auditGatewayResponse(),
                         rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
                         pricingCard: card,
                     },

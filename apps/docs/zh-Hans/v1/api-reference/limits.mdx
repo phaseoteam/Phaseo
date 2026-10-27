@@ -31,20 +31,33 @@ icon: "gauge"
 
 达到 API 密钥的每日、每周或每月请求和支出上限，或工作区的[预算](./endpoint/budgets-list.mdx)时，会返回 `429` 和错误代码 `key_limit_exceeded`。响应正文中的 `reason`、`limit_window` 和 `reset_at` 字段说明触发的是哪个限制以及其周期何时重置。`Retry-After` 给出距离重置的秒数。如果限制不会自动重置（例如终身预算或被临时封禁的密钥），则不会返回该标头；此时请不要重试，而是提高工作区预算；如果是密钥上限，请提高该密钥的上限或改用其他密钥。
 
+工作区所有者和管理员也可以在控制台的[设置 → 预算](https://phaseo.app/settings/budgets)中设置、更改和删除预算。该页面显示每项预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。
+
+通过 `/v1/department-budgets` API 管理的部门预算不会拒绝请求。部门的支出计入的密钥和 OAuth 请求与下文的部门速率限制相同。当每日、每周或每月预算用到约 80% 以及 100% 时，所有者和管理员会收到移动推送通知。支出来自可能延迟最多一小时的用量数据。
+
+所有者和管理员也可以在[设置 → 预算](https://phaseo.app/settings/budgets)中管理部门预算，或使用 Terraform 提供程序的 `phaseo_department_budget` 资源。
+
 ## 速率限制策略
 
-工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、防护规则，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口分别执行策略的 `requests_per_minute` 和 `tokens_per_minute`：
+工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、部门、防护规则，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口分别执行策略的 `requests_per_minute` 和 `tokens_per_minute`：
 
 - **密钥：**该密钥自己的配额。
 - **成员：**由该成员的密钥和 OAuth 请求共享的一份配额。
+- **部门：**计入该部门的所有请求共享的一份配额。关联到某个部门的密钥只计入该部门。其他密钥计入其创建者所属的所有部门，OAuth 请求计入其用户所属的所有部门。设置了部门覆盖的成员只计入覆盖指定的部门。
 - **防护规则：**防护规则覆盖的每个密钥（或 OAuth 用户）各有一份独立配额。
 - **最终用户默认值：**每个最终用户各有一份独立配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 请求头识别。没有最终用户 ID 的请求不受其限制。
 
-当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。`concurrent_requests` 和部门分配尚未执行。策略变更约在一分钟内生效。
+所有者和管理员也可以在[设置 → 速率限制](https://phaseo.app/settings/rate-limits)中管理策略及其分配，或使用 Terraform 提供程序的 `phaseo_rate_limit_policy` 和 `phaseo_rate_limit_assignment` 资源。
+
+当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。策略变更约在一分钟内生效。在控制台或通过 SCIM 进行的部门成员变更最多可能需要约五分钟才能生效。
 
 `tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括消耗了 token 的流式请求和失败请求。某个额度在最近一分钟内的用量一旦达到上限，后续请求就会被拒绝，因此已在处理中的请求可能使用量超出上限。
 
-被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute` 或 `policy_tokens_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`guardrail` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格的请求数限制的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`），以及最严格的 token 限制的 `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens` 和 `x-ratelimit-reset-tokens`。被拒绝的请求只包含导致拒绝的那个限制的响应头。计数在后台进行，因此 `remaining` 为近似值，且 token 响应头尚未包含当前请求本身的用量。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute` 或 `policy_tokens_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`department`、`guardrail` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格的请求数限制的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`），以及最严格的 token 限制的 `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens` 和 `x-ratelimit-reset-tokens`。被拒绝的请求只包含导致拒绝的那个限制的响应头。计数在后台进行，因此 `remaining` 为近似值，且 token 响应头尚未包含当前请求本身的用量。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+
+`concurrent_requests` 限制可同时处理的请求数量。请求从被接受起占用一个名额，直到其响应完全发送完毕（流式响应则到整个流结束），同一请求内的提供商和模型回退共享这个名额。所有名额都被占用时，请求会被拒绝，原因为 `policy_concurrent_requests`，并附带 `Retry-After: 1`。检查并发限制需要等待策略的计数器，因此会给其覆盖的请求增加少量延迟。释放丢失的名额会在 15 分钟后自动释放。批处理和实时会话不受此限制，视频生成只在启动它的请求处理期间占用名额。
+
+默认情况下，如果无法检查策略的限制，请求会被放行。设置 `fail_closed` 可使策略变为严格模式。严格策略的请求数和令牌限制会在请求发送前检查，而不是在后台进行，因此结果精确，但会增加延迟；如果两秒内无法完成检查，请求会被拒绝，原因为 `policy_unavailable`。因并发和 `policy_unavailable` 被拒绝的请求不带 `x-ratelimit-*` 响应头。
 
 ## 提供商限制
 
@@ -73,6 +86,7 @@ BYOK 请求使用你的提供商账户限制。托管请求使用提供商的共
 
 - Gateway 配额会返回 `429`，原因为 `customer_requests_per_minute` 或 `free_requests_per_day`；请等待 `Retry-After` 指定的秒数。如果配额检查不可用，Gateway 会返回带有重试指引的 `503`。
 - 密钥限制和预算会返回带有 `key_limit_exceeded` 和 `reset_at` 的 `429`。没有 `Retry-After` 时，限制不会自动重置：请提高限制或改用其他密钥，而不是重试。
+- 部门预算从不返回 `429`，只发送提醒。
 - 工作区速率限制策略会返回带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope` 的 `429`。`x-ratelimit-remaining-requests` 是近似值。
 - `Retry-After` 可以是秒数或 HTTP 日期；安排重试前先校验该值。不要重新提交结果不明确的视频或批处理任务，而应查询其状态。
 </Visibility>

@@ -3,6 +3,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 
 const MODES = new Set(["balanced", "price", "latency", "throughput"]);
@@ -130,7 +131,7 @@ accountSettingsDynamicRoutesRouter.get("/dynamic-routes", async (c) => {
 	const [routesResult, linksResult, keysResult, providersResult] = await Promise.all([
 		context.client.from("gateway_dynamic_routes").select("id,workspace_id,name,slug,description,status,version,deployed_version,config,created_at,updated_at").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }),
 		context.client.from("gateway_dynamic_route_keys").select("route_id,key_id"),
-		context.client.from("keys").select("id,name,prefix,status").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+		context.client.from("keys").select("id,name,prefix,status").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("v2_providers")
 			.select("api_provider_id:provider_slug,api_provider_name:name,status,routing_enabled")
 			.eq("routable", true)

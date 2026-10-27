@@ -16,6 +16,7 @@ from gen import models
 from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
+from .auth import ApiKeyProvider
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
 from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
@@ -491,7 +492,7 @@ class _JsonResource:
 class Phaseo:
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: Optional[Union[str, ApiKeyProvider]] = None,
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
         devtools: Optional[dict[str, Any]] = None,
@@ -511,6 +512,9 @@ class Phaseo:
         api_key = api_key or os.getenv("PHASEO_API_KEY")
         if not api_key:
             raise ValueError("api_key is required (pass api_key or set PHASEO_API_KEY)")
+        # A credential function sets Authorization on every request instead of once here.
+        self._api_key = api_key
+        provider = api_key if callable(api_key) else None
 
         if base_url is not None and region is not None:
             raise ValueError("base_url and region cannot be used together")
@@ -519,7 +523,7 @@ class Phaseo:
         host = (base_url or REGIONAL_BASE_URLS[region or "global"]).rstrip("/")
         self._base_url = host
         self._headers = {
-            "Authorization": f"Bearer {api_key}",
+            **({} if provider else {"Authorization": f"Bearer {api_key}"}),
             "User-Agent": DEFAULT_USER_AGENT,
             "X-Phaseo-Client": client_source or "phaseo-python",
             "X-Phaseo-Client-Version": client_source_version or "2.0.7",
@@ -536,7 +540,7 @@ class Phaseo:
                 if isinstance(value, str) and value.strip()
             })
         self._client = HttpClient(base_url=host, headers=self._headers, timeout=timeout, max_retries=max_retries, http_client=http_client,
-                                  on_request=on_request, on_response=on_response, on_retry=on_retry)
+                                  on_request=on_request, on_response=on_response, on_retry=on_retry, api_key_provider=provider)
         self._timeout = timeout
         self.chat = _ChatResource(self)
         self.responses = _ResponsesResource(self)
@@ -584,7 +588,7 @@ class Phaseo:
         self.close()
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "Phaseo":
-        scoped = Phaseo(api_key=self._headers["Authorization"].removeprefix("Bearer "), base_url=self._base_url,
+        scoped = Phaseo(api_key=self._api_key, base_url=self._base_url,
             timeout=self._timeout if timeout is None else timeout,
             max_retries=self._client.max_retries if max_retries is None else max_retries,
             http_client=self._client.http, enable_deprecation_warnings=self._enable_deprecation_warnings,
@@ -2004,6 +2008,7 @@ def _as_trimmed_string(value: Any) -> Optional[str]:
 
 
 __all__ = [
+    "ApiKeyProvider",
     "APIResponse",
     "AsyncPhaseo",
     "AsyncJobHandle",

@@ -1,0 +1,177 @@
+---
+title: "Broadcast"
+description: "Envoyez une trace de chaque requête vers votre outil d’observabilité, un webhook, un bucket de stockage ou un entrepôt de données."
+icon: "radio-tower"
+---
+
+Broadcast envoie une trace de chaque requête du gateway vers les destinations de votre choix, sans modifier votre code. La trace suit les conventions GenAI d’OpenTelemetry : un span pour la requête et un span pour chaque tentative auprès d’un fournisseur, avec le modèle, le fournisseur, l’utilisation des tokens, le coût, les temps et (sauf si vous le désactivez) le prompt et la sortie.
+
+Broadcast est gratuit. Les propriétaires et les administrateurs gèrent les destinations dans **Paramètres → Broadcast**, ou avec l’[API des destinations d’observabilité](../api-reference/endpoint/observability-destinations-create.mdx) et une [clé de gestion](../developers/management-api-keys.mdx) disposant de `settings:write`. Un espace de travail peut avoir jusqu’à cinq destinations de chaque type.
+
+## Ajouter une destination
+
+1. Ouvrez **Paramètres → Broadcast** et choisissez une destination.
+2. Saisissez ses identifiants. Ils sont chiffrés avant leur enregistrement et ne sont plus jamais affichés.
+3. Choisissez ce qui est envoyé (voir la section « Choisir ce qui est envoyé »).
+4. Sélectionnez **Tester la connexion**. Phaseo envoie une trace d’exemple de la même manière que les envois réels : un échec à cette étape affiche donc l’erreur propre à la destination.
+5. Enregistrez. Les requêtes qui se terminent ensuite sont envoyées en une minute environ.
+
+| Catégorie | Destinations |
+| --- | --- |
+| Outils OpenTelemetry | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| Tout point de terminaison OTLP | OpenTelemetry Collector (OTLP/HTTP, JSON ou protobuf, gzip facultatif) |
+| Votre propre service | Webhook |
+| Stockage d’objets | Amazon S3 et stockages compatibles S3, Cloudflare R2, Google Cloud Storage |
+| Bases de données et entrepôts | ClickHouse, Google BigQuery, Snowflake |
+
+Chaque formulaire ne demande que ce dont l’outil a besoin, par exemple une clé API et un projet ou une région. Les outils OpenTelemetry reçoivent les mêmes spans ; Phaseo renseigne le point de terminaison, les en-têtes et l’encodage propres à chaque fournisseur.
+
+## Choisir ce qui est envoyé
+
+Chaque destination a ses propres paramètres :
+
+- **Mode de confidentialité** exclut de chaque trace les prompts, les sorties, les instructions système et les définitions d’outils. Les requêtes effectuées avec une clé API qui ne stocke jamais de contenu ne sont jamais transmises avec leur contenu, quelle que soit la valeur de ce paramètre.
+- **Métadonnées de génération**, **Coût**, **Identité** et **Contexte de la requête** activent ou désactivent chacun un groupe d’attributs de span. Désactiver **Contexte de la requête** supprime aussi les métadonnées de requête (voir la section « Ajouter votre propre contexte de trace »).
+- **Taux** envoie une part des requêtes éligibles, de 0 à 1. Le choix est stable pour chaque requête et chaque destination : un envoi relancé n’est donc jamais échantillonné différemment.
+- **Filtre des clés API** inclut ou exclut les requêtes effectuées avec certaines clés.
+- **Règles de filtre** n’envoient que les requêtes correspondantes. Les règles comparent des champs comme le modèle, le fournisseur, l’ID utilisateur, le motif de fin, le coût ou le nombre de tokens, et peuvent être regroupées avec **et** et **ou**. **Matches regex** utilise un moteur en temps linéaire : les références arrière et les assertions lookaround ne sont pas prises en charge, et un motif trop volumineux est refusé à l’enregistrement.
+
+## Ajouter votre propre contexte de trace
+
+Placez un objet `metadata` dans le corps de la requête pour nommer les traces et y joindre vos propres champs. Phaseo le lit pour Broadcast :
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [{ "role": "user", "content": "Summarise this ticket" }],
+  "metadata": {
+    "trace_id": "ticket-48213",
+    "trace_name": "support-summary",
+    "generation_name": "summarise",
+    "customer_tier": "enterprise"
+  }
+}
+```
+
+| Clé | Effet |
+| --- | --- |
+| `trace_id` | La trace à laquelle appartient la requête. Un ID hexadécimal de 32 caractères ou un UUID est utilisé tel quel ; toute autre chaîne est hachée, de sorte que toutes les requêtes ayant la même valeur rejoignent la même trace. |
+| `parent_span_id` | Un ID de span hexadécimal de 16 caractères sous lequel imbriquer la requête. S’utilise avec `trace_id`. |
+| `trace_name`, `span_name` | Nom du span de la requête. `span_name` l’emporte si les deux sont définis. |
+| `generation_name` | Nom du span de chaque tentative auprès d’un fournisseur. |
+| Toute autre clé | Envoyée comme attribut de span nommé `phaseo.metadata.<key>`. |
+
+Les valeurs peuvent être des chaînes, des nombres ou des booléens ; les objets imbriqués sont ignorés. Phaseo conserve jusqu’à 64 clés de 64 caractères au plus et tronque les valeurs à 512 caractères. Un en-tête W3C `traceparent`, s’il est présent, détermine la trace à la place de `trace_id` et `parent_span_id`.
+
+Ne placez ni secrets ni données personnelles dans `metadata` : il est envoyé à toutes les destinations où **Contexte de la requête** est activé.
+
+## Envois par webhook
+
+Un webhook reçoit un `POST` (ou un `PUT`, si vous le choisissez) par requête. Le corps est un export OTLP/JSON, `{"resourceSpans": [...]}`, contenant les spans de cette requête. Utilisez **Headers JSON** pour ajouter vos propres en-têtes, comme un en-tête `Authorization` attendu par votre point de terminaison.
+
+Ajoutez un **Signing Secret** (de 16 à 256 caractères, sans espaces) pour que chaque envoi, test et exemple soit signé. Phaseo ajoute alors deux en-têtes :
+
+```http
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` est le HMAC-SHA256 hexadécimal de l’horodatage, d’un point (`.`) et du corps de la requête non modifié, avec votre secret comme clé. C’est le même schéma que pour les webhooks de notification : vous pouvez donc réutiliser leur [code de vérification](./workspace-notifications.mdx). Les envois Broadcast n’ont pas d’en-tête d’ID d’événement : dédupliquez à l’aide des ID de span présents dans le corps.
+
+**Tester la connexion** envoie `{"resourceSpans": []}` avec un en-tête `X-Test-Connection: true`. Une réponse `400` est considérée comme joignable : un récepteur qui refuse les exports vides réussit donc quand même le test.
+
+## Lignes du stockage d’objets et des entrepôts
+
+Le stockage d’objets, ClickHouse, BigQuery et Snowflake reçoivent une ligne par span au lieu de traces. Chaque lot est écrit en une seule requête : un objet ou une insertion.
+
+| Colonne | Type | Contenu |
+| --- | --- | --- |
+| `event_id` | chaîne | L’ID d’événement de la requête. Tous les spans d’une requête le partagent. |
+| `trace_id` | chaîne | ID de trace hexadécimal de 32 caractères. |
+| `span_id` | chaîne | ID de span hexadécimal de 16 caractères. |
+| `parent_span_id` | chaîne ou null | Le span parent, ou null pour le span de la requête. |
+| `name` | chaîne | Nom du span. |
+| `kind` | chaîne | `server` pour la requête, `client` pour les tentatives auprès des fournisseurs. |
+| `start_time`, `end_time` | horodatage | RFC 3339 en UTC, à la microseconde près. |
+| `duration_ms` | nombre | Fin moins début, en millisecondes. |
+| `status_code` | chaîne | `unset`, `ok` ou `error`. |
+| `status_message` | chaîne ou null | Le message d’erreur, le cas échéant. |
+| `service_name` | chaîne ou null | `phaseo-gateway`. |
+| `attributes` | objet | Attributs du span par nom, comme `gen_ai.request.model` ou `gen_ai.usage.input_tokens`, avec leurs types conservés. |
+| `resource_attributes` | objet | Attributs de ressource, comme `service.name`. |
+
+Une ligne fait au plus 512 Ko. Lorsqu’un span contient davantage, par exemple une image intégrée, ses plus grandes valeurs d’attribut sont tronquées pour se partager l’espace ; chacune conserve son début et se termine par `…[truncated]`, et leurs noms sont listés dans l’attribut `phaseo.truncated_attributes`.
+
+Un lot en échec est relancé. Si la destination l’a enregistré mais que la réponse a été perdue, la relance peut écrire certaines lignes deux fois ; utilisez `event_id` et `span_id` pour dédupliquer. BigQuery et Snowflake utilisent des ID de requête qui évitent la plupart de ces doublons.
+
+### Stockage d’objets
+
+Chaque lot est un fichier JSON Lines compressé avec gzip. **Path Template** définit sa clé, par défaut `phaseo/{year}/{month}/{day}/{hour}/{uuid}`, et Phaseo ajoute `.jsonl.gz`. Le modèle peut utiliser `{year}`, `{month}`, `{day}`, `{hour}`, `{date}` (`YYYY-MM-DD`) et `{uuid}`, et doit inclure `{uuid}` pour que les fichiers ne s’écrasent jamais entre eux. Les heures sont en UTC.
+
+- **Amazon S3** : une clé d’accès autorisée à effectuer `s3:PutObject` sur le bucket, et la région du bucket. Pour un stockage compatible S3, renseignez **S3-Compatible Endpoint**.
+- **Cloudflare R2** : l’ID de clé d’accès et le secret d’un jeton d’API R2, votre ID de compte et la juridiction si le bucket en a une (`eu` ou `fedramp`).
+- **Google Cloud Storage** : une clé HMAC d’un compte de service autorisé à créer des objets dans le bucket.
+
+Les objets sont stockés compressés, sans en-tête `Content-Encoding`, afin que les tables externes Athena, BigQuery et Snowflake les lisent d’après leur extension `.gz`.
+
+### ClickHouse
+
+Les lignes sont insérées au format `JSONEachRow` via l’interface HTTPS, avec des insertions asynchrones. Les colonnes absentes de la table sont ignorées : vous pouvez donc ne garder que celles dont vous avez besoin :
+
+```sql
+CREATE TABLE phaseo_traces (
+  event_id String, trace_id String, span_id String, parent_span_id Nullable(String),
+  name String, kind LowCardinality(String),
+  start_time DateTime64(6, 'UTC'), end_time DateTime64(6, 'UTC'), duration_ms Float64,
+  status_code LowCardinality(String), status_message Nullable(String), service_name Nullable(String),
+  attributes String, resource_attributes String
+) ENGINE = MergeTree ORDER BY (start_time, trace_id);
+```
+
+Utilisez le point de terminaison sur le port 8443 pour ClickHouse Cloud. `attributes` et `resource_attributes` peuvent aussi être des colonnes `JSON`.
+
+### BigQuery
+
+Les lignes sont transmises en streaming avec `insertAll`, en utilisant les ID d’événement et de span comme ID d’insertion. Créez un compte de service disposant du rôle **BigQuery Data Editor** sur la table, puis collez son fichier de clé JSON dans le formulaire. `attributes` et `resource_attributes` doivent être des colonnes `JSON` :
+
+```sql
+CREATE TABLE observability.phaseo_traces (
+  event_id STRING, trace_id STRING, span_id STRING, parent_span_id STRING,
+  name STRING, kind STRING, start_time TIMESTAMP, end_time TIMESTAMP, duration_ms FLOAT64,
+  status_code STRING, status_message STRING, service_name STRING,
+  attributes JSON, resource_attributes JSON
+) PARTITION BY DATE(start_time) CLUSTER BY trace_id;
+```
+
+### Snowflake
+
+Chaque lot est un seul `INSERT` via la SQL API, avec une connexion par authentification à paire de clés : il s’exécute donc sur l’entrepôt que vous indiquez. Créez un utilisateur pour Phaseo et attribuez-lui une clé RSA :
+
+```sql
+CREATE TABLE PHASEO.OBSERVABILITY.PHASEO_TRACES (
+  EVENT_ID STRING, TRACE_ID STRING, SPAN_ID STRING, PARENT_SPAN_ID STRING,
+  NAME STRING, KIND STRING, START_TIME TIMESTAMP_TZ, END_TIME TIMESTAMP_TZ, DURATION_MS FLOAT,
+  STATUS_CODE STRING, STATUS_MESSAGE STRING, SERVICE_NAME STRING,
+  ATTRIBUTES VARIANT, RESOURCE_ATTRIBUTES VARIANT
+);
+-- openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out phaseo_key.p8
+-- openssl rsa -in phaseo_key.p8 -pubout
+ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
+```
+
+Collez la clé privée (`BEGIN PRIVATE KEY`, non chiffrée) dans le formulaire et utilisez l’identifiant organisation-compte, par exemple `myorg-myaccount`. Le rôle de l’utilisateur a besoin de `INSERT` sur la table et de `USAGE` sur l’entrepôt, la base de données et le schéma.
+
+## Envoi, état et alertes
+
+Les envois qui échouent à cause d’un délai d’attente dépassé, d’une limite de débit ou d’une erreur serveur sont relancés avec un délai croissant, jusqu’à huit tentatives. Les autres erreurs, comme une clé refusée ou une table manquante, ne sont pas relancées.
+
+**Paramètres → Broadcast** affiche l’état de chaque destination : **Opérationnel**, **En échec**, **Aucune livraison pour l’instant** ou **Désactivé**, avec la dernière erreur et les requêtes envoyées et en échec des dernières 24 heures.
+
+Pour être prévenu lorsqu’une destination cesse de fonctionner, acheminez les **Alertes de Diffusion** vers une [destination de notification](./workspace-notifications.mdx). Une alerte est envoyée lorsqu’une destination a échoué sur au moins cinq requêtes consécutives et n’a rien envoyé pendant 15 minutes. Elle est envoyée une fois par série d’échecs, puis de nouveau uniquement après que la destination s’est rétablie et qu’au moins six heures se sont écoulées.
+
+## Voir aussi
+
+- [API des destinations d’observabilité](../api-reference/endpoint/observability-destinations-list.mdx)
+- [Libellés de requête](./request-labels.mdx), envoyés comme attributs `phaseo.label.<key>`
+- [Notifications de l’espace de travail](./workspace-notifications.mdx)
+- [Intégrations d’observabilité](./integrations/observability.mdx), pour tracer depuis votre propre client

@@ -42,7 +42,7 @@ begin
   foreach v_endpoint in array p_endpoints loop
     with provider_rows as (
       select distinct on (r.provider_model_id)
-        r.*, c.status as capability_status,c.params,c.max_input_tokens as cap_input,c.max_output_tokens as cap_output,
+        r.*, c.status as capability_status,coalesce(c.params,'{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('data_policy',public.resolve_catalog_data_policy(r.provider_model_id,c.capability_id))) as params,c.max_input_tokens as cap_input,c.max_output_tokens as cap_output,
         coalesce(case when jsonb_typeof(r.metadata->'availability') = 'object' and (r.metadata->'availability'->>'mode') in ('allowlist','blocklist') and jsonb_typeof(r.metadata->'availability'->'countries') = 'array' then r.metadata->'availability' end,p.metadata->'availability') as availability,
         p.prompt_training_policy,p.data_policy_tier,p.data_policy_confidence,p.data_policy_contract_mode,p.data_policy_variant
       from public.v2_model_provider_routes r

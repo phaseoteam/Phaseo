@@ -372,7 +372,7 @@ try {
     await db.exec(`insert into public.mobile_push_digests (user_id, iso_week, time_zone, week_start, week_cutoff, status, workspace_id, title, body, href, created_at)
       values ('${user(8)}', '2026-W42', 'UTC', '2026-10-12Z', '2026-10-18 18:00Z', 'queued', '${workspace(2)}', 't', 'b', '/', now());
       insert into public.mobile_push_deliveries (digest_id, workspace_id, device_id, user_id, status, not_before, created_at)
-      select g.id, g.workspace_id, d.id, d.user_id, 'pending', now() - interval '1 hour', '2026-10-25 17:00Z'
+      select g.id, g.workspace_id, d.id, d.user_id, 'pending', '2026-10-25 17:00Z', '2026-10-25 17:00Z'
       from public.mobile_push_digests g join public.mobile_push_devices d on d.user_id = g.user_id where g.iso_week = '2026-W42';`);
     assert.deepEqual(await asService(() => rows('select * from public.claim_mobile_push_deliveries(500, $1)', [claimToken()])), []);
     assert.deepEqual(await rows(`select x.status from public.mobile_push_deliveries x join public.mobile_push_digests g on g.id = x.digest_id where g.iso_week = '2026-W42'`), [{ status: 'pending' }]);
@@ -415,6 +415,9 @@ try {
     const others = london.pushes.filter(push => push !== tablet);
     assert.deepEqual((await complete(others))[phone.claimToken], { sent: 2, retrying: 0, failed: 0, invalidated: 0 });
     assert.deepEqual((await complete([tablet], 'retry'))[tablet.claimToken], { sent: 0, retrying: 1, failed: 0, invalidated: 0 });
+    // The retry backoff runs on the real clock; move it onto this test's clock (one minute after 18:00).
+    await db.exec(`update public.mobile_push_deliveries x set not_before = timestamptz '2026-10-25 18:01Z'
+      from public.mobile_push_devices dev where dev.id = x.device_id and dev.installation_id = 'install-u1-tablet' and x.digest_id is not null`);
 
     // Five minutes on: nothing new is written, the retry goes out, and u10 is still held.
     const later = await claimPushes('2026-10-25 18:05Z');

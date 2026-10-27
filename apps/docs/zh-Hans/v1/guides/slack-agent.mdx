@@ -1,0 +1,412 @@
+---
+title: "Slack 智能体"
+description: "把 Phaseo 智能体添加到 Slack，让你的团队向它提问，由你选择的模型回答。"
+icon: "messages-square"
+---
+
+<Note>
+Slack 智能体正在逐步向各个工作区开放。如果你的设置中还没有出现 **设置 → Slack**，说明你的工作区暂时还不能使用它。
+</Note>
+
+Phaseo 智能体在 Slack 中回答问题。在频道中提及它，或者给它发私信，它就会在线程中回复，并在撰写时以流式方式显示回答。它使用你在 Phaseo 中选择的模型，可以搜索网页和读取网页内容，还能告诉已关联的成员你的工作区在 Phaseo 上的支出、积分、API 密钥用量和模型。
+
+所有者和管理员在 **设置 → Slack** 中添加它，选择谁可以使用它，并设置它的限制。你按当月使用过它的人数支付月费，模型 token 则像其他网关请求一样计费。
+
+## 开始之前
+
+- 你需要是 Phaseo 工作区的所有者或管理员，并且有权在你的 Slack 工作区中添加应用。
+- 打开一次 **Chat**，检查工作区的隐私设置。Phaseo 会在首次安装前要求完成这一步。
+- 充值[积分](https://phaseo.app/settings/credits)。每月扣费和智能体的模型 token 都从积分中支付。
+
+## 把智能体添加到 Slack
+
+<Steps>
+<Step title="选择它的工作方式">
+
+打开 **设置 → Slack**。在 **添加到 Slack** 下，选择模型、谁可以使用智能体、它可以在哪里分享用量数据，以及它的限制（见下文“限制”）。如果你的工作区可以使用自动路由，选择 **自动** 时，Phaseo 会为每个问题挑选合适的模型；否则请选择指定模型。这些都可以之后再改。
+
+</Step>
+
+<Step title="在 Slack 中批准">
+
+选择 **添加到 Slack**。Slack 会显示智能体请求的权限。批准后，Slack 会带你回到 **设置 → Slack**，页面上会显示这次安装。
+
+</Step>
+
+<Step title="向它提问">
+
+在 Slack 中，从你的应用里打开智能体并给它发消息。要在频道中使用它，先用 `/invite @Phaseo` 邀请它，然后提及它。
+
+</Step>
+</Steps>
+
+安装会在你的 Phaseo 工作区中创建两样东西：
+
+- **一个供智能体使用的 API 密钥。** 它由 Phaseo 管理，所以不会出现在你的 API 密钥列表中。智能体的模型 token 通过它计费。
+- **该密钥上一个名为 Slack agent 的护栏**，它让 Slack 消息不进入训练（见下文“数据与隐私”）。
+
+一个 Slack 工作区同一时间只能拥有来自一个 Phaseo 工作区的智能体。
+
+## 在 Slack 中使用智能体
+
+- **私信：** 在 Slack 中从你的应用里打开智能体，在它的 **Messages** 标签页中输入。它会回答每一条消息。
+- **频道：** 把智能体邀请到公开或私有频道，然后提及它，例如 `@Phaseo which model should we use to summarise call transcripts?`。它会在线程中回复。在该线程中每次追问都要再次提及它。
+
+回答时：
+
+- 它会读取线程中最新的部分，直到你的消息为止，以便跟上对话。Slack 允许它一次读取 15 条消息，并允许 Phaseo 的应用在每个 Slack 工作区中大约每分钟读取一次。
+  - 它总能看到线程中的第一条消息。
+  - 在私信中，它会读取你和它对话中最新的消息。
+  - 在频道中，它最多读取最近 30 分钟内的最新消息。
+  - 如果写下的消息比它能读取的多，它会被告知缺少了一些消息。
+  - 如果 Slack 当时不让它读取线程，它会根据自己之前在该线程中的回复来回答。
+- 在每个线程中，它一次只回答一条消息。最多还有 5 条消息排队等待；超过后，它会请你等待前面的回答。
+- 用 Slack 的停止按钮可以停止它正在生成的回答。
+- 每个回答的末尾会显示模型以及这次回答的模型 token 费用，例如 `Auto → GPT-6 Luna · $0.0031`。使用 **自动** 时，它选择的模型显示在箭头后面。模型名称链接到它在 Phaseo 上的页面，费用链接到 **日志** 中这次回答的请求，Phaseo 工作区的成员可以打开。
+
+## 按消息选择模型
+
+所有者和管理员可以让成员为单条消息选择模型。在 **设置 → Slack** 的 **模型选择** 下，打开 **允许按消息选择模型**，并从 Phaseo 目录中添加最多 10 个模型。如果你的工作区可以使用自动路由，**包含“自动”** 会把 **自动** 也加入列表。其他消息仍由 **智能体** 中设置的模型回答。
+
+要选择模型，请以 `with <model>:` 开头发送消息，并用名称或 ID 指定一个允许的模型：
+
+```text
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
+```
+
+- 只会与允许的模型匹配，不区分大小写。如果只有一个允许的模型以某段文字开头，输入名称或 ID 的开头就够了，所以列表中只有一个 Claude 模型时，`with claude:` 也能用。ID 也可以省略实验室部分，例如 `with gpt-6-luna:`。
+- 智能体会用该模型回答这条消息，不包括 `with …:` 部分，页脚会显示作答的模型。
+- 如果你指定了不在列表中的目录模型，或者名称能对应多个模型，智能体会私下回复可选的模型，不回答这条消息。这条消息不计为一次回答。以“With …:”开头但没有指定任何模型的消息（例如“With regards to the invoice: …”）会照常回答。
+- 无论哪个模型回答，每个回答的限制（$0.50 和 12 步，见下文“每个回答的限制”）都不变。模型 token 按该模型自己的价格计费。
+- **Slack agent** 护栏仍然适用。如果所选模型没有任何提供商满足它，智能体会说明原因，而不回答。
+
+### 带按钮的问题
+
+当智能体需要你在几个选项中做出选择，或在继续之前批准某件事时，它会在线程中提问，每个选项一个按钮，最多 5 个。它也可以提供 **Other…**，点击后会打开一个小表单，让你用自己的话回答。
+
+- 只有它正在回答的那个人可以回答。其他人点击按钮时，会收到一条只有自己能看到的提示。
+- 你也可以直接在线程中回复（在频道中需要提及智能体）。你的回复会被当作你的回答。
+- 你回答后，按钮会被替换为你的回答，智能体会从停下的地方继续。
+- 一个问题最多等待一小时。超过一小时后，问题会显示已过期，这次回答到此结束。准备好后再问一次即可。
+- 等待期间，Slack 的停止按钮同样可用。
+- 等待期间，线程中其他人的消息会排队等待，并会私下告知他们智能体正在等谁回答。
+- 一次回答最多可以问 3 个问题。整个过程算作一次回答，每个回答的限制覆盖全部内容，包括每个问题之前和之后。
+
+### Home 标签页
+
+在 Slack 中打开智能体并选择 **Home**，可以查看使用方法、它使用的模型，以及你的 Phaseo 账户是否已连接。如果尚未连接，而连接会有帮助（在 **仅限已关联的账户** 时，或在允许 **用量数据** 的地方），标签页会显示 **Connect your Phaseo account** 按钮。已连接账户的 Phaseo 工作区成员还能看到智能体本月（UTC）在这个 Slack 工作区中给出了多少次回答。标签页只显示设置和数字，从不显示消息。
+
+使用你自己的 Slack 应用时，Home 标签页需要最新的清单：把 `home_tab_enabled` 设为 `true`，并添加机器人事件 `app_home_opened`。
+
+## 谁可以使用
+
+在 **谁可以使用** 中选择：
+
+| 选项 | 谁能得到回答 |
+| --- | --- |
+| **Slack 中的所有人**（默认） | 你的 Slack 工作区中的任何人，在你设置的限制范围内。 |
+| **仅限已关联的账户** | 只有把 Slack 账户关联到这个 Phaseo 工作区成员的人。智能体会给其他人发送一个用于关联的链接。 |
+
+在 **限制** 中，**允许访客**（默认开启）让你的 Slack 工作区中的访客使用智能体，**允许其他公司的人**（默认关闭）让共享 Slack Connect 频道中来自其他组织的人使用它。同一个 Enterprise Grid 组织中其他工作区的人算作你自己的人。智能体从不回答机器人或其他应用。
+
+### 关联 Slack 账户
+
+智能体会私下向尚未关联的人发送 **Connect your Phaseo account** 按钮：
+
+- 使用 **仅限已关联的账户** 时，在对方给它发消息时发送。对方连接之前，它不会回答。
+- 使用 **Slack 中的所有人** 时，在 **用量数据** 允许的地方，当对方询问用量时发送（见下文“询问用量”）。它仍会回答能回答的部分，并且在每个线程中对每个人最多发送一次按钮。如需新的按钮，请在新的线程中提问。
+
+该按钮在 15 分钟内有效。
+
+1. 选择按钮。浏览器中会打开 Phaseo。
+2. 用一个属于安装了智能体的 Phaseo 工作区成员的账户登录。
+3. 选择 **连接账户**。
+
+关联账户后也可以询问用量。
+
+## 询问用量
+
+已关联的成员可以向智能体询问这个 Phaseo 工作区的以下信息（其他人提问时会收到用于关联账户的按钮，见上文“关联 Slack 账户”）：
+
+- 某段时间内的请求和支出，可按天、周或月，以及按模型或提供商查看；
+- 积分余额、为进行中的请求预留的积分，以及本月已花费的积分；
+- 每个 API 密钥的请求和支出；
+- Phaseo 目录中的模型。
+
+日期使用 UTC，每周从星期一开始。在 **用量数据** 中选择智能体可以在哪里回答这些问题：
+
+| 选项 | 已关联的成员可以在哪里提问 |
+| --- | --- |
+| **关闭** | 任何地方都不行。智能体从不分享用量数据。 |
+| **私信**（默认） | 只能在与智能体的私信中。 |
+| **私信和指定频道** | 在私信中，以及在 **频道 ID** 中列出的频道里（最多 100 个）。 |
+
+频道中的每个人都能看到智能体的回答，所以只列出成员可以查看你工作区支出的频道。频道 ID 在 Slack 中该频道详情的底部，例如 `C0123ABCD`。
+
+## 记忆和技能
+
+智能体可以记住你的团队让它记住的内容，并遵循技能：为重复的任务保存的指令。在 Slack 中这样让它做，例如：
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`，之后 `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` 或 `@Phaseo forget the note about deploys`
+
+它会保存三类笔记，每条最多 500 个字符，用它自己的话写：
+
+| 类型 | 用途 |
+| --- | --- |
+| **笔记** | 需要记住的事。智能体会在相关时查找笔记。 |
+| **置顶** | 需要一直记在心上的事。每条消息中，智能体都会看到最多 10 条本对话的置顶和 10 条整个工作区的置顶。 |
+| **待办** | 需要跟进的事，可以标记为完成。 |
+
+笔记属于保存它的频道或私信，除非有人要求它适用于整个工作区。在一个对话中，智能体只会看到该对话的笔记和整个工作区的笔记，绝不会看到其他频道或私信的笔记。整个工作区的笔记对智能体回答的、你所在组织的所有人可用。共享 Slack Connect 频道中其他公司的人只能查看和保存所在对话的笔记，绝不会看到整个工作区的笔记；他们可以使用已保存的技能，但不能保存新技能，因为技能适用于整个工作区。笔记可以保留到某个日期，例如 `remember until Friday that the office is closed`，过了该日期就会被删除。
+
+只有当有人让智能体记住、置顶某件事或把它记为待办，或者遇到决定、截止日期这类长期有用的事实时，它才会保存笔记。它绝不会复制整条消息或整个线程。
+
+### 技能
+
+技能由名称、一行描述和最多 4,000 个字符的指令组成，用于团队重复的任务，例如周报。让智能体保存一个技能：
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+每条消息中，智能体都会看到最近更改的 20 个技能的名称和描述。当请求与某个技能相符，或有人提出要求时（例如 `@Phaseo use the Weekly report skill`），它会加载该技能的指令。只有在有人明确要求时它才会保存技能，也只有在被要求时才会替换同名技能。
+
+### 管理员可以控制什么
+
+- **允许智能体保留笔记**（默认开启，位于 **设置 → Slack** 的 **记忆和技能** 下）可以关闭笔记、置顶和待办。关闭期间，智能体既不保存也不查看任何笔记，有人让它记住某件事时，它会说明管理员已关闭记忆。技能照常可用。已保存的笔记会保留，所有者和管理员仍可以查看和删除；重新开启后，智能体会再次使用它们。
+- 每个 Slack 工作区最多保留 500 条笔记和 100 个技能。记忆已满时智能体会告知；删除一些即可腾出空间。
+- 所有者和管理员可以在 **设置 → Slack** 的 **记忆和技能** 下看到智能体保存的全部内容。他们可以按类型筛选笔记、删除任意笔记或技能，以及编辑技能的名称、描述和指令。工作区活动日志会记录这些更改，但不包含文本。
+- 卸载智能体会删除它的全部笔记和技能。再次添加后，它会从空的记忆开始。
+
+## 限制
+
+所有者和管理员在 **设置 → Slack** 中设置以下项目：
+
+| 设置 | 作用 | 默认值 |
+| --- | --- | --- |
+| **套餐** | 智能体每月服务的人数：最多 3、10、25、50 或 100 人，或者你选择的 100 以上的人数。 | 最多 3 人 |
+| **当新加入的人会超出套餐时** | **拒绝** 会告诉新来的人套餐已满。**自动升级套餐** 让套餐随着使用智能体的人数增长，最多到 **每月人数上限**。 | **拒绝** |
+| **每月人数上限** | 每月人数的硬性上限，与套餐无关。不能低于套餐人数。 | 无上限 |
+| **每月支出上限** | 智能体每月扣费的最高金额。如果下一个回答会超过它，智能体会停止回答，直到下个月。它至少要覆盖套餐的价格。 | 安装时设置 |
+| **每人每小时回答数** | 防止一个人用完整个月的额度。 | 60 |
+| **每月模型支出上限** | 限制智能体的 API 密钥每月在模型 token 上的花费。 | 无上限 |
+| **允许访客** | 你的 Slack 工作区中的访客可以使用智能体。 | 开启 |
+| **允许其他公司的人** | 共享 Slack Connect 频道中来自其他组织的人可以使用智能体。 | 关闭 |
+
+**智能体** 部分用于设置模型和 **指令**：智能体在每个回答中都会遵循的额外说明，例如语气或重点，最多 8,000 个字符。
+
+### 每个回答的限制
+
+每个回答在 12 步或 $0.50 的模型支出时停止，以先到者为准。一步是一次模型调用及其运行的工具，例如一次网页搜索。如果某个限制让回答停止，智能体会说明，你可以让它继续。这些限制对所有工作区都一样。
+
+## 价格
+
+你按当月（UTC）至少得到一次回答的人数付费。无论得到多少回答，每人每月只算一次；没有人使用智能体的月份不收费。
+
+| 当月使用过智能体的人数 | 每月价格 |
+| --- | --- |
+| 1 到 3 | $0.99 |
+| 4 到 10 | $2.99 |
+| 11 到 25 | $4.99 |
+| 26 到 50 | $7.99 |
+| 51 到 100 | $14.99 |
+| 101 到 1,000 | 从 $15 均匀上升到 $59，按整美元计。例如 200 人为 $20，500 人为 $35。 |
+| 超过 1,000 | $59，或每人 $0.045（按整美元计），取较高者（约从 1,300 人起按人计）。例如 2,000 人为 $90。 |
+
+每人每月包含 300 个回答，在整个工作区内共享。超出部分每 1,000 个回答收费 $0.25。
+
+例如，如果 8 个人在一个月内得到 3,000 个回答，价格是最多 10 人的 $2.99。他们包含 2,400 个回答，所以另外 600 个回答收费 $0.15，当月扣费为 $3.14。
+
+模型 token 不包含在这个价格中。它们会在智能体回答时，通过智能体的 API 密钥按普通网关请求、以各模型的价格计费。用 **每月模型支出上限** 来限制它们。
+
+### 如何扣费
+
+- 当月费用会在月末后的最初几个小时内从你的积分中扣除，并且绝不会超过 **每月支出上限**。
+- **设置 → Slack** 中的 **本月** 显示到目前为止的人数、回答数和预计费用。每笔扣费都会出现在 **历史扣费** 中，并以 **Slack 智能体** 显示在你的账单交易记录中。
+- 如果你的积分不足以支付，扣费会等待积分，智能体的状态会变为 **待付款**。在扣费完成前，它会停止回答。Phaseo 每小时重试一次，所以充值积分后大约一小时内就会恢复回答。金额在第一次尝试时确定。
+
+## 发给所有者和管理员的邮件
+
+当智能体因为只有所有者或管理员才能解决的原因拒绝某人时，Phaseo 会给工作区的每位所有者和管理员发送邮件：
+
+| 原因 | 邮件主题 | 怎么做 |
+| --- | --- | --- |
+| 套餐已满 | Slack agent: someone new was turned away | 选择更大的套餐，或选择 **自动升级套餐**。 |
+| 达到 **每月人数上限** | Slack agent: people limit reached | 提高或取消 **每月人数上限**。 |
+| 达到 **每月支出上限** | Slack agent: monthly spending cap reached | 提高上限，或等到下个月。 |
+| 有一笔扣费未支付 | Slack agent: paused until the charge is paid | 充值积分。 |
+
+每封邮件对每个原因每月最多发送一次。邮件不会提到任何 Slack 用户，也不会引用任何消息。
+
+对访客、其他公司的人以及因每小时上限而产生的拒绝不会发送邮件。工作区活动日志每月会记录因套餐已满、**每月人数上限** 和 **每月支出上限** 产生的第一次拒绝；对于访客、其他公司的人和每小时上限，则记录每个人的第一次。智能体在 Slack 中的回复从不会说已经通知了管理员。
+
+## 数据与隐私
+
+Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档这些数据，所以智能体是这样设置的：
+
+- **Phaseo 的日志中没有消息内容。** 无论你的工作区如何设置，智能体的 API 密钥都从不存储请求或响应的内容，无论是在日志、缓存还是遥测中。它的请求仍会以不含内容的形式出现在你的用量和日志中，并带有[请求标签](./request-labels.mdx) `app=slack-agent`、`slack_team` 和 `slack_channel`，以及[应用标题](./app-attribution.mdx) `Phaseo Slack agent`。
+- **不使用会用提示词训练的提供商。** **Slack agent** [护栏](../cookbook/guardrails-for-api-keys.mdx)会关闭在付费和免费模型上的训练以及提示词发布，因此绝不会使用会用提示词训练的提供商。保留日志但不用于训练的提供商可以回答，并可能按其自身政策在这些日志中保留消息内容；Phaseo 自身的日志、缓存和遥测仍不保存任何消息内容。
+- **短暂的工作记忆。** 对于每个线程，智能体会保留它最近的回复、关于所用工具的简短记录、正在排队的消息、线程中最近消息的 ID（不含文本，用于判断从哪里开始读取），它向谁发送过连接按钮，以及它提出的问题和对应的回答。它们会在线程最后一次活动的 7 天后删除。
+- **可以查看和删除的记忆。** 智能体会保留有人让它保存的笔记、置顶、待办和技能，用它自己的话写，绝不是消息的副本，并附上提出要求的人的 Slack ID。它们会一直保留，直到有人删除、超过保留日期，或你卸载智能体。所有者和管理员可以在 **设置 → Slack** 中查看和删除它们，也可以在那里关闭笔记（见上文“记忆和技能”）。 其他公司的人永远看不到整个工作区的笔记。
+- **不归档任何内容。** Phaseo 不会归档来自 Slack 的任何内容。智能体自己的日志只保留 Slack ID 和状态。
+- **加密的密钥。** 机器人 token 和你的 Slack 应用的密钥都会加密存储，并且不会再次显示。
+
+卸载会删除智能体的 API 密钥、笔记和已保存的技能，并移除它的护栏。
+
+## 使用你自己的 Slack 应用
+
+默认情况下，智能体会安装 Phaseo 的 Slack 应用。要使用你公司自己的 Slack 应用，例如使用你自己的名称和图标，请用 Phaseo 的清单创建一个。
+
+<Steps>
+<Step title="用清单创建应用">
+
+在 Slack 的应用设置（[api.slack.com/apps](https://api.slack.com/apps)）中，选择 **Create New App**，然后选择 **From a manifest**。选择你的 Slack 工作区，并粘贴下面的清单。你可以修改 `name`、`description`、`long_description` 和 `display_name`；其他内容保持不变。Slack 可能会提示请求 URL 尚未验证，这在第 3 步之前是正常的。
+
+</Step>
+
+<Step title="在 Phaseo 中保存应用">
+
+在 Slack 中该应用的 **Basic Information** 页面上，复制它的 **App ID**、**Client ID**、**Client Secret** 和 **Signing Secret**。在 Phaseo 中打开 **设置 → Slack**，在 **高级：使用你自己的 Slack 应用** 下填入这些信息，然后选择 **保存 Slack 应用**。
+
+</Step>
+
+<Step title="把请求 URL 指向你的应用">
+
+在 Slack 中打开该应用的 **App Manifest** 页面。在两个请求 URL 中，把 `YOUR_APP_ID` 替换为应用 ID，例如 `https://slack.phaseo.app/events/A0123ABCDEF`。保存，并在 Slack 要求时验证请求 URL。
+
+</Step>
+
+<Step title="安装应用">
+
+在 **设置 → Slack** 中，在 **Slack 应用** 下选择 **你的 Slack 应用**，然后选择 **添加到 Slack**。
+
+</Step>
+</Steps>
+
+```json manifest.json
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Phaseo",
+    "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
+    "background_color": "#0069a8",
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Phaseo",
+      "always_online": true
+    },
+    "agent_view": {
+      "agent_description": "Answers your team's questions with the model your Phaseo workspace chooses. It can search the web, and linked members can ask about Phaseo spend, credits, API key usage and models."
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://phaseo.app/api/account/settings/slack/oauth/callback"
+    ],
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "channels:history",
+        "groups:history",
+        "users:read"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "agent_session_stopped",
+        "app_uninstalled",
+        "tokens_revoked",
+        "app_home_opened"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+    },
+    "org_deploy_enabled": true,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
+```
+
+| 设置 | 值 |
+| --- | --- |
+| 重定向 URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
+| Event Subscriptions 请求 URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
+| Interactivity 请求 URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| 机器人事件 | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked`、`app_home_opened` |
+
+安装时，Phaseo 会向 Slack 请求的正是以下机器人 token 权限范围，所以应用需要具备全部这些权限范围：
+
+| 权限范围 | 允许的操作 |
+| --- | --- |
+| `app_mentions:read` | 查看提及智能体的消息。 |
+| `assistant:write` | 在 Slack 中作为智能体工作，回答时显示状态和停止按钮。 |
+| `chat:write` | 发布回答并以流式方式显示。 |
+| `im:history` | 读取发给智能体的私信。 |
+| `channels:history`、`groups:history` | 在公开和私有频道中读取提及它的线程。 |
+| `users:read` | 检查某人是访客、机器人还是来自其他组织。 |
+关于你自己的应用，有几条规则：
+
+- 像清单中那样保持 token 轮换关闭。一旦开启，Slack 就无法再关闭它。
+- 清单使用 Slack 的智能体消息体验（`agent_view`），这是 Slack 为新应用提供的唯一体验。
+- 一个 Slack 应用只能连接到一个 Phaseo 工作区，一个 Phaseo 工作区也只能保存一个 Slack 应用。
+- 当智能体通过你的应用安装时，你只能替换应用的密钥。要换成另一个应用，或换回 Phaseo 的应用，请先卸载。
+
+## 暂停或卸载
+
+- 在 **设置 → Slack** 中选择 **暂停回答** 会停止所有回答，直到你选择 **恢复回答**。给智能体发消息的人会收到一条私密提示，说明它已暂停。
+- **卸载** 会立即停止智能体，删除它的 API 密钥、笔记和已保存的技能，移除它的护栏，并从 Slack 中移除应用。如果 Slack 没有确认移除，Phaseo 会告诉你，这时你也应该在 Slack 中移除该应用。如果你把这个护栏也添加给了其他密钥或成员，它会保留。
+- 在 Slack 中移除应用，或撤销它的机器人 token，也会以同样的方式在 Phaseo 中卸载它。
+
+历史扣费会保留在你的账单记录中。在你卸载的那个月使用过智能体的人，仍会在当月结束时计费。你随时可以再次添加智能体。
+
+## 故障排除
+
+当智能体无法回答某人时，它会在 Slack 中私下回复：
+
+| Slack 中的回复 | 原因 | 解决方法 |
+| --- | --- | --- |
+| "The Phaseo agent is paused until this workspace's Phaseo bill is paid." | 之前某个月的扣费正在等待积分（**待付款**）。 | 充值积分。大约一小时内会恢复回答。 |
+| "The Phaseo agent is paused in this Slack workspace." | 管理员选择了 **暂停回答**。 | 选择 **恢复回答**。 |
+| "…has answered as many people this month as this workspace's plan covers…" | 套餐已满，新来的人被拒绝。 | 选择更大的套餐，或选择 **自动升级套餐**。 |
+| "This workspace has reached its Slack agent limit for the month." | 已达到 **每月人数上限**。 | 提高或取消该上限。 |
+| "…has reached this workspace's monthly spending cap…" | 下一个回答会超过 **每月支出上限**。 | 提高上限，或等到下个月。 |
+| "You've reached the limit of … answers an hour." | 已达到 **每人每小时回答数**。 | 稍等，或提高该上限。 |
+| "The Phaseo agent isn't available to guests in this workspace." | **允许访客** 已关闭。 | 如果访客应该能使用智能体，就开启它。 |
+| "The Phaseo agent only answers people in this organization." | **允许其他公司的人** 已关闭。 | 如果这些人应该能使用智能体，就开启它。 |
+| "Connect your Phaseo account to use the Phaseo agent here." | 访问方式为 **仅限已关联的账户**。 | 关联 Slack 账户（见上文“关联 Slack 账户”）。 |
+| "I'm still working through earlier messages in this thread." | 这个线程中已有 5 条消息在排队。 | 等待这些回答。 |
+| "Sorry, I couldn't check your Slack account just now." | Slack 没有响应一次查询。 | 一分钟后再试。 |
+| "The model chosen for this agent isn't available to the Slack agent." | 网关无法用智能体的密钥使用它的模型：在没有自动路由时选择了 **自动**，或者该模型没有符合 **Slack agent** 护栏的提供商。 | 在 **设置 → Slack** 中选择其他模型。 |
+| "…isn't one of the models you can choose here, so I didn't answer." | 消息以 `with …:` 开头，但指定的模型不在 **模型选择** 中，或者名称能对应多个允许的模型。 | 使用回复列表中的模型，或去掉 `with …:`。 |
+| "The model you chose for this message isn't available to the Slack agent." | 原因同上：网关无法用智能体的密钥使用所选模型。 | 去掉 `with …:` 再问，或在 **模型选择** 中换一个模型。 |
+
+如果智能体完全没有回复：
+
+- 在频道中，确认它是该频道的成员，并在每条你希望它回答的消息中提及它。
+- 它不会回答已编辑的消息、机器人或其他应用。
+- 如果使用你自己的 Slack 应用，请检查两个请求 URL 是否都以你的应用 ID 结尾、Slack 是否显示它们已验证，以及应用是否已保存在 **设置 → Slack** 中。
+
+如果安装没有完成，**设置 → Slack** 会显示原因。最常见的原因是还没有完成隐私设置检查（打开一次 **Chat**），以及该 Slack 工作区已经安装了来自另一个 Phaseo 工作区的智能体（请先在那里卸载）。

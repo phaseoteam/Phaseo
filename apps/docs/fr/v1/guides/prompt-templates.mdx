@@ -1,0 +1,307 @@
+---
+title: "Modèles de prompt"
+description: "Conservez les prompts dans un préréglage et n’envoyez que les valeurs qui changent à chaque requête."
+icon: "braces"
+---
+
+Un modèle de prompt est une liste de messages contenant des `{{variables}}`, enregistrée dans un [préréglage](./presets.mdx). Votre application envoie la référence du préréglage et les valeurs des variables. Phaseo vérifie les valeurs, complète les messages et envoie la requête au modèle du préréglage.
+
+Le texte du prompt reste ainsi en dehors du code applicatif. Vous pouvez modifier le prompt dans le tableau de bord sans redéploiement, et tous les appelants utilisent la même formulation, les mêmes outils et le même format de réponse.
+
+Les modèles de prompt fonctionnent avec `POST /v1/chat/completions`, `POST /v1/responses` et `POST /v1/messages`.
+
+## Démarrage rapide
+
+<Steps>
+<Step title="Rédiger le modèle">
+
+Ouvrez **Paramètres -> Préréglages**, créez ou ouvrez un préréglage, choisissez son modèle et ouvrez l’onglet **Modèle de prompt**. Ajoutez des messages et écrivez les variables entre doubles accolades :
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+L’éditeur liste chaque variable qu’il détecte. Définissez son type, si elle est obligatoire, une valeur par défaut et une description. Remplissez le panneau **Essayer** pour voir les messages exacts que le gateway enverra, puis enregistrez.
+
+Une fois le préréglage enregistré, **Exécuter le préréglage enregistré** envoie une vraie requête avec vos valeurs de test et affiche la réponse, le modèle et le nombre de tokens. Cette requête consomme les crédits de votre espace de travail. Le même panneau fournit le code cURL, TypeScript et Python de la requête, complété avec vos valeurs de test.
+
+</Step>
+
+<Step title="Envoyer les variables">
+
+Indiquez le préréglage dans `prompt.id` et placez les valeurs dans `prompt.variables`. Omettez `model`, ou donnez-lui la même référence.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Vérifier la requête">
+
+Ouvrez **Gateway -> Journaux** pour voir la requête, le modèle qui l’a traitée et son coût. Les métadonnées de la requête enregistrent le préréglage, les noms des variables et le nombre de messages générés, mais pas les valeurs des variables.
+
+</Step>
+</Steps>
+
+## Utiliser les modèles depuis chaque endpoint
+
+Le même objet `prompt` fonctionne sur les trois endpoints. Les messages système et développeur du modèle deviennent les instructions système de l’endpoint, et ses autres messages sont placés avant toute conversation envoyée par votre requête.
+
+| Endpoint | Les messages système du modèle vont dans | La conversation du modèle est placée avant |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (conservés comme messages système) | vos `messages` |
+| `/v1/responses` | `instructions` | votre `input` |
+| `/v1/messages` | `system` | vos `messages` |
+
+Vous pouvez envoyer une conversation avec le modèle. Par exemple, une requête de chat peut ajouter les tours de suivi de l’utilisateur après les messages du modèle :
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## Syntaxe des modèles
+
+Les modèles utilisent un petit sous-ensemble de Mustache, sans logique. Aucun élément d’un modèle n’est jamais exécuté comme du code.
+
+| Syntaxe | Effet |
+| --- | --- |
+| `{{name}}` | Insère une valeur. Le texte est inséré tel quel, les nombres et booléens sous forme de texte, et les listes et objets en JSON. Une valeur facultative absente n’insère rien. |
+| `{{customer.name}}` | Insère un champ d’une variable de type objet. |
+| `{{#name}}...{{/name}}` | Génère le bloc une fois lorsque la valeur est définie et différente de `false`, ou une fois pour chaque élément d’une liste. À l’intérieur, `{{.}}` désigne l’élément courant, et ses champs sont accessibles par leur nom. |
+| `{{^name}}...{{/name}}` | Génère le bloc lorsque la valeur est absente, vaut `false`, est un texte vide ou une liste vide. |
+| `{{! note }}` | Un commentaire. Il est supprimé. |
+| `\{{` | Un `{{` littéral. |
+
+Les valeurs sont insérées en texte brut, sans échappement HTML. Une valeur peut modifier le texte d’un message, mais jamais la structure de la requête.
+
+Si un message ne contient plus que des espaces après génération, il est supprimé. Utilisez ce comportement pour rendre un message entier facultatif :
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Pour répéter du texte pour chaque élément d’une liste, ouvrez une section sur la liste et utilisez `{{.}}` pour l’élément courant :
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+Les partiels (`{{> name}}`), les balises non échappées (`{{{name}}}` et `{{& name}}`), les changements de délimiteurs et les lambdas ne sont pas pris en charge ; l’éditeur et l’API refusent les modèles qui les utilisent.
+
+## Variables
+
+Chaque variable a un type. Il suffit de déclarer une variable pour modifier ses valeurs par défaut ; les variables utilisées dans les messages mais non déclarées sont du texte obligatoire.
+
+| Type | Accepte |
+| --- | --- |
+| `string` | Du texte. Définissez `max_length` pour limiter sa longueur. |
+| `number` | Un nombre. |
+| `boolean` | `true` ou `false`. |
+| `enum` | L’une des chaînes listées dans `enum`. |
+| `array` | Une liste. |
+| `object` | Un objet JSON. |
+| `any` | N’importe quelle valeur JSON. |
+| `image` | Une image pour un message utilisateur. Voir [Variables de type image](#variables-de-type-image). |
+
+Chaque variable peut aussi avoir :
+
+- `required` : la requête échoue si la valeur est absente. Une variable obligatoire ne peut pas avoir de valeur par défaut.
+- `default` : utilisée lorsque la requête omet la valeur. Elle doit correspondre au type.
+- `description` : affichée dans l’éditeur et dans les messages d’erreur, jusqu’à 500 caractères.
+
+Un nom utilisé uniquement pour ouvrir des sections, comme `notes` et `examples` ci-dessus, est facultatif et accepte n’importe quelle valeur.
+
+Les requêtes sont vérifiées de façon stricte. Une valeur obligatoire absente, une valeur du mauvais type ou un nom que le modèle ne contient pas renvoie une erreur `400` qui liste tous les problèmes en une fois, afin qu’une faute de frappe ne supprime pas silencieusement une partie d’un prompt.
+
+## Variables de type image
+
+Une variable de type image remplit une partie de contenu entière d’un message utilisateur : c’est donc le modèle qui détermine l’emplacement de l’image. Dans l’éditeur, choisissez **Ajouter une image** dans un message utilisateur. Dans l’API, utilisez une partie `variable` :
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+La requête peut envoyer chaque image sous forme d’URL `https`, d’URL `data:image/...` ou de partie image au format chat completions, Responses ou Messages. Phaseo la convertit au format de l’endpoint appelé. Le modèle sélectionné doit accepter les images en entrée.
+
+## Outils et format de réponse
+
+Un modèle peut inclure `tools`, `tool_choice` et `response_format`, rédigés au format chat completions. Phaseo les convertit pour les endpoints Responses et Messages.
+
+Lorsque les deux définissent le même élément, la requête l’emporte toujours :
+
+- Les outils sont fusionnés par nom de fonction. Si la requête définit un outil portant le même nom, la définition de la requête est utilisée.
+- Le `tool_choice` et le format de réponse de la requête (`response_format`, `text.format` ou `output_config.format`) remplacent ceux du modèle.
+
+Les paramètres de requête comme `temperature` et `max_tokens` fonctionnent normalement. Les valeurs par défaut du préréglage ne complètent que les champs omis par la requête.
+
+## Créer un modèle avec l’API
+
+Les modèles sont stockés dans le champ `config.prompt` du préréglage. Créez ou mettez à jour le préréglage avec une [clé d’API de gestion](../developers/management-api-keys.mdx) disposant de `presets:write` :
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo vérifie le modèle lors de l’enregistrement. Un modèle contenant une erreur de syntaxe, un type inconnu ou une valeur par défaut qui ne correspond pas à son type est refusé avec `400 invalid_prompt_template` et l’emplacement de chaque problème, ici comme dans l’éditeur.
+
+Les modifications enregistrées s’appliquent aux requêtes en deux minutes environ.
+
+## Erreurs
+
+Les problèmes de modèle dans une requête renvoient `400` avec le code `validation_error`. `reason` contient le code du premier problème et `details` les liste tous avec leur chemin :
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Motif | Cause |
+| --- | --- |
+| `template_variable_required` | Une variable obligatoire est absente. |
+| `template_variable_type` | Une valeur ne correspond pas à son type, à sa liste `enum` ou à son `max_length`. |
+| `template_variable_unknown` | La requête a envoyé une variable que le modèle ne contient pas, ou le préréglage n’a pas de modèle. |
+| `template_variables_invalid` | `prompt.variables` n’est pas un objet. |
+| `template_limit_exceeded` | Les variables ou le texte généré dépassent les limites ci-dessous. |
+| `template_rendered_empty` | Le modèle n’a généré aucun message utilisateur ou assistant, et la requête n’en a envoyé aucun. |
+| `template_endpoint_unsupported` | Le préréglage a un modèle et a été appelé depuis un endpoint autre que les trois ci-dessus. |
+| `prompt_model_conflict` | `model` désigne un préréglage ou un modèle différent de `prompt.id`. |
+| `prompt_version_unsupported` | La requête a défini `prompt.version`. |
+| `prompt_model_fallbacks_unsupported` | La requête a défini des modèles de repli dans `models`. Indiquez plutôt les modèles de repli dans le préréglage. |
+
+Un `prompt.id` qui ne désigne aucun préréglage de votre espace de travail renvoie `404`.
+
+## Limites
+
+| Limite | Valeur |
+| --- | --- |
+| Messages par modèle | 64 |
+| Variables par modèle | 64 |
+| Texte du modèle sur l’ensemble des messages | 48 000 caractères |
+| Profondeur d’imbrication des sections | 8 |
+| Répétitions de sections par requête | 1 000 |
+| Texte généré par requête | 1 000 000 caractères |
+| Taille de `prompt.variables` | 256 Ko |
+| Valeurs par `enum` | 100 |
+
+## Garde-fous et journaux
+
+Les [garde-fous](../cookbook/guardrails-for-api-keys.mdx) vérifient les valeurs des variables comme du contenu utilisateur, même lorsque le modèle les place dans un message système. Un garde-fou qui masque une valeur la masque partout où le modèle l’a insérée, et un garde-fou qui bloque une valeur bloque la requête.
+
+Les métadonnées de la requête enregistrent le préréglage, les noms des variables et le nombre de messages générés. Les valeurs elles-mêmes ne sont conservées que là où le corps de la requête l’est, selon les paramètres de journalisation habituels de votre espace de travail.
+
+## Limitations actuelles
+
+- Les requêtes utilisent le modèle dans sa dernière version enregistrée. `prompt.version` ne permet pas encore de figer une version antérieure.
+- Les modèles de repli `models` ne peuvent pas être combinés avec un modèle de prompt. Ajoutez plutôt les modèles de repli au préréglage.
+- Les modèles de prompt s’appliquent uniquement aux requêtes chat completions, Responses et Messages.
+
+## Guides associés
+
+- [Préréglages](./presets.mdx)
+- [Sorties structurées](./structured-outputs.mdx)
+- [Appels d’outils](./tool-calling.mdx)
+- [Multimodalité](./multimodality.mdx)

@@ -5,7 +5,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
-import { ChatCompletionsSchema, ResponsesSchema } from "@core/schemas";
+import { AnthropicMessagesSchema, ChatCompletionsSchema, ResponsesSchema } from "@core/schemas";
+import { decodeAnthropicMessagesRequest } from "@protocols/anthropic-messages/decode";
 import { decodeOpenAIChatRequest } from "@protocols/openai-chat/decode";
 import { decodeOpenAIResponsesRequest } from "@protocols/openai-responses/decode";
 import { providerAcceptsStreamOptions } from "@executors/_shared/text-generate/openai-compat/prompt-cache-policy";
@@ -37,6 +38,10 @@ afterAll(() => teardownTestRuntime());
 
 function chatIR(body: Record<string, any>): IRChatRequest {
 	return decodeOpenAIChatRequest(ChatCompletionsSchema.parse(body) as any);
+}
+
+function messagesIR(body: Record<string, any>): IRChatRequest {
+	return decodeAnthropicMessagesRequest(AnthropicMessagesSchema.parse({ max_tokens: 256, ...body }) as any);
 }
 
 function responsesIR(body: Record<string, any>): IRChatRequest {
@@ -396,6 +401,67 @@ describe("A-F8: Anthropic system and developer messages", () => {
 		}), "claude-opus-5");
 		expect(call.bodyJson.system).toBe("Be brief.");
 		expect(call.bodyJson.messages.map((message: any) => message.role)).toEqual(["user", "assistant", "user"]);
+	});
+
+	// /v1/messages clients send the same message as `role: "system"` in `messages`
+	// (https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages).
+	const messagesConversation = {
+		system: "You are terse.",
+		messages: [
+			{ role: "user", content: "Hi" },
+			{ role: "assistant", content: "Hello." },
+			{ role: "user", content: "Colour of the sky?" },
+			{ role: "system", content: "From now on, answer in one word." },
+		],
+	};
+
+	it("sends a /v1/messages system message in place on models that support it", async () => {
+		const call = await captureAnthropic(messagesIR({ model: "anthropic/claude-opus-5", ...messagesConversation }), "claude-opus-5");
+		expect(call.bodyJson.system).toBe("You are terse.");
+		expect(call.bodyJson.messages.at(-1)).toEqual({ role: "system", content: "From now on, answer in one word." });
+	});
+
+	it("hoists a /v1/messages system message on Microsoft Foundry, which Anthropic does not list for them", async () => {
+		const call = await captureFailedCall((url) => hasHost(url, "api.azure.example"), () => azureExecute(args(
+			messagesIR({ model: "anthropic/claude-opus-5", ...messagesConversation }),
+			{ providerId: "azure", providerModelSlug: "claude-opus-5" },
+		)));
+		expect(call.bodyJson.system).toBe("You are terse.\nFrom now on, answer in one word.");
+		expect(call.bodyJson.messages.map((message: any) => message.role)).toEqual(["user", "assistant", "user"]);
+	});
+
+	it("hoists a /v1/messages system message on Sonnet 5, which does not support them", async () => {
+		const call = await captureAnthropic(messagesIR({ model: "anthropic/claude-sonnet-5", ...messagesConversation }));
+		expect(call.bodyJson.system).toBe("You are terse.\nFrom now on, answer in one word.");
+		expect(call.bodyJson.messages.map((message: any) => message.role)).toEqual(["user", "assistant", "user"]);
+	});
+
+	it("keeps one in place after tool results and after a server tool result", async () => {
+		const afterToolResults = await captureAnthropic(messagesIR({
+			model: "anthropic/claude-opus-5",
+			messages: [
+				{ role: "user", content: "Run the tests" },
+				{ role: "assistant", content: [{ type: "tool_use", id: "toolu_1", name: "run_tests", input: {} }] },
+				{ role: "user", content: [{ type: "tool_result", tool_use_id: "toolu_1", content: "12 passed" }] },
+				{ role: "system", content: "The user asked you to update the changelog too." },
+			],
+			tools: [{ name: "run_tests", input_schema: { type: "object", properties: {} } }],
+		}), "claude-opus-5");
+		expect(afterToolResults.bodyJson.messages.map((message: any) => message.role)).toEqual(["user", "assistant", "user", "system"]);
+		expect(afterToolResults.bodyJson.system).toBeUndefined();
+
+		const afterServerToolResult = await captureAnthropic(messagesIR({
+			model: "anthropic/claude-opus-5",
+			messages: [
+				{ role: "user", content: "Search for the release date" },
+				{ role: "assistant", content: [
+					{ type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: { query: "release date" } },
+					{ type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: [] },
+				] },
+				{ role: "system", content: "Cite the source." },
+			],
+		}), "claude-opus-5");
+		expect(afterServerToolResult.bodyJson.messages.at(-1)).toEqual({ role: "system", content: "Cite the source." });
 	});
 });
 

@@ -5,7 +5,7 @@ export interface DecisionBoxAnswer {
     right: number;
     top: number;
   };
-  confidence: number;
+  confidence: number | null;
   name: string | null;
   type: "box";
 }

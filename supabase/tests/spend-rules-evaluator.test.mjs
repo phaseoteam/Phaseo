@@ -439,6 +439,33 @@ try {
   }
   assert.equal(periodicTotal, withRules, 'each workspace with rules is evaluated once an hour');
 
+  // A slot with more workspaces than the limit rotates hourly instead of always taking the first ones.
+  await db.exec(`
+    create table spend_rule_evaluation_log (workspace_id uuid);
+    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz) rename to evaluate_workspace_spend_rules_logged;
+    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz) returns jsonb language plpgsql as $$
+    begin
+      insert into public.spend_rule_evaluation_log values (p_workspace_id);
+      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now);
+    end $$;
+  `);
+  const slotStart = Date.parse('2026-10-20T15:10:00Z');
+  const inSlot = (await sweep(new Date(slotStart).toISOString(), 1000)).periodic;
+  assert.ok(inSlot >= 3, `the slot has enough workspaces to rotate (${inSlot})`);
+  const limit = Math.ceil(inSlot / 3);
+  await db.exec('truncate spend_rule_evaluation_log');
+  for (let hour = 1; hour <= Math.ceil(inSlot / limit); hour += 1) {
+    const result = await sweep(new Date(slotStart + hour * 3600e3).toISOString(), limit);
+    assert.equal(result.periodic, limit);
+    assert.equal(result.rollover, 0);
+  }
+  assert.equal((await one('select count(distinct workspace_id)::int n from spend_rule_evaluation_log')).n, inSlot, 'every workspace in an over-full slot is reached within ceil(n / limit) hours');
+  await db.exec(`
+    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz);
+    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz) rename to evaluate_workspace_spend_rules;
+    drop table spend_rule_evaluation_log;
+  `);
+
   // One workspace with 50 rules over every scope.
   const big = (await one(`select id from public.workspaces where name = 'Perf 1'`)).id;
   const bigKey = (await one(`select id from public.keys where workspace_id = $1 order by name limit 1`, [big])).id;

@@ -15,12 +15,14 @@ function isProbability(value: unknown): value is number {
 }
 
 function validAnswer(answer: unknown, question: IRDecisionQuestion): boolean {
+	// A box answer's confidence is null when the model gives none (https://docs.typesafe.ai/api).
+	const nullBoxConfidence = question.type === "box" && isRecord(answer) && answer.confidence === null;
 	if (!isRecord(answer) || answer.type !== question.type ||
-		(answer.confidence !== undefined && !isProbability(answer.confidence))) return false;
+		(answer.confidence !== undefined && !nullBoxConfidence && !isProbability(answer.confidence))) return false;
 	if (question.type === "noul") return isProbability(answer.noul);
 	if (question.type === "box") {
 		const box = answer.box;
-		return isProbability(answer.confidence) && isRecord(box) &&
+		return (nullBoxConfidence || isProbability(answer.confidence)) && isRecord(box) &&
 			isProbability(box.top) && isProbability(box.bottom) && isProbability(box.left) && isProbability(box.right) &&
 			box.top < box.bottom && box.left < box.right;
 	}

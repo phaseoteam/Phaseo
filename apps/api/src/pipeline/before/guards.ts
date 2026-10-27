@@ -24,9 +24,11 @@ import { readAttributionHeaders } from "../after/attribution";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
+import { hasConfiguredKeyLimits } from "./context.shared";
+import { shadowSpendLimitOnce } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -452,6 +454,12 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
+    /**
+     * Compare the key-limit decision with the spend-limit coordinator (shadow mode). Only callers
+     * whose successes reach handleSuccessAudit, which records their spend, opt in; batch and
+     * realtime do not. OAuth requests carry a client ID in apiKeyId and must not opt in.
+     */
+    shadowSpendLimit?: boolean;
     testingMode?: boolean;
     internalOnly?: boolean;
     disableCache?: boolean;
@@ -478,6 +486,11 @@ export async function guardContext(args: {
                     workspace_id: args.workspaceId,
                 }),
             };
+        }
+
+        if (args.shadowSpendLimit && !args.internal && (!context.keyLimit.ok || hasConfiguredKeyLimits(context.keyLimit))) {
+            // Shadow mode only: compares the spend-limit coordinator with this check, in the background.
+            shadowSpendLimitOnce({ workspaceId: args.workspaceId, keyId: args.apiKeyId, requestId: args.requestId }, context.keyLimit);
         }
 
         if (!args.internal && !context.keyLimit.ok) {
@@ -586,6 +599,23 @@ export async function guardContext(args: {
             },
         };
     } catch (e) {
+        // A missing or unusable preset is the caller's mistake (often a typo in
+        // the @reference), not a gateway failure.
+        const message = e instanceof Error ? e.message : String(e);
+        if (args.model.startsWith("@") && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
+            const missing = message.includes("preset_not_found");
+            return {
+                ok: false,
+                response: err(missing ? "not_found" : "validation_error", {
+                    reason: missing ? "preset_not_found" : "preset_no_model",
+                    description: missing
+                        ? `Preset "${args.model}" was not found, or this key cannot use it`
+                        : `Preset "${args.model}" has no model configured`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
         console.error("[guardContext] gateway_context_failed", e);
         return {
             ok: false,
@@ -646,10 +676,11 @@ export function makeMeta(input: {
             128,
         );
     const trace = normalizeTraceObject(rawBody?.trace);
+    const requestMetadata = readRequestMetadata(rawBody?.metadata);
     const otelTraceContext = parseW3cTraceContext(
         input.req.headers.get("traceparent"),
         input.req.headers.get("tracestate"),
-    );
+    ) ?? metadataTraceContext(requestMetadata);
     const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
@@ -715,6 +746,7 @@ export function makeMeta(input: {
         requestUserId,
         sessionId,
         trace,
+        requestMetadata,
         otelTraceContext,
         testId,
         requestMethod: input.req.method ?? null,

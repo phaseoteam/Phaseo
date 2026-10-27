@@ -27,6 +27,9 @@ publicHoistPattern:
 virtualStoreDirMaxLength: 32
 
 allowBuilds:
+  # Its postinstall downloads a native binary. The web build's source-map
+  # upload fetches it on first use, so installs that never upload skip it.
+  '@posthog/cli': false
   '@scarf/scarf': false
   core-js: set this to true or false
   electron: true

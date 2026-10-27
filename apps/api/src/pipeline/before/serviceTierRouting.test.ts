@@ -5,6 +5,7 @@ import { applyServiceTierRouting } from "./serviceTierRouting";
 const queryState = vi.hoisted(() => ({
     providerRows: [] as any[],
     capabilityRows: [] as any[],
+    providerError: null as { message: string } | null,
 }));
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
@@ -12,7 +13,7 @@ const loadPriceCardMock = vi.hoisted(() => vi.fn());
 vi.mock("@/runtime/env", () => ({
     getSupabaseAdmin: () => ({
         from: (table: string) => {
-            if (table === "v2_model_provider_routes" || table === "v2_route_capabilities") {
+            if (table === "v2_model_provider_routes" || table === "v2_effective_route_capabilities") {
                 const rows = table === "v2_model_provider_routes"
                     ? queryState.providerRows.map((row) => ({
                         ...row,
@@ -39,7 +40,7 @@ vi.mock("@/runtime/env", () => ({
                         );
                         return builder;
                     },
-                    then: (resolve: (value: unknown) => unknown) => resolve({ data: filteredRows, error: null }),
+                    then: (resolve: (value: unknown) => unknown) => resolve({ data: filteredRows, error: table === "v2_model_provider_routes" ? queryState.providerError : null }),
                 };
                 return builder;
             }
@@ -104,6 +105,30 @@ function makeCandidate(args: {
 }
 
 describe("applyServiceTierRouting", () => {
+    // Sail rejects flex on synchronous Responses, Chat and Messages
+    // (https://docs.sailresearch.com/completion-windows).
+    it("drops Sail Research for flex requests but keeps it for standard", async () => {
+        const plans: Array<"standard" | "flex"> = ["standard", "flex", "standard", "flex"];
+        const sail = makeCandidate({
+            providerId: "sail-research",
+            apiModelId: "z-ai/glm-5.2",
+            providerModelSlug: "zai-org/GLM-5.2-FP8",
+            pricingCard: makeCard({ provider: "sail-research", model: "z-ai/glm-5.2", plans }),
+        });
+        const other = makeCandidate({
+            providerId: "deepinfra",
+            apiModelId: "z-ai/glm-5.2",
+            pricingCard: makeCard({ provider: "deepinfra", model: "z-ai/glm-5.2", plans }),
+        });
+
+        const flex = await applyServiceTierRouting({ candidates: [sail, other], body: { service_tier: "flex" }, capability: "text.generate" });
+        expect(flex.candidates.map((candidate) => candidate.providerId)).toEqual(["deepinfra"]);
+        expect(flex.diagnostics.droppedProviders).toMatchObject([{ providerId: "sail-research", reason: "service_tier_flex_unsupported" }]);
+
+        const standard = await applyServiceTierRouting({ candidates: [sail, other], body: { service_tier: "standard" }, capability: "text.generate" });
+        expect(standard.candidates.map((candidate) => candidate.providerId)).toEqual(["sail-research", "deepinfra"]);
+    });
+
     it("selects a declared catalog tier without sibling guessing", async () => {
         const candidates = ["standard", "fast", "flex"].map((name) => makeCandidate({
             providerId: "catalog", apiModelId: "acme/model", providerModelSlug: `upstream-${name}`,
@@ -480,6 +505,66 @@ describe("applyServiceTierRouting", () => {
                 reason: "priority_fast_sibling",
             },
         ]);
+    });
+
+    it.each(["priority", "fast"])("routes K3.1 Pro %s to Highspeed without changing the public model or price card", async (tier) => {
+        const model = "moonshotai/kimi-k3.1-pro";
+        queryState.providerRows = [{
+            provider_slug: "moonshotai", model_slug: model,
+            provider_model_id: "moonshotai:moonshotai/kimi-k3.1-pro-highspeed",
+            provider_model_slug: "kimi-k3.1-pro-highspeed", routing_enabled: false,
+            effective_from: null, effective_to: null,
+        }];
+        queryState.capabilityRows = [{
+            provider_model_id: "moonshotai:moonshotai/kimi-k3.1-pro-highspeed",
+            params: { "reasoning.effort": {} }, max_input_tokens: 1_048_576,
+            max_output_tokens: 1_048_576, status: "active", updated_at: null, created_at: null,
+        }];
+        const card = makeCard({ provider: "moonshotai", model, plans: ["standard", "priority"] });
+        const candidate = makeCandidate({ providerId: "moonshotai", apiModelId: model, providerModelSlug: "kimi-k3.1-pro", pricingCard: card });
+        const result = await applyServiceTierRouting({ candidates: [candidate], body: { service_tier: tier }, capability: "text.generate" });
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({ apiModelId: model, providerModelSlug: "kimi-k3.1-pro-highspeed", pricingCard: card });
+        expect(result.diagnostics.remappedProviders).toHaveLength(1);
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        for (const body of [{}, { service_tier: "standard" }]) {
+            const standard = await applyServiceTierRouting({ candidates: [candidate], body, capability: "text.generate" });
+            expect(standard.candidates[0].providerModelSlug).toBe("kimi-k3.1-pro");
+            expect(standard.diagnostics.remappedProviders).toHaveLength(0);
+        }
+    });
+
+    it.each(["missing", "expired", "no_capability", "query_error"])("rejects K3.1 Pro Priority and Fast when Highspeed is %s", async (failure) => {
+        const model = "moonshotai/kimi-k3.1-pro";
+        if (failure !== "missing") queryState.providerRows = [{
+            model_slug: model, provider_model_id: "k31-highspeed",
+            provider_model_slug: "kimi-k3.1-pro-highspeed", routing_enabled: false,
+            effective_from: null, effective_to: failure === "expired" ? "2020-01-01T00:00:00Z" : null,
+        }];
+        if (failure === "query_error") queryState.providerError = { message: "Catalogue unavailable" };
+        if (failure !== "no_capability") queryState.capabilityRows = [{
+            provider_model_id: "k31-highspeed", params: {}, status: "active",
+            max_input_tokens: 1_048_576, max_output_tokens: 1_048_576,
+        }];
+        const candidate = makeCandidate({ providerId: "moonshotai", apiModelId: model, providerModelSlug: "kimi-k3.1-pro",
+            pricingCard: makeCard({ provider: "moonshotai", model, plans: ["standard", "priority"] }) });
+        try {
+            for (const tier of ["priority", "fast"]) {
+                const result = await applyServiceTierRouting({ candidates: [candidate], body: { service_tier: tier }, capability: "text.generate" });
+                expect(result.candidates).toEqual([]);
+                expect(result.diagnostics.droppedProviders).toMatchObject([{ providerModelSlug: "kimi-k3.1-pro", reason: "service_tier_priority_unsupported" }]);
+            }
+        } finally {
+            queryState.providerError = null;
+        }
+    });
+
+    it("preserves other providers' native Priority support for K3.1 Pro", async () => {
+        const model = "moonshotai/kimi-k3.1-pro";
+        const candidate = makeCandidate({ providerId: "openrouter", apiModelId: model, providerModelSlug: model,
+            pricingCard: makeCard({ provider: "openrouter", model, plans: ["standard", "priority"] }) });
+        const result = await applyServiceTierRouting({ candidates: [candidate], body: { service_tier: "priority" }, capability: "text.generate" });
+        expect(result.candidates).toEqual([candidate]);
     });
 
     it("remaps Xiaomi MiMo V2.6 Pro fast requests to the hidden UltraSpeed slug", async () => {

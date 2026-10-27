@@ -67,6 +67,7 @@ Abra a solicitação em **Gateway -> Uso** para confirmar quais padrões foram a
 ## O que uma predefinição pode incluir
 
 - Um prompt de sistema anexado ao início de cada solicitação.
+- Um [template de prompt](./prompt-templates.mdx): mensagens com `{{variables}}` que cada solicitação preenche.
 - Modelos ou famílias de modelos permitidos.
 - Listas de provedores permitidos ou ignorados para preferências de roteamento.
 - Parâmetros padrão, como temperature, top_p, max_tokens e configurações semelhantes.
@@ -74,7 +75,7 @@ Abra a solicitação em **Gateway -> Uso** para confirmar quais padrões foram a
 
 Os nomes das predefinições começam com `@` para facilitar a identificação.
 
-Invoque uma predefinição somente pelo campo `model` da solicitação. A Phaseo não oferece um campo `preset` separado.
+Invoque uma predefinição pelo campo `model` da solicitação ou, quando a predefinição tiver um [template de prompt](./prompt-templates.mdx), por `prompt.id`. A Phaseo não oferece um campo `preset` separado.
 
 - Predefinições privadas e do espaço de trabalho usam `@{slug}` e são resolvidas no espaço de trabalho da chave de API.
 - Predefinições públicas usam `@{username}/{slug}` e podem ser resolvidas em qualquer espaço de trabalho. Por exemplo, `@octavia/release-summary`.
@@ -113,6 +114,7 @@ Assim, as predefinições são a principal interface pública para padrões de s
 O fluxo de predefinições do painel é intencionalmente limitado a um subconjunto estável e explícito de ajustes de solicitação:
 
 - injeção de prompt de sistema
+- templates de prompt com variáveis tipadas
 - listas de modelos permitidos
 - restrições de roteamento com listas de provedores permitidos ou ignorados
 - padrões de decodificação e geração
@@ -133,6 +135,7 @@ Crie e gerencie predefinições em **Painel -> Configurações -> Predefiniçõe
 
 ## Guias relacionados
 
+- [Templates de prompt](./prompt-templates.mdx)
 - [Colete feedback sobre predefinições](./preset-feedback.mdx)
 - [Roteamento e alternativas](./routing-and-fallbacks.mdx)
 - [Parâmetros de inferência](./inference-parameters.mdx)

@@ -68,6 +68,8 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public java.util.List<Object> plugins;
+		public Object prompt;
+		public String prompt_cache_key;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -95,6 +97,17 @@ public final class Models {
 		public String stop_sequence;
 		public String type;
 		public Object usage;
+	}
+
+	public static class AnthropicSystemMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class AnthropicSystemTextBlock {
+		public Object cache_control;
+		public String text;
+		public Object type;
 	}
 
 	public static class AnthropicTool {
@@ -135,6 +148,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;
@@ -155,6 +169,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public java.util.List<String> storage_locations;
 		public String workspace_id;
 	}
 
@@ -202,6 +217,9 @@ public final class Models {
 	public static class ApiKeyScopeValue {
 	}
 
+	public static class ApiKeyStorageLocations {
+	}
+
 	public static class ApiKeyUpdateRequest {
 		public String department_id;
 		public Boolean disabled;
@@ -213,6 +231,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public Object storage_locations;
 	}
 
 	public static class ApiKeyUsageBucket {
@@ -249,6 +268,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;
@@ -577,6 +597,7 @@ public final class Models {
 		public java.util.List<Object> plugins;
 		public Object prediction;
 		public Double presence_penalty;
+		public Object prompt;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
 		public Object prompt_cache_retention;
@@ -621,6 +642,7 @@ public final class Models {
 	}
 
 	public static class ChatMessage {
+		public Object audio;
 		public java.util.List<Object> audios;
 		public Object content;
 		public java.util.List<Object> images;
@@ -642,6 +664,20 @@ public final class Models {
 		public String summary;
 		public String text;
 		public Object type;
+	}
+
+	public static class ChatResponseMessage {
+		public Object audio;
+		public java.util.List<Object> audios;
+		public Object content;
+		public java.util.List<Object> images;
+		public String name;
+		public String reasoning;
+		public String reasoning_content;
+		public java.util.List<Object> reasoning_details;
+		public Object role;
+		public String tool_call_id;
+		public java.util.List<Object> tool_calls;
 	}
 
 	public static class Classifier {
@@ -988,6 +1024,48 @@ public final class Models {
 
 	public static class DeletedResponse {
 		public Object deleted;
+	}
+
+	public static class DepartmentBudget {
+		public String created_at;
+		public String created_by;
+		public String department_id;
+		public String department_name;
+		public Boolean exceeded;
+		public String id;
+		public Object interval;
+		public Double limit;
+		public Integer limit_nanos;
+		public Double remaining;
+		public Integer remaining_nanos;
+		public String reset_at;
+		public String updated_at;
+		public Double usage;
+		public Integer usage_nanos;
+		public String window_start;
+		public String workspace_id;
+	}
+
+	public static class DepartmentBudgetInput {
+		public String department_id;
+		public Object interval;
+		public Double limit;
+	}
+
+	public static class DepartmentBudgetInterval {
+	}
+
+	public static class DepartmentBudgetListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class DepartmentBudgetResponse {
+		public Object data;
+	}
+
+	public static class DepartmentBudgetUpdateInput {
+		public Object interval;
+		public Double limit;
 	}
 
 	public static class DynamicRoute {
@@ -2592,6 +2670,7 @@ public final class Models {
 	}
 
 	public static class PresetConfig {
+		public Object prompt;
 	}
 
 	public static class PresetCreateRequest {
@@ -2615,6 +2694,29 @@ public final class Models {
 	public static class PresetListResponse {
 		public java.util.List<Object> data;
 		public Integer total_count;
+	}
+
+	public static class PresetPromptTemplate {
+		public java.util.List<Object> messages;
+		public Object response_format;
+		public Object syntax;
+		public Object tool_choice;
+		public java.util.List<Object> tools;
+		public Object variables;
+	}
+
+	public static class PresetPromptTemplateMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class PresetPromptVariable {
+		public Object default_;
+		public String description;
+		public java.util.List<String> enum_;
+		public Integer max_length;
+		public Boolean required;
+		public Object type;
 	}
 
 	public static class PresetPublisher {
@@ -2821,6 +2923,11 @@ public final class Models {
 	public static class PromptCacheOptions {
 		public Object mode;
 		public String ttl;
+	}
+
+	public static class PromptTemplateReference {
+		public String id;
+		public Object variables;
 	}
 
 	public static class Provider {
@@ -3161,6 +3268,7 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public java.util.List<Object> plugins;
 		public String previous_response_id;
+		public Object prompt;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
 		public Object prompt_cache_retention;
@@ -4190,8 +4298,11 @@ public final class Models {
 
 	public static class WorkspaceNotificationDestination {
 		public String created_at;
+		public Boolean has_signing_secret;
 		public String id;
 		public String name;
+		public String signing_secret;
+		public String signing_secret_rotated_at;
 		public Object status;
 		public String target_preview;
 		public Object type;
@@ -4242,6 +4353,7 @@ public final class Models {
 
 	public static class WorkspaceNotificationRouteMap {
 		public java.util.List<String> auto_top_up_failed;
+		public java.util.List<String> broadcast_destination_failing;
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
 		public java.util.List<String> model_substitution;

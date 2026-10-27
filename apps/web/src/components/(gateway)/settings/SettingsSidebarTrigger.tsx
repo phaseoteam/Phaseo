@@ -50,6 +50,8 @@ export default function SettingsSidebarTrigger({
 	showWebhooks = true,
 	showAutoRouting = false,
 	showClassifiers = false,
+	showWorkloadIdentity = false,
+	showSlackAgent = false,
 	providerMode = false,
 }: {
 	copy: SettingsNavigationCopy;
@@ -57,6 +59,8 @@ export default function SettingsSidebarTrigger({
 	showWebhooks?: boolean;
 	showAutoRouting?: boolean;
 	showClassifiers?: boolean;
+	showWorkloadIdentity?: boolean;
+	showSlackAgent?: boolean;
 	providerMode?: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
@@ -73,12 +77,14 @@ export default function SettingsSidebarTrigger({
 		getClientSnapshot,
 		getServerSnapshot,
 	);
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, showClassifiers, providerMode });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, showClassifiers, showWorkloadIdentity, showSlackAgent, providerMode });
 	const activeNav = getActiveSettingsNav(pathname, {
 		showBroadcast,
 		showWebhooks,
 		showAutoRouting,
 		showClassifiers,
+		showWorkloadIdentity,
+		showSlackAgent,
 		providerMode,
 	});
 	const activeItem = activeNav?.item ?? null;

@@ -114,10 +114,13 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options:
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
 	isProviderTransportFailure: (error: unknown) => boolean;
+	/** Provider-phase responses with a 2xx status: the provider did the (billable) work. */
+	providerSuccessCount: () => number;
 } {
 	const executorStartedAt = performance.now();
 	const responseTimings = new WeakMap<Response, UpstreamResponseTiming>();
 	const providerTransportFailures = new Set<unknown>();
+	let providerSuccesses = 0;
 	let sequence = 0;
 	let firstProviderFetchAt: number | undefined;
 	let firstProviderFetchEpochMs: number | undefined;
@@ -181,11 +184,13 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options:
 		if (phase === "provider" && firstProviderHeadersMs === undefined) {
 			firstProviderHeadersMs = headersMs;
 		}
+		if (phase === "provider" && response.ok) providerSuccesses += 1;
 		return response;
 	};
 
 	return {
 		isProviderTransportFailure: (error) => providerTransportFailures.has(error),
+		providerSuccessCount: () => providerSuccesses,
 		timing: {
 			fetch: timedFetch,
 			timingFor: (response) => responseTimings.get(response),
