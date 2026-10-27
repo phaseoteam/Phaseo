@@ -31,6 +31,7 @@ import {
 	resolveOpenAIKey,
 	resolveXAIKey,
 	isDurationBilledRealtimeProvider,
+	isRelayMeteredRealtimeProvider,
 	ELEVENLABS_REALTIME_MAX_DURATION_SECONDS,
 	settleRealtimeSession,
 	sha256Hex,
@@ -51,6 +52,14 @@ import {
 	fetchElevenLabsConversationCost,
 	resolveElevenLabsKey,
 } from "./elevenlabs-realtime";
+import {
+	MISTRAL_REALTIME_INPUT_SAMPLE_RATE,
+	MISTRAL_REALTIME_PROVIDER,
+	applyMistralTranscriptionUsage,
+	mistralRealtimeUrl,
+	resolveMistralRealtimeKey,
+	sanitizeMistralSessionUpdate,
+} from "./mistral-realtime";
 import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
 import {
 	buildSessionEndedEvent,
@@ -491,6 +500,7 @@ function relayTokenFromRequest(request: Request): { token: string; responseProto
 function inputSampleRate(provider: RealtimeProvider): number {
 	if (provider === "google-ai-studio") return GOOGLE_INPUT_SAMPLE_RATE;
 	if (provider === "spacex-ai") return XAI_INPUT_SAMPLE_RATE;
+	if (provider === MISTRAL_REALTIME_PROVIDER) return MISTRAL_REALTIME_INPUT_SAMPLE_RATE;
 	return OPENAI_INPUT_SAMPLE_RATE;
 }
 
@@ -779,6 +789,15 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 
+		if (provider === MISTRAL_REALTIME_PROVIDER) {
+			// Header auth from the relay; Mistral's session.created ends setup.
+			const key = resolveMistralRealtimeKey();
+			if (!key) throw new Error("mistral_key_missing");
+			this.upstream = await connectWebSocket(mistralRealtimeUrl(model), { headers: { Authorization: `Bearer ${key}` } });
+			this.attachUpstream();
+			return;
+		}
+
 		const key = resolveXAIKey();
 		if (!key) throw new Error("xai_key_missing");
 		this.upstream = await connectWebSocket(
@@ -949,8 +968,15 @@ export class RealtimeRelayDurableObject {
 			this.forwardLiveToolEvent(message as unknown as Record<string, unknown>);
 			return;
 		}
-		if (!message || message.type !== "client.audio" || !message.audio) return;
 		const provider = this.session ? providerFromSession(this.session) : null;
+		if (provider === MISTRAL_REALTIME_PROVIDER && type === "session.update") {
+			// Transcription settings only; the audio format stays what the relay meters.
+			const update = sanitizeMistralSessionUpdate(message as unknown as Record<string, unknown>);
+			if (update && this.acceptingAudio && this.providerSetupComplete) this.sendUpstream(update);
+			else this.sendClient({ type: "relay.client_event_rejected", event_type: type, reason: "realtime_session_update_not_accepted" });
+			return;
+		}
+		if (!message || message.type !== "client.audio" || !message.audio) return;
 		if (!provider || !this.acceptingAudio || !this.providerSetupComplete) return;
 		if (!this.audioStartedAt) this.audioStartedAt = Date.now();
 		const validated = validateRealtimeAudioIngress({
@@ -1018,7 +1044,7 @@ export class RealtimeRelayDurableObject {
 			this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
 		}
 		const pendingBefore = this.inputSinceLastResponse;
-		if (!isDurationBilledRealtimeProvider(provider)) {
+		if (!isRelayMeteredRealtimeProvider(provider)) {
 			this.usage.pending_input_audio_ms = toNumber(this.usage.pending_input_audio_ms) + validated.durationMs;
 		}
 		// OpenAI only bills audio once the provider commits it and creates a
@@ -1036,7 +1062,7 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		this.sendUpstream({
-			type: "input_audio_buffer.append",
+			type: provider === MISTRAL_REALTIME_PROVIDER ? "input_audio.append" : "input_audio_buffer.append",
 			audio: message.audio,
 		});
 	}
@@ -1176,6 +1202,36 @@ export class RealtimeRelayDurableObject {
 		return "unavailable";
 	}
 
+	/**
+	 * Mistral streaming transcription: session.created ends setup, the first
+	 * transcript text marks the session as having produced output, and
+	 * transcription.done (after session.end flushes the stream) carries the
+	 * final text and Mistral's audio count, then lets an ending session settle.
+	 * Returns true when the event was handled (and forwarded) here.
+	 */
+	private async handleMistralEvent(event: Record<string, unknown>, type: string, forward: () => void): Promise<boolean> {
+		if (type === "session.created") {
+			this.providerSetupComplete = true;
+			return false;
+		}
+		if (type === "transcription.text.delta" || type === "transcription.segment") {
+			if (!this.providerCompletedResponseSeen) {
+				this.markProviderResponseCompleted();
+				await this.checkpointUsage(true);
+			}
+			return false;
+		}
+		if (type !== "transcription.done") return false;
+		this.markProviderResponseCompleted();
+		this.usage = applyMistralTranscriptionUsage(this.usage, event);
+		await this.checkpointUsage(true);
+		forward();
+		await this.persistUsage();
+		const pending = this.pendingSettlement;
+		if (pending) await this.settle(this.pendingSettlementStatus(pending), pending.reason);
+		return true;
+	}
+
 	private async rejectAudio(reason: string) {
 		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.input_rejected", reason });
@@ -1187,9 +1243,11 @@ export class RealtimeRelayDurableObject {
 		if (!this.session) return false;
 		const type = getStringField(event, "type");
 		if (this.isLive) return LIVE_BILLING_EVENT_TYPES.has(type);
-		if (providerFromSession(this.session) === "google-ai-studio") {
+		const provider = providerFromSession(this.session);
+		if (provider === "google-ai-studio") {
 			return Boolean(event.usageMetadata || event.serverContent);
 		}
+		if (provider === MISTRAL_REALTIME_PROVIDER) return type === "transcription.done";
 		return OPENAI_BILLING_EVENT_TYPES.has(type);
 	}
 
@@ -1274,6 +1332,7 @@ export class RealtimeRelayDurableObject {
 		}
 		if (type === "session.updated" || event.setupComplete) this.providerSetupComplete = true;
 		if (provider === ELEVENLABS_PROVIDER && await this.handleElevenLabsSetupEvent(event, type)) return;
+		if (provider === MISTRAL_REALTIME_PROVIDER && await this.handleMistralEvent(event, type, forward)) return;
 		if (event.error && !this.providerSetupComplete) {
 			forward();
 			await this.settle("failed", "provider_session_setup_failed");
@@ -1865,9 +1924,12 @@ export class RealtimeRelayDurableObject {
 		if (this.pendingSettlement?.phase === "authoritative") return;
 		const provider = providerFromSession(this.session);
 		this.cancelResponsesOnDrain = true;
+		// Mistral transcribes audio it already has after the stream is ended, so
+		// the caller still gets the final transcript.
+		const mistralFinishing = provider === MISTRAL_REALTIME_PROVIDER && this.receivedAudioMs > 0;
 		if (
 			isDurationBilledRealtimeProvider(provider) ||
-			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear) ||
+			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear && !mistralFinishing) ||
 			this.upstream?.readyState !== WebSocket.OPEN
 		) {
 			await this.settle(status, reason);
@@ -1878,6 +1940,9 @@ export class RealtimeRelayDurableObject {
 			if (this.responseInFlight) this.sendUpstream({ type: "response.cancel" });
 		} else if (provider === "google-ai-studio") {
 			this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+		} else if (provider === MISTRAL_REALTIME_PROVIDER) {
+			this.sendUpstream({ type: "input_audio.flush" });
+			this.sendUpstream({ type: "input_audio.end" });
 		}
 		await this.checkpointUsage(true);
 		await this.setPendingSettlement({
@@ -2176,6 +2241,11 @@ export class RealtimeRelayDurableObject {
 		this.noteEnd(reason);
 		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
+		// Transcription has no reply to finish: end the stream and wait for the final transcript.
+		if (this.session && providerFromSession(this.session) === MISTRAL_REALTIME_PROVIDER) {
+			await this.forceAuthoritativeUsage(status, reason, options);
+			return;
+		}
 		if (!this.hasPendingBilling() && !this.waitingForOpenAIInputClear) {
 			await this.settle(options?.statusFromResponses ? (this.providerCompletedResponseSeen ? "completed" : "cancelled") : status, reason);
 			return;

@@ -299,6 +299,7 @@ function normalizedProvider(value: string): string {
 	if (provider === "xai" || provider === "x-ai") return "spacex-ai";
 	if (provider === "google") return "google-ai-studio";
 	if (provider === "eleven-labs") return "elevenlabs";
+	if (provider === "mistralai") return "mistral";
 	return provider;
 }
 
@@ -307,7 +308,8 @@ function providerFromModel(model: string): string | null {
 	if (prefix === "xai" || prefix === "x-ai") return "spacex-ai";
 	if (prefix === "google") return "google-ai-studio";
 	if (prefix === "eleven-labs") return "elevenlabs";
-	return ["openai", "spacex-ai", "google-ai-studio", "elevenlabs"].includes(prefix) ? prefix : null;
+	if (prefix === "mistralai") return "mistral";
+	return ["openai", "spacex-ai", "google-ai-studio", "elevenlabs", "mistral"].includes(prefix) ? prefix : null;
 }
 
 export async function authorizeRealtimeSource(args: {
