@@ -13,6 +13,8 @@ Worker reads the same tables.
 | `POST /events` | Events API request URL for the hosted Phaseo app. |
 | `POST /events/:appId` | Events API request URL for a company's own Slack app (`:appId` is its Slack app id, `A...`). Its signing secret is read from `slack_apps`. |
 | `POST /interactions`, `POST /interactions/:appId` | Interactivity request URL (Cancel, Connect account, feedback, question buttons and the Other form). |
+| `GET /p/:store/:page` | A shared page the agent published (see [Shared pages](#shared-pages)). |
+| `GET /p/signin` | Sign in with Slack's redirect, for pages shared with a Slack workspace. Registered in the manifest. |
 | `GET /health` | Liveness. |
 
 Every Slack request is checked against its v0 signature over the raw body, with
@@ -56,6 +58,8 @@ Worker's production host and routes.
   `app_home_opened` and the tab doesn't appear; nothing else depends on them.
 - Token rotation is off. Slack can't turn it off again, and the hosted app's
   client credentials are optional secrets here.
+- The second redirect URL, `https://slack.phaseo.app/p/signin`, is Sign in with
+  Slack for shared pages. It only works for an app whose manifest lists it.
 - Editing the manifest file doesn't change the live Slack app: paste the new
   manifest on the app's App Manifest page in Slack too.
 
@@ -77,9 +81,11 @@ Worker's production host and routes.
   - Serialises bot token refreshes when Slack rotates tokens.
   - Keeps Slack's `Retry-After` when a thread read gets 429, so no thread of the installation reads until it has passed.
   - Keeps an answer that waits for a reply to its question pending for the wait (`keepPending`), so it stays one answer.
+- `PageStore` (`PAGES`), one per installation: its shared pages (see [Shared pages](#shared-pages)).
 
-Both use SQLite storage. Neither keeps Slack text longer than 7 days, and logs
-carry ids and statuses only, as Slack's API terms require.
+All three use SQLite storage. The coordinator and the meter keep no Slack text
+longer than 7 days, and a shared page is kept until it expires (at most 90
+days). Logs carry ids and statuses only, as Slack's API terms require.
 
 ## Agent turns
 
@@ -255,6 +261,61 @@ save a skill only when someone explicitly asks.
   its notes and skills in the same transaction (the `delete_slack_agent_memory`
   trigger).
 
+## Shared pages
+
+With `publish_page` (`src/pages.ts`) the agent publishes a self-contained HTML
+page (a report, a table, a chart or a small interactive view) and links it in
+its reply. The installation's `PageStore` keeps it under a random 128-bit id;
+the link is `PUBLIC_ORIGIN/p/<store>/<page>`, where `<store>` is the store's
+Durable Object id, so the URL doesn't reveal the installation.
+
+- **Offered** when `pages_enabled` is on, `PUBLIC_ORIGIN` is set, the person
+  isn't from another organisation (the turn's `external` flag), and at least one
+  way of sharing is allowed. A turn answers as its person, so a scheduled run is
+  offered it only when the person who set it up could publish.
+- **Limits**: at most 512 KB, 3 pages per answer (counted by the answer's event
+  id in the store, across retries and questions) and 200 live pages per
+  installation. Publishing is part of the answer: no extra charge, and the
+  tokens count against its $0.50.
+- **Expiry**: `page_expiry_days` (7, 30 or 90; 30 by default) when published.
+  The store's alarm deletes expired pages; a view or a listing deletes an expired
+  one too.
+- **Uninstall**: removing the app in Slack deletes the store's pages at once
+  (`handleRemoval`), and so does uninstalling in Phaseo settings (web-api calls
+  `SlackAgentAdmin.deletePages`). As a backstop, every view and a daily alarm
+  check the installation, and an uninstalled one's pages are deleted.
+- **Kept out of logs**: a page's HTML, title and id never go into logs or
+  Workflow step outputs, and the thread's working memory notes only
+  `publish_page`.
+
+**Serving** (`src/page-viewer.ts`). Pages are served with
+`Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'`,
+plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+`Cache-Control: private, no-store`, `X-Frame-Options: DENY` and `noindex`. The
+sandbox without `allow-same-origin` gives the page an opaque origin, so its
+scripts can't read this Worker's cookies or call its routes with them, and the
+fetch directives stop it loading or sending anything. Link unfurlers (Slackbot
+and others) get a generic page and count no view.
+
+**Who can view**: `link` (anyone with the link, while `page_link_access` is on)
+or `workspace`. A workspace page (and a link page once link sharing is turned
+off) needs a session for its installation: a cookie for `/p/` signed with
+`SLACK_STATE_SECRET` (purpose `page_session`), valid 8 hours. Without one, the
+viewer goes through Sign in with Slack (OpenID Connect, scope `openid`, with the
+installation's team) using the client credentials of the app the installation
+uses: the hosted app's `SLACK_CLIENT_ID` and `SLACK_CLIENT_SECRET`, or a
+company app's from `slack_apps`. A short-lived cookie binds the sign-in to the
+browser and holds the page to return to, so the page id never goes to Slack. The
+ID token comes straight from `openid.connect.token` over TLS; its issuer,
+audience, expiry and nonce are checked. Membership is decided like answers:
+`users.info` with the bot token, no bots, nobody from another organisation,
+guests only where `allow_guests` is on. Without client credentials the
+`workspace` mode isn't offered, and Settings says so.
+
+**Settings → Slack** (web-api `/api/account/settings/slack/pages`) lists and
+deletes pages through the service binding to the `SlackAgentAdmin` entrypoint
+(`src/admin.ts`), which nothing on the internet can reach.
+
 ## Secrets
 
 Set production secrets with `wrangler secret put <NAME> --env production`.
@@ -271,7 +332,7 @@ missing.
 | `SUPABASE_URL` | yes | The Supabase project URL. |
 | The Supabase service key (named in `src/env.ts`) | yes | The Slack tables deny every other role. |
 | `SLACK_APP_ID` | no | The hosted app's id. When set, `/events` refuses events for any other app. |
-| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They are only needed when token rotation is on, to refresh bot tokens. |
+| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They refresh bot tokens when token rotation is on, and they turn on Sign in with Slack for shared pages: without them, pages can only be open to anyone with the link. |
 | `SLACK_SECRETS_ENCRYPTION_KEY_VERSION` | no | Defaults to `v1`. It must match web-api. |
 | `DISCORD_SIGNUP_WEBHOOK_URL` | no | Phaseo's internal Discord webhook, the same value as web-api. When set, removing the app inside Slack posts a short alert (workspace, Slack team, hosted or company app). Without it there is no alert. |
 
@@ -279,6 +340,9 @@ Vars:
 - `ENV`.
 - `PHASEO_WEB_ORIGIN`: where `/slack/link` lives (default `https://phaseo.app`).
 - `PHASEO_API_BASE_URL`: the gateway (default `https://api.phaseo.app/v1`).
+- `PUBLIC_ORIGIN`: this Worker's public origin, for shared page links and their
+  sign-in redirect (`https://slack.phaseo.app` in production). Unset (the preview
+  Worker), the agent publishes no pages.
 
 Agent turns call the gateway's public URL rather than a service binding. A
 service binding's request carries no country, and providers that refuse requests

@@ -25,6 +25,7 @@ import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./hist
 import { installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
 import { loadTurnMemory, memoryInstructions, memoryPromptLines, memoryTools, noteAccess, type NoteAccess } from "./memory";
 import { modelChoiceOn, withoutMention } from "./model-choice";
+import { turnPageTools } from "./pages";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
@@ -44,8 +45,9 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //            meter keeps Slack's Retry-After so no other thread reads until then
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
-//            agent step (with ask_model, it can ask other allowed models); or,
-//            for a Compare, each compared model at once, with one reply
+//            agent step (with ask_model, it can ask other allowed models, and with
+//            publish_page, publish a shared page to link); or, for a Compare,
+//            each compared model at once, with one reply
 //   reply    finish the Slack message with a footer (every model used, linked to
 //            its page, and the cost, linked to the answer's requests in Logs):
 //            stop the stream, or write the staged answer when the live stream
@@ -406,13 +408,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	// another organisation) and the saved skills go before the conversation.
 	const access = noteAccess(installation, turn);
 	const memory = await loadTurnMemory(deps.db, installation.id, turn.channel, access);
+	// publish_page, where this person may publish shared pages.
+	const pageTools = await turnPageTools(deps, turn, installation, notes);
 	try {
 		output = await deps.agent.run({
 			...gateway,
 			model,
 			instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true),
 			prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source)].join("\n"),
-			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), askQuestion, ...askTools],
+			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), askQuestion, ...askTools, ...pageTools],
 			maxCostUsd: budgetUsd,
 			otherCostUsd: consultedUsd,
 			signal: controller.signal,

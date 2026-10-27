@@ -4,10 +4,13 @@ import type { Env } from "./env";
 import { defaultDeps, isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
 import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
+import { finishSignIn, servePage } from "./page-viewer";
 import { verifySlackSignature } from "./signature";
 
+export { SlackAgentAdmin } from "./admin";
 export { ThreadCoordinator } from "./coordinator";
 export { WorkspaceMeter } from "./meter";
+export { PageStore } from "./pages";
 export { AgentTurnWorkflow } from "./workflow";
 export { defaultDeps };
 
@@ -16,6 +19,8 @@ export { defaultDeps };
 //   POST /events                Events API, hosted Phaseo app
 //   POST /events/:appId         Events API, a company's own app (Slack app id A...)
 //   POST /interactions[/:appId] Button clicks
+//   GET  /p/:store/:page        A shared page (pages.ts, page-viewer.ts)
+//   GET  /p/signin              Sign in with Slack, for pages shared with a workspace
 //   GET  /health
 //
 // Every Slack request is verified (v0 signature over the raw body, five-minute
@@ -114,6 +119,8 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 	app.post("/events/:appId", limit, events);
 	app.post("/interactions", limit, interactions);
 	app.post("/interactions/:appId", limit, interactions);
+	app.get("/p/signin", (c) => finishSignIn(makeDeps(c.env), c.req.raw));
+	app.get("/p/:store/:page", (c) => servePage(makeDeps(c.env), c.req.raw, c.req.param("store"), c.req.param("page")));
 	app.notFound((c) => c.json({ error: "not_found" }, 404));
 	app.onError((error, c) => {
 		console.error("[slack-agent] request failed", { path: c.req.path, error: error.message });

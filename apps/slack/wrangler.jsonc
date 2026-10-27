@@ -9,10 +9,15 @@
   "durable_objects": {
     "bindings": [
       { "name": "THREADS", "class_name": "ThreadCoordinator" },
-      { "name": "METERS", "class_name": "WorkspaceMeter" }
+      { "name": "METERS", "class_name": "WorkspaceMeter" },
+      { "name": "PAGES", "class_name": "PageStore" }
     ]
   },
-  "migrations": [{ "tag": "slack-agent-v1", "new_sqlite_classes": ["ThreadCoordinator", "WorkspaceMeter"] }],
+  "migrations": [
+    { "tag": "slack-agent-v1", "new_sqlite_classes": ["ThreadCoordinator", "WorkspaceMeter"] },
+    // Shared pages: one PageStore per installation.
+    { "tag": "slack-agent-v2", "new_sqlite_classes": ["PageStore"] }
+  ],
   // One instance per Slack event. Instances are kept 1 day (set when each is created).
   "workflows": [
     { "name": "phaseo-slack-agent-turns-preview", "binding": "AGENT_TURNS", "class_name": "AgentTurnWorkflow" }
@@ -31,6 +36,7 @@
     "logs": { "head_sampling_rate": 1 },
     "traces": { "enabled": true, "head_sampling_rate": 0.01 }
   },
+  // No PUBLIC_ORIGIN here: the preview Worker publishes no shared pages.
   "vars": {
     "ENV": "preview",
     "PHASEO_API_BASE_URL": "https://api.phaseo.app/v1",
@@ -43,7 +49,8 @@
       "durable_objects": {
         "bindings": [
           { "name": "THREADS", "class_name": "ThreadCoordinator" },
-          { "name": "METERS", "class_name": "WorkspaceMeter" }
+          { "name": "METERS", "class_name": "WorkspaceMeter" },
+          { "name": "PAGES", "class_name": "PageStore" }
         ]
       },
       "workflows": [
@@ -66,7 +73,9 @@
       "vars": {
         "ENV": "production",
         "PHASEO_API_BASE_URL": "https://api.phaseo.app/v1",
-        "PHASEO_WEB_ORIGIN": "https://phaseo.app"
+        "PHASEO_WEB_ORIGIN": "https://phaseo.app",
+        // Shared page links (/p/...) and their Sign in with Slack redirect (/p/signin).
+        "PUBLIC_ORIGIN": "https://slack.phaseo.app"
       }
     }
   }
