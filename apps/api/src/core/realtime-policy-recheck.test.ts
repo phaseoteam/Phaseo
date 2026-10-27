@@ -119,6 +119,8 @@ describe("active realtime policy recheck", () => {
 	it.each([
 		[{ status: "revoked", revoked_at: "2026-10-22T10:05:00Z" }, "realtime_key_revoked"],
 		[{ soft_blocked: true }, "realtime_key_blocked"],
+		[{ status: "paused" }, "realtime_key_blocked"],
+		[{ status: "disabled" }, "realtime_key_revoked"],
 		[{ expires_at: "2026-01-01T00:00:00Z" }, "realtime_key_expired"],
 	])("ends an API call when the key changes to %o", async (change, reason) => {
 		state.session = session("api");

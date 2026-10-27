@@ -908,8 +908,10 @@ async function realtimeKeyAccessReason(session: RealtimeSessionRow): Promise<str
 		if (workspaceError) throw workspaceError;
 		return workspace ? "realtime_key_revoked" : "realtime_workspace_disabled";
 	}
-	if (key.status !== "active" || key.revoked_at) return "realtime_key_revoked";
-	if (key.soft_blocked === true) return "realtime_key_blocked";
+	if (key.revoked_at) return "realtime_key_revoked";
+	// Pausing sets status "paused" (soft_blocked is usually left false).
+	if (key.status === "paused" || key.soft_blocked === true) return "realtime_key_blocked";
+	if (key.status !== "active") return "realtime_key_revoked";
 	if (key.expires_at && Date.parse(String(key.expires_at)) <= Date.now()) return "realtime_key_expired";
 	return null;
 }
