@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayFetch, turnErrorText, type AgentTurnRequest } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest } from "../src/agent";
 
 function sse(events: unknown[]): Response {
 	return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "Content-Type": "text/event-stream" } });
@@ -89,6 +89,16 @@ describe("the SDK agent runner", () => {
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const output = await runner.run(request({ maxCostUsd: 0.001 }), { onText: async () => undefined, onStep: async () => undefined });
 		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "max_cost:0.001" });
+	});
+
+	it("only sends the managed key to an HTTPS gateway, or plain HTTP on this machine", () => {
+		expect(gatewayBaseUrl({})).toBe("https://api.phaseo.app/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: " https://api.phaseo.app/v1/ " })).toBe("https://api.phaseo.app/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://localhost:8787/v1" })).toBe("http://localhost:8787/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://127.0.0.1:8787/v1" })).toBe("http://127.0.0.1:8787/v1");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL must use https");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "ftp://api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL must use https");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL is not a valid URL");
 	});
 
 	it("calls the gateway's public URL, so the request has a country providers can check", async () => {

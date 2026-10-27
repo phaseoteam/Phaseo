@@ -75,8 +75,24 @@ export function requestLabelsHeader(labels: AgentTurnRequest["labels"]): string 
 	});
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The gateway's base URL. Requests carry the installation's managed key, so it
+ * must be HTTPS; plain HTTP is only accepted for a gateway on this machine (local
+ * development). Anything else fails, rather than sending the key unencrypted.
+ */
 export function gatewayBaseUrl(env: Pick<Env, "PHASEO_API_BASE_URL">): string {
-	return withoutTrailingSlashes(env.PHASEO_API_BASE_URL?.trim() ?? "") || DEFAULT_GATEWAY_BASE_URL;
+	const configured = withoutTrailingSlashes(env.PHASEO_API_BASE_URL?.trim() ?? "");
+	if (!configured) return DEFAULT_GATEWAY_BASE_URL;
+	let url: URL;
+	try {
+		url = new URL(configured);
+	} catch {
+		throw new Error("PHASEO_API_BASE_URL is not a valid URL");
+	}
+	if (url.protocol === "https:" || (url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname))) return configured;
+	throw new Error("PHASEO_API_BASE_URL must use https");
 }
 
 /**
