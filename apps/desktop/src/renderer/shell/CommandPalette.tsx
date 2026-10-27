@@ -1,9 +1,11 @@
-import { Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, FileSearch, TextSearch, Search } from "lucide-react";
+import { Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { runCommand, shortcut } from "../lib/keybindings";
 import { ProjectSearchDialog } from "./ProjectSearch";
+import { openArchivedChats } from "./ArchivedChats";
+import { usePendingDeletes } from "./threadUndo";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "../components/ui/command";
 import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
@@ -20,7 +22,8 @@ export function CommandPalette() {
 	// The palette opens empty each time, as it did when its input kept its own value.
 	useEffect(() => { if (!commandsOpen) setSearch(""); }, [commandsOpen]);
 	const grouped = new Set(compareGroups.flatMap(group => group.taskIds));
-	const tasks = overview.tasks.filter(task => !task.delegation?.parentTaskId && !grouped.has(task.id)).slice(0, 200);
+	const hidden = usePendingDeletes();
+	const tasks = overview.tasks.filter(task => !task.delegation?.parentTaskId && !grouped.has(task.id) && !hidden.has(task.id)).slice(0, 200);
 	const projectName = (id?: string) => overview.projects.find(project => project.id === id)?.name;
 	const current = selectedId ? taskById(selectedId) : undefined, linked = current?.pullRequests ?? [];
 	return <><ProjectSearchDialog /><CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
@@ -36,6 +39,7 @@ export function CommandPalette() {
 				<CommandItem value="Usage cost tokens spend today pace forecast pull requests settled" onSelect={() => run(() => openUsage())}><ChartLine />Usage</CommandItem>
 				<CommandItem value="Usage limits subscriptions rings Claude Codex" onSelect={() => run(() => openUsage("limits"))}><Gauge />Usage limits</CommandItem>
 				<CommandItem onSelect={() => run(openScheduled)}><CalendarClock />Scheduled tasks</CommandItem>
+			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><Archive />Archived chats</CommandItem>
 				<CommandItem value="Open pull requests prs pr github review merge branch" onSelect={() => run(openPullRequests)}><GitPullRequestArrow />Open pull requests</CommandItem>
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}
 				<CommandItem onSelect={() => run(() => setSidebarOpen(open => !open))}><PanelLeft />Toggle sidebar<CommandShortcut>{shortcut("sidebar.toggle")}</CommandShortcut></CommandItem>

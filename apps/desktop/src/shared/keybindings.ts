@@ -14,7 +14,7 @@ export const keybindingCommands = [
 	{ command: "thread.previous", label: "Previous chat", group: "Chats", keys: ["mod+shift+["] },
 	{ command: "thread.next", label: "Next chat", group: "Chats", keys: ["mod+shift+]"] },
 	{ command: "thread.settle", label: "Settle or un-settle chat", group: "Chats", keys: ["mod+shift+s"], when: "codeMode && chatOpen" },
-	{ command: "thread.undo", label: "Undo settle, snooze, unpin or archive", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
+	{ command: "thread.undo", label: "Undo settle, snooze, unpin, archive or delete", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	// Shares Mod+F with the Pull requests page's search: that page replaces the chat while it is open.
 	{ command: "chat.find", label: "Find in chat", group: "Chats", keys: ["mod+f"], when: "chatOpen && !terminalFocused && !browserFocused" },
