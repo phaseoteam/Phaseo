@@ -94,8 +94,10 @@ export function probeAddress(address: string): Promise<boolean> {
 	return new Promise(resolve => {
 		const url = new URL(address);
 		const options = { host: url.hostname.replace(/^\[|\]$/g, "") === "localhost" ? "localhost" : url.hostname.replace(/^\[|\]$/g, ""), port: url.port || (url.protocol === "https:" ? 443 : 80), path: url.pathname + url.search, timeout: 1500, headers: { accept: "text/html,*/*" } };
-		// A local dev server's certificate is usually self-signed; only whether it answers matters here.
-		const request = url.protocol === "https:" ? https.get({ ...options, rejectUnauthorized: false }, response => { response.resume(); resolve(true); }) : http.get(options, response => { response.resume(); resolve(true); });
+		// A local dev server's certificate is usually self-signed and only whether it answers matters here, so a loopback
+		// address skips the check; anything else must present a valid one.
+		const loopback = ["localhost", "127.0.0.1", "::1"].includes(options.host);
+		const request = url.protocol === "https:" ? https.get({ ...options, rejectUnauthorized: !loopback }, response => { response.resume(); resolve(true); }) : http.get(options, response => { response.resume(); resolve(true); });
 		request.on("timeout", () => { request.destroy(); resolve(false); });
 		request.on("error", () => resolve(false));
 	});

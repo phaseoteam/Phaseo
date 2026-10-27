@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
+import { javascriptLiteral } from "./javascript-literal.mjs";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-hunk-smoke-"));
 app.setPath("userData", data);
@@ -32,9 +33,9 @@ app.whenReady().then(async () => {
 		const run = expression => window.webContents.executeJavaScript(expression).catch(error => { console.error('FAILED_SCRIPT', expression.slice(0, 400)); throw error; });
 		async function wait(expression) { for (let attempt = 0; attempt < 100; attempt++) { if (await run(expression)) return; await new Promise(resolve => setTimeout(resolve, 50)); } throw new Error("Hunk UI did not settle: " + expression); }
 		const captures = path.resolve('output/playwright/git-hunks', entry ? 'packaged' : 'source'); mkdirSync(captures, { recursive: true });
-		const result = await window.webContents.executeJavaScript(`(async()=>{const api=window.phaseoDesktop.workspace,filename=${JSON.stringify(filename)};const review=await api.gitHunks('fixture',filename,false);if(review.hunks.length!==2)throw Error('Missing hunks');await api.gitCommand('fixture',{type:'stage-hunk',filename,index:1,hash:review.hash});const staged=(await api.gitReview('fixture')).stagedDiff;let stale=false;try{await api.gitCommand('fixture',{type:'stage-hunk',filename,index:0,hash:review.hash})}catch(error){stale=String(error).includes('diff changed')}const confirmed=await api.gitHunks('fixture',filename,true);await api.gitCommand('fixture',{type:'unstage-hunk',filename,index:0,hash:confirmed.hash});let outside=false;try{await api.gitHunks('fixture','../outside',false)}catch{outside=true}return {partial:staged.includes('Second edit')&&!staged.includes('First edit'),stale,outside,unstaged:!(await api.gitReview('fixture')).stagedDiff}})()`);
+		const result = await window.webContents.executeJavaScript(`(async()=>{const api=window.phaseoDesktop.workspace,filename=${javascriptLiteral(filename)};const review=await api.gitHunks('fixture',filename,false);if(review.hunks.length!==2)throw Error('Missing hunks');await api.gitCommand('fixture',{type:'stage-hunk',filename,index:1,hash:review.hash});const staged=(await api.gitReview('fixture')).stagedDiff;let stale=false;try{await api.gitCommand('fixture',{type:'stage-hunk',filename,index:0,hash:review.hash})}catch(error){stale=String(error).includes('diff changed')}const confirmed=await api.gitHunks('fixture',filename,true);await api.gitCommand('fixture',{type:'unstage-hunk',filename,index:0,hash:confirmed.hash});let outside=false;try{await api.gitHunks('fixture','../outside',false)}catch{outside=true}return {partial:staged.includes('Second edit')&&!staged.includes('First edit'),stale,outside,unstaged:!(await api.gitReview('fixture')).stagedDiff}})()`);
 		if (Object.values(result).some(value => !value) || readFileSync(target, "utf8") !== edited) throw new Error("Hunk workflow failed: " + JSON.stringify(result));
-		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${JSON.stringify(filename)},staged:false,hash:review.diffHash})})()`);
+		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${javascriptLiteral(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
 		// The Diff is its own pane tab (T3).
 		const surface = `document.querySelector('aside[aria-label="Tools"] .diff-surface')`;

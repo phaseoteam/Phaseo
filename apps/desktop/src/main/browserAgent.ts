@@ -4,6 +4,7 @@ import { browserTabLimit } from "../shared/browser";
 import { browserAgentDefaults, type BrowserAgentElement, type BrowserAgentPage, type BrowserAgentTab, type BrowserAgentTools } from "../shared/browserAgent";
 import { overlayCursorScript } from "./browserOverlay";
 import { overlayWorld, type BrowserHost } from "./browserHost";
+import { javascriptLiteral } from "./javascriptLiteral";
 
 /** Page scripts run in the overlay's isolated world: the page's own scripts can neither see nor replace them. */
 const helpers = `const __visible = element => { const rect = element.getBoundingClientRect(); if (rect.width <= 0 || rect.height <= 0) return false; const style = getComputedStyle(element); return style.visibility !== "hidden" && style.display !== "none" && style.opacity !== "0"; };
@@ -53,7 +54,7 @@ export function snapshotScript(maxCharacters: number, maxElements: number) {
 /** Scrolls the one element a selector matches into view and returns its centre in page CSS pixels. */
 export function targetScript(selector: string) {
 	return `(async () => { ${helpers}
-	const found = __find(${JSON.stringify(selector)}); if (found.error) return found;
+	const found = __find(${javascriptLiteral(selector)}); if (found.error) return found;
 	const element = found.element;
 	element.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
 	await __settle();
@@ -66,17 +67,17 @@ export function targetScript(selector: string) {
 }
 /** Focuses the element and selects its contents, so typed text replaces them. */
 export const selectContentsScript = (selector: string) => `(() => { ${helpers}
-	const found = __find(${JSON.stringify(selector)}); if (found.error) return false;
+	const found = __find(${javascriptLiteral(selector)}); if (found.error) return false;
 	const element = found.element; element.focus();
 	if (typeof element.select === "function") element.select();
 	else { const range = document.createRange(); range.selectNodeContents(element); const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range); }
 	return true;
 })()`;
 /** Without the DevTools protocol: clicks or types through the DOM. */
-const domClickScript = (selector: string) => `(() => { ${helpers} const found = __find(${JSON.stringify(selector)}); if (found.error) return found.error; found.element.focus(); found.element.click(); return ""; })()`;
+const domClickScript = (selector: string) => `(() => { ${helpers} const found = __find(${javascriptLiteral(selector)}); if (found.error) return found.error; found.element.focus(); found.element.click(); return ""; })()`;
 const domTypeScript = (selector: string, text: string, clear: boolean) => `(() => { ${helpers}
-	const found = __find(${JSON.stringify(selector)}); if (found.error) return found.error;
-	const element = found.element, text = ${JSON.stringify(text)}; element.focus();
+	const found = __find(${javascriptLiteral(selector)}); if (found.error) return found.error;
+	const element = found.element, text = ${javascriptLiteral(text)}; element.focus();
 	if (element.isContentEditable) { if (${clear}) element.textContent = ""; document.execCommand("insertText", false, text); return ""; }
 	const prototype = element.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
 	Object.getOwnPropertyDescriptor(prototype, "value").set.call(element, (${clear} ? "" : element.value) + text);

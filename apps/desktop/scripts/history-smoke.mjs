@@ -118,7 +118,7 @@ try {
   if (JSON.stringify(history) !== JSON.stringify({ count: 155, unique: 155, pages: 4, pinnedFirst: true, metadataOnly: true, body: ["042"], rapid: ["154"], archived: 2, empty: 0 })) throw new Error("Task history pages failed: " + JSON.stringify(history));
   const rows = `Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav [role=button]'))`;
   // Scrolls the virtualised list until the row is mounted, then clicks it.
-  const clickRow = title => `(async()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');for(let top=0;top<=list.scrollHeight;top+=200){list.scrollTop=top;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const row=${rows}.find(row=>row.textContent===${JSON.stringify(title)});if(row){row.click();return true;}}return false})()`;
+  const clickRow = title => `(async()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');for(let top=0;top<=list.scrollHeight;top+=200){list.scrollTop=top;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const row=${rows}.find(row=>row.textContent===${javascriptLiteral(title)});if(row){row.click();return true;}}return false})()`;
   await run(`window.__auditNavigate('Tasks')`);
   // Rows outside the view are not mounted, so the list publishes how many chats it holds.
   await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='155'&&${rows}.length>0`, "sidebar lists every active chat");

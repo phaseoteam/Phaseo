@@ -1,5 +1,6 @@
 import type { PullRequest } from "../../../shared/pullRequests";
 import type { PullRequestActor, PullRequestCheck, PullRequestComment, PullRequestCommit, PullRequestReaction, PullRequestView } from "../../../shared/pullRequestView";
+import { removeAll } from "../../../shared/removeAll";
 
 /** Pure rules behind the pull request surfaces, after T3 Code's pullRequestDetail.logic. */
 export type PullRequestStateKey = "open" | "draft" | "closed" | "merged";
@@ -94,7 +95,7 @@ export const mergeMethodLabels = { merge: "Merge", squash: "Squash and merge", r
 export type TimelineEvent = { id: string; at: string; kind: "opened" | "commit" | "comment" | "review" | "merged" | "closed"; title: string; body: string | null; url?: string; actor: PullRequestActor | null; commitAuthors: PullRequestActor[]; additions?: number; deletions?: number; path?: string; reviewState?: string; reactions: PullRequestReaction[]; canReact?: boolean };
 export type TimelineRow = { kind: "event"; event: TimelineEvent } | { kind: "comments"; events: TimelineEvent[] };
 /** Bots keep bookkeeping in HTML comments; a body that is only those reads as no body. */
-export function visibleBody(body: string): string | null { return body.replace(/<!--[\s\S]*?-->/g, "").trim() ? body.trim() : null; }
+export function visibleBody(body: string): string | null { return removeAll(body, /<!--[\s\S]*?-->/g).trim() ? body.trim() : null; }
 /** Newest first: what happened last is what a reader opening the tab is asking about. Merged wins over closed. */
 export function buildTimeline(view: Pick<PullRequestView, "createdAt" | "authorActor" | "commits" | "comments" | "mergedAt" | "closedAt">): TimelineEvent[] {
 	const events: TimelineEvent[] = [

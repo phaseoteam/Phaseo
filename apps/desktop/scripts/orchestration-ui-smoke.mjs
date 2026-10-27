@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { javascriptLiteral } from "./javascript-literal.mjs";
 app.setPath('userData', mkdtempSync(path.join(tmpdir(), 'phaseo-orchestration-ui-')));
 await import('../dist/main/index.mjs');
 app.whenReady().then(async () => {
@@ -85,7 +86,7 @@ app.whenReady().then(async () => {
   owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
   await wait("!document.querySelector('[aria-label=\"Remove chat reference\"]')");
   if(sends!==1||sent.threadReferences?.[0]!==referenceId)throw Error('Reference not sent durably');
-  await run(`(()=>{const data=new DataTransfer();data.setData('application/x-phaseo-chat',${JSON.stringify(referenceId)});document.querySelector('.task-composer').dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));})()`);
+  await run(`(()=>{const data=new DataTransfer();data.setData('application/x-phaseo-chat',${javascriptLiteral(referenceId)});document.querySelector('.task-composer').dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));})()`);
   await wait("Boolean(document.querySelector('[aria-label=\"Remove chat reference\"]'))");
   owner.setSize(1440,920);mkdirSync('../../output/playwright/orchestration',{recursive:true});
   writeFileSync('../../output/playwright/orchestration/agents-pane.png',(await owner.webContents.capturePage()).toPNG());

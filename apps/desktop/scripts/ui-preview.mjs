@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { openFixtureStore, storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
+import { javascriptLiteral } from "./javascript-literal.mjs";
 
 const argument = (name, fallback) => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const out = path.resolve(argument("out", "output/ui-preview"));
@@ -412,7 +413,7 @@ app.whenReady().then(async () => {
 		await settle(1400);
 		if (state.script) { await run(state.script); await settle(); }
 		if (state.hover) {
-			const point = await run(`(() => { const r = document.querySelector(${JSON.stringify(state.hover)}).getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+			const point = await run(`(() => { const r = document.querySelector(${javascriptLiteral(state.hover)}).getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
 			window.focus(); window.webContents.focus();
 			window.webContents.sendInputEvent({ type: "mouseMove", x: point.x - 30, y: point.y });
 			await settle(200);

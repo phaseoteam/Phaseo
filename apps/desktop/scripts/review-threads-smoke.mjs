@@ -10,6 +10,7 @@ import { syncBuiltinESMExports } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { installControlActions } from './fixtures/control-actions.mjs';
 import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
+import { javascriptLiteral } from "./javascript-literal.mjs";
 // Inline review threads in the pull request Code tab, driven through the production gh adapter with an owned fake gh.
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-review-threads-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const project=path.join(profile,'project');mkdirSync(project);for(const args of [['init','-b','fixture'],['remote','add','origin','https://github.com/owned/repo.git']])childProcess.execFileSync('git',args,{cwd:project,stdio:'ignore'});
@@ -48,7 +49,7 @@ const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice(12
 app.whenReady().then(async()=>{try{
  const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));await installControlActions(owner);const run=code=>owner.webContents.executeJavaScript(code),wait=async code=>{for(let index=0;index<300;index++){const result=await run(code);if(result)return result;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Review workflow did not settle: '+code);};
  const pane='[aria-label="Pull request #12"]';
- const click=async(label,scope=pane)=>run(`(()=>{const button=Array.from(document.querySelectorAll(${JSON.stringify(scope+' button')})).find(button=>button.textContent.trim()===${JSON.stringify(label)});if(!button)throw Error('Missing button '+${JSON.stringify(label)});button.click()})()`);
+ const click=async(label,scope=pane)=>run(`(()=>{const button=Array.from(document.querySelectorAll(${javascriptLiteral(scope+' button')})).find(button=>button.textContent.trim()===${javascriptLiteral(label)});if(!button)throw Error('Missing button '+${javascriptLiteral(label)});button.click()})()`);
  // Annotations may render in the diff's light or shadow DOM; look in both.
  const thread=`(()=>{for(const host of document.querySelectorAll('${pane} [data-pr-file]')){const found=host.querySelector('[data-thread-id="PRRT_0"]')??Array.from(host.querySelectorAll('*')).map(node=>node.shadowRoot?.querySelector('[data-thread-id="PRRT_0"]')).find(Boolean);if(found)return found;}return null;})()`;
  await run(`window.__auditOpenChat('project-chat')`);await run(`window.__auditPanel('Linked pull requests')`);await wait(`document.querySelector('section[aria-label="Pull requests"]')?.textContent.includes('No linked pull requests')`);

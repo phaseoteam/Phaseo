@@ -3,6 +3,7 @@
  * and `</details>` tags become elements, and everything between them stays Markdown. Single-dollar maths follows
  * Pandoc's rule so prices ("$5 and $10") stay text.
  */
+import { removeAll } from "../../shared/removeAll";
 type MarkdownNode = { type: string; value?: string; children?: MarkdownNode[]; data?: Record<string, unknown>; position?: { start: { offset?: number }; end: { offset?: number } } };
 
 export const alertKinds = ["note", "tip", "important", "warning", "caution"] as const;
@@ -51,7 +52,7 @@ function details(children: MarkdownNode[]) {
 		}
 		result.push({
 			type: "details", data: { hName: "details", hProperties: open[1] ? { open: true } : {} },
-			children: [{ type: "detailsSummary", data: { hName: "summary" }, children: [{ type: "text", value: summary?.[1].replace(/<[^>]*>/g, "").trim() || "Details" }] }, ...details(body)],
+			children: [{ type: "detailsSummary", data: { hName: "summary" }, children: [{ type: "text", value: (summary ? removeAll(summary[1], /<[^>]*>/g) : "").trim() || "Details" }] }, ...details(body)],
 		});
 		index = end;
 	}

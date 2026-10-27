@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { installControlActions } from './fixtures/control-actions.mjs';
+import { javascriptLiteral } from "./javascript-literal.mjs";
 const profile = mkdtempSync(path.join(tmpdir(), 'phaseo-questions-')); app.setPath('userData', profile);
 const calls = { chat: 0, code: 0, plan: 0 }; let fixtureError;
 const server = createServer(async (request, response) => {
@@ -29,17 +30,17 @@ app.whenReady().then(async () => {
   const owner = BrowserWindow.getAllWindows()[0]; owner.webContents.setBackgroundThrottling(false); if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once('did-finish-load', resolve));
   await installControlActions(owner);
   const run = code => owner.webContents.executeJavaScript(code), wait = async code => { for (let index = 0; index < 400; index++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error('UI did not settle: ' + code); };
-  const account = await run(`(async()=>{const state=await window.phaseoDesktop.workspace.command({type:'add-account',name:'Owned question fixture',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});return state.accounts.find(value=>value.name==='Owned question fixture').id})()`);
+  const account = await run(`(async()=>{const state=await window.phaseoDesktop.workspace.command({type:'add-account',name:'Owned question fixture',kind:'api',harness:'phaseo',endpoint:${javascriptLiteral(endpoint)},apiKey:'owned-unused'});return state.accounts.find(value=>value.name==='Owned question fixture').id})()`);
   const output = path.resolve('../../output/playwright/phaseo-questions', entry ? 'packaged' : 'source'); mkdirSync(output, { recursive: true }); let captures = 0;
   for (const mode of Object.keys(calls)) {
-   const id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,before=new Set((await api.overview()).tasks.map(task=>task.id));const state=await api.command({type:'create-task',harness:'phaseo',accountId:${JSON.stringify(account)},model:'owned-${mode}',mode:'${mode}'});const id=state.tasks.find(task=>!before.has(task.id)).id;await api.command({type:'send',id,text:'Ask me a question'});return id})()`);
-   const pending = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.questions?.length?task:false})()`); assert.equal(pending.status, 'waiting'); assert.equal((pending.approvals?.length ?? 0), 0); assert.equal(calls[mode], 1);
+   const id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,before=new Set((await api.overview()).tasks.map(task=>task.id));const state=await api.command({type:'create-task',harness:'phaseo',accountId:${javascriptLiteral(account)},model:'owned-${mode}',mode:'${mode}'});const id=state.tasks.find(task=>!before.has(task.id)).id;await api.command({type:'send',id,text:'Ask me a question'});return id})()`);
+   const pending = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.questions?.length?task:false})()`); assert.equal(pending.status, 'waiting'); assert.equal((pending.approvals?.length ?? 0), 0); assert.equal(calls[mode], 1);
    await run(`window.__auditOpenChatId(${JSON.stringify(id)})`); await wait(`Boolean(document.querySelector('[aria-label="Agent questions"]'))`);
    for (const [width, height] of [[1440, 920], [1040, 680]]) for (const theme of ['light', 'dark']) { owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`); await run(`document.querySelector('[aria-label="Agent questions"]').scrollIntoView({block:'center'})`); await new Promise(resolve => setTimeout(resolve, 150)); writeFileSync(path.join(output, `${mode}-${theme}-${width}.png`), (await owner.webContents.capturePage()).toPNG()); captures++; }
    await wait(`Boolean(document.querySelector('[aria-label="Agent questions"] input[aria-label="Your own answer"]'))`);
    await run(`(()=>{const input=document.querySelector('[aria-label="Agent questions"] input[aria-label="Your own answer"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Owned custom direction');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
    await run(`Array.from(document.querySelectorAll('[aria-label="Agent questions"] button')).find(button=>/^Submit answer/.test(button.textContent)).click()`);
-   await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'})()`);
+   await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'})()`);
   }
   assert.ok(!fixtureError); assert.deepEqual(calls, { chat: 2, code: 2, plan: 2 }); console.log('PHASEO_QUESTIONS_SMOKE', JSON.stringify({ allModes: true, customAnswers: true, captures, loopbackRequests: 6, providerInferenceCalls: 0, packaged: Boolean(entry) })); clearTimeout(deadline); server.close(); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); server.close(); app.exit(1); }

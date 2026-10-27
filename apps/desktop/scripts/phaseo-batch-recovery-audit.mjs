@@ -8,6 +8,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { installControlActions } from './fixtures/control-actions.mjs';
+import { javascriptLiteral } from "./javascript-literal.mjs";
 const arg = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
 const entry = arg('app-entry'), stage = arg('stage');
 if (stage) {
@@ -25,8 +26,8 @@ if (stage) {
   const wait = async code => { for (let i = 0; i < 600; i++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error('Batch recovery did not settle: ' + code); };
   let id;
   if (stage === 'prepare') {
-   id = await run(`(async()=>{const api=window.phaseoDesktop.workspace;const state=await api.command({type:'add-account',name:'Owned batch recovery',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned batch recovery').id;await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Owned batch',enabled:true,transport:'http',url:${JSON.stringify(endpoint.replace(/\/v1$/, '/mcp'))}}});const created=await api.command({type:'create-task',harness:'phaseo',accountId,model:'owned',mode:${JSON.stringify(mode)}});const id=created.tasks[0].id;await api.command({type:'send',id,text:'Perform two owned effects'});return id})()`);
-   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
+   id = await run(`(async()=>{const api=window.phaseoDesktop.workspace;const state=await api.command({type:'add-account',name:'Owned batch recovery',kind:'api',harness:'phaseo',endpoint:${javascriptLiteral(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned batch recovery').id;await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Owned batch',enabled:true,transport:'http',url:${javascriptLiteral(endpoint.replace(/\/v1$/, '/mcp'))}}});const created=await api.command({type:'create-task',harness:'phaseo',accountId,model:'owned',mode:${javascriptLiteral(mode)}});const id=created.tasks[0].id;await api.command({type:'send',id,text:'Perform two owned effects'});return id})()`);
+   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
    await run(`window.phaseoDesktop.workspace.command({type:'send',id:${JSON.stringify(id)},text:'Queued batch follow-up'})`);
    writeFileSync(path.join(profile, 'pending.json'), JSON.stringify({ taskId: id, runId: task.nativeSessionId }));
    console.log('BATCH_RECOVERY_PREPARED'); return;
@@ -37,14 +38,14 @@ if (stage) {
   await run(`window.phaseoDesktop.workspace.command({type:'resume',id:${JSON.stringify(id)}})`);
   if (stage === 'write') {
    for (let index = 0; index < 2; index++) {
-    const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
+    const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
     await run(`window.phaseoDesktop.workspace.command({type:'approval',id:${JSON.stringify(id)},approvalId:${JSON.stringify(task.approvals[0].id)},decision:'accept'})`);
    }
-   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});return (task.activities??[]).some(activity=>activity.id.endsWith(':two')&&activity.status==='running')?task:false})()`);
+   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});return (task.activities??[]).some(activity=>activity.id.endsWith(':two')&&activity.status==='running')?task:false})()`);
    writeFileSync(path.join(profile, 'pending.json'), JSON.stringify({ taskId: id, runId: task.nativeSessionId }));
    console.log('BATCH_RECOVERY_PENDING'); return;
   }
-  const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
+  const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
   assert.equal(task.approvals.length, 1); assert.ok(task.approvals[0].description.includes('may already have completed'));
   await run(`window.__auditOpenChatId(${JSON.stringify(id)})`);
   const output = path.resolve('../../output/playwright/phaseo-batch-recovery', entry ? 'packaged' : 'source', mode); mkdirSync(output, { recursive: true });
@@ -54,7 +55,7 @@ if (stage) {
    writeFileSync(path.join(output, `interrupted-action-${theme}-${width}.png`), (await owner.webContents.capturePage()).toPNG());
   }
   await run(`window.phaseoDesktop.workspace.command({type:'approval',id:${JSON.stringify(id)},approvalId:${JSON.stringify(task.approvals[0].id)},decision:'decline'})`);
-  const finished = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'?task:false})()`);
+  const finished = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${javascriptLiteral(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'?task:false})()`);
   assert.equal(finished.messages.filter(message => message.role === 'user' && message.text === 'Queued batch follow-up').length, 1);
   console.log('BATCH_RECOVERY_RESUMED'); clearTimeout(deadline); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); app.exit(1); } });

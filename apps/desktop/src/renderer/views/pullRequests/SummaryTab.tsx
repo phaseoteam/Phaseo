@@ -13,6 +13,7 @@ import { CandidatePicker } from "./CandidatePicker";
 import { EditButton, MarkdownEditor, PullRequestCommentBody, PullRequestMarkdown } from "./PullRequestMarkdown";
 import { applyPendingReactions, canEditComment, canEditDescription, findingKey, isBot, isFinished, reactionEmoji, reactionName, reactionTooltip, relativeTime, reviewerEntries, reviewOutcome, sectionCollapseAnchorScrollTop, visibleBody, type PullRequestFinding } from "./pullRequestLogic";
 import type { PullRequestHandoff } from "./usePullRequestHandoff";
+import { removeAll } from "../../../shared/removeAll";
 
 function MetaRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return <div className="grid min-h-6 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs"><span className="flex items-center gap-1.5 text-muted-foreground">{icon}{label}</span><span className="flex min-w-0 items-center gap-1.5 text-foreground">{children}</span></div>;
@@ -128,7 +129,7 @@ function CommentRow({ comment, actions, onOpen, editor }: { comment: PullRequest
 				<Reactions reactions={comment.reactions} subjectId={comment.id} canReact={comment.canReact} />
 			</div>
 			<CommentLocation comment={comment} view={view} />
-			{!open && body && <p className="mt-1 truncate text-xs text-muted-foreground">{body.replace(/<!--[\s\S]*?-->/g, "").replace(/[*`#>]/g, "").replace(/\s+/g, " ").trim()}</p>}
+			{!open && body && <p className="mt-1 truncate text-xs text-muted-foreground">{removeAll(body, /<!--[\s\S]*?-->/g).replace(/[*`#>]/g, "").replace(/\s+/g, " ").trim()}</p>}
 			<CollapsibleContent>{body && <div className="mt-2"><PullRequestCommentBody text={body} projectId={projectId} repository={view.repository} /></div>}</CollapsibleContent>
 		</Collapsible>;
 	}
