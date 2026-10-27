@@ -446,6 +446,13 @@ export type { WebhookEndpointSecretResponse } from "./WebhookEndpointSecretRespo
 export type { WebhookEndpointTestResponse } from "./WebhookEndpointTestResponse.js";
 export type { WebhookEndpointUpdateRequest } from "./WebhookEndpointUpdateRequest.js";
 export type { WebSearchPlugin } from "./WebSearchPlugin.js";
+export type { WorkloadIdentityPolicy } from "./WorkloadIdentityPolicy.js";
+export type { WorkloadIdentityPolicyDeleteResponse } from "./WorkloadIdentityPolicyDeleteResponse.js";
+export type { WorkloadIdentityPolicyInput } from "./WorkloadIdentityPolicyInput.js";
+export type { WorkloadIdentityPolicyListResponse } from "./WorkloadIdentityPolicyListResponse.js";
+export type { WorkloadIdentityPolicyResponse } from "./WorkloadIdentityPolicyResponse.js";
+export type { WorkloadIdentityPolicyUpdateInput } from "./WorkloadIdentityPolicyUpdateInput.js";
+export type { WorkloadIdentityProvider } from "./WorkloadIdentityProvider.js";
 export type { Workspace } from "./Workspace.js";
 export type { WorkspaceActivityEntry } from "./WorkspaceActivityEntry.js";
 export type { WorkspaceActivityResponse } from "./WorkspaceActivityResponse.js";

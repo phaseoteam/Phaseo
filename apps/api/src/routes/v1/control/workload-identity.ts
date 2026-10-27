@@ -1,9 +1,10 @@
 // Workload identity trust policies: which Vercel deployments and GitHub Actions
 // workflows may call the gateway with their OIDC token instead of an API key.
-// Dashboard sessions only while the feature is in beta, and only for owners and
-// admins of workspaces in the gateway_workload_identity Statsig gate. Each policy
-// owns a secretless keys row; the gateway reads policies with a 30 s cache and
-// their issuers with a 60 s cache, so changes apply within a minute.
+// Owners and admins (dashboard sessions, OAuth) and management keys with the
+// keys:* scopes manage them, only for workspaces in the gateway_workload_identity
+// Statsig gate. Each policy owns a secretless keys row; the gateway reads
+// policies with a 30 s cache and their issuers with a 60 s cache, so changes
+// apply within a minute.
 import { Hono } from "hono";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
@@ -14,8 +15,9 @@ import { WORKLOAD_IDENTITY_AUDIENCE } from "@/lib/workload-identity/verify";
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
-import { authenticateDashboardSession, type DashboardSession } from "./dashboard-session";
-import { internalServerError, isResponse, parsePathId, requireJsonBody } from "./route-helpers";
+import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { authenticateDashboardSession } from "./dashboard-session";
+import { internalServerError, isResponse, parsePathId, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const SCOPES = [CAPABILITIES.KEYS_READ, CAPABILITIES.KEYS_WRITE];
@@ -73,14 +75,32 @@ function format(row: Row) {
 	};
 }
 
-async function authorize(req: Request): Promise<{ session: DashboardSession } | { response: Response }> {
+type PolicyAuth = { workspaceId: string; userId?: string | null };
+
+/**
+ * Settings → Trusted workloads uses a dashboard session; Terraform and scripts
+ * use a management key or OAuth token with the keys:* scope for the method,
+ * since every policy owns a key. OAuth users must be owners or admins.
+ */
+async function authorize(req: Request, capability: string): Promise<{ auth: PolicyAuth } | { response: Response }> {
+	let auth: PolicyAuth;
 	const session = await authenticateDashboardSession(req, SCOPES);
 	if (session instanceof Response) return { response: session };
-	if (!session) return { response: forbidden("Trusted workloads are managed in the dashboard during the beta") };
-	if (!["owner", "admin"].includes(session.role)) return { response: forbidden("Only workspace owners and admins can manage trusted workloads") };
+	if (session) {
+		if (!["owner", "admin"].includes(session.role)) return { response: forbidden("Only workspace owners and admins can manage trusted workloads") };
+		auth = session.auth;
+	} else {
+		const management = await guardManagementAuth(req, { useKvCache: false });
+		if (!management.ok) return { response: (management as GuardErr).response };
+		const scopeError = requireCapability(management.value, capability);
+		if (scopeError) return { response: scopeError };
+		const roleError = await requireOAuthWorkspaceRole(management.value, management.value.workspaceId, ["owner", "admin"]);
+		if (roleError) return { response: roleError };
+		auth = management.value;
+	}
 	// Outside the rollout the feature does not exist for the workspace.
-	if (!(await isWorkloadIdentityAccessEnabled({ workspaceId: session.auth.workspaceId }))) return { response: notFound("Trusted workloads are not available for this workspace") };
-	return { session };
+	if (!(await isWorkloadIdentityAccessEnabled({ workspaceId: auth.workspaceId }))) return { response: notFound("Trusted workloads are not available for this workspace") };
+	return { auth };
 }
 
 function pathId(req: Request): string | null {
@@ -125,10 +145,10 @@ function validate(input: {
 	return { ok: true, conditions, maxTokenLifetimeSeconds: result.value.maxTokenLifetimeSeconds };
 }
 
-async function audit(session: DashboardSession, action: string, row: Pick<Row, "id" | "name" | "provider" | "issuer" | "pinned_owner_id" | "key_id">, extra: Record<string, unknown> = {}) {
+async function audit(auth: PolicyAuth, action: string, row: Pick<Row, "id" | "name" | "provider" | "issuer" | "pinned_owner_id" | "key_id">, extra: Record<string, unknown> = {}) {
 	await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
-		workspaceId: session.auth.workspaceId,
-		actorUserId: session.auth.userId ?? null,
+		workspaceId: auth.workspaceId,
+		actorUserId: auth.userId ?? null,
 		action: `workload_identity_policy.${action}`,
 		targetType: "workload_identity_policy",
 		targetId: row.id,
@@ -149,13 +169,13 @@ async function loadRow(workspaceId: string, id: string): Promise<Row | null> {
 }
 
 async function handleList(req: Request) {
-	const authorization = await authorize(req);
+	const authorization = await authorize(req, CAPABILITIES.KEYS_READ);
 	if ("response" in authorization) return authorization.response;
 	try {
 		const { data, error } = await getSupabaseAdmin()
 			.from("workload_identity_policies")
 			.select(COLUMNS)
-			.eq("workspace_id", authorization.session.auth.workspaceId)
+			.eq("workspace_id", authorization.auth.workspaceId)
 			.order("created_at", { ascending: true })
 			.limit(MAX_POLICIES_PER_WORKSPACE);
 		if (error) throw error;
@@ -166,12 +186,12 @@ async function handleList(req: Request) {
 }
 
 async function handleGet(req: Request) {
-	const authorization = await authorize(req);
+	const authorization = await authorize(req, CAPABILITIES.KEYS_READ);
 	if ("response" in authorization) return authorization.response;
 	const id = pathId(req);
 	if (!id) return notFound();
 	try {
-		const row = await loadRow(authorization.session.auth.workspaceId, id);
+		const row = await loadRow(authorization.auth.workspaceId, id);
 		return row ? json({ data: format(row) }, 200, NO_STORE) : notFound();
 	} catch (error) {
 		return internalServerError("workload_identity.policies.get", error);
@@ -179,9 +199,9 @@ async function handleGet(req: Request) {
 }
 
 async function handleCreate(req: Request) {
-	const authorization = await authorize(req);
+	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
 	if ("response" in authorization) return authorization.response;
-	const { session } = authorization;
+	const { auth } = authorization;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
 
@@ -199,12 +219,12 @@ async function handleCreate(req: Request) {
 	const validated = validate({ provider, issuer, ownerId, conditions, maxTokenLifetimeSeconds: lifetime });
 	if (validated.ok === false) return badRequest("Invalid trust policy", validated.errors);
 
-	const workspaceId = session.auth.workspaceId;
+	const workspaceId = auth.workspaceId;
 	try {
 		// The function enforces the cap under a per-workspace lock.
 		const { data, error } = await getSupabaseAdmin().rpc("create_workload_identity_policy", {
 			p_workspace_id: workspaceId,
-			p_created_by: session.auth.userId ?? null,
+			p_created_by: auth.userId ?? null,
 			p_name: name,
 			p_provider: provider,
 			p_issuer: issuer,
@@ -220,7 +240,7 @@ async function handleCreate(req: Request) {
 		if (!created) throw new Error("create_workload_identity_policy returned no row");
 		const row = await loadRow(workspaceId, created.policy_id);
 		if (!row) throw new Error("created policy not found");
-		await audit(session, "created", row, { claim_conditions: row.claim_conditions });
+		await audit(auth, "created", row, { claim_conditions: row.claim_conditions });
 		return json({ data: format(row) }, 201, NO_STORE);
 	} catch (error) {
 		return internalServerError("workload_identity.policies.create", error);
@@ -228,9 +248,9 @@ async function handleCreate(req: Request) {
 }
 
 async function handleUpdate(req: Request) {
-	const authorization = await authorize(req);
+	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
 	if ("response" in authorization) return authorization.response;
-	const { session } = authorization;
+	const { auth } = authorization;
 	const id = pathId(req);
 	if (!id) return notFound();
 	const body = await requireJsonBody(req);
@@ -241,7 +261,7 @@ async function handleUpdate(req: Request) {
 	}
 
 	try {
-		const existing = await loadRow(session.auth.workspaceId, id);
+		const existing = await loadRow(auth.workspaceId, id);
 		if (!existing) return notFound();
 		const update: Record<string, unknown> = {};
 		if ("name" in body) {
@@ -274,13 +294,13 @@ async function handleUpdate(req: Request) {
 		const { error } = await getSupabaseAdmin()
 			.from("workload_identity_policies")
 			.update(update)
-			.eq("workspace_id", session.auth.workspaceId)
+			.eq("workspace_id", auth.workspaceId)
 			.eq("id", id);
 		if (error) throw error;
-		const row = await loadRow(session.auth.workspaceId, id);
+		const row = await loadRow(auth.workspaceId, id);
 		if (!row) return notFound();
 		const { updated_at: _updatedAt, ...changes } = update;
-		await audit(session, "updated", row, { changes });
+		await audit(auth, "updated", row, { changes });
 		return json({ data: format(row) }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("workload_identity.policies.update", error);
@@ -288,13 +308,13 @@ async function handleUpdate(req: Request) {
 }
 
 async function handleDelete(req: Request) {
-	const authorization = await authorize(req);
+	const authorization = await authorize(req, CAPABILITIES.KEYS_DELETE);
 	if ("response" in authorization) return authorization.response;
-	const { session } = authorization;
+	const { auth } = authorization;
 	const id = pathId(req);
 	if (!id) return notFound();
 	try {
-		const existing = await loadRow(session.auth.workspaceId, id);
+		const existing = await loadRow(auth.workspaceId, id);
 		if (!existing) return notFound();
 		const supabase = getSupabaseAdmin();
 		// Revoke the key first so the policy can never match again, then remove
@@ -303,17 +323,17 @@ async function handleDelete(req: Request) {
 		const revoked = await supabase
 			.from("keys")
 			.update({ status: "revoked", revoked_at: now, revoked_reason: "workload_identity_policy_deleted" })
-			.eq("workspace_id", session.auth.workspaceId)
+			.eq("workspace_id", auth.workspaceId)
 			.eq("id", existing.key_id)
 			.eq("key_kind", "workload_identity");
 		if (revoked.error) throw revoked.error;
 		const removed = await supabase
 			.from("workload_identity_policies")
 			.delete()
-			.eq("workspace_id", session.auth.workspaceId)
+			.eq("workspace_id", auth.workspaceId)
 			.eq("id", id);
 		if (removed.error) throw removed.error;
-		await audit(session, "deleted", existing);
+		await audit(auth, "deleted", existing);
 		return json({ data: { id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("workload_identity.policies.delete", error);
