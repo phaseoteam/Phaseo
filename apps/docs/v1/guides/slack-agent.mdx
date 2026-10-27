@@ -209,6 +209,41 @@ With every message, the agent sees the names and descriptions of the 20 most rec
 - Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
 - Uninstalling the agent deletes all its notes and skills. Adding it again starts with an empty memory.
 
+## Shared pages
+
+When an answer is too long or too rich for a Slack message, such as a report, a table or a chart, the agent can publish it as a web page and link it in its reply. Ask for one, for example:
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+A page is one HTML file the agent writes. It can be interactive, such as a table you can sort or a chart that shows details when you point at it, but it can't load anything from elsewhere, such as scripts, fonts or images from other sites, and it can't send anything anywhere. Pages open on `slack.phaseo.app` in a locked-down sandbox, so a page can't reach your Phaseo or Slack sign-in.
+
+| Who can view a page | How |
+| --- | --- |
+| **Anyone with the link** (default) | Anyone who has the link, without signing in. The link is long and random, so it can't be guessed. |
+| **People in this Slack workspace** | Members of your Slack workspace, after they sign in with Slack. Guests can only while **Allow guests** is on, and people from other companies can't. A sign-in lasts 8 hours. |
+
+The agent uses your admins' default unless someone asks for the other, for example `@Phaseo make it a page only our Slack workspace can see`.
+
+### Page limits
+
+- A page is kept for 30 days by default, then deleted. Admins can choose 7, 30 or 90 days for new pages.
+- Each answer can publish up to 3 pages, and each Slack workspace keeps up to 200 pages at a time. A page can be up to 512 KB.
+- Publishing is part of the answer: it costs nothing extra, and the model tokens spent writing the page count toward the answer's $0.50 limit.
+- People from other companies in shared Slack Connect channels can't publish pages.
+
+### What admins control for pages
+
+Under **Shared pages** in **Settings → Slack**:
+
+- **Let the agent publish pages** (on by default) turns publishing off. Pages already published stay until they expire or you delete them.
+- **Keep new pages for** 7, 30 or 90 days.
+- **Anyone with the link can view pages** (on by default). Turned off, every page needs a Slack sign-in, including pages already published.
+- **New pages are open to** sets the default when both options are available.
+- The list shows each page's title, who asked for it, when it was published and when it expires, and how often it was opened. Owners and admins can open any page and delete it; its link stops working at once. The workspace activity log records deletions without the title.
+
+**People in this Slack workspace** needs Sign in with Slack for the Slack app the agent uses. Until it's set up, **Settings → Slack** says so, and pages are open to anyone with the link. With your own Slack app, its manifest must include the redirect URL `https://slack.phaseo.app/p/signin`, as Phaseo's manifest does (see [Use your own Slack app](#use-your-own-slack-app)).
+
 ## Limits
 
 Owners and admins set these in **Settings → Slack**:
@@ -279,10 +314,11 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
+- **Shared pages until they expire.** A page the agent publishes can include what was said in Slack or what it found. Phaseo keeps the page, its title, the Slack ID of the person who asked for it and how often it was opened until it expires (after 7, 30 or 90 days, as your admins chose), an owner or admin deletes it, or you uninstall the agent. Anyone with its link can open it, or only signed-in members of your Slack workspace, as set for the page. Pages never appear in Phaseo's logs.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
-Uninstalling deletes the agent's API key, notes and saved skills, and removes its guardrail.
+Uninstalling deletes the agent's API key, notes and saved skills, and removes its guardrail. Its shared pages are deleted too, and their links stop working.
 
 ## Use your own Slack app
 
@@ -342,7 +378,8 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
   },
   "oauth_config": {
     "redirect_urls": [
-      "https://phaseo.app/api/account/settings/slack/oauth/callback"
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
     ],
     "scopes": {
       "bot": [
@@ -403,11 +440,13 @@ A few rules for your own app:
 - The manifest uses Slack's agent messaging experience (`agent_view`), the only one Slack offers new apps.
 - A Slack app can be connected to one Phaseo workspace, and a Phaseo workspace can save one Slack app.
 - While the agent is installed with your app, you can only replace its secrets. To switch to another app, or back to Phaseo's, uninstall first.
+- The manifest's second redirect URL, `https://slack.phaseo.app/p/signin`, lets people sign in with Slack to view pages shared with your Slack workspace. If you created your app from an earlier manifest, add it on the app's **App Manifest** page.
 
 ## Pause or uninstall
 
 - **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused.
 - **Uninstall** stops the agent straight away, deletes its API key, notes and saved skills, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
+- Uninstalling also deletes the agent's shared pages, so their links stop working.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
 
 Past charges stay in your billing history. The people who used the agent in the month you uninstall are still charged when that month ends. You can add the agent again at any time.
@@ -441,3 +480,5 @@ If the agent doesn't reply at all:
 - With your own Slack app, check that both request URLs end in your app ID, that Slack shows them as verified, and that the app is saved in **Settings → Slack**.
 
 If the install doesn't finish, **Settings → Slack** says why. The most common reasons are a privacy review that hasn't been done yet (open **Chat** once) and a Slack workspace that already has the agent from another Phaseo workspace (uninstall it there first).
+
+If a shared page doesn't open, it may have expired or been deleted: ask the agent for a new one. A page shared with your Slack workspace asks you to sign in with Slack; sign in with that workspace. Guests can open it only while **Allow guests** is on.

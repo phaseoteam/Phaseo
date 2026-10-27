@@ -208,6 +208,41 @@ A cada mensagem, o agente vê os nomes e as descrições das 20 habilidades alte
 - Proprietários e administradores veem tudo o que o agente salvou em **Memória e habilidades**, em **Configurações → Slack**. Eles podem filtrar as notas por tipo, excluir qualquer nota ou habilidade e editar o nome, a descrição e as instruções de uma habilidade. O registro de atividades do espaço de trabalho guarda essas alterações sem o texto.
 - Desinstalar o agente exclui todas as notas e habilidades dele. Se você o adicionar de novo, ele começa com a memória vazia.
 
+## Páginas compartilhadas
+
+Quando uma resposta é longa ou rica demais para uma mensagem do Slack, como um relatório, uma tabela ou um gráfico, o agente pode publicá-la como página web e colocar o link na resposta. Peça uma, por exemplo:
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+Uma página é um único arquivo HTML escrito pelo agente. Ela pode ser interativa, como uma tabela que dá para ordenar ou um gráfico que mostra detalhes ao passar o mouse, mas não pode carregar nada de outro lugar, como scripts, fontes ou imagens de outros sites, nem enviar nada para lugar nenhum. As páginas abrem em `slack.phaseo.app` numa sandbox fechada, então uma página não consegue acessar seu login no Phaseo ou no Slack.
+
+| Quem pode ver uma página | Como |
+| --- | --- |
+| **Qualquer pessoa com o link** (padrão) | Qualquer pessoa que tenha o link, sem fazer login. O link é longo e aleatório, então não dá para adivinhar. |
+| **Pessoas deste workspace do Slack** | Membros do seu workspace do Slack, depois de entrar com o Slack. Convidados só enquanto **Permitir convidados** estiver ativado, e pessoas de outras empresas não podem. Um login dura 8 horas. |
+
+O agente usa o padrão escolhido pelos seus administradores, a menos que alguém peça a outra opção, por exemplo `@Phaseo make it a page only our Slack workspace can see`.
+
+### Limites das páginas
+
+- Uma página é mantida por 30 dias por padrão e depois é apagada. Os administradores podem escolher 7, 30 ou 90 dias para páginas novas.
+- Cada resposta pode publicar até 3 páginas, e cada workspace do Slack mantém até 200 páginas ao mesmo tempo. Uma página pode ter até 512 KB.
+- Publicar faz parte da resposta: não custa nada a mais, e os tokens de modelo usados para escrever a página contam para o limite de $0.50 da resposta.
+- Pessoas de outras empresas em canais compartilhados do Slack Connect não podem publicar páginas.
+
+### O que os administradores controlam nas páginas
+
+Em **Páginas compartilhadas**, em **Configurações → Slack**:
+
+- **Permitir que o agente publique páginas** (ativado por padrão) desativa a publicação. As páginas já publicadas ficam até expirar ou até você excluí-las.
+- **Manter páginas novas por** 7, 30 ou 90 dias.
+- **Qualquer pessoa com o link pode ver as páginas** (ativado por padrão). Desativado, toda página pede login com o Slack, inclusive as já publicadas.
+- **Páginas novas ficam abertas para** define o padrão quando as duas opções estão disponíveis.
+- A lista mostra o título de cada página, quem pediu, quando foi publicada e quando expira, e quantas vezes foi aberta. Proprietários e administradores podem abrir qualquer página e excluí-la; o link para de funcionar na hora. O registro de atividades do espaço de trabalho guarda as exclusões sem o título.
+
+**Pessoas deste workspace do Slack** precisa do login com o Slack configurado para o app do Slack que o agente usa. Enquanto não estiver, **Configurações → Slack** avisa, e as páginas ficam abertas para qualquer pessoa com o link. Com seu próprio app do Slack, o manifesto dele precisa incluir a URL de redirecionamento `https://slack.phaseo.app/p/signin`, como o manifesto do Phaseo (veja "Usar seu próprio app do Slack", mais abaixo).
+
 ## Limites
 
 Proprietários e administradores os definem em **Configurações → Slack**:
@@ -278,10 +313,11 @@ Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-
 - **Nenhum provedor que treina com prompts.** O [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desativa o treinamento com modelos pagos e gratuitos e a publicação de prompts, então provedores que treinam com prompts nunca são usados. Provedores que guardam logs sem treinar com eles podem responder e podem manter o conteúdo das mensagens nesses logs conforme as próprias políticas; os logs, caches e a telemetria da Phaseo continuam sem guardar o conteúdo das mensagens.
 - **Memória de trabalho curta.** Para cada thread, o agente guarda suas respostas recentes, notas curtas sobre as ferramentas que usou, as mensagens que aguardam a vez, os IDs (não o texto) das mensagens recentes da thread para saber de onde ler a quem já enviou o botão para conectar a conta e as perguntas que fez, com as respostas. Elas são excluídas 7 dias depois da última atividade da thread.
 - **Memória que você pode ver e excluir.** O agente guarda as notas, notas fixadas, tarefas e habilidades que pedem para ele salvar, com as próprias palavras e nunca como cópias de mensagens, junto com o ID do Slack de quem pediu. Elas ficam até alguém excluí-las, passar a data até a qual deviam ser mantidas ou você desinstalar o agente. Proprietários e administradores podem vê-las e excluí-las em **Configurações → Slack** e desativar as notas lá (veja "Memória e habilidades", acima). Pessoas de outras empresas nunca veem as notas do workspace inteiro.
+- **Páginas compartilhadas até expirarem.** Uma página publicada pelo agente pode incluir o que foi dito no Slack ou o que ele encontrou. O Phaseo guarda a página, o título, o ID do Slack da pessoa que pediu e quantas vezes ela foi aberta até a página expirar (depois de 7, 30 ou 90 dias, como seus administradores escolheram), um proprietário ou administrador excluí-la ou você desinstalar o agente. Qualquer pessoa com o link pode abri-la, ou só membros do seu workspace do Slack que fizeram login, conforme a configuração da página. As páginas nunca aparecem nos logs do Phaseo.
 - **Nada arquivado.** A Phaseo não arquiva nada do Slack. Os logs do próprio agente guardam apenas IDs e status do Slack.
 - **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
 
-Desinstalar exclui a chave de API do agente, as notas e as habilidades salvas dele, e remove o guardrail dele.
+Desinstalar exclui a chave de API do agente, as notas e as habilidades salvas dele, e remove o guardrail dele. As páginas compartilhadas dele também são excluídas, e os links param de funcionar.
 
 ## Usar seu próprio app do Slack
 
@@ -341,7 +377,8 @@ Em **Configurações → Slack**, escolha **Seu app do Slack** em **App do Slack
   },
   "oauth_config": {
     "redirect_urls": [
-      "https://phaseo.app/api/account/settings/slack/oauth/callback"
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
     ],
     "scopes": {
       "bot": [
@@ -401,11 +438,13 @@ Algumas regras para o seu próprio app:
 - O manifesto usa a experiência de mensagens de agente do Slack (`agent_view`), a única que o Slack oferece a apps novos.
 - Um app do Slack pode estar conectado a um único espaço de trabalho da Phaseo, e um espaço de trabalho da Phaseo pode salvar um único app do Slack.
 - Enquanto o agente estiver instalado com o seu app, você só pode substituir os segredos dele. Para trocar para outro app, ou voltar ao da Phaseo, desinstale primeiro.
+- A segunda URL de redirecionamento do manifesto, `https://slack.phaseo.app/p/signin`, permite entrar com o Slack para ver páginas compartilhadas com seu workspace do Slack. Se você criou seu app com um manifesto anterior, adicione-a na página **App Manifest** do app.
 
 ## Pausar ou desinstalar
 
 - **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado.
 - **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas e as habilidades salvas dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
+- Desinstalar também exclui as páginas compartilhadas do agente, então os links delas param de funcionar.
 - Remover o app dentro do Slack, ou revogar o token de bot dele, desinstala o agente na Phaseo da mesma forma.
 
 As cobranças anteriores continuam no seu histórico de faturamento. As pessoas que usaram o agente no mês em que você o desinstala ainda são cobradas quando esse mês termina. Você pode adicionar o agente de novo a qualquer momento.
@@ -439,3 +478,5 @@ Se o agente não responder nada:
 - Com o seu próprio app do Slack, confira se as duas URLs de solicitação terminam com o ID do seu app, se o Slack as mostra como verificadas e se o app está salvo em **Configurações → Slack**.
 
 Se a instalação não terminar, **Configurações → Slack** mostra o motivo. Os mais comuns são uma revisão de privacidade que ainda não foi feita (abra o **Chat** uma vez) e um espaço de trabalho do Slack que já tem o agente de outro espaço de trabalho da Phaseo (desinstale-o lá primeiro).
+
+Se uma página compartilhada não abrir, ela pode ter expirado ou sido excluída: peça uma nova ao agente. Uma página compartilhada com seu workspace do Slack pede login com o Slack; entre com esse workspace. Convidados só podem abri-la enquanto **Permitir convidados** estiver ativado.
