@@ -140,9 +140,9 @@ describe("schedule timing", () => {
 });
 
 describe("schedule tools", () => {
-	const tools = (canCreate = true) => {
+	const tools = (canCreate = true, channel = CHANNEL) => {
 		const notes: string[] = [];
-		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel: CHANNEL, slackUserId: PERSON, canCreate, runKey: "Ev0SAVE0001:0", notes });
+		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel, slackUserId: PERSON, canCreate, runKey: "Ev0SAVE0001:0", notes });
 		const byId = (id: string) => list.find((tool) => tool.id === id)!;
 		return { list, notes, run: (id: string, input: Record<string, unknown> = {}) => (byId(id).execute as (input: unknown) => Promise<any>)(input) };
 	};
@@ -226,14 +226,22 @@ describe("schedule tools", () => {
 		await expect(run("schedule_task", { ...input, prompt: "x".repeat(2_001) })).rejects.toThrow(/at most 2,000/);
 	});
 
-	it("lists this conversation's and the person's own, and cancels by id", async () => {
+	it("lists only this conversation's in a channel, never the person's tasks elsewhere", async () => {
+		await tools().run("list_schedules");
+		const query = world.db.queries.at(-1)?.query;
+		expect(query).toMatchObject({ installation_id: `eq.${INSTALLATION_ID}`, channel_id: `eq.${CHANNEL}` });
+		expect(query).not.toHaveProperty("or");
+	});
+
+	it("lists this conversation's and the person's own in a direct message, and cancels by id", async () => {
+		const DM = "D0DIRECT01";
 		world.db.tables.slack_agent_schedules = [
-			{ ...savedRow(), installation_id: INSTALLATION_ID, created_at: "2026-10-20T09:00:00Z" },
+			{ ...savedRow({ channel_id: DM }), installation_id: INSTALLATION_ID, created_at: "2026-10-20T09:00:00Z" },
 			{ ...savedRow({ id: "00000000-0000-4000-8000-00000000e5c2", channel_id: "C0OTHER001", status: "paused", pause_reason: "failures", last_result: "failed" }), installation_id: INSTALLATION_ID, created_at: "2026-10-21T09:00:00Z" },
 		];
-		const { run, notes } = tools();
+		const { run, notes } = tools(true, DM);
 		const { schedules } = await run("list_schedules");
-		expect(world.db.queries.at(-1)?.query).toMatchObject({ installation_id: `eq.${INSTALLATION_ID}`, or: `(channel_id.eq.${CHANNEL},created_by.eq.${PERSON})` });
+		expect(world.db.queries.at(-1)?.query).toMatchObject({ installation_id: `eq.${INSTALLATION_ID}`, or: `(channel_id.eq.${DM},created_by.eq.${PERSON})` });
 		expect(schedules).toEqual([
 			{ id: SCHEDULE_ID, title: "Weekly spend", prompt: "Summarise it.", runs: "every Monday at 09:00 (Europe/London time)", where: "this conversation", status: "active", next_run: "Mon, Nov 2, 2026, 09:00 (Europe/London)", set_up_by: `<@${PERSON}>` },
 			{ id: "00000000-0000-4000-8000-00000000e5c2", title: "Weekly spend", prompt: "Summarise it.", runs: "every Monday at 09:00 (Europe/London time)", where: "<#C0OTHER001>", status: "paused after 3 runs in a row didn't go through", last_run: "failed", set_up_by: `<@${PERSON}>` },

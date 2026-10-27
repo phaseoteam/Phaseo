@@ -254,14 +254,19 @@ export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>
 	const tools: AgentTool<any, any>[] = [
 		{
 			id: "list_schedules",
-			description: "List the recurring tasks that post in this conversation and the ones the person asking set up anywhere: what each does, where it posts, how often, its next run, its status, who set it up, and the id cancel_schedule needs.",
+			description: "List the recurring tasks that post in this conversation (in a direct message with you, also the ones the person asking set up anywhere): what each does, where it posts, how often, its next run, its status, who set it up, and the id cancel_schedule needs.",
 			parameters: { type: "object", properties: {}, additionalProperties: false },
 			onError: "return-to-model",
 			execute: async () => {
+				// Only a direct message is private to the person asking: elsewhere, their tasks in other
+				// conversations (private channels, other DMs) and their prompts would be shown to everyone here.
+				const conversation: Record<string, string> = channel.startsWith("D")
+					? { or: `(channel_id.eq.${channel},created_by.eq.${slackUserId})` }
+					: { channel_id: `eq.${channel}` };
 				const rows = await db.select<ScheduleRow>("slack_agent_schedules", {
 					select: LIST_COLUMNS,
 					installation_id: `eq.${installationId}`,
-					or: `(channel_id.eq.${channel},created_by.eq.${slackUserId})`,
+					...conversation,
 					order: "created_at.asc",
 					limit: "100",
 				});
