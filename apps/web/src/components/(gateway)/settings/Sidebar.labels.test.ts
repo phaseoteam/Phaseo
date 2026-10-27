@@ -13,7 +13,7 @@ describe("settings sheet translations", () => {
         const navigation = await getSettingsNavigationMessages(locale);
         expect(navigation).toEqual(getSettingsMessages(locale));
         const copy = getSettingsNavigationCopy(navigation, messages.SettingsUI.sidebarNew);
-        const groups = getSettingsSidebar({ showBroadcast: true, showWebhooks: true, showEnterprise: true, showAutoRouting: true, showClassifiers: true, showSlackAgent: true, showInternal: true });
+        const groups = getSettingsSidebar({ showBroadcast: true, showWebhooks: true, showEnterprise: true, showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true, showInternal: true });
         for (const group of groups) {
             if (group.heading) expect(copy.headings[group.heading]).toEqual(expect.any(String));
             for (const item of group.items) {

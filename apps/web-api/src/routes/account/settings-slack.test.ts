@@ -25,8 +25,14 @@ const env = {
 	PHASEO_CONTROL_KEY: "control-key",
 	PHASEO_CONTROL_SECRET: "control-secret",
 	GATEWAY_API_ORIGIN: "https://gateway-control.test",
+	STATSIG_SERVER_KEY: "statsig-server-key",
 };
-const executionCtx = { waitUntil: () => undefined, passThroughOnException: () => undefined, props: {} } as any;
+const background: Promise<unknown>[] = [];
+const executionCtx = { waitUntil: (promise: Promise<unknown>) => { background.push(promise); }, passThroughOnException: () => undefined, props: {} } as any;
+/** Waits for the work the routes handed to waitUntil (gateway invalidation, alerts). */
+const settle = () => Promise.allSettled(background.splice(0));
+const ALERT_WEBHOOK = "https://discord.test/api/webhooks/1/alerts";
+const KEY_KID = "kidAAAA00001";
 const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b" };
 
 function installationRow(overrides: Record<string, unknown> = {}) {
@@ -59,6 +65,8 @@ type Fixture = {
 	appInUse?: boolean;
 	keyLimitNanos?: number;
 	usage?: { people: number; answers: number };
+	modelSpend?: Array<Record<string, unknown>>;
+	modelSpendError?: boolean;
 	charges?: Array<Record<string, unknown>>;
 	installInsertError?: { status: number; body: Record<string, unknown> };
 	installationUpdateRows?: Array<Record<string, unknown>>;
@@ -66,6 +74,12 @@ type Fixture = {
 	slackUninstallOk?: boolean;
 	keyById?: Record<string, unknown>;
 	customAppInsertError?: { status: number; body: Record<string, unknown> };
+	/** The internal alert webhook's answer: a status (default 204) or a function. */
+	alert?: number | ((request: Request) => Response | Promise<Response>);
+	/** Statsig's answer for the Auto Routing gate (default: closed), or "error" for a failed check. */
+	autoRouting?: boolean | "error";
+	/** The agent key's created_by (default user-a, the installer). */
+	keyCreatedBy?: string | null;
 };
 
 function parse(text: string): any {
@@ -90,6 +104,14 @@ function database(fixture: Fixture = {}) {
 			if (path === "/api/apps.uninstall") return Response.json({ ok: fixture.slackUninstallOk ?? true });
 		}
 		if (url.hostname === "gateway-control.test") return Response.json({ ok: true });
+		if (url.hostname === "discord.test") {
+			if (typeof fixture.alert === "function") return fixture.alert(request);
+			return new Response(null, { status: fixture.alert ?? 204 });
+		}
+		if (url.hostname === "api.statsig.com") {
+			if (fixture.autoRouting === "error") return new Response("unavailable", { status: 503 });
+			return Response.json({ name: "gateway_auto_routing", value: fixture.autoRouting ?? false });
+		}
 		if (path.endsWith("/auth/v1/user")) {
 			const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
 			const id = TOKENS[token];
@@ -103,6 +125,10 @@ function database(fixture: Fixture = {}) {
 		if (path.endsWith("/workspaces")) return rows([{ owner_user_id: "owner", slug: "workspace-a", name: "Workspace A" }]);
 		if (path.endsWith("/workspace_audit_events")) return new Response(null, { status: 201 });
 		if (path.endsWith("/rpc/get_slack_agent_month_usage")) return rows([fixture.usage ?? { people: 0, answers: 0 }]);
+		if (path.endsWith("/rpc/get_slack_agent_model_spend")) {
+			if (fixture.modelSpendError) return Response.json({ code: "PGRST202", message: "Could not find the function" }, { status: 404 });
+			return rows(fixture.modelSpend ?? []);
+		}
 		if (path.endsWith("/slack_agent_charges")) return rows(fixture.charges ?? []);
 		if (path.endsWith("/slack_user_links")) return new Response(null, { status: 201 });
 		if (path.endsWith("/workspace_member_guardrails")) return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
@@ -119,7 +145,7 @@ function database(fixture: Fixture = {}) {
 			if (request.method === "PATCH") return rows([{ id: KEY_ID }]);
 			if (request.method === "DELETE") return new Response(null, { status: 204 });
 			if (url.searchParams.get("id") === `eq.${KEY_ID}` && fixture.keyById) return rows([fixture.keyById]);
-			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0 }]);
+			return rows([{ monthly_limit_cost_nanos: fixture.keyLimitNanos ?? 0, created_by: fixture.keyCreatedBy === undefined ? "user-a" : fixture.keyCreatedBy, kid: KEY_KID }]);
 		}
 		if (path.endsWith("/slack_apps")) {
 			if (request.method === "GET") return rows(fixture.customApp ? [fixture.customApp] : []);
@@ -167,7 +193,7 @@ function callback(query: Record<string, string>, cookieToken: string | null = "t
 	}, { ...env, ...overrides }, executionCtx);
 }
 
-const validInstall = { workspaceId: WORKSPACE, plan_people: 10, over_plan: "refuse", monthly_cap_usd: 25, token_monthly_limit_usd: 40, model: "phaseo/auto", access_mode: "everyone", usage_data_mode: "dm" };
+const validInstall = { workspaceId: WORKSPACE, plan_people: 10, over_plan: "refuse", monthly_cap_usd: 25, token_monthly_limit_usd: 40, model: "openai/gpt-6-luna", access_mode: "everyone", usage_data_mode: "dm" };
 
 async function installState(overrides: Record<string, unknown> = {}, now = Date.now()) {
 	const { workspaceId: _ignored, ...settings } = validInstall;
@@ -179,6 +205,7 @@ async function installState(overrides: Record<string, unknown> = {}, now = Date.
 
 const find = (requests: Recorded[], method: string, suffix: string) =>
 	requests.filter((entry) => entry.method === method && entry.url.pathname.endsWith(suffix));
+const gateChecks = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "api.statsig.com");
 
 function location(response: Response) {
 	return new URL(response.headers.get("location") ?? "");
@@ -198,6 +225,7 @@ describe("Slack agent settings reads", () => {
 			installation: { team_name: "Acme", status: "active", installed_at: "2026-10-01T00:00:00Z" },
 		});
 		expect(find(requests, "POST", "/rpc/get_slack_agent_month_usage")).toHaveLength(0);
+		expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(0);
 		expect(find(requests, "GET", "/slack_agent_charges")).toHaveLength(0);
 	});
 
@@ -209,7 +237,11 @@ describe("Slack agent settings reads", () => {
 	it("shows admins the settings, plan price, this month's usage from the database and recent charges, without secrets", async () => {
 		const requests = database({
 			role: "admin", installation: {}, keyLimitNanos: 40_000_000_000, usage: { people: 4, answers: 1_500 },
-			charges: [{ period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+			modelSpend: [
+				{ installation_id: INSTALLATION_ID, period_start: currentPeriodStart(), requests: 812, cost_nanos: 12_500_000_000 },
+				{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", requests: 95, cost_nanos: 1_234_567_890 },
+			],
 		});
 		const response = await call(`/slack?workspaceId=${WORKSPACE}`);
 		expect(response.status).toBe(200);
@@ -220,14 +252,115 @@ describe("Slack agent settings reads", () => {
 		expect(body.installation.settings).toMatchObject({ plan_people: 10, monthly_cap_usd: 25, token_monthly_limit_usd: 40, over_plan: "refuse" });
 		expect(body.installation.plan).toEqual({ people: 10, price_usd: 2.99 });
 		// 4 people: the 10-person plan ($2.99) and 1,200 included answers, so 300 extra at $0.25 per 1,000.
-		expect(body.installation.month).toEqual({ period_start: currentPeriodStart(), people: 4, answers: 1_500, estimated_charge_usd: 3.065 });
-		expect(body.charges).toEqual([{ period_start: "2026-09-01", people: 3, answers: 200, amount_usd: 0.99, status: "charged", charged_at: "2026-10-01T01:00:00Z" }]);
+		// Model spend through the agent's key is billed as normal requests, beside the charge, not in it.
+		expect(body.installation.month).toEqual({
+			period_start: currentPeriodStart(), people: 4, answers: 1_500, estimated_charge_usd: 3.065, model_spend_usd: 12.5, model_requests: 812,
+		});
+		expect(body.charges).toEqual([{ period_start: "2026-09-01", people: 3, answers: 200, amount_usd: 0.99, model_spend_usd: 1.23456789, status: "charged", charged_at: "2026-10-01T01:00:00Z" }]);
 		const rpc = find(requests, "POST", "/rpc/get_slack_agent_month_usage")[0];
 		expect(rpc.body).toEqual({ p_installation_id: INSTALLATION_ID, p_period_start: currentPeriodStart() });
+		// Spend is summed in the database for this month and the charged months, in one call.
+		const spend = find(requests, "POST", "/rpc/get_slack_agent_model_spend");
+		expect(spend).toHaveLength(1);
+		expect(spend[0].body).toEqual({ p_workspace_id: WORKSPACE, p_periods: [currentPeriodStart(), "2026-09-01"] });
+		const charges = find(requests, "GET", "/slack_agent_charges");
+		expect(charges).toHaveLength(1);
+		expect(charges[0].url.searchParams.get("select")).toContain("installation_id");
 		// Usage is never read row by row, and secrets are never selected or returned.
 		expect(find(requests, "GET", "/slack_agent_monthly_people")).toHaveLength(0);
+		expect(find(requests, "GET", "/v2_private_usage_15m")).toHaveLength(0);
 		for (const entry of find(requests, "GET", "/slack_installations")) expect(entry.url.searchParams.get("select")).not.toContain("secrets");
 		expect(JSON.stringify(body)).not.toMatch(/secret|ciphertext|xox/);
+	});
+
+	it("shows zero model spend for months without any, and each charge's own installation's spend", async () => {
+		const OLD_INSTALLATION = "00000000-0000-4000-8000-0000000000d0";
+		database({
+			role: "admin", installation: {},
+			charges: [
+				{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "pending", charged_at: null },
+				{ installation_id: OLD_INSTALLATION, period_start: "2026-09-01", people: 1, answers: 20, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" },
+			],
+			modelSpend: [{ installation_id: OLD_INSTALLATION, period_start: "2026-09-01", requests: 40, cost_nanos: 2_000_000_000 }],
+		});
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.installation.month).toMatchObject({ model_spend_usd: 0, model_requests: 0 });
+		expect(body.charges.map((charge: any) => charge.model_spend_usd)).toEqual([0, 2]);
+	});
+
+	it("still loads the page when the model spend can't be read, without guessing it", async () => {
+		const requests = database({
+			role: "admin", installation: {}, modelSpendError: true,
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+		});
+		const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			const response = await call(`/slack?workspaceId=${WORKSPACE}`);
+			expect(response.status).toBe(200);
+			const body = await response.json() as any;
+			expect(body.installation.month).toMatchObject({ model_spend_usd: null, model_requests: null });
+			expect(body.charges[0]).toMatchObject({ amount_usd: 0.99, model_spend_usd: null });
+			expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(1);
+			expect(logged).toHaveBeenCalledWith("[slack-agent] model spend unavailable", { workspaceId: WORKSPACE, code: "PGRST202" });
+		} finally {
+			logged.mockRestore();
+		}
+	});
+
+	it("asks for the charged months' spend after an uninstall, and nothing when there is no history", async () => {
+		const requests = database({
+			role: "admin",
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-08-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-09-01T01:00:00Z" }],
+			modelSpend: [{ installation_id: INSTALLATION_ID, period_start: "2026-08-01", requests: 5, cost_nanos: 50_000_000 }],
+		});
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.installation).toBeNull();
+		expect(body.charges[0].model_spend_usd).toBe(0.05);
+		expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")[0].body).toEqual({ p_workspace_id: WORKSPACE, p_periods: ["2026-08-01"] });
+
+		const empty = database({ role: "admin" });
+		expect((await call(`/slack?workspaceId=${WORKSPACE}`)).status).toBe(200);
+		expect(find(empty, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(0);
+	});
+
+	it("says whether Auto is open to the agent's key, asking Statsig as the gateway does", async () => {
+		const requests = database({ role: "admin", installation: {}, autoRouting: true });
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`, {}, "token-b")).json() as any;
+		expect(body.auto_routing).toBe(true);
+		const checks = gateChecks(requests);
+		expect(checks).toHaveLength(1);
+		expect(checks[0].headers.get("statsig-api-key")).toBe("statsig-server-key");
+		// The key's creator, not the admin looking, with the key's ids: what the gateway sends for the agent's requests.
+		expect(checks[0].body).toEqual({
+			gateName: "gateway_auto_routing",
+			user: {
+				userID: "user-a",
+				customIDs: { workspaceID: WORKSPACE, apiKeyID: KEY_ID, apiKeyKid: KEY_KID },
+				custom: { workspace_id: WORKSPACE, api_key_id: KEY_ID, api_key_ref: `kid_${KEY_KID}`, api_key_kid: KEY_KID, is_internal: false, surface: "gateway_auto_routing" },
+				statsigEnvironment: { tier: "production" },
+			},
+		});
+	});
+
+	it("decides Auto for the admin about to install, the workspace owner for a key without a creator, and no when Statsig fails", async () => {
+		let requests = database({ role: "admin", autoRouting: true });
+		expect(((await (await call(`/slack?workspaceId=${WORKSPACE}`, {}, "token-b")).json()) as any).auto_routing).toBe(true);
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-b", customIDs: { workspaceID: WORKSPACE } });
+		expect(gateChecks(requests)[0].body.user.custom.api_key_id).toBeNull();
+
+		requests = database({ role: "admin", installation: {}, autoRouting: true, keyCreatedBy: null });
+		await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(gateChecks(requests)[0].body.user.userID).toBe("owner");
+
+		database({ role: "admin", installation: {}, autoRouting: "error" });
+		const failed = await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(failed.status).toBe(200);
+		expect(((await failed.json()) as any).auto_routing).toBe(false);
+
+		// Members never trigger the check.
+		requests = database({ role: "member", installation: {}, autoRouting: true });
+		await call(`/slack?workspaceId=${WORKSPACE}`);
+		expect(gateChecks(requests)).toHaveLength(0);
 	});
 });
 
@@ -309,7 +442,7 @@ describe("Slack agent install", () => {
 			expect(verified.payload).toMatchObject({
 				workspace_id: WORKSPACE, user_id: "user-a",
 				settings: {
-					plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "phaseo/auto", slack_app_id: null,
+					plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "openai/gpt-6-luna", slack_app_id: null,
 					// The table's defaults when the install doesn't choose them.
 					answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
 				},
@@ -317,6 +450,31 @@ describe("Slack agent install", () => {
 			expect(verified.payload.exp - before).toBeGreaterThanOrEqual(599);
 			expect(verified.payload.exp - before).toBeLessThanOrEqual(601);
 		}
+	});
+
+	it("refuses Auto where the gateway would refuse it, and checks nothing for a specific model", async () => {
+		let requests = database({ role: "admin", autoRouting: false });
+		const refused = await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "Phaseo/Auto" }) });
+		expect(refused.status).toBe(400);
+		expect(await refused.json()).toMatchObject({ error: "auto_routing_unavailable", message: "Auto isn't available to this workspace. Choose a specific model" });
+		// Decided for the admin installing, who becomes the key's creator.
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-a", customIDs: { workspaceID: WORKSPACE } });
+
+		database({ role: "admin", autoRouting: "error" });
+		expect((await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "phaseo/auto" }) })).status).toBe(400);
+
+		database({ role: "admin", autoRouting: true });
+		const allowed = await call("/slack/install", { method: "POST", body: JSON.stringify({ ...validInstall, model: "phaseo/auto" }) });
+		expect(allowed.status).toBe(200);
+
+		requests = database({ role: "admin" });
+		const { model: _model, ...withoutModel } = validInstall;
+		const defaulted = await call("/slack/install", { method: "POST", body: JSON.stringify(withoutModel) });
+		expect(defaulted.status).toBe(200);
+		const state = await verifySlackToken<{ settings: { model: string } }>(env as never, "install", new URL(((await defaulted.json()) as any).url).searchParams.get("state"));
+		// Without a choice, the agent gets a model every workspace can use.
+		expect(state.ok && state.payload.settings.model).toBe("openai/gpt-6-luna");
+		expect(gateChecks(requests)).toHaveLength(0);
 	});
 
 	it("uses the workspace's own Slack app when one is chosen, even without the hosted app", async () => {
@@ -366,7 +524,7 @@ describe("Slack OAuth callback", () => {
 		expect(find(requests, "POST", "/keys")).toHaveLength(0);
 	});
 
-	it("installs: managed key, no-training no-logging guardrail, key link and encrypted installation", async () => {
+	it("installs: managed key that stores no content, no-training guardrail, key link and encrypted installation", async () => {
 		const requests = database({ role: "admin" });
 		const response = await callback({ code: "123.456.abc", state: await installState() });
 		expect(response.status).toBe(302);
@@ -390,18 +548,21 @@ describe("Slack OAuth callback", () => {
 		expect(key.kid).toMatch(/^[A-Za-z0-9]{12}$/);
 		expect(key.hash).toMatch(/^[0-9a-f]{64}$/);
 
+		// Training and prompt publishing are off. Providers that keep logs may answer, or most
+		// models would have no route; Phaseo's own storage is off through never_store_content.
 		const guardrail = find(requests, "POST", "/workspace_guardrails")[0].body;
 		expect(guardrail).toMatchObject({
 			workspace_id: WORKSPACE, name: "Slack agent", enabled: true,
+			description: "Managed by the Slack agent. Slack's API terms do not allow training on Slack data, so training and prompt publishing are off.",
 			privacy_enable_paid_may_train: false, privacy_enable_free_may_train: false,
-			privacy_enable_free_may_publish_prompts: false, privacy_enable_input_output_logging: false,
+			privacy_enable_free_may_publish_prompts: false, privacy_enable_input_output_logging: true,
 		});
 		expect(find(requests, "POST", "/key_guardrails")[0].body).toEqual({ key_id: KEY_ID, guardrail_id: GUARDRAIL_ID });
 
 		const installation = find(requests, "POST", "/slack_installations")[0].body;
 		expect(installation).toMatchObject({
 			workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
-			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", access_mode: "everyone",
+			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "openai/gpt-6-luna", access_mode: "everyone",
 			usage_data_mode: "dm", plan_people: 10, over_plan: "refuse", max_people: null, monthly_cap_nanos: 25_000_000_000, installed_by: "user-a",
 			answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
 		});
@@ -612,6 +773,26 @@ describe("Slack agent settings changes", () => {
 		expect((await patch({ status: "active" })).status).toBe(200);
 	});
 
+	it("switches to Auto only where the agent's key has access to it", async () => {
+		let requests = database({ role: "admin", installation: { model: "openai/gpt-6-luna" }, autoRouting: false });
+		const refused = await patch({ model: "phaseo/auto", instructions: "Be brief." });
+		expect(refused.status).toBe(400);
+		expect(await refused.json()).toMatchObject({ error: "auto_routing_unavailable" });
+		expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+		expect(gateChecks(requests)[0].body.user).toMatchObject({ userID: "user-a", customIDs: { apiKeyID: KEY_ID, apiKeyKid: KEY_KID } });
+
+		requests = database({ role: "admin", installation: { model: "openai/gpt-6-luna" }, autoRouting: true });
+		expect((await patch({ model: "phaseo/auto" })).status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ model: "phaseo/auto" });
+
+		// Other changes, and an agent already on Auto, don't ask.
+		for (const body of [{ model: "anthropic/claude-sonnet-5-5" }, { instructions: "Be brief." }]) {
+			requests = database({ role: "admin", installation: {}, autoRouting: false });
+			expect((await patch(body)).status, JSON.stringify(body)).toBe(200);
+			expect(gateChecks(requests)).toHaveLength(0);
+		}
+	});
+
 	it("is for admins, and 404s without an installation", async () => {
 		database({ role: "member", installation: {} });
 		expect((await patch({ status: "paused" })).status).toBe(403);
@@ -657,6 +838,117 @@ describe("Slack agent uninstall", () => {
 		const requests = database({ role: "member", installation: {} });
 		expect((await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(403);
 		expect(requests.some((entry) => entry.method === "PATCH")).toBe(false);
+	});
+});
+
+describe("Internal Slack agent alerts", () => {
+	const alerts = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "discord.test");
+	const withAlerts = { DISCORD_SIGNUP_WEBHOOK_URL: ALERT_WEBHOOK };
+
+	it("tells the Phaseo team when a workspace installs, with names only", async () => {
+		const requests = database({ role: "admin" });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("installed")).toBe("1");
+		await settle();
+		const sent = alerts(requests);
+		expect(sent).toHaveLength(1);
+		expect(sent[0].method).toBe("POST");
+		expect(sent[0].url.href).toBe(ALERT_WEBHOOK);
+		expect(sent[0].body).toEqual({
+			content: [
+				"Slack agent installed",
+				`- workspace: \`Workspace A\` (\`${WORKSPACE}\`)`,
+				"- slack_team: `Acme`",
+				"- app: `hosted`",
+				"- installed_by: `user-a` (`u*****@example.com`)",
+			].join("\n"),
+			allowed_mentions: { parse: [] },
+		});
+		expect(JSON.stringify(sent[0].body)).not.toContain("xox");
+	});
+
+	it("says when the install used the workspace's own Slack app", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext };
+		const requests = database({ role: "admin", customApp, slackAccess: grant({ app_id: "A0CUSTOM01" }) });
+		await callback({ code: "123.456.abc", state: await installState({ slack_app_id: APP_ROW_ID }) }, "token-a", withAlerts);
+		await settle();
+		expect(alerts(requests)[0].body.content).toContain("- app: `company`");
+	});
+
+	it("tells the team when a workspace uninstalls in Phaseo settings", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "phaseo_v1_sk_kid_secret" });
+		const requests = database({ role: "admin", installation: { secrets_ciphertext } });
+		const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+		expect(response.status).toBe(200);
+		await settle();
+		const sent = alerts(requests);
+		expect(sent).toHaveLength(1);
+		expect(sent[0].body.content).toBe([
+			"Slack agent uninstalled",
+			`- workspace: \`Workspace A\` (\`${WORKSPACE}\`)`,
+			"- slack_team: `Acme`",
+			"- app: `hosted`",
+			"- uninstalled_by: `user-a` (`u*****@example.com`) in Phaseo settings",
+		].join("\n"));
+		expect(JSON.stringify(sent[0].body)).not.toContain(BOT_TOKEN);
+	});
+
+	it("sends nothing when the uninstall found the agent already removed", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const requests = database({ role: "admin", installation: { secrets_ciphertext }, installationUpdateRows: [] });
+		await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+	});
+
+	it("sends nothing for an install that failed", async () => {
+		const requests = database({ role: "admin", teamRows: [{ id: "other", workspace_id: OTHER_WORKSPACE }] });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("error")).toBe("slack_team_in_use");
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+	});
+
+	it("never fails an install or uninstall when the alert fails", async () => {
+		const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			database({ role: "admin", alert: 500 });
+			expect(location(await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts)).searchParams.get("installed")).toBe("1");
+			await settle();
+			expect(errors).toHaveBeenCalledWith("slack_agent_alert_failed", { event: "installed", status: 500 });
+
+			const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+			database({ role: "admin", installation: { secrets_ciphertext }, alert: () => { throw new TypeError("fetch failed"); } });
+			const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+			expect(await response.json()).toEqual({ uninstalled: true, slack_uninstalled: true });
+			expect((await settle()).every((result) => result.status === "fulfilled")).toBe(true);
+			expect(errors).toHaveBeenCalledWith("slack_agent_alert_failed", { event: "uninstalled", status: null });
+		} finally {
+			errors.mockRestore();
+		}
+	});
+
+	it("doesn't make the install wait for the alert", async () => {
+		let deliver!: () => void;
+		const held = new Promise<Response>((resolve) => { deliver = () => resolve(new Response(null, { status: 204 })); });
+		const requests = database({ role: "admin", alert: () => held });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("installed")).toBe("1");
+		deliver();
+		await settle();
+		expect(alerts(requests)).toHaveLength(1);
+	});
+
+	it("is off without the webhook", async () => {
+		const requests = database({ role: "admin" });
+		expect(location(await callback({ code: "123.456.abc", state: await installState() }, "token-a", { DISCORD_SIGNUP_WEBHOOK_URL: " " })).searchParams.get("installed")).toBe("1");
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const uninstall = database({ role: "admin", installation: { secrets_ciphertext } });
+		expect((await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(200);
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+		expect(alerts(uninstall)).toHaveLength(0);
 	});
 });
 

@@ -129,6 +129,9 @@ describe("audit request detail persistence", () => {
 	it.each([
 		["a requests-per-minute policy rejection", "user:rate_limit_exceeded", "policy_requests_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "requests" }],
 		["a tokens-per-minute policy rejection", "user:rate_limit_exceeded", "policy_tokens_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "tokens" }],
+		["a concurrency policy rejection", "user:rate_limit_exceeded", "policy_concurrent_requests", { policy_id: "policy-1", limit_scope: "member", limit: "concurrent_requests" }],
+		["a strict policy that could not be checked", "user:rate_limit_exceeded", "policy_unavailable", { policy_id: "policy-1", limit_scope: "member", limit: "unavailable" }],
+		["an unknown reason", "user:rate_limit_exceeded", "something_else", null],
 		["a provider rate limit", "rate_limit_exceeded", "policy_requests_per_minute", null],
 	])("records the rejecting rate limit policy on %s", async (_label, errorCode, reason, expected) => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({

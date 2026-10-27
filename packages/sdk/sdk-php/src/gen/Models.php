@@ -6649,6 +6649,8 @@ class WorkspaceAutoTopUpUpdate
 	public $payment_method_id;
 }
 
+class WorkspaceBillingTimeZone { }
+
 class WorkspaceBudget
 {
 	/** @var string */
@@ -7201,6 +7203,12 @@ class WorkspaceNotificationRouteMap
 	public $payment_method_expiring;
 	/** @var array */
 	public $rate_limit_throttled;
+	/** @var array */
+	public $spend_alert;
+	/** @var array */
+	public $spend_blocked;
+	/** @var array */
+	public $spend_report;
 }
 
 class WorkspaceNotificationRouteResponse
@@ -7229,6 +7237,8 @@ class WorkspaceNotificationSettings
 	public $email_preferences;
 	/** @var array<string, mixed> */
 	public $low_balance_email;
+	/** @var array<string, mixed> */
+	public $spend;
 }
 
 class WorkspaceNotificationSettingsResponse
@@ -7245,6 +7255,8 @@ class WorkspaceNotificationSettingsUpdateRequest
 	public $email_preferences;
 	/** @var array<string, mixed>|null */
 	public $low_balance_email;
+	/** @var array<string, mixed>|null */
+	public $spend;
 }
 
 class WorkspaceNotificationTestResponse
@@ -7455,6 +7467,24 @@ class WorkspaceSettingsUpdateRequest
 	public $response_healing_mode;
 	/** @var string|null */
 	public $routing_mode;
+}
+
+class WorkspaceSpendAttribution { }
+
+class WorkspaceSpendSettings
+{
+	/** @var string */
+	public $billing_time_zone;
+	/** @var string */
+	public $department_attribution;
+}
+
+class WorkspaceSpendSettingsUpdate
+{
+	/** @var string|null */
+	public $billing_time_zone;
+	/** @var string|null */
+	public $department_attribution;
 }
 
 class WorkspaceSsoResponse

@@ -1,6 +1,6 @@
 import type { Env } from "@/env";
 
-function maskEmail(email: string | null): string {
+export function maskEmail(email: string | null): string {
 	if (!email) return "unknown";
 	const at = email.indexOf("@");
 	if (at <= 0 || at === email.length - 1) return "unknown";

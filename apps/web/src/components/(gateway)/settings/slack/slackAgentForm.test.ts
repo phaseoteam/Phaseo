@@ -8,6 +8,7 @@ import {
 	formatUsd,
 	installDraftDefaults,
 	installPayload,
+	isAutoModel,
 	parseAmount,
 	parseChannelIds,
 	parseWhole,
@@ -112,11 +113,19 @@ describe("Slack agent install payload", () => {
 				allow_guests: true,
 				allow_external_users: false,
 				token_monthly_limit_usd: 0,
-				model: "phaseo/auto",
+				// Auto isn't open to every workspace, so a model everyone can use is preselected.
+				model: "openai/gpt-6-luna",
 				access_mode: "everyone",
 				slack_app_id: null,
 			},
 		});
+	});
+
+	it("starts on Auto only where the workspace may use it", () => {
+		expect(installDraftDefaults(false, true).model).toBe("phaseo/auto");
+		expect(installDraftDefaults(false, false).model).toBe("openai/gpt-6-luna");
+		expect(isAutoModel(" Phaseo/Auto ")).toBe(true);
+		expect(isAutoModel("openai/gpt-6-luna")).toBe(false);
 	});
 
 	it("sends the company app only when it is chosen", () => {
@@ -216,6 +225,7 @@ describe("Slack agent error messages", () => {
 		["session_mismatch", "sessionMismatch"],
 		["key_write_failed", "unavailable"],
 		["conflict", "conflict"],
+		["auto_routing_unavailable", "autoUnavailable"],
 	] as const)("maps %s to its message", (code, key) => {
 		expect(slackErrorKey(code, 400)).toBe(key);
 	});

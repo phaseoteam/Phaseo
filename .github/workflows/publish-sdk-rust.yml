@@ -110,7 +110,7 @@ jobs:
       - name: Authenticate with crates.io trusted publishing
         id: crates-auth
         if: steps.auth-mode.outputs.bootstrap != 'true'
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9
 
       - name: Publish Phaseo Rust SDK with bootstrap credential
         if: steps.registry.outputs.core_should_publish == 'true' && steps.auth-mode.outputs.bootstrap == 'true'

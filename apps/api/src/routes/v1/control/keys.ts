@@ -993,10 +993,12 @@ async function handleRotateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
-			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,storage_locations,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id")
+			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,storage_locations,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id,key_kind")
 			.eq("workspace_id", auth.value.workspaceId).not("name", "in", MANAGED_KEY_NAMES_FILTER).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
+		// Rotating would mint a secret that acts as the workload policy's key.
+		if (existing.key_kind === "workload_identity") return json({ error: "key_not_rotatable", message: "Workload identity keys have no secret to rotate." }, 409, { "Cache-Control": "no-store" });
 		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });

@@ -24,6 +24,7 @@ import {
 	Gauge,
 	FlaskConical,
 	Languages,
+	MessagesSquare,
 } from "lucide-react";
 
 const internalTools = [
@@ -42,6 +43,10 @@ const internalTools = [
 	{
 		id: "key-incidents", titleKey: "keyIncidentsTitle", descriptionKey: "keyIncidentsDescription",
 		icon: ShieldAlert, href: "/internal/key-incidents", comingSoon: false,
+	},
+	{
+		id: "slack-agent", titleKey: "slackAgentTitle", descriptionKey: "slackAgentDescription",
+		icon: MessagesSquare, href: "/internal/slack-agent", comingSoon: false,
 	},
 	{
 		id: "model-test-playground",

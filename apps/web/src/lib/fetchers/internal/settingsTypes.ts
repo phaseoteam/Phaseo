@@ -318,6 +318,10 @@ export type SettingsCreditsInitialData = {
 	paymentMethodExpiringEmailEnabled: boolean;
 	modelDeprecationAlertsEnabled: boolean;
 	modelDeprecationAlertsIncludeAdmins: boolean;
+	/** Whether spend rules count a person toward all their departments or only the primary one. */
+	departmentSpendAttribution?: "all" | "primary";
+	/** IANA time zone for spend rule calendar periods (rules without their own zone) and spend reports. */
+	billingTimeZone?: string;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
@@ -450,7 +454,7 @@ export type NotificationDestination = {
 	signingSecretRotatedAt?: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing" | "spend_alert" | "spend_blocked" | "spend_report";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;
@@ -611,6 +615,87 @@ export type SettingsClassifiersInitialData = {
 	apps: Array<{ id: string; title: string }>;
 };
 
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+
+export type SettingsRateLimitPolicy = {
+	id: string;
+	name: string;
+	description: string | null;
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	/** Requests in progress at once. */
+	concurrentRequests: number | null;
+	/** Strict mode: limits are checked before sending, and requests are rejected when they can't be. */
+	failClosed: boolean;
+	updatedAt: string;
+};
+
+export type SettingsRateLimitsInitialData = {
+	workspaceId: string | null;
+	canManageRateLimits: boolean;
+	policies: SettingsRateLimitPolicy[];
+	assignments: Array<{ id: string; policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }>;
+	targets: {
+		keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+		members: Array<{ id: string; name: string | null; role: string }>;
+		departments: Array<{ id: string; name: string }>;
+		guardrails: Array<{ id: string; name: string }>;
+	};
+	/** Requests each policy rejected in the last throttleWindowHours. */
+	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
+	throttleWindowHours: number;
+	/** The workspace's trust-ladder tier from the gateway; null when unavailable, absent from older responses. */
+	tier?: SettingsRateLimitTier | null;
+};
+
+export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+
+/** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
+export type SettingsWorkloadIdentityPolicy = {
+	id: string;
+	name: string;
+	provider: SettingsWorkloadIdentityProvider;
+	issuer: string;
+	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	ownerId: string;
+	/** Exact-match conditions on other token claims, such as project_id or environment. */
+	claimConditions: Record<string, string[]>;
+	maxTokenLifetimeSeconds: number;
+	status: "active" | "disabled";
+	lastUsedAt: string | null;
+	createdAt: string | null;
+	updatedAt: string | null;
+};
+
+export type SettingsWorkloadIdentityInitialData = {
+	workspaceId: string | null;
+	/** False when the workspace is outside the rollout. */
+	available: boolean;
+	/** Owners and admins only. */
+	canManage: boolean;
+	/** The audience every token must be issued for. */
+	audience: string;
+	policies: SettingsWorkloadIdentityPolicy[];
+};
+
+export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
+/** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
+export type SettingsRateLimitTier = {
+	tier: SettingsRateLimitTierName;
+	requestsPerMinute: number;
+	target: SettingsRateLimitTierName | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	refusal: "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown" | null;
+	/** Epoch ms. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+	/** The signed-in user is the owner and the workspace is eligible. */
+	canRaise: boolean;
+};
+
 /** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */
 export type SettingsWorkspaceBudget = {
 	id: string;
@@ -629,12 +714,21 @@ export type SettingsWorkspaceBudget = {
 	created_at: string;
 	updated_at: string;
 };
+/** A department budget: alerts at about 80% and 100%, never blocks (web-api settings-budgets). */
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
+	department_id: string;
+	department_name: string | null;
+};
 export type SettingsBudgetsInitialData = {
 	workspaceId: string | null;
 	canManageBudgets: boolean;
 	/** Database time the usage was read, so projections match between render and hydration. */
 	observedAt: string;
 	budgets: SettingsWorkspaceBudget[];
+	/** Null when department budgets couldn't be read; absent from older web-api responses. */
+	departmentBudgets?: SettingsDepartmentBudget[] | null;
+	departments?: Array<{ id: string; name: string }>;
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };

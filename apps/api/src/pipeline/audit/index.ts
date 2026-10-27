@@ -275,7 +275,14 @@ async function insertGatewayRequest(row: any) {
     throw lastError;
 }
 
-type RateLimitPolicyRejection = { policy_id: string; limit_scope: string; limit: "requests" | "tokens" };
+type RateLimitPolicyRejection = { policy_id: string; limit_scope: string; limit: "requests" | "tokens" | "concurrent_requests" | "unavailable" };
+
+const POLICY_REJECTION_LIMITS: Record<string, RateLimitPolicyRejection["limit"]> = {
+    policy_requests_per_minute: "requests",
+    policy_tokens_per_minute: "tokens",
+    policy_concurrent_requests: "concurrent_requests",
+    policy_unavailable: "unavailable",
+};
 
 /** The workspace rate limit policy that rejected a request, from its stored error payload. */
 export function rateLimitPolicyRejection(
@@ -284,10 +291,11 @@ export function rateLimitPolicyRejection(
 ): RateLimitPolicyRejection | null {
     if (errorCode !== "user:rate_limit_exceeded") return null;
     const reason = errorPayload?.reason;
-    if (reason !== "policy_requests_per_minute" && reason !== "policy_tokens_per_minute") return null;
+    const limit = typeof reason === "string" ? POLICY_REJECTION_LIMITS[reason] : undefined;
+    if (!limit) return null;
     const { policy_id: policyId, limit_scope: limitScope } = errorPayload!;
     if (typeof policyId !== "string" || typeof limitScope !== "string") return null;
-    return { policy_id: policyId, limit_scope: limitScope, limit: reason === "policy_tokens_per_minute" ? "tokens" : "requests" };
+    return { policy_id: policyId, limit_scope: limitScope, limit };
 }
 
 async function upsertV2RequestFact(args: {

@@ -12,6 +12,8 @@ import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/intern
 import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 import { fetchSettingsGuardrailsInitialData } from "@/lib/fetchers/internal/fetchSettingsGuardrailsInitialData";
 import { fetchSettingsClassifiersInitialData } from "@/lib/fetchers/internal/fetchSettingsClassifiersInitialData";
+import { fetchSettingsRateLimitsInitialData } from "@/lib/fetchers/internal/fetchSettingsRateLimitsInitialData";
+import { fetchSettingsWorkloadIdentityInitialData } from "@/lib/fetchers/internal/fetchSettingsWorkloadIdentityInitialData";
 import { fetchSettingsBudgetsInitialData } from "@/lib/fetchers/internal/fetchSettingsBudgetsInitialData";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
@@ -64,6 +66,8 @@ async function readNotifications() {
 		notificationRoutes: data.notificationRoutes,
 		modelDeprecationAlertsEnabled: data.modelDeprecationAlertsEnabled,
 		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
+		departmentSpendAttribution: data.departmentSpendAttribution ?? "all",
+		billingTimeZone: data.billingTimeZone ?? "UTC",
 	};
 }
 
@@ -85,6 +89,8 @@ const readers = {
 	routing: fetchSettingsRoutingInitialData,
 	guardrails: fetchSettingsGuardrailsInitialData,
 	classifiers: fetchSettingsClassifiersInitialData,
+	"rate-limits": fetchSettingsRateLimitsInitialData,
+	"trusted-workloads": fetchSettingsWorkloadIdentityInitialData,
 	budgets: fetchSettingsBudgetsInitialData,
 	privacy: fetchSettingsPrivacyInitialData,
 	byok: fetchSettingsByokInitialData,

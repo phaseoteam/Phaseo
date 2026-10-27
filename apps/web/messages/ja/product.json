@@ -2430,7 +2430,9 @@
 		"realtimeBillingTitle": "リアルタイム請求",
 		"realtimeBillingDescription": "不足した使用量、保留中の資金、監査記録のある請求判断を確認します。",
 		"keyIncidentsTitle": "キー保管場所のインシデント",
-		"keyIncidentsDescription": "情報漏えいが起きたプラットフォームに保管されたすべての API キーを無効化または一時停止します。"
+		"keyIncidentsDescription": "情報漏えいが起きたプラットフォームに保管されたすべての API キーを無効化または一時停止します。",
+		"slackAgentTitle": "Slack エージェント",
+		"slackAgentDescription": "すべての Slack エージェントのインストールと、今月の人数、回答数、料金、モデルの支出。"
 	},
 	"webhookPage": {
 		"description": "非同期の動画ジョブやバッチジョブから、署名付きで再試行可能な更新をアプリケーションに送信します。",

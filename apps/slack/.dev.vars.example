@@ -10,3 +10,5 @@ SLACK_STATE_SECRET=replace-with-a-long-random-string
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_SERVICE_ROLE_KEY=replace-with-the-local-service-role-key
 PHASEO_WEB_ORIGIN=http://localhost:3000
+# Optional internal alert when the app is removed inside Slack:
+# DISCORD_SIGNUP_WEBHOOK_URL=

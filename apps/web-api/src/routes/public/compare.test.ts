@@ -20,6 +20,9 @@ describe("public compare routes", () => {
 				last_24h: { total_requests: 5 }, hourly_24h: [],
 			}]), { status: 200 });
 			if (url.includes("get_model_token_trajectory")) return new Response(JSON.stringify([{ points: [] }]), { status: 200 });
+			if (url.includes("get_compare_usage_daily")) return new Response(JSON.stringify([{
+				day_bucket: new Date().toISOString().slice(0, 10), model_id: "openai/gpt-test", requests: 4, input_tokens: 900, output_tokens: 100, reasoning_tokens: 0,
+			}]), { status: 200 });
 			return new Response("[]", { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -28,11 +31,31 @@ describe("public compare routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
-		await expect(response.json()).resolves.toMatchObject({ usage: {
+		const body = await response.json() as { usage: Record<string, { activity30d: Array<Record<string, unknown>> }> };
+		expect(body).toMatchObject({ usage: {
 			"openai/gpt-test": { totalRequests: 5, requests30m: 2, latencyP50Ms30m: 75, throughputP50TokPerSec30m: 100 },
 		} });
-		expect(fetchMock).toHaveBeenCalledTimes(3);
+		const activity = body.usage["openai/gpt-test"]!.activity30d;
+		expect(activity).toHaveLength(30);
+		expect(activity.at(-1)).toMatchObject({ requests: 4, input: 900, output: 100, reasoning: 0 });
+		expect(fetchMock).toHaveBeenCalledTimes(4);
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("get_public_compare_realtime"))).toBe(true);
+	});
+
+	it("leaves the daily series out until the activity function is deployed", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_compare_realtime")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test" }]), { status: 200 });
+			if (url.includes("get_compare_usage_daily")) return new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function" }), { status: 404 });
+			return new Response(JSON.stringify([{}]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/compare/usage?ids=openai%2Fgpt-test", {}, env);
+
+		expect(response.status).toBe(200);
+		const body = await response.json() as { usage: Record<string, Record<string, unknown>> };
+		expect(body.usage["openai/gpt-test"]).toBeDefined();
+		expect(body.usage["openai/gpt-test"]).not.toHaveProperty("activity30d");
 	});
 
 	it("rejects oversized detailed selections before querying the database", async () => {
@@ -66,6 +89,37 @@ describe("public compare routes", () => {
 		});
 		const modelUrls = fetchMock.mock.calls.map(([input]) => String(input));
 		expect(modelUrls.filter((url) => url.includes("/v2_models?")).length).toBe(1);
+	});
+
+	it("places the compared models among each capability leaderboard", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("epoch-capabilities-index")) return new Response("[]", { status: 200 });
+			if (url.includes("v2_benchmarks")) return new Response(JSON.stringify([
+				{ benchmark_id: "aa-intelligence-index-v4", name: "Intelligence Index", ascending_order: true, total_models: 7 },
+				{ benchmark_id: "aa-intelligence-index-cost-v4", name: "Cost to run the Intelligence Index", ascending_order: false, total_models: 7 },
+			]), { status: 200 });
+			if (url.includes("v2_benchmark_results")) return new Response(JSON.stringify(Array.from({ length: 7 }, (_, index) => [
+				{ benchmark_id: "aa-intelligence-index-v4", model_slug: `lab/model-${index + 1}`, score_numeric: 70 - index },
+				{ benchmark_id: "aa-intelligence-index-cost-v4", model_slug: `lab/model-${index + 1}`, score_numeric: 100 + index },
+			]).flat()), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify(Array.from({ length: 7 }, (_, index) => ({
+				model_slug: `lab/model-${index + 1}`, name: `Model ${index + 1}`, lab_slug: "lab", lab: { name: "Lab" },
+			}))), { status: 200 });
+			return new Response("[]", { status: 200 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request("https://phaseo.app/api/_web/compare/peers?ids=lab%2Fmodel-7,lab%2Fmodel-2", {}, env);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=86400");
+		const body = await response.json() as { boards: Array<{ id: string; total: number; entries: Array<{ modelId: string; rank: number }> }> };
+		expect(body.boards.map((board) => board.id)).toEqual(["aa-intelligence-index-v4"]);
+		expect(body.boards[0]!.total).toBe(7);
+		expect(body.boards[0]!.entries.map((entry) => [entry.modelId, entry.rank])).toEqual([
+			["lab/model-1", 1], ["lab/model-2", 2], ["lab/model-3", 3], ["lab/model-4", 4], ["lab/model-5", 5], ["lab/model-7", 7],
+		]);
 	});
 
 	it("returns the composed compare view with the selection cache policy", async () => {

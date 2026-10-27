@@ -1,0 +1,177 @@
+---
+title: "Broadcast"
+description: "将每个请求的追踪数据发送到你的可观测性工具、webhook、存储桶或数据仓库。"
+icon: "radio-tower"
+---
+
+Broadcast 会将每个网关请求的追踪数据发送到你选择的目标，无需修改代码。追踪遵循 OpenTelemetry GenAI 约定：请求对应一个 span，每次提供商尝试各对应一个 span，其中包含模型、提供商、token 用量、成本、耗时，以及（除非你关闭）提示词和输出。
+
+Broadcast 免费提供。所有者和管理员可以在 **设置 → Broadcast** 中管理目标，也可以使用[可观测性目标 API](../api-reference/endpoint/observability-destinations-create.mdx) 和带有 `settings:write` 的[管理密钥](../developers/management-api-keys.mdx)进行管理。每个工作区每种类型最多可以有五个目标。
+
+## 添加目的地
+
+1. 打开 **设置 → Broadcast** 并选择一个目标。
+2. 输入它的凭据。凭据在存储前会加密，之后不会再次显示。
+3. 选择要发送的内容（见下方“选择发送的内容”）。
+4. 选择**测试连接**。Phaseo 会按照真实投递的方式发送一条示例追踪，因此如果这里失败，显示的是目标自身返回的错误。
+5. 保存。此后完成的请求会在大约一分钟内发送。
+
+| 类别 | 目标 |
+| --- | --- |
+| OpenTelemetry 工具 | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| 任意 OTLP 端点 | OpenTelemetry Collector（OTLP/HTTP，JSON 或 protobuf，可选 gzip） |
+| 你自己的服务 | Webhook |
+| 对象存储 | Amazon S3 及兼容 S3 的存储、Cloudflare R2、Google Cloud Storage |
+| 数据库和数据仓库 | ClickHouse, Google BigQuery, Snowflake |
+
+每个表单只要求填写该工具所需的信息，例如 API 密钥以及项目或区域。所有 OpenTelemetry 工具接收相同的 span；Phaseo 会为每个供应商填写端点、请求头和编码。
+
+## 选择发送的内容
+
+每个目标都有自己的设置：
+
+- **隐私模式**会从每条追踪中移除提示词、输出、系统指令和工具定义。使用从不存储内容的 API 密钥发出的请求，无论此设置如何，都不会连同内容一起转发。
+- **生成元数据**、**成本**、**身份**和**请求上下文**各自开启或关闭一组 span 属性。关闭**请求上下文**还会丢弃请求元数据（见下方“添加你自己的追踪上下文”）。
+- **采样率**发送符合条件的请求中的一定比例，取值从 0 到 1。对于每个请求和目标，这一选择是固定的，因此重试的投递不会以不同方式采样。
+- **API 密钥过滤器**包含或排除使用特定密钥发出的请求。
+- **过滤规则**只发送匹配的请求。规则会比较模型、提供商、用户 ID、结束原因、成本或 token 数量等字段，并可以用**且**和**或**进行分组。**匹配正则表达式**使用线性时间引擎：不支持反向引用和环视，过大的模式会在保存时被拒绝。
+
+## 添加你自己的追踪上下文
+
+在请求体中加入 `metadata` 对象，即可为追踪命名并附加你自己的字段。Phaseo 会为 Broadcast 读取它：
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [{ "role": "user", "content": "Summarise this ticket" }],
+  "metadata": {
+    "trace_id": "ticket-48213",
+    "trace_name": "support-summary",
+    "generation_name": "summarise",
+    "customer_tier": "enterprise"
+  }
+}
+```
+
+| 键 | 作用 |
+| --- | --- |
+| `trace_id` | 请求所属的追踪。32 个字符的十六进制 ID 或 UUID 会按原样使用；其他字符串会被哈希，因此具有相同值的所有请求都会归入同一条追踪。 |
+| `parent_span_id` | 一个 16 个字符的十六进制 span ID，请求会嵌套在它之下。与 `trace_id` 一起使用。 |
+| `trace_name`, `span_name` | 请求 span 的名称。如果两者都设置，以 `span_name` 为准。 |
+| `generation_name` | 每次提供商尝试的 span 名称。 |
+| 其他任意键 | 作为名为 `phaseo.metadata.<key>` 的 span 属性发送。 |
+
+值可以是字符串、数字或布尔值；嵌套对象会被跳过。Phaseo 最多保留 64 个键，每个键最多 64 个字符，值会在 512 个字符处截断。如果存在 W3C `traceparent` 请求头，则由它而不是 `trace_id` 和 `parent_span_id` 决定追踪。
+
+不要在 `metadata` 中放入机密或个人数据：它会被发送到每个开启了**请求上下文**的目标。
+
+## Webhook 投递
+
+Webhook 会为每个请求收到一次 `POST`（如果你选择，也可以是 `PUT`）。请求体是一个 OTLP/JSON 导出 `{"resourceSpans": [...]}`，包含该请求的 span。使用 **Headers JSON** 添加你自己的请求头，例如你的端点要求的 `Authorization` 请求头。
+
+添加 **Signing Secret**（16 到 256 个字符，不含空格），即可为每次投递、测试和示例签名。随后 Phaseo 会添加两个请求头：
+
+```http
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` 是以你的密钥为键，对时间戳、一个句点（`.`）和未经修改的请求体计算出的 HMAC-SHA256 的十六进制值。这与通知 webhook 的方案相同，因此你可以复用它们的[验证代码](./workspace-notifications.mdx)。Broadcast 投递没有事件 ID 请求头：请根据请求体中的 span ID 去重。
+
+**测试连接**会发送 `{"resourceSpans": []}`，并带有 `X-Test-Connection: true` 请求头。`400` 响应也视为可访问，因此拒绝空导出的接收方仍然可以通过测试。
+
+## 对象存储和数据仓库的行
+
+对象存储、ClickHouse、BigQuery 和 Snowflake 接收的是每个 span 一行，而不是追踪。每个批次通过一次请求写入：一个对象，或一次插入。
+
+| 列 | 类型 | 内容 |
+| --- | --- | --- |
+| `event_id` | 字符串 | 请求的事件 ID。请求的所有 span 共享该值。 |
+| `trace_id` | 字符串 | 32 个字符的十六进制追踪 ID。 |
+| `span_id` | 字符串 | 16 个字符的十六进制 span ID。 |
+| `parent_span_id` | 字符串或 null | 父 span；对于请求的 span 为 null。 |
+| `name` | 字符串 | span 名称。 |
+| `kind` | 字符串 | 请求为 `server`，提供商尝试为 `client`。 |
+| `start_time`, `end_time` | 时间戳 | UTC 的 RFC 3339 格式，精确到微秒。 |
+| `duration_ms` | 数字 | 结束时间减去开始时间，单位为毫秒。 |
+| `status_code` | 字符串 | `unset`、`ok` 或 `error`。 |
+| `status_message` | 字符串或 null | 错误消息（如有）。 |
+| `service_name` | 字符串或 null | `phaseo-gateway`。 |
+| `attributes` | 对象 | 按名称排列的 span 属性，例如 `gen_ai.request.model` 或 `gen_ai.usage.input_tokens`，并保留其类型。 |
+| `resource_attributes` | 对象 | 资源属性，例如 `service.name`。 |
+
+每行最大 512 KB。当某个 span 携带的内容超过此大小（例如内联图片）时，其中最大的属性值会被截断以分摊空间，每个值保留开头部分并以 `…[truncated]` 结尾，这些属性的名称会列在 `phaseo.truncated_attributes` 属性中。
+
+失败的批次会重试。如果目标已保存该批次但响应丢失，重试可能会把部分行写入两次；请使用 `event_id` 和 `span_id` 去重。BigQuery 和 Snowflake 使用请求 ID，可以防止大多数此类重复。
+
+### 对象存储
+
+每个批次是一个 gzip 压缩的 JSON Lines 文件。**Path Template** 设置文件的键，默认为 `phaseo/{year}/{month}/{day}/{hour}/{uuid}`，Phaseo 会在末尾追加 `.jsonl.gz`。模板可以使用 `{year}`、`{month}`、`{day}`、`{hour}`、`{date}`（`YYYY-MM-DD`）和 `{uuid}`，并且必须包含 `{uuid}`，以免文件相互覆盖。时间均为 UTC。
+
+- **Amazon S3**：一个可以对存储桶执行 `s3:PutObject` 的访问密钥，以及存储桶所在的区域。对于兼容 S3 的存储，请设置 **S3-Compatible Endpoint**。
+- **Cloudflare R2**：R2 API 令牌的访问密钥 ID 和密钥、你的账户 ID，以及存储桶所属的管辖区（如有，`eu` 或 `fedramp`）。
+- **Google Cloud Storage**：一个服务账号的 HMAC 密钥，该服务账号需能在存储桶中创建对象。
+
+对象以压缩形式存储，不带 `Content-Encoding` 请求头，因此 Athena、BigQuery 和 Snowflake 的外部表会根据 `.gz` 扩展名读取它们。
+
+### ClickHouse
+
+行通过 HTTPS 接口以 `JSONEachRow` 格式插入，并使用异步插入。表中不存在的列会被跳过，因此你可以只保留需要的列：
+
+```sql
+CREATE TABLE phaseo_traces (
+  event_id String, trace_id String, span_id String, parent_span_id Nullable(String),
+  name String, kind LowCardinality(String),
+  start_time DateTime64(6, 'UTC'), end_time DateTime64(6, 'UTC'), duration_ms Float64,
+  status_code LowCardinality(String), status_message Nullable(String), service_name Nullable(String),
+  attributes String, resource_attributes String
+) ENGINE = MergeTree ORDER BY (start_time, trace_id);
+```
+
+对于 ClickHouse Cloud，请使用 8443 端口上的端点。`attributes` 和 `resource_attributes` 也可以是 `JSON` 列。
+
+### BigQuery
+
+行通过 `insertAll` 流式写入，并使用事件 ID 和 span ID 作为插入 ID。创建一个对该表拥有 **BigQuery Data Editor** 角色的服务账号，然后将其 JSON 密钥文件粘贴到表单中。`attributes` 和 `resource_attributes` 必须是 `JSON` 列：
+
+```sql
+CREATE TABLE observability.phaseo_traces (
+  event_id STRING, trace_id STRING, span_id STRING, parent_span_id STRING,
+  name STRING, kind STRING, start_time TIMESTAMP, end_time TIMESTAMP, duration_ms FLOAT64,
+  status_code STRING, status_message STRING, service_name STRING,
+  attributes JSON, resource_attributes JSON
+) PARTITION BY DATE(start_time) CLUSTER BY trace_id;
+```
+
+### Snowflake
+
+每个批次是通过 SQL API 执行的一次 `INSERT`，使用密钥对认证登录，因此会在你指定的仓库上运行。为 Phaseo 创建一个用户，并为其设置 RSA 密钥：
+
+```sql
+CREATE TABLE PHASEO.OBSERVABILITY.PHASEO_TRACES (
+  EVENT_ID STRING, TRACE_ID STRING, SPAN_ID STRING, PARENT_SPAN_ID STRING,
+  NAME STRING, KIND STRING, START_TIME TIMESTAMP_TZ, END_TIME TIMESTAMP_TZ, DURATION_MS FLOAT,
+  STATUS_CODE STRING, STATUS_MESSAGE STRING, SERVICE_NAME STRING,
+  ATTRIBUTES VARIANT, RESOURCE_ATTRIBUTES VARIANT
+);
+-- openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out phaseo_key.p8
+-- openssl rsa -in phaseo_key.p8 -pubout
+ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
+```
+
+将私钥（`BEGIN PRIVATE KEY`，未加密）粘贴到表单中，并使用组织-账户标识符，例如 `myorg-myaccount`。该用户的角色需要对表拥有 `INSERT` 权限，并对仓库、数据库和 schema 拥有 `USAGE` 权限。
+
+## 投递、健康状态和提醒
+
+因超时、速率限制或服务器错误而失败的投递会按退避策略重试，最多尝试八次。其他错误（例如密钥被拒绝或表不存在）不会重试。
+
+**设置 → Broadcast** 会显示每个目标的健康状态：**正常**、**失败**、**尚无投递**或**已停用**，同时显示最近一次错误以及过去 24 小时内投递成功和失败的请求数。
+
+如需在目标停止工作时收到通知，请将**广播警报**路由到某个[通知目标](./workspace-notifications.mdx)。当某个目标连续至少五个请求失败，并且 15 分钟内没有成功投递任何内容时，就会发送提醒。每段连续失败期间只发送一次，只有在目标恢复且至少过去六小时后才会再次发送。
+
+## 相关内容
+
+- [可观测性目标 API](../api-reference/endpoint/observability-destinations-list.mdx)
+- [请求标签](./request-labels.mdx)，它们会作为 `phaseo.label.<key>` 属性发送
+- [工作区通知](./workspace-notifications.mdx)
+- [可观测性集成](./integrations/observability.mdx)，用于从你自己的客户端进行追踪

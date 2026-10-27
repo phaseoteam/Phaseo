@@ -831,6 +831,16 @@ describe("management key routes", () => {
 		});
 	});
 
+	it("refuses to rotate a workload identity key", async () => {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Vercel production", prefix: "oidc", status: "active", scopes: "[]", soft_blocked: false, key_kind: "workload_identity" });
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "key_not_rotatable" });
+		expect(state.insertPayloads).toHaveLength(0);
+	});
+
 	function pushRotationRows() {
 		state.workspaceRows.push({ owner_user_id: "user_1" });
 		state.keyRows.push(

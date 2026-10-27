@@ -6,6 +6,20 @@
 export type CompareView = {
 	models: CompareViewModel[];
 	benchmarks: CompareViewBenchmark[];
+	/** Leaderboard context, fetched separately; absent when that request fails. */
+	peers?: ComparePeerBoard[];
+};
+
+export type ComparePeerEntry = { modelId: string; name: string; labId: string | null; score: number; rank: number };
+
+/** A capability leaderboard's leaders, then any compared model further down, in rank order. */
+export type ComparePeerBoard = {
+	id: string;
+	name: string;
+	source: "artificial-analysis" | "epoch";
+	lowerIsBetter: boolean;
+	total: number;
+	entries: ComparePeerEntry[];
 };
 
 export type CompareViewModel = {
@@ -107,6 +121,9 @@ export type CompareViewBenchmarkResult = {
 
 export type CompareUsageWindow = "30m" | "24h" | "5d";
 
+/** One day of a model's traffic through Phaseo. */
+export type CompareActivityDay = { date: string; requests: number; input: number; output: number; reasoning: number };
+
 export type CompareViewUsage = {
 	periodDays: number;
 	tokens30d: number;
@@ -116,6 +133,8 @@ export type CompareViewUsage = {
 	/** Absent from web API deployments older than the compare view. */
 	latencyWindow?: CompareUsageWindow | null;
 	throughputWindow?: CompareUsageWindow | null;
+	/** The last 30 days, oldest first. Absent from web API deployments older than the Activity section. */
+	activity30d?: CompareActivityDay[];
 };
 
 export type CompareViewUsageByModel = Record<string, CompareViewUsage>;

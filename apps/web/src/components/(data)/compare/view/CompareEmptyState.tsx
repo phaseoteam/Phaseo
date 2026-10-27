@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import ModelCombobox from "../ModelCombobox";
+import type { ComparePairLink } from "../ComparePairSummary";
+import { pairPath } from "../comparePairs";
 import type { CompareModelOption } from "../types";
 
 /** Hand-picked starting points; each opens a normal comparison URL. */
@@ -19,9 +21,11 @@ const urlId = (id: string) => id.replace("/", "_");
 export function CompareEmptyState({
 	selectedOptions,
 	onSelect,
+	pairs,
 }: {
 	selectedOptions: CompareModelOption[];
 	onSelect: (ids: string[]) => void;
+	pairs: ComparePairLink[];
 }) {
 	const t = useTranslations("Catalogue.compareView");
 	// Stay on the current locale's compare page.
@@ -67,6 +71,23 @@ export function CompareEmptyState({
 					))}
 				</ul>
 			</section>
+			{pairs.length ? (
+				<section aria-labelledby="compare-pairs" className="space-y-3">
+					<h2 id="compare-pairs" className="text-sm font-medium text-muted-foreground">{t("headToHead")}</h2>
+					<ul className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
+						{pairs.slice(0, 24).map((pair) => {
+							const href = pairPath([pair.models[0].id, pair.models[1].id]);
+							return (
+								<li key={href}>
+									<Link href={`${pathname}${href.slice("/compare".length)}`} className="hover:underline">
+										{t("pairTitle", { a: pair.models[0].name, b: pair.models[1].name })}
+									</Link>
+								</li>
+							);
+						})}
+					</ul>
+				</section>
+			) : null}
 		</div>
 	);
 }

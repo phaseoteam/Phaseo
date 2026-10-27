@@ -254,6 +254,8 @@
 				"nav-settings-presets": "Routing Presets",
 				"nav-settings-privacy": "Privacy Settings",
 				"nav-settings-guardrails": "Guardrails",
+				"nav-settings-rate-limits": "Rate limits",
+				"nav-settings-trusted-workloads": "Trusted workloads",
 				"nav-settings-classifiers": "Classifiers",
 				"nav-settings-slack": "Slack",
 				"nav-settings-security": "Key Security",

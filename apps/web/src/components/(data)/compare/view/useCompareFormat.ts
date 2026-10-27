@@ -57,6 +57,7 @@ export function useCompareFormat() {
 				: t("milliseconds", { value: format.number(ms, { maximumFractionDigits: 0 }) }),
 			throughput: (value: number) => t("tokensPerSecond", { value: format.number(value, { maximumFractionDigits: 0 }) }),
 			monthYear: (value: string) => format.dateParts(asUtc(value), { month: "short", year: "numeric", timeZone: "UTC" }),
+			shortDate: (value: string) => format.dateParts(asUtc(value), { day: "numeric", month: "short", timeZone: "UTC" }),
 			date: (value: string) => format.dateParts(asUtc(value), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }),
 			modality: (type: string) => known(MODALITY_KEYS[type.toLowerCase()], capitalise(type)),
 			modalities: (types: string[]) => types.map((type) => known(MODALITY_KEYS[type.toLowerCase()], capitalise(type))).join(", "),

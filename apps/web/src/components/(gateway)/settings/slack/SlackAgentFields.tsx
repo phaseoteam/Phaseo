@@ -12,10 +12,12 @@ import { cn } from "@/lib/utils";
 import { EXTRA_ANSWER_NANOS, INCLUDED_ANSWERS_PER_PERSON, NANOS_PER_USD, PLAN_TIERS } from "@/lib/slack-agent/pricing";
 import { GatewayModelCombobox, useGatewayModelOptions } from "../GatewayModelCombobox";
 import {
+	AUTO_SLACK_AGENT_MODEL,
 	CUSTOM_PLAN,
 	DEFAULT_ANSWERS_PER_PERSON_HOUR,
 	DEFAULT_SLACK_AGENT_MODEL,
 	formatUsd,
+	isAutoModel,
 	parseWhole,
 	planPriceUsd,
 	type SlackAccessMode,
@@ -105,30 +107,50 @@ function MoneyInput({ id, value, disabled, invalid, describedBy, placeholder, on
 	);
 }
 
-/** Auto, or one model from the gateway catalogue. */
-export function ModelField({ value, disabled, problem, onChange }: { value: string; disabled?: boolean; problem: SlackDraftProblem | null; onChange: (model: string) => void }) {
+/**
+ * Auto, or one model from the gateway catalogue. Auto is offered only where the
+ * workspace has Auto Routing: the gateway refuses phaseo/auto everywhere else.
+ */
+export function ModelField({ value, autoAvailable, disabled, problem, onChange }: {
+	value: string;
+	autoAvailable: boolean;
+	disabled?: boolean;
+	problem: SlackDraftProblem | null;
+	onChange: (model: string) => void;
+}) {
 	const t = useTranslations("SettingsUI.slack");
 	const models = useGatewayModelOptions();
-	const auto = value === DEFAULT_SLACK_AGENT_MODEL;
+	const auto = isAutoModel(value);
+	const picker = (
+		<GatewayModelCombobox
+			value={auto ? "" : value}
+			onChange={onChange}
+			options={models.options}
+			filter={(option) => option.capabilities.includes(TEXT_MODEL_CAPABILITY)}
+			ariaLabel={t("model.label")}
+			loading={models.loading}
+			error={models.error}
+		/>
+	);
 	return (
 		<div className="space-y-2">
-			<Choice
-				label={t("model.label")}
-				value={auto ? "auto" : "specific"}
-				disabled={disabled}
-				options={[{ value: "auto", label: t("model.auto") }, { value: "specific", label: t("model.specific") }]}
-				onChange={(mode) => onChange(mode === "auto" ? DEFAULT_SLACK_AGENT_MODEL : "")}
-			/>
-			{auto ? <p className="text-xs text-muted-foreground">{t("model.autoHelp")}</p> : (
-				<GatewayModelCombobox
-					value={value}
-					onChange={onChange}
-					options={models.options}
-					filter={(option) => option.capabilities.includes(TEXT_MODEL_CAPABILITY)}
-					ariaLabel={t("model.label")}
-					loading={models.loading}
-					error={models.error}
-				/>
+			{autoAvailable ? (
+				<>
+					<Choice
+						label={t("model.label")}
+						value={auto ? "auto" : "specific"}
+						disabled={disabled}
+						options={[{ value: "auto", label: t("model.auto") }, { value: "specific", label: t("model.specific") }]}
+						onChange={(mode) => onChange(mode === "auto" ? AUTO_SLACK_AGENT_MODEL : DEFAULT_SLACK_AGENT_MODEL)}
+					/>
+					{auto ? <p className="text-xs text-muted-foreground">{t("model.autoHelp")}</p> : picker}
+				</>
+			) : (
+				<>
+					{/* Saved on Auto before access was checked: the agent can't answer until a model is chosen. */}
+					{auto ? <Notice tone="warning" role="status">{t("model.autoUnavailable")}</Notice> : null}
+					{picker}
+				</>
 			)}
 			<FieldProblem id="slack-model-help" problem={problem} field="model" help={t("model.help")} />
 		</div>
