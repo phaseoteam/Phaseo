@@ -2,13 +2,14 @@ import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export default async function SubscriptionPlanOffers({ plan }: { plan: SubscriptionPlanSummary }) {
 	if (!plan.offers?.length) return null;
 	const [locale, t] = await Promise.all([getLocale(), getTranslations()]);
 	const messages = getSubscriptionPlansMessagesFor(locale).detail;
 	const labels = localizedSubscriptionPriceLabels(locale, { custom: messages.customPricing, usage: messages.usageBased, unknown: t("Common.status.unknown"), from: t("Common.ui.subscriptionCatalog.starting_at"), seat: t("Common.ui.subscriptionCatalog.seat"), introductory: t("Common.ui.subscriptionCatalog.introductory"), firstCycle: t("Common.ui.subscriptionCatalog.first_billing_cycle"), cycleCount: t("Common.ui.subscriptionCatalog.number_of_cycles") });
-	const formatAmount = (amount: number, currency: string) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount);
+	const formatAmount = (amount: number, currency: string) => new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount);
 	return <section id="plan-offers" className="scroll-mt-36 space-y-4">
 		<h2 className="text-xl font-semibold">{t("Common.ui.subscriptionCatalog.plan_offers")}</h2>
 		<div className="divide-y border-y">{plan.offers.map((offer) => {

@@ -4,7 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
@@ -62,6 +62,7 @@ import { RoomResponseTimestamp } from "@/components/(chat)/RoomResponseTimestamp
 import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView, type LiveSettingsValue } from "./LiveSettings";
 import { createAudioBufferFromPcm16, createPcmCapture, ensureAudioRunning, type PcmChunk } from "./realtimeAudio";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RealtimePersona = dynamic(
 	() => import("@/components/ai-elements/persona").then((mod) => mod.Persona),
@@ -1433,7 +1434,6 @@ type RealtimeRoomProps = {
 export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
-	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatElapsedSeconds = (ms: number) =>
 		`${format.number(Math.floor(ms / 1000), { notation: "standard" })}s`;
@@ -3314,7 +3314,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									>
 										<NumberFlow
 											value={displayedCostUsd}
-											locales={locale}
+											locales={MONEY_LOCALE}
 											format={{
 												style: "currency",
 												currency: "USD",
@@ -3326,7 +3326,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								</div>
 
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <p className="text-sm text-muted-foreground">
-									{tCopy("livePrice", { voice: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
+									{tCopy("livePrice", { voice: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
 								</p>}
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
 								{billingSessionId && <p className="text-sm text-muted-foreground">
@@ -3342,7 +3342,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										>
 											<NumberFlow
 												value={reservedBudgetUsd}
-												locales={locale}
+												locales={MONEY_LOCALE}
 												format={{
 													style: "currency",
 													currency: "USD",
@@ -3357,7 +3357,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										>
 											<NumberFlow
 												value={ledger?.final_cost_nanos != null ? ledger.released_nanos / 1e9 : remainingBudgetUsd}
-												locales={locale}
+												locales={MONEY_LOCALE}
 												format={{
 													style: "currency",
 													currency: "USD",
