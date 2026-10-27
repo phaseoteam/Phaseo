@@ -67,9 +67,14 @@ const DELIVERED: Record<string, Record<string, unknown>> = {
 	agent_session_stopped: { type: "agent_session_stopped", user: "U0PERSON01", channel: "C0CHANNEL1", thread_ts: "1792600000.000100", streaming_message_ts: [], event_ts: "1792600001.000100" },
 	app_uninstalled: { type: "app_uninstalled" },
 	tokens_revoked: { type: "tokens_revoked", tokens: { oauth: [], bot: [BOT_USER_ID] } },
+	app_home_opened: { type: "app_home_opened", user: "U0PERSON01", channel: "D0DIRECT01", tab: "home", event_ts: "1792600000.000300" },
 };
 
-/** Events the app does not subscribe to. The Worker must ignore them, or the manifest is missing a subscription. */
+/**
+ * Events the app does not subscribe to, and the one subscribed event it leaves
+ * alone (opening the Messages tab). The Worker must ignore them, or the
+ * manifest is missing a subscription.
+ */
 const NOT_SUBSCRIBED: Record<string, unknown>[] = [
 	directMessage({ channel_type: "channel", channel: "C0CHANNEL1" }),
 	directMessage({ channel_type: "group", channel: "G0GROUP001" }),
@@ -149,11 +154,11 @@ describe("Slack app manifest", () => {
 		}
 	});
 
-	it("uses the agent messaging experience with a writable Messages tab", () => {
+	it("uses the agent messaging experience with a writable Messages tab, and a Home tab", () => {
 		expect(manifest.features.agent_view?.agent_description?.length).toBeGreaterThan(0);
 		expect(manifest.features.agent_view!.agent_description!.length).toBeLessThanOrEqual(300);
 		expect(manifest.features.assistant_view).toBeUndefined();
-		expect(manifest.features.app_home).toMatchObject({ messages_tab_enabled: true, messages_tab_read_only_enabled: false });
+		expect(manifest.features.app_home).toEqual({ home_tab_enabled: true, messages_tab_enabled: true, messages_tab_read_only_enabled: false });
 	});
 
 	it("keeps token rotation off and uses HTTP request URLs, not Socket Mode", () => {

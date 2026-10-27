@@ -33,6 +33,13 @@ export type TurnStart = { started: true } | { finished: TurnOutcome };
 
 export interface TurnRunner {
 	start(turn: TurnRef): Promise<TurnStart>;
+	/** Wakes a turn waiting for the answer to its question n (answered, or the thread was stopped). Runners whose turns never wait leave it out. */
+	wake?(turn: TurnRef, question: number): Promise<void>;
+}
+
+/** The Workflow event a turn waits for after posting its question n. */
+export function answerEventType(question: number): string {
+	return `answer-${question}`;
 }
 
 /** Workflow instances are kept a day, not the 30-day default: their storage is billed, and they hold ids only. */
@@ -58,6 +65,11 @@ export function createWorkflowTurnRunner(env: Pick<Env, "AGENT_TURNS">): TurnRun
 				if (!(error instanceof Error && /already exists/i.test(error.message))) throw error;
 			}
 			return { started: true };
+		},
+		async wake(turn, question) {
+			// The event says which question, nothing more: the answer stays in the thread's coordinator.
+			const instance = await env.AGENT_TURNS.get(turnInstanceId(turn));
+			await instance.sendEvent({ type: answerEventType(question), payload: { question } });
 		},
 	};
 }

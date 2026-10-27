@@ -9,6 +9,8 @@ import {
 	type AgentModelResponse,
 	type AgentRunResult,
 	type AgentTool,
+	type AgentToolOutput,
+	type AgentUsageSummary,
 } from "@phaseo/agent-sdk";
 import type { Env } from "./env";
 import { withoutTrailingSlashes } from "./url";
@@ -46,7 +48,17 @@ export type AgentTurnRequest = {
 	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
 	maxCostUsd: number;
 	signal: AbortSignal;
+	/** Continues a run that paused for the person's answer (ask_question), with its paused tool call's output. */
+	resume?: { run: PausedRun; toolOutputs: AgentToolOutput[] };
 };
+
+/**
+ * A run paused for the person's answer, as pausedRun keeps it: the conversation
+ * so far (Slack text, so it is kept with the thread's coordinator only), the
+ * paused tool call and the step count. What earlier steps cost isn't in it: that
+ * is counted by the turn, so the limit given to the continued run isn't spent twice.
+ */
+export type PausedRun = AgentRunResult<unknown, unknown, unknown>;
 
 export type AgentTurnHooks = {
 	onText(delta: string): Promise<void>;
@@ -60,7 +72,29 @@ export type AgentTurnOutput = {
 	model: string | null;
 	/** Set when a limit stopped the run before the model finished, e.g. step_count:12 or max_cost:0.5. */
 	stopReason: string | null;
+	/** Set when the run paused for the person's answer: what continues it. */
+	paused?: PausedRun;
 };
+
+const NO_USAGE: AgentUsageSummary = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 };
+
+/**
+ * What a paused run needs to continue, and no more: its record (the messages,
+ * the pending tool call, the step count) and one entry per step, so the step
+ * limit spans the continued run. Steps keep their model (the footer's) but not
+ * their usage, items or tool results, which hold web pages and provider data.
+ */
+export function pausedRun(result: AgentRunResult<unknown, unknown, unknown>): PausedRun {
+	return {
+		run: { ...result.run, input: null, usage: { ...NO_USAGE } },
+		steps: result.steps.map((step) => ({ runId: step.runId, index: step.index, status: step.status, model: step.model, createdAt: step.createdAt, updatedAt: step.updatedAt })),
+		stepResults: (result.stepResults ?? []).map((step) => ({ stepIndex: step.stepIndex, text: "", toolCalls: [], toolResults: [], usage: { ...NO_USAGE } })),
+		usage: { ...NO_USAGE },
+		output: undefined,
+		messages: [],
+		items: [],
+	};
+}
 
 export interface AgentRunner {
 	run(request: AgentTurnRequest, hooks: AgentTurnHooks): Promise<AgentTurnOutput>;
@@ -176,7 +210,10 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				maxSteps: MAX_STEPS,
 				stopWhen: [stepCountIs(MAX_STEPS), maxCost(request.maxCostUsd)],
 			});
-			const stream = agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
+			// A continued run starts from its paused record, whose steps carry no cost: its usage is this run's alone.
+			const stream = request.resume
+				? agent.continueStream({ run: request.resume.run as AgentRunResult<string, unknown, unknown>, toolOutputs: request.resume.toolOutputs, client, signal: request.signal, devtools: { enabled: false } })
+				: agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
 			let result: AgentRunResult<unknown, unknown, unknown> | null = null;
 			for await (const event of stream.getFullStream()) {
 				if (event.type === "response.output_text.delta") await hooks.onText(event.delta);
@@ -188,6 +225,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				costUsd: result.usage?.cost ?? spentUsd,
 				model: lastModel(result),
 				stopReason: result.run.status === "stopped" ? result.run.stopReason ?? null : null,
+				...(result.run.status === "waiting_for_human" ? { paused: pausedRun(result) } : {}),
 			};
 		},
 	};
