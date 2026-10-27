@@ -57,7 +57,7 @@ CREATE INDEX keys_expires_at_idx ON public.keys USING btree (expires_at)
 CREATE UNIQUE INDEX keys_kid_uidx ON public.keys USING btree (kid);
 
 CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (oauth_user_id, workspace_id, oauth_client_id)
-  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text));
+  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text) AND (issued_via <> 'desktop'::text));
 
 CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);

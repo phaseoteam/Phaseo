@@ -210,7 +210,7 @@ const MODEL_NOT_ALLOWED_CODES = new Set([
  * with no more specific reason. The gateway uses the same code for unrelated
  * refusals, so it only means "model not allowed" when the agent asked for Auto.
  */
-function isAutoModel(model: string | null | undefined): boolean {
+export function isAutoModel(model: string | null | undefined): boolean {
 	return typeof model === "string" && model.trim().toLowerCase().startsWith("phaseo/auto");
 }
 

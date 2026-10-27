@@ -5,7 +5,7 @@ import { clearUserFactsCache } from "../src/access";
 import type { TurnRequest } from "../src/coordinator";
 import type { Installation } from "../src/installations";
 import type { TurnRef } from "../src/turns";
-import { runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
+import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
 	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, HOSTED_APP_ID, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, WORKSPACE_ID, type TestWorld,
 } from "./fakes";
@@ -98,6 +98,10 @@ beforeEach(async () => {
 	step = new FakeStep();
 	clearUserFactsCache();
 	await install();
+	world.db.tables.v2_models.push(
+		{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false },
+		{ model_slug: "anthropic/claude-test", name: "Claude Test", hidden: false },
+	);
 });
 
 describe("AgentTurnWorkflow", () => {
@@ -116,7 +120,7 @@ describe("AgentTurnWorkflow", () => {
 			["agents.sessions.setStatus", { channel_id: "C0CHANNEL1", thread_ts: turn.threadTs, status: "processing" }],
 			["chat.startStream", { channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "You spent ", recipient_user_id: "U0PERSON01", recipient_team_id: TEAM_ID }],
 			["chat.appendStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "$12.50 this week." }],
-			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: "phaseo/auto → openai/gpt-test · $0.0123" }] }] }],
+			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: "Auto → GPT Test · $0.0123" }] }] }],
 		]);
 		expect(new Set(world.slack.calls.map((call) => call.token))).toEqual(new Set([BOT_TOKEN]));
 		expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 1, pending: 0 });
@@ -142,6 +146,32 @@ describe("AgentTurnWorkflow", () => {
 		});
 		expect(request.prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
 		expect(request.instructions).toContain("can't see this workspace's Phaseo usage");
+	});
+
+	it("names models in the footer by their catalogue names, and only adds the one Auto picked", async () => {
+		// A chosen model: its own name, even when the response names the provider's id for it.
+		await expect(footerModels(world.db, "anthropic/claude-test", "claude-test-2026-10")).resolves.toEqual({ model: "Claude Test", answeredBy: null });
+		await expect(footerModels(world.db, "anthropic/claude-test", "anthropic/claude-test")).resolves.toEqual({ model: "Claude Test", answeredBy: null });
+		// Not in the catalogue: its id.
+		await expect(footerModels(world.db, "acme/unlisted", null)).resolves.toEqual({ model: "acme/unlisted", answeredBy: null });
+		// Auto: the model it picked, only when that is a catalogue model.
+		await expect(footerModels(world.db, "phaseo/auto", "openai/gpt-test")).resolves.toEqual({ model: "Auto", answeredBy: "GPT Test" });
+		await expect(footerModels(world.db, "phaseo/auto", "gpt-test")).resolves.toEqual({ model: "Auto", answeredBy: null });
+		await expect(footerModels(world.db, "phaseo/auto", null)).resolves.toEqual({ model: "Auto", answeredBy: null });
+		// The catalogue can't be read: ids, never an error.
+		world.db.select = async () => { throw new Error("db_error_503"); };
+		await expect(footerModels(world.db, "anthropic/claude-test", null)).resolves.toEqual({ model: "anthropic/claude-test", answeredBy: null });
+	});
+
+	it("shows the chosen model's name in the footer when the response reports the provider's id", async () => {
+		await install({ model: "anthropic/claude-test" });
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("Bonjour.");
+			await hooks.onStep({ costUsd: 0.0123 });
+			return answer("claude-test-2026-10");
+		});
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Claude Test · $0.0123" }] }]);
 	});
 
 	it("passes the admins' instructions and model", async () => {
@@ -530,7 +560,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(world.slack.of("chat.appendStream")).toHaveLength(1);
 		expect(world.slack.calls.slice(-2).map((call) => [call.method, call.args])).toEqual([
 			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001" }],
-			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "Part one, part two, part three.\n\n_phaseo/auto → openai/gpt-test · $0.0010_" }],
+			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "Part one, part two, part three.\n\n_Auto → GPT Test · $0.0010_" }],
 		]);
 		// Stopping the stream also set the session back to active.
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing"]);
@@ -548,7 +578,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
-			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Hello\n\n_phaseo/auto → openai/gpt-test · $0.0123_" },
+			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Hello\n\n_Auto → GPT Test · $0.0123_" },
 		]);
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
@@ -566,8 +596,8 @@ describe("AgentTurnWorkflow", () => {
 		expect(step.failures).toEqual([{ name: "reply", attempt: 1 }]);
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual([
-			"Answer\n\n_phaseo/auto → openai/gpt-test · $0.0123_",
-			"Answer\n\n_phaseo/auto → openai/gpt-test · $0.0123_",
+			"Answer\n\n_Auto → GPT Test · $0.0123_",
+			"Answer\n\n_Auto → GPT Test · $0.0123_",
 		]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1 });
 	});
@@ -597,7 +627,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(agent.requests.map((request) => request.maxCostUsd)).toEqual([0.5, expect.closeTo(0.2, 9)]);
 		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 400_000_000, streamed: false });
 		expect(world.slack.of("chat.startStream")).toHaveLength(1);
-		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe("Second try\n\n_phaseo/auto → openai/gpt-test · $0.4000_");
+		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe("Second try\n\n_Auto → GPT Test · $0.4000_");
 	});
 
 	it("doesn't run the model again when earlier attempts used the whole limit", async () => {
@@ -617,7 +647,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe(
-			"A long answer\n\n_I stopped here to keep this answer within its $0.50 cost limit._\n\n_phaseo/auto · $0.5000_",
+			"A long answer\n\n_I stopped here to keep this answer within its $0.50 cost limit._\n\n_Auto · $0.5000_",
 		);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 	});
@@ -634,7 +664,7 @@ describe("AgentTurnWorkflow", () => {
 		turn = await startTurn();
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
 		expect(world.slack.of("chat.appendStream").map((call) => call.args.markdown_text)).toEqual(["\n\n_Stopped._"]);
-		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "phaseo/auto · $0.0000" }] }]);
+		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Auto · $0.0000" }] }]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		expect(coordinatorOf(turn).status()).toMatchObject({ running: null });
 	});
