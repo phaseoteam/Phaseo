@@ -39,7 +39,20 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       variant.data_region,
       variant.status as variant_status,
       variant.routing_enabled as variant_routing_enabled,
-      region.region_code
+      region.region_code,
+      -- The gateway's own provider filter (get_v2_routing_candidates): no
+      -- disabled or deprecated provider, and an external provider only when
+      -- the route opts in with external_routing_override.
+      (
+        route.routing_enabled
+        and provider.routing_enabled
+        and variant.routing_enabled
+        and provider.status not in ('disabled', 'deprecated')
+        and (
+          provider.status <> 'external'
+          or coalesce(route.metadata->>'external_routing_override', 'false') = 'true'
+        )
+      ) as gateway_routable
     from public.v2_model_provider_routes route
     join public.v2_models model on model.model_slug = route.model_slug
     join public.v2_labs lab on lab.lab_slug = model.lab_slug
@@ -72,12 +85,13 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         or lower(p_region) = any(route.regions)
       )
   ),
+  -- Routes the gateway can serve. A routing-enabled route at a provider the
+  -- gateway skips is left out, like any other unroutable route, so it adds no
+  -- active provider, capability, modality or price.
   eligible_routes as (
     select *
     from candidate_routes
-    where route_routing_enabled = true
-      and provider_routing_enabled = true
-      and variant_routing_enabled = true
+    where gateway_routable
   ),
   preview_routes as (
     select *
@@ -332,10 +346,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       count(distinct route.provider_model_id)::integer as provider_count,
       count(distinct route.provider_model_id) filter (
         where route.route_status = 'active'
-          and route.route_routing_enabled
-          and route.provider_status not in ('disabled', 'deprecated')
-          and route.provider_routing_enabled
-          and route.variant_routing_enabled
+          and route.gateway_routable
       )::integer as active_provider_count,
       count(distinct route.provider_model_id) filter (
         where route.provider_availability_status = 'coming_soon'
@@ -346,9 +357,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       array_agg(distinct route.provider_name order by route.provider_name) as provider_names,
       array_agg(distinct route.provider_name order by route.provider_name) filter (
         where route.route_status = 'active'
-          and route.route_routing_enabled
-          and route.provider_routing_enabled
-          and route.variant_routing_enabled
+          and route.gateway_routable
       ) as active_provider_names,
       array_agg(distinct route.provider_model_slug order by route.provider_model_slug) as provider_model_slugs,
       array_agg(distinct route.service_tier_slug order by route.service_tier_slug) as service_tiers,
@@ -361,10 +370,10 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         'service_tier', route.service_tier_slug,
         'execution_region', route.execution_region,
         'data_region', route.data_region,
-        'is_active', route.route_status = 'active' and route.route_routing_enabled and route.provider_routing_enabled and route.variant_routing_enabled,
+        'is_active', route.route_status = 'active' and route.gateway_routable,
         'status', case
           when route.provider_availability_status = 'coming_soon' then 'coming_soon'
-          when route.route_status = 'active' and route.route_routing_enabled and route.provider_routing_enabled and route.variant_routing_enabled then 'active'
+          when route.route_status = 'active' and route.gateway_routable then 'active'
           else 'inactive'
         end
       )) as provider_details
