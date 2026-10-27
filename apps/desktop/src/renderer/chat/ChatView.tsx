@@ -9,7 +9,7 @@ import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/thre
 import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { TagEditor } from "../components/Tags";
-import type { AccountStatus, Attachment, Task } from "../../shared/workspace";
+import type { AccountStatus, Attachment, Message, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { useSelectedTask } from "../lib/useSelectedTask";
 import { usePersistedState } from "../lib/persistedState";
@@ -37,6 +37,8 @@ import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
+import { RewindDialog } from "./RewindDialog";
+import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -150,6 +152,12 @@ function ChatComposer({ task }: { task: Task }) {
 	];
 	const menu = useComposerMenu({ editor, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId, actions });
 	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
+	// Edit from here hands the rewound message back to this chat's composer.
+	useEffect(() => {
+		const restore = (event: Event) => { const detail = (event as CustomEvent<{ taskId: string; text: string }>).detail; if (detail?.taskId === task.id) { draft.setText(detail.text); editor.focus("end"); } };
+		window.addEventListener(restoreDraftEvent, restore);
+		return () => window.removeEventListener(restoreDraftEvent, restore);
+	});
 	const message = composeMessage(draft.text);
 	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
 
@@ -261,7 +269,10 @@ export function ChatView({ id }: { id: string }) {
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
 	const [preview, setPreview] = useState<string>();
-	useEffect(() => { setPreview(undefined); }, [id]);
+	const [rewinding, setRewinding] = useState<Message>();
+	// A rewind can remove the messages the conversation's window starts at, so the window starts over.
+	const [epoch, setEpoch] = useState(0);
+	useEffect(() => { setPreview(undefined); setRewinding(undefined); }, [id]);
 	// Until a chat's details load, its header and composer render from the sidebar's copy so they stay in place.
 	const task = loaded ?? (snapshot ? { ...snapshot, messages: [], queue: [] } as unknown as Task : undefined);
 	if (!task || (!loaded && detail.error)) return <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
@@ -270,9 +281,14 @@ export function ChatView({ id }: { id: string }) {
 	</div>;
 	const branch = async (messageId: string) => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id, messageId }); const next = state?.tasks.find(value => !known.has(value.id))?.id; if (next) select(next); };
 	const removed = overview.projects.find(project => project.id === task.projectId)?.worktree?.removedAt;
+	const rewind = async (message: Message, restoreFiles: boolean) => {
+		if (await command({ type: "rewind", id: task.id, messageId: message.id, ...(restoreFiles ? { restoreFiles } : {}) })) { restoreDraft(task.id, rewoundDraft(message)); setEpoch(value => value + 1); }
+		setRewinding(undefined);
+	};
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
-		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
+		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
+				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>
@@ -286,5 +302,6 @@ export function ChatView({ id }: { id: string }) {
 		<ChatComposer task={task} />
 		{drawers[task.id] && <TerminalDrawer projectId={task.projectId} taskId={task.id} />}
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
+		<RewindDialog task={task} message={rewinding} onClose={() => setRewinding(undefined)} onConfirm={restoreFiles => rewind(rewinding!, restoreFiles)} />
 	</div>;
 }
