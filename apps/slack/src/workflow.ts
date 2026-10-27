@@ -629,7 +629,7 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		if (access.status === "skip") {
 			console.log("[slack-agent] answer stopped after a question", { turnId: turn.turnId, question: leg, reason: access.reason });
 			// Not explained yet: the reply step tells the person why it stopped (privately, as nothing follows the question).
-			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, model: null, error: "access_changed" };
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, requestedModel: null, model: null, error: "access_changed" };
 		}
 		return runAgent(deps, turn, coordinator, { usageTools: access.usageTools, connectOffer: access.connectOffer }, context, leg, attempt);
 	})

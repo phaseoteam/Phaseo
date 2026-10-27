@@ -887,7 +887,7 @@ describe("AgentTurnWorkflow", () => {
 			expect(answered.args.text).toBe("Which region?\n<@U0PERSON01> chose: EU");
 			expect((answered.args.blocks as unknown[]).map((block) => (block as { type: string }).type)).toEqual(["section", "context"]);
 			expect(world.slack.of("chat.startStream")[1].args).toEqual({ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Using EU.", ...recipient });
-			expect(world.slack.of("chat.stopStream")[1].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Auto → GPT Test · $0.1500" }] }]);
+			expect(world.slack.of("chat.stopStream")[1].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.1500") }] }]);
 
 			expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 1, pending: 0 });
 			expect(coordinatorOf(turn).workingMemory().map((entry) => [entry.text, entry.ts])).toEqual([
@@ -899,7 +899,7 @@ describe("AgentTurnWorkflow", () => {
 
 			expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "ask-1", "close-1", "resume-1", "reply", "finish"]);
 			expect(step.waits).toEqual([{ name: "answer-1", type: "answer-1", timeout: "1 hour" }]);
-			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, model: "openai/gpt-test", error: null });
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
 			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ status: "answered", costNanos: 150_000_000 });
 			const stored = JSON.stringify(step.outputs);
 			for (const text of ["Which region", "One thing", "Using EU", "\"EU\""]) expect(stored).not.toContain(text);
@@ -1109,7 +1109,7 @@ describe("AgentTurnWorkflow", () => {
 			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 			expect(agent.requests).toHaveLength(1);
 			expect(world.slack.of("chat.startStream").at(-1)?.args.markdown_text).toBe("_I stopped here to keep this answer within its $0.50 cost limit._");
-			expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Auto · $0.5000" }] }]);
+			expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.5000", "Auto") }] }]);
 			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 		});
 

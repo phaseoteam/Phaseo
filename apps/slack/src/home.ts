@@ -2,6 +2,7 @@ import { connectAccountMessage, linkUrl, webOrigin } from "./access";
 import { isAutoModel } from "./agent";
 import type { Env } from "./env";
 import type { Installation } from "./installations";
+import { allowedModels, modelChoiceOn, modelNames } from "./model-choice";
 import type { SlackClient } from "./slack-api";
 import type { Db } from "./supabase";
 import { isWorkspaceMember, linkedUserId } from "./usage-tools";
@@ -19,6 +20,8 @@ export type HomeFacts = {
 	installation: Pick<Installation, "bot_user_id" | "status" | "access_mode" | "usage_data_mode">;
 	/** The model's catalogue name, or Auto. */
 	model: string;
+	/** The models people may choose per message (`with <model>:`), by name, when admins turned that on. */
+	choices: string[] | null;
 	account: HomeAccount;
 	/** The Connect button's link, when connecting would let them use the agent or ask about usage. */
 	connectUrl: string | null;
@@ -26,6 +29,11 @@ export type HomeFacts = {
 	answers: number | null;
 	settingsUrl: string;
 };
+
+/** Text for Slack's mrkdwn, which reads &, < and > as markup. */
+function escapeText(text: string): string {
+	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 function section(text: string) {
 	return { type: "section", text: { type: "mrkdwn", text } };
@@ -49,6 +57,9 @@ export function homeView(facts: HomeFacts) {
 			"• *Direct message:* write to it in the *Messages* tab. It answers every message.",
 			`• *In a channel:* invite ${bot} to the channel, then mention it. It replies in a thread; mention it again for each follow-up.`,
 			"• *Questions:* when it needs you to choose or approve something, it asks with buttons. Only you can answer, within an hour, with a button or a reply in the thread.",
+			...(facts.choices?.length
+				? [`• *Choose a model:* start a message with \`with &lt;model&gt;:\` and one of ${facts.choices.map(escapeText).join(", ")}, for example \`with ${escapeText(facts.choices[0])}: …\`.`]
+				: []),
 			"• *Stop:* Slack's stop button stops the answer it's working on.",
 		].join("\n")),
 		{
@@ -105,6 +116,7 @@ export async function publishHome(input: {
 	const view = homeView({
 		installation,
 		model: await modelName(db, installation.model),
+		choices: modelChoiceOn(installation) ? allowedModels(installation, await modelNames(db, installation.allowed_models)).map((model) => model.name) : null,
 		account,
 		connectUrl,
 		answers,

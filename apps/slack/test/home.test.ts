@@ -92,6 +92,15 @@ describe("the Home tab", () => {
 		expect(home.text).toContain("isn't a member of the workspace that added the agent");
 	});
 
+	it("lists the models people may choose per message, only when admins turned that on", async () => {
+		await openHome();
+		expect(published().text).not.toContain("Choose a model");
+		world.db.tables.v2_models.push({ model_slug: "openai/gpt-6-luna", name: "GPT-6 Luna & <Co>", hidden: false });
+		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test", "openai/gpt-6-luna"] });
+		await openHome();
+		expect(published().text).toContain("*Choose a model:* start a message with `with &lt;model&gt;:` and one of Claude Test, GPT-6 Luna &amp; &lt;Co&gt;, for example `with Claude Test: …`.");
+	});
+
 	it("says when the agent is paused", async () => {
 		await install({ status: "paused" });
 		await openHome();
