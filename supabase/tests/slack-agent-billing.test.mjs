@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -13,6 +13,10 @@ const guardrailMigration = await readFile(new URL('../migrations/20261026223103_
 // Adds per-message model choice to slack_installations: two columns, a check and their comments.
 const modelChoiceMigration = await readFile(new URL('../migrations/20261027131100_slack_agent_model_choice.sql', import.meta.url), 'utf8');
 const MODEL_CHOICE_LINES = /^ {2}"(?:model_choice_enabled|allowed_models)" .*\n|^ {2}CONSTRAINT "slack_installations_allowed_models_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:model_choice_enabled|allowed_models)" .*\n\n/gm;
+// The memory migration adds the memory switch to slack_installations: a column and its comment.
+const memoryMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_memory_and_skills.sql'));
+const memoryMigration = await readFile(new URL(`../migrations/${memoryMigrationName}`, import.meta.url), 'utf8');
+const MEMORY_LINES = /^ {2}"memory_enabled" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."memory_enabled" .*\n\n/gm;
 const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
@@ -79,6 +83,11 @@ try {
       assert.equal(added.length, 5, 'slack_installations declares the model choice columns, check and comments');
       for (const line of added) assert.ok(words(modelChoiceMigration).includes(words(line)), `the model choice migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(MODEL_CHOICE_LINES, '');
+      // And what the memory migration added.
+      const memoryLines = definition.match(MEMORY_LINES) ?? [];
+      assert.equal(memoryLines.length, 2, 'slack_installations declares the memory switch and its comment');
+      for (const line of memoryLines) assert.ok(words(memoryMigration).includes(words(line)), `the memory migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(MEMORY_LINES, '');
     }
     assert.ok(migration.includes(definition), `${table} migration matches the declarative definition`);
   }

@@ -7002,6 +7002,11 @@
 		"memory": {
 			"title": "Memory and skills",
 			"description": "Notes, pins and to-dos the agent saves when people ask it to remember something, and skills people ask it to save. They are short notes in the agent's own words, not copies of Slack messages. Uninstalling deletes them all.",
+			"enable": "Let the agent keep notes",
+			"enableHelp": "Notes, pins and to-dos it saves when asked and sees in later answers. Turned off, it saves and sees none. Notes already saved are kept, and you can still see and delete them here. Skills work either way.",
+			"externalHelp": "People from other companies (Slack Connect) only see and save notes for their own conversation, never the whole workspace's.",
+			"turnedOn": "The agent keeps notes again.",
+			"turnedOff": "The agent no longer keeps notes. Saved notes are kept.",
 			"loading": "Loading…",
 			"notesTitle": "Notes, pins and to-dos",
 			"skillsTitle": "Skills",

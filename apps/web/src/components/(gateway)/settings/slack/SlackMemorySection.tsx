@@ -22,9 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteSlackAgentNote, deleteSlackAgentSkill, loadSlackAgentMemory, updateSlackAgentSkill } from "@/app/(dashboard)/settings/slack/actions";
+import { deleteSlackAgentNote, deleteSlackAgentSkill, loadSlackAgentMemory, updateSlackAgent, updateSlackAgentSkill } from "@/app/(dashboard)/settings/slack/actions";
 import { cn } from "@/lib/utils";
-import { Choice, Notice, SlackError } from "./SlackAgentFields";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { Choice, Notice, SlackError, SwitchField } from "./SlackAgentFields";
+import { slackErrorKey, type SlackErrorKey } from "./slackAgentForm";
 import {
 	MAX_SKILL_DESCRIPTION_CHARS,
 	MAX_SKILL_INSTRUCTIONS_CHARS,
@@ -55,9 +57,10 @@ function MemoryError({ error }: { error: SlackMemoryError }) {
 
 /**
  * What the agent remembers: its notes, pins and to-dos, and its saved skills.
- * Owners and admins can delete any of them and edit a skill. Loaded when opened.
+ * Owners and admins can turn notes off, delete any of them and edit a skill.
+ * The lists load when opened.
  */
-export function SlackMemorySection() {
+export function SlackMemorySection({ memoryEnabled }: { memoryEnabled: boolean }) {
 	const t = useTranslations("SettingsUI.slack");
 	const [open, setOpen] = useState(false);
 	const [filter, setFilter] = useState<SlackMemoryFilter>("all");
@@ -101,6 +104,7 @@ export function SlackMemorySection() {
 				</button>
 			</CollapsibleTrigger>
 			<p className="mt-1 pl-6 text-sm text-muted-foreground">{t("memory.description")}</p>
+			<MemorySwitch initial={memoryEnabled} />
 			<CollapsibleContent className="space-y-8 pt-5">
 				{error ? <MemoryError error={error} /> : null}
 				{!memory ? (loading ? <p className="text-sm text-muted-foreground">{t("memory.loading")}</p> : null) : (
@@ -111,6 +115,36 @@ export function SlackMemorySection() {
 				)}
 			</CollapsibleContent>
 		</Collapsible>
+	);
+}
+
+/** The admins' switch for notes, saved as soon as it changes. Turning it off keeps the saved notes. */
+function MemorySwitch({ initial }: { initial: boolean }) {
+	const t = useTranslations("SettingsUI.slack");
+	const write = useSettingsWrite();
+	const [enabled, setEnabled] = useState(initial);
+	const [error, setError] = useState<{ key: SlackErrorKey; message?: string | null } | null>(null);
+	const [saving, startSaving] = useTransition();
+
+	function change(next: boolean) {
+		setError(null);
+		startSaving(async () => {
+			const result = await write(updateSlackAgent({ memory_enabled: next }));
+			if (!result.ok) {
+				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
+				return;
+			}
+			setEnabled(result.installation.settings.memory_enabled);
+			toast.success(next ? t("memory.turnedOn") : t("memory.turnedOff"));
+		});
+	}
+
+	return (
+		<div className="mt-4 max-w-xl space-y-2 pl-6">
+			<SwitchField label={t("memory.enable")} help={t("memory.enableHelp")} checked={enabled} disabled={saving} onChange={change} />
+			<p className="text-xs text-muted-foreground">{t("memory.externalHelp")}</p>
+			{error ? <SlackError error={error} /> : null}
+		</div>
 	);
 }
 

@@ -1,5 +1,7 @@
 import type { AgentTool } from "@phaseo/agent-sdk";
+import type { Installation } from "./installations";
 import type { Db } from "./supabase";
+import type { TurnRef } from "./turns";
 import { ToolInputError } from "./usage-tools";
 
 // The agent's memory and saved skills, offered on every turn.
@@ -8,11 +10,14 @@ import { ToolInputError } from "./usage-tools";
 // it to remember something (or for a fact the team will need again), never copies
 // of Slack messages: Slack's API terms forbid archiving them. A note belongs to
 // one conversation (its channel or DM) or to the whole Slack workspace, and a
-// conversation only ever sees its own and the workspace's. Skills are named
-// instructions for tasks people repeat, saved only when someone asks.
+// conversation only ever sees its own and the workspace's. Someone from another
+// organisation (Slack Connect) sees and saves only the conversation's. Admins can
+// turn notes off; saved ones are kept. Skills are named instructions for tasks
+// people repeat, saved only when someone asks, and work whatever the notes do.
 //
 // Everything goes through database functions with the service role: they cap an
-// installation at 500 notes and 100 skills, and uninstalling deletes both. Admins
+// installation at 500 notes and 100 skills, keep to the same rules about whose
+// notes a turn sees and the admins' switch, and uninstalling deletes both. Admins
 // see, edit and delete them in Settings → Slack.
 
 export const MAX_NOTE_CHARS = 500;
@@ -27,12 +32,37 @@ const NOTE_KINDS = ["note", "pin", "todo"] as const;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-export const MEMORY_TOOL_IDS = ["remember", "recall", "update_todo", "forget", "save_skill", "list_skills", "use_skill"] as const;
+export const NOTE_TOOL_IDS = ["remember", "recall", "update_todo", "forget"] as const;
+export const SKILL_TOOL_IDS = ["save_skill", "list_skills", "use_skill"] as const;
+export const MEMORY_TOOL_IDS = [...NOTE_TOOL_IDS, ...SKILL_TOOL_IDS] as const;
 
-export const MEMORY_INSTRUCTIONS = [
-	"You have a memory for this Slack workspace: notes, pins and to-dos. Save one with remember only when someone asks you to remember, pin or track something, or for a lasting fact the team will need again, such as a decision, a convention or a deadline. Write a short note in your own words; never copy whole messages or threads. Keep it to this conversation unless they ask for the whole workspace. Use recall before saying you don't know something you may have been told, update_todo to tick off a to-do, and forget when someone asks you to.",
-	"Saved skills are instructions people saved for tasks they repeat. When a request matches one, call use_skill and follow what it says. Call save_skill only when someone explicitly asks you to save a skill.",
-];
+/**
+ * The notes a turn works with: none while an admin has turned memory off; only
+ * the conversation's for someone from another organisation; otherwise the
+ * conversation's and the whole workspace's.
+ */
+export type NoteAccess = "off" | "conversation" | "workspace";
+
+export function noteAccess(installation: Pick<Installation, "memory_enabled">, turn: Pick<TurnRef, "external">): NoteAccess {
+	if (!installation.memory_enabled) return "off";
+	return turn.external ? "conversation" : "workspace";
+}
+
+const NOTES_HOW = "Save one with remember only when someone asks you to remember, pin or track something, or for a lasting fact the team will need again, such as a decision, a convention or a deadline. Write a short note in your own words; never copy whole messages or threads.";
+const NOTE_TOOLS_HOW = "Use recall before saying you don't know something you may have been told, update_todo to tick off a to-do, and forget when someone asks you to.";
+const SKILLS_HOW = "Saved skills are instructions people saved for tasks they repeat. When a request matches one, call use_skill and follow what it says. Call save_skill only when someone explicitly asks you to save a skill.";
+
+/** What the agent is told about its memory and skills, for the turn's note access. */
+export function memoryInstructions(access: NoteAccess): string[] {
+	switch (access) {
+		case "off":
+			return ["This workspace's admins have turned your memory (notes, pins and to-dos) off. If someone asks you to remember, pin or track something, say an admin has turned memory off in Phaseo.", SKILLS_HOW];
+		case "conversation":
+			return [`You have a memory for this conversation: notes, pins and to-dos. The person asking is from another organisation, so you can only see and save this conversation's notes; if they ask you to keep something for the whole workspace, save it for this conversation and say so. ${NOTES_HOW} ${NOTE_TOOLS_HOW}`, SKILLS_HOW];
+		case "workspace":
+			return [`You have a memory for this Slack workspace: notes, pins and to-dos. ${NOTES_HOW} Keep it to this conversation unless they ask for the whole workspace. ${NOTE_TOOLS_HOW}`, SKILLS_HOW];
+	}
+}
 
 type NoteKind = (typeof NOTE_KINDS)[number];
 
@@ -55,15 +85,20 @@ export type TurnMemory = {
 	skillsTotal: number;
 };
 
-/** The pins and skill list a turn is shown. Null when the database can't say: the turn goes on without them. */
-export async function loadTurnMemory(db: Db, installationId: string, channel: string): Promise<TurnMemory | null> {
+/**
+ * The pins and skill list a turn is shown: no pins while memory is off, and only
+ * the conversation's for someone from another organisation (the database keeps to
+ * the same rules). Null when the database can't say: the turn goes on without them.
+ */
+export async function loadTurnMemory(db: Db, installationId: string, channel: string, access: NoteAccess): Promise<TurnMemory | null> {
 	try {
 		const memory = await db.rpc<{ pins?: TurnMemory["pins"]; skills?: TurnMemory["skills"]; skills_total?: number | string } | null>(
 			"load_slack_agent_turn_memory",
-			{ p_installation_id: installationId, p_channel_id: channel },
+			{ p_installation_id: installationId, p_channel_id: channel, p_workspace_notes: access === "workspace" },
 		);
 		if (!memory) return null;
-		return { pins: memory.pins ?? [], skills: memory.skills ?? [], skillsTotal: Number(memory.skills_total) || 0 };
+		const pins = access === "off" ? [] : (memory.pins ?? []).filter((pin) => pin.scope === "channel" || access === "workspace");
+		return { pins, skills: memory.skills ?? [], skillsTotal: Number(memory.skills_total) || 0 };
 	} catch {
 		console.error("[slack-agent] memory not loaded", { installationId });
 		return null;
@@ -145,10 +180,19 @@ export type MemoryToolContext = {
 	now: () => number;
 	/** Short notes of what each tool did, kept as the thread's working memory. */
 	notes: string[];
+	/** Which notes the turn can see and save (noteAccess). Off: only the skill tools. */
+	access: NoteAccess;
 };
 
+/** The note tools the turn's access allows, then the skill tools, which every turn gets. */
 export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
+	return [...(context.access === "off" ? [] : noteTools(context, context.access === "workspace")), ...skillTools(context)];
+}
+
+/** workspace: the turn sees and saves the whole workspace's notes, not only the conversation's. */
+function noteTools(context: MemoryToolContext, workspace: boolean): AgentTool<any, any>[] {
 	const { db, installationId, channel, slackUserId, notes } = context;
+	const visible = workspace ? "this conversation or the workspace" : "this conversation";
 	return [
 		{
 			id: "remember",
@@ -158,7 +202,9 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 				properties: {
 					text: { type: "string", description: `The note, short and in your own words; never a copied message. At most ${MAX_NOTE_CHARS} characters.` },
 					kind: { type: "string", enum: [...NOTE_KINDS], description: "note (default), pin (shown on every turn) or todo." },
-					scope: { type: "string", enum: ["conversation", "workspace"], description: "conversation (default): only this channel or DM. workspace: everywhere in this Slack workspace, only when they ask for that." },
+					scope: workspace
+						? { type: "string", enum: ["conversation", "workspace"], description: "conversation (default): only this channel or DM. workspace: everywhere in this Slack workspace, only when they ask for that." }
+						: { type: "string", enum: ["conversation"], description: "conversation: only this channel or DM. The person asking is from another organisation, so notes for the whole workspace aren't available." },
 					expires_on: { type: "string", description: "Optional last UTC date to keep it, YYYY-MM-DD, for something temporary." },
 				},
 				required: ["text"],
@@ -170,6 +216,7 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 				const noteKind = kind(input.kind, "note")!;
 				const scope = input.scope ?? "conversation";
 				if (scope !== "conversation" && scope !== "workspace") throw new ToolInputError("scope must be conversation or workspace");
+				if (scope === "workspace" && !workspace) throw new ToolInputError("scope must be conversation: the person asking is from another organisation, so only this conversation's notes are available");
 				const result = await db.rpc<{ status: string; note?: NoteRow; limit?: number }>("save_slack_agent_note", {
 					p_installation_id: installationId,
 					p_kind: noteKind,
@@ -180,13 +227,14 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 				});
 				notes.push(`remember ${noteKind} (${scope})`);
 				if (result?.status === "full") return { saved: false, note: `Your memory is full (${result.limit ?? 500} notes). Ask which notes to forget, or an admin can delete some in Phaseo settings.` };
+				if (result?.status === "memory_off") return { saved: false, note: "An admin has turned your memory off in Phaseo, so nothing was saved." };
 				if (!result?.note) return { saved: false, note: "The Phaseo agent is no longer installed here." };
 				return { saved: true, already_saved: result.status === "exists", ...noteView(result.note) };
 			},
 		},
 		{
 			id: "recall",
-			description: "Search your memory: the notes, pins and to-dos for this conversation and for the whole workspace. Matches any of the words given, best matches then newest first; without words, the newest. Done to-dos only when asked for.",
+			description: `Search your memory: the notes, pins and to-dos for this conversation${workspace ? " and for the whole workspace" : ""}. Matches any of the words given, best matches then newest first; without words, the newest. Done to-dos only when asked for.`,
 			parameters: {
 				type: "object",
 				properties: {
@@ -206,6 +254,7 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 				const rows = await db.rpc<NoteRow[]>("search_slack_agent_notes", {
 					p_installation_id: installationId,
 					p_channel_id: channel,
+					p_workspace_notes: workspace,
 					p_query: query,
 					p_kind: kind(input.kind, null),
 					p_include_done: input.include_done === true,
@@ -231,10 +280,10 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 			execute: async (input: Record<string, unknown>) => {
 				const id = noteId(input.id);
 				if (typeof input.done !== "boolean") throw new ToolInputError("done must be true or false");
-				const rows = await db.rpc<NoteRow[]>("set_slack_agent_todo_done", { p_installation_id: installationId, p_channel_id: channel, p_note_id: id, p_done: input.done });
+				const rows = await db.rpc<NoteRow[]>("set_slack_agent_todo_done", { p_installation_id: installationId, p_channel_id: channel, p_workspace_notes: workspace, p_note_id: id, p_done: input.done });
 				notes.push(`update_todo ${input.done ? "done" : "reopened"}`);
 				const row = rows?.[0];
-				return row ? { updated: true, ...noteView(row) } : { updated: false, note: "No to-do with that id in this conversation or the workspace." };
+				return row ? { updated: true, ...noteView(row) } : { updated: false, note: `No to-do with that id in ${visible}.` };
 			},
 		},
 		{
@@ -248,11 +297,17 @@ export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 			},
 			onError: "return-to-model",
 			execute: async (input: Record<string, unknown>) => {
-				const removed = await db.rpc<boolean>("forget_slack_agent_note", { p_installation_id: installationId, p_channel_id: channel, p_note_id: noteId(input.id) });
+				const removed = await db.rpc<boolean>("forget_slack_agent_note", { p_installation_id: installationId, p_channel_id: channel, p_workspace_notes: workspace, p_note_id: noteId(input.id) });
 				notes.push("forget");
-				return removed ? { deleted: true } : { deleted: false, note: "No note with that id in this conversation or the workspace." };
+				return removed ? { deleted: true } : { deleted: false, note: `No note with that id in ${visible}.` };
 			},
 		},
+	];
+}
+
+function skillTools(context: MemoryToolContext): AgentTool<any, any>[] {
+	const { db, installationId, slackUserId, notes } = context;
+	return [
 		{
 			id: "save_skill",
 			description: "Save a skill: named instructions for a task people repeat, which anyone can then ask you to use. Only when someone explicitly asks you to save a skill.",

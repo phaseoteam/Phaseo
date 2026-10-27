@@ -19,6 +19,8 @@ export type TurnRef = {
 	kind: "mention" | "dm";
 	/** The model the person chose for this message (`with <model>:`), when the installation allows it. */
 	model?: string | null;
+	/** The person is from another organisation (Slack Connect): the turn sees and saves only this conversation's notes. */
+	external?: boolean;
 };
 
 export type TurnOutcome = {

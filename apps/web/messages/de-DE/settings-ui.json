@@ -7002,6 +7002,11 @@
 		"memory": {
 			"title": "Gedächtnis und Skills",
 			"description": "Notizen, Pins und To-dos, die der Agent speichert, wenn ihn jemand bittet, sich etwas zu merken, und Skills, die er auf Wunsch speichert. Es sind kurze Notizen in den Worten des Agenten, keine Kopien von Slack-Nachrichten. Beim Deinstallieren werden alle gelöscht.",
+			"enable": "Agent darf Notizen behalten",
+			"enableHelp": "Notizen, Pins und To-dos, die er auf Wunsch speichert und in späteren Antworten sieht. Ausgeschaltet speichert und sieht er keine. Bereits gespeicherte Notizen bleiben erhalten, und du kannst sie hier weiter ansehen und löschen. Skills funktionieren in beiden Fällen.",
+			"externalHelp": "Personen aus anderen Unternehmen (Slack Connect) sehen und speichern nur Notizen für ihre eigene Unterhaltung, nie die des ganzen Workspace.",
+			"turnedOn": "Der Agent behält wieder Notizen.",
+			"turnedOff": "Der Agent behält keine Notizen mehr. Gespeicherte Notizen bleiben erhalten.",
 			"loading": "Wird geladen…",
 			"notesTitle": "Notizen, Pins und To-dos",
 			"skillsTitle": "Skills",

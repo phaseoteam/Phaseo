@@ -222,7 +222,7 @@ describe("ThreadCoordinator", () => {
 		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
 		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
-		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs"]));
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external"]));
 		expect(columns("memory")).toContain("ts");
 		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");
@@ -239,6 +239,15 @@ describe("ThreadCoordinator", () => {
 			{ kind: "reply", text: "An older answer", at: NOW, ts: null },
 			{ kind: "reply", text: "Answer", at: NOW, ts: "1792600100.000001" },
 		]);
+	});
+
+	it("keeps, per turn, whether the person is from another organisation", async () => {
+		runner.next = { finished: { status: "done" } };
+		admitInMeter("Ev0TEST0001");
+		await coordinator.enqueue(request("Ev0TEST0001", { external: true }), NOW);
+		admitInMeter("Ev0TEST0002");
+		await coordinator.enqueue(request("Ev0TEST0002"), NOW);
+		expect(runner.starts.map((turn) => turn.external)).toEqual([true, undefined]);
 	});
 
 	it("keeps each attempt's cost once, however often it is staged", async () => {

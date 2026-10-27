@@ -6,10 +6,14 @@ import { NotesList, SkillsList, SlackMemorySection } from "./SlackMemorySection"
 import { noteScope, skillPatch, slackMemoryError, type SlackAgentMemory, type SlackAgentNote } from "./slackAgentMemory";
 
 jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
+	updateSlackAgent: jest.fn(),
 	loadSlackAgentMemory: jest.fn(),
 	deleteSlackAgentNote: jest.fn(),
 	updateSlackAgentSkill: jest.fn(),
 	deleteSlackAgentSkill: jest.fn(),
+}));
+jest.mock("../PrivateSettingsQuery", () => ({
+	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
 jest.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
@@ -48,11 +52,21 @@ function render(children: React.ReactNode) {
 
 describe("SlackMemorySection", () => {
 	it("starts closed, saying what memory is, without loading anything", () => {
-		const html = render(<SlackMemorySection />);
+		const html = render(<SlackMemorySection memoryEnabled />);
 		expect(html).toContain(">Memory and skills<");
 		expect(html).toContain("not copies of Slack messages. Uninstalling deletes them all.");
 		expect(html).not.toContain("<h3");
 		expect(html).not.toContain("Loading");
+	});
+
+	it("shows the switch for notes while closed, saying saved notes are kept and who sees which", () => {
+		const html = render(<SlackMemorySection memoryEnabled />);
+		expect(html).toContain("Let the agent keep notes");
+		expect(html).toContain("Notes already saved are kept, and you can still see and delete them here. Skills work either way.");
+		expect(html).toContain("People from other companies (Slack Connect) only see and save notes for their own conversation");
+		expect(html).toMatch(/role="switch"[^>]*aria-checked="true"/);
+		expect(render(<SlackMemorySection memoryEnabled={false} />)).toMatch(/role="switch"[^>]*aria-checked="false"/);
+		expect(html).not.toMatch(/rounded-(full|lg|xl)\b/);
 	});
 
 	it("lists notes with their kind, where they apply, who saved them and when they're done or kept until", () => {

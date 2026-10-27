@@ -7002,6 +7002,11 @@
 		"memory": {
 			"title": "Memória e habilidades",
 			"description": "Notas, notas fixadas e tarefas que o agente salva quando alguém pede para ele lembrar de algo, e habilidades que pedem para ele salvar. São notas curtas, escritas pelo próprio agente, e não cópias de mensagens do Slack. Desinstalar apaga tudo.",
+			"enable": "Permitir que o agente guarde notas",
+			"enableHelp": "Notas, notas fixadas e tarefas que ele salva quando pedem e vê nas respostas seguintes. Desativado, ele não salva nem vê nenhuma. As notas já salvas são mantidas, e você ainda pode vê-las e apagá-las aqui. As habilidades funcionam de qualquer forma.",
+			"externalHelp": "Pessoas de outras empresas (Slack Connect) só veem e salvam notas da própria conversa, nunca as do workspace inteiro.",
+			"turnedOn": "O agente voltou a guardar notas.",
+			"turnedOff": "O agente não guarda mais notas. As notas salvas são mantidas.",
 			"loading": "Carregando…",
 			"notesTitle": "Notas, fixadas e tarefas",
 			"skillsTitle": "Habilidades",

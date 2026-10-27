@@ -359,7 +359,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 				</p>
 			</Section>
 
-			<SlackMemorySection />
+			<SlackMemorySection memoryEnabled={installation.settings.memory_enabled !== false} />
 
 			<SlackCustomAppSection view={view} />
 

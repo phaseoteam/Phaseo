@@ -70,7 +70,7 @@ const OAUTH_CODE_PATTERN = /^[A-Za-z0-9._-]{1,512}$/;
 
 const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "team_name", "enterprise_id", "bot_user_id", "key_id", "guardrail_id",
-	"model", "model_choice_enabled", "allowed_models", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
 	"installed_by", "installed_at", "uninstalled_at", "updated_at",
 ].join(",");
@@ -92,6 +92,7 @@ type InstallationRow = {
 	model: string;
 	model_choice_enabled: boolean;
 	allowed_models: string[] | null;
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: string;
 	usage_data_mode: string;
@@ -282,6 +283,7 @@ function settingsView(row: InstallationRow, keyLimitNanos: number) {
 		model: row.model,
 		model_choice_enabled: row.model_choice_enabled,
 		allowed_models: row.allowed_models ?? [],
+		memory_enabled: row.memory_enabled,
 		instructions: row.instructions,
 		access_mode: row.access_mode,
 		usage_data_mode: row.usage_data_mode,

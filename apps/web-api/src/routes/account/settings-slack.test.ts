@@ -38,7 +38,7 @@ const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b
 function installationRow(overrides: Record<string, unknown> = {}) {
 	return {
 		id: INSTALLATION_ID, workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
-		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], instructions: null,
+		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, instructions: null,
 		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], plan_people: 10, over_plan: "refuse",
 		max_people: null, monthly_cap_nanos: 25_000_000_000, answers_per_person_hour: 60, allow_guests: true,
 		allow_external_users: false, status: "active", installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
@@ -889,6 +889,27 @@ describe("Slack agent settings changes", () => {
 			expect(gateChecks(requests)).toHaveLength(0);
 			expect(find(requests, "GET", "/v2_models")).toHaveLength(0);
 		});
+	});
+
+	it("turns the agent's memory off and on, and returns the switch", async () => {
+		let requests = database({ role: "admin", installation: {} });
+		const off = await patch({ memory_enabled: false });
+		expect(off.status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ memory_enabled: false });
+		expect(((await off.json()) as any).installation.settings).toMatchObject({ memory_enabled: false });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata.changed_fields).toEqual(["memory_enabled"]);
+		// Turning it off keeps the notes: nothing else is written.
+		expect(requests.filter((entry) => entry.method !== "GET").map((entry) => entry.url.pathname)).toEqual([
+			expect.stringContaining("/slack_installations"), expect.stringContaining("/workspace_audit_events"),
+		]);
+		requests = database({ role: "admin", installation: { memory_enabled: false } });
+		expect(((await (await patch({ memory_enabled: true })).json()) as any).installation.settings.memory_enabled).toBe(true);
+		for (const value of ["no", 0, null]) {
+			database({ role: "admin", installation: {} });
+			expect(await (await patch({ memory_enabled: value })).json()).toMatchObject({ error: "bad_request", message: "memory_enabled must be true or false" });
+		}
+		database({ role: "member", installation: {} });
+		expect((await patch({ memory_enabled: false })).status).toBe(403);
 	});
 
 	it("is for admins, and 404s without an installation", async () => {

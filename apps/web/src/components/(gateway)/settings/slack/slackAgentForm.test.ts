@@ -30,6 +30,7 @@ const saved: SlackAgentSettings = {
 	model: "phaseo/auto",
 	model_choice_enabled: false,
 	allowed_models: [],
+	memory_enabled: true,
 	instructions: null,
 	access_mode: "everyone",
 	usage_data_mode: "dm",

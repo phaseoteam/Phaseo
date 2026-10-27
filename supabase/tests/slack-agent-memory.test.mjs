@@ -75,6 +75,7 @@ try {
   ))[0].id;
   const installationId = await install(WORKSPACE, 'T0TEAM0001');
   const otherId = await install(OTHER_WORKSPACE, 'T0TEAM0002');
+  assert.equal((await rows('select memory_enabled from public.slack_installations where id = $1', [installationId]))[0].memory_enabled, true, 'memory is on by default');
 
   // Clients can neither read the tables nor call the functions.
   for (const role of ['anon', 'authenticated']) {
@@ -83,8 +84,8 @@ try {
       await assert.rejects(rows(`select * from public.${table}`), /permission denied/);
     }
     await assert.rejects(rows('select public.save_slack_agent_note($1, $2, $3, $4, $5, $6)', [installationId, 'note', CHANNEL, 'x', PERSON, null]), /permission denied/);
-    await assert.rejects(rows('select * from public.search_slack_agent_notes($1, $2, $3, $4, $5, $6)', [installationId, CHANNEL, null, null, null, null]), /permission denied/);
-    await assert.rejects(rows('select public.load_slack_agent_turn_memory($1, $2)', [installationId, CHANNEL]), /permission denied/);
+    await assert.rejects(rows('select * from public.search_slack_agent_notes($1, $2, $3, $4, $5, $6, $7)', [installationId, CHANNEL, true, null, null, null, null]), /permission denied/);
+    await assert.rejects(rows('select public.load_slack_agent_turn_memory($1, $2, $3)', [installationId, CHANNEL, true]), /permission denied/);
     await assert.rejects(rows('select public.save_slack_agent_skill($1, $2, $3, $4, $5, $6)', [installationId, 'x', 'x', 'x', PERSON, false]), /permission denied/);
     await db.exec('reset role');
   }
@@ -96,8 +97,9 @@ try {
 
   const save = async (kind, channel, text, { installation = installationId, by = PERSON, expiresAt = null } = {}) =>
     (await rows('select public.save_slack_agent_note($1, $2, $3, $4, $5, $6) as result', [installation, kind, channel, text, by, expiresAt]))[0].result;
-  const search = async ({ installation = installationId, channel = CHANNEL, query = null, kind = null, includeDone = null, limit = null } = {}) =>
-    rows('select * from public.search_slack_agent_notes($1, $2, $3, $4, $5, $6)', [installation, channel, query, kind, includeDone, limit]);
+  // workspaceNotes: false for someone from another organisation, who sees only the conversation's.
+  const search = async ({ installation = installationId, channel = CHANNEL, workspaceNotes = true, query = null, kind = null, includeDone = null, limit = null } = {}) =>
+    rows('select * from public.search_slack_agent_notes($1, $2, $3, $4, $5, $6, $7)', [installation, channel, workspaceNotes, query, kind, includeDone, limit]);
 
   const note = await save('note', CHANNEL, '  Deploys freeze on Fridays after 3pm.  ');
   assert.equal(note.status, 'saved');
@@ -136,7 +138,8 @@ try {
   assert.equal((await search({ limit: 0 })).length, 1, 'at least one');
 
   // To-dos: done and not done again, only one the conversation can see.
-  const setDone = async (id, done, channel = CHANNEL) => rows('select * from public.set_slack_agent_todo_done($1, $2, $3, $4)', [installationId, channel, id, done]);
+  const setDone = async (id, done, channel = CHANNEL, workspaceNotes = true) =>
+    rows('select * from public.set_slack_agent_todo_done($1, $2, $3, $4, $5)', [installationId, channel, workspaceNotes, id, done]);
   const [done] = await setDone(todo.note.id, true);
   assert.ok(done.done_at instanceof Date);
   assert.ok(done.updated_at >= done.created_at);
@@ -149,10 +152,25 @@ try {
   assert.equal((await setDone(todo.note.id, true, OTHER_CHANNEL)).length, 0, 'not from another conversation');
 
   // Forget: one note the conversation can see.
-  const forget = async (id, channel = CHANNEL, installation = installationId) =>
-    (await rows('select public.forget_slack_agent_note($1, $2, $3) as removed', [installation, channel, id]))[0].removed;
+  const forget = async (id, channel = CHANNEL, installation = installationId, workspaceNotes = true) =>
+    (await rows('select public.forget_slack_agent_note($1, $2, $3, $4) as removed', [installation, channel, workspaceNotes, id]))[0].removed;
   assert.equal(await forget(channelPin.note.id, OTHER_CHANNEL), false, 'not from another conversation');
   assert.equal(await forget(pin.note.id, CHANNEL, otherId), false, 'not from another installation');
+
+  // Someone from another organisation: the conversation's notes only, never the workspace's.
+  const workspaceTodo = await save('todo', null, 'Renew the company domain.');
+  assert.deepEqual((await search({ workspaceNotes: false })).map((row) => row.text).sort(), [
+    'Deploys freeze on Fridays after 3pm.', 'Release notes go out every Tuesday.', 'Send the Q4 budget to finance.', 'Send the Q4 budget to finance.',
+  ]);
+  assert.ok((await search()).some((row) => row.id === workspaceTodo.note.id), 'which everyone else sees');
+  assert.deepEqual((await search({ workspaceNotes: null, kind: 'pin' })).map((row) => row.id), [channelPin.note.id], 'no flag means no workspace notes');
+  assert.equal((await setDone(workspaceTodo.note.id, true, CHANNEL, false)).length, 0, 'a workspace to-do is not ticked off');
+  assert.equal((await setDone(workspaceTodo.note.id, true, CHANNEL, null)).length, 0);
+  assert.equal(await forget(pin.note.id, CHANNEL, installationId, false), false, 'nor a workspace note forgotten');
+  assert.equal((await setDone(todo.note.id, true, CHANNEL, false)).length, 1, 'the conversation\'s still is');
+  assert.equal((await setDone(todo.note.id, false, CHANNEL, false)).length, 1);
+  assert.equal(await forget(workspaceTodo.note.id), true);
+
   assert.equal(await forget(channelPin.note.id), true);
   assert.equal(await forget(channelPin.note.id), false);
 
@@ -163,8 +181,8 @@ try {
   await rows(`update public.slack_agent_notes set created_at = now() - interval '2 days', expires_at = now() - interval '1 day' where id = $1`, [expiring.note.id]);
   await db.exec('set role service_role');
   assert.ok(!(await search()).some((row) => row.id === expiring.note.id), 'an expired note is hidden at once');
-  const memory = async (channel = CHANNEL, installation = installationId) =>
-    (await rows('select public.load_slack_agent_turn_memory($1, $2) as memory', [installation, channel]))[0].memory;
+  const memory = async (channel = CHANNEL, installation = installationId, workspaceNotes = true) =>
+    (await rows('select public.load_slack_agent_turn_memory($1, $2, $3) as memory', [installation, channel, workspaceNotes]))[0].memory;
   const turn = await memory();
   assert.deepEqual(turn.pins.map((entry) => [entry.scope, entry.text]), [['workspace', 'Our fiscal year starts on 1 April.']]);
   assert.deepEqual(Object.keys(turn.pins[0]).sort(), ['created_at', 'id', 'scope', 'text']);
@@ -185,6 +203,9 @@ try {
   assert.deepEqual(pinned.slice(0, 3).map((entry) => entry.text), ['Pin 2', 'Pin 4', 'Pin 6'], 'the conversation\'s first, newest first');
   assert.equal(pinned[10].text, 'Our fiscal year starts on 1 April.', 'then the workspace\'s, newest first');
   assert.ok(!(await memory(OTHER_CHANNEL)).pins.some((entry) => entry.scope === 'channel' && entry.text.startsWith('Pin ')), 'another conversation sees none of them');
+  const external = (await memory(CHANNEL, installationId, false)).pins;
+  assert.deepEqual([external.length, new Set(external.map((entry) => entry.scope))], [10, new Set(['channel'])], 'someone from another organisation sees only the conversation\'s');
+  assert.deepEqual((await memory(CHANNEL, installationId, null)).pins.filter((entry) => entry.scope === 'workspace'), []);
 
   // At most 500 notes an installation.
   await db.exec('reset role');
@@ -225,6 +246,25 @@ try {
   assert.equal(withSkills.skills.length, 20, 'the 20 changed most recently');
   assert.deepEqual(withSkills.skills[0], { name: 'Skill 050', description: 'Changed' });
   assert.deepEqual(Object.keys(withSkills.skills[0]).sort(), ['description', 'name']);
+
+  // Memory turned off by an admin: no pins and no note functions, skills as before, and the notes kept.
+  await db.exec('reset role');
+  const notesBefore = await count();
+  await rows('update public.slack_installations set memory_enabled = false where id = $1', [installationId]);
+  await db.exec('set role service_role');
+  const off = await memory();
+  assert.deepEqual([off.pins, off.skills.length, off.skills_total], [[], 20, 100]);
+  assert.deepEqual(await save('note', CHANNEL, 'Saved while off.'), { status: 'memory_off' });
+  assert.deepEqual(await search(), []);
+  assert.equal((await setDone(todo.note.id, true)).length, 0);
+  assert.equal(await forget(pin.note.id), false);
+  assert.equal((await getSkill('Skill 050')).length, 1, 'skills still load');
+  assert.equal((await saveSkill('Skill 050', { replace: true, description: 'Changed while off' })).status, 'replaced', 'and can be saved');
+  await db.exec('reset role');
+  assert.equal(await count(), notesBefore, 'nothing was deleted');
+  await rows('update public.slack_installations set memory_enabled = true where id = $1', [installationId]);
+  await db.exec('set role service_role');
+  assert.equal((await memory()).pins.length, 20, 'back on, the same pins');
 
   // Uninstalling in Slack deletes the installation's notes and skills, and nothing else's.
   const otherNotes = async () => (await rows('select count(*)::int as n from public.slack_agent_notes where installation_id = $1', [otherId]))[0].n;

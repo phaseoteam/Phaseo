@@ -33,7 +33,7 @@ function installation(month: SlackAgentInstallation["month"], settings: Partial<
 		installed_at: "2026-10-01T00:00:00Z", uses_custom_app: false, plan: { people: 10, price_usd: 2.99 }, month,
 		settings: {
 			plan_people: 10, over_plan: "refuse", max_people: null, monthly_cap_usd: 25, answers_per_person_hour: 60, model: "phaseo/auto",
-			model_choice_enabled: false, allowed_models: [],
+			model_choice_enabled: false, allowed_models: [], memory_enabled: true,
 			instructions: null, access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], allow_guests: true,
 			allow_external_users: false, token_monthly_limit_usd: 40, ...settings,
 		},
@@ -72,6 +72,10 @@ describe("SlackAgentSettingsClient model spend", () => {
 		expect(html).not.toMatch(/rounded-(full|lg|xl)\b/);
 		// Memory and skills sit with the other installed settings.
 		expect(html).toContain(">Memory and skills<");
+		// With the admins' switch for notes, as saved.
+		expect(html).toContain("Let the agent keep notes");
+		expect(html).toMatch(/Let the agent keep notes[\s\S]*?role="switch"[^>]*aria-checked="true"/);
+		expect(render(MONTH, [], { memory_enabled: false })).toMatch(/Let the agent keep notes[\s\S]*?role="switch"[^>]*aria-checked="false"/);
 	});
 
 	it("adds each past month's model spend to the charges table", () => {

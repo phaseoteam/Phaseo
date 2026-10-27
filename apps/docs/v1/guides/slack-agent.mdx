@@ -162,7 +162,7 @@ It saves three kinds of note, each up to 500 characters and in its own words:
 | **Pin** | Something to keep in mind all the time. The agent sees up to 10 of the conversation's pins and 10 workspace-wide pins with every message. |
 | **To-do** | Something to track, which can be marked done. |
 
-A note belongs to the channel or direct message it was saved in, unless someone asks for it to be workspace-wide. In a conversation, the agent sees that conversation's notes and the workspace-wide ones, never another channel's or direct message's. Workspace-wide notes are available to everyone the agent answers. A note can be kept until a date, such as `remember until Friday that the office is closed`, and is deleted after it.
+A note belongs to the channel or direct message it was saved in, unless someone asks for it to be workspace-wide. In a conversation, the agent sees that conversation's notes and the workspace-wide ones, never another channel's or direct message's. Workspace-wide notes are available to everyone in your organisation the agent answers. People from other companies in shared Slack Connect channels only see and save the notes for the conversation they're in, never workspace-wide ones; skills work for them as usual. A note can be kept until a date, such as `remember until Friday that the office is closed`, and is deleted after it.
 
 The agent only saves a note when someone asks it to remember, pin or track something, or for a lasting fact such as a decision or a deadline. It never copies whole messages or threads.
 
@@ -176,6 +176,7 @@ With every message, the agent sees the names and descriptions of the 20 most rec
 
 ### What admins control
 
+- **Let the agent keep notes** (on by default, under **Memory and skills** in **Settings → Slack**) turns notes, pins and to-dos off. While it's off, the agent saves none and sees none, and tells people who ask it to remember something that an admin has turned memory off. Skills keep working. The notes already saved are kept, and owners and admins can still see and delete them; turn it back on and the agent uses them again.
 - Each Slack workspace keeps up to 500 notes and 100 skills. When memory is full, the agent says so; delete some to make room.
 - Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
 - Uninstalling the agent deletes all its notes and skills. Adding it again starts with an empty memory.
@@ -249,7 +250,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
-- **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack** (see [Memory and skills](#memory-and-skills)).
+- **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 

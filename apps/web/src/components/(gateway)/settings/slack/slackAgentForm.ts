@@ -20,6 +20,8 @@ export type SlackAgentSettings = {
 	/** People may start a message with "with <model>:" to have one of allowed_models answer it. */
 	model_choice_enabled: boolean;
 	allowed_models: string[];
+	/** The agent's notes, pins and to-dos. Off: it saves and sees none, saved ones are kept, and skills still work. */
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: SlackAccessMode;
 	usage_data_mode: SlackUsageDataMode;

@@ -129,12 +129,15 @@ describe("events: who gets an answer", () => {
 		clearUserFactsCache();
 		await expect(run(mention({ user: "U0OUTSIDE1" }))).resolves.toBe("started");
 		expect(refusalEmails(), "an admin's own setting is not emailed").toEqual([]);
+		// Their turn says so, so it sees and saves only this conversation's notes (memory.ts).
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([true]);
 	});
 
 	it("treats another workspace of the same Enterprise Grid org as inside the organisation", async () => {
 		await install({ enterprise_id: "E0ORG00001" });
 		world.slack.users.set("U0SISTER01", { id: "U0SISTER01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } });
 		await expect(run(mention({ user: "U0SISTER01" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([undefined]);
 	});
 
 	it("refuses guests only when an admin turned them off", async () => {

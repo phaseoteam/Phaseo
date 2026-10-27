@@ -8,7 +8,7 @@ import { hostedApp, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
-import { MEMORY_TOOL_IDS } from "../src/memory";
+import { MEMORY_TOOL_IDS, SKILL_TOOL_IDS } from "../src/memory";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
 	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
@@ -233,7 +233,7 @@ describe("AgentTurnWorkflow", () => {
 		};
 		const agent = new ScriptedAgent(async () => answer());
 		await runTurn(deps(agent), await startTurn(), step);
-		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1" });
+		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1", p_workspace_notes: true });
 		expect(agent.requests[0].prompt).toBe([
 			"Pinned for the whole Slack workspace, newest first:",
 			"- Our fiscal year starts on 1 April. (id 00000000-0000-4000-8000-0000000000e1)",
@@ -251,6 +251,57 @@ describe("AgentTurnWorkflow", () => {
 		await runTurn(deps(agent), await startTurn(), step);
 		expect(agent.requests[1].prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
 		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+	});
+
+	it("shows someone from another organisation only this conversation's notes, and keeps skills", async () => {
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [
+				{ id: "00000000-0000-4000-8000-0000000000e1", scope: "channel", text: "Release notes go out on Tuesdays.", created_at: "2026-10-20T09:00:00Z" },
+				{ id: "00000000-0000-4000-8000-0000000000e2", scope: "workspace", text: "Our fiscal year starts on 1 April.", created_at: "2026-10-20T09:00:00Z" },
+			],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		const turn = await startTurn({ external: true });
+		// The coordinator keeps the flag for the Workflow.
+		expect(turn.external).toBe(true);
+		await runTurn(deps(agent), turn, step);
+		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toMatchObject({ p_workspace_notes: false });
+		const [request] = agent.requests;
+		expect(request.prompt).toContain("Release notes go out on Tuesdays.");
+		expect(request.prompt).not.toContain("fiscal year");
+		expect(request.prompt).toContain("- Weekly report: Summarise the week.");
+		expect(request.instructions).toContain("The person asking is from another organisation");
+		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+		expect((request.tools.find((tool) => tool.id === "remember")!.parameters as any).properties.scope.enum).toEqual(["conversation"]);
+
+		// Someone from this organisation in the same thread sees the workspace's too.
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].prompt).toContain("fiscal year");
+	});
+
+	it("with memory off: no note tools and no pins, but the skills and their tools", async () => {
+		await install({ memory_enabled: false });
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [{ id: "00000000-0000-4000-8000-0000000000e1", scope: "channel", text: "Release notes go out on Tuesdays.", created_at: "2026-10-20T09:00:00Z" }],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		const [request] = agent.requests;
+		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS]);
+		expect(request.prompt).toBe([
+			"Saved skills (call use_skill to load one):",
+			"- Weekly report: Summarise the week.",
+			"",
+			"New message from <@U0PERSON01>:",
+			"what did we spend this week?",
+		].join("\n"));
+		expect(request.instructions).toContain("turned your memory (notes, pins and to-dos) off");
+		expect(request.instructions).not.toContain("Save one with remember");
+		expect(request.instructions).toContain("Call save_skill only when someone explicitly asks you to save a skill.");
 	});
 
 	it("offers usage tools only where usage_data_mode allows and to a linked member", async () => {

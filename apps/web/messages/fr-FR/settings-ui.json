@@ -7002,6 +7002,11 @@
 		"memory": {
 			"title": "Mémoire et compétences",
 			"description": "Les notes, épingles et tâches que l’agent enregistre quand on lui demande de retenir quelque chose, et les compétences qu’on lui demande d’enregistrer. Ce sont de courtes notes rédigées par l’agent, pas des copies de messages Slack. La désinstallation les supprime toutes.",
+			"enable": "Permettre à l’agent de garder des notes",
+			"enableHelp": "Les notes, épingles et tâches qu’il enregistre quand on le lui demande et qu’il voit dans ses réponses suivantes. Désactivé, il n’en enregistre ni n’en voit aucune. Les notes déjà enregistrées sont conservées, et vous pouvez toujours les consulter et les supprimer ici. Les compétences fonctionnent dans les deux cas.",
+			"externalHelp": "Les personnes d’autres entreprises (Slack Connect) ne voient et n’enregistrent que les notes de leur propre conversation, jamais celles de tout l’espace de travail.",
+			"turnedOn": "L’agent garde à nouveau des notes.",
+			"turnedOff": "L’agent ne garde plus de notes. Les notes enregistrées sont conservées.",
 			"loading": "Chargement…",
 			"notesTitle": "Notes, épingles et tâches",
 			"skillsTitle": "Compétences",

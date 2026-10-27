@@ -8,8 +8,15 @@
 -- * Functions for the Worker's tools (save, search, update_todo, forget, save/get skill) and each turn's pins
 --   and skill list.
 -- * Marking an installation uninstalled, by either path, deletes its notes and skills in the same transaction.
+-- * slack_installations.memory_enabled: admins can turn notes off (skills keep working); saved notes are kept.
+--   Someone from another organisation only ever sees and saves the conversation's notes (p_workspace_notes).
 
 SET local check_function_bodies = off;
+
+ALTER TABLE "public"."slack_installations"
+  ADD COLUMN "memory_enabled" boolean NOT NULL DEFAULT true;
+
+COMMENT ON COLUMN "public"."slack_installations"."memory_enabled" IS 'Whether the agent may save and read its notes, pins and to-dos (on by default). While off, turns get no note tools and no pins, and saved notes are kept for admins to see or delete. Saved skills work either way.';
 
 CREATE TABLE "public"."slack_agent_notes" (
   "id"              uuid                     NOT NULL DEFAULT gen_random_uuid(),
@@ -122,24 +129,31 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_note (
 -- conversation (p_channel_id) or the whole Slack workspace (null). An installation
 -- keeps at most 500; the same open note already saved there is returned instead
 -- of a second copy. Expired notes are deleted first, so they never count.
+-- Nothing is saved while an admin has turned the installation's memory off.
 -- Locking the installation row makes saves take turns, so the cap holds, and
 -- orders them against uninstalling, which deletes every note in the transaction
 -- that marks the installation uninstalled (delete_slack_agent_memory).
--- Returns {status: saved | exists | full | not_installed, note?, limit?}.
+-- Returns {status: saved | exists | full | memory_off | not_installed, note?,
+-- limit?}.
 -- Service role only: the Worker calls it for the installation it is answering for.
 declare
   v_note public.slack_agent_notes%rowtype;
   v_text text := btrim(p_text);
+  v_memory_enabled boolean;
 begin
   if p_kind is null or p_kind not in ('note', 'pin', 'todo') then
     raise exception 'invalid_kind' using errcode = '22023';
   end if;
 
-  perform 1 from public.slack_installations installation
+  select installation.memory_enabled into v_memory_enabled
+  from public.slack_installations installation
   where installation.id = p_installation_id and installation.status <> 'uninstalled'
   for no key update;
   if not found then
     return jsonb_build_object('status', 'not_installed');
+  end if;
+  if not v_memory_enabled then
+    return jsonb_build_object('status', 'memory_off');
   end if;
 
   delete from public.slack_agent_notes note
@@ -168,7 +182,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) IS 'For the Slack Worker''s remember tool: saves a note, pin or to-do for a conversation or the whole Slack workspace, at most 500 per installation, without duplicating an open one. Returns {status: saved | exists | full | not_installed, note?, limit?}.';
+COMMENT ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) IS 'For the Slack Worker''s remember tool: saves a note, pin or to-do for a conversation or the whole Slack workspace, at most 500 per installation, without duplicating an open one, and nothing while its memory is off. Returns {status: saved | exists | full | memory_off | not_installed, note?, limit?}.';
 
 GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) TO "service_role";
 
@@ -181,6 +195,7 @@ REVOKE ALL ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, 
 CREATE OR REPLACE FUNCTION public.search_slack_agent_notes (
   p_installation_id uuid,
   p_channel_id      text,
+  p_workspace_notes boolean,
   p_query           text,
   p_kind            text,
   p_include_done    boolean,
@@ -191,12 +206,13 @@ CREATE OR REPLACE FUNCTION public.search_slack_agent_notes (
   STABLE
   SET search_path TO ''
   AS $function$
-  -- The Slack agent's recall tool: the notes one conversation can see (its own and
-  -- the whole Slack workspace's), optionally of one kind. With search words (up to
-  -- 8, of 2 characters or more, matched case-insensitively anywhere in the text),
-  -- only notes holding at least one come back, those holding more first; then
-  -- newest first. Done to-dos only with p_include_done, expired notes never. At
-  -- most 50 (default 10). Service role only.
+  -- The Slack agent's recall tool: the notes one conversation can see (its own
+  -- and, with p_workspace_notes, the whole Slack workspace's), optionally of one
+  -- kind. With search words (up to 8, of 2 characters or more, matched
+  -- case-insensitively anywhere in the text), only notes holding at least one
+  -- come back, those holding more first; then newest first. Done to-dos only with
+  -- p_include_done, expired notes never, and nothing while the installation's
+  -- memory is off. At most 50 (default 10). Service role only.
   with words as (
     select distinct word
     from regexp_split_to_table(lower(coalesce(p_query, '')), '[\s,.;:!?()"]+') as word
@@ -205,11 +221,12 @@ CREATE OR REPLACE FUNCTION public.search_slack_agent_notes (
   )
   select note.*
   from public.slack_agent_notes note
+  join public.slack_installations installation on installation.id = note.installation_id and installation.memory_enabled
   cross join lateral (
     select count(*) as hits from words where strpos(lower(note.text), words.word) > 0
   ) matched
   where note.installation_id = p_installation_id
-    and (note.channel_id is null or note.channel_id = p_channel_id)
+    and (note.channel_id = p_channel_id or (note.channel_id is null and coalesce(p_workspace_notes, false)))
     and (p_kind is null or note.kind = p_kind)
     and (coalesce(p_include_done, false) or note.done_at is null)
     and (note.expires_at is null or note.expires_at > now())
@@ -218,19 +235,20 @@ CREATE OR REPLACE FUNCTION public.search_slack_agent_notes (
   limit least(greatest(coalesce(p_limit, 10), 1), 50);
 $function$;
 
-COMMENT ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, text, text, boolean, integer) IS 'For the Slack Worker''s recall tool: a conversation''s and the Slack workspace''s notes, matching search words first, then newest first, at most 50. Leaves out done to-dos unless asked and expired notes always.';
+COMMENT ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, boolean, text, text, boolean, integer) IS 'For the Slack Worker''s recall tool: a conversation''s notes and, with p_workspace_notes, the Slack workspace''s, matching search words first, then newest first, at most 50. Leaves out done to-dos unless asked and expired notes always; none while the installation''s memory is off.';
 
-GRANT EXECUTE ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, text, text, boolean, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, boolean, text, text, boolean, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, text, text, boolean, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, boolean, text, text, boolean, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, text, text, boolean, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, boolean, text, text, boolean, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, text, text, boolean, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."search_slack_agent_notes"(uuid, text, boolean, text, text, boolean, integer) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.set_slack_agent_todo_done (
   p_installation_id uuid,
   p_channel_id      text,
+  p_workspace_notes boolean,
   p_note_id         uuid,
   p_done            boolean
 )
@@ -239,32 +257,36 @@ CREATE OR REPLACE FUNCTION public.set_slack_agent_todo_done (
   SET search_path TO ''
   AS $function$
   -- The Slack agent's update_todo tool: marks a to-do done or not done. Only a
-  -- to-do the conversation can see (its own or the whole Slack workspace's) that
-  -- hasn't expired; no row when there is none. Marking a done to-do done again
-  -- keeps when it was done. Service role only.
+  -- to-do the conversation can see (its own or, with p_workspace_notes, the whole
+  -- Slack workspace's) that hasn't expired, while the installation's memory is
+  -- on; no row when there is none. Marking a done to-do done again keeps when it
+  -- was done. Service role only.
   update public.slack_agent_notes note
   set done_at = case when coalesce(p_done, false) then coalesce(note.done_at, now()) end
+  from public.slack_installations installation
   where note.id = p_note_id
     and note.installation_id = p_installation_id
+    and installation.id = note.installation_id and installation.memory_enabled
     and note.kind = 'todo'
-    and (note.channel_id is null or note.channel_id = p_channel_id)
+    and (note.channel_id = p_channel_id or (note.channel_id is null and coalesce(p_workspace_notes, false)))
     and (note.expires_at is null or note.expires_at > now())
   returning note.*;
 $function$;
 
-COMMENT ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, uuid, boolean) IS 'For the Slack Worker''s update_todo tool: marks a to-do the conversation can see done or not done. Returns the to-do, or no row when there is none.';
+COMMENT ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, boolean, uuid, boolean) IS 'For the Slack Worker''s update_todo tool: marks a to-do the conversation can see (the workspace''s only with p_workspace_notes) done or not done, while the installation''s memory is on. Returns the to-do, or no row when there is none.';
 
-GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, uuid, boolean) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, boolean, uuid, boolean) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, uuid, boolean) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, boolean, uuid, boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, uuid, boolean) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, boolean, uuid, boolean) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, uuid, boolean) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."set_slack_agent_todo_done"(uuid, text, boolean, uuid, boolean) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.forget_slack_agent_note (
   p_installation_id uuid,
   p_channel_id      text,
+  p_workspace_notes boolean,
   p_note_id         uuid
 )
   RETURNS boolean
@@ -272,42 +294,53 @@ CREATE OR REPLACE FUNCTION public.forget_slack_agent_note (
   SET search_path TO ''
   AS $function$
   -- The Slack agent's forget tool: deletes one note, pin or to-do the conversation
-  -- can see (its own or the whole Slack workspace's). False when there was none.
-  -- Service role only.
+  -- can see (its own or, with p_workspace_notes, the whole Slack workspace's),
+  -- while the installation's memory is on. False when there was none. Service
+  -- role only.
   with deleted as (
     delete from public.slack_agent_notes note
+    using public.slack_installations installation
     where note.id = p_note_id
       and note.installation_id = p_installation_id
-      and (note.channel_id is null or note.channel_id = p_channel_id)
+      and installation.id = note.installation_id and installation.memory_enabled
+      and (note.channel_id = p_channel_id or (note.channel_id is null and coalesce(p_workspace_notes, false)))
     returning note.id
   )
   select exists (select 1 from deleted);
 $function$;
 
-COMMENT ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, uuid) IS 'For the Slack Worker''s forget tool: deletes one note the conversation can see. Returns whether there was one.';
+COMMENT ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, boolean, uuid) IS 'For the Slack Worker''s forget tool: deletes one note the conversation can see (the workspace''s only with p_workspace_notes), while the installation''s memory is on. Returns whether there was one.';
 
-GRANT EXECUTE ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, uuid) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, boolean, uuid) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, uuid) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, boolean, uuid) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, uuid) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, boolean, uuid) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, uuid) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."forget_slack_agent_note"(uuid, text, boolean, uuid) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.load_slack_agent_turn_memory (
   p_installation_id uuid,
-  p_channel_id      text
+  p_channel_id      text,
+  p_workspace_notes boolean
 )
   RETURNS jsonb
   LANGUAGE plpgsql
   SET search_path TO ''
   AS $function$
 -- What the Slack agent is shown of its memory on every turn: the conversation's
--- pins and the whole Slack workspace's, newest first and 10 of each at most, and
--- the names and descriptions of the 20 saved skills changed most recently, with
--- how many there are. Expired notes are deleted here first, so none outlasts its
--- date by more than a turn. Returns {pins: [{id, scope, text, created_at}],
--- skills: [{name, description}], skills_total}. Service role only.
+-- pins and, with p_workspace_notes, the whole Slack workspace's, newest first and
+-- 10 of each at most, and the names and descriptions of the 20 saved skills
+-- changed most recently, with how many there are. No pins while an admin has
+-- turned the installation's memory off (memory_enabled), and none of the
+-- workspace's for someone from another organisation (the Worker passes false).
+-- Expired notes are deleted here first, so none outlasts its date by more than a
+-- turn. Returns {pins: [{id, scope, text, created_at}], skills: [{name,
+-- description}], skills_total}. Service role only.
+declare
+  v_memory_enabled boolean := coalesce((
+    select installation.memory_enabled from public.slack_installations installation where installation.id = p_installation_id
+  ), false);
 begin
   delete from public.slack_agent_notes note
   where note.installation_id = p_installation_id and note.expires_at <= now();
@@ -319,13 +352,15 @@ begin
       from (
         (select note.id, 'channel'::text as scope, note.text, note.created_at
           from public.slack_agent_notes note
-          where note.installation_id = p_installation_id and note.kind = 'pin' and note.channel_id = p_channel_id
+          where v_memory_enabled
+            and note.installation_id = p_installation_id and note.kind = 'pin' and note.channel_id = p_channel_id
           order by note.created_at desc, note.id
           limit 10)
         union all
         (select note.id, 'workspace'::text, note.text, note.created_at
           from public.slack_agent_notes note
-          where note.installation_id = p_installation_id and note.kind = 'pin' and note.channel_id is null
+          where v_memory_enabled and coalesce(p_workspace_notes, false)
+            and note.installation_id = p_installation_id and note.kind = 'pin' and note.channel_id is null
           order by note.created_at desc, note.id
           limit 10)
       ) pin
@@ -345,15 +380,15 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text) IS 'For the Slack Worker on every turn: up to 10 of the conversation''s pins and 10 of the Slack workspace''s, and the 20 most recently changed saved skills'' names and descriptions with the total. Deletes the installation''s expired notes first.';
+COMMENT ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text, boolean) IS 'For the Slack Worker on every turn: up to 10 of the conversation''s pins and, with p_workspace_notes, 10 of the Slack workspace''s (none while the installation''s memory is off), and the 20 most recently changed saved skills'' names and descriptions with the total. Deletes the installation''s expired notes first.';
 
-GRANT EXECUTE ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text, boolean) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text, boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text, boolean) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."load_slack_agent_turn_memory"(uuid, text, boolean) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.save_slack_agent_skill (
   p_installation_id uuid,

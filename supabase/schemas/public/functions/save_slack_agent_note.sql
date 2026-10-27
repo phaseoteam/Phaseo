@@ -15,24 +15,31 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_note (
 -- conversation (p_channel_id) or the whole Slack workspace (null). An installation
 -- keeps at most 500; the same open note already saved there is returned instead
 -- of a second copy. Expired notes are deleted first, so they never count.
+-- Nothing is saved while an admin has turned the installation's memory off.
 -- Locking the installation row makes saves take turns, so the cap holds, and
 -- orders them against uninstalling, which deletes every note in the transaction
 -- that marks the installation uninstalled (delete_slack_agent_memory).
--- Returns {status: saved | exists | full | not_installed, note?, limit?}.
+-- Returns {status: saved | exists | full | memory_off | not_installed, note?,
+-- limit?}.
 -- Service role only: the Worker calls it for the installation it is answering for.
 declare
   v_note public.slack_agent_notes%rowtype;
   v_text text := btrim(p_text);
+  v_memory_enabled boolean;
 begin
   if p_kind is null or p_kind not in ('note', 'pin', 'todo') then
     raise exception 'invalid_kind' using errcode = '22023';
   end if;
 
-  perform 1 from public.slack_installations installation
+  select installation.memory_enabled into v_memory_enabled
+  from public.slack_installations installation
   where installation.id = p_installation_id and installation.status <> 'uninstalled'
   for no key update;
   if not found then
     return jsonb_build_object('status', 'not_installed');
+  end if;
+  if not v_memory_enabled then
+    return jsonb_build_object('status', 'memory_off');
   end if;
 
   delete from public.slack_agent_notes note
@@ -61,7 +68,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) IS 'For the Slack Worker''s remember tool: saves a note, pin or to-do for a conversation or the whole Slack workspace, at most 500 per installation, without duplicating an open one. Returns {status: saved | exists | full | not_installed, note?, limit?}.';
+COMMENT ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) IS 'For the Slack Worker''s remember tool: saves a note, pin or to-do for a conversation or the whole Slack workspace, at most 500 per installation, without duplicating an open one, and nothing while its memory is off. Returns {status: saved | exists | full | memory_off | not_installed, note?, limit?}.';
 
 GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_note"(uuid, text, text, text, text, timestamp with time zone) TO "service_role";
 
