@@ -943,6 +943,11 @@ export class RealtimeRelayDurableObject {
 				}
 			}
 		}
+		if (provider === "google-ai-studio" && this.googleResumeBufferFull(validated.durationMs)) {
+			// Speech past the switch buffer never reaches Google, so it isn't metered as billable.
+			this.usage.resume_dropped_audio_ms = toNumber(this.usage.resume_dropped_audio_ms) + validated.durationMs;
+			return;
+		}
 		if (provider === "openai") {
 			// Raw microphone duration is diagnostic; OpenAI bills committed tokens.
 			this.usage.received_audio_ms = this.receivedAudioMs;
@@ -997,8 +1002,9 @@ export class RealtimeRelayDurableObject {
 		// Bounds the billed duration of an xAI session if this object is evicted.
 		if (this.upstream && this.usage.provider_connected_at_ms) this.usage.provider_last_seen_ms = this.lastActivityAt;
 		const event = parseJson(text);
-		// A connection abandoned because the call ended has nothing left to say.
-		if (socket && socket !== this.upstream && socket !== this.resumeSocket && (this.settled || this.settling)) return;
+		// A replaced or abandoned connection has nothing left to say: resumption only
+		// starts between turns, so its late frames are stale duplicates.
+		if (socket && socket !== this.upstream && socket !== this.resumeSocket) return;
 		if (socket && socket === this.resumeSocket) {
 			// A resumed Google connection: its setupComplete completes the switch
 			// and is not shown to the client, which saw the first one.
@@ -1368,9 +1374,13 @@ export class RealtimeRelayDurableObject {
 	}
 
 	/** Sends Google microphone audio, holding it briefly while the connection is switched. */
+	private googleResumeBufferFull(ms: number): boolean {
+		return this.googleResuming && this.resumeAudioMs + ms > GOOGLE_RESUME_AUDIO_BUFFER_MS;
+	}
+
 	private sendGoogleAudio(audio: string, ms: number) {
 		if (this.googleResuming) {
-			if (this.resumeAudioMs + ms > GOOGLE_RESUME_AUDIO_BUFFER_MS) {
+			if (this.googleResumeBufferFull(ms)) {
 				this.usage.resume_dropped_audio_ms = toNumber(this.usage.resume_dropped_audio_ms) + ms;
 				return;
 			}

@@ -212,6 +212,38 @@ describe("Google goAway reconnect (recorded 2026-10-22)", () => {
 		expect(object.acceptingAudio).toBe(true);
 	});
 
+	it("does not meter speech dropped past the switch buffer as billable input", async () => {
+		const resumed = fakeSocket();
+		const { object, first } = relay([resumed]);
+		object.providerSetupComplete = true;
+		object.audioStartedAt = Date.now() - 60_000;
+		await play(object, recording.first_connection, first);
+		await object.resumeTask;
+		delete object.usage.pending_input_audio_ms;
+		for (let i = 0; i < 6; i += 1) await clientAudio(object, speech(1_000));
+		// Five seconds fit in the buffer; the sixth never reaches Google.
+		expect(object.usage.pending_input_audio_ms).toBe(5_000);
+		expect(object.usage.resume_dropped_audio_ms).toBe(1_000);
+		await play(object, recording.resumed_connection.slice(0, 1), resumed);
+		expect(sentTo(resumed).filter((event: any) => event.realtimeInput?.audio)).toHaveLength(5);
+	});
+
+	it("ignores late frames from the connection it replaced", async () => {
+		const resumed = fakeSocket();
+		const { object, first } = relay([resumed]);
+		await play(object, recording.first_connection, first);
+		await object.resumeTask;
+		await play(object, recording.resumed_connection.slice(0, 1), resumed);
+		expect(object.upstream).toBe(resumed);
+		const usage = structuredClone(object.usage);
+		const forwarded = sent(object).length;
+		await object.handleUpstreamMessage(JSON.stringify({ goAway: { timeLeft: "1s" } }), first);
+		await object.handleUpstreamMessage(JSON.stringify({ serverContent: { turnComplete: true }, usageMetadata: { promptTokenCount: 50, responseTokenCount: 10 } }), first);
+		expect(object.openGoogleSocket).toHaveBeenCalledOnce();
+		expect(sent(object)).toHaveLength(forwarded);
+		expect(object.usage).toEqual(usage);
+	});
+
 	it("warns and ends with the connection when resumption fails while it is still open", async () => {
 		const { object, first } = relay([new Error("upstream_http_503"), new Error("upstream_http_503")]);
 		await play(object, recording.first_connection, first);
