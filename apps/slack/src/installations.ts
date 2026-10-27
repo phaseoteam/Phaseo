@@ -24,7 +24,7 @@ export type SlackAppContext = {
 export const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "enterprise_id", "bot_user_id", "secrets_ciphertext", "key_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
-	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"schedules_enabled", "schedule_creators", "plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
 	"bot_scopes", "search_mode",
 ].join(",");
 
@@ -57,6 +57,10 @@ export type Installation = {
 	access_mode: "everyone" | "linked";
 	usage_data_mode: "off" | "dm" | "dm_and_channels";
 	usage_data_channel_ids: string[] | null;
+	/** Recurring tasks (schedules.ts): whether people may set them up and they run. */
+	schedules_enabled: boolean;
+	/** Who may set up recurring tasks: anyone the agent answers, or only people who linked their Phaseo account. */
+	schedule_creators: "everyone" | "linked";
 	plan_people: number;
 	over_plan: "refuse" | "move_up";
 	max_people: number | null;

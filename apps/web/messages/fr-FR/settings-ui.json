@@ -7085,6 +7085,71 @@
 				"skillNameTaken": "Une autre compétence enregistrée porte déjà ce nom."
 			}
 		},
+		"schedules": {
+			"title": "Tâches récurrentes",
+			"description": "Des tâches que l'on demande à l'agent de faire régulièrement dans Slack, au plus toutes les heures. Chaque exécution publie un court message dans sa conversation et y répond dans le fil, comme une réponse à la personne qui l'a créée : elle compte comme une réponse et respecte les mêmes limites. Les désinstaller les supprime toutes.",
+			"enable": "Autoriser les tâches récurrentes",
+			"enableHelp": "Désactivé, personne ne peut en créer et aucune ne s'exécute. Elles sont conservées et reprennent dès que vous le réactivez.",
+			"max": "Nombre maximal de tâches récurrentes dans cet espace de travail",
+			"maxHelp": "De 1 à {max}. Le réduire conserve celles déjà créées.",
+			"maxInvalid": "Saisissez un nombre entier de 1 à {max}.",
+			"creators": "Qui peut les créer",
+			"creatorsEveryone": "Toutes les personnes qui peuvent utiliser l'agent",
+			"creatorsLinked": "Seulement les personnes qui ont connecté leur compte Phaseo",
+			"save": "Enregistrer",
+			"saved": "Paramètres des tâches récurrentes enregistrés.",
+			"loading": "Chargement…",
+			"used": "{used} sur {limit} créées",
+			"offNote": "Les tâches récurrentes sont désactivées : aucune ne s'exécute tant que vous ne les réactivez pas.",
+			"empty": "Aucune tâche récurrente pour l'instant. On peut demander à l'agent dans Slack de faire quelque chose toutes les heures, tous les jours, chaque semaine ou chaque mois.",
+			"columns": {
+				"task": "Tâche",
+				"where": "Où",
+				"often": "Fréquence",
+				"next": "Prochaine exécution",
+				"by": "Créée par",
+				"last": "Dernière exécution",
+				"actions": "Actions"
+			},
+			"channel": "Canal {id}",
+			"directMessage": "Message direct {id}",
+			"frequency": {
+				"hourly": "Toutes les heures à :{minute}",
+				"daily": "Tous les jours à {time}",
+				"weekdays": "En semaine à {time}",
+				"weekly": "Chaque {day} à {time}",
+				"monthly": "Chaque mois le {day} à {time}"
+			},
+			"timeZone": "Heure de {zone}",
+			"paused": "En pause",
+			"pauseReasons": {
+				"admin": "Mise en pause par un admin",
+				"creatorAccess": "La personne qui l'a créée ne peut plus utiliser l'agent",
+				"notInChannel": "L'agent ne peut pas publier dans sa conversation",
+				"installationPaused": "L'agent a été mis en pause",
+				"paymentDue": "Une facture Phaseo était impayée",
+				"failures": "3 exécutions d'affilée n'ont pas abouti"
+			},
+			"lastResult": {
+				"answered": "Répondue",
+				"failed": "Échec",
+				"skipped": "Ignorée",
+				"running": "En cours",
+				"none": "Pas encore exécutée"
+			},
+			"failuresInRow": "Échecs d'affilée : {count}",
+			"pause": "Mettre en pause",
+			"resume": "Reprendre",
+			"delete": "Supprimer",
+			"pausedToast": "Tâche récurrente mise en pause.",
+			"resumedToast": "Tâche récurrente reprise.",
+			"deletedToast": "Tâche récurrente supprimée.",
+			"deleteTitle": "Supprimer {title} ?",
+			"deleteDescription": "Elle ne s'exécutera plus, et la personne qui l'a créée n'est pas prévenue. Cette action est irréversible.",
+			"errors": {
+				"scheduleNotFound": "Elle a déjà été supprimée. Rechargez pour voir ce qu'il reste."
+			}
+		},
 		"uninstall": {
 			"description": "Retire l’agent de Slack et supprime sa clé API. Les facturations passées restent dans votre historique.",
 			"button": "Désinstaller",

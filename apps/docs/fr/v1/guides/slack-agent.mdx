@@ -123,7 +123,7 @@ Quand l’agent a besoin que vous choisissiez entre quelques options ou que vous
 
 ### Onglet Home
 
-Ouvrez l’agent dans Slack et choisissez **Home** pour voir comment l’utiliser, le modèle qu’il utilise et si votre compte Phaseo est connecté. S’il ne l’est pas et que le connecter serait utile (avec **Comptes associés uniquement**, ou là où les **Données d’utilisation** sont autorisées), l’onglet affiche le bouton **Connect your Phaseo account**. Les membres de l’espace de travail Phaseo qui ont connecté leur compte voient aussi combien de réponses l’agent a données dans l’espace de travail Slack ce mois-ci (UTC). L’onglet n’affiche que des paramètres et des chiffres, jamais de messages.
+Ouvrez l’agent dans Slack et choisissez **Home** pour voir comment l’utiliser, le modèle qu’il utilise et si votre compte Phaseo est connecté. S’il ne l’est pas et que le connecter serait utile (avec **Comptes associés uniquement**, ou là où les **Données d’utilisation** sont autorisées), l’onglet affiche le bouton **Connect your Phaseo account**. Les membres de l’espace de travail Phaseo qui ont connecté leur compte voient aussi combien de réponses l’agent a données dans l’espace de travail Slack ce mois-ci (UTC). L’onglet n’affiche que des paramètres et des chiffres, jamais de messages. Il liste aussi les tâches récurrentes que vous avez créées, avec leur prochaine exécution (voir « Tâches planifiées » plus bas).
 
 Avec votre propre application Slack, l’onglet Home a besoin du dernier manifeste : `home_tab_enabled` à `true` et l’événement de bot `app_home_opened`.
 
@@ -179,7 +179,7 @@ Certaines limites viennent de Slack :
 - Slack ne permet cette recherche qu’aux applications du Slack Marketplace et aux applications propres d’une entreprise. L’application Slack de Phaseo pourra chercher une fois sa fiche sur le Slack Marketplace approuvée ; d’ici là, l’agent indique que la recherche n’est pas disponible. Pour chercher dès maintenant, utilisez votre propre application Slack (voir « Utiliser votre propre application Slack » plus bas).
 - Les installations antérieures à la recherche ont besoin d’autorisations Slack mises à jour (voir « Mettre à jour les autorisations Slack » plus haut).
 
-Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences.
+Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente.
 
 ## Qui peut l’utiliser
 
@@ -262,6 +262,43 @@ Une compétence est un nom, une description d’une ligne et des instructions de
 - Les propriétaires et les administrateurs voient tout ce que l’agent a enregistré sous **Mémoire et compétences**, dans **Paramètres → Slack**. Ils peuvent filtrer les notes par type, supprimer n’importe quelle note ou compétence, et modifier le nom, la description et les instructions d’une compétence. Le journal d’activité de l’espace de travail enregistre ces changements sans le texte.
 - La désinstallation de l’agent supprime toutes ses notes et compétences. Si vous l’ajoutez de nouveau, il repart avec une mémoire vide.
 
+## Tâches planifiées
+
+Demandez à l’agent de faire quelque chose régulièrement, et il crée une tâche récurrente dans cette conversation. Par exemple :
+
+- `@Phaseo every weekday at 9:00, summarise yesterday's news about electric vehicles`
+- `@Phaseo every Monday at 8:30, list last week's Phaseo spend by model`
+- `@Phaseo on the 1st of every month at 10:00, list the API keys nobody used last month`
+- `@Phaseo which recurring tasks are set up here?` or `@Phaseo cancel the Monday spend summary`
+
+L’agent confirme ce qu’il a créé : ce que fait la tâche, où elle publie, à quelle fréquence et quand elle s’exécute la prochaine fois.
+
+- **Fréquence :** toutes les heures (à la minute choisie), tous les jours, en semaine (du lundi au vendredi), une fois par semaine le jour choisi ou une fois par mois le jour choisi (les mois plus courts, leur dernier jour). Jamais plus d’une fois par heure.
+- **Quand :** à une heure locale dans le fuseau horaire Slack de la personne qui l’a créée, y compris lors des changements d’heure.
+- **Où :** dans le canal ou le message direct où elle a été créée. Chaque exécution y publie un court message **Scheduled: …** et y répond dans le fil. Les réponses dans ce fil sont des messages ordinaires adressés à l’agent.
+- **Ce qui s’exécute :** l’agent enregistre la demande sous forme d’instruction autonome, si bien que chaque exécution fonctionne sans la conversation où elle a été créée. Les exécutions planifiées ne posent pas de questions avec des boutons, ne cherchent pas dans Slack et ne peuvent pas créer ni modifier de tâches récurrentes.
+
+Chaque exécution est une réponse ordinaire à la personne qui a créé la tâche. L’agent vérifie qu’elle peut encore l’utiliser, l’exécution compte comme une de ses réponses pour votre forfait, le **Plafond de dépenses mensuel** et les **Réponses par personne et par heure**, elle respecte les limites de chaque réponse (voir « Limites de chaque réponse » plus bas) et se termine par le pied de page habituel.
+
+Quand une exécution ne peut pas avoir lieu :
+
+- Si la personne qui l’a créée ne peut plus utiliser l’agent, si l’agent a été mis en pause dans Phaseo ou s’il ne peut plus publier dans la conversation (par exemple parce qu’il a été retiré du canal), l’exécution est ignorée et la tâche est mise en pause, avec la raison dans **Paramètres → Slack**.
+- Toute autre exécution qui n’aboutit pas, comme une exécution refusée parce que le **Plafond de dépenses mensuel** est atteint, compte comme un échec. Après 3 échecs d’affilée, la tâche est mise en pause et l’agent prévient la personne qui l’a créée par message direct.
+
+Chacun peut annuler les tâches qu’il a créées en le demandant à l’agent. Les propriétaires et administrateurs de l’espace de travail Phaseo qui ont associé leur compte Slack (voir « Associer un compte Slack » plus haut) peuvent annuler celles de tout le monde. Les personnes d’autres entreprises dans des canaux Slack Connect partagés voient les tâches d’une conversation mais ne peuvent pas en créer. L’onglet **Home** de l’agent liste vos propres tâches.
+
+### Paramètres des tâches récurrentes
+
+Les propriétaires et administrateurs les définissent sous **Tâches récurrentes**, dans **Paramètres → Slack** :
+
+| Paramètre | Effet | Par défaut |
+| --- | --- | --- |
+| **Autoriser les tâches récurrentes** | Désactivé, personne ne peut en créer et aucune ne s’exécute. Elles sont conservées et reprennent dès que vous le réactivez. | Activé |
+| **Nombre maximal de tâches récurrentes dans cet espace de travail** | De 1 à 100. Le réduire conserve celles déjà créées. | 20 |
+| **Qui peut les créer** | **Toutes les personnes qui peuvent utiliser l'agent** ou **Seulement les personnes qui ont connecté leur compte Phaseo**. | Tout le monde |
+
+La même section liste chaque tâche : ce qu’elle fait, où elle publie, sa fréquence, sa prochaine exécution, qui l’a créée et le résultat de sa dernière exécution. Vous pouvez mettre en pause, reprendre ou supprimer n’importe laquelle. Une tâche reprise s’exécute à sa prochaine heure, et ses échecs repartent de zéro. Désinstaller l’agent supprime toutes ses tâches récurrentes.
+
 ## Limites
 
 Les propriétaires et les administrateurs les définissent dans **Paramètres → Slack** :
@@ -334,10 +371,11 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Une mémoire que vous pouvez voir et supprimer.** L’agent conserve les notes, épingles, tâches et compétences qu’on lui demande d’enregistrer, rédigées avec ses propres mots et jamais sous forme de copies de messages, avec l’ID Slack de la personne qui l’a demandé. Elles restent jusqu’à ce que quelqu’un les supprime, que la date jusqu’à laquelle elles devaient être conservées soit passée ou que vous désinstalliez l’agent. Les propriétaires et les administrateurs peuvent les voir et les supprimer dans **Paramètres → Slack**, et y désactiver les notes (voir « Mémoire et compétences », plus haut). Les personnes d’autres entreprises ne voient jamais les notes de tout l’espace de travail.
 - **Les fichiers partagés sont lus, pas conservés.** L’agent télécharge les images et PDF qu’il lit pour une réponse et les envoie au modèle avec les requêtes de cette réponse, selon les mêmes règles. Il ne les conserve jamais ; seuls leurs identifiants de fichier Slack et leurs noms restent avec le message jusqu’à la fin de la réponse.
 - **Les résultats de recherche Slack ne sont pas conservés.** Ce que l’agent trouve en cherchant dans Slack est envoyé au modèle avec les requêtes de cette réponse, selon les mêmes règles, et nulle part ailleurs : ni dans sa mémoire de travail, ni dans ses journaux, ni dans la base de données de Phaseo, pas même pendant qu’il attend votre réponse à une question. Sa mémoire de travail note seulement ce qu’il a cherché et combien de résultats il a trouvés. L’autorisation de Slack de chercher pour vous est conservée avec votre message jusqu’à la fin de la réponse.
+- **Tâches récurrentes.** Pour chaque tâche, l’agent conserve son titre et son instruction, l’endroit où elle publie, sa planification et son fuseau horaire, l’ID Slack de la personne qui l’a créée et le résultat de sa dernière exécution. Elles restent jusqu’à ce que quelqu’un annule ou supprime la tâche, ou que vous désinstalliez l’agent. Les propriétaires et administrateurs peuvent les voir, les mettre en pause et les supprimer dans **Paramètres → Slack**.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 
-La désinstallation supprime la clé d’API de l’agent, ses notes et ses compétences enregistrées, et retire son garde-fou.
+La désinstallation supprime la clé d’API de l’agent, ses notes, ses compétences enregistrées et ses tâches récurrentes, et retire son garde-fou.
 
 ## Utiliser votre propre application Slack
 
@@ -469,8 +507,8 @@ Quelques règles pour votre propre application :
 
 ## Mettre en pause ou désinstaller
 
-- **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause.
-- **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes et ses compétences enregistrées, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
+- **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause. Les tâches récurrentes qui arrivent à échéance pendant la pause sont aussi mises en pause ; reprenez-les sous **Tâches récurrentes**.
+- **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes, ses compétences enregistrées et ses tâches récurrentes, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
 - Retirer l’application dans Slack, ou révoquer son token de bot, la désinstalle de la même façon dans Phaseo.
 
 Les facturations passées restent dans votre historique de facturation. Les personnes qui ont utilisé l’agent pendant le mois où vous le désinstallez sont tout de même facturées à la fin de ce mois. Vous pouvez rajouter l’agent à tout moment.

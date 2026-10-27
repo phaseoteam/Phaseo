@@ -21,6 +21,10 @@ const MEMORY_LINES = /^ {2}"memory_enabled" .*\n|^COMMENT ON COLUMN "public"\."s
 const botScopesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_bot_scopes.sql'));
 const botScopesMigration = await readFile(new URL(`../migrations/${botScopesMigrationName}`, import.meta.url), 'utf8');
 const BOT_SCOPES_LINES = /^ {2}"bot_scopes" .*\n|^ {2}CONSTRAINT "slack_installations_bot_scopes_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."bot_scopes" .*\n\n/gm;
+// The schedules migration adds the recurring task settings to slack_installations: three columns, two checks and their comments.
+const schedulesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_schedules.sql'));
+const schedulesMigration = await readFile(new URL(`../migrations/${schedulesMigrationName}`, import.meta.url), 'utf8');
+const SCHEDULE_LINES = /^ {2}"(?:schedules_enabled|schedules_max|schedule_creators)" .*\n|^ {2}CONSTRAINT "slack_installations_(?:schedule_creators|schedules_max)_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:schedules_enabled|schedules_max|schedule_creators)" .*\n\n/gm;
 // Where the agent may search Slack: one column, a check and its comment.
 const searchMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_search.sql'));
 const searchMigration = await readFile(new URL(`../migrations/${searchMigrationName}`, import.meta.url), 'utf8');
@@ -83,10 +87,12 @@ try {
   await db.exec(botScopesMigration);
   await db.exec(searchMigration);
 
-  // The memory migration added the trigger that deletes the agent's memory on uninstall (slack-agent-memory.test.mjs).
+  // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
+  // uninstall (slack-agent-memory.test.mjs, slack-agent-schedules.test.mjs).
   const MEMORY_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_memory\n[\s\S]*?;\n/;
+  const SCHEDULES_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_schedules\n[\s\S]*?;\n/;
   for (const table of TABLES) {
-    let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '');
+    let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '').replace(SCHEDULES_TRIGGER, '');
     if (table === 'slack_installations') {
       // The first migration's table, plus what the model choice migration added to it.
       const added = definition.match(MODEL_CHOICE_LINES) ?? [];
@@ -103,6 +109,11 @@ try {
       assert.equal(scopes.length, 3, 'slack_installations declares the bot scopes column, check and comment');
       for (const line of scopes) assert.ok(words(botScopesMigration).includes(words(line)), `the bot scopes migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(BOT_SCOPES_LINES, '');
+      // And what the schedules migration added.
+      const scheduleLines = definition.match(SCHEDULE_LINES) ?? [];
+      assert.equal(scheduleLines.length, 8, 'slack_installations declares the schedule settings, their checks and comments');
+      for (const line of scheduleLines) assert.ok(words(schedulesMigration).includes(words(line)), `the schedules migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(SCHEDULE_LINES, '');
       // And what the search migration added.
       const search = definition.match(SEARCH_LINES) ?? [];
       assert.equal(search.length, 3, 'slack_installations declares the search mode column, check and comment');

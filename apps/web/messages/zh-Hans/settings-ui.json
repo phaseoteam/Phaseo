@@ -7085,6 +7085,71 @@
 				"skillNameTaken": "已有另一个保存的技能使用这个名称。"
 			}
 		},
+		"schedules": {
+			"title": "定期任务",
+			"description": "大家在 Slack 中请智能体定期执行的任务，最多每小时一次。每次运行都会在对应的会话中发一条简短消息，并在该消息的线程中作为对设置人的回答进行回复：每次计为一次回答，并遵守相同的限制。卸载会删除全部定期任务。",
+			"enable": "允许设置定期任务",
+			"enableHelp": "关闭后，任何人都无法设置，所有定期任务也都不会运行。它们会被保留，重新开启后继续运行。",
+			"max": "此工作区的定期任务上限",
+			"maxHelp": "1 到 {max}。调低上限会保留已设置的任务。",
+			"maxInvalid": "请输入 1 到 {max} 之间的整数。",
+			"creators": "谁可以设置",
+			"creatorsEveryone": "所有可以使用智能体的人",
+			"creatorsLinked": "仅限已连接 Phaseo 账户的人",
+			"save": "保存",
+			"saved": "定期任务设置已保存。",
+			"loading": "正在加载…",
+			"used": "已设置 {used} / {limit}",
+			"offNote": "定期任务已关闭，重新开启之前这些任务都不会运行。",
+			"empty": "还没有定期任务。大家可以在 Slack 中请智能体每小时、每天、每周或每月做某件事。",
+			"columns": {
+				"task": "任务",
+				"where": "位置",
+				"often": "频率",
+				"next": "下次运行",
+				"by": "设置人",
+				"last": "上次运行",
+				"actions": "操作"
+			},
+			"channel": "频道 {id}",
+			"directMessage": "私信 {id}",
+			"frequency": {
+				"hourly": "每小时的第 {minute} 分",
+				"daily": "每天 {time}",
+				"weekdays": "工作日 {time}",
+				"weekly": "每{day} {time}",
+				"monthly": "每月 {day} 日 {time}"
+			},
+			"timeZone": "{zone} 时间",
+			"paused": "已暂停",
+			"pauseReasons": {
+				"admin": "已被管理员暂停",
+				"creatorAccess": "设置人已无法使用智能体",
+				"notInChannel": "智能体无法在其会话中发消息",
+				"installationPaused": "智能体已被暂停",
+				"paymentDue": "有一笔 Phaseo 账单未支付",
+				"failures": "连续 3 次运行未能完成"
+			},
+			"lastResult": {
+				"answered": "已回答",
+				"failed": "失败",
+				"skipped": "已跳过",
+				"running": "运行中",
+				"none": "尚未运行"
+			},
+			"failuresInRow": "连续失败次数：{count}",
+			"pause": "暂停",
+			"resume": "恢复",
+			"delete": "删除",
+			"pausedToast": "定期任务已暂停。",
+			"resumedToast": "定期任务已恢复。",
+			"deletedToast": "定期任务已删除。",
+			"deleteTitle": "删除 {title}？",
+			"deleteDescription": "它将不再运行，也不会通知设置人。此操作无法撤销。",
+			"errors": {
+				"scheduleNotFound": "它已被删除。请重新加载查看剩余内容。"
+			}
+		},
 		"uninstall": {
 			"description": "从 Slack 中移除智能体并删除其 API 密钥。历史扣费仍保留在你的账单记录中。",
 			"button": "卸载",

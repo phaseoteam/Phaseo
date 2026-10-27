@@ -123,7 +123,7 @@ Quando o agente precisa que você escolha entre algumas opções ou aprove algo 
 
 ### Aba Home
 
-Abra o agente no Slack e escolha **Home** para ver como usá-lo, o modelo que ele usa e se sua conta da Phaseo está conectada. Se não estiver, e conectar ajudar (com **Somente contas vinculadas**, ou onde os **Dados de uso** são permitidos), a aba mostra o botão **Connect your Phaseo account**. Membros do espaço de trabalho da Phaseo que conectaram a conta também veem quantas respostas o agente deu no espaço de trabalho do Slack neste mês (UTC). A aba mostra apenas configurações e números, nunca mensagens.
+Abra o agente no Slack e escolha **Home** para ver como usá-lo, o modelo que ele usa e se sua conta da Phaseo está conectada. Se não estiver, e conectar ajudar (com **Somente contas vinculadas**, ou onde os **Dados de uso** são permitidos), a aba mostra o botão **Connect your Phaseo account**. Membros do espaço de trabalho da Phaseo que conectaram a conta também veem quantas respostas o agente deu no espaço de trabalho do Slack neste mês (UTC). A aba mostra apenas configurações e números, nunca mensagens. Ela também lista as tarefas recorrentes que você configurou, com a próxima execução de cada uma (veja "Tarefas agendadas" mais abaixo).
 
 Com seu próprio app do Slack, a aba Home precisa do manifesto mais recente: `home_tab_enabled` como `true` e o evento de bot `app_home_opened`.
 
@@ -179,7 +179,7 @@ Alguns limites vêm do Slack:
 - O Slack só permite essa pesquisa para apps do Slack Marketplace e para os apps próprios de uma empresa. O app do Slack da Phaseo poderá pesquisar quando a página dele no Slack Marketplace for aprovada; até lá, o agente avisa que a pesquisa não está disponível. Para pesquisar já, use seu próprio app do Slack (veja "Usar seu próprio app do Slack" abaixo).
 - Instalações anteriores à pesquisa precisam de permissões do Slack atualizadas (veja "Atualizar permissões do Slack" acima).
 
-O que ele encontra só é usado para essa resposta e nunca é armazenado (veja "Dados e privacidade" abaixo). Pelo mesmo motivo, uma resposta que pesquisou no Slack não pode parar para fazer uma pergunta a você nem salvar notas, notas fixadas, tarefas ou habilidades.
+O que ele encontra só é usado para essa resposta e nunca é armazenado (veja "Dados e privacidade" abaixo). Pelo mesmo motivo, uma resposta que pesquisou no Slack não pode parar para fazer uma pergunta a você, salvar notas, notas fixadas, tarefas ou habilidades, nem configurar uma tarefa recorrente.
 
 ## Quem pode usar
 
@@ -262,6 +262,43 @@ A cada mensagem, o agente vê os nomes e as descrições das 20 habilidades alte
 - Proprietários e administradores veem tudo o que o agente salvou em **Memória e habilidades**, em **Configurações → Slack**. Eles podem filtrar as notas por tipo, excluir qualquer nota ou habilidade e editar o nome, a descrição e as instruções de uma habilidade. O registro de atividades do espaço de trabalho guarda essas alterações sem o texto.
 - Desinstalar o agente exclui todas as notas e habilidades dele. Se você o adicionar de novo, ele começa com a memória vazia.
 
+## Tarefas agendadas
+
+Peça ao agente para fazer algo regularmente, e ele configura uma tarefa recorrente nessa conversa. Por exemplo:
+
+- `@Phaseo every weekday at 9:00, summarise yesterday's news about electric vehicles`
+- `@Phaseo every Monday at 8:30, list last week's Phaseo spend by model`
+- `@Phaseo on the 1st of every month at 10:00, list the API keys nobody used last month`
+- `@Phaseo which recurring tasks are set up here?` or `@Phaseo cancel the Monday spend summary`
+
+O agente confirma o que configurou: o que a tarefa faz, onde publica, com que frequência e quando roda da próxima vez.
+
+- **Com que frequência:** a cada hora (no minuto que você escolher), todo dia, em dias úteis (de segunda a sexta), uma vez por semana no dia que você escolher ou uma vez por mês no dia que você escolher (nos meses mais curtos, no último dia). Nunca mais de uma vez por hora.
+- **Quando:** em um horário local no fuso horário do Slack da pessoa que a configurou, inclusive quando o relógio muda.
+- **Onde:** no canal ou mensagem direta em que foi configurada. Cada execução publica ali uma mensagem curta **Scheduled: …** e a responde no thread. Respostas nesse thread são mensagens normais para o agente.
+- **O que roda:** o agente salva o pedido como uma instrução completa por si só, então cada execução funciona sem a conversa em que foi configurada. Execuções agendadas não fazem perguntas com botões, não pesquisam no Slack e não podem configurar nem alterar tarefas recorrentes.
+
+Cada execução é uma resposta normal à pessoa que a configurou. O agente verifica se ela ainda pode usá-lo, a execução conta como uma das respostas dela para o seu plano, o **Teto de gastos mensal** e as **Respostas por pessoa por hora**, segue os limites de cada resposta (veja "Limites de cada resposta" mais abaixo) e termina com o rodapé de sempre.
+
+Quando uma execução não pode acontecer:
+
+- Se a pessoa que a configurou não pode mais usar o agente, se o agente foi pausado na Phaseo ou se ele não consegue mais publicar na conversa (por exemplo, porque foi removido do canal), a execução é pulada e a tarefa é pausada, com o motivo em **Configurações → Slack**.
+- Qualquer outra execução que não dê certo, como uma recusada porque o **Teto de gastos mensal** foi atingido, conta como falha. Depois de 3 seguidas, a tarefa é pausada e o agente avisa a pessoa que a configurou em uma mensagem direta.
+
+Cada pessoa pode cancelar as tarefas que configurou pedindo ao agente. Proprietários e administradores do workspace da Phaseo que vincularam a conta do Slack (veja "Vincular uma conta do Slack" mais acima) podem cancelar as de qualquer pessoa. Pessoas de outras empresas em canais compartilhados do Slack Connect veem as tarefas de uma conversa, mas não podem configurá-las. A aba **Home** do agente lista as suas próprias tarefas.
+
+### Configurações de tarefas recorrentes
+
+Proprietários e administradores as definem em **Tarefas recorrentes**, em **Configurações → Slack**:
+
+| Configuração | O que faz | Padrão |
+| --- | --- | --- |
+| **Permitir tarefas recorrentes** | Desativado, ninguém pode configurar uma e nenhuma é executada. Elas são mantidas e voltam a rodar quando você ativar de novo. | Ativado |
+| **Máximo de tarefas recorrentes neste workspace** | De 1 a 100. Diminuir mantém as que já estão configuradas. | 20 |
+| **Quem pode configurá-las** | **Todos que podem usar o agente** ou **Só quem conectou a conta Phaseo**. | Todos |
+
+A mesma seção lista cada tarefa: o que faz, onde publica, com que frequência, a próxima execução, quem a configurou e como foi a última execução. Você pode pausar, retomar ou excluir qualquer uma. Uma tarefa retomada roda no próximo horário, e as falhas voltam a contar do zero. Desinstalar o agente exclui todas as tarefas recorrentes dele.
+
 ## Limites
 
 Proprietários e administradores os definem em **Configurações → Slack**:
@@ -334,10 +371,11 @@ Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-
 - **Memória que você pode ver e excluir.** O agente guarda as notas, notas fixadas, tarefas e habilidades que pedem para ele salvar, com as próprias palavras e nunca como cópias de mensagens, junto com o ID do Slack de quem pediu. Elas ficam até alguém excluí-las, passar a data até a qual deviam ser mantidas ou você desinstalar o agente. Proprietários e administradores podem vê-las e excluí-las em **Configurações → Slack** e desativar as notas lá (veja "Memória e habilidades", acima). Pessoas de outras empresas nunca veem as notas do workspace inteiro.
 - **Arquivos compartilhados são lidos, não guardados.** O agente baixa as imagens e os PDFs que lê para uma resposta e os envia ao modelo com as solicitações dessa resposta, com as mesmas regras. Ele nunca os armazena; só os IDs de arquivo do Slack e os nomes ficam com a mensagem até a resposta terminar.
 - **Os resultados da pesquisa no Slack não são guardados.** O que o agente encontra ao pesquisar no Slack vai para o modelo com as solicitações dessa resposta, com as mesmas regras, e para nenhum outro lugar: nem para a memória de trabalho dele, nem para os logs dele, nem para o banco de dados da Phaseo, nem enquanto ele espera a sua resposta a uma pergunta. A memória de trabalho dele anota só o que ele pesquisou e quantos resultados encontrou. A permissão do Slack para pesquisar por você fica com a sua mensagem até a resposta terminar.
+- **Tarefas recorrentes.** Para cada tarefa, o agente guarda o título e a instrução, onde ela publica, o agendamento e o fuso horário, o ID do Slack da pessoa que a configurou e como foi a última execução. Elas ficam até alguém cancelar ou excluir a tarefa, ou você desinstalar o agente. Proprietários e administradores podem vê-las, pausá-las e excluí-las em **Configurações → Slack**.
 - **Nada arquivado.** A Phaseo não arquiva nada do Slack. Os logs do próprio agente guardam apenas IDs e status do Slack.
 - **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
 
-Desinstalar exclui a chave de API do agente, as notas e as habilidades salvas dele, e remove o guardrail dele.
+Desinstalar exclui a chave de API do agente, as notas, as habilidades salvas e as tarefas recorrentes dele, e remove o guardrail dele.
 
 ## Usar seu próprio app do Slack
 
@@ -469,8 +507,8 @@ Algumas regras para o seu próprio app:
 
 ## Pausar ou desinstalar
 
-- **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado.
-- **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas e as habilidades salvas dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
+- **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado. Tarefas recorrentes que vencem enquanto ele está pausado também são pausadas; retome-as em **Tarefas recorrentes**.
+- **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas, as habilidades salvas e as tarefas recorrentes dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
 - Remover o app dentro do Slack, ou revogar o token de bot dele, desinstala o agente na Phaseo da mesma forma.
 
 As cobranças anteriores continuam no seu histórico de faturamento. As pessoas que usaram o agente no mês em que você o desinstala ainda são cobradas quando esse mês termina. Você pode adicionar o agente de novo a qualquer momento.

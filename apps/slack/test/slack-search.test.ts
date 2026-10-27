@@ -68,6 +68,10 @@ describe("Slack search: when it's offered", () => {
 		expect(searchAvailability({ search_mode: "dm_and_channels", bot_scopes: SCOPES }, { ...CHANNEL, external: true })).toBe("external");
 		// A mention in a direct message with the agent is still a direct message.
 		expect(searchAvailability({ search_mode: "dm", bot_scopes: SCOPES }, { channel: "D0DIRECT01", kind: "mention" })).toBe("on");
+		// A scheduled run of a recurring task answers no one's message: never, whatever else allows it.
+		const schedule = { id: "00000000-0000-4000-8000-00000000e5c1", runAt: "2026-10-27T09:00:00+00:00" };
+		expect(searchAvailability({ search_mode: "dm_and_channels", bot_scopes: SCOPES }, { ...DM, schedule })).toBe("scheduled");
+		expect(searchAvailability({ search_mode: "off", bot_scopes: null }, { ...CHANNEL, schedule })).toBe("scheduled");
 	});
 
 	it("reads Slack's action token from the event, or from assistant_thread, and keeps it only where it may be used", () => {
@@ -193,7 +197,8 @@ describe("an answer that searched Slack", () => {
 	});
 
 	it("is explained to the model whenever it can search", () => {
-		expect(searchInstructions("on", "U0PERSON01", false)).toContain("once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos or skills");
+		expect(searchInstructions("on", "U0PERSON01", false)).toContain("once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos, skills or recurring tasks");
 		expect(searchInstructions("off", "U0PERSON01", false)).not.toContain("ask_question");
+		expect(searchInstructions("scheduled", "U0PERSON01", false)).toBe("You can't search Slack messages in a scheduled run: Slack lets you search only while answering someone's message. If the task needs a Slack search, say so.");
 	});
 });
