@@ -168,8 +168,8 @@ resource "phaseo_trusted_workload" "preview" {
 	}
 }
 
-func TestAccTrustedWorkloadRejectsIssuersTheAPIWouldRewrite(t *testing.T) {
-	for _, issuer := range []string{`""`, `" https://token.actions.githubusercontent.com"`} {
+func TestAccTrustedWorkloadRejectsIssuersTheAPIWouldRefuseOrRewrite(t *testing.T) {
+	for _, issuer := range []string{`""`, `" https://token.actions.githubusercontent.com"`, `"\u00a0https://token.actions.githubusercontent.com"`, `"https://example.com"`} {
 		resource.Test(t, resource.TestCase{
 			ProtoV6ProviderFactories: testProviderFactories,
 			TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_5_0)},
@@ -186,7 +186,7 @@ resource "phaseo_trusted_workload" "deploy" {
   owner_id = "123456"
 }
 `, issuer),
-				ExpectError: regexp.MustCompile(`whitespace`),
+				ExpectError: regexp.MustCompile(`must be https://oidc.vercel.com`),
 			}},
 		})
 	}

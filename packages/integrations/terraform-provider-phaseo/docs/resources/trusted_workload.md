@@ -45,7 +45,7 @@ Trusted workloads are in beta. Only workspaces in the beta can use this resource
 
 ### Optional
 
-- `issuer` (String) Token issuer. Required for Vercel: `https://oidc.vercel.com/<team slug>` for team issuer mode, or `https://oidc.vercel.com` for global mode. Defaults to `https://token.actions.githubusercontent.com` for GitHub Actions. Must not be empty or start or end with whitespace. Changing it replaces the policy.
+- `issuer` (String) Token issuer. Required for Vercel: `https://oidc.vercel.com/<team slug>` for team issuer mode, or `https://oidc.vercel.com` for global mode. Defaults to `https://token.actions.githubusercontent.com` for GitHub Actions. Changing it replaces the policy.
 - `claim_conditions` (Map of List of String) Extra claims the token must match: claim name to allowed values. Every claim must match one of its values. Up to 15 claims (the owner claim makes 16) and 20 values per claim. `iss`, `aud`, `exp`, `iat`, `nbf`, `jti` and the owner claim can't be used. Removing conditions from the configuration, or setting `{}`, removes them from the policy.
 - `max_token_lifetime_seconds` (Number) Longest token lifetime the policy accepts, from 60 to 43200 seconds. Defaults to `43200`.
 - `enabled` (Boolean) Whether matching tokens are accepted. Defaults to `true`.

@@ -63,6 +63,9 @@ type trustedWorkloadResponse struct {
 const trustedWorkloadsPath = "workload-identity/policies"
 
 var claimName = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
+
+// The issuer forms the API accepts (apps/api/src/lib/workload-identity/issuers.ts).
+var workloadIssuer = regexp.MustCompile(`^https://(oidc\.vercel\.com|token\.actions\.githubusercontent\.com)(/[a-z0-9][a-z0-9_-]{0,99})?$`)
 var conditionValueList = types.ListType{ElemType: types.StringType}
 
 func NewTrustedWorkloadResource() resource.Resource { return &trustedWorkloadResource{} }
@@ -78,7 +81,7 @@ func (r *trustedWorkloadResource) Schema(_ context.Context, _ resource.SchemaReq
 		"platform": schema.StringAttribute{Required: true, Description: "vercel or github_actions. Changing it replaces the policy.", PlanModifiers: replace, Validators: []validator.String{stringvalidator.OneOf("vercel", "github_actions")}},
 		"issuer": schema.StringAttribute{Optional: true, Computed: true, Description: "Token issuer. Required for Vercel; defaults to https://token.actions.githubusercontent.com for GitHub Actions. Changing it replaces the policy.",
 			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown(), stringplanmodifier.RequiresReplaceIfConfigured()},
-			Validators:    []validator.String{stringvalidator.RegexMatches(trimmedText, "must not be empty or start or end with whitespace")}},
+			Validators:    []validator.String{stringvalidator.RegexMatches(workloadIssuer, "must be https://oidc.vercel.com, https://token.actions.githubusercontent.com, or one of them followed by /<slug>")}},
 		"owner_id": schema.StringAttribute{Required: true, Description: "The Vercel team ID, or the GitHub organisation or user ID. Changing it replaces the policy.", PlanModifiers: replace, Validators: []validator.String{stringvalidator.RegexMatches(trimmedText, "must not be empty or start or end with whitespace")}},
 		"claim_conditions": schema.MapAttribute{Optional: true, ElementType: conditionValueList, Description: "Extra claims the token must match: claim name to allowed values. Up to 15 claims; the owner claim counts toward the API's 16.", Validators: []validator.Map{
 			mapvalidator.SizeAtMost(15),
