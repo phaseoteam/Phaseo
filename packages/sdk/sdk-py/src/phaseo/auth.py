@@ -37,10 +37,16 @@ def resolve_sync(provider: ApiKeyProvider) -> str:
 
 
 async def resolve_async(provider: ApiKeyProvider, timeout: float | None) -> str:
-    """Resolves the credential within the request timeout, so a hung function cannot outlive it."""
+    """Resolves the credential within the request timeout, so a hung function cannot outlive it.
+
+    Plain functions run in a worker thread so they cannot block the event loop; the
+    request is not sent if they miss the deadline, though the thread itself finishes.
+    """
 
     async def call() -> Any:
-        value = provider()
+        if inspect.iscoroutinefunction(provider):
+            return await provider()
+        value = await asyncio.to_thread(provider)
         return await value if inspect.isawaitable(value) else value
 
     return _checked(await asyncio.wait_for(call(), timeout))

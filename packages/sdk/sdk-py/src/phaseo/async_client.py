@@ -347,12 +347,14 @@ class AsyncPhaseo:
             kwargs["headers"]["Idempotency-Key"] = idempotency_key
         validate_controls(timeout, max_retries)
         retries = max_retries if method.upper() in ("GET", "HEAD") else 0
+        base_headers = kwargs["headers"]
         for attempt in range(retries + 1):
             if self.on_request:
                 self.on_request({"method": method.upper(), "attempt": attempt})
-            if self._api_key_provider and not has_authorization(kwargs["headers"]):
+            # Each attempt, including retries, asks the function for a current credential.
+            if self._api_key_provider and not has_authorization(base_headers):
                 credential = await resolve_async(self._api_key_provider, timeout)
-                kwargs = {**kwargs, "headers": {**kwargs["headers"], "Authorization": f"Bearer {credential}"}}
+                kwargs["headers"] = {**base_headers, "Authorization": f"Bearer {credential}"}
             context = self.http.stream(method, self.base_url + path, timeout=timeout, follow_redirects=False, **kwargs)
             try:
                 response = await context.__aenter__()

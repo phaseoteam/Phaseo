@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import httpx
 import pytest
@@ -111,6 +112,50 @@ def test_async_client_awaits_the_function_per_request():
 
     asyncio.run(run())
     assert seen == ["Bearer async-1", "Bearer async-2"]
+
+
+def test_async_retries_get_a_fresh_credential():
+    seen: list[str | None] = []
+    issued = iter(["token-1", "token-2"])
+
+    async def provider() -> str:
+        return next(issued)
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(503) if len(seen) == 1 else ok(request)
+
+    async def run() -> None:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as transport:
+            client = AsyncPhaseo(api_key=provider, base_url="https://example.test/v1", http_client=transport, max_retries=1)
+            await client.request("GET", "/key")
+
+    asyncio.run(run())
+    assert seen == ["Bearer token-1", "Bearer token-2"]
+
+
+def test_async_client_runs_a_blocking_function_off_the_event_loop_within_the_timeout():
+    sent = 0
+
+    def slow() -> str:
+        time.sleep(0.3)
+        return "late-token"
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal sent
+        sent += 1
+        return ok(request)
+
+    async def run() -> None:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as transport:
+            client = AsyncPhaseo(api_key=slow, base_url="https://example.test/v1", http_client=transport, timeout=0.05)
+            with pytest.raises(asyncio.TimeoutError):
+                await client.request("GET", "/key")
+            fast = AsyncPhaseo(api_key=lambda: "sync-token", base_url="https://example.test/v1", http_client=transport)
+            await fast.request("GET", "/key")
+
+    asyncio.run(run())
+    assert sent == 1
 
 
 def test_async_client_honours_the_timeout_when_the_function_hangs():
