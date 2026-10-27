@@ -528,6 +528,9 @@ importers:
       '@phaseo/agent-sdk':
         specifier: workspace:*
         version: link:../../packages/sdk/agent-sdk-ts
+      '@resvg/resvg-wasm':
+        specifier: 2.6.2
+        version: 2.6.2
       hono:
         specifier: ^4.13.11
         version: 4.13.12
@@ -5937,6 +5940,10 @@ packages:
         optional: true
       react-redux:
         optional: true
+
+  '@resvg/resvg-wasm@2.6.2':
+    resolution: {integrity: sha512-FqALmHI8D4o6lk/LRWDnhw95z5eO+eAa6ORjVg09YRR7BkcM6oPHU9uyC0gtQG5vpFLvgpeU4+zEAz2H8APHNw==}
+    engines: {node: '>= 10'}
 
   '@rive-app/react-webgl2@4.36.0':
     resolution: {integrity: sha512-EWWFztHCKZoYrdPSkVwtnO3YQ4N9Z0rdAP5C7FLg7PgTT4Kwxdj5G+7vGnRKer08P0+E6gvZJNzitnewRXookA==}
@@ -22566,6 +22573,8 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
       react-redux: 9.3.0(@types/react@19.3.0)(react@19.3.0)(redux@5.0.1)
+
+  '@resvg/resvg-wasm@2.6.2': {}
 
   '@rive-app/react-webgl2@4.36.0(react@19.3.0)':
     dependencies:

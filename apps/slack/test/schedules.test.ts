@@ -477,9 +477,9 @@ describe("normal turns", () => {
 	it("offer schedule_task with instructions to confirm the next run; off or for another organisation, only listing and cancelling", async () => {
 		const { buildInstructions } = await import("../src/workflow");
 		const offered = { usageTools: false };
-		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "workspace", false, "create")).toContain("its next run");
-		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "workspace", false, "off")).toContain("turned recurring tasks off");
-		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "conversation", true, "external")).toContain("can't set up recurring tasks here");
+		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "workspace", false, undefined, "create")).toContain("its next run");
+		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "workspace", false, undefined, "off")).toContain("turned recurring tasks off");
+		expect(buildInstructions({ instructions: null, usage_data_mode: "off" }, offered, NOW, "conversation", true, undefined, "external")).toContain("can't set up recurring tasks here");
 	});
 });
 

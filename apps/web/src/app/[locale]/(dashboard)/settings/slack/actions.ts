@@ -52,6 +52,25 @@ export async function startSlackInstall(settings: Record<string, unknown>) {
 	}
 }
 
+/**
+ * Update Slack permissions: Slack's consent page for the live installation, which
+ * asks for the scopes it lacks and keeps its settings, key and data.
+ */
+export async function startSlackPermissionsUpdate() {
+	try {
+		const context = await account();
+		const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/permissions`, context.accessToken, {
+			method: "POST",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		const url = new URL(result.url);
+		if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/permissions`, 502);
+		return { ok: true as const, url: url.toString() };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
 export async function updateSlackAgent(patch: Record<string, unknown>) {
 	try {
 		const context = await account();

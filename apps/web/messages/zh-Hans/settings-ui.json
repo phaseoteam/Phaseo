@@ -6828,7 +6828,9 @@
 		"openChat": "打开 Chat",
 		"addCredits": "充值额度",
 		"notices": {
-			"installed": "Phaseo 智能体现已加入 {team}。"
+			"installed": "Phaseo 智能体现已加入 {team}。",
+			"permissionsUpdated": "已更新 {team} 中的 Slack 权限。智能体现在可以发布图表和图片，并读取分享给它的文件。",
+			"permissionsPartial": "Slack 没有授予全部权限，因此部分功能仍处于关闭状态。请重试，并确认你的 Slack 应用包含所有 scope。"
 		},
 		"member": {
 			"installed": "Phaseo 智能体已安装在 {team}。",
@@ -6946,6 +6948,13 @@
 			"save": "保存更改",
 			"saved": "设置已保存。",
 			"discard": "放弃更改"
+		},
+		"permissions": {
+			"title": "更新 Slack 权限",
+			"description": "获得 Slack 许可后，智能体就可以发布它生成的图表和图片，并读取分享给它的图片和 PDF。更新时会打开 Slack 以批准新权限，智能体的设置、密钥和数据都会保留。",
+			"customApp": "请先在你的 Slack 应用清单中添加 files:read 和 files:write 机器人 scope。",
+			"submit": "更新 Slack 权限",
+			"redirecting": "正在打开 Slack…"
 		},
 		"month": {
 			"note": "{date}截至目前，按 UTC 计算。月底时从额度中扣费。",
@@ -7172,6 +7181,7 @@
 			"appUnavailable": "Phaseo 无法读取你的 Slack 应用已保存的信息。请重新保存后再试。",
 			"alreadyInstalled": "此工作区已安装 Slack 智能体。",
 			"teamInUse": "此 Slack 工作区已从另一个 Phaseo 工作区安装了智能体。请先在那里卸载。",
+			"teamMismatch": "你选择了另一个 Slack 工作区。请选择安装了智能体的工作区，然后重试。",
 			"notInstalled": "此工作区已不再安装 Slack 智能体。请刷新页面。",
 			"conflict": "Slack 智能体在此期间已被更改。请刷新后重试。",
 			"keyMissing": "智能体的 API 密钥缺失。请卸载智能体后重新添加。",

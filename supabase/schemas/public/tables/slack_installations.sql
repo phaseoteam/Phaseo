@@ -33,9 +33,11 @@ CREATE TABLE "public"."slack_installations" (
   "schedules_enabled"       boolean                  NOT NULL DEFAULT true,
   "schedules_max"           integer                  NOT NULL DEFAULT 20,
   "schedule_creators"       text                     NOT NULL DEFAULT 'everyone'::text,
+  "bot_scopes"              text[],
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
+  CONSTRAINT "slack_installations_bot_scopes_check" CHECK (((bot_scopes IS NULL) OR (cardinality(bot_scopes) <= 50))),
   CONSTRAINT "slack_installations_bot_user_id_check" CHECK ((bot_user_id ~ '^[UWB][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_installations_enterprise_id_check" CHECK (((enterprise_id IS NULL) OR (enterprise_id ~ '^E[A-Z0-9]{2,31}$'::text))),
   CONSTRAINT "slack_installations_guardrail_id_fkey" FOREIGN KEY (guardrail_id) REFERENCES public.workspace_guardrails(id) ON DELETE SET NULL,
@@ -115,6 +117,8 @@ COMMENT ON COLUMN "public"."slack_installations"."schedules_enabled" IS 'Whether
 COMMENT ON COLUMN "public"."slack_installations"."schedules_max" IS 'The most schedules the installation keeps, 1 to 100 (20 by default). save_slack_agent_schedule refuses one more; lowering it keeps the ones saved.';
 
 COMMENT ON COLUMN "public"."slack_installations"."schedule_creators" IS 'Who may set up schedules: everyone (default), anyone the agent answers; or linked, only people who linked their Phaseo account.';
+
+COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

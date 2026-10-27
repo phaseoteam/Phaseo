@@ -9,7 +9,7 @@ icon: "messages-square"
 The Slack agent is rolling out to workspaces gradually. If **Settings → Slack** doesn't appear in your settings yet, it isn't available to your workspace yet.
 </Note>
 
-The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread, streaming the answer as it writes. It uses the model you choose in Phaseo, can search the web and read web pages, and can tell linked members about your workspace's Phaseo spend, credits, API key usage and models.
+The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread, streaming the answer as it writes. It uses the model you choose in Phaseo, can search the web and read web pages, and can tell linked members about your workspace's Phaseo spend, credits, API key usage and models. It can also post charts and images it makes, and read images and PDFs you share with it.
 
 Owners and admins add it from **Settings → Slack**, choose who can use it and set its limits. You pay a monthly price for the people who used it, and model tokens are billed like any other gateway request.
 
@@ -127,6 +127,27 @@ When the agent needs you to choose between a few options or approve something be
 Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages. It also lists the recurring tasks you set up, with their next run (see [Scheduled tasks](#scheduled-tasks)).
 
 With your own Slack app, the Home tab needs the latest [manifest](#use-your-own-slack-app): `home_tab_enabled` set to `true` and the `app_home_opened` bot event.
+
+## Charts, images and files
+
+The agent can post charts and images in the thread, and read images and PDFs you share with it.
+
+- **Charts:** ask for a chart, for example `@Phaseo chart our spend by week this month`. The agent draws a bar, line or pie chart from the numbers it has and posts it in the thread as an image. Chart text uses Latin and Cyrillic letters; anything else stays in its reply.
+- **Images:** ask it to make one, for example `@Phaseo make an icon of a paper plane in blue`. It uses [GPT Image 2](https://phaseo.app/models/openai/gpt-image-2) through the agent's API key, billed like any other request. An image costs a few cents and counts towards the answer's [$0.50 limit](#limits-on-each-answer), and the answer's footer includes it. One answer makes at most 2 images, and only while at least $0.15 of its limit is left.
+- **Files you share:** attach images (PNG, JPEG, GIF or WebP, up to 5 MB each) or PDFs (up to 10 MB) to your message, or to earlier messages in the thread that the agent reads. It reads up to 4 files, 12 MB together, for each answer, newest first. Other file types can't be read yet.
+
+The model has to read images or PDFs too. With **Auto**, the agent sends the files, and answers without them if the model it picks can't read them. With a specific model, the agent tells you when that model can't read the kind of file you shared.
+
+Files you share are downloaded for the answer that reads them and never stored. Charts and images the agent posts are files in your Slack workspace, like any other.
+
+### Update Slack permissions
+
+Charts and images need Slack's `files:write` permission, and reading files needs `files:read`. If the agent was added before it could use files, it doesn't have them yet: it tells people an admin needs to update its permissions, and **Settings → Slack** shows **Update Slack permissions**.
+
+1. Select **Update Slack permissions**. Slack shows the permissions the agent asks for.
+2. Approve them for the same Slack workspace. Slack sends you back to **Settings → Slack**.
+
+Updating keeps the agent's settings, API key, guardrail and history. With your own Slack app, add `files:read` and `files:write` to its [manifest](#use-your-own-slack-app) first.
 
 ## Who can use it
 
@@ -265,7 +286,7 @@ The **Agent** section sets the model and **Instructions**: extra guidance the ag
 
 ### Limits on each answer
 
-Each answer stops after 12 steps or $0.50 of model spend, whichever comes first. A step is one model call and the tools it runs, such as a web search. Other models the agent asks, and the models in a comparison, count toward the same $0.50. When a limit stops an answer, the agent says so, and you can ask it to continue. These limits are the same for every workspace.
+Each answer stops after 12 steps or $0.50 of model spend, whichever comes first. A step is one model call and the tools it runs, such as a web search. Other models the agent asks, and the models in a comparison, count toward the same $0.50. When a limit stops an answer, the agent says so, and you can ask it to continue. These limits are the same for every workspace. Images the agent makes count towards the $0.50 too.
 
 ## Pricing
 
@@ -316,6 +337,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
+- **Shared files are read, not kept.** The agent downloads the images and PDFs it reads for an answer and sends them to the model with that answer's requests, under the same rules. It never stores them; only their Slack file IDs and names are kept with the message until the answer ends.
 - **Recurring tasks.** For each task, the agent keeps its title and instruction, where it posts, its schedule and time zone, the Slack ID of the person who set it up and how its last run went. They stay until someone cancels or deletes the task, or you uninstall the agent. Owners and admins can see, pause and delete them in **Settings → Slack**.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
@@ -390,7 +412,9 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read"
+        "users:read",
+        "files:read",
+        "files:write"
       ]
     }
   },
@@ -434,6 +458,8 @@ Phaseo asks Slack for exactly these bot token scopes when you install, so the ap
 | `im:history` | Read direct messages sent to the agent. |
 | `channels:history`, `groups:history` | Read the thread it was mentioned in, in public and private channels. |
 | `users:read` | Check whether someone is a guest, a bot or from another organisation. |
+| `files:read` | Read images and PDFs shared with the agent. |
+| `files:write` | Post charts and images in the thread. |
 
 A few rules for your own app:
 
@@ -470,6 +496,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "The model chosen for this agent isn't available to the Slack agent." | The gateway can't use the agent's model with its key: **Auto** without Auto Routing, or no provider of the model meets the **Slack agent** guardrail. | Choose another model in **Settings → Slack**. |
 | "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
+| "The model this agent uses can't read the files shared here." | No provider of the agent's model reads the images or PDFs shared. | Ask without the files, or choose a model that reads images in **Settings → Slack**. |
 | "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
 
 If the agent doesn't reply at all:

@@ -259,6 +259,11 @@ describe("Slack agent settings reads", () => {
 		expect(body.configured).toEqual({ hosted_app: true, custom_app: true });
 		expect(body.installation.settings).toMatchObject({ plan_people: 10, monthly_cap_usd: 25, token_monthly_limit_usd: 40, over_plan: "refuse" });
 		expect(body.installation.plan).toEqual({ people: 10, price_usd: 2.99 });
+		// Installed before the scopes were recorded: the original seven, without the file scopes.
+		expect(body.installation.permissions).toEqual({
+			granted: ["app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read"],
+			missing: ["files:read", "files:write"],
+		});
 		// 4 people: the 10-person plan ($2.99) and 1,200 included answers, so 300 extra at $0.25 per 1,000.
 		// Model spend through the agent's key is billed as normal requests, beside the charge, not in it.
 		expect(body.installation.month).toEqual({
@@ -440,7 +445,7 @@ describe("Slack agent install", () => {
 		const url = new URL(((await response.json()) as any).url);
 		expect(`${url.origin}${url.pathname}`).toBe("https://slack.com/oauth/v2/authorize");
 		expect(url.searchParams.get("client_id")).toBe("1111.2222");
-		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read");
+		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read,files:read,files:write");
 		expect(url.searchParams.get("redirect_uri")).toBe("https://phaseo.app/api/account/settings/slack/oauth/callback");
 		const state = url.searchParams.get("state")!;
 		expect(state.length).toBeLessThan(1_000);
@@ -573,6 +578,8 @@ describe("Slack OAuth callback", () => {
 			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "openai/gpt-6-luna", access_mode: "everyone",
 			usage_data_mode: "dm", plan_people: 10, over_plan: "refuse", max_people: null, monthly_cap_nanos: 25_000_000_000, installed_by: "user-a",
 			answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
+			// The scopes Slack granted, so the Worker knows which features it may use.
+			bot_scopes: [...SLACK_AGENT_BOT_SCOPES],
 		});
 		const secrets = await decryptSlackSecrets(env as never, installation.secrets_ciphertext);
 		expect(secrets).toEqual({ bot_token: BOT_TOKEN, gateway_key: expect.stringMatching(new RegExp(`^phaseo_v1_sk_${key.kid}_[A-Za-z0-9]{40}$`)) });
@@ -670,6 +677,118 @@ describe("Slack OAuth callback", () => {
 		const exchange = requests.find((entry) => entry.url.pathname === "/api/oauth.v2.access")!;
 		expect(exchange.headers.get("authorization")).toBe(`Basic ${btoa("9999.8888:customclientsecret0001")}`);
 		expect(find(requests, "POST", "/slack_installations")[0].body.slack_app_id).toBe(APP_ROW_ID);
+	});
+});
+
+describe("Updating the Slack permissions", () => {
+	const UPDATED_TOKEN = "xoxb-3333-4444-newbottokenvalue";
+	const GATEWAY_KEY = "phaseo_v1_sk_kidAAAA00001_existinggatewaykeysecret0000000000000";
+
+	async function liveRow(overrides: Record<string, unknown> = {}) {
+		return {
+			secrets_ciphertext: await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: GATEWAY_KEY }),
+			bot_scopes: null,
+			...overrides,
+		};
+	}
+
+	async function updateState(installationId = INSTALLATION_ID, userId = "user-a") {
+		return signSlackToken(env as never, "install", { workspace_id: WORKSPACE, user_id: userId, installation_id: installationId }, 600);
+	}
+
+	it("lists the scopes Slack granted, and none missing once it has them all", async () => {
+		database({ role: "admin", installation: { bot_scopes: [...SLACK_AGENT_BOT_SCOPES] } });
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.installation.permissions).toEqual({ granted: [...SLACK_AGENT_BOT_SCOPES], missing: [] });
+	});
+
+	it("starts Slack's install again for the live installation, with every scope and a state naming it", async () => {
+		database({ role: "member", installation: {} });
+		expect((await call("/slack/permissions", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(403);
+		database({ role: "admin", installation: null });
+		expect((await call("/slack/permissions", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(404);
+
+		database({ role: "admin", installation: {} });
+		const response = await call("/slack/permissions", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(response.status).toBe(200);
+		const url = new URL(((await response.json()) as any).url);
+		expect(url.searchParams.get("client_id")).toBe("1111.2222");
+		expect(url.searchParams.get("scope")).toBe(SLACK_AGENT_BOT_SCOPES.join(","));
+		const verified = await verifySlackToken(env as never, "install", url.searchParams.get("state"));
+		expect(verified.ok && verified.payload).toMatchObject({ workspace_id: WORKSPACE, user_id: "user-a", installation_id: INSTALLATION_ID });
+		expect(verified.ok && verified.payload.settings).toBeUndefined();
+
+		// An installation on the workspace's own app asks that app.
+		database({ role: "admin", installation: { slack_app_id: APP_ROW_ID }, customApp: { id: APP_ROW_ID, client_id: "9999.8888" } });
+		const own = await call("/slack/permissions", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(new URL(((await own.json()) as any).url).searchParams.get("client_id")).toBe("9999.8888");
+	});
+
+	it("updates the installation in place: the new bot token and scopes, the same key, guardrail and settings", async () => {
+		const requests = database({
+			role: "admin",
+			installation: await liveRow({ model: "openai/gpt-6-luna", plan_people: 25 }),
+			slackAccess: grant({ access_token: UPDATED_TOKEN }),
+		});
+		const response = await callback({ code: "123.456.abc", state: await updateState() });
+		const target = location(response);
+		expect(target.searchParams.get("error")).toBeNull();
+		expect(target.searchParams.get("permissions_updated")).toBe("1");
+
+		// No second install: nothing new is created, and only this row changes.
+		expect(find(requests, "POST", "/keys")).toHaveLength(0);
+		expect(find(requests, "POST", "/workspace_guardrails")).toHaveLength(0);
+		expect(find(requests, "POST", "/slack_installations")).toHaveLength(0);
+		const updates = find(requests, "PATCH", "/slack_installations");
+		expect(updates).toHaveLength(1);
+		expect(updates[0].url.searchParams.get("id")).toBe(`eq.${INSTALLATION_ID}`);
+		expect(updates[0].url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+		expect(updates[0].url.searchParams.get("status")).toBe("neq.uninstalled");
+		const update = updates[0].body;
+		expect(Object.keys(update).sort()).toEqual(["bot_scopes", "bot_user_id", "secrets_ciphertext", "team_name"]);
+		expect(update).toMatchObject({ bot_user_id: "U0BOT0001", team_name: "Acme", bot_scopes: [...SLACK_AGENT_BOT_SCOPES] });
+		expect(await decryptSlackSecrets(env as never, update.secrets_ciphertext)).toEqual({ bot_token: UPDATED_TOKEN, gateway_key: GATEWAY_KEY });
+		expect(JSON.stringify(update)).not.toContain(UPDATED_TOKEN);
+
+		const audit = find(requests, "POST", "/workspace_audit_events")[0].body;
+		expect(audit).toMatchObject({ action: "slack_agent.permissions_updated", target_id: INSTALLATION_ID });
+		expect(audit.metadata).toEqual({ added_permissions: ["files:read", "files:write"], missing_permissions: [] });
+	});
+
+	it("says when Slack granted only some of the scopes", async () => {
+		database({ role: "admin", installation: await liveRow(), slackAccess: grant({ scope: "app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read,files:read" }) });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState() })).searchParams.get("permissions_updated")).toBe("partial");
+	});
+
+	it("refuses another Slack workspace, an installation that changed meanwhile, and anyone but the admin who started it", async () => {
+		let requests = database({ role: "admin", installation: await liveRow(), slackAccess: grant({ team: { id: "T0OTHER001", name: "Other" } }) });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState() })).searchParams.get("error")).toBe("slack_team_mismatch");
+		expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+
+		requests = database({ role: "admin", installation: await liveRow() });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState("00000000-0000-4000-8000-0000000000d9") })).searchParams.get("error")).toBe("not_installed");
+		expect(requests.some((entry) => entry.url.hostname === "slack.com")).toBe(false);
+
+		requests = database({ role: "admin", installation: await liveRow() });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState() }, "token-b")).searchParams.get("error")).toBe("session_mismatch");
+		expect(requests.some((entry) => entry.url.hostname === "slack.com")).toBe(false);
+
+		requests = database({ role: "admin", installation: await liveRow() });
+		const tampered = await signSlackToken(env as never, "install", { workspace_id: WORKSPACE, user_id: "user-a", installation_id: "not-an-id" }, 600);
+		expect(location(await callback({ code: "123.456.abc", state: tampered })).searchParams.get("error")).toBe("state_invalid");
+		expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+	});
+
+	it("requires Slack to have installed the workspace's own app for an installation that uses it", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext };
+		let requests = database({ role: "admin", installation: await liveRow({ slack_app_id: APP_ROW_ID }), customApp, slackAccess: grant({ app_id: "A0HOSTED01" }) });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState() })).searchParams.get("error")).toBe("slack_response_invalid");
+		expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+
+		requests = database({ role: "admin", installation: await liveRow({ slack_app_id: APP_ROW_ID }), customApp, slackAccess: grant({ app_id: "A0CUSTOM01" }) });
+		expect(location(await callback({ code: "123.456.abc", state: await updateState() })).searchParams.get("permissions_updated")).toBe("1");
+		expect(requests.find((entry) => entry.url.pathname === "/api/oauth.v2.access")!.headers.get("authorization")).toBe(`Basic ${btoa("9999.8888:customclientsecret0001")}`);
 	});
 });
 

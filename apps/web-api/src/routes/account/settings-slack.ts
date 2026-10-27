@@ -12,6 +12,7 @@ import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { sendSlackAgentAlert } from "@/lib/slack-agent-alerts";
 import {
 	SLACK_AGENT_BOT_SCOPES,
+	SLACK_AGENT_ORIGINAL_BOT_SCOPES,
 	exchangeSlackCode,
 	slackAuthorizeUrl,
 	uninstallSlackApp,
@@ -53,6 +54,12 @@ import {
 // carry and requires that user to be the one who started the install (the user
 // in the signed state). That binding is the CSRF protection: a link to Slack's
 // consent page started by someone else fails for anyone but them.
+//
+// Updating the Slack permissions runs the same install again for the live
+// installation (its state names the installation): the callback swaps in the
+// new bot token and records the scopes Slack granted, and keeps the key,
+// guardrail, settings and everything else. A new feature's scope reaches an
+// installation only this way, so the Worker checks bot_scopes before using one.
 
 const INSTALL_STATE_TTL_SECONDS = 10 * 60;
 const CALLBACK_PATH = "/api/account/settings/slack/oauth/callback";
@@ -72,7 +79,7 @@ const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "team_name", "enterprise_id", "bot_user_id", "key_id", "guardrail_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"schedules_enabled", "schedules_max", "schedule_creators", "plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
-	"installed_by", "installed_at", "uninstalled_at", "updated_at",
+	"installed_by", "installed_at", "uninstalled_at", "updated_at", "bot_scopes",
 ].join(",");
 const CUSTOM_APP_COLUMNS = "id,slack_app_id,client_id,created_at,updated_at";
 
@@ -112,12 +119,15 @@ type InstallationRow = {
 	installed_at: string;
 	uninstalled_at: string | null;
 	updated_at: string;
+	/** What Slack granted at the last install or permissions update; null means the original seven scopes. */
+	bot_scopes: string[] | null;
 	secrets_ciphertext?: string;
 };
 
 type CustomAppRow = { id: string; slack_app_id: string; client_id: string; created_at: string; updated_at: string };
 
-type InstallState = { workspace_id: string; user_id: string; settings: Body };
+/** installation_id: updating the Slack permissions of that live installation, instead of a new install with settings. */
+type InstallState = { workspace_id: string; user_id: string; settings?: Body; installation_id?: string };
 
 export function json(c: any, body: unknown, status = 200) {
 	return c.json(body, status, PRIVATE_NO_STORE_HEADERS);
@@ -300,6 +310,12 @@ function settingsView(row: InstallationRow, keyLimitNanos: number) {
 	};
 }
 
+/** The scopes Slack granted the installation, and the ones the agent now asks for that it lacks. */
+export function slackPermissions(row: Pick<InstallationRow, "bot_scopes">): { granted: string[]; missing: string[] } {
+	const granted: readonly string[] = row.bot_scopes ?? SLACK_AGENT_ORIGINAL_BOT_SCOPES;
+	return { granted: [...granted], missing: SLACK_AGENT_BOT_SCOPES.filter((scope) => !granted.includes(scope)) };
+}
+
 function installationView(row: InstallationRow, keyLimitNanos: number) {
 	return {
 		id: row.id,
@@ -310,6 +326,7 @@ function installationView(row: InstallationRow, keyLimitNanos: number) {
 		status: row.status,
 		installed_at: row.installed_at,
 		uses_custom_app: Boolean(row.slack_app_id),
+		permissions: slackPermissions(row),
 		settings: settingsView(row, keyLimitNanos),
 		plan: { people: row.plan_people, price_usd: nanosToUsd(slackAgentPlanNanos(row.plan_people)) },
 	};
@@ -464,6 +481,40 @@ accountSettingsSlackRouter.post("/slack/install", bodyLimit({ maxSize: 8 * 1024 
 	return json(c, { url: slackAuthorizeUrl({ clientId, redirectUri: slackRedirectUri(c.env), state }) });
 });
 
+/**
+ * Update Slack permissions: the same OAuth install, for the live installation.
+ * Slack's consent page asks for the scopes the agent now needs, and the callback
+ * updates this installation in place (updatePermissions).
+ */
+accountSettingsSlackRouter.post("/slack/permissions", bodyLimit({ maxSize: 8 * 1024 }), async (c) => {
+	const body = await readBody(c);
+	const access = await managerContext(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	if (!slackCoreConfigured(c.env)) return notConfigured(c);
+	const live = await liveInstallation(context.client, context.workspaceId, "id,slack_app_id");
+	if (live.error) return json(c, { error: "settings_unavailable" }, 503);
+	if (!live.row) return json(c, { error: "not_installed", message: "The Slack agent is not installed in this workspace" }, 404);
+	let clientId: string;
+	if (live.row.slack_app_id) {
+		const app = await context.client.from("slack_apps").select("client_id")
+			.eq("id", live.row.slack_app_id).eq("workspace_id", context.workspaceId).maybeSingle();
+		if (app.error) return json(c, { error: "settings_unavailable" }, 503);
+		if (!app.data) return json(c, { error: "slack_app_not_found", message: "Save your Slack app first" }, 404);
+		clientId = String(app.data.client_id);
+	} else {
+		const hosted = hostedCredentials(c.env);
+		if (!hosted) return notConfigured(c);
+		clientId = hosted.clientId;
+	}
+	const state = await signSlackToken(c.env, "install", {
+		workspace_id: context.workspaceId,
+		user_id: context.user.id,
+		installation_id: live.row.id,
+	} satisfies InstallState, INSTALL_STATE_TTL_SECONDS);
+	return json(c, { url: slackAuthorizeUrl({ clientId, redirectUri: slackRedirectUri(c.env), state }) });
+});
+
 function redirectToSettings(c: any, params: Record<string, string>): Response {
 	const url = new URL(SETTINGS_PATH, slackWebOrigin(c.env));
 	for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
@@ -562,6 +613,7 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 			allow_guests: settings.allow_guests,
 			allow_external_users: settings.allow_external_users,
 			installed_by: context.user.id,
+			bot_scopes: grant.scopes,
 		}).select("id").maybeSingle();
 		if (installation.error) {
 			const message = String(installation.error.message ?? "");
@@ -586,6 +638,77 @@ async function liveTeamInstallations(client: DataClient, grant: SlackInstallGran
 	return query.limit(5);
 }
 
+/**
+ * The callback of Update Slack permissions. The same checks as an install (the
+ * admin who started it, the same Slack app), and Slack must have installed it
+ * for the installation's own Slack team or org. Then the installation's row is
+ * updated in place: the new bot token (its gateway key kept), its bot user, and
+ * the scopes Slack granted. Nothing else changes.
+ */
+async function updatePermissions(c: any, state: InstallState, installationId: string, code: string): Promise<Response> {
+	const env = c.env as Env;
+	const fail = (error: string) => redirectToSettings(c, { error });
+	const authRequest = withSessionAuthorization(c.req.raw, env);
+	if (!authRequest) return fail("sign_in_required");
+	const context = await requireAccountWorkspace({ request: authRequest, env, workspaceId: state.workspace_id });
+	if (!context) return fail("sign_in_required");
+	if (context.user.id !== state.user_id) return fail("session_mismatch");
+	if (!isManager(context)) return fail("forbidden");
+	if (!slackCoreConfigured(env)) return fail("slack_not_configured");
+
+	const live = await liveInstallation(context.client, context.workspaceId, `${INSTALLATION_COLUMNS},secrets_ciphertext`);
+	if (live.error) return fail("install_failed");
+	// Uninstalled, or replaced by another install, since the update started.
+	if (!live.row || live.row.id !== installationId) return fail("not_installed");
+	const current = live.row;
+
+	let credentials: SlackAppCredentials | null;
+	try {
+		credentials = current.slack_app_id
+			? await customAppCredentials(env, context.client, context.workspaceId, current.slack_app_id)
+			: hostedCredentials(env);
+	} catch {
+		return fail("slack_app_unavailable");
+	}
+	if (!credentials) return fail(current.slack_app_id ? "slack_app_not_found" : "slack_not_configured");
+
+	const exchanged = await exchangeSlackCode({ credentials, code, redirectUri: slackRedirectUri(env) });
+	if (exchanged.ok === false) return fail(exchanged.error);
+	const grant = exchanged.grant;
+	if (credentials.slackAppId && grant.appId !== credentials.slackAppId) return fail("slack_response_invalid");
+	// Slack's consent page lets the admin pick a Slack workspace: it must be this installation's.
+	if (grant.teamId !== current.team_id || grant.enterpriseId !== current.enterprise_id) return fail("slack_team_mismatch");
+
+	let secrets: Record<string, string>;
+	try {
+		secrets = await decryptSlackSecrets(env, String(current.secrets_ciphertext ?? ""));
+	} catch {
+		return fail("install_failed");
+	}
+	if (!secrets.gateway_key) return fail("install_failed");
+	// The new bot token replaces the old one (and its refresh token, if it rotates); the gateway key stays.
+	const next: Record<string, string> = { gateway_key: secrets.gateway_key, bot_token: grant.botToken };
+	if (grant.refreshToken) {
+		next.bot_refresh_token = grant.refreshToken;
+		if (grant.expiresInSeconds) next.bot_token_expires_at = new Date(Date.now() + grant.expiresInSeconds * 1000).toISOString();
+	}
+	const updated = await context.client.from("slack_installations").update({
+		secrets_ciphertext: await encryptSlackSecrets(env, next),
+		bot_user_id: grant.botUserId,
+		team_name: grant.teamName ?? current.team_name,
+		bot_scopes: grant.scopes,
+	}).eq("id", current.id).eq("workspace_id", context.workspaceId).neq("status", "uninstalled").select("id").maybeSingle();
+	if (updated.error) return fail("install_failed");
+	if (!updated.data) return fail("not_installed");
+	const before = slackPermissions(current);
+	const after = slackPermissions({ bot_scopes: grant.scopes });
+	await auditSlack(c, context, "permissions_updated", { id: current.id, name: grant.teamName ?? current.team_name }, {
+		added_permissions: after.granted.filter((scope) => !before.granted.includes(scope)),
+		missing_permissions: after.missing,
+	});
+	return redirectToSettings(c, { permissions_updated: after.missing.length ? "partial" : "1", workspaceId: context.workspaceId });
+}
+
 accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 	const env = c.env;
 	const fail = (error: string) => redirectToSettings(c, { error });
@@ -597,14 +720,16 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 		return fail(verified.reason === "expired" ? "state_expired" : verified.reason === "unconfigured" ? "slack_not_configured" : "state_invalid");
 	}
 	const state = verified.payload;
-	if (typeof state.workspace_id !== "string" || typeof state.user_id !== "string" || !state.settings || typeof state.settings !== "object") {
-		return fail("state_invalid");
-	}
-	const parsed = parseInstallSettings(state.settings);
-	if (parsed.ok === false) return fail("state_invalid");
-	const settings = parsed.value;
+	if (typeof state.workspace_id !== "string" || typeof state.user_id !== "string") return fail("state_invalid");
+	const updating = typeof state.installation_id === "string" && UUID_PATTERN.test(state.installation_id) ? state.installation_id : null;
+	if (state.installation_id !== undefined && !updating) return fail("state_invalid");
+	if (!updating && (!state.settings || typeof state.settings !== "object")) return fail("state_invalid");
 	const code = c.req.query("code") ?? "";
 	if (!OAUTH_CODE_PATTERN.test(code)) return fail("slack_code_missing");
+	if (updating) return updatePermissions(c, state, updating, code);
+	const parsed = parseInstallSettings(state.settings!);
+	if (parsed.ok === false) return fail("state_invalid");
+	const settings = parsed.value;
 
 	// Bind the callback to the browser's signed-in user: it must be the admin who
 	// started this install. Its session arrives as the Supabase cookie (see above).

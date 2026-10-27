@@ -107,4 +107,20 @@ describe("threadRead", () => {
 		const unknownApp = threadRead({ messages: [message(1_792_590_500, { user: undefined, bot_id: "B0BOT00001", bot_profile: { app_id: HOSTED_APP_ID } })], has_more: false }, window, turn, { botUserId: BOT_USER_ID, appId: null });
 		expect(unknownApp.context.messages[0]).toMatchObject({ role: "app" });
 	});
+
+	it("keeps the files people shared by id and name, also on a message with no text", () => {
+		const window = { oldest: ROOT, fromRoot: true };
+		const read = threadRead({
+			messages: [
+				message(1_792_590_100, { text: "", subtype: "file_share", files: [{ id: "F0IMAGE001", name: "dashboard.png", url_private: "https://files.slack.com/x", mimetype: "image/png" }] }),
+				message(1_792_590_200, { text: "", files: [] }),
+				message(1_792_590_300, { files: [{ id: "F0PDF00001", title: "Invoice" }] }),
+			],
+			has_more: false,
+		}, window, turn, SELF);
+		expect(read.context.messages).toEqual([
+			{ role: "user", author: "U0PERSON02", text: "", ts: ts(1_792_590_100), files: [{ id: "F0IMAGE001", name: "dashboard.png" }] },
+			{ role: "user", author: "U0PERSON02", text: "at 1792590300", ts: ts(1_792_590_300), files: [{ id: "F0PDF00001", name: "Invoice" }] },
+		]);
+	});
 });

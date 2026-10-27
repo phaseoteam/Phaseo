@@ -45,6 +45,8 @@ export type SlackAgentInstallation = {
 	status: string;
 	installed_at: string;
 	uses_custom_app: boolean;
+	/** The Slack scopes the installation was granted, and those the agent now asks for that it lacks (Update Slack permissions). */
+	permissions?: { granted: string[]; missing: string[] };
 	settings: SlackAgentSettings;
 	plan: { people: number; price_usd: number };
 	/** Counted in the database for the current UTC month. Absent in PATCH responses. */
@@ -405,7 +407,7 @@ export type SlackErrorKey =
 	| "appMissing" | "appUnavailable" | "alreadyInstalled" | "teamInUse" | "notInstalled" | "conflict" | "keyMissing"
 	| "slackDenied" | "slackError" | "slackResponseInvalid" | "stateExpired" | "stateInvalid" | "signInRequired"
 	| "sessionMismatch" | "installFailed" | "autoUnavailable" | "unknownModels" | "modelChoiceNeedsModels" | "tooManyModels"
-	| "invalid" | "unavailable" | "generic";
+	| "teamMismatch" | "invalid" | "unavailable" | "generic";
 
 // Every error code the Slack settings routes return, including the OAuth
 // callback's ?error= values.
@@ -422,6 +424,7 @@ const ERROR_KEYS: Record<string, SlackErrorKey> = {
 	slack_app_unavailable: "appUnavailable",
 	already_installed: "alreadyInstalled",
 	slack_team_in_use: "teamInUse",
+	slack_team_mismatch: "teamMismatch",
 	not_installed: "notInstalled",
 	conflict: "conflict",
 	key_missing: "keyMissing",
@@ -456,9 +459,14 @@ export function slackErrorKey(code: string | null | undefined, status: number | 
 	return "generic";
 }
 
-/** What the OAuth callback's redirect says: ?installed=1, or ?error=<code>. */
-export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "installed" } | { kind: "error"; key: SlackErrorKey } | null {
+/**
+ * What the OAuth callback's redirect says: ?installed=1, ?permissions_updated=1
+ * (or partial, when Slack granted only some of the scopes), or ?error=<code>.
+ */
+export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "installed" } | { kind: "permissionsUpdated"; partial: boolean } | { kind: "error"; key: SlackErrorKey } | null {
 	if (params.get("installed") === "1") return { kind: "installed" };
+	const updated = params.get("permissions_updated");
+	if (updated === "1" || updated === "partial") return { kind: "permissionsUpdated", partial: updated === "partial" };
 	const error = params.get("error");
 	return error ? { kind: "error", key: slackErrorKey(error) } : null;
 }

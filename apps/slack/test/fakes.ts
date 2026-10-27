@@ -203,6 +203,7 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		allow_guests: true,
 		allow_external_users: false,
 		status: "active",
+		bot_scopes: null,
 		...overrides,
 	};
 }
@@ -292,9 +293,23 @@ export class FakeDb implements Db {
 
 export type SlackCall = { token: string; method: string; args: Record<string, unknown> };
 
-/** Records Web API calls. users.info answers from `users`; everything else is ok. */
+/** A file shared in Slack: what files.info returns for it, and what its url_private_download serves. */
+export type FakeSlackFile = { info: Record<string, unknown>; bytes?: Uint8Array; contentType?: string; error?: "no_access" | "download_failed" };
+
+/**
+ * Records Web API calls. users.info answers from `users`, files.info from
+ * `files`, and files.getUploadURLExternal hands out upload URLs whose bytes land
+ * in `uploads`; everything else is ok.
+ */
 export class FakeSlack {
 	calls: SlackCall[] = [];
+	/** Files shared in Slack, by id. */
+	files = new Map<string, FakeSlackFile>();
+	/** Bytes sent to upload URLs, by the file id the URL was issued for. */
+	uploads = new Map<string, Uint8Array>();
+	/** URLs downloaded, in order. */
+	downloads: string[] = [];
+	private uploadUrls = 0;
 	users = new Map<string, SlackUser>();
 	failUsersInfo = false;
 	/** Errors the next calls of a method return, in order. "ratelimited" is a 429 with Retry-After 60; "ratelimited:30" sets it. */
@@ -341,12 +356,35 @@ export class FakeSlack {
 					return { ok: true, data: { ok: true, channel: args.channel, ts: this.nextTs?.() ?? `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
 				}
 				if (method === "conversations.replies") return { ok: true, data: { ok: true, ...this.repliesPage(args) } as T };
+				if (method === "files.info") {
+					const file = this.files.get(String(args.file));
+					return file ? { ok: true, data: { ok: true, file: file.info } as T } : { ok: false, error: "file_not_found" };
+				}
+				if (method === "files.getUploadURLExternal") {
+					this.uploadUrls += 1;
+					const fileId = `F0UPLOAD${String(this.uploadUrls).padStart(3, "0")}`;
+					return { ok: true, data: { ok: true, upload_url: `https://files.slack.com/upload/v1/${fileId}`, file_id: fileId } as T };
+				}
 				if (method === "users.info") {
 					if (this.failUsersInfo) return { ok: false, error: "ratelimited", retryAfterSeconds: 30 };
 					const user = this.users.get(String(args.user)) ?? { id: String(args.user), team_id: TEAM_ID };
 					return { ok: true, data: { ok: true, user } as T };
 				}
 				return { ok: true, data: { ok: true } as T };
+			},
+			upload: async (url: string, bytes: Uint8Array) => {
+				this.calls.push({ token, method: "upload", args: { url, bytes: bytes.byteLength } });
+				if (this.failures.get("upload")?.shift()) return false;
+				this.uploads.set(url.split("/").pop() ?? url, bytes);
+				return true;
+			},
+			download: async (url: string, maxBytes: number) => {
+				this.downloads.push(url);
+				const file = [...this.files.values()].find((entry) => entry.info.url_private_download === url);
+				if (!file || file.error) return { ok: false, error: file?.error ?? "no_access" } as const;
+				const bytes = file.bytes ?? new Uint8Array();
+				if (bytes.byteLength > maxBytes) return { ok: false, error: "too_large" } as const;
+				return { ok: true, bytes, contentType: file.contentType ?? String(file.info.mimetype ?? "") } as const;
 			},
 		};
 	}

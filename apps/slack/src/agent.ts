@@ -24,6 +24,12 @@ import { withoutTrailingSlashes } from "./url";
 // applies it from provider data-policy metadata), and the key stores no
 // content (never_store_content, set at install). The request must not send
 // provider.data_collection: the gateway rejects "deny" with a 400.
+//
+// Files shared in the thread go to the model as input parts of the run's first
+// user message (withAttachments). Images the agent generates are made through
+// the gateway's image endpoint with the same key, labels, end user and session
+// (generateImage), and their cost counts against the turn's limit with the
+// model's (otherCostUsd).
 
 export const AGENT_ID = "phaseo-slack-agent";
 export const MAX_STEPS = 12;
@@ -33,6 +39,9 @@ export const APP_TITLE = "Phaseo Slack agent";
 /** Server tools the gateway runs itself. */
 export const GATEWAY_TOOLS: Array<{ type: "phaseo:web_search" } | { type: "phaseo:web_fetch" }> = [{ type: "phaseo:web_search" }, { type: "phaseo:web_fetch" }];
 const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+const IMAGE_TIMEOUT_MS = 120_000;
+/** The largest generated image the Worker downloads or decodes. */
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 export type AgentTurnRequest = {
 	gatewayKey: string;
@@ -47,11 +56,13 @@ export type AgentTurnRequest = {
 	tools: AgentTool<any, any>[];
 	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
 	maxCostUsd: number;
-	/** What the run's tools spent on their own gateway requests (other models it asked), counted against maxCostUsd and in its cost. */
+	/** What the run's tools spent on their own gateway requests (other models it asked, images it made), counted against maxCostUsd and in its cost. */
 	otherCostUsd?: () => number;
 	signal: AbortSignal;
 	/** Continues a run that paused for the person's answer (ask_question), with its paused tool call's output. */
 	resume?: { run: PausedRun; toolOutputs: AgentToolOutput[] };
+	/** Files shared in the thread, as Responses input parts (input_image, input_file), sent after the prompt's text. */
+	attachments?: Array<Record<string, unknown>>;
 };
 
 /**
@@ -111,10 +122,35 @@ export function pausedRun(result: AgentRunResult<unknown, unknown, unknown>): Pa
 	};
 }
 
+export type ImageSize = "1024x1024" | "1536x1024" | "1024x1536";
+
+export type ImageRequest = {
+	gatewayKey: string;
+	model: string;
+	prompt: string;
+	size: ImageSize;
+	endUser: string;
+	sessionId: string;
+	labels: AgentTurnRequest["labels"];
+	signal: AbortSignal;
+};
+
+export type GeneratedImage = { bytes: Uint8Array; mimeType: string; costUsd: number; model: string | null };
+
+/** The gateway made (and billed) an image, but its bytes couldn't be downloaded or aren't an image: the cost still counts. */
+export class ImageNotReadError extends Error {
+	constructor(readonly costUsd: number) {
+		super("image_response_invalid");
+		this.name = "ImageNotReadError";
+	}
+}
+
 export interface AgentRunner {
 	run(request: AgentTurnRequest, hooks: AgentTurnHooks): Promise<AgentTurnOutput>;
 	/** Throws the gateway's error, like run. */
 	ask(request: AskRequest): Promise<AskOutput>;
+	/** Makes one image through the gateway. Throws the gateway's error (classifyTurnError reads it). */
+	generateImage?(request: ImageRequest): Promise<GeneratedImage>;
 }
 
 /** The x-phaseo-metadata labels every Slack agent request carries (filterable in Logs and Usage). */
@@ -158,6 +194,25 @@ export function gatewayFetch(): typeof fetch {
 	return ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init)) as typeof fetch;
 }
 
+/**
+ * The run's fetch, with the shared files added to the first user message of
+ * each Responses request: the SDK's messages are text only. Every step's
+ * request carries them, since the model reads the whole conversation each time.
+ */
+export function withAttachments(fetchImpl: typeof fetch, parts: Array<Record<string, unknown>>): typeof fetch {
+	if (!parts.length) return fetchImpl;
+	return (async (input: RequestInfo | URL, init?: RequestInit) => {
+		const request = new Request(input, init);
+		if (request.method !== "POST" || !new URL(request.url).pathname.endsWith("/responses")) return fetchImpl(request);
+		const body = await request.clone().json().catch(() => null) as { input?: unknown } | null;
+		const items = Array.isArray(body?.input) ? body.input as Array<Record<string, unknown>> : null;
+		const first = items ? items.findIndex((item) => item?.role === "user" && typeof item.content === "string") : -1;
+		if (!items || first < 0) return fetchImpl(request);
+		items[first] = { ...items[first], content: [{ type: "input_text", text: items[first].content }, ...parts] };
+		return fetchImpl(new Request(request, { body: JSON.stringify(body) }));
+	}) as typeof fetch;
+}
+
 /** A model response's cost, read the way the SDK's maxCost reads it. */
 function responseCost(response: AgentModelResponse): number {
 	if (typeof response.cost === "number") return response.cost;
@@ -197,6 +252,87 @@ function lastModel(result: AgentRunResult<unknown, unknown, unknown>): string | 
 	return null;
 }
 
+/** Decodes base64, refusing more than MAX_IMAGE_BYTES. */
+function decodeBase64(value: string): Uint8Array | null {
+	if (value.length > Math.ceil(MAX_IMAGE_BYTES / 3) * 4) return null;
+	try {
+		const binary = atob(value);
+		const bytes = new Uint8Array(binary.length);
+		for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+		return bytes;
+	} catch {
+		return null;
+	}
+}
+
+/** The image types a generated image may be, from its first bytes. */
+function imageType(bytes: Uint8Array): string | null {
+	if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+	if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+	if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return "image/webp";
+	return null;
+}
+
+/** A number, or a numeric string; null, blanks and anything else are no amount. */
+function amount(value: unknown): number | null {
+	const number = typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;
+	return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+/** An image response's cost: the gateway's cost_nanos, or its usage pricing. */
+function imageCost(body: Record<string, any>): number {
+	const nanos = [body.cost_nanos, body.usage?.pricing?.total_nanos].map(amount).find((value) => value !== null);
+	if (nanos != null) return nanos / 1_000_000_000;
+	return amount(body.usage?.cost) ?? 0;
+}
+
+/**
+ * One image through the gateway's /images/generations, with the turn's key,
+ * labels, end user and session. The image comes back as base64, or as a URL
+ * (HTTPS only) that is downloaded here.
+ */
+async function requestImage(fetchImpl: typeof fetch, baseUrl: string, request: ImageRequest): Promise<GeneratedImage> {
+	const signal = AbortSignal.any([request.signal, AbortSignal.timeout(IMAGE_TIMEOUT_MS)]);
+	const response = await fetchImpl(`${baseUrl}/images/generations`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${request.gatewayKey}`,
+			"Content-Type": "application/json",
+			"x-title": APP_TITLE,
+			"x-phaseo-metadata": requestLabelsHeader(request.labels),
+			"x-phaseo-session-id": request.sessionId,
+		},
+		body: JSON.stringify({ model: request.model, prompt: request.prompt, n: 1, size: request.size, quality: "medium", user: request.endUser }),
+		signal,
+	});
+	const body = await response.json().catch(() => null) as Record<string, any> | null;
+	if (!response.ok || !body) {
+		const message = typeof body?.message === "string" ? body.message : typeof body?.error?.message === "string" ? body.error.message : "The image request failed";
+		throw new AgentGatewayError({ status: response.status || 502, statusText: response.statusText || "Bad Gateway", body: body ?? {}, message });
+	}
+	// Billed from here on: a failed download or a bad image still costs.
+	const costUsd = imageCost(body);
+	const first = Array.isArray(body.data) ? body.data[0] as Record<string, unknown> | undefined : undefined;
+	let bytes: Uint8Array | null = null;
+	try {
+		if (typeof first?.b64_json === "string") {
+			bytes = decodeBase64(first.b64_json);
+		} else if (typeof first?.url === "string" && first.url.startsWith("https://")) {
+			const download = await fetchImpl(first.url, { signal });
+			const length = Number(download.headers.get("content-length"));
+			if (download.ok && !(Number.isFinite(length) && length > MAX_IMAGE_BYTES)) {
+				const buffer = new Uint8Array(await download.arrayBuffer());
+				bytes = buffer.byteLength <= MAX_IMAGE_BYTES ? buffer : null;
+			}
+		}
+	} catch {
+		bytes = null;
+	}
+	const mimeType = bytes ? imageType(bytes) : null;
+	if (!bytes || !mimeType) throw new ImageNotReadError(costUsd);
+	return { bytes, mimeType, costUsd, model: typeof body.model === "string" ? body.model : null };
+}
+
 /**
  * The gateway client for one answer's requests: the installation's key, its
  * Slack labels, app title, end user and session (the Responses API takes the
@@ -227,10 +363,11 @@ function maxTurnCost(limit: number, otherCostUsd: () => number): AgentStopCondit
 
 export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl: string }): AgentRunner {
 	return {
+		generateImage: (request) => requestImage(options.fetchImpl, options.baseUrl, request),
 		async run(request, hooks) {
 			let spentUsd = 0;
 			const otherCostUsd = () => request.otherCostUsd?.() ?? 0;
-			const client = meteredClient(gatewayClient(options, request, true), (usd) => {
+			const client = meteredClient(gatewayClient({ ...options, fetchImpl: withAttachments(options.fetchImpl, request.attachments ?? []) }, request, true), (usd) => {
 				spentUsd += usd;
 				hooks.onCost?.(spentUsd);
 			});
@@ -276,8 +413,11 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 	};
 }
 
-/** access_changed: after a question, the person (or the installation) could no longer use the agent. */
-export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "access_changed" | "failed";
+/**
+ * access_changed: after a question, the person (or the installation) could no longer use the agent.
+ * files_unsupported: no route of the model takes the files sent with the request.
+ */
+export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "files_unsupported" | "access_changed" | "failed";
 
 /**
  * Gateway refusals that won't change on a retry, because the agent's model can't
@@ -322,6 +462,7 @@ export function classifyTurnError(error: unknown, model?: string | null): TurnEr
 	if (status === 402 || codes.some((code) => /insufficient_(funds|quota|credits)/.test(code))) return "no_credits";
 	if (codes.some((code) => /(_limit_reached|_budget_reached|key_limit_exceeded|spend_limit)/.test(code))) return "cap_reached";
 	if (codes.some((code) => MODEL_NOT_ALLOWED_CODES.has(code))) return "model_not_allowed";
+	if (codes.includes("unsupported_modalities")) return "files_unsupported";
 	if (isAutoModel(model) && codes.includes("not_supported")) return "model_not_allowed";
 	if (status === 404 || codes.some((code) => /(model_not_found|model_unavailable|unsupported_model|no_.*providers?|not_found_error)/.test(code))
 		|| (status >= 500 && failedProviders > 0)) return "model_unavailable";
@@ -343,6 +484,10 @@ export function turnErrorText(kind: TurnErrorKind, chosenForMessage = false): st
 			return chosenForMessage
 				? "The model you chose for this message isn't available right now. Please try again in a few minutes, or ask without `with …:` to use the agent's model."
 				: "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
+		case "files_unsupported":
+			return chosenForMessage
+				? "The model you chose for this message can't read the files shared here. Ask again without `with …:` to use the agent's model, or without the files."
+				: "The model this agent uses can't read the files shared here. Ask again without them, or an admin can choose a model that reads images and PDFs in Phaseo settings.";
 		case "access_changed":
 			return "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this.";
 		case "failed":
