@@ -144,7 +144,11 @@ export class SlackReplyStream {
 	}
 }
 
-/** The small grey line under an answer: the model and what the turn cost. */
+/**
+ * The small grey line under an answer: the model and what the turn cost. `model`
+ * and `answeredBy` are display names; `answeredBy` is only shown when it differs
+ * (the model Auto picked).
+ */
 export function footerText(args: { model: string; answeredBy: string | null; costNanos: number }): string {
 	const dollars = args.costNanos / 1_000_000_000;
 	const cost = `$${dollars < 1 ? dollars.toFixed(4) : dollars.toFixed(2)}`;

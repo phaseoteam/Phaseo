@@ -152,9 +152,9 @@ describe("finishing a reply", () => {
 		await expect(postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: null })).rejects.toBeInstanceOf(SlackPostError);
 	});
 
-	it("shows the model that answered and the cost in US dollars", () => {
-		expect(footerText({ model: "phaseo/auto", answeredBy: "openai/gpt-test", costNanos: 12_300_000 })).toBe("phaseo/auto → openai/gpt-test · $0.0123");
-		expect(footerText({ model: "openai/gpt-test", answeredBy: "openai/gpt-test", costNanos: 1_250_000_000 })).toBe("openai/gpt-test · $1.25");
-		expect(footerText({ model: "phaseo/auto", answeredBy: null, costNanos: 0 })).toBe("phaseo/auto · $0.0000");
+	it("shows the model, the one Auto picked when it differs, and the cost in US dollars", () => {
+		expect(footerText({ model: "Auto", answeredBy: "GPT Test", costNanos: 12_300_000 })).toBe("Auto → GPT Test · $0.0123");
+		expect(footerText({ model: "GPT Test", answeredBy: null, costNanos: 1_250_000_000 })).toBe("GPT Test · $1.25");
+		expect(footerText({ model: "Auto", answeredBy: null, costNanos: 0 })).toBe("Auto · $0.0000");
 	});
 });
