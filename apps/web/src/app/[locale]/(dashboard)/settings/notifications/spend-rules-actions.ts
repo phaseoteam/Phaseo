@@ -32,8 +32,9 @@ async function account(): Promise<{ accessToken: string; workspaceId: string }> 
 function failure(error: unknown): SpendRuleActionError {
 	if (error instanceof WebApiError) {
 		const detail = error.detail ?? null;
-		const code = detail && /^[a-z_]+$/.test(detail) ? detail : null;
-		return { ok: false, status: error.status, message: code ? null : detail, code };
+		// The API's machine-readable error, kept even when detail is its message.
+		const code = error.code ?? (detail && /^[a-z_]+$/.test(detail) ? detail : null);
+		return { ok: false, status: error.status, message: detail === code ? null : detail, code };
 	}
 	return { ok: false, status: null, message: null, code: null };
 }

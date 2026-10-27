@@ -5,8 +5,8 @@ import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
+import type { SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
 
-import type { SpendRule } from "@/components/(gateway)/settings/spend-rules/spendRules";
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
 	showBroadcast: boolean;
@@ -741,6 +741,23 @@ export type SettingsSpendRulesInitialData = {
 	/** The zone a rule with time_zone null uses. */
 	billingTimeZone: string;
 	rules: SpendRule[];
+};
+/** GET /api/account/settings/spend-rules/options: what the rule editor's scope and base pickers offer. */
+export type SettingsSpendRuleOptions = {
+	workspaceId: string;
+	/** Cost limits in USD by window; null when the key has none. */
+	keys: Array<{ id: string; name: string; prefix: string; status: string; limitsUsd: { daily: number | null; weekly: number | null; monthly: number | null } }>;
+	members: Array<{ id: string; name: string | null; role: string }>;
+	departments: Array<{ id: string; name: string }>;
+	providers: Array<{ id: string; name: string }>;
+	/** Workspace budget limits in USD by interval (daily, weekly, monthly, lifetime). */
+	budgetsUsd: Partial<Record<string, number | null>>;
+};
+
+/** The "spend-rules" settings resource: rules, editor options and a preview per enabled, evaluated rule. */
+export type SettingsSpendAlertsData = SettingsSpendRulesInitialData & {
+	options: SettingsSpendRuleOptions;
+	previews: Record<string, SpendRulePreview>;
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };

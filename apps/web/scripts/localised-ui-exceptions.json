@@ -251,6 +251,15 @@
   },
   {
     "files": [
+      "src/components/(gateway)/settings/spend-rules/SpendRuleEditorSheet.tsx"
+    ],
+    "texts": [
+      "openai/gpt-5"
+    ],
+    "reason": "Canonical model ID example for the spend alert model scope."
+  },
+  {
+    "files": [
       "src/components/landingPage/Home/HomeQuickstartSection.tsx"
     ],
     "texts": [
