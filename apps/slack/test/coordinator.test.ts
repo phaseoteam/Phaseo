@@ -325,6 +325,8 @@ describe("ThreadCoordinator", () => {
 			expect(coordinator.pausedRun(1, 1)).toMatchObject({ run: "{\"retried\":true}" });
 			// Too big to keep in one row, or for a turn that isn't running.
 			expect(coordinator.holdForAnswer(1, 2, { run: "x".repeat(1_500_001), question: DRAFT })).toBe(false);
+			// The limit is in UTF-8 bytes: 600,000 three-byte characters are 1.8 MB.
+			expect(coordinator.holdForAnswer(1, 2, { run: "語".repeat(600_000), question: DRAFT })).toBe(false);
 			expect(coordinator.holdForAnswer(9, 1, { run: "{}", question: DRAFT })).toBe(false);
 		});
 

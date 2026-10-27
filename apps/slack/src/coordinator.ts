@@ -37,7 +37,7 @@ const MAX_TOOL_CHARS = 200;
 const MAX_TOOLS_PER_TURN = 5;
 const MAX_MESSAGE_CHARS = 40_000;
 /** A paused run is kept in one row; SQLite in Durable Objects holds at most 2 MB a value. */
-const MAX_PAUSED_RUN_CHARS = 1_500_000;
+const MAX_PAUSED_RUN_BYTES = 1_500_000;
 
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
 	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
@@ -417,7 +417,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	 * or the paused run is too big to keep.
 	 */
 	holdForAnswer(turnId: number, n: number, input: { run: string; question: QuestionDraft }): boolean {
-		if (input.run.length > MAX_PAUSED_RUN_CHARS) return false;
+		if (new TextEncoder().encode(input.run).byteLength > MAX_PAUSED_RUN_BYTES) return false;
 		return this.ctx.storage.transactionSync(() => {
 			if (!this.sql.exec("SELECT 1 FROM turns WHERE id = ? AND status = 'running'", turnId).toArray().length) return false;
 			const existing = this.question(turnId, n);

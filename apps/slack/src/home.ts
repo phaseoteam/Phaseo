@@ -65,7 +65,7 @@ export function homeView(facts: HomeFacts) {
 		{
 			type: "section",
 			fields: [
-				{ type: "mrkdwn", text: `*Model*\n${facts.model}` },
+				{ type: "mrkdwn", text: `*Model*\n${escapeText(facts.model)}` },
 				{ type: "mrkdwn", text: `*Your Phaseo account*\n${facts.account === "not_linked" ? "Not connected" : "Connected"}` },
 				...(facts.answers !== null ? [{ type: "mrkdwn", text: `*This month (UTC)*\n${facts.answers.toLocaleString("en-US")} ${facts.answers === 1 ? "answer" : "answers"} in this Slack workspace` }] : []),
 			],

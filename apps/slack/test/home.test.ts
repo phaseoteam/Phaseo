@@ -99,6 +99,10 @@ describe("the Home tab", () => {
 		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test", "openai/gpt-6-luna"] });
 		await openHome();
 		expect(published().text).toContain("*Choose a model:* start a message with `with &lt;model&gt;:` and one of Claude Test, GPT-6 Luna &amp; &lt;Co&gt;, for example `with Claude Test: …`.");
+		// The agent's own model name is escaped too.
+		await install({ model: "openai/gpt-6-luna" });
+		await openHome();
+		expect(fields(published().blocks)[0]).toBe("*Model*\nGPT-6 Luna &amp; &lt;Co&gt;");
 	});
 
 	it("says when the agent is paused", async () => {
