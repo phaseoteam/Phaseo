@@ -161,6 +161,7 @@ const desktopApi: PhaseoDesktopApi = {
 		return () => ipcRenderer.removeListener("desktop:update-state", subscription);
 	},
 	openExternal: (url) => ipcRenderer.invoke("desktop:open-external", url),
+	setBadge: (count, overlay) => ipcRenderer.invoke("desktop:set-badge", count, overlay),
 };
 
 contextBridge.exposeInMainWorld("phaseoDesktop", desktopApi);

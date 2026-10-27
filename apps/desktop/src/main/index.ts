@@ -20,7 +20,7 @@ import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles, projectPullRequestFilesViewed, projectSetPullRequestFilesViewed } from "./projectPullRequestFiles";
 import { projectPullRequestThreads } from "./projectPullRequestThreads";
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
@@ -980,6 +980,15 @@ ipcMain.handle("desktop:install-update", (event) => {
 	if (senderWindow(event)) autoUpdater.quitAndInstall();
 });
 
+// The dock (macOS) and launcher (Linux) count it; Windows has no count, so the taskbar button shows an overlay instead.
+ipcMain.handle("desktop:set-badge", (event, count: unknown, overlay: unknown) => {
+	const window = senderWindow(event);
+	if (!window || !Number.isSafeInteger(count) || (count as number) < 0 || (count as number) > 100_000) return;
+	app.setBadgeCount(count as number);
+	if (process.platform !== "win32") return;
+	const image = count && typeof overlay === "string" && overlay.length < 50_000 && overlay.startsWith("data:image/png;base64,") ? nativeImage.createFromDataURL(overlay) : null;
+	window.setOverlayIcon(image && !image.isEmpty() ? image : null, image ? `${count} unread` : "");
+});
 ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 	if (!senderWindow(event) || typeof url !== "string" || !isAllowedExternalUrl(url)) return false;
 	await shell.openExternal(url);

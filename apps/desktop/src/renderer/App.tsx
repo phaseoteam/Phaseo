@@ -19,6 +19,7 @@ import { ScheduledTasks } from "./views/ScheduledTasks";
 import { Inbox } from "./views/Inbox";
 import { Usage } from "./views/Usage";
 import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
+import { ChatNotifications } from "./app/ChatNotifications";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
@@ -98,6 +99,7 @@ function Shell() {
 		</div>
 		<CommandPalette />
 		<Toaster />
+		<ChatNotifications />
 		<GuideRunNotices />
 	</div>;
 }
