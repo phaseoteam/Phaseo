@@ -170,6 +170,12 @@ Hover a line number and click **+** to comment on a line or a selected range. A 
 
 Branch switching, new branches and worktrees, staging, unstaging, commits and **Push** (or **Publish branch** the first time) are in the Git actions, kept apart from the diff. Push never asks for credentials in the app; set up Git credentials first.
 
+### Starting a chat in a new worktree
+
+The new Code chat composer has T3 Code's workspace choice beside the permissions: **Local** works in the project's own checkout, **New worktree** gives the chat a checkout of its own. With New worktree, **from main** (the project's current branch at first) picks the branch it starts from, searching local and remote branches. The choice is remembered per project; folders that are not Git repositories only offer Local.
+
+Sending makes the worktree on a temporary `phaseo/<8 characters>` branch and opens the chat at once. The chat then shows the setup as it runs: **Create the worktree**, **Name the branch** and **Run the setup action**. The branch is renamed from your first message, as T3 names it: by the title model (Settings → General) when one is chosen, else from the message's first words, always as `phaseo/<words>` and with `-2`, `-3` … when the name is taken. A failed rename keeps the temporary branch. Then each action marked **Run when a worktree is created** runs in a terminal of the chat (**Show the setup output** opens it), one after another, and the agent starts only when they have all finished. If one fails, the chat stops with its exit code and your message stays queued; fix it in the terminal and press **Resume**. Stopping the chat during setup does the same.
+
 ### Files
 
 The file explorer lists the project as a tree, loading each folder as you open it. Files Git ignores stay hidden. **Search files** finds files and folders by name or path, and **Expand all folders** opens every folder (very large projects show the first 5,000 entries). Opening a file shows it in its own surface: the path at the top (click a folder to browse its neighbours), **Open in editor**, **Show source**/**Show preview** for Markdown, CSV and TSV (up to 100 rows and 30 columns) and HTML pages (shown without running scripts), word wrap, and the explorer on the right. Images show as pictures and PDFs as their text.

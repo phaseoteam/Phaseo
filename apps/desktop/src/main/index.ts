@@ -33,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
+import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
@@ -647,6 +648,13 @@ ipcMain.handle("workspace:pull-request-checkout-here", async (event, id: unknown
 	const result = await workspaceRuntime.mutateProject(id, () => checkoutPullRequestHere(root, view));
 	return { workspace: workspaceRuntime.store.getOverview(), projectId: id, branch: result.branch };
 });
+ipcMain.handle("workspace:start-worktree-chat", (event, value: unknown) => {
+	const { create, ...rest } = value && typeof value === "object" ? value as Record<string, unknown> : {};
+	const request = validateWorktreeChatRequest(rest); projectRoot(event, request.projectId);
+	const command = validateCommand(create);
+	if (command.type !== "create-task" || shutdownStarted) throw new Error("Invalid worktree chat request.");
+	return workspaceRuntime.startWorktreeChat(request, command);
+});
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
 	return workspaceRuntime.removeWorktree(id);
@@ -1048,6 +1056,7 @@ app.whenReady().then(() => {
 	workspaceRuntime.getTerminals = () => terminalService.get();
 	workspaceRuntime.closeIdleTerminals = taskId => terminalService.closeIdle(taskId);
 	workspaceRuntime.runProjectScript = (projectId, script) => { terminalService.runScript(projectId, script); };
+	workspaceRuntime.runSetupScript = (projectId, script, taskId) => terminalService.runSetup(projectId, script, taskId);
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };

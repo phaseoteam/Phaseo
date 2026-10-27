@@ -50,6 +50,9 @@ import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { gitBranches, withGitLock } from "./gitOperations";
+import { runWorktreeSetup } from "./worktreeChat";
+import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { captureCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
@@ -120,6 +123,10 @@ export class WorkspaceRuntime {
 	closeIdleTerminals?: (taskId: string) => Promise<unknown>;
 	/** Starts a project script in a terminal of its own (TerminalService.runScript). */
 	runProjectScript?: (projectId: string, script: ProjectScript) => void;
+	/** Runs a setup action to completion in a terminal of the chat (TerminalService.runSetup). */
+	runSetupScript?: (projectId: string, script: ProjectScript, taskId: string) => { terminalId: string; exited: Promise<number | undefined> };
+	/** New worktree chats whose first turn waits for their setup (shared/worktreeChat.ts). */
+	private readonly worktreeSetups = new Map<string, Promise<void>>();
 	/** Settle cleanups in progress, and the settle each chat's scripts last ran for, so a repeat settle does not run them twice. */
 	private readonly settleCleanups = new Set<Promise<unknown>>();
 	private readonly settleScriptRuns = new Map<string, string>();
@@ -525,10 +532,10 @@ export class WorkspaceRuntime {
 		}, 250));
 	}
 	threadTools(parentId: string): ThreadTools { const tools = this.threads.forThread(parentId); return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
-	async createWorktree(projectId: string, branch: string, base: string) {
+	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
-		const operation = this.performCreateWorktree(projectId, branch, base); this.worktreeOperations.add(operation);
+		const operation = this.performCreateWorktree(projectId, branch, base, runScripts); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.worktreeOperations.delete(operation); const count = this.worktreeSources.get(projectId)! - 1; if (count) this.worktreeSources.set(projectId, count); else this.worktreeSources.delete(projectId); }
 	}
 	assertProjectAvailable(projectId: string) {
@@ -575,16 +582,61 @@ export class WorkspaceRuntime {
 		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.getOverview(); })(); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.removingWorktrees.delete(projectId); this.worktreeOperations.delete(operation); }
 	}
-	private async performCreateWorktree(projectId: string, branch: string, base: string) {
+	private async performCreateWorktree(projectId: string, branch: string, base: string, runScripts: boolean) {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
-		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
 	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
 	private startWorktreeScripts(projectId: string) {
 		for (const script of worktreeCreateScripts(this.store.getProjects(), projectId)) try { this.runProjectScript?.(projectId, script); } catch { /* Terminal limits reached; the person can run it from the chat header. */ }
+	}
+	/**
+	 * T3's New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
+	 * renamed from the first message and the setup actions run; the chat's first turn waits for both.
+	 */
+	async startWorktreeChat(request: WorktreeChatRequest, create: Extract<WorkspaceCommand, { type: "create-task" }>) {
+		const temporary = temporaryWorktreeBranch(randomUUID().replaceAll("-", ""));
+		const { projectId } = await this.createWorktree(request.projectId, temporary, request.base, false);
+		const known = new Set(this.store.getOverview().tasks.map(task => task.id));
+		const id = (await this.command({ ...create, projectId })).tasks.find(task => !known.has(task.id))?.id;
+		if (!id) throw new Error(`The worktree was created as project ${projectId}, but the chat could not be created.`);
+		const task = this.store.getTask(id);
+		task.worktreeSetup = { base: request.base, branch: temporary, startedAt: new Date().toISOString(), stages: [{ id: "checkout", status: "done", detail: `From ${request.base}` }, { id: "branch", status: "pending" }, { id: "setup", status: "pending" }] };
+		this.store.saveTask(task); this.broadcast();
+		const project = () => { const value = this.store.getProjects().find(item => item.id === projectId); if (!value) throw new Error("The worktree project no longer exists."); return value; };
+		const cancelled = () => { if (this.closing) return true; try { const current = this.store.getTask(id); return current.status === "interrupted" || current.archived; } catch { return true; } };
+		const setup = runWorktreeSetup({
+			branches: () => gitBranches(project().directory),
+			renameBranch: async (from, to) => {
+				const directory = project().directory;
+				await withGitLock(directory, async () => { await git(directory, ["check-ref-format", "--branch", to]); await git(directory, ["branch", "-m", from, to]); });
+				const current = project(), source = this.store.getProjects().find(value => value.id === current.worktree?.sourceProjectId);
+				current.worktree = { ...current.worktree!, branch: to }; current.name = `${source?.name ?? current.name.split(" · ")[0]} · ${to}`; this.store.saveProject(current); this.broadcast();
+			},
+			nameBranch: async text => {
+				const access = this.titleModelAccount();
+				if ("missing" in access) return undefined;
+				const prompt = branchNamePrompt(mentionPlainText(text));
+				return (await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...prompt, maxTokens: 24, timeoutMs: 20_000 }))?.split("\n").map(line => line.trim()).find(Boolean);
+			},
+			setupScripts: () => worktreeCreateScripts(this.store.getProjects(), projectId),
+			runScript: script => { if (!this.runSetupScript) throw new Error("Terminals are unavailable."); return this.runSetupScript(projectId, script, id); },
+			update: mutate => { if (this.closing) return; try { const current = this.store.getTask(id); if (!current.worktreeSetup) return; mutate(current.worktreeSetup); this.store.saveTask(current, true); this.broadcast(); } catch { /* The chat was deleted during setup. */ } },
+			cancelled,
+		}, temporary, request.text);
+		const hold = setup.catch(() => false).then(ready => {
+			this.worktreeSetups.delete(id);
+			if (this.closing) return;
+			let current; try { current = this.store.getTask(id); } catch { return; }
+			// A failed setup or a stop leaves the first message queued; Resume starts it.
+			if (!ready) { current.status = current.status === "interrupted" ? "interrupted" : "failed"; current.error = current.worktreeSetup?.error ?? "The chat was stopped before the agent started."; this.store.saveTask(current); this.broadcast(); return; }
+			if (current.queue.length) this.start(id);
+		});
+		this.worktreeSetups.set(id, hold);
+		return { workspace: this.store.getOverview(), taskId: id };
 	}
 	assertAccountIdle(accountId: string) {
 		if (this.store.getOverview().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
@@ -865,7 +917,8 @@ export class WorkspaceRuntime {
 		this.broadcast(); return this.store.getOverview();
 	}
 	private start(id: string) {
-		if (this.closing || this.executions.has(id)) return;
+		// A new worktree chat starts once its setup finishes.
+		if (this.closing || this.executions.has(id) || this.worktreeSetups.has(id)) return;
 		// The turn's span is the parent of everything it starts; a drain with nothing to run leaves no record.
 		const turn = startSpan("turn.run");
 		const execution = turn.within(() => this.drain(id, turn)).then(() => turn.discard(), error => { turn.end(error); throw error; }).finally(() => {

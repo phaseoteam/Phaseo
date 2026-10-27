@@ -15,6 +15,8 @@ export type StartChat = {
 	/** Chats mentioned with `@`, which the agent can read. */
 	threadReferences?: string[];
 	nativeAction?: NativeAction;
+	/** Creates the chat another way, such as in a new worktree (WorktreeTarget); returns its id. */
+	create?: (command: Extract<WorkspaceCommand, { type: "create-task" }>, text: string) => Promise<string | undefined>;
 };
 
 /** Harnesses whose per-model settings travel as `modelOptions` rather than effort and speed fields. */
@@ -32,15 +34,15 @@ export function selectionSettings(selection: ModelSelection) {
 /** Create a chat for one model and send its first message. Returns the new chat id. */
 export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview | undefined>, known: Set<string>, input: StartChat) {
 	const { selection } = input;
-	const state = await command({
+	const create: Extract<WorkspaceCommand, { type: "create-task" }> = {
 		type: "create-task", harness: selection.harness, model: selection.model, mode: input.mode,
 		...(input.permissionMode ? { permissionMode: input.permissionMode } : {}),
 		...(input.autopilot ? { autopilot: input.autopilot } : {}),
 		...(input.projectId ? { projectId: input.projectId } : {}),
 		...(selection.accountId ? { accountId: selection.accountId } : {}),
 		...selectionSettings(selection),
-	});
-	const id = state?.tasks.find(task => !known.has(task.id))?.id;
+	};
+	const id = input.create ? await input.create(create, input.text) : (await command(create))?.tasks.find(task => !known.has(task.id))?.id;
 	if (!id) return;
 	known.add(id);
 	const attachments: string[] = [];

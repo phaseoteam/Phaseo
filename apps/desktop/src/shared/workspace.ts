@@ -28,6 +28,7 @@ import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
 import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
+import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -112,6 +113,8 @@ export type Task = {
 	missionId?: string;
 	/** Pull requests linked to this chat, after T3 Code's thread pull requests. */
 	pullRequests?: TaskPullRequestLink[];
+	/** Started in a new worktree from the new-chat composer: its setup, shown until the agent starts (shared/worktreeChat.ts). */
+	worktreeSetup?: WorktreeSetup;
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
@@ -209,6 +212,8 @@ export type WorkspaceApi = {
 	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
+	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
+	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
 	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	/** Switches the project's own checkout to the pull request's branch; refuses while it has uncommitted changes. */

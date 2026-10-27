@@ -37,6 +37,7 @@ import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
+import { ChatNotices } from "./ChatNotices";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -274,6 +275,7 @@ export function ChatView({ id }: { id: string }) {
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
 		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
 			{snapshot && <ThreadStatusLine task={snapshot} />}
+			<ChatNotices task={task} />
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
