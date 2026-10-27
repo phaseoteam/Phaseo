@@ -27,6 +27,7 @@ vi.mock("@/runtime/env", () => ({
 
 import { runTextGeneratePipeline } from "./text-generate";
 import { passthroughWithPricing } from "../after/streaming";
+import { withServedModel } from "../after/served-model";
 
 type Surface = "responses" | "chat.completions" | "messages";
 
@@ -336,5 +337,26 @@ describe("streaming client frames after a gateway server tool", () => {
 			{ type: "content_block_stop", index: 3 },
 		]);
 		expect(frames.at(-1)!.event).toBe("message_stop");
+	});
+
+	// The providers above echo `gpt-5.4-nano` and `claude`; the request resolved to openai/gpt-5.4-nano.
+	it.each(["responses", "chat.completions", "messages"] as const)("%s: every event names the Phaseo model, not the provider's echo", async (surface) => {
+		// As handleStreamResponse does: each outbound frame gets the served model.
+		finalizeRequestMock.mockImplementation(async ({ pre, exec }: any) => passthroughWithPricing({
+			upstream: new Response(exec.result.stream, { status: 200 }),
+			ctx: pre.ctx,
+			provider: "openai",
+			priceCard: null,
+			rewriteFrame: (frame: any) => withServedModel({ ...frame }, pre.ctx),
+		}));
+		const frames = (await clientFrames(surface)).filter((frame) => frame.data !== "[DONE]");
+		const models = frames.flatMap(({ data }) => [data?.model, data?.response?.model, data?.message?.model].filter((value) => typeof value === "string"));
+		expect(models.length).toBeGreaterThan(0);
+		expect(new Set(models)).toEqual(new Set(["openai/gpt-5.4-nano"]));
+		if (surface === "responses") {
+			expect(frames.find((frame) => frame.event === "response.created")!.data.response.model).toBe("openai/gpt-5.4-nano");
+			expect(frames.find((frame) => frame.event === "response.completed")!.data.response.model).toBe("openai/gpt-5.4-nano");
+		}
+		if (surface === "messages") expect(frames[0]!.data.message.model).toBe("openai/gpt-5.4-nano");
 	});
 });

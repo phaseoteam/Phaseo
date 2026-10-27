@@ -22,9 +22,20 @@ describe("withServedModel", () => {
 		expect(withServedModel({ type: "message_start", message: { model: "echo" } }, fallbackCtx).message.model).toBe("openai/gpt-oss-120b");
 	});
 
-	it("leaves responses alone when no model fallback served the request", () => {
-		const payload = { model: "provider-echo" };
-		expect(withServedModel(payload, { model: "openai/gpt-oss-120b", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
+	it.each([
+		["openai/gpt-6-luna", "gpt-6-luna"],
+		["anthropic/claude-sonnet-5.5", "claude-sonnet-5-5"],
+		["deepseek/deepseek-v4.1-flash-1017", "deepseek-ai/DeepSeek-V4.1-Flash-1017"],
+	])("names %s instead of the provider's %s without a fallback", (model, echo) => {
+		const ctx = { model, routingDiagnostics: {} };
+		expect(withServedModel({ object: "chat.completion.chunk", model: echo }, ctx).model).toBe(model);
+		expect(withServedModel({ type: "response.completed", response: { model: echo } }, ctx).response.model).toBe(model);
+		expect(withServedModel({ type: "message_start", message: { model: echo } }, ctx).message.model).toBe(model);
+	});
+
+	it("keeps the payload's model when the request model is not a Phaseo id and no fallback served it", () => {
+		expect(withServedModel({ model: "provider-echo" }, { model: "bare-model", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
+		expect(withServedModel({ model: "provider-echo" }, { model: "", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
 	});
 
 	it("does not add a model field to frames that have none", () => {
