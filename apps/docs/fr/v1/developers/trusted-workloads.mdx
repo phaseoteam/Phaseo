@@ -65,6 +65,38 @@ Les règles prennent effet en une minute environ. Si vous désactivez ou supprim
 
 ---
 
+## Gérer les règles avec Terraform ou l'API
+
+Vous pouvez aussi gérer les règles sous forme de code avec une [clé de gestion](./management-api-keys.mdx) qui dispose des autorisations `keys:read`, `keys:write` et `keys:delete`. Seuls les espaces de travail qui ont déjà les charges de travail de confiance peuvent le faire.
+
+Avec Terraform, utilisez la ressource `phaseo_trusted_workload` :
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` vaut `vercel` ou `github_actions`. Pour Vercel, définissez aussi `issuer` sur `https://oidc.vercel.com/<team-slug>`, ou sur `https://oidc.vercel.com` en mode émetteur global, et utilisez des conditions comme `project_id` et `environment`. Changer la plateforme, l'émetteur ou le propriétaire remplace la règle. Une règle n'a pas de secret : rien de sensible n'est stocké dans l'état Terraform.
+
+Avec l'API, envoyez les mêmes champs à `/v1/workload-identity/policies`. Dans l'API, la plateforme s'appelle `provider` :
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## Appeler Phaseo avec un jeton
 
 <Tabs>

@@ -7103,6 +7103,71 @@
 				"skillNameTaken": "Otra habilidad guardada ya tiene este nombre."
 			}
 		},
+		"schedules": {
+			"title": "Tareas recurrentes",
+			"description": "Tareas que la gente pide al agente que haga con regularidad en Slack, como mucho cada hora. Cada ejecución publica un mensaje corto en su conversación y lo responde en el hilo, como respuesta a la persona que la configuró: cuenta como una respuesta y respeta los mismos límites. Al desinstalar se eliminan todas.",
+			"enable": "Permitir configurar tareas recurrentes",
+			"enableHelp": "Desactivado, nadie puede configurar una y ninguna se ejecuta. Se conservan y vuelven a ejecutarse cuando lo actives de nuevo.",
+			"max": "Máximo de tareas recurrentes en este workspace",
+			"maxHelp": "De 1 a {max}. Si lo bajas, se conservan las que ya están configuradas.",
+			"maxInvalid": "Escribe un número entero de 1 a {max}.",
+			"creators": "Quién puede configurarlas",
+			"creatorsEveryone": "Todas las personas que pueden usar el agente",
+			"creatorsLinked": "Solo quienes conectaron su cuenta de Phaseo",
+			"save": "Guardar",
+			"saved": "Ajustes de tareas recurrentes guardados.",
+			"loading": "Cargando…",
+			"used": "{used} de {limit} configuradas",
+			"offNote": "Las tareas recurrentes están desactivadas, así que ninguna se ejecuta hasta que las vuelvas a activar.",
+			"empty": "Aún no hay tareas recurrentes. La gente puede pedir al agente en Slack que haga algo cada hora, día, semana o mes.",
+			"columns": {
+				"task": "Tarea",
+				"where": "Dónde",
+				"often": "Frecuencia",
+				"next": "Próxima ejecución",
+				"by": "Configurada por",
+				"last": "Última ejecución",
+				"actions": "Acciones"
+			},
+			"channel": "Canal {id}",
+			"directMessage": "Mensaje directo {id}",
+			"frequency": {
+				"hourly": "Cada hora a los :{minute}",
+				"daily": "Cada día a las {time}",
+				"weekdays": "Días laborables a las {time}",
+				"weekly": "Cada {day} a las {time}",
+				"monthly": "Cada mes el día {day} a las {time}"
+			},
+			"timeZone": "Hora de {zone}",
+			"paused": "En pausa",
+			"pauseReasons": {
+				"admin": "Pausada por un admin",
+				"creatorAccess": "La persona que la configuró ya no puede usar el agente",
+				"notInChannel": "El agente no puede publicar en su conversación",
+				"installationPaused": "El agente se pausó",
+				"paymentDue": "Había una factura de Phaseo sin pagar",
+				"failures": "3 ejecuciones seguidas no salieron bien"
+			},
+			"lastResult": {
+				"answered": "Respondida",
+				"failed": "Falló",
+				"skipped": "Omitida",
+				"running": "En curso",
+				"none": "Aún no se ha ejecutado"
+			},
+			"failuresInRow": "Fallos seguidos: {count}",
+			"pause": "Pausar",
+			"resume": "Reanudar",
+			"delete": "Eliminar",
+			"pausedToast": "Tarea recurrente pausada.",
+			"resumedToast": "Tarea recurrente reanudada.",
+			"deletedToast": "Tarea recurrente eliminada.",
+			"deleteTitle": "¿Eliminar {title}?",
+			"deleteDescription": "No volverá a ejecutarse, y no se avisa a la persona que la configuró. Esto no se puede deshacer.",
+			"errors": {
+				"scheduleNotFound": "Ya se había eliminado. Recarga para ver lo que queda."
+			}
+		},
 		"uninstall": {
 			"description": "Quita el agente de Slack y elimina su clave de API. Los cargos anteriores se mantienen en tu historial de facturación.",
 			"button": "Desinstalar",

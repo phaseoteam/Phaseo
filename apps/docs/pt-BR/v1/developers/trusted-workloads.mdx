@@ -65,6 +65,38 @@ As políticas entram em vigor em cerca de um minuto. Ao desativar ou excluir uma
 
 ---
 
+## Gerenciar políticas com Terraform ou a API
+
+Você também pode gerenciar as políticas como código com uma [chave de gerenciamento](./management-api-keys.mdx) que tenha as permissões `keys:read`, `keys:write` e `keys:delete`. Isso só funciona em workspaces que já têm workloads confiáveis.
+
+No Terraform, use o recurso `phaseo_trusted_workload`:
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` é `vercel` ou `github_actions`. Na Vercel, defina também `issuer` como `https://oidc.vercel.com/<team-slug>`, ou `https://oidc.vercel.com` no modo de emissor global, e use condições como `project_id` e `environment`. Alterar a plataforma, o emissor ou o proprietário substitui a política. Uma política não tem segredo, então nada sensível fica salvo no estado do Terraform.
+
+Pela API, envie os mesmos campos para `/v1/workload-identity/policies`. Na API, a plataforma se chama `provider`:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## Chamar o Phaseo com um token
 
 <Tabs>

@@ -66,6 +66,38 @@ Policies take effect within about a minute. Turning a policy off or deleting it 
 
 ---
 
+## Manage policies with Terraform or the API
+
+You can also manage policies as code with a [management key](./management-api-keys.mdx) that has the `keys:read`, `keys:write` and `keys:delete` capabilities. Only workspaces with trusted workloads can use them.
+
+With Terraform, use the `phaseo_trusted_workload` resource:
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` is `vercel` or `github_actions`. For Vercel, also set `issuer` to `https://oidc.vercel.com/<team-slug>`, or `https://oidc.vercel.com` for global issuer mode, and use conditions such as `project_id` and `environment`. Changing the platform, issuer or owner replaces the policy. A policy has no secret, so nothing sensitive is stored in Terraform state.
+
+With the API, send the same fields to `/v1/workload-identity/policies`. The API calls the platform `provider`:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## Call Phaseo with a token
 
 <Tabs>

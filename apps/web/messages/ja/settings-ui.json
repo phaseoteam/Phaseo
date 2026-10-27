@@ -7103,6 +7103,71 @@
 				"skillNameTaken": "同じ名前の保存済みスキルがすでにあります。"
 			}
 		},
+		"schedules": {
+			"title": "定期タスク",
+			"description": "Slack でエージェントに定期的に実行を頼んだタスクです。頻度は最大で 1 時間に 1 回です。各実行では会話に短いメッセージを投稿し、そのスレッドで設定した人への回答として答えます。1 回の回答として数えられ、同じ上限が適用されます。アンインストールするとすべて削除されます。",
+			"enable": "定期タスクの設定を許可する",
+			"enableHelp": "オフにすると、誰も設定できず、どれも実行されません。タスクは保持され、オンに戻すと再び実行されます。",
+			"max": "このワークスペースの定期タスクの上限",
+			"maxHelp": "1 から {max} まで。下げても、設定済みのタスクは残ります。",
+			"maxInvalid": "1 から {max} までの整数を入力してください。",
+			"creators": "設定できる人",
+			"creatorsEveryone": "エージェントを使えるすべての人",
+			"creatorsLinked": "Phaseo アカウントを連携した人のみ",
+			"save": "保存",
+			"saved": "定期タスクの設定を保存しました。",
+			"loading": "読み込み中…",
+			"used": "{limit} 件中 {used} 件を設定済み",
+			"offNote": "定期タスクはオフになっているため、オンに戻すまでどれも実行されません。",
+			"empty": "定期タスクはまだありません。Slack でエージェントに、毎時・毎日・毎週・毎月何かをするよう頼めます。",
+			"columns": {
+				"task": "タスク",
+				"where": "場所",
+				"often": "頻度",
+				"next": "次回の実行",
+				"by": "設定した人",
+				"last": "前回の実行",
+				"actions": "操作"
+			},
+			"channel": "チャンネル {id}",
+			"directMessage": "ダイレクトメッセージ {id}",
+			"frequency": {
+				"hourly": "毎時 {minute} 分",
+				"daily": "毎日 {time}",
+				"weekdays": "平日 {time}",
+				"weekly": "毎週{day} {time}",
+				"monthly": "毎月 {day} 日 {time}"
+			},
+			"timeZone": "{zone} の時刻",
+			"paused": "一時停止中",
+			"pauseReasons": {
+				"admin": "管理者が一時停止しました",
+				"creatorAccess": "設定した人がエージェントを使えなくなりました",
+				"notInChannel": "エージェントがその会話に投稿できません",
+				"installationPaused": "エージェントが一時停止されました",
+				"paymentDue": "Phaseo の請求が未払いでした",
+				"failures": "3 回続けて実行できませんでした"
+			},
+			"lastResult": {
+				"answered": "回答済み",
+				"failed": "失敗",
+				"skipped": "スキップ",
+				"running": "実行中",
+				"none": "未実行"
+			},
+			"failuresInRow": "連続失敗: {count} 回",
+			"pause": "一時停止",
+			"resume": "再開",
+			"delete": "削除",
+			"pausedToast": "定期タスクを一時停止しました。",
+			"resumedToast": "定期タスクを再開しました。",
+			"deletedToast": "定期タスクを削除しました。",
+			"deleteTitle": "{title} を削除しますか？",
+			"deleteDescription": "今後は実行されず、設定した人にも通知されません。この操作は元に戻せません。",
+			"errors": {
+				"scheduleNotFound": "すでに削除されています。再読み込みして残りを確認してください。"
+			}
+		},
 		"uninstall": {
 			"description": "エージェントを Slack から外し、その API キーを削除します。過去の請求は請求履歴に残ります。",
 			"button": "アンインストール",
