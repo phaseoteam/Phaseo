@@ -14,8 +14,8 @@ import type { Env } from "./env";
 import { withoutTrailingSlashes } from "./url";
 
 // The agent run behind a small interface, so a turn can be tested without the
-// gateway. The real runner uses @phaseo/agent-sdk against the gateway through the
-// PHASEO_API service binding, with the installation's managed key.
+// gateway. The real runner uses @phaseo/agent-sdk against the gateway's public URL,
+// with the installation's managed key.
 //
 // The Slack data rules live on the installation's key, not in the request: its
 // "Slack agent" guardrail allows no provider that trains on prompts (the gateway
@@ -79,11 +79,14 @@ export function gatewayBaseUrl(env: Pick<Env, "PHASEO_API_BASE_URL">): string {
 	return withoutTrailingSlashes(env.PHASEO_API_BASE_URL?.trim() ?? "") || DEFAULT_GATEWAY_BASE_URL;
 }
 
-/** Requests go through the service binding when there is one (production), else over the internet. */
-export function gatewayFetch(env: Pick<Env, "PHASEO_API">): typeof fetch {
-	const binding = env.PHASEO_API;
-	if (!binding) return fetch;
-	return ((input: RequestInfo | URL, init?: RequestInit) => binding.fetch(new Request(input, init))) as typeof fetch;
+/**
+ * Requests go to the gateway's public URL, not through a service binding: a
+ * binding's request carries no country, and providers that refuse requests from
+ * an unknown country (OpenAI, Anthropic and others) would then never answer.
+ * Called through a function so the runtime's fetch keeps its own `this`.
+ */
+export function gatewayFetch(): typeof fetch {
+	return ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init)) as typeof fetch;
 }
 
 /** A model response's cost, read the way the SDK's maxCost reads it. */

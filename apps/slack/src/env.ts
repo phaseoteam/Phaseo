@@ -11,11 +11,8 @@ export interface Env {
 	METERS: DurableObjectNamespace<WorkspaceMeter>;
 	/** Agent turns (AgentTurnWorkflow), one instance per Slack event. */
 	AGENT_TURNS: Workflow<TurnRef>;
-	/** The gateway, through a service binding in production (used by agent turns). */
-	PHASEO_API?: Fetcher;
-
 	ENV?: string;
-	/** The gateway's base URL (default https://api.phaseo.app/v1); requests use PHASEO_API when bound. */
+	/** The gateway's base URL (default https://api.phaseo.app/v1), which agent turns call. */
 	PHASEO_API_BASE_URL?: string;
 	/** Where the account linking page lives (default https://phaseo.app). */
 	PHASEO_WEB_ORIGIN?: string;

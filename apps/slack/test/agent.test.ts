@@ -91,15 +91,18 @@ describe("the SDK agent runner", () => {
 		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "max_cost:0.001" });
 	});
 
-	it("goes through the PHASEO_API service binding when there is one", async () => {
-		const binding = { fetch: vi.fn(async (_req: Request) => sse([COMPLETED])) };
-		const runner = createSdkAgentRunner({ fetchImpl: gatewayFetch({ PHASEO_API: binding as unknown as Fetcher }), baseUrl: "https://api.phaseo.app/v1" });
-		await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined });
-		const calls = binding.fetch.mock.calls.map(([req]) => `${req.method} ${req.url}`);
-		// One request: the agent client doesn't look the model up first.
-		expect(calls).toEqual(["POST https://api.phaseo.app/v1/responses"]);
-		expect(binding.fetch.mock.calls[0][0]).toBeInstanceOf(Request);
-		expect(gatewayFetch({})).toBe(fetch);
+	it("calls the gateway's public URL, so the request has a country providers can check", async () => {
+		const globalFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => sse([COMPLETED]));
+		vi.stubGlobal("fetch", globalFetch);
+		try {
+			const runner = createSdkAgentRunner({ fetchImpl: gatewayFetch(), baseUrl: "https://api.phaseo.app/v1" });
+			await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined });
+			// One request: the agent client doesn't look the model up first.
+			expect(globalFetch.mock.calls.map(([input, init]) => `${init?.method ?? (input as Request).method} ${String(input instanceof Request ? input.url : input)}`))
+				.toEqual(["POST https://api.phaseo.app/v1/responses"]);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("turns gateway errors into plain replies", async () => {
