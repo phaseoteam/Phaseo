@@ -4,7 +4,7 @@
 -- enabled route already ends then, but the model was still active with no
 -- replacement, so its requests would fail with nothing to suggest or redirect
 -- to. The hourly refresh_model_unserved_since job approves the replacement.
--- Guarded on the state seen in prod on 2026-10-24; history is kept by the
+-- Guarded on the state seen in prod on 2026-10-27; history is kept by the
 -- catalogue_row_history trigger on public.v2_models.
 update public.v2_models
 set status = 'deprecated',
