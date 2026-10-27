@@ -24,6 +24,7 @@ function request(overrides: Partial<AgentTurnRequest> = {}): AgentTurnRequest {
 		instructions: "You are the Phaseo agent.",
 		prompt: "New message from <@U0PERSON01>:\nhello",
 		endUser: "slack:T0TEST0001:U0PERSON01",
+		sessionId: "slack-Ev0TEST0001",
 		labels: { slackTeam: "T0TEST0001", slackChannel: "C0CHANNEL1" },
 		tools: [],
 		maxCostUsd: 0.5,
@@ -69,6 +70,8 @@ describe("the SDK agent runner", () => {
 		expect(sent.body).toMatchObject({
 			model: "phaseo/auto",
 			user: "slack:T0TEST0001:U0PERSON01",
+			// The answer's session, in the body: the Responses API reads it from nowhere else.
+			session_id: "slack-Ev0TEST0001",
 			stream: true,
 			instructions: "You are the Phaseo agent.",
 		});

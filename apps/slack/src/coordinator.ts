@@ -33,7 +33,7 @@ const MAX_TOOLS_PER_TURN = 5;
 const MAX_MESSAGE_CHARS = 40_000;
 
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
-	/** The person's message. Kept only until the turn ends. */
+	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
 	text: string;
 };
 
@@ -94,6 +94,7 @@ type TurnRow = {
 	message_ts: string;
 	slack_user_id: string;
 	kind: "mention" | "dm";
+	model: string | null;
 	status: "queued" | "running";
 	started_at: number | null;
 };
@@ -110,10 +111,11 @@ function turnRef(row: TurnRow): TurnRef {
 		messageTs: row.message_ts,
 		slackUserId: row.slack_user_id,
 		kind: row.kind,
+		...(row.model ? { model: row.model } : {}),
 	};
 }
 
-const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, status, started_at";
+const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, status, started_at";
 
 /** Columns added after the first release, created on objects that predate them. */
 const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
@@ -122,6 +124,7 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "staged_reply", "TEXT"],
 	["turns", "staged_tools", "TEXT"],
 	["turns", "attempt_costs", "TEXT"],
+	["turns", "model", "TEXT"],
 	["memory", "ts", "TEXT"],
 ];
 
@@ -223,10 +226,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, text, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, text, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
-				request.messageTs, request.slackUserId, request.kind, request.text.slice(0, MAX_MESSAGE_CHARS), now,
+				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.text.slice(0, MAX_MESSAGE_CHARS), now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});

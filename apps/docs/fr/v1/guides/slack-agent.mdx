@@ -62,7 +62,24 @@ Pendant qu’il répond :
   - Quand Slack ne le laisse pas lire le fil à ce moment-là, il s’appuie sur ses propres réponses précédentes dans le fil.
 - Il répond à un message à la fois dans chaque fil. Jusqu’à 5 messages supplémentaires attendent leur tour ; au-delà, il vous demande d’attendre les réponses précédentes.
 - Le bouton d’arrêt de Slack arrête la réponse en cours.
-- Chaque réponse se termine par le modèle et le coût de la réponse en tokens de modèle, par exemple `phaseo/auto · $0.0031`. Avec **Automatique**, le modèle choisi suit une flèche.
+- Chaque réponse se termine par le modèle et le coût de la réponse en tokens de modèle, par exemple `Auto → GPT-6 Luna · $0.0031`. Avec **Automatique**, le modèle choisi suit une flèche. Le nom d’un modèle renvoie vers sa page sur Phaseo, et le coût renvoie vers les requêtes de cette réponse dans **Journaux**, que les membres de l’espace de travail Phaseo peuvent ouvrir.
+
+## Choisir un modèle par message
+
+Les propriétaires et les administrateurs peuvent laisser les personnes choisir le modèle d’un seul message. Dans **Paramètres → Slack**, sous **Choix du modèle**, activez **Permettre de choisir un modèle par message** et ajoutez jusqu’à 10 modèles du catalogue Phaseo. Si votre espace de travail a le routage automatique, **Inclure « Automatique »** ajoute **Automatique** à la liste. Le modèle choisi sous **Agent** répond toujours à tous les autres messages.
+
+Pour choisir un modèle, commencez le message par `with <model>:` et indiquez un modèle autorisé par son nom ou son ID :
+
+```text
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
+```
+
+- Seuls les modèles autorisés sont comparés, sans tenir compte des majuscules. Le début d’un nom ou d’un ID suffit quand un seul modèle autorisé le possède : `with claude:` fonctionne donc quand un seul modèle Claude figure dans la liste. Un ID fonctionne aussi sans son laboratoire, par exemple `with gpt-6-luna:`.
+- L’agent répond à ce message avec ce modèle, sans la partie `with …:`, et le pied de page indique le modèle qui a répondu.
+- Si vous nommez un modèle du catalogue qui n’est pas dans la liste, ou si le nom correspond à plusieurs modèles, l’agent répond en privé avec les modèles que vous pouvez choisir et ne répond pas au message. Ce message n’est pas compté comme une réponse. Un message qui commence par « With …: » sans nommer de modèle, comme « With regards to the invoice: … », reçoit une réponse normale.
+- Chaque réponse garde les mêmes limites ($0.50 et 12 étapes, voir « Limites de chaque réponse » plus bas), quel que soit le modèle qui répond. Les tokens du modèle sont facturés à son propre prix.
+- Le garde-fou **Slack agent** s’applique toujours. Si aucun fournisseur du modèle choisi ne le respecte, l’agent le dit au lieu de répondre.
 
 ## Qui peut l’utiliser
 
@@ -327,6 +344,8 @@ Quand l’agent ne peut pas répondre à quelqu’un, il lui répond en privé d
 | "I'm still working through earlier messages in this thread." | 5 messages attendent déjà dans ce fil. | Attendez ces réponses. |
 | "Sorry, I couldn't check your Slack account just now." | Slack n’a pas répondu à une vérification. | Réessayez dans une minute. |
 | "The model chosen for this agent isn't available to the Slack agent." | Le gateway ne peut pas utiliser le modèle de l’agent avec sa clé : **Automatique** sans routage automatique, ou aucun fournisseur du modèle ne respecte le garde-fou **Slack agent**. | Choisissez un autre modèle dans **Paramètres → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | Le message commençait par `with …:` et nommait un modèle absent de **Choix du modèle**, ou un nom qui correspond à plusieurs modèles autorisés. | Utilisez un modèle de la liste de la réponse, ou retirez `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | Le gateway ne peut pas utiliser le modèle choisi avec la clé de l’agent, comme ci-dessus. | Posez la question sans `with …:`, ou remplacez le modèle dans **Choix du modèle**. |
 
 Si l’agent ne répond pas du tout :
 

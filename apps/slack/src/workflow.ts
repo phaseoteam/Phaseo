@@ -16,11 +16,13 @@ import { connectAccountMessage, linkUrl } from "./access";
 import type { ContextEntry, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
 import { botToken, coordinatorFor, defaultDeps, meterFor, type Deps } from "./events";
+import { answerLogsUrl, modelPageUrl } from "./footer-links";
 import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./history";
 import { installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
-import { finishReply, footerText, postReply, replaceReply, SlackReplyStream, type ReplyTarget } from "./reply-stream";
+import { modelChoiceOn, withoutMention } from "./model-choice";
+import { finishReply, postReply, replaceReply, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
-import type { TurnRef } from "./turns";
+import { turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
 // AgentTurnWorkflow: one answer, as a Cloudflare Workflow (billed on CPU, so
@@ -37,9 +39,10 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
 //            agent step
-//   reply    finish the Slack message with a footer (model and cost): stop the
-//            stream, or write the staged answer when the live stream failed or
-//            the run was retried
+//   reply    finish the Slack message with a footer (the model, linked to its
+//            page, and the cost, linked to the answer's requests in Logs): stop
+//            the stream, or write the staged answer when the live stream failed
+//            or the run was retried
 //   finish   count the answer in the meter, and tell the coordinator
 //
 // Step outputs are kept with the instance (for a day), so they hold ids and
@@ -88,6 +91,9 @@ export type RunResult = {
 	explained: boolean;
 	/** Every attempt of the run together. */
 	costNanos: number;
+	/** The model the run asked for (turnModel); null when the run step failed before choosing it. */
+	requestedModel: string | null;
+	/** The model that answered, as the response reports it. */
 	model: string | null;
 	error: TurnErrorKind | null;
 };
@@ -100,10 +106,6 @@ function replyTarget(turn: TurnRef): ReplyTarget {
 
 async function setSessionStatus(slack: SlackClient, turn: TurnRef, status: "processing" | "active"): Promise<void> {
 	await slack.call("agents.sessions.setStatus", { channel_id: turn.channel, thread_ts: turn.threadTs, status });
-}
-
-function withoutMention(text: string, botUserId: string): string {
-	return text.split(`<@${botUserId}>`).join("").trim();
 }
 
 function speakerLabel(entry: ContextEntry): string {
@@ -208,13 +210,24 @@ function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub
 	return [];
 }
 
+/**
+ * The model a turn asks for: the one the person chose for the message, while the
+ * installation still allows it (an admin may have changed that since the message
+ * was queued), otherwise the installation's.
+ */
+export function turnModel(installation: Pick<Installation, "model" | "model_choice_enabled" | "allowed_models">, turn: Pick<TurnRef, "model">): string {
+	if (turn.model && modelChoiceOn(installation) && installation.allowed_models.includes(turn.model)) return turn.model;
+	return installation.model || DEFAULT_MODEL;
+}
+
 async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: Offered, context: ContextResult, attempt: number): Promise<RunResult> {
 	const installation = await requireInstallation(deps, turn);
 	const secrets = await installationSecrets(deps.env, installation.secrets_ciphertext);
 	const slack = deps.slack(await requireToken(deps, installation));
 	const input: TurnInput | null = await coordinator.turnInput(turn.turnId);
+	const model = turnModel(installation, turn);
 	// The turn ended meanwhile (timed out, or the thread was stopped and cleared).
-	if (!input) return { status: "failed", ts: null, streamed: false, explained: true, costNanos: 0, model: null, error: null };
+	if (!input) return { status: "failed", ts: null, streamed: false, explained: true, costNanos: 0, requestedModel: model, model: null, error: null };
 
 	// A retried run: what earlier attempts spent counts against this turn's limit and shows in its footer.
 	const earlierNanos = Object.entries(input.attemptCosts).reduce((sum, [key, nanos]) => (Number(key) === attempt ? sum : sum + nanos), 0);
@@ -238,7 +251,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		await reply.push(`${reply.text ? "\n\n" : ""}${stopNote(`max_cost:${TURN_MAX_COST_USD}`)}`);
 		await reply.close();
 		await stage();
-		return { status: input.stagedReply ? "answered" : "failed", ts: reply.ts, streamed: reply.streaming, explained: true, costNanos: earlierNanos, model: null, error: null };
+		return { status: input.stagedReply ? "answered" : "failed", ts: reply.ts, streamed: reply.streaming, explained: true, costNanos: earlierNanos, requestedModel: model, model: null, error: null };
 	}
 
 	const controller = new AbortController();
@@ -253,7 +266,6 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const team = turn.teamId ?? installation.team_id ?? installation.enterprise_id ?? "unknown";
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
-	const model = installation.model || DEFAULT_MODEL;
 	try {
 		output = await deps.agent.run({
 			gatewayKey: secrets.gateway_key,
@@ -261,6 +273,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			instructions: buildInstructions(installation, load, deps.now()),
 			prompt: buildPrompt(input, turn, installation.bot_user_id, context.source),
 			endUser: `slack:${team}:${turn.slackUserId}`,
+			sessionId: turnSessionId(turn),
 			labels: { slackTeam: team, slackChannel: turn.channel },
 			tools: turnTools(deps, turn, coordinator, slack, installation, load, notes),
 			maxCostUsd: budgetUsd,
@@ -289,7 +302,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	if (cancelled) {
 		if (!reply.stoppedByUser) await reply.push(`${gap}_Stopped._`);
 	} else if (error) {
-		await reply.push(`${gap}${turnErrorText(error)}`);
+		await reply.push(`${gap}${turnErrorText(error, model === turn.model)}`);
 	} else if (output?.stopReason) {
 		await reply.push(`${gap}${stopNote(output.stopReason)}`);
 	}
@@ -302,25 +315,43 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		streamed: reply.streaming,
 		explained: true,
 		costNanos: earlierNanos + toNanos(costUsd),
+		requestedModel: model,
 		model: output?.model ?? null,
 		error,
 	};
 }
+
+/** A model as the footer names it; `slug` when it has a public catalogue page. */
+type CatalogueName = { name: string; slug: string | null };
 
 /**
  * The footer's model names, from the catalogue. A chosen model is shown by its
  * own name: the model a response reports can be a provider's id for the same
  * model, so it is never compared with the choice. With Auto, the model it picked
  * is added, but only when the response names a catalogue model. Falls back to the
- * chosen id when the catalogue can't be read.
+ * chosen id when the catalogue can't be read. `slug` is set for a catalogue model
+ * with a public page (not hidden), which the footer links to.
  */
-export async function footerModels(db: TurnDeps["db"], chosen: string, answeredBy: string | null): Promise<{ model: string; answeredBy: string | null }> {
+export async function footerModels(db: TurnDeps["db"], chosen: string, answeredBy: string | null): Promise<{ model: CatalogueName; answeredBy: CatalogueName | null }> {
 	const auto = isAutoModel(chosen);
 	const wanted = auto ? (answeredBy?.includes("/") && !isAutoModel(answeredBy) ? answeredBy : null) : chosen;
-	if (!wanted) return { model: auto ? "Auto" : chosen, answeredBy: null };
-	const rows = await db.select<{ name: string | null }>("v2_models", { select: "name", model_slug: `eq.${wanted}`, limit: "1" }).catch(() => []);
+	if (!wanted) return { model: { name: auto ? "Auto" : chosen, slug: null }, answeredBy: null };
+	const rows = await db.select<{ name: string | null; hidden: boolean | null }>("v2_models", { select: "name,hidden", model_slug: `eq.${wanted}`, limit: "1" }).catch(() => []);
 	const name = rows[0]?.name?.trim() || null;
-	return auto ? { model: "Auto", answeredBy: name } : { model: name ?? chosen, answeredBy: null };
+	const found = name ? { name, slug: rows[0]?.hidden === true ? null : wanted } : null;
+	return auto ? { model: { name: "Auto", slug: null }, answeredBy: found } : { model: found ?? { name: chosen, slug: null }, answeredBy: null };
+}
+
+/** The footer: models linked to their pages, and the cost to the answer's requests in Logs. */
+async function replyFooter(deps: TurnDeps, installation: Installation, turn: TurnRef, run: RunResult): Promise<Footer> {
+	const models = await footerModels(deps.db, run.requestedModel ?? turnModel(installation, turn), run.model);
+	const linked = (model: CatalogueName) => ({ name: model.name, url: model.slug ? modelPageUrl(deps.env, model.slug) : null });
+	return {
+		model: linked(models.model),
+		answeredBy: models.answeredBy ? linked(models.answeredBy) : null,
+		costNanos: run.costNanos,
+		logsUrl: answerLogsUrl(deps.env, installation.workspace_id, turnSessionId(turn), deps.now()),
+	};
 }
 
 /**
@@ -336,9 +367,9 @@ async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	const input = await coordinator.turnInput(turn.turnId);
 	const ts = input?.replyTs ?? run.ts;
 	const text = input?.stagedReply ?? "";
-	const footer = run.status === "failed" ? null : footerText({ ...await footerModels(deps.db, installation.model || DEFAULT_MODEL, run.model), costNanos: run.costNanos });
+	const footer = run.status === "failed" ? null : await replyFooter(deps, installation, turn, run);
 	// A run step that failed outright never wrote its error into the reply.
-	const closing = run.explained ? null : turnErrorText(run.error ?? "failed");
+	const closing = run.explained ? null : turnErrorText(run.error ?? "failed", Boolean(turn.model) && run.requestedModel === turn.model);
 	if (ts && run.streamed) {
 		return { shown: true, stopped: await finishReply(slack, { channel: turn.channel, ts, text, footer, closingText: closing ? `\n\n${closing}` : null }) };
 	}
@@ -449,7 +480,7 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 	const run = await step.do<RunResult>("run", RUN_STEP, async ({ attempt }) => runAgent(deps, turn, coordinator, load, context, attempt))
 		.catch((error: unknown): RunResult => {
 			console.error("[slack-agent] turn run step failed", { turnId: turn.turnId, error: error instanceof Error ? error.message : "unknown" });
-			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: 0, model: null, error: "failed" };
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: 0, requestedModel: null, model: null, error: "failed" };
 		});
 
 	// Retried on its own: a Slack write that fails here never runs the model again.

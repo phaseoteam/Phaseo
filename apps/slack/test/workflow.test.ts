@@ -45,6 +45,21 @@ class ScriptedAgent implements AgentRunner {
 
 const answer = (model = "openai/gpt-test", costUsd = 0.0123): AgentTurnOutput => ({ costUsd, model, stopReason: null });
 
+const GPT_PAGE = "https://phaseo.app/models/openai/gpt-test";
+
+/** The footer's link to a turn's requests in Logs: its session, from the day before to the day after NOW. */
+function logsUrl(turn: Pick<TurnRef, "eventId">): string {
+	return `https://phaseo.app/settings/usage/logs/requests?workspaceId=${WORKSPACE_ID}&session=slack-${turn.eventId}&usage_preset=custom&usage_from=2026-10-20&usage_to=2026-10-22`;
+}
+
+/** The footer in a context block (mrkdwn) and in a whole message (italic markdown); Auto → GPT Test unless given. */
+function mrkdwnFooter(turn: Pick<TurnRef, "eventId">, cost: string, model = `Auto → <${GPT_PAGE}|GPT Test>`): string {
+	return `${model} · <${logsUrl(turn)}|${cost}>`;
+}
+function markdownFooter(turn: Pick<TurnRef, "eventId">, cost: string, model = `Auto → [GPT Test](${GPT_PAGE})`): string {
+	return `_${model} · [${cost}](${logsUrl(turn)})_`;
+}
+
 let world: TestWorld;
 let step: FakeStep;
 let counter = 0;
@@ -120,7 +135,7 @@ describe("AgentTurnWorkflow", () => {
 			["agents.sessions.setStatus", { channel_id: "C0CHANNEL1", thread_ts: turn.threadTs, status: "processing" }],
 			["chat.startStream", { channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "You spent ", recipient_user_id: "U0PERSON01", recipient_team_id: TEAM_ID }],
 			["chat.appendStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "$12.50 this week." }],
-			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: "Auto → GPT Test · $0.0123" }] }] }],
+			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0123") }] }] }],
 		]);
 		expect(new Set(world.slack.calls.map((call) => call.token))).toEqual(new Set([BOT_TOKEN]));
 		expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 1, pending: 0 });
@@ -133,7 +148,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "reply", "finish"]);
 		const stored = JSON.stringify(step.outputs);
 		for (const secretOrText of ["spent", "what did we", GATEWAY_KEY, BOT_TOKEN]) expect(stored).not.toContain(secretOrText);
-		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, model: "openai/gpt-test", error: null });
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
 		expect(step.outputs.find((entry) => entry.name === "reply")?.output).toEqual({ shown: true, stopped: true });
 
 		const [request] = agent.requests;
@@ -149,18 +164,23 @@ describe("AgentTurnWorkflow", () => {
 	});
 
 	it("names models in the footer by their catalogue names, and only adds the one Auto picked", async () => {
+		const claude = { name: "Claude Test", slug: "anthropic/claude-test" };
+		const auto = { name: "Auto", slug: null };
 		// A chosen model: its own name, even when the response names the provider's id for it.
-		await expect(footerModels(world.db, "anthropic/claude-test", "claude-test-2026-10")).resolves.toEqual({ model: "Claude Test", answeredBy: null });
-		await expect(footerModels(world.db, "anthropic/claude-test", "anthropic/claude-test")).resolves.toEqual({ model: "Claude Test", answeredBy: null });
-		// Not in the catalogue: its id.
-		await expect(footerModels(world.db, "acme/unlisted", null)).resolves.toEqual({ model: "acme/unlisted", answeredBy: null });
-		// Auto: the model it picked, only when that is a catalogue model.
-		await expect(footerModels(world.db, "phaseo/auto", "openai/gpt-test")).resolves.toEqual({ model: "Auto", answeredBy: "GPT Test" });
-		await expect(footerModels(world.db, "phaseo/auto", "gpt-test")).resolves.toEqual({ model: "Auto", answeredBy: null });
-		await expect(footerModels(world.db, "phaseo/auto", null)).resolves.toEqual({ model: "Auto", answeredBy: null });
+		await expect(footerModels(world.db, "anthropic/claude-test", "claude-test-2026-10")).resolves.toEqual({ model: claude, answeredBy: null });
+		await expect(footerModels(world.db, "anthropic/claude-test", "anthropic/claude-test")).resolves.toEqual({ model: claude, answeredBy: null });
+		// Not in the catalogue: its id, with no page to link to.
+		await expect(footerModels(world.db, "acme/unlisted", null)).resolves.toEqual({ model: { name: "acme/unlisted", slug: null }, answeredBy: null });
+		// Hidden from the catalogue: its name, but no page.
+		world.db.tables.v2_models.push({ model_slug: "acme/hidden", name: "Hidden Test", hidden: true });
+		await expect(footerModels(world.db, "acme/hidden", null)).resolves.toEqual({ model: { name: "Hidden Test", slug: null }, answeredBy: null });
+		// Auto: the model it picked, only when that is a catalogue model. Auto itself has no page.
+		await expect(footerModels(world.db, "phaseo/auto", "openai/gpt-test")).resolves.toEqual({ model: auto, answeredBy: { name: "GPT Test", slug: "openai/gpt-test" } });
+		await expect(footerModels(world.db, "phaseo/auto", "gpt-test")).resolves.toEqual({ model: auto, answeredBy: null });
+		await expect(footerModels(world.db, "phaseo/auto", null)).resolves.toEqual({ model: auto, answeredBy: null });
 		// The catalogue can't be read: ids, never an error.
 		world.db.select = async () => { throw new Error("db_error_503"); };
-		await expect(footerModels(world.db, "anthropic/claude-test", null)).resolves.toEqual({ model: "anthropic/claude-test", answeredBy: null });
+		await expect(footerModels(world.db, "anthropic/claude-test", null)).resolves.toEqual({ model: { name: "anthropic/claude-test", slug: null }, answeredBy: null });
 	});
 
 	it("shows the chosen model's name in the footer when the response reports the provider's id", async () => {
@@ -170,8 +190,9 @@ describe("AgentTurnWorkflow", () => {
 			await hooks.onStep({ costUsd: 0.0123 });
 			return answer("claude-test-2026-10");
 		});
-		await runTurn(deps(agent), await startTurn(), step);
-		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Claude Test · $0.0123" }] }]);
+		const turn = await startTurn();
+		await runTurn(deps(agent), turn, step);
+		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0123", "<https://phaseo.app/models/anthropic/claude-test|Claude Test>") }] }]);
 	});
 
 	it("passes the admins' instructions and model", async () => {
@@ -560,7 +581,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(world.slack.of("chat.appendStream")).toHaveLength(1);
 		expect(world.slack.calls.slice(-2).map((call) => [call.method, call.args])).toEqual([
 			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001" }],
-			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "Part one, part two, part three.\n\n_Auto → GPT Test · $0.0010_" }],
+			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: `Part one, part two, part three.\n\n${markdownFooter(turn, "$0.0010")}` }],
 		]);
 		// Stopping the stream also set the session back to active.
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing"]);
@@ -578,7 +599,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
-			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Hello\n\n_Auto → GPT Test · $0.0123_" },
+			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: `Hello\n\n${markdownFooter(turn, "$0.0123")}` },
 		]);
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
@@ -592,12 +613,13 @@ describe("AgentTurnWorkflow", () => {
 			await hooks.onText("Answer");
 			return answer();
 		});
-		await expect(runTurn(deps(agent), await startTurn(), step)).resolves.toEqual({ status: "answered" });
+		const turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(step.failures).toEqual([{ name: "reply", attempt: 1 }]);
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual([
-			"Answer\n\n_Auto → GPT Test · $0.0123_",
-			"Answer\n\n_Auto → GPT Test · $0.0123_",
+			`Answer\n\n${markdownFooter(turn, "$0.0123")}`,
+			`Answer\n\n${markdownFooter(turn, "$0.0123")}`,
 		]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1 });
 	});
@@ -627,7 +649,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(agent.requests.map((request) => request.maxCostUsd)).toEqual([0.5, expect.closeTo(0.2, 9)]);
 		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 400_000_000, streamed: false });
 		expect(world.slack.of("chat.startStream")).toHaveLength(1);
-		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe("Second try\n\n_Auto → GPT Test · $0.4000_");
+		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe(`Second try\n\n${markdownFooter(turn, "$0.4000")}`);
 	});
 
 	it("doesn't run the model again when earlier attempts used the whole limit", async () => {
@@ -647,7 +669,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe(
-			"A long answer\n\n_I stopped here to keep this answer within its $0.50 cost limit._\n\n_Auto · $0.5000_",
+			`A long answer\n\n_I stopped here to keep this answer within its $0.50 cost limit._\n\n${markdownFooter(turn, "$0.5000", "Auto")}`,
 		);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 	});
@@ -664,7 +686,7 @@ describe("AgentTurnWorkflow", () => {
 		turn = await startTurn();
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
 		expect(world.slack.of("chat.appendStream").map((call) => call.args.markdown_text)).toEqual(["\n\n_Stopped._"]);
-		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: "Auto · $0.0000" }] }]);
+		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0000", "Auto") }] }]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		expect(coordinatorOf(turn).status()).toMatchObject({ running: null });
 	});
@@ -689,6 +711,43 @@ describe("AgentTurnWorkflow", () => {
 			// No footer on an error.
 			expect(world.slack.of("chat.stopStream")[0].args.blocks).toBeUndefined();
 		}
+		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+	});
+
+	it("answers with the model chosen for the message, in the answer's own gateway session, and names it in the footer", async () => {
+		await install({ model: "phaseo/auto", model_choice_enabled: true, allowed_models: ["anthropic/claude-test"] });
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("Summary.");
+			return answer("claude-test-2026-10");
+		});
+		// events.ts queued it without its `with claude:`.
+		const turn = await startTurn({ model: "anthropic/claude-test", text: `<@${BOT_USER_ID}> summarise this thread` });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests[0]).toMatchObject({ model: "anthropic/claude-test", sessionId: `slack-${turn.eventId}` });
+		expect(agent.requests[0].prompt).toBe("New message from <@U0PERSON01>:\nsummarise this thread");
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ requestedModel: "anthropic/claude-test", model: "claude-test-2026-10" });
+		// The model actually chosen, linked to its page; the cost to the answer's requests in Logs.
+		expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0123", "<https://phaseo.app/models/anthropic/claude-test|Claude Test>") }] }]);
+		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+	});
+
+	it("answers with the agent's model when an admin no longer allows the one chosen for a queued message", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test"] });
+		await runTurn(deps(agent), await startTurn({ model: "anthropic/claude-test" }), step);
+		await install({ model: "openai/gpt-test", model_choice_enabled: false, allowed_models: ["anthropic/claude-test"] });
+		await runTurn(deps(agent), await startTurn({ model: "anthropic/claude-test" }), step);
+		expect(agent.requests.map((request) => request.model)).toEqual(["openai/gpt-test", "openai/gpt-test"]);
+	});
+
+	it("says when the model chosen for the message can't be used", async () => {
+		await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["anthropic/claude-test"] });
+		const body = { error: { code: "guardrail_blocked" }, code: "guardrail_blocked", error_operational_kind: "data_handling_policy_no_routes" };
+		const agent = new ScriptedAgent(async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body }); });
+		await expect(runTurn(deps(agent), await startTurn({ model: "anthropic/claude-test" }), step)).resolves.toEqual({ status: "failed" });
+		expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe(
+			"The model you chose for this message isn't available to the Slack agent. Ask again without `with …:` to use the agent's model, or an admin can change the models you can choose in Phaseo settings.",
+		);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 	});
 

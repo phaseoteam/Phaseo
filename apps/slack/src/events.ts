@@ -11,14 +11,16 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
 // ignore bots and edits, find the installation, dedupe the event in its thread's
 // coordinator, check the person (status, guests, Slack Connect users, linked
-// accounts, the meter's limits), then queue the turn. Every refusal is a polite
-// ephemeral reply. Logs carry ids and outcomes only, never message text.
+// accounts, a model chosen for the message, the meter's limits), then queue the
+// turn. Every refusal is a polite ephemeral reply. Logs carry ids and outcomes
+// only, never message text.
 //
 // Removing the app inside Slack (app_uninstalled, or tokens_revoked for the bot
 // token) uninstalls the installation, like Uninstall in Phaseo settings.
@@ -78,7 +80,7 @@ export type SlackEnvelope = {
 };
 
 export type EventOutcome =
-	| "ignored" | "ignored_bot" | "ignored_self" | "no_installation" | "duplicate" | "link_required"
+	| "ignored" | "ignored_bot" | "ignored_self" | "no_installation" | "duplicate" | "link_required" | "model_refused"
 	| `refused_${ReplyReason}` | "started" | "queued" | "cancelled" | "uninstalled" | "error";
 
 /** Events that mean the app was removed in Slack, or its tokens were revoked. */
@@ -264,6 +266,28 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
+	// A model chosen for this message. One that can't be used is refused here, before
+	// the meter counts the person or holds an answer for them.
+	let text = typeof event.text === "string" ? event.text : "";
+	let model: string | null = null;
+	const message = withoutMention(text, installation.bot_user_id);
+	if (modelChoiceOn(installation) && namesModel(message)) {
+		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
+		const allowed = allowedModels(installation, names);
+		let choice = chooseModel(message, allowed);
+		// A longer reading may name another model the shorter match only starts.
+		const other = choice.kind === "chosen" ? await namesOtherModel(deps.db, choice.longer, choice.model.id, choice.exact) : null;
+		if (other) choice = { kind: "not_allowed", named: other };
+		if (choice.kind === "chosen") {
+			model = choice.model.id;
+			text = choice.prompt;
+		} else if (choice.kind === "ambiguous" || (choice.kind === "not_allowed" && (other !== null || await namesCatalogueModel(deps.db, choice.named)))) {
+			console.log("[slack-agent] model choice refused", { installationId: installation.id, eventId, reason: choice.kind });
+			await replyPrivately(slack, target, modelRefusalText(choice, allowed, names.get(installation.model) ?? installation.model));
+			return "model_refused";
+		}
+	}
+
 	const meter = meterFor(deps.env, installation.id);
 	const admitted = await meter.admit({ settings: meterSettings(installation), slackUserId: user, facts, eventId, now });
 	if (admitted.allowed === false) {
@@ -288,7 +312,8 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		messageTs: ts,
 		slackUserId: user,
 		kind,
-		text: typeof event.text === "string" ? event.text : "",
+		...(model ? { model } : {}),
+		text,
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });

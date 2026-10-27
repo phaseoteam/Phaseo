@@ -6849,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "Agent",
+			"modelChoice": "Model choice",
 			"access": "Who can use it",
 			"usageData": "Usage data",
 			"limits": "Limits",
@@ -6869,6 +6870,20 @@
 			"label": "Instructions",
 			"help": "Extra guidance the agent follows in every answer, such as tone or what to focus on.",
 			"placeholder": "Keep answers short. Link to our handbook when it helps."
+		},
+		"modelChoice": {
+			"description": "Let people pick the model for one message from the models you allow. Other messages use the agent's model.",
+			"enable": "Let people choose a model per message",
+			"enableHelp": "People put {prefix} at the start of a message, naming an allowed model by its name or ID. If the model isn't allowed, they get a private reply listing the choices, and no answer.",
+			"models": "Models people can choose ({count} of {max})",
+			"add": "Add a model",
+			"remove": "Remove {model}",
+			"auto": "Auto",
+			"full": "You can allow up to {max} models. Remove one to add another.",
+			"includeAuto": "Include Auto",
+			"includeAutoHelp": "People can choose Auto, and Phaseo picks a suitable model for that message.",
+			"autoUnavailable": "Auto isn't available to this workspace, so messages that choose it can't be answered. Turn off Include Auto.",
+			"help": "Each answer keeps its {cost} cost limit and {steps}-step limit, whichever model answers. Its footer names the model that answered."
 		},
 		"access": {
 			"everyone": "Everyone in Slack",
@@ -7002,6 +7017,8 @@
 			"answersPerHour": "Enter a whole number from 1 to {max}.",
 			"tokenLimit": "Enter an amount up to {max}, or leave it blank for no limit.",
 			"model": "Choose a model.",
+			"allowedModelsEmpty": "Add at least one model, or turn off model choice.",
+			"tooManyModels": "Allow at most {max} models.",
 			"instructions": "Keep instructions to {max} characters or fewer.",
 			"channelIds": "Enter Slack channel IDs such as C0123ABCD, separated by commas.",
 			"tooManyChannels": "List at most {max} channels.",
@@ -7037,6 +7054,9 @@
 			"sessionMismatch": "Finish the install signed in as the admin who started it.",
 			"installFailed": "The install didn't finish, and nothing was set up. Try again.",
 			"autoUnavailable": "Auto isn't available to this workspace. Choose a specific model.",
+			"unknownModels": "Some of these models aren't in the Phaseo catalogue any more. Remove them and save again.",
+			"modelChoiceNeedsModels": "Add at least one model people can choose, or turn off model choice.",
+			"tooManyModels": "You can allow at most {max} models.",
 			"invalid": "Check the settings and try again.",
 			"invalidWithMessage": "Check the settings and try again: {message}",
 			"unavailable": "Phaseo couldn't do that right now. Try again in a moment.",

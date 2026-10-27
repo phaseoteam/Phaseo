@@ -144,25 +144,45 @@ export class SlackReplyStream {
 	}
 }
 
+/** A model in the footer: its display name, and its Phaseo model page when it is a catalogue model. */
+export type FooterModel = { name: string; url: string | null };
+
 /**
- * The small grey line under an answer: the model and what the turn cost. `model`
- * and `answeredBy` are display names; `answeredBy` is only shown when it differs
- * (the model Auto picked).
+ * The small grey line under an answer: the model and what the turn cost.
+ * `answeredBy` (the model Auto picked) is only shown when it differs from
+ * `model`. `logsUrl` links the cost to the answer's requests in Phaseo Logs.
  */
-export function footerText(args: { model: string; answeredBy: string | null; costNanos: number }): string {
-	const dollars = args.costNanos / 1_000_000_000;
-	const cost = `$${dollars < 1 ? dollars.toFixed(4) : dollars.toFixed(2)}`;
-	const model = args.answeredBy && args.answeredBy !== args.model ? `${args.model} → ${args.answeredBy}` : args.model;
+export type Footer = { model: FooterModel; answeredBy: FooterModel | null; costNanos: number; logsUrl: string | null };
+
+/** Slack's mrkdwn (a context block's text) reads &, < and > as markup. */
+function mrkdwnLink(text: string, url: string | null): string {
+	const shown = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	return url ? `<${url}|${shown}>` : shown;
+}
+
+/** markdown_text: the footer is in italics, so markup characters in a name are escaped; a link's URL keeps no parentheses. */
+function markdownLink(text: string, url: string | null): string {
+	const shown = text.replace(/[\\`*_[\]]/g, "\\$&");
+	return url ? `[${shown}](${url.replace(/\(/g, "%28").replace(/\)/g, "%29")})` : shown;
+}
+
+/** The footer as mrkdwn (a context block, under a stopped stream) or markdown (in a message's markdown_text). */
+export function footerText(footer: Footer, format: "mrkdwn" | "markdown" = "mrkdwn"): string {
+	const link = format === "mrkdwn" ? mrkdwnLink : markdownLink;
+	const dollars = footer.costNanos / 1_000_000_000;
+	const cost = link(`$${dollars < 1 ? dollars.toFixed(4) : dollars.toFixed(2)}`, footer.logsUrl);
+	const chosen = link(footer.model.name, footer.model.url);
+	const model = footer.answeredBy && footer.answeredBy.name !== footer.model.name ? `${chosen} → ${link(footer.answeredBy.name, footer.answeredBy.url)}` : chosen;
 	return `${model} · ${cost}`;
 }
 
 /** The whole reply as one message: blocks aren't allowed with markdown_text, so the footer is italic text. */
-function wholeReply(text: string, footer: string | null): string {
-	const footerLine = footer ? `\n\n_${footer}_` : "";
+function wholeReply(text: string, footer: Footer | null): string {
+	const footerLine = footer ? `\n\n_${footerText(footer, "markdown")}_` : "";
 	return `${truncateMarkdown(text, MAX_MARKDOWN_CHARS - footerLine.length)}${footerLine}`;
 }
 
-async function updateReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: string | null }): Promise<void> {
+async function updateReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: Footer | null }): Promise<void> {
 	const updated = await slack.call("chat.update", { channel: args.channel, ts: args.ts, markdown_text: wholeReply(args.text, args.footer) });
 	if (updated.ok === false) throw new SlackPostError("update", updated.error);
 }
@@ -174,8 +194,8 @@ async function updateReply(slack: SlackClient, args: { channel: string; ts: stri
  * throws so the step retries. Safe to repeat. Returns whether the stream was
  * stopped here (which also sets the session back to active).
  */
-export async function finishReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: string | null; closingText?: string | null }): Promise<boolean> {
-	const blocks = args.footer ? [{ type: "context", elements: [{ type: "mrkdwn", text: args.footer }] }] : undefined;
+export async function finishReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: Footer | null; closingText?: string | null }): Promise<boolean> {
+	const blocks = args.footer ? [{ type: "context", elements: [{ type: "mrkdwn", text: footerText(args.footer) }] }] : undefined;
 	const stopped = await slack.call("chat.stopStream", {
 		channel: args.channel,
 		ts: args.ts,
@@ -195,14 +215,14 @@ export async function finishReply(slack: SlackClient, args: { channel: string; t
  * first, since Slack won't edit a message that is still streaming. Throws so the
  * step retries; safe to repeat. Returns whether the stream was stopped here.
  */
-export async function replaceReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: string | null }): Promise<boolean> {
+export async function replaceReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: Footer | null }): Promise<boolean> {
 	const stopped = await slack.call("chat.stopStream", { channel: args.channel, ts: args.ts });
 	if (args.text) await updateReply(slack, args);
 	return stopped.ok;
 }
 
 /** Posts the whole answer as a new message, when its stream never started. Throws so the step retries. */
-export async function postReply(slack: SlackClient, args: { channel: string; threadTs: string; text: string; footer: string | null }): Promise<string> {
+export async function postReply(slack: SlackClient, args: { channel: string; threadTs: string; text: string; footer: Footer | null }): Promise<string> {
 	const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: args.channel, thread_ts: args.threadTs, markdown_text: wholeReply(args.text, args.footer) });
 	if (posted.ok === false || typeof posted.data.ts !== "string") throw new SlackPostError("postMessage", posted.ok === false ? posted.error : "ts_missing");
 	return posted.data.ts;
