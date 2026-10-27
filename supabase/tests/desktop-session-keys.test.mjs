@@ -34,9 +34,9 @@ try {
   await db.exec(migration); await db.exec(migration);
   const schema = await readFile(new URL('../schemas/public/functions/issue_desktop_session_key.sql', import.meta.url), 'utf8');
   assert.ok(migration.includes(schema.slice(schema.indexOf('declare'), schema.indexOf('$function$;'))), 'the schema file matches the migration');
-  const allowed = migration.match(/check \(issued_via in \(([^)]*)\)\)/)[1].split(', ').map(value => `${value}::text`).join(', ');
+  const check = migration.match(/CONSTRAINT "keys_issued_via_check" CHECK \(.*\)(?= NOT VALID;)/)[0];
   const keysSchema = await readFile(new URL('../schemas/public/tables/keys.sql', import.meta.url), 'utf8');
-  assert.ok(keysSchema.includes(`CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY[${allowed}]))),`), 'keys.sql allows the same issued_via values');
+  assert.ok(keysSchema.includes(`${check},`), 'keys.sql has the same issued_via check');
 
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);

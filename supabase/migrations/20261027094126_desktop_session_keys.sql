@@ -1,11 +1,12 @@
 -- The desktop app signs in to Phaseo itself, like the website and the mobile app, and gets the key for its model calls
 -- from that login instead of an OAuth consent screen. The key is the same delegated key as before (client
 -- phaseo_desktop, gateway:access and models:read), so the gateway, renewal, revocation and Connected apps treat it alike.
-alter table public.keys drop constraint if exists keys_issued_via_check;
-alter table public.keys
-  add constraint keys_issued_via_check
-  check (issued_via in ('dashboard', 'oauth_pkce', 'cli', 'desktop')) not valid;
-alter table public.keys validate constraint keys_issued_via_check;
+ALTER TABLE "public"."keys" DROP CONSTRAINT "keys_issued_via_check";
+
+ALTER TABLE "public"."keys"
+  ADD CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text, 'workload_identity'::text, 'desktop'::text]))) NOT VALID;
+
+ALTER TABLE "public"."keys" VALIDATE CONSTRAINT "keys_issued_via_check";
 
 -- The key's expiry, or null when the person isn't a member of the workspace. Earlier desktop keys stay: each one is a
 -- signed-in copy of the app (another computer, say), and each ends when it's signed out, revoked or left unrenewed.
