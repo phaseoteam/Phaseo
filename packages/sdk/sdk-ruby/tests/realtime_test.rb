@@ -138,6 +138,27 @@ class RealtimeTest < Minitest::Test
     assert_equal "max_duration_reached", session.wait(timeout: 5)["reason"]
   end
 
+  def test_interrupting_connect_before_relay_connected_closes_the_socket
+    socket = nil
+    opened = Queue.new
+    transport = lambda do |url, protocols, _timeout|
+      socket = FakeRelaySocket.new(url, protocols)
+      socket.read_text # Swallow relay.connected so the session keeps waiting.
+      opened << true
+      socket
+    end
+    caller = Thread.new do
+      client_with([]).realtime.connect(model: "openai/gpt-realtime-2", transport: transport)
+    rescue Interrupt
+      :interrupted
+    end
+    opened.pop
+    sleep 0.05
+    caller.raise(Interrupt)
+    assert_equal :interrupted, caller.value
+    assert_equal [1000, "client_closed"], socket.closed_with
+  end
+
   def test_relay_url_resolves_relative_connect_urls
     assert_equal "ws://localhost:8787/v1/realtime/sessions/rt_x/relay",
                  PhaseoSdk::Realtime.relay_url("http://localhost:8787/v1", "/v1/realtime/sessions/rt_x/relay")

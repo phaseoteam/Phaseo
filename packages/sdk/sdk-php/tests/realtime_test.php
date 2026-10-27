@@ -141,6 +141,25 @@ assert_true($ended["reason"] === "client_requested" && $ended["cost"]["total_usd
 assert_true(end($socket->sent) === ["type" => "session.end", "reason" => "caller hung up", "cancel_response" => false], "end message");
 assert_true($session->end() === $ended, "end is idempotent");
 
+// a throwing listener neither escapes nor loses the final bill
+$session = connect_fake($http, $socket);
+$session->onEnded(function (array $event): void {
+    throw new RuntimeException("listener failed");
+});
+$after = [];
+$session->on("*", function (array $event) use (&$after): void {
+    $after[] = $event["type"];
+});
+$socket->onSend = function (array $message, FakeRelayConnection $relay): void {
+    if ($message["type"] === "session.end") {
+        $relay->inbox[] = json_encode(ENDED);
+        $relay->serverClose(1000);
+    }
+};
+$ended = $session->end(null, null, 5.0);
+assert_true($ended["billing_status"] === "settled", "bill kept despite throwing listener");
+assert_true($after === ["session.ended"], "later listeners still run");
+
 // closed without session.ended
 $session = connect_fake($http, $socket);
 $socket->onSend = function (array $message, FakeRelayConnection $relay): void {

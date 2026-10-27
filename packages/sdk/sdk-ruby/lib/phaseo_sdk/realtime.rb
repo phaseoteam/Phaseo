@@ -64,7 +64,15 @@ module PhaseoSdk
       opener = transport || WebSocketTransport.method(:open)
       socket = opener.call(self.class.relay_url(@base_path, connect_url), [RELAY_PROTOCOL, "rtsec.#{secret}"], connect_timeout)
       session = RealtimeSession.new(session_id, info, socket)
-      session.wait_connected(connect_timeout)
+      connected = false
+      begin
+        session.wait_connected(connect_timeout)
+        connected = true
+      ensure
+        # Interrupted (Thread#raise, Timeout, Ctrl-C) or failed: the caller never gets the session,
+        # so close the socket here or the metered call keeps running.
+        session.close unless connected
+      end
       session
     end
   end

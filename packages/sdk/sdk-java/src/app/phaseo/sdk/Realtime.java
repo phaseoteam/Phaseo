@@ -68,16 +68,28 @@ public final class Realtime {
 			session.attach(socket.get(connectTimeout.toMillis(), TimeUnit.MILLISECONDS));
 			session.connected().get(connectTimeout.toMillis(), TimeUnit.MILLISECONDS);
 		} catch (ExecutionException error) {
+			abandon(socket, session);
 			Throwable cause = error.getCause() == null ? error : error.getCause();
 			if (cause instanceof RuntimeException) {
 				throw (RuntimeException) cause;
 			}
 			throw new IOException("Realtime session " + sessionId + " failed to connect: " + cause.getMessage(), cause);
 		} catch (TimeoutException error) {
-			session.close();
+			abandon(socket, session);
 			throw new IOException("Realtime session " + sessionId + " did not connect within " + connectTimeout.toMillis() + " ms", error);
+		} catch (InterruptedException error) {
+			// The caller never gets the session, so close the socket here or the metered call keeps running.
+			abandon(socket, session);
+			Thread.currentThread().interrupt();
+			throw error;
 		}
 		return session;
+	}
+
+	/** Gives up on a connect: stops the handshake and closes the socket, now or as soon as it opens. */
+	private static void abandon(CompletableFuture<WebSocket> socket, RealtimeSession session) {
+		session.abandon();
+		socket.cancel(true);
 	}
 
 	/** Resolves the session's {@code connect.url} against the base URL as ws:// or wss://. */

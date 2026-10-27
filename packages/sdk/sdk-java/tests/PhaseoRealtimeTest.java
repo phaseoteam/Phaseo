@@ -138,6 +138,10 @@ public class PhaseoRealtimeTest {
 		final Thread thread;
 
 		FakeRelay(Behaviour behaviour) throws IOException {
+			this(behaviour, true);
+		}
+
+		FakeRelay(Behaviour behaviour, boolean sendConnected) throws IOException {
 			relaySocket = new ServerSocket(0);
 			api = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 			int relayPort = relaySocket.getLocalPort();
@@ -160,7 +164,9 @@ public class PhaseoRealtimeTest {
 						connections.add(relay);
 					}
 					relay.handshake();
-					relay.sendText("{\"type\":\"relay.connected\",\"session_id\":\"rt_test\"}");
+					if (sendConnected) {
+						relay.sendText("{\"type\":\"relay.connected\",\"session_id\":\"rt_test\"}");
+					}
 					behaviour.run(relay);
 					Thread.sleep(100);
 				} catch (Exception ignored) {
@@ -253,6 +259,34 @@ public class PhaseoRealtimeTest {
 			RealtimeSessionClosedException error = assertThrows(RealtimeSessionClosedException.class,
 				() -> session.end(null, null, Duration.ofMillis(100)));
 			assertTrue(error.getMessage().contains("timed out after 100 ms"));
+		}
+	}
+
+	@Test
+	void interruptingConnectBeforeRelayConnectedClosesTheSocket() throws Exception {
+		java.util.concurrent.CountDownLatch opened = new java.util.concurrent.CountDownLatch(1);
+		java.util.concurrent.CompletableFuture<Boolean> clientClosed = new java.util.concurrent.CompletableFuture<>();
+		try (FakeRelay relay = new FakeRelay(connection -> {
+			opened.countDown();
+			clientClosed.complete(!connection.receiveUntil("never"));
+		}, false)) {
+			Phaseo client = new Phaseo("sk_test_123", relay.baseUrl(), false, false, null);
+			java.util.concurrent.CompletableFuture<Throwable> outcome = new java.util.concurrent.CompletableFuture<>();
+			Thread caller = new Thread(() -> {
+				try {
+					client.realtime.connect(Map.of("model", "openai/gpt-realtime-2"), Duration.ofSeconds(30));
+					outcome.complete(null);
+				} catch (Throwable error) {
+					outcome.complete(Thread.currentThread().isInterrupted() ? error : new AssertionError("interrupt status lost", error));
+				}
+			});
+			caller.start();
+			assertTrue(opened.await(5, java.util.concurrent.TimeUnit.SECONDS));
+			Thread.sleep(100);
+			caller.interrupt();
+			Throwable error = outcome.get(5, java.util.concurrent.TimeUnit.SECONDS);
+			assertTrue(error instanceof InterruptedException, String.valueOf(error));
+			assertTrue(clientClosed.get(5, java.util.concurrent.TimeUnit.SECONDS));
 		}
 	}
 

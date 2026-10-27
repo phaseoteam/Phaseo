@@ -91,15 +91,26 @@ namespace PhaseoSdk
             socket.Options.AddSubProtocol("rtsec." + secret);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(options.ConnectTimeout);
-            await socket.ConnectAsync(new Uri(RelayUrl(_basePath, connectUrl)), timeout.Token).ConfigureAwait(false);
+            try
+            {
+                await socket.ConnectAsync(new Uri(RelayUrl(_basePath, connectUrl)), timeout.Token).ConfigureAwait(false);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
             var session = new RealtimeSession(sessionId, info, socket);
             try
             {
                 await session.Connected.WaitAsync(timeout.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
+                // Timed out or cancelled by the caller: either way the caller never gets the session,
+                // so close the socket here or the metered call keeps running.
                 await session.CloseAsync().ConfigureAwait(false);
+                if (cancellationToken.IsCancellationRequested) throw;
                 throw new TimeoutException($"Realtime session {sessionId} did not connect within {options.ConnectTimeout.TotalMilliseconds} ms");
             }
             return session;

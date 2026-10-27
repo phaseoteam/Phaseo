@@ -114,7 +114,13 @@ final class Realtime
         $connector = $this->connector ?? [PhrityRealtimeConnection::class, "open"];
         $connection = $connector(self::relayUrl($this->basePath, $connectUrl), [self::RELAY_PROTOCOL, "rtsec." . $secret], $connectTimeout);
         $session = new RealtimeSession($sessionId, $info, $connection);
-        $session->waitForConnected($connectTimeout);
+        try {
+            $session->waitForConnected($connectTimeout);
+        } catch (\Throwable $error) {
+            // The caller never gets the session, so close the socket here or the metered call keeps running.
+            $session->close();
+            throw $error;
+        }
         return $session;
     }
 }
@@ -313,13 +319,18 @@ final class RealtimeSession
         if (!is_array($event) || !isset($event["type"]) || !is_string($event["type"])) {
             return null;
         }
-        foreach ([$event["type"], "*"] as $key) {
-            foreach ($this->listeners[$key] ?? [] as $listener) {
-                $listener($event);
-            }
-        }
+        // Record the bill before listeners run, so a throwing listener can't make end() lose it.
         if ($event["type"] === "session.ended" && !$this->isFinished()) {
             $this->ended = $event;
+        }
+        foreach ([$event["type"], "*"] as $key) {
+            foreach ($this->listeners[$key] ?? [] as $listener) {
+                try {
+                    $listener($event);
+                } catch (\Throwable) {
+                    // Listener errors must not break the session.
+                }
+            }
         }
         return $event;
     }

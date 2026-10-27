@@ -38,6 +38,7 @@ public final class RealtimeSession {
 	private final CompletableFuture<Void> connected = new CompletableFuture<>();
 	private final Object sendLock = new Object();
 	private volatile WebSocket socket;
+	private volatile boolean abandoned;
 
 	RealtimeSession(String id, JsonNode info, ObjectMapper mapper) {
 		this.id = id;
@@ -206,6 +207,12 @@ public final class RealtimeSession {
 		this.socket = socket;
 	}
 
+	/** connect() gave up: close the socket now, or as soon as it opens if the handshake is still running. */
+	void abandon() {
+		abandoned = true;
+		close();
+	}
+
 	WebSocket.Listener listener() {
 		return new WebSocket.Listener() {
 			private final StringBuilder buffer = new StringBuilder();
@@ -213,6 +220,9 @@ public final class RealtimeSession {
 			@Override
 			public void onOpen(WebSocket webSocket) {
 				socket = webSocket;
+				if (abandoned) {
+					close();
+				}
 				webSocket.request(1);
 			}
 

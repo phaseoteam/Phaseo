@@ -23,7 +23,7 @@ public class RealtimeTests
         public string? Path;
         public JsonElement Created;
 
-        public FakeRelay(Func<FakeRelay, WebSocket, Task> behaviour)
+        public FakeRelay(Func<FakeRelay, WebSocket, Task> behaviour, bool sendConnected = true)
         {
             _listener.Start();
             _run = Task.Run(async () =>
@@ -47,7 +47,7 @@ public class RealtimeTests
                 var response = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\nSec-WebSocket-Protocol: statsync-realtime\r\n\r\n";
                 await stream.WriteAsync(Encoding.ASCII.GetBytes(response));
                 using var socket = WebSocket.CreateFromStream(stream, isServer: true, subProtocol: "statsync-realtime", keepAliveInterval: TimeSpan.Zero);
-                await SendAsync(socket, "{\"type\":\"relay.connected\",\"session_id\":\"rt_test\"}");
+                if (sendConnected) await SendAsync(socket, "{\"type\":\"relay.connected\",\"session_id\":\"rt_test\"}");
                 await behaviour(this, socket);
                 await Task.Delay(100);
             });
@@ -157,6 +157,21 @@ public class RealtimeTests
         var session = await relay.Client().Realtime.ConnectAsync(new RealtimeConnectOptions { Model = "openai/gpt-realtime-2" });
         var error = await Assert.ThrowsAsync<RealtimeSessionClosedException>(() => session.EndAsync(timeout: TimeSpan.FromMilliseconds(100)));
         Assert.Contains("timed out after 100 ms", error.Message);
+    }
+
+    [Fact]
+    public async Task CancellingConnectBeforeRelayConnectedClosesTheSocket()
+    {
+        var clientClosed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var relay = new FakeRelay(async (self, socket) =>
+        {
+            var sawEvent = await self.ReceiveUntilAsync(socket, "never");
+            clientClosed.TrySetResult(!sawEvent);
+        }, sendConnected: false);
+        using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            relay.Client().Realtime.ConnectAsync(new RealtimeConnectOptions { Model = "openai/gpt-realtime-2" }, cancel.Token));
+        Assert.True(await clientClosed.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
