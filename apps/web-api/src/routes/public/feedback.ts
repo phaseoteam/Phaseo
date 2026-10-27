@@ -93,9 +93,11 @@ type FeedbackRequestRecord = {
 
 /** The "survey sent" event posthog-js would send for these answers, as the account's user. */
 export function feedbackSurveyEvent(request: FeedbackRequestRecord, answers: FeedbackAnswers) {
-	const responses: Record<string, string | number | undefined> = {
+	// PostHog survey responses are text: the reason as its choice label, the score as "0"-"10".
+	const responses: Record<string, string | undefined> = {
 		...answers,
 		reason: answers.reason === undefined ? undefined : REASON_CHOICES[answers.reason],
+		nps: answers.nps === undefined ? undefined : String(answers.nps),
 	};
 	const properties: Record<string, unknown> = {
 		$survey_id: FEEDBACK_SURVEY.id,

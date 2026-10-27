@@ -120,14 +120,14 @@ describe("public feedback routes", () => {
 		});
 	});
 
-	it("sends a 0-10 score as a number under the rating question", async () => {
+	it("sends a 0-10 score as text under the rating question, as PostHog expects", async () => {
 		mocks.rpc
 			.mockResolvedValueOnce({ data: { ...openRequest, segment: "paid" }, error: null })
 			.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" }, error: null });
 		await post(token, { answers: { nps: 0, improve: "Cheaper Opus" } });
 		const { properties } = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
-		expect(properties[`$survey_response_${FEEDBACK_SURVEY.questions[2].id}`]).toBe(0);
-		expect(properties.$survey_response_2).toBe(0);
+		expect(properties[`$survey_response_${FEEDBACK_SURVEY.questions[2].id}`]).toBe("0");
+		expect(properties.$survey_response_2).toBe("0");
 		expect(properties.$survey_response_4).toBe("Cheaper Opus");
 	});
 
