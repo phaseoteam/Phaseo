@@ -64,9 +64,9 @@ const WORKSPACE_ZONE = "__workspace__";
 export function useSpendActionError() {
 	const t = useTranslations("SettingsUI.spendAlerts");
 	return (result: SpendRuleActionError, maxRules: number) => {
-		if (result.code === "spend_rule_limit_reached" || (result.status === 409 && !result.code)) return t("errors.limit", { max: maxRules });
-		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.code === "no_notification_destinations" || result.code === "no_active_destinations") return t("errors.noDestinations");
+		if (result.code === "spend_rule_limit_reached") return t("errors.limit", { max: maxRules });
+		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.status === 401 || result.status === 403) return t("errors.forbidden");
 		if (result.status === 404) return t("errors.notFound");
 		if (result.status === 400) return result.message ?? t("errors.invalid");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { parseAsString, useQueryStates } from "nuqs";
 import { BellRing, History, MoreHorizontal, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -30,7 +30,11 @@ import { useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SPEND_ALERT_ANCHOR, prefillFromSearchParams, previewSummary } from "./spendRuleDraft";
 import type { SpendRule } from "./spendRules";
 
-const PREFILL_PARAMS = ["spendAlert", "metric", "scope", "scopeId", "period", "base", "thresholds", "name"];
+// The shortcut links' query parameters; while spendAlert=new is in the URL, the editor is open, prefilled.
+const PREFILL_PARAMS = {
+	spendAlert: parseAsString, metric: parseAsString, scope: parseAsString, scopeId: parseAsString,
+	period: parseAsString, base: parseAsString, thresholds: parseAsString, name: parseAsString,
+};
 
 /**
  * Settings → Notifications → Spend alerts: the workspace's spend rules with their current value,
@@ -61,25 +65,28 @@ function SpendAlertsPanel({ data, destinations, departmentSpendAttribution }: {
 	departmentSpendAttribution: DepartmentSpendAttribution;
 }) {
 	const t = useTranslations("SettingsUI.spendAlerts");
-	const params = useSearchParams();
 	const canManage = data.canManageSpendRules;
 	const atLimit = data.rules.length >= data.maxRules;
-	// A shortcut link (key page, budgets page) opens the editor prefilled, once.
-	const [editor, setEditor] = useState<SpendRuleEditorTarget | null>(() => {
-		const prefill = canManage && !atLimit ? prefillFromSearchParams(params) : null;
-		return prefill ? { mode: "create", prefill, key: 0 } : null;
-	});
+	// A shortcut link (key page, budgets page) opens the editor prefilled for as long as its
+	// parameters are in the URL, so reloading, sharing and Back/Forward keep the sheet in step.
+	const [linkParams, setLinkParams] = useQueryStates(PREFILL_PARAMS, { shallow: true, scroll: false, history: "replace" });
+	const linkPrefill = canManage && !atLimit ? prefillFromSearchParams({ get: (name) => linkParams[name as keyof typeof PREFILL_PARAMS] ?? null }) : null;
+	const [openedEditor, setOpenedEditor] = useState<SpendRuleEditorTarget | null>(null);
+	const editor = openedEditor ?? (linkPrefill ? { mode: "create" as const, prefill: linkPrefill, key: 0 } : null);
+	const linked = linkParams.spendAlert !== null;
 	const [createCount, setCreateCount] = useState(1);
 	const [historyRule, setHistoryRule] = useState<SpendRule | null>(null);
 	const [deleting, setDeleting] = useState<SpendRule | null>(null);
 
 	useEffect(() => {
-		if (params.get("spendAlert") === null) return;
-		const url = new URL(window.location.href);
-		for (const name of PREFILL_PARAMS) url.searchParams.delete(name);
-		window.history.replaceState(window.history.state, "", url);
-		document.getElementById(SPEND_ALERT_ANCHOR)?.scrollIntoView({ block: "start" });
-	}, [params]);
+		if (linked) document.getElementById(SPEND_ALERT_ANCHOR)?.scrollIntoView({ block: "start" });
+	}, [linked]);
+
+	/** Opens the editor from the page, dropping a shortcut link's parameters (and only those). */
+	function setEditor(target: SpendRuleEditorTarget | null) {
+		setOpenedEditor(target);
+		if (linked) void setLinkParams(null);
+	}
 
 	function openCreate() {
 		setEditor({ mode: "create", prefill: {}, key: createCount });
