@@ -113,6 +113,8 @@ export type PostedFile = { kind: "chart" | "image"; title: string; shown: boolea
 const MAX_POSTED_CHARTS = 20;
 
 const MAX_CONTEXT_ENTRIES = 20;
+/** Working memory's note for an answer that searched Slack, in place of its text. */
+export const SEARCHED_REPLY_MEMORY = "(An answer that used Slack search. Its text isn't kept here; it's in the thread.)";
 const MAX_CONTEXT_CHARS = 4_000;
 
 type TurnRow = {
@@ -345,8 +347,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	}
 
 	private async endTurn(turnId: number, outcome: TurnOutcome, now: number): Promise<boolean> {
-		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null }>(
-			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts FROM turns WHERE id = ? AND status = 'running'`, turnId,
+		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null; searches: number | null }>(
+			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts, searches FROM turns WHERE id = ? AND status = 'running'`, turnId,
 		).toArray()[0];
 		if (!turn) return false;
 		// A turn that staged its reply reports back with ids only.
@@ -369,7 +371,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 				if (question.leg) remember(question.leg);
 				if (question.ts) remember({ reply: questionMemory(question, turn.slack_user_id), ts: question.ts, tools: [] });
 			}
-			remember({ reply, ts: turn.reply_ts, tools });
+			// An answer that searched Slack can quote what it found: only that it answered is kept (the reply is in the thread).
+			remember({ reply: (turn.searches ?? 0) > 0 && reply?.trim() ? SEARCHED_REPLY_MEMORY : reply, ts: turn.reply_ts, tools });
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
 			// The replies and questions are messages in the thread too.
 			const posted = [...questions.flatMap((question) => [question.leg?.ts ?? null, question.ts]), turn.reply_ts].filter((ts): ts is string => ts !== null);

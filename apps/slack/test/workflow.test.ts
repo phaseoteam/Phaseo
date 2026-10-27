@@ -2,7 +2,7 @@ import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, AskOutput, AskRequest, GeneratedImage, ImageRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
-import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { SEARCHED_REPLY_MEMORY, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
@@ -1830,7 +1830,8 @@ describe("Slack search", () => {
 			expect(stored(turn)).not.toContain(value);
 		}
 		// Its own answer is a message in the thread like any other; the note names the query and the count.
-		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack \"launch plan\": 1 result", "The launch plan ships on Friday (<https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100|#launch>)."]);
+		// The answer quotes what it found: working memory keeps only a note of it (the reply is in the thread).
+		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack \"launch plan\": 1 result", SEARCHED_REPLY_MEMORY]);
 	});
 
 	function askQuestion(request: AgentTurnRequest, id = "call_q1") {

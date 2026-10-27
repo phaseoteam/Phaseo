@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ThreadCoordinator, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { SEARCHED_REPLY_MEMORY, ThreadCoordinator, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { createWorkflowTurnRunner, type TurnRef, type TurnRunner, type TurnStart } from "../src/turns";
 import { fakeState, FakeStorage, INSTALLATION_ID, storageOf, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
 
@@ -241,7 +241,8 @@ describe("ThreadCoordinator", () => {
 		await expect(upgraded.finishTurn(1, { status: "done" }, NOW)).resolves.toEqual({ ok: true });
 		expect(upgraded.workingMemory()).toEqual([
 			{ kind: "reply", text: "An older answer", at: NOW, ts: null },
-			{ kind: "reply", text: "Answer", at: NOW, ts: "1792600100.000001" },
+			// It searched above: only a note of its answer is kept.
+			{ kind: "reply", text: SEARCHED_REPLY_MEMORY, at: NOW, ts: "1792600100.000001" },
 		]);
 	});
 
@@ -276,6 +277,16 @@ describe("ThreadCoordinator", () => {
 		expect(coordinator.reserveSearch(1, 4)).toBe(false);
 		expect(coordinator.searchCount(1)).toBeNull();
 		expect(coordinator.searchCount(2)).toBe(0);
+	});
+
+	it("keeps only a note, not the text, of an answer that searched Slack in the thread's working memory", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		expect(coordinator.reserveSearch(1, 4)).toBe(true);
+		await coordinator.finishTurn(1, { status: "done", reply: "The decision was in #infra: move to eu-west.", tools: ["search_slack: 3 results"] }, NOW);
+		expect(coordinator.workingMemory().map((entry) => [entry.kind, entry.text])).toEqual([
+			["tool", "search_slack: 3 results"],
+			["reply", SEARCHED_REPLY_MEMORY],
+		]);
 	});
 
 	it("keeps, per turn, whether the person is from another organisation", async () => {
