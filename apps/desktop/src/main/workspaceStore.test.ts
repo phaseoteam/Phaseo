@@ -201,7 +201,7 @@ describe("IPC validation", () => {
 		try {
 			store.close(); const legacy = new DatabaseSync(filename); legacy.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?)").run(JSON.stringify({ notifications: "all", notificationTitles: true })); legacy.close();
 			store = new WorkspaceStore(filename);
-			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, maxActiveAgents: 32, autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null, openPullRequestsInApp: true, pullRequestMergeMethod: null, diffFilesCollapsed: false, autopilot: false, autopilotModel: null });
+			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, inAppNotifications: true, notificationBadge: true, maxActiveAgents: 32, autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null, openPullRequestsInApp: true, pullRequestMergeMethod: null, diffFilesCollapsed: false, autopilot: false, autopilotModel: null });
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 
