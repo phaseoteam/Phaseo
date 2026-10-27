@@ -39,6 +39,8 @@ export type AgentTurnRequest = {
 	prompt: string;
 	/** slack:<team>:<user>, the gateway's end user. */
 	endUser: string;
+	/** The answer's gateway session (turnSessionId), shared by all its model requests so Logs can filter to them. */
+	sessionId: string;
 	labels: { slackTeam: string; slackChannel: string };
 	tools: AgentTool<any, any>[];
 	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
@@ -161,6 +163,8 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				model: request.model,
 				user: request.endUser,
 				gatewayTools: GATEWAY_TOOLS,
+				// The Responses API takes the session from the body only.
+				requestOptions: { session_id: request.sessionId },
 			}), (usd) => {
 				spentUsd += usd;
 			});
@@ -240,16 +244,21 @@ export function classifyTurnError(error: unknown, model?: string | null): TurnEr
 	return "failed";
 }
 
-export function turnErrorText(kind: TurnErrorKind): string {
+/** `chosenForMessage`: the person chose the model with `with <model>:`, so the reply talks about that model. */
+export function turnErrorText(kind: TurnErrorKind, chosenForMessage = false): string {
 	switch (kind) {
 		case "no_credits":
 			return "This Phaseo workspace is out of credits, so I can't answer right now. An admin can add credits in Phaseo billing.";
 		case "cap_reached":
 			return "The Phaseo agent's monthly spending limit on its Phaseo key has been reached. An admin can raise it in Phaseo settings.";
 		case "model_not_allowed":
-			return "The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.";
+			return chosenForMessage
+				? "The model you chose for this message isn't available to the Slack agent. Ask again without `with …:` to use the agent's model, or an admin can change the models you can choose in Phaseo settings."
+				: "The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.";
 		case "model_unavailable":
-			return "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
+			return chosenForMessage
+				? "The model you chose for this message isn't available right now. Please try again in a few minutes, or ask without `with …:` to use the agent's model."
+				: "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
 		case "failed":
 			return "Sorry, something went wrong while I was answering. Please try again.";
 	}

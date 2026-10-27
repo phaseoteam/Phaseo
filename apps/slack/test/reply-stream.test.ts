@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { finishReply, footerText, MAX_REPLY_CHARS, postReply, replaceReply, SlackPostError, SlackReplyStream, STREAM_BATCH_MS, type ReplyTarget } from "../src/reply-stream";
+import { finishReply, footerText, MAX_REPLY_CHARS, postReply, replaceReply, SlackPostError, SlackReplyStream, STREAM_BATCH_MS, type Footer, type ReplyTarget } from "../src/reply-stream";
 import { FakeSlack } from "./fakes";
 
 const CHANNEL: ReplyTarget = { channel: "C0CHANNEL1", threadTs: "1792600000.000100", recipientUserId: "U0PERSON01", recipientTeamId: "T0TEST0001" };
@@ -109,52 +109,70 @@ describe("SlackReplyStream", () => {
 	});
 });
 
+/** A plain footer (Auto, nothing linked), and how each format writes it. */
+const FOOTER: Footer = { model: { name: "Auto", url: null }, answeredBy: null, costNanos: 12_300_000, logsUrl: null };
+const FOOTER_TEXT = "Auto · $0.0123";
+
 describe("finishing a reply", () => {
 	it("stops the stream with the footer under it", async () => {
-		await expect(finishReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: "phaseo/auto · $0.0123" })).resolves.toBe(true);
+		await expect(finishReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: FOOTER })).resolves.toBe(true);
 		expect(slack.calls.map((call) => [call.method, call.args])).toEqual([
-			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: "phaseo/auto · $0.0123" }] }] }],
+			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: FOOTER_TEXT }] }] }],
 		]);
 	});
 
 	it("adds the footer with an update when the stream had already stopped, and is safe to repeat", async () => {
 		slack.failures.set("chat.stopStream", ["message_not_in_streaming_state", "message_not_in_streaming_state"]);
 		for (let attempt = 0; attempt < 2; attempt += 1) {
-			await finishReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: "phaseo/auto · $0.0123" });
+			await finishReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: FOOTER });
 		}
-		expect(slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual(["Answer\n\n_phaseo/auto · $0.0123_", "Answer\n\n_phaseo/auto · $0.0123_"]);
+		expect(slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual([`Answer\n\n_${FOOTER_TEXT}_`, `Answer\n\n_${FOOTER_TEXT}_`]);
 	});
 
 	it("throws when that update fails, so the step retries instead of losing the footer", async () => {
 		slack.failures.set("chat.stopStream", ["message_not_in_streaming_state"]);
 		slack.failures.set("chat.update", ["internal_error"]);
-		const args = { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: "phaseo/auto · $0.0123" };
+		const args = { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: FOOTER };
 		await expect(finishReply(slack.client("xoxb-1-test-token"), args)).rejects.toMatchObject({ method: "update", code: "internal_error" });
 		await expect(finishReply(slack.client("xoxb-1-test-token"), args)).resolves.toBe(true);
 	});
 
 	it("replaces a message's text with the whole answer, stopping its stream first", async () => {
-		const args = { channel: "C0CHANNEL1", ts: "1792600100.000009", text: "A fresh answer", footer: "phaseo/auto · $0.0010" };
+		const args = { channel: "C0CHANNEL1", ts: "1792600100.000009", text: "A fresh answer", footer: { ...FOOTER, costNanos: 1_000_000 } };
 		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).resolves.toBe(true);
 		expect(slack.calls.map((call) => [call.method, call.args])).toEqual([
 			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000009" }],
-			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000009", markdown_text: "A fresh answer\n\n_phaseo/auto · $0.0010_" }],
+			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000009", markdown_text: "A fresh answer\n\n_Auto · $0.0010_" }],
 		]);
 		slack.failures.set("chat.update", ["ratelimited"]);
 		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).rejects.toBeInstanceOf(SlackPostError);
 	});
 
 	it("posts the whole answer when its stream never started", async () => {
-		const ts = await postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: "phaseo/auto · $0.0123" });
+		const ts = await postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: FOOTER });
 		expect(ts).toBe("1792600100.000001");
-		expect(slack.of("chat.postMessage")[0].args).toEqual({ channel: "C0CHANNEL1", thread_ts: "1792600000.000100", markdown_text: "Answer\n\n_phaseo/auto · $0.0123_" });
+		expect(slack.of("chat.postMessage")[0].args).toEqual({ channel: "C0CHANNEL1", thread_ts: "1792600000.000100", markdown_text: `Answer\n\n_${FOOTER_TEXT}_` });
 		slack.failures.set("chat.postMessage", ["channel_not_found"]);
 		await expect(postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: null })).rejects.toBeInstanceOf(SlackPostError);
 	});
 
 	it("shows the model, the one Auto picked when it differs, and the cost in US dollars", () => {
-		expect(footerText({ model: "Auto", answeredBy: "GPT Test", costNanos: 12_300_000 })).toBe("Auto → GPT Test · $0.0123");
-		expect(footerText({ model: "GPT Test", answeredBy: null, costNanos: 1_250_000_000 })).toBe("GPT Test · $1.25");
-		expect(footerText({ model: "Auto", answeredBy: null, costNanos: 0 })).toBe("Auto · $0.0000");
+		const gpt = { name: "GPT Test", url: null };
+		expect(footerText({ ...FOOTER, answeredBy: gpt })).toBe("Auto → GPT Test · $0.0123");
+		expect(footerText({ ...FOOTER, model: gpt, costNanos: 1_250_000_000 })).toBe("GPT Test · $1.25");
+		expect(footerText({ ...FOOTER, answeredBy: { name: "Auto", url: null }, costNanos: 0 })).toBe("Auto · $0.0000");
+	});
+
+	it("links models to their pages and the cost to Logs, in either format", () => {
+		const footer: Footer = {
+			model: { name: "Auto", url: null },
+			answeredBy: { name: "GPT_Test [beta] & co", url: "https://phaseo.app/models/openai/gpt-test(beta)" },
+			costNanos: 12_300_000,
+			logsUrl: "https://phaseo.app/settings/usage/logs/requests?session=slack-Ev0TEST0001",
+		};
+		// A context block: Slack's <url|text> links, with &, < and > escaped.
+		expect(footerText(footer, "mrkdwn")).toBe("Auto → <https://phaseo.app/models/openai/gpt-test(beta)|GPT_Test [beta] &amp; co> · <https://phaseo.app/settings/usage/logs/requests?session=slack-Ev0TEST0001|$0.0123>");
+		// markdown_text, where the footer is in italics: markup in names is escaped, and parentheses in URLs.
+		expect(footerText(footer, "markdown")).toBe("Auto → [GPT\\_Test \\[beta\\] & co](https://phaseo.app/models/openai/gpt-test%28beta%29) · [$0.0123](https://phaseo.app/settings/usage/logs/requests?session=slack-Ev0TEST0001)");
 	});
 });

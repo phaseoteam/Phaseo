@@ -17,6 +17,8 @@ export type TurnRef = {
 	messageTs: string;
 	slackUserId: string;
 	kind: "mention" | "dm";
+	/** The model the person chose for this message (`with <model>:`), when the installation allows it. */
+	model?: string | null;
 };
 
 export type TurnOutcome = {
@@ -39,6 +41,11 @@ export const TURN_RETENTION = { successRetention: "1 day", errorRetention: "1 da
 /** One instance per Slack event; the id makes a repeated start a no-op. */
 export function turnInstanceId(turn: Pick<TurnRef, "eventId">): string {
 	return `turn-${turn.eventId}`;
+}
+
+/** The gateway session of one answer: every model request it makes, so Logs can show them together. */
+export function turnSessionId(turn: Pick<TurnRef, "eventId">): string {
+	return `slack-${turn.eventId}`;
 }
 
 export function createWorkflowTurnRunner(env: Pick<Env, "AGENT_TURNS">): TurnRunner {

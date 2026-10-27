@@ -82,8 +82,9 @@ Workflows), one per Slack event, kept for 1 day. It has five steps:
 
 1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
 2. `context`: one `conversations.replies` read of up to 15 messages, ending at the message answered (`src/history.ts`). Slack allows apps outside the Marketplace about one read a minute per workspace, 15 messages each, and returns a range's earliest messages first, so the read starts at the oldest of the 8 newest messages the coordinator knows (in a channel, never more than 30 minutes back; the first read in a thread goes 30 minutes back). Slack sends the thread's first message with every read. When the stretch held more, the prompt says messages are missing. Only the installation's bot user (or its app) is the agent in the prompt; other bots and apps are labelled `Another app (name)`. When Slack rate limits the read, the coordinator's working memory is used alone, and the meter keeps Slack's `Retry-After`: until it passes, every thread of the installation skips its read and uses working memory too. Reads aren't spaced otherwise, for the hosted app or a company's own app: Slack tolerates small bursts, and a refused read only costs that turn its read.
-3. `run`: runs `@phaseo/agent-sdk` through the gateway's public URL (`PHASEO_API_BASE_URL`) with the installation's managed key and model. Every request carries:
+3. `run`: runs `@phaseo/agent-sdk` through the gateway's public URL (`PHASEO_API_BASE_URL`) with the installation's managed key and model (or the model chosen for the message, below). Every request carries:
    - `user: slack:<team>:<user>`;
+   - `session_id: slack-<Slack event id>`, the same for every request of one answer, so Logs can show them together (and the gateway keeps them on one provider);
    - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
    - `x-title: Phaseo Slack agent`;
    - the gateway's web search and fetch tools.
@@ -91,7 +92,7 @@ Workflows), one per Slack event, kept for 1 day. It has five steps:
    Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training or prompt publishing; providers that keep logs without training may answer), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400.
 
    It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
-4. `reply`: finishes the Slack message with a footer: the model's catalogue name (with Auto, also the model it picked) and the cost. It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
+4. `reply`: finishes the Slack message with a footer: the model's catalogue name (with Auto, also the model it picked) and the cost. A catalogue model's name links to its page (`PHASEO_WEB_ORIGIN/models/<model_slug>`; Auto has none), and the cost links to Logs filtered to the answer's session (`/settings/usage/logs/requests?session=…`, from the day before to the day after). The footer is a context block (`<url|text>` links) under a stopped stream, or italic markdown (`[text](url)`) when the answer is written with `chat.update` or `chat.postMessage`. It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
 5. `finish`: counts the answer in the meter, if the person could see it, and tells the coordinator.
 
 Step outputs hold ids and statuses only. A retried step never posts twice: the
@@ -103,6 +104,22 @@ model finishes, and the `reply` step (retried up to 3 times on its own) delivers
 the staged answer. The `run` step is retried once for other failures; the retry
 counts what earlier attempts spent against the $0.50 limit, and the footer shows
 the total.
+
+### Choosing a model per message
+
+When an admin turns on `model_choice_enabled`, a message that starts with
+`with <model>:` is answered by that model (`src/model-choice.ts`). `<model>` is
+one of the installation's `allowed_models` (up to 10, which web-api checks
+against the catalogue): its id or catalogue name, or the start of either when
+only one allowed model has it, ignoring case. Nothing outside the allowlist is
+matched, and the longest reading is tried first, since catalogue names can hold
+a colon. `src/events.ts` decides it before the meter admits the person: a name
+that isn't allowed, or fits more than one model, gets a private reply listing
+the models, and no turn, person or answer is counted. A chosen model travels
+with the turn (the coordinator's `turns.model`), and the prompt is the message
+without the prefix. The run re-checks the live installation and falls back to
+its model if an admin removed the choice meanwhile. The turn's $0.50 and 12-step
+limits don't change.
 
 The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
 `find_models`. They are offered only when the installation's `usage_data_mode`

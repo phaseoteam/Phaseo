@@ -182,6 +182,8 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		),
 		key_id: null,
 		model: "phaseo/auto",
+		model_choice_enabled: false,
+		allowed_models: [],
 		instructions: null,
 		access_mode: "everyone",
 		usage_data_mode: "dm",
@@ -206,12 +208,17 @@ function matches(value: unknown, filter: string): boolean {
 	if (filter === "is.true") return value === true;
 	if (filter.startsWith("eq.")) return value !== null && value !== undefined && String(value) === filter.slice(3);
 	if (filter.startsWith("neq.")) return String(value) !== filter.slice(4);
+	// in.("a","b"), with every value quoted, as the Worker writes it.
+	if (filter.startsWith("in.(") && filter.endsWith(")")) {
+		const values = [...filter.slice(4, -1).matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((match) => match[1].replace(/\\(.)/g, "$1"));
+		return value !== null && value !== undefined && values.includes(String(value));
+	}
 	throw new Error(`fake db: unsupported filter ${filter}`);
 }
 
 const RESERVED = new Set(["select", "limit", "order", "or"]);
 
-/** An in-memory PostgREST with eq, neq and is.null filters. */
+/** An in-memory PostgREST with eq, neq, in and is filters. */
 export class FakeDb implements Db {
 	tables: Record<string, Row[]> = {
 		slack_installations: [], slack_apps: [], slack_user_links: [], workspace_audit_events: [],
