@@ -89,6 +89,9 @@ class ScriptedAgent implements AgentRunner {
 		this.requests.push(request);
 		return this.script(hooks);
 	}
+	async ask(): Promise<never> {
+		throw new Error("unexpected ask");
+	}
 }
 
 beforeEach(async () => {

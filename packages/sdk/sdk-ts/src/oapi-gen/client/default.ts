@@ -7879,6 +7879,78 @@ export async function createWebhookEndpoint(
   });
 }
 
+export type CreateWorkloadIdentityPolicyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    issuer?: string;
+    max_token_lifetime_seconds?: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+  };
+};
+
+/**
+ * Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function createWorkloadIdentityPolicy(
+  client: Client,
+  args: CreateWorkloadIdentityPolicyParams = {},
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateWorkspaceParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -8958,6 +9030,45 @@ export async function deleteWebhookEndpoint(
     deleted: true;
     id: string;
     object: "webhook_endpoint";
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function deleteWorkloadIdentityPolicy(
+  client: Client,
+  args: DeleteWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -12868,6 +12979,73 @@ export async function getWebhookEndpoint(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function getWorkloadIdentityPolicy(
+  client: Client,
+  args: GetWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
   }>({
     method: "GET",
     path: resolvedPath,
@@ -19591,6 +19769,71 @@ export async function listWebhookEndpoints(
   });
 }
 
+export type ListWorkloadIdentityPoliciesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function listWorkloadIdentityPolicies(
+  client: Client,
+  args: ListWorkloadIdentityPoliciesParams = {},
+): Promise<{
+  audience: string;
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    audience: string;
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListWorkspaceAppsParams = {
   path?: Record<string, never>;
   query?: {
@@ -25010,6 +25253,80 @@ export async function updateWebhookEndpoint(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    max_token_lifetime_seconds?: number;
+    name?: string;
+    status?: "active" | "disabled";
+  };
+};
+
+/**
+ * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function updateWorkloadIdentityPolicy(
+  client: Client,
+  args: UpdateWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
   }>({
     method: "PATCH",
     path: resolvedPath,

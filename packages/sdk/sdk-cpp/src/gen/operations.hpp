@@ -265,6 +265,11 @@ inline Response CreateWebhookEndpoint(Client& client, const std::map<std::string
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateWorkloadIdentityPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workload-identity/policies";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/workspaces";
 	return client.request("POST", resolved_path, body);
@@ -387,6 +392,11 @@ inline Response DeleteVideoAlias(Client& client, const std::map<std::string, std
 
 inline Response DeleteWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/webhook-endpoints/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteWorkloadIdentityPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workload-identity/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -617,6 +627,11 @@ inline Response GetVideoContentAlias(Client& client, const std::map<std::string,
 
 inline Response GetWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/webhook-endpoints/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetWorkloadIdentityPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workload-identity/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -887,6 +902,11 @@ inline Response ListVideosAlias(Client& client, const std::map<std::string, std:
 
 inline Response ListWebhookEndpoints(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/webhook-endpoints";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListWorkloadIdentityPolicies(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workload-identity/policies";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -1207,6 +1227,11 @@ inline Response UpdateSpendRule(Client& client, const std::map<std::string, std:
 
 inline Response UpdateWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/webhook-endpoints/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateWorkloadIdentityPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/workload-identity/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

@@ -6711,6 +6711,88 @@ class WebSearchPlugin
 	public $search_context_size;
 }
 
+class WorkloadIdentityPolicy
+{
+	/** @var string */
+	public $audience;
+	/** @var array<string, mixed> */
+	public $claim_conditions;
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $issuer;
+	/** @var string */
+	public $key_id;
+	/** @var string|null */
+	public $last_used_at;
+	/** @var int */
+	public $max_token_lifetime_seconds;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $owner_id;
+	/** @var string */
+	public $provider;
+	/** @var string */
+	public $status;
+	/** @var string */
+	public $updated_at;
+}
+
+class WorkloadIdentityPolicyDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class WorkloadIdentityPolicyInput
+{
+	/** @var array<string, mixed>|null */
+	public $claim_conditions;
+	/** @var string|null */
+	public $issuer;
+	/** @var int|null */
+	public $max_token_lifetime_seconds;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $owner_id;
+	/** @var string */
+	public $provider;
+}
+
+class WorkloadIdentityPolicyListResponse
+{
+	/** @var string */
+	public $audience;
+	/** @var array */
+	public $data;
+}
+
+class WorkloadIdentityPolicyResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class WorkloadIdentityPolicyUpdateInput
+{
+	/** @var array<string, mixed>|null */
+	public $claim_conditions;
+	/** @var int|null */
+	public $max_token_lifetime_seconds;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $status;
+}
+
+class WorkloadIdentityProvider { }
+
 class Workspace
 {
 	/** @var string|null */

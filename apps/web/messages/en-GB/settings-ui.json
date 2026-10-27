@@ -6883,7 +6883,8 @@
 			"includeAuto": "Include Auto",
 			"includeAutoHelp": "People can choose Auto, and Phaseo picks a suitable model for that message.",
 			"autoUnavailable": "Auto isn't available to this workspace, so messages that choose it can't be answered. Turn off Include Auto.",
-			"help": "Each answer keeps its {cost} cost limit and {steps}-step limit, whichever model answers. Its footer names the model that answered."
+			"help": "Each answer keeps its {cost} cost limit and {steps}-step limit, whichever model answers. Its footer names the model that answered.",
+			"askAndCompare": "The agent can also ask these models for a second opinion while it answers, and people can compare 2 or 3 of them by starting a message with {prefix}. Both count toward the answer's {cost} limit, and the footer names every model used."
 		},
 		"access": {
 			"everyone": "Everyone in Slack",

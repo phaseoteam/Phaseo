@@ -77,6 +77,9 @@ export function homeView(facts: HomeFacts) {
 			...(facts.choices?.length
 				? [`• *Choose a model:* start a message with \`with &lt;model&gt;:\` and one of ${facts.choices.map(escapeText).join(", ")}, for example \`with ${escapeText(facts.choices[0])}: …\`.`]
 				: []),
+			...(facts.choices && facts.choices.length >= 2
+				? [`• *Compare models:* start a message with \`compare &lt;model&gt;, &lt;model&gt;:\` and 2 or 3 of them, for example \`compare ${escapeText(facts.choices[0])}, ${escapeText(facts.choices[1])}: …\`. Each answers your question, in one reply.`]
+				: []),
 			...(facts.schedules?.enabled
 				? ["• *Recurring tasks:* ask it to do something regularly, for example `every weekday at 09:00, summarize yesterday's news about our industry`. It posts in that conversation, hourly at the most, at your local time."]
 				: []),

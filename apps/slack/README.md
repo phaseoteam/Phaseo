@@ -101,8 +101,8 @@ more for each question the agent asks (see below):
 
    Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training or prompt publishing; providers that keep logs without training may answer), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400.
 
-   It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
-4. `reply`: finishes the Slack message with a footer: the model's catalogue name (with Auto, also the model it picked) and the cost. A catalogue model's name links to its page (`PHASEO_WEB_ORIGIN/models/<model_slug>`; Auto has none), and the cost links to Logs filtered to the answer's session (`/settings/usage/logs/requests?session=…`, from the day before to the day after). The footer is a context block (`<url|text>` links) under a stopped stream, or italic markdown (`[text](url)`) when the answer is written with `chat.update` or `chat.postMessage`. It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
+   It stops after 12 steps or $0.50 of model spend (other models it asks count too, below). The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked. A Compare (below) asks its models instead of running the agent.
+4. `reply`: finishes the Slack message with a footer: the model's catalogue name (with Auto, also the model it picked, after an arrow; other models the answer asked or compared, after a `+`) and the cost. A catalogue model's name links to its page (`PHASEO_WEB_ORIGIN/models/<model_slug>`; Auto has none), and the cost links to Logs filtered to the answer's session (`/settings/usage/logs/requests?session=…`, from the day before to the day after). The footer is a context block (`<url|text>` links) under a stopped stream, or italic markdown (`[text](url)`) when the answer is written with `chat.update` or `chat.postMessage`. It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
 5. `finish`: counts the answer in the meter, if the person could see it, and tells the coordinator.
 
 Step outputs hold ids and statuses only. A retried step never posts twice: the
@@ -130,6 +130,48 @@ with the turn (the coordinator's `turns.model`), and the prompt is the message
 without the prefix. The run re-checks the live installation and falls back to
 its model if an admin removed the choice meanwhile. The turn's $0.50 and 12-step
 limits don't change.
+
+### Asking another model
+
+While model choice is on and at least one allowed model isn't the one answering,
+the agent gets `ask_model` (`src/ask-model.ts`): it sends another allowed model a
+self-contained prompt and gets its text back. The other model sees nothing of
+the thread beyond that prompt. It is one non-streaming `/responses` request
+(`AgentRunner.ask`) with the answer's key, `user`, `session_id`, labels and
+`x-title`, no tools and at most 4,000 output tokens. An answer may ask 3 times
+(failures count, and so do consults before a question: the run after it takes
+over `consultCount`), one consult at a time. Each consult's cost counts against the
+same $0.50: the run's stop condition adds it to the agent's own spend
+(`otherCostUsd`), and a consult is refused while less than $0.10 of the limit is
+left, so the agent can still finish. Gateway refusals become tool errors the
+agent can explain (`consultErrorText`). The models that answered travel in the
+run step's output (`consulted`, ids only) to the footer; the working memory
+notes `ask_model <model id>`, never the prompt or the answer.
+
+### Comparing models
+
+A message that starts with `compare <model>, <model>[, <model>]: <question>`
+names 2 or 3 allowed models, each matched like `with <model>:`
+(`chooseComparison` and `decideComparison` in `src/model-choice.ts`), with the
+same private refusals before the meter: a model that isn't allowed, an
+ambiguous name, a longer reading of the last name that is another catalogue
+model, fewer than 2 or more than 3 different models, or no question. A list
+that names no allowed model is an ordinary message unless one of its names is a
+catalogue model. The models travel with the turn (the coordinator's
+`turns.compare`, JSON) and the run re-checks them against the live allowlist,
+answering as usual when fewer than 2 are still allowed.
+
+The run step (`src/compare.ts`) sends the question alone to every model at
+once, each a non-streaming request with the gateway's web search and fetch
+tools and at most 4,000 output tokens, and splits what is left of the $0.50
+evenly between them. The gateway can't stop one request at a dollar amount, so
+the share is held at request boundaries like the agent's own limit: a model
+whose share is under $0.02 (a retry after earlier attempts spent most of it)
+isn't asked. The reply, written through the same stream and footer as any
+answer, has a section per model: its name linked to its page, its cost and its
+answer (cut so all of them fit one Slack message), or why it failed. It counts
+as one answer when at least one model answered; the cancel flag is checked
+every 2 seconds while the models answer.
 
 ### Questions with buttons
 
