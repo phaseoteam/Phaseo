@@ -23,6 +23,8 @@ export const SPEND_RULE_PERIODS = ["day", "week", "month", "rolling"] as const;
 export const SPEND_RULE_BASE_KINDS = ["amount", "workspace_budget", "key_limit", "previous_period"] as const;
 export const SPEND_RULE_BASE_REFS = ["daily", "weekly", "monthly"] as const;
 export const SPEND_RULE_ACTIONS = ["notify", "block"] as const;
+/** Nothing enforces blocks yet, so a rule that would block is refused rather than saved to only notify. */
+export const SPEND_RULE_BLOCKS_AVAILABLE = false;
 
 /**
  * What the evaluator handles so far (private.spend_rule_evaluable). Every metric the table
@@ -487,6 +489,7 @@ export function spendRuleProblem(rule: SpendRuleFields): string | null {
 		if (metric === "budget_percent" && rule.threshold_percents && rule.block_at_percent < Math.max(...rule.threshold_percents)) {
 			return "block_at_percent must be at least the highest of threshold_percents";
 		}
+		if (!SPEND_RULE_BLOCKS_AVAILABLE) return "action block is not available yet; use notify";
 	} else if (rule.block_at_amount_nanos !== null) {
 		return "block_at_amount is only used by spend rules that block; set it to null";
 	}

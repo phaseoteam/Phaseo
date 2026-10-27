@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है।
+      description: 'notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।'
       enum:
         - notify
         - block

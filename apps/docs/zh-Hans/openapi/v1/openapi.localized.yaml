@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。
+      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。
       enum:
         - notify
         - block

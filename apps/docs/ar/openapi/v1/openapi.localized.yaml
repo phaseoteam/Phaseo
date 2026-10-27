@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق.
+      description: 'notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. الحظر غير متاح بعد: تُرفض القاعدة التي تحمل action block برمز 400 إلى أن يصبح متاحًا.'
       enum:
         - notify
         - block

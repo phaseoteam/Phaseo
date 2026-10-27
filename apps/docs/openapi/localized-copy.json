@@ -9374,15 +9374,15 @@
 			"zh-Hans": "规则时区内的 day、week（从周一开始）或 month，或最近 window_hours 的 rolling。",
 			"ar": "day أو week (بدءًا من الاثنين) أو month في المنطقة الزمنية للقاعدة، أو rolling على آخر window_hours."
 		},
-		"notify, or notify and then block once spend reaches block_at_percent of the base or block_at_amount. Blocking is best effort and acts minutes after the threshold.": {
-			"es": "notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral.",
-			"fr": "notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil.",
-			"de": "notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert.",
-			"pt-BR": "notify, ou avisar e depois bloquear quando o gasto atingir block_at_percent da base ou block_at_amount. O bloqueio é feito com o melhor esforço e age minutos após o limite.",
-			"hi": "notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है।",
-			"ja": "notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。",
-			"zh-Hans": "notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。",
-			"ar": "notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق."
+		"notify, or notify and then block once spend reaches block_at_percent of the base or block_at_amount. Blocking is best effort and acts minutes after the threshold. Blocking is not available yet: a rule with action block is refused with a 400 until it is.": {
+			"es": "notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. El bloqueo aún no está disponible: una regla con action block se rechaza con un 400 hasta que lo esté.",
+			"fr": "notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Le blocage n’est pas encore disponible : une règle avec action block est refusée avec une erreur 400 tant qu’il ne l’est pas.",
+			"de": "notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Das Sperren ist noch nicht verfügbar: Eine Regel mit action block wird mit einem 400 abgelehnt, bis es verfügbar ist.",
+			"pt-BR": "notify, ou avisar e depois bloquear quando o gasto atingir block_at_percent da base ou block_at_amount. O bloqueio é feito com o melhor esforço e age minutos após o limite. O bloqueio ainda não está disponível: uma regra com action block é recusada com um 400 até que esteja.",
+			"hi": "notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।",
+			"ja": "notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ブロックはまだ利用できません。action が block のルールは、利用可能になるまで 400 で拒否されます。",
+			"zh-Hans": "notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。",
+			"ar": "notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. الحظر غير متاح بعد: تُرفض القاعدة التي تحمل action block برمز 400 إلى أن يصبح متاحًا."
 		},
 		"A spend rule: thresholds in dollars or percent over a scope and a period that notify, or notify and then block. Amounts are returned in nanodollars and in USD.": {
 			"es": "Una regla de gasto: umbrales en dólares o en porcentaje para un ámbito y un periodo que avisan, o avisan y después bloquean. Los importes se devuelven en nanodólares y en USD.",

@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。
+      description: notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ブロックはまだ利用できません。action が block のルールは、利用可能になるまで 400 で拒否されます。
       enum:
         - notify
         - block

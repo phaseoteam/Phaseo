@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil.
+      description: 'notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Le blocage n’est pas encore disponible : une règle avec action block est refusée avec une erreur 400 tant qu’il ne l’est pas.'
       enum:
         - notify
         - block

@@ -21837,7 +21837,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert.
+      description: 'notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Das Sperren ist noch nicht verfügbar: Eine Regel mit action block wird mit einem 400 abgelehnt, bis es verfügbar ist.'
       enum:
         - notify
         - block

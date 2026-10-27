@@ -124,13 +124,17 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 	})));
 	const deliveries: SpendRuleTestDelivery[] = destinations.map((destination, index) => {
 		const outcome = settled[index];
+		// 208: an email destination whose recipients are all suppressed, so nothing was sent.
+		const suppressed = outcome.status === "fulfilled" && outcome.value === 208;
 		return {
 			destination_id: destination.id,
 			name: String(destination.name ?? ""),
 			type: destination.type,
-			delivered: outcome.status === "fulfilled",
+			delivered: outcome.status === "fulfilled" && !suppressed,
 			status: outcome.status === "fulfilled" ? outcome.value : null,
-			error: outcome.status === "rejected" ? String(outcome.reason instanceof Error ? outcome.reason.message : outcome.reason).slice(0, 300) : null,
+			error: outcome.status === "rejected"
+				? String(outcome.reason instanceof Error ? outcome.reason.message : outcome.reason).slice(0, 300)
+				: suppressed ? "Every recipient of this email destination is suppressed" : null,
 		};
 	});
 	const delivered = deliveries.filter((delivery) => delivery.delivered).length;
