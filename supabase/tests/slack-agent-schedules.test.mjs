@@ -185,7 +185,7 @@ try {
   assert.equal(await count(), 4);
   assert.equal(await count(otherId), 2);
 
-  // Claiming: due rows once, the next run at least 59 minutes on.
+  // Claiming: due rows once, the next run at least 50 minutes on.
   const claim = async (limit = 50) => rows('select * from public.claim_slack_agent_schedules($1)', [limit]);
   assert.deepEqual(await claim(), [], 'nothing is due yet');
   const makeDue = async (id, minutesAgo) => {
@@ -205,10 +205,10 @@ try {
   const afterHourly = await schedule(hourly.schedule.id);
   assert.equal(afterHourly.last_run_at.getTime(), hourlyDue.getTime());
   assert.equal(afterHourly.last_result, null, 'running');
-  assert.ok(afterHourly.next_run_at.getTime() >= hourlyDue.getTime() + 59 * MINUTE, 'an hour later at the soonest');
+  assert.ok(afterHourly.next_run_at.getTime() >= hourlyDue.getTime() + 50 * MINUTE, '50 minutes later at the soonest');
   assert.equal(afterHourly.next_run_at.getUTCMinutes(), 5, 'at its minute');
   const afterWeekly = await schedule(weekly.schedule.id);
-  assert.ok(afterWeekly.next_run_at.getTime() > weeklyDue.getTime() + 59 * MINUTE);
+  assert.ok(afterWeekly.next_run_at.getTime() > weeklyDue.getTime() + 50 * MINUTE);
   const london = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   assert.equal(london.format(afterWeekly.next_run_at), 'Mon 09:00', 'on its own day and local time');
 
@@ -225,7 +225,7 @@ try {
   assert.deepEqual((await claim(1)).map((row) => row.schedule_id), [hourly.schedule.id]);
   assert.deepEqual((await claim(1)).map((row) => row.schedule_id), [daily.schedule.id]);
 
-  // A run claimed late, 59.5 minutes after it was due: the next run is still at least 59 minutes after the
+  // A run claimed late, 59.5 minutes after it was due: the next run is still at least 50 minutes after the
   // claim, not at its minute moments later. Resuming it keeps that gap too.
   const setStatus = async (id, status, installation = installationId) =>
     (await rows('select public.set_slack_agent_schedule_status($1, $2, $3) as result', [installation, id, status]))[0].result;
@@ -238,11 +238,21 @@ try {
   const late = await schedule(hourly.schedule.id);
   assert.ok(late.last_claimed_at.getTime() >= claimedFrom, 'when it was claimed');
   assert.ok(late.last_claimed_at.getTime() - late.last_run_at.getTime() >= 59 * MINUTE, 'last_run_at stays when it was due');
-  assert.ok(late.next_run_at.getTime() >= late.last_claimed_at.getTime() + 59 * MINUTE, 'an hour after the claim at the soonest');
+  assert.ok(late.next_run_at.getTime() >= late.last_claimed_at.getTime() + 50 * MINUTE, '50 minutes after the claim at the soonest');
   assert.equal(late.next_run_at.getUTCMinutes(), soon, 'at its minute');
   await setStatus(hourly.schedule.id, 'paused');
   const resumedLate = await setStatus(hourly.schedule.id, 'active');
-  assert.ok(Date.parse(resumedLate.next_run_at) >= late.last_claimed_at.getTime() + 59 * MINUTE, 'resuming keeps the hour after the claim');
+  assert.ok(Date.parse(resumedLate.next_run_at) >= late.last_claimed_at.getTime() + 50 * MINUTE, 'resuming keeps the gap after the claim');
+
+  // A run claimed a few minutes late keeps its next hourly slot.
+  const slot = (new Date().getUTCMinutes() + 55) % 60;
+  await db.exec('reset role');
+  await rows(`update public.slack_agent_schedules set status = 'active', minute = $2, next_run_at = now() - interval '5 minutes' where id = $1`, [hourly.schedule.id, slot]);
+  await db.exec('set role service_role');
+  assert.deepEqual((await claim()).map((row) => row.schedule_id), [hourly.schedule.id]);
+  const slightlyLate = await schedule(hourly.schedule.id);
+  assert.ok(slightlyLate.next_run_at.getTime() - slightlyLate.last_claimed_at.getTime() < 60 * MINUTE, 'the next slot, not the one after');
+  assert.equal(slightlyLate.next_run_at.getUTCMinutes(), slot);
 
   // Recording what became of a run.
   const record = async (id, runAt, result, { reason = null, pause = false } = {}) =>

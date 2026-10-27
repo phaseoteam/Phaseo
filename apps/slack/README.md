@@ -277,9 +277,10 @@ organisation can list and cancel but not set one up.
 - `cancel_slack_agent_schedule` lets the creator cancel, or a Slack person
   linked to an owner or admin of the workspace.
 - `slack_agent_schedule_next_run` computes every next run in the database.
-  Hourly is the finest frequency, and a run's next one is at least 59 minutes
+  Hourly is the finest frequency, and a run's next one is at least 50 minutes
   after it was claimed (`last_claimed_at`), even when it was claimed late, and
-  after a resume, so nothing runs more than once an hour.
+  after a resume: a late claim is never followed by another run moments later,
+  and a run claimed up to 10 minutes late keeps its next hourly slot.
 
 The cron trigger (`* * * * *`, `env.production` only; the preview Worker has
 none) calls `claim_slack_agent_schedules` once a tick (`src/scheduled-runs.ts`).
