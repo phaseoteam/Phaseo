@@ -491,7 +491,13 @@ async function postQuestion(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	}
 	const question: QuestionState | null = await coordinator.questionPosted(turn.turnId, n, ts, deps.now());
 	if (!question) return { status: "failed" };
-	if (question.status === "cancelled" || question.status === "expired") return { status: "cancelled" };
+	if (question.status === "cancelled" || question.status === "expired") {
+		// Show it ended rather than leaving buttons nobody can use.
+		if (!(await updateQuestionMessage(slack, questionTarget(turn), question))) {
+			console.warn("[slack-agent] question message not updated", { turnId: turn.turnId, question: n, status: question.status });
+		}
+		return { status: "cancelled" };
+	}
 	// The answer is in progress for as long as the question waits: its meter place stays held.
 	try {
 		await meterFor(deps.env, turn.installationId).keepPending({ eventId: turn.eventId, until: question.expiresAt ?? deps.now() });
@@ -539,21 +545,32 @@ async function pauseHistoryReads(deps: TurnDeps, turn: TurnRef, retryAfterSecond
 	}
 }
 
+/**
+ * Whether the turn may run, and which tools it is offered: read at the start and
+ * again for every run after a question, so access or usage data taken away while
+ * it waited isn't used.
+ */
+async function turnAccess(deps: TurnDeps, turn: TurnRef): Promise<{ status: "skip"; reason: string } | ({ status: "ok"; installation: Installation } & Offered)> {
+	const installation = await loadInstallation(deps.db, turn.installationId);
+	if (!installation) return { status: "skip", reason: "no_installation" };
+	if (installation.status !== "active") return { status: "skip", reason: installation.status };
+	const userId = await linkedUserId(deps.db, installation.id, turn.slackUserId);
+	if (installation.access_mode === "linked" && !userId) return { status: "skip", reason: "link_required" };
+	const allowed = conversationAllowsUsageData(installation, turn);
+	const usage = allowed && userId !== null && await isWorkspaceMember(deps.db, installation.workspace_id, userId);
+	// Someone not linked, where linking would bring the usage tools: the agent can send them the Connect button.
+	return { status: "ok", installation, usageTools: usage, connectOffer: allowed && userId === null };
+}
+
 /** Runs one turn. Each step is safe to repeat. */
 export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): Promise<{ status: RunResult["status"] | "skipped" }> {
 	const coordinator = coordinatorFor(deps.env, turn.threadKey);
 
 	const load = await step.do<LoadResult>("load", LOAD_STEP, async () => {
-		const installation = await loadInstallation(deps.db, turn.installationId);
-		if (!installation) return { status: "skip", reason: "no_installation" };
-		if (installation.status !== "active") return { status: "skip", reason: installation.status };
-		const userId = await linkedUserId(deps.db, installation.id, turn.slackUserId);
-		if (installation.access_mode === "linked" && !userId) return { status: "skip", reason: "link_required" };
-		const allowed = conversationAllowsUsageData(installation, turn);
-		const usage = allowed && userId !== null && await isWorkspaceMember(deps.db, installation.workspace_id, userId);
-		await setSessionStatus(deps.slack(await requireToken(deps, installation)), turn, "processing");
-		// Someone not linked, where linking would bring the usage tools: the agent can send them the Connect button.
-		return { status: "ok", usageTools: usage, connectOffer: allowed && userId === null };
+		const access = await turnAccess(deps, turn);
+		if (access.status === "skip") return access;
+		await setSessionStatus(deps.slack(await requireToken(deps, access.installation)), turn, "processing");
+		return { status: "ok", usageTools: access.usageTools, connectOffer: access.connectOffer };
 	}).catch((): LoadResult => ({ status: "skip", reason: "load_failed" }));
 
 	if (load.status === "skip") {
@@ -605,7 +622,16 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		return { source: "replies", messages: read.context.messages.length };
 	}).catch((): ContextResult => ({ source: "memory", messages: 0 }));
 
-	const runStep = (leg: number, costNanos: number) => step.do<RunResult>(leg ? `resume-${leg}` : "run", RUN_STEP, async ({ attempt }) => runAgent(deps, turn, coordinator, load, context, leg, attempt))
+	const runStep = (leg: number, costNanos: number) => step.do<RunResult>(leg ? `resume-${leg}` : "run", RUN_STEP, async ({ attempt }) => {
+		if (!leg) return runAgent(deps, turn, coordinator, load, context, leg, attempt);
+		// After a question, access and tools are read again: they may have changed while it waited.
+		const access = await turnAccess(deps, turn);
+		if (access.status === "skip") {
+			console.log("[slack-agent] answer stopped after a question", { turnId: turn.turnId, question: leg, reason: access.reason });
+			return { status: "cancelled", ts: null, streamed: false, explained: true, costNanos, model: null, error: null };
+		}
+		return runAgent(deps, turn, coordinator, { usageTools: access.usageTools, connectOffer: access.connectOffer }, context, leg, attempt);
+	})
 		.catch((error: unknown): RunResult => {
 			console.error("[slack-agent] turn run step failed", { turnId: turn.turnId, leg, error: error instanceof Error ? error.message : "unknown" });
 			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, requestedModel: null, model: null, error: "failed" };

@@ -452,6 +452,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			const current = this.question(turnId, n);
 			if (!current) return null;
 			current.ts ??= ts;
+			// Stopped while the question was being posted: cancel() found nothing open to wake, so it never opens.
+			if (current.status === "pending" && this.isCancelled(turnId)) current.status = "cancelled";
 			if (current.status === "pending") {
 				current.status = "open";
 				current.expiresAt = now + QUESTION_TIMEOUT_MS;

@@ -988,6 +988,55 @@ describe("AgentTurnWorkflow", () => {
 			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		});
 
+		it("ends at once, without waiting, when the thread is stopped while the question is being posted", async () => {
+			let turn!: TurnRef;
+			// The stop lands after Slack posted the question but before the coordinator opened it.
+			world.slack.nextTs = () => {
+				world.slack.nextTs = null;
+				void coordinatorOf(turn).cancel(NOW);
+				return QUESTION_TS;
+			};
+			const agent = askingAgent();
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(step.waits).toEqual([]);
+			expect(agent.requests).toHaveLength(1);
+			expect(questionUpdates().at(-1)?.args.text).toBe("Which region?\nStopped before an answer.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("reads access again after a question: usage tools taken away while it waited aren't offered, and a removed link stops the answer", async () => {
+			world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
+			world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
+			let turn!: TurnRef;
+			let resumedTools: string[] = [];
+			const agent = askingAgent({ after: async (request) => { resumedTools = request.tools.map((tool) => tool.id); return "Done."; } });
+			step.onWait = async () => {
+				world.db.tables.workspace_members = [];
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			turn = await startTurn({ channel: "D0DIRECT01" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests[0].tools.map((tool) => tool.id)).toContain("get_spend");
+			expect(resumedTools).not.toContain("get_spend");
+
+			// Only linked people may use it, and the link went while it waited: the answer stops there.
+			step = new FakeStep();
+			await install({ access_mode: "linked" });
+			world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
+			step.onWait = async () => {
+				world.db.tables.slack_user_links = [];
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			const stopped = askingAgent();
+			turn = await startTurn({ channel: "D0DIRECT01" });
+			await expect(runTurn(deps(stopped), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(stopped.requests).toHaveLength(1);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
 		it("takes a reply in the thread from the person asked as their answer, and tells anyone else who writes that it's waiting", async () => {
 			let turn!: TurnRef;
 			const agent = askingAgent({ after: async (request) => JSON.stringify(request.resume?.toolOutputs[0].output) });
