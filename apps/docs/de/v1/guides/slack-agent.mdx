@@ -144,6 +144,42 @@ Datumsangaben sind in UTC, und Wochen beginnen am Montag. Wo der Agent diese Fra
 
 Alle in einem Channel können die Antworten des Agenten lesen. Trag also nur Channels ein, deren Mitglieder die Ausgaben deines Workspace sehen dürfen. Die ID eines Channels steht in Slack unten in seinen Details, zum Beispiel `C0123ABCD`.
 
+## Gedächtnis und Skills
+
+Der Agent kann sich merken, worum dein Team ihn bittet, und Skills befolgen: gespeicherte Anweisungen für Aufgaben, die sich wiederholen. Bitte ihn in Slack darum, zum Beispiel:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance` und später `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` oder `@Phaseo forget the note about deploys`
+
+Er speichert drei Arten von Notizen, jeweils bis zu 500 Zeichen lang und in seinen eigenen Worten:
+
+| Art | Wofür |
+| --- | --- |
+| **Notiz** | Etwas, das er sich merken soll. Der Agent schlägt Notizen nach, wenn sie relevant sind. |
+| **Pin** | Etwas, das er immer im Blick behalten soll. Der Agent sieht bei jeder Nachricht bis zu 10 Pins der Unterhaltung und 10 workspaceweite Pins. |
+| **To-do** | Etwas, das verfolgt und als erledigt markiert werden kann. |
+
+Eine Notiz gehört zu dem Channel oder der Direktnachricht, in dem bzw. der sie gespeichert wurde, außer jemand bittet darum, sie für den ganzen Workspace zu speichern. In einer Unterhaltung sieht der Agent deren Notizen und die workspaceweiten, nie die eines anderen Channels oder einer anderen Direktnachricht. Workspaceweite Notizen stehen allen in deiner Organisation zur Verfügung, denen der Agent antwortet. Personen aus anderen Unternehmen in geteilten Slack Connect-Channels sehen und speichern nur die Notizen der Unterhaltung, in der sie sind, nie workspaceweite; gespeicherte Skills können sie nutzen, aber keine neuen speichern, weil Skills für den ganzen Workspace gelten. Eine Notiz kann bis zu einem Datum behalten werden, zum Beispiel mit `remember until Friday that the office is closed`, und wird danach gelöscht.
+
+Der Agent speichert eine Notiz nur, wenn ihn jemand bittet, sich etwas zu merken, es anzupinnen oder als To-do festzuhalten, oder für einen dauerhaften Fakt wie eine Entscheidung oder eine Frist. Er kopiert nie ganze Nachrichten oder Threads.
+
+### Skills
+
+Ein Skill besteht aus einem Namen, einer einzeiligen Beschreibung und Anweisungen mit bis zu 4.000 Zeichen für eine Aufgabe, die dein Team wiederholt, etwa einen Wochenbericht. Bitte den Agenten, einen zu speichern:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+Bei jeder Nachricht sieht der Agent die Namen und Beschreibungen der 20 zuletzt geänderten Skills. Er lädt die Anweisungen eines Skills, wenn eine Anfrage dazu passt oder wenn jemand darum bittet, zum Beispiel mit `@Phaseo use the Weekly report skill`. Er speichert einen Skill nur, wenn jemand ausdrücklich darum bittet, und ersetzt einen Skill mit demselben Namen nur auf Wunsch.
+
+### Was Administratoren steuern
+
+- **Agent darf Notizen behalten** (standardmäßig an, unter **Gedächtnis und Skills** in **Einstellungen → Slack**) schaltet Notizen, Pins und To-dos aus. Solange es aus ist, speichert und sieht der Agent keine und sagt Personen, die ihn bitten, sich etwas zu merken, dass ein Administrator das Gedächtnis ausgeschaltet hat. Skills funktionieren weiter. Bereits gespeicherte Notizen bleiben erhalten, und Inhaber und Administratoren können sie weiter sehen und löschen; schaltest du es wieder ein, nutzt der Agent sie wieder.
+- Jeder Slack-Workspace behält bis zu 500 Notizen und 100 Skills. Ist das Gedächtnis voll, sagt der Agent das; lösche einige, um Platz zu schaffen.
+- Inhaber und Administratoren sehen alles, was der Agent gespeichert hat, unter **Gedächtnis und Skills** in **Einstellungen → Slack**. Sie können Notizen nach Art filtern, jede Notiz und jeden Skill löschen und Name, Beschreibung und Anweisungen eines Skills bearbeiten. Das Aktivitätsprotokoll des Workspace hält diese Änderungen ohne den Text fest.
+- Beim Deinstallieren des Agenten werden alle seine Notizen und Skills gelöscht. Fügst du ihn wieder hinzu, beginnt er mit einem leeren Gedächtnis.
+
 ## Limits
 
 Inhaber und Administratoren legen diese Werte unter **Einstellungen → Slack** fest:
@@ -213,10 +249,11 @@ Die API-Bedingungen von Slack erlauben weder Training mit Slack-Daten noch deren
 - **Keine Nachrichteninhalte in den Logs von Phaseo.** Der API-Schlüssel des Agenten speichert nie Inhalte von Anfragen oder Antworten, weder in Logs noch in Caches oder Telemetrie, unabhängig von den Einstellungen deines Workspace. Seine Anfragen erscheinen trotzdem ohne Inhalt in deiner Nutzung und deinen Logs, mit den [Anfragekennzeichnungen](./request-labels.mdx) `app=slack-agent`, `slack_team` und `slack_channel` und dem [App-Titel](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Keine Anbieter, die mit Prompts trainieren.** Die [Guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** schaltet Training mit bezahlten und kostenlosen Modellen und das Veröffentlichen von Prompts ab, sodass Anbieter, die mit Prompts trainieren, nie genutzt werden. Anbieter, die Logs führen, ohne damit zu trainieren, können antworten und dabei Nachrichteninhalte nach ihren eigenen Richtlinien in diesen Logs aufbewahren; Phaseos eigene Logs, Caches und Telemetrie speichern weiterhin keine Nachrichteninhalte.
 - **Kurzes Arbeitsgedächtnis.** Für jeden Thread behält der Agent seine letzten Antworten, kurze Notizen zu den genutzten Tools, Nachrichten, die auf ihre Antwort warten, die IDs (nicht den Text) der neuesten Nachrichten des Threads, damit er weiß, ab wo er liest, wem er die Schaltfläche zum Verbinden geschickt hat und die Fragen, die er gestellt hat, mit ihren Antworten. Sie werden 7 Tage nach der letzten Aktivität im Thread gelöscht.
+- **Gedächtnis, das du sehen und löschen kannst.** Der Agent behält die Notizen, Pins, To-dos und Skills, die er auf Wunsch speichert, in seinen eigenen Worten und nie als Kopien von Nachrichten, zusammen mit der Slack-ID der Person, die darum gebeten hat. Sie bleiben, bis jemand sie löscht, das Datum verstrichen ist, bis zu dem sie behalten werden sollten, oder du den Agenten deinstallierst. Inhaber und Administratoren können sie unter **Einstellungen → Slack** sehen und löschen und dort Notizen ausschalten (siehe oben, „Gedächtnis und Skills“). Personen aus anderen Unternehmen sehen nie workspaceweite Notizen.
 - **Nichts archiviert.** Phaseo archiviert nichts aus Slack. Die eigenen Logs des Agenten enthalten nur Slack-IDs und Status.
 - **Verschlüsselte Secrets.** Bot-Tokens und die Secrets deiner Slack-App werden verschlüsselt gespeichert und nie wieder angezeigt.
 
-Beim Deinstallieren werden der API-Schlüssel des Agenten gelöscht und seine Guardrail entfernt.
+Beim Deinstallieren werden der API-Schlüssel des Agenten, seine Notizen und gespeicherten Skills gelöscht und seine Guardrail entfernt.
 
 ## Deine eigene Slack-App verwenden
 
@@ -340,7 +377,7 @@ Ein paar Regeln für deine eigene App:
 ## Pausieren oder deinstallieren
 
 - **Antworten pausieren** unter **Einstellungen → Slack** stoppt alle Antworten, bis du **Antworten fortsetzen** wählst. Wer dem Agenten schreibt, bekommt einen privaten Hinweis, dass er pausiert ist.
-- **Deinstallieren** stoppt den Agenten sofort, löscht seinen API-Schlüssel, entfernt seine Guardrail und entfernt die App aus Slack. Wenn Slack das Entfernen nicht bestätigt, sagt Phaseo dir das, und du solltest die App auch in Slack entfernen. Die Guardrail bleibt, wenn du sie anderen Schlüsseln oder Mitgliedern zugewiesen hast.
+- **Deinstallieren** stoppt den Agenten sofort, löscht seinen API-Schlüssel, seine Notizen und gespeicherten Skills, entfernt seine Guardrail und entfernt die App aus Slack. Wenn Slack das Entfernen nicht bestätigt, sagt Phaseo dir das, und du solltest die App auch in Slack entfernen. Die Guardrail bleibt, wenn du sie anderen Schlüsseln oder Mitgliedern zugewiesen hast.
 - Wenn die App in Slack entfernt oder ihr Bot-Token widerrufen wird, wird sie in Phaseo auf dieselbe Weise deinstalliert.
 
 Frühere Abrechnungen bleiben in deinem Abrechnungsverlauf. Die Personen, die den Agenten in dem Monat genutzt haben, in dem du ihn deinstallierst, werden trotzdem am Ende dieses Monats abgerechnet. Du kannst den Agenten jederzeit wieder hinzufügen.

@@ -6999,6 +6999,70 @@
 			"removeDescription": "Phaseo löscht die gespeicherten Angaben. Spätere Installationen nutzen die Slack-App von Phaseo.",
 			"notAvailable": "Eine eigene Slack-App zu nutzen ist noch nicht verfügbar."
 		},
+		"memory": {
+			"title": "Gedächtnis und Skills",
+			"description": "Notizen, Pins und To-dos, die der Agent speichert, wenn ihn jemand bittet, sich etwas zu merken, und Skills, die er auf Wunsch speichert. Es sind kurze Notizen in den Worten des Agenten, keine Kopien von Slack-Nachrichten. Beim Deinstallieren werden alle gelöscht.",
+			"enable": "Agent darf Notizen behalten",
+			"enableHelp": "Notizen, Pins und To-dos, die er auf Wunsch speichert und in späteren Antworten sieht. Ausgeschaltet speichert und sieht er keine. Bereits gespeicherte Notizen bleiben erhalten, und du kannst sie hier weiter ansehen und löschen. Skills funktionieren in beiden Fällen.",
+			"externalHelp": "Personen aus anderen Unternehmen (Slack Connect) sehen und speichern nur Notizen für ihre eigene Unterhaltung, nie die des ganzen Workspace.",
+			"turnedOn": "Der Agent behält wieder Notizen.",
+			"turnedOff": "Der Agent behält keine Notizen mehr. Gespeicherte Notizen bleiben erhalten.",
+			"loading": "Wird geladen…",
+			"notesTitle": "Notizen, Pins und To-dos",
+			"skillsTitle": "Skills",
+			"used": "{used} von {limit} gespeichert",
+			"filter": "Anzeigen",
+			"filters": {
+				"all": "Alle",
+				"note": "Notizen",
+				"pin": "Pins",
+				"todo": "To-dos"
+			},
+			"kinds": {
+				"note": "Notiz",
+				"pin": "Pin",
+				"todo": "To-do"
+			},
+			"columns": {
+				"note": "Notiz",
+				"kind": "Art",
+				"where": "Wo",
+				"saved": "Gespeichert",
+				"actions": "Aktionen"
+			},
+			"workspaceWide": "Ganzer Workspace",
+			"channel": "Kanal {id}",
+			"directMessage": "Direktnachricht {id}",
+			"by": "von {user}",
+			"doneOn": "Erledigt am {date}",
+			"expires": "Behalten bis {date}",
+			"noNotes": "Noch nichts gespeichert. In Slack kann man den Agenten bitten, sich etwas zu merken, es anzupinnen oder als To-do festzuhalten.",
+			"noNotesOfKind": "Nichts dieser Art gespeichert.",
+			"noSkills": "Noch keine Skills gespeichert. In Slack kann man den Agenten bitten, einen Skill für eine wiederkehrende Aufgabe zu speichern.",
+			"skillMeta": "Gespeichert von {user} · aktualisiert am {date}",
+			"skillName": "Name",
+			"skillDescription": "Beschreibung",
+			"skillInstructions": "Anweisungen",
+			"edit": "Bearbeiten",
+			"delete": "Löschen",
+			"saveSkill": "Skill speichern",
+			"skillSaved": "Skill gespeichert.",
+			"skillDeleted": "Skill gelöscht.",
+			"noteDeleted": "Notiz gelöscht.",
+			"deleteNote": "Notiz löschen",
+			"deleteNoteTitle": "Diese Notiz löschen?",
+			"deleteNoteDescription": "Der Agent vergisst sie sofort. Das lässt sich nicht rückgängig machen.",
+			"deleteSkillTitle": "{name} löschen?",
+			"deleteSkillDescription": "Der Agent kann ihn dann nicht mehr verwenden. Das lässt sich nicht rückgängig machen.",
+			"problems": {
+				"required": "Darf nicht leer sein.",
+				"tooLong": "Höchstens {max} Zeichen."
+			},
+			"errors": {
+				"memoryNotFound": "Das wurde bereits gelöscht. Lade die Seite neu, um den aktuellen Stand zu sehen.",
+				"skillNameTaken": "Ein anderer gespeicherter Skill hat bereits diesen Namen."
+			}
+		},
 		"uninstall": {
 			"description": "Entfernt den Agenten aus Slack und löscht seinen API-Schlüssel. Frühere Abrechnungen bleiben in deinem Abrechnungsverlauf.",
 			"button": "Deinstallieren",

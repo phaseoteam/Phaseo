@@ -332,6 +332,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		slackUserId: user,
 		kind,
 		...(model ? { model } : {}),
+		...(facts.isExternal ? { external: true } : {}),
 		text,
 	}, now);
 	if (queued.status === "queue_full") {

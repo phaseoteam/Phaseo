@@ -6999,6 +6999,70 @@
 			"removeDescription": "Phaseo は保存済みの情報を削除します。以後のインストールには Phaseo の Slack アプリが使われます。",
 			"notAvailable": "独自の Slack アプリはまだ利用できません。"
 		},
+		"memory": {
+			"title": "メモリとスキル",
+			"description": "覚えておくよう頼まれたときにエージェントが保存するメモ、ピン、To-Do と、保存を頼まれたスキルです。エージェント自身の言葉で書いた短いメモで、Slack メッセージのコピーではありません。アンインストールするとすべて削除されます。",
+			"enable": "エージェントにメモを残させる",
+			"enableHelp": "頼まれたときに保存し、以降の回答で参照するメモ、ピン、To-Do です。オフにすると、保存も参照もしません。保存済みのメモは残り、ここで引き続き確認・削除できます。スキルはどちらでも使えます。",
+			"externalHelp": "他社の人（Slack Connect）が見たり保存したりできるのは自分の会話のメモだけで、ワークスペース全体のメモは対象外です。",
+			"turnedOn": "エージェントがまたメモを残すようになりました。",
+			"turnedOff": "エージェントはメモを残さなくなりました。保存済みのメモは残ります。",
+			"loading": "読み込み中…",
+			"notesTitle": "メモ、ピン、To-Do",
+			"skillsTitle": "スキル",
+			"used": "{limit} 件中 {used} 件を保存済み",
+			"filter": "表示",
+			"filters": {
+				"all": "すべて",
+				"note": "メモ",
+				"pin": "ピン",
+				"todo": "To-Do"
+			},
+			"kinds": {
+				"note": "メモ",
+				"pin": "ピン",
+				"todo": "To-Do"
+			},
+			"columns": {
+				"note": "メモ",
+				"kind": "種類",
+				"where": "場所",
+				"saved": "保存日",
+				"actions": "操作"
+			},
+			"workspaceWide": "ワークスペース全体",
+			"channel": "チャンネル {id}",
+			"directMessage": "ダイレクトメッセージ {id}",
+			"by": "{user} が保存",
+			"doneOn": "{date} に完了",
+			"expires": "{date} まで保持",
+			"noNotes": "まだ何も保存されていません。Slack でエージェントに、何かを覚えておく、ピン留めする、やることとして記録するよう頼めます。",
+			"noNotesOfKind": "この種類のものは保存されていません。",
+			"noSkills": "まだスキルは保存されていません。Slack で、繰り返す作業のスキルを保存するようエージェントに頼めます。",
+			"skillMeta": "{user} が保存 · {date} に更新",
+			"skillName": "名前",
+			"skillDescription": "説明",
+			"skillInstructions": "指示",
+			"edit": "編集",
+			"delete": "削除",
+			"saveSkill": "スキルを保存",
+			"skillSaved": "スキルを保存しました。",
+			"skillDeleted": "スキルを削除しました。",
+			"noteDeleted": "メモを削除しました。",
+			"deleteNote": "メモを削除",
+			"deleteNoteTitle": "このメモを削除しますか？",
+			"deleteNoteDescription": "エージェントはすぐにこれを忘れます。元に戻すことはできません。",
+			"deleteSkillTitle": "{name} を削除しますか？",
+			"deleteSkillDescription": "エージェントはこのスキルを使えなくなります。元に戻すことはできません。",
+			"problems": {
+				"required": "空欄にはできません。",
+				"tooLong": "{max} 文字以内で入力してください。"
+			},
+			"errors": {
+				"memoryNotFound": "すでに削除されています。再読み込みして最新の状態を確認してください。",
+				"skillNameTaken": "同じ名前の保存済みスキルがすでにあります。"
+			}
+		},
 		"uninstall": {
 			"description": "エージェントを Slack から外し、その API キーを削除します。過去の請求は請求履歴に残ります。",
 			"button": "アンインストール",

@@ -23,8 +23,9 @@ deduped by event id.
 **Removed in Slack.** When an admin removes the app inside Slack (`app_uninstalled`),
 or its bot token is revoked (`tokens_revoked` listing the bot user), the Worker
 calls `uninstall_slack_agent_from_slack`. In one transaction it deletes the
-installation's gateway key, marks the installation uninstalled, removes its
-guardrail and records `slack_agent.uninstalled_in_slack` in the audit log, in
+installation's gateway key, marks the installation uninstalled (which deletes
+its notes and skills), removes its guardrail and records
+`slack_agent.uninstalled_in_slack` in the audit log, in
 the same order as Uninstall in Phaseo settings. The Worker handles this event
 before answering Slack, so a database failure returns 500 and Slack retries it.
 Repeats are safe, and an event older than the current install is ignored. The
@@ -172,6 +173,45 @@ workspace. They sum in the database (`get_workspace_spend_buckets`,
 linked an account (an installation open to everyone), the agent gets
 `connect_phaseo_account` instead: it sends the Connect button privately when
 they ask about usage, at most once per person in a thread.
+
+### Memory and skills
+
+Turns get the memory tools (`src/memory.ts`): `remember`, `recall`,
+`update_todo` and `forget` for notes, pins and to-dos, and `save_skill`,
+`list_skills` and `use_skill` for skills (named instructions for a repeated
+task). Slack's API terms forbid archiving Slack messages, so the instructions
+tell the model to save a short note in its own words only when someone asks it
+to remember something (or for a lasting fact), never a copied message, and to
+save a skill only when someone explicitly asks.
+
+- A note is for one conversation (`channel_id`) or the whole Slack workspace
+  (null). A turn only ever reads or changes its own conversation's notes and the
+  workspace's. Notes can expire; expired ones are hidden at once and deleted on
+  the next turn or save.
+- Someone from another organisation (Slack Connect; the `isExternal` fact the
+  meter checks) gets only their conversation's notes: the Worker marks their
+  turn `external` in the coordinator, the turn passes `p_workspace_notes: false`
+  to every note function, and `remember` has no workspace scope. Skills are the
+  same for everyone.
+- `slack_installations.memory_enabled` (on by default) is the admins' switch.
+  Off, turns get only the skill tools and no pins, and the note functions read,
+  save, change and forget nothing (`save_slack_agent_note` returns
+  `memory_off`). Saved notes are kept; admins can still list and delete them.
+- Before the conversation, the prompt lists up to 10 of the conversation's pins
+  and 10 workspace pins (as above, when the turn may see them), and the names
+  and descriptions of the 20 most recently changed skills
+  (`load_slack_agent_turn_memory`, one call). A failed read leaves them out; the
+  turn goes on.
+- Writes go through database functions with the service role
+  (`save_slack_agent_note`, `save_slack_agent_skill`), which cap an installation
+  at 500 notes and 100 skills and lock the installation row while they write.
+  The service role can't insert into `slack_agent_notes` or `slack_agent_skills`
+  directly.
+- Owners and admins list, delete and edit them in Settings → Slack (web-api
+  `/api/account/settings/slack/memory`).
+- Marking an installation uninstalled, from Phaseo settings or in Slack, deletes
+  its notes and skills in the same transaction (the `delete_slack_agent_memory`
+  trigger).
 
 ## Secrets
 

@@ -144,6 +144,42 @@ Las fechas están en UTC y las semanas empiezan el lunes. Elige dónde puede res
 
 Todos los miembros de un canal pueden leer las respuestas del agente, así que indica solo canales cuyos miembros puedan ver el gasto de tu espacio de trabajo. El ID de un canal está al final de sus detalles en Slack, como `C0123ABCD`.
 
+## Memoria y habilidades
+
+El agente puede recordar lo que tu equipo le pida y seguir habilidades: instrucciones guardadas para tareas que se repiten. Pídeselo en Slack, por ejemplo:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance` y, más tarde, `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` o `@Phaseo forget the note about deploys`
+
+Guarda tres tipos de nota, cada una de hasta 500 caracteres y con sus propias palabras:
+
+| Tipo | Para qué sirve |
+| --- | --- |
+| **Nota** | Algo que recordar. El agente consulta las notas cuando son relevantes. |
+| **Fijada** | Algo que tener siempre presente. El agente ve hasta 10 notas fijadas de la conversación y 10 de todo el espacio de trabajo con cada mensaje. |
+| **Tarea** | Algo que seguir, que se puede marcar como hecho. |
+
+Una nota pertenece al canal o al mensaje directo en el que se guardó, salvo que alguien pida que sea para todo el espacio de trabajo. En una conversación, el agente ve las notas de esa conversación y las de todo el espacio de trabajo, nunca las de otro canal o mensaje directo. Las notas de todo el espacio de trabajo están disponibles para todas las personas de tu organización a las que responde el agente. Las personas de otras empresas en canales compartidos de Slack Connect solo ven y guardan las notas de la conversación en la que están, nunca las de todo el espacio de trabajo; pueden usar las habilidades guardadas, pero no guardar otras nuevas, porque las habilidades se aplican a todo el espacio de trabajo. Una nota puede guardarse hasta una fecha, por ejemplo con `remember until Friday that the office is closed`, y se elimina después.
+
+El agente solo guarda una nota cuando alguien le pide que recuerde algo, lo fije o lo apunte como tarea, o para un dato duradero, como una decisión o una fecha límite. Nunca copia mensajes ni hilos completos.
+
+### Habilidades
+
+Una habilidad es un nombre, una descripción de una línea e instrucciones de hasta 4000 caracteres para una tarea que tu equipo repite, como un informe semanal. Pídele al agente que guarde una:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+Con cada mensaje, el agente ve los nombres y las descripciones de las 20 habilidades cambiadas más recientemente. Carga las instrucciones de una habilidad cuando una petición encaja con ella o cuando alguien lo pide, por ejemplo con `@Phaseo use the Weekly report skill`. Solo guarda una habilidad cuando alguien se lo pide expresamente, y solo sustituye una habilidad con el mismo nombre si se lo piden.
+
+### Qué controlan los administradores
+
+- **Permitir que el agente guarde notas** (activado de forma predeterminada, en **Memoria y habilidades** de **Ajustes → Slack**) desactiva las notas, notas fijadas y tareas. Mientras está desactivado, el agente no guarda ni ve ninguna, y a quien le pide que recuerde algo le dice que un administrador ha desactivado la memoria. Las habilidades siguen funcionando. Las notas ya guardadas se conservan, y los propietarios y administradores pueden seguir viéndolas y eliminándolas; si lo vuelves a activar, el agente vuelve a usarlas.
+- Cada espacio de trabajo de Slack guarda hasta 500 notas y 100 habilidades. Cuando la memoria está llena, el agente lo dice; elimina algunas para hacer sitio.
+- Los propietarios y administradores ven todo lo que ha guardado el agente en **Memoria y habilidades**, en **Ajustes → Slack**. Pueden filtrar las notas por tipo, eliminar cualquier nota o habilidad y editar el nombre, la descripción y las instrucciones de una habilidad. El registro de actividad del espacio de trabajo guarda estos cambios sin el texto.
+- Al desinstalar el agente se eliminan todas sus notas y habilidades. Si lo vuelves a añadir, empieza con la memoria vacía.
+
 ## Límites
 
 Los propietarios y administradores los fijan en **Ajustes → Slack**:
@@ -213,10 +249,11 @@ Las condiciones de la API de Slack no permiten entrenar con datos de Slack ni ar
 - **Sin contenido de mensajes en los registros de Phaseo.** La clave de API del agente nunca guarda el contenido de las solicitudes ni de las respuestas, ni en registros ni en cachés ni en telemetría, sea cual sea la configuración de tu espacio de trabajo. Sus solicitudes siguen apareciendo en tu uso y tus registros sin contenido, con las [etiquetas de solicitud](./request-labels.mdx) `app=slack-agent`, `slack_team` y `slack_channel` y el [título de aplicación](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Ningún proveedor que entrene con prompts.** El [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desactiva el entrenamiento con modelos de pago y gratuitos y la publicación de prompts, así que nunca se usan proveedores que entrenan con prompts. Pueden responder proveedores que guardan registros sin entrenar con ellos, y pueden conservar el contenido de los mensajes en esos registros según sus propias políticas; los registros, cachés y telemetría de Phaseo siguen sin guardar el contenido de los mensajes.
 - **Memoria de trabajo breve.** Para cada hilo, el agente guarda sus respuestas recientes, notas breves sobre las herramientas que usó, los mensajes que esperan su turno, los ID (no el texto) de los mensajes recientes del hilo para saber desde dónde leer, a quién ha enviado el botón para conectar la cuenta y las preguntas que hizo, con sus respuestas. Se eliminan 7 días después de la última actividad del hilo.
+- **Memoria que puedes ver y eliminar.** El agente guarda las notas, notas fijadas, tareas y habilidades que le piden guardar, con sus propias palabras y nunca como copias de mensajes, junto con el ID de Slack de quien lo pidió. Se mantienen hasta que alguien las elimina, pasa la fecha hasta la que debían guardarse o desinstalas el agente. Los propietarios y administradores pueden verlas y eliminarlas en **Ajustes → Slack**, y desactivar ahí las notas (consulta «Memoria y habilidades», más arriba). Las personas de otras empresas nunca ven las notas de todo el espacio de trabajo.
 - **Nada archivado.** Phaseo no archiva nada de Slack. Los registros propios del agente solo guardan ID y estados de Slack.
 - **Secretos cifrados.** Los tokens de bot y los secretos de tu aplicación de Slack se guardan cifrados y no se vuelven a mostrar.
 
-Al desinstalar, se elimina la clave de API del agente y se quita su guardrail.
+Al desinstalar, se eliminan la clave de API del agente, sus notas y sus habilidades guardadas, y se quita su guardrail.
 
 ## Usar tu propia aplicación de Slack
 
@@ -340,7 +377,7 @@ Algunas reglas para tu propia aplicación:
 ## Pausar o desinstalar
 
 - **Pausar respuestas**, en **Ajustes → Slack**, detiene todas las respuestas hasta que selecciones **Reanudar respuestas**. Quien escriba al agente recibe un aviso privado de que está en pausa.
-- **Desinstalar** detiene el agente al instante, elimina su clave de API, quita su guardrail y quita la aplicación de Slack. Si Slack no confirma que la quitó, Phaseo te lo indica, y deberías quitar la aplicación también en Slack. El guardrail se mantiene si lo has añadido a otras claves o miembros.
+- **Desinstalar** detiene el agente al instante, elimina su clave de API, sus notas y sus habilidades guardadas, quita su guardrail y quita la aplicación de Slack. Si Slack no confirma que la quitó, Phaseo te lo indica, y deberías quitar la aplicación también en Slack. El guardrail se mantiene si lo has añadido a otras claves o miembros.
 - Quitar la aplicación dentro de Slack, o revocar su token de bot, la desinstala en Phaseo de la misma forma.
 
 Los cargos anteriores se quedan en tu historial de facturación. Las personas que usaron el agente en el mes en que lo desinstalas se cobran igualmente cuando termina ese mes. Puedes volver a añadir el agente en cualquier momento.
