@@ -13,12 +13,17 @@ set -euo pipefail
 API_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${BROADCAST_SMOKE_DIR:-${TMPDIR:-/tmp}/broadcast-smoke}"
 EXTRA="${1:-}"
+# The config copies credentials from destinations.json, and the key and S3
+# secrets are written here too: keep every work file private to this user.
+umask 077
 mkdir -p "$WORK/out" "$WORK/tls" "$WORK/buckets/phaseo-smoke" "$WORK/object-metadata"
+chmod 700 "$WORK" "$WORK/out" "$WORK/tls"
 rm -f "$WORK/out/traces.jsonl"
 
 # A throwaway certificate, trusted only by this run through NODE_EXTRA_CA_CERTS.
 # localtest.me resolves to 127.0.0.1; the OTLP sender refuses "localhost".
-if [ ! -f "$WORK/tls/cert.pem" ]; then
+# It lasts 30 days, so one expiring within a day is replaced.
+if [ ! -f "$WORK/tls/cert.pem" ] || ! openssl x509 -checkend 86400 -noout -in "$WORK/tls/cert.pem" >/dev/null 2>&1; then
 	MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=localhost" \
 		-addext "subjectAltName=DNS:localhost,DNS:localtest.me,IP:127.0.0.1" \
 		-keyout "$WORK/tls/key.pem" -out "$WORK/tls/cert.pem" 2>/dev/null

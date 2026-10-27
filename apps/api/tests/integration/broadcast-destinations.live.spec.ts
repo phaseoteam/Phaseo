@@ -694,12 +694,19 @@ describe.skipIf(!live)("Broadcast destinations (live)", () => {
 			afterAll(async () => {
 				if (spec.cleanup === false) return;
 				const ids = (["full", "private"] as const).flatMap((variant) => buildRunIds(runId, variant, spec.name));
+				// fetch resolves on an error status, such as a key without delete
+				// permission, so each response is checked.
+				const succeeded = async (response: Response, what: string) => {
+					if (!response.ok) throw new Error(`${what} returned ${response.status}: ${(await response.text()).slice(0, 200)}`);
+				};
 				try {
 					if (["s3", "r2", "gcs"].includes(spec.type)) {
 						const config = destinationRow(spec, "full", runId, spec.config).destination_config;
-						for (const key of await objectKeys(spec, config, `phaseo-smoke/${runId}/`)) await s3Request(spec, config, "DELETE", objectUrl(spec, config, key));
+						for (const key of await objectKeys(spec, config, `phaseo-smoke/${runId}/`)) {
+							await succeeded(await s3Request(spec, config, "DELETE", objectUrl(spec, config, key)), `DELETE ${key}`);
+						}
 					} else if (spec.type === "clickhouse") {
-						await clickHouseQuery(spec.config, `DELETE FROM ${chTable(spec.config)} WHERE event_id IN (${sqlList(ids)})`);
+						await succeeded(await clickHouseQuery(spec.config, `DELETE FROM ${chTable(spec.config)} WHERE event_id IN (${sqlList(ids)})`), "ClickHouse DELETE");
 					} else if (spec.type === "snowflake") {
 						await snowflakeStatement(spec.config, `DELETE FROM ${sfTable(spec.config)} WHERE EVENT_ID IN (${placeholders(ids.length)})`, ids);
 					} else if (spec.type === "bigquery") {
