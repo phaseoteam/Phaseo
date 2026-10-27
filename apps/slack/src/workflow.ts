@@ -368,7 +368,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		}
 		await checkCancel();
 		costUsd = answers.reduce((sum, answer) => sum + answer.costUsd, 0);
-		const failures = answers.flatMap((answer) => answer.error && answer.error !== "skipped" ? [answer.error] : []);
+		const failures = answers.flatMap((answer) => answer.error && answer.error !== "skipped" ? [answer.error === "empty" ? "failed" as const : answer.error] : []);
 		const answered = answers.some((answer) => answer.error === null);
 		await reply.push(cancelled ? "_Stopped._" : comparisonText(answers, await linkedModels(deps.db, deps.env, compared)));
 		await reply.close();

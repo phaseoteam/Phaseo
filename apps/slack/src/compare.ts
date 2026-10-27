@@ -28,8 +28,12 @@ export type ComparedAnswer = {
 	model: string;
 	text: string;
 	costUsd: number;
-	/** Why the model gave no answer: a gateway error, or `skipped` when its share of the limit was too small. */
-	error: TurnErrorKind | "skipped" | null;
+	/**
+	 * Why the model gave no answer: a gateway error, `skipped` when its share of
+	 * the limit was too small, or `empty` when it ran out of output without writing
+	 * any (its cost still counts).
+	 */
+	error: TurnErrorKind | "skipped" | "empty" | null;
 };
 
 /**
@@ -67,7 +71,8 @@ export async function compareAnswers(agent: AgentRunner, args: {
 		if (share < COMPARE_MIN_SHARE_USD) return { model, text: "", costUsd: 0, error: "skipped" };
 		try {
 			const output = await agent.ask({ ...args.request, model, instructions: args.instructions, prompt: args.question, webTools: true, maxOutputTokens: COMPARE_MAX_OUTPUT_TOKENS });
-			return { model, text: output.text, costUsd: output.costUsd, error: null };
+			// A reasoning model can use its whole output allowance before writing anything.
+			return { model, text: output.text, costUsd: output.costUsd, error: output.text.trim() ? null : "empty" };
 		} catch (error) {
 			return { model, text: "", costUsd: 0, error: classifyTurnError(error, model) };
 		}
@@ -79,6 +84,8 @@ function failureText(error: Exclude<ComparedAnswer["error"], null>): string {
 	switch (error) {
 		case "skipped":
 			return `_Not asked: this answer's $${TURN_MAX_COST_USD.toFixed(2)} limit was already used._`;
+		case "empty":
+			return "_No answer: this model used its whole output allowance before writing one._";
 		case "no_credits":
 			return "_This Phaseo workspace is out of credits. An admin can add credits in Phaseo billing._";
 		case "cap_reached":
@@ -103,9 +110,10 @@ export function comparisonText(answers: ComparedAnswer[], names: Map<string, Foo
 	const perSection = Math.floor(SECTIONS_CHARS / Math.max(1, answers.length));
 	return answers.map((answer) => {
 		const model = names.get(answer.model) ?? { name: answer.model, url: null };
-		const heading = `**${markdownLink(model.name, model.url)}**${answer.error ? "" : ` · ${costText(Math.round(answer.costUsd * 1_000_000_000))}`}`;
+		// What a model cost shows even when it gave no answer, as long as it cost something.
+		const heading = `**${markdownLink(model.name, model.url)}**${answer.error && !answer.costUsd ? "" : ` · ${costText(Math.round(answer.costUsd * 1_000_000_000))}`}`;
 		const room = perSection - heading.length - 4;
-		const body = answer.error ? failureText(answer.error) : answer.text || "_No answer._";
+		const body = answer.error ? failureText(answer.error) : answer.text;
 		return `${heading}\n\n${body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body}`;
 	}).join("\n\n");
 }

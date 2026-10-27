@@ -1014,6 +1014,16 @@ describe("AgentTurnWorkflow", () => {
 			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		});
 
+		it("isn't counted when every model runs out of output without an answer, but keeps what they cost", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => ({ text: "", costUsd: 0.02 }));
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain("_No answer: this model used its whole output allowance before writing one._");
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "failed", costNanos: 40_000_000 });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
 		it("stops when the thread is cancelled while the models answer, and isn't counted", async () => {
 			await compareInstall();
 			let turn!: TurnRef;

@@ -74,6 +74,16 @@ describe("Compare", () => {
 		expect(answers.map((answer) => [answer.model, answer.error])).toEqual([[LUNA, null], [OPUS, "model_not_allowed"], [AUTO, "model_not_allowed"]]);
 	});
 
+	it("treats an answer with no text as failed, keeping what it cost", async () => {
+		// A reasoning model can use its whole output allowance before writing anything.
+		const { agent } = agentAnswering(async (request) => ({ text: request.model === LUNA ? "Luna's answer" : "  \n", costUsd: 0.03 }));
+		const answers = await compareAnswers(agent, { models: [LUNA, OPUS], question: "q", instructions: "", request: REQUEST, budgetUsd: 0.5 });
+		expect(answers).toEqual([
+			{ model: LUNA, text: "Luna's answer", costUsd: 0.03, error: null },
+			{ model: OPUS, text: "  \n", costUsd: 0.03, error: "empty" },
+		]);
+	});
+
 	it("splits what is left of the limit evenly, and doesn't ask when a share is too small", async () => {
 		const { agent, asks } = agentAnswering(async () => ({ text: "ok", costUsd: 0.01 }));
 		// A retry after earlier attempts spent $0.47: $0.015 each.
@@ -94,7 +104,7 @@ describe("Compare", () => {
 		const answers: ComparedAnswer[] = [
 			{ model: LUNA, text: "Luna is faster.", costUsd: 0.0123, error: null },
 			{ model: OPUS, text: "", costUsd: 0, error: "model_unavailable" },
-			{ model: AUTO, text: "", costUsd: 0.001, error: null },
+			{ model: AUTO, text: "", costUsd: 0.001, error: "empty" },
 		];
 		expect(comparisonText(answers, names)).toBe([
 			"**[GPT-6 Luna](https://phaseo.app/models/openai/gpt-6-luna)** · $0.0123",
@@ -107,7 +117,7 @@ describe("Compare", () => {
 			"",
 			"**Auto** · $0.0010",
 			"",
-			"_No answer._",
+			"_No answer: this model used its whole output allowance before writing one._",
 		].join("\n"));
 		// A model the names don't cover keeps its id.
 		expect(comparisonText([{ model: "acme/x", text: "hi", costUsd: 0, error: "skipped" }], new Map())).toBe("**acme/x**\n\n_Not asked: this answer's $0.50 limit was already used._");
