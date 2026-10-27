@@ -36,6 +36,7 @@ import { reportScheduledRun, skippedTurnOutcome } from "./scheduled-runs";
 import { scheduleInstructions, scheduleMode, scheduleTools, type ScheduleMode } from "./schedules";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import { attachmentParts, fileLines, readableKinds, readSharedFiles, unreadByModel, uploadToThread, type FileOutcome, type SharedFile, type SharedFileRef } from "./slack-files";
+import { FILE_SEARCH_SCOPE, MAX_SEARCHES_PER_ANSWER, searchAvailability, searchedThisAnswer, searchInstructions, searchSlackTool, type SearchAvailability, type SearchedThisAnswer } from "./slack-search";
 import { answerEventType, turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
@@ -87,13 +88,22 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 // answer's image limit counts every run's. Installations whose Slack permissions
 // predate a scope are told what an admin can do instead.
 //
+// Slack search: with search:read.public, where its admins allow it, the agent
+// can search Slack as the person asking (search_slack, slack-search.ts), with
+// the action token the coordinator holds for the turn's message. The results
+// go to the model and nowhere else. Once the answer has searched (the
+// coordinator counts its searches, across its runs and retries), it asks no
+// questions and saves no notes, skills or recurring tasks (searchedThisAnswer),
+// so nothing the model writes after a search is kept.
+//
 // An unanswered question ends the answer there, and the answer is still counted
 // (the person saw it). Stopping the thread while it waits ends it uncounted. The
 // whole thing is one answer in the meter.
 //
 // A run of a recurring task (turn.schedule, scheduled-runs.ts) is the same turn,
 // answering the "Scheduled:" message for the person who set it up, without the
-// question or schedule tools. Its skip or finish step records what became of it.
+// question or schedule tools or Slack search. Its skip or finish step records
+// what became of it.
 //
 // Step outputs are kept with the instance (for a day), so they hold ids and
 // statuses only. Slack text lives in the coordinator, which deletes it within 7
@@ -220,8 +230,14 @@ export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, 
 /** What the agent can post in the thread: charts (make_chart) and generated images (generate_image), with files:write. */
 export type PostAbilities = { charts: boolean; images: boolean };
 
-/** posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode); a scheduled run can't ask questions. */
-export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }, schedules?: ScheduleMode): string {
+/** Whether the turn can search Slack (search_slack), for the person asking (asker), and whether others read the answer (inChannel). */
+export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean };
+
+/**
+ * posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode), and a
+ * scheduled run can't ask questions; search: whether it can search Slack.
+ */
+export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }, schedules?: ScheduleMode, search?: SearchOffer): string {
 	const lines = [
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
@@ -245,6 +261,7 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 	} else {
 		lines.push("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack), and answer in text meanwhile.");
 	}
+	if (search) lines.push(searchInstructions(search.availability, search.asker, search.inChannel));
 	if (installation.instructions?.trim()) lines.push("", "Instructions from this workspace's admins:", installation.instructions.trim());
 	return lines.join("\n");
 }
@@ -291,12 +308,12 @@ async function offerConnect(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 
 /**
  * The usage tools or the Connect button where they apply, then the note tools the turn's access allows, the skill
- * tools and the recurring task tools (none in a scheduled run).
+ * tools and the recurring task tools (none in a scheduled run). Those that save text refuse once the answer has searched Slack.
  */
-function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess, schedules: ScheduleMode, leg: number) {
+function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess, schedules: ScheduleMode, leg: number, searched: SearchedThisAnswer) {
 	const memory = [
-		...memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes, access, external: turn.external === true }),
-		...(schedules === "run" ? [] : scheduleTools({ db: deps.db, slack, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, canCreate: schedules === "create", runKey: `${turn.eventId}:${leg}`, notes })),
+		...memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes, access, external: turn.external === true, searched }),
+		...(schedules === "run" ? [] : scheduleTools({ db: deps.db, slack, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, canCreate: schedules === "create", runKey: `${turn.eventId}:${leg}`, notes, searched })),
 	];
 	if (offered.usageTools) return [...usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }), ...memory];
 	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack)), ...memory];
@@ -348,10 +365,12 @@ function attemptKey(leg: number, attempt: number): string {
 }
 
 /** Why the agent can't ask a question at this step, or null. `leg`: the questions asked so far in this answer. */
-function questionRefusal(leg: number, stepIndex: number): string | null {
+async function questionRefusal(leg: number, stepIndex: number, searched: SearchedThisAnswer): Promise<string | null> {
 	if (leg >= MAX_QUESTIONS) return `You've asked ${MAX_QUESTIONS} questions in this answer, the most one answer may ask. Answer with what you know, and say what you'd still need to know.`;
 	// The answer needs a step after the question to go on with.
 	if (stepIndex + 1 >= MAX_STEPS) return "This answer has no steps left to go on after a question. Answer with what you know, and say what you'd still need to know.";
+	// The run is held in the coordinator until the answer, and nothing a search found may be kept.
+	if (await searched()) return "You searched Slack in this answer, so you can't ask a question: the answer would be kept while it waits for a reply, and Slack's terms don't allow keeping what its search finds. Answer with what you have, and say what you'd still need to know.";
 	return null;
 }
 
@@ -479,7 +498,9 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
 	const asked: { question: QuestionDraft | null } = { question: null };
-	const askQuestion = askQuestionTool({ refusal: (stepIndex) => questionRefusal(leg, stepIndex), onAsk: (question) => { asked.question = question; } });
+	// Whether any run of this answer searched Slack: then it keeps nothing the model writes.
+	const searched = searchedThisAnswer(coordinator, turn.turnId);
+	const askQuestion = askQuestionTool({ refusal: (stepIndex) => questionRefusal(leg, stepIndex, searched), onAsk: (question) => { asked.question = question; } });
 	// The pins the turn may see (none with memory off, only this conversation's for someone from
 	// another organisation) and the saved skills go before the conversation.
 	const access = noteAccess(installation, turn);
@@ -539,6 +560,24 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		}
 	}
 
+	// Slack search as the person asking, with the action token of their message (or of their answer to the last question).
+	// A scheduled run answers no one's message, so it never searches.
+	let searchOn: SearchAvailability = searchAvailability(installation, turn);
+	const actionToken = searchOn === "on" ? await coordinator.actionToken(turn.turnId) : null;
+	if (searchOn === "on" && !actionToken) searchOn = "no_token";
+	const search: SearchOffer = { availability: searchOn, asker: turn.slackUserId, inChannel: !(turn.kind === "dm" || turn.channel.startsWith("D")) };
+	const searchTools = actionToken
+		? [searchSlackTool({
+			slack,
+			actionToken,
+			files: hasBotScope(installation, FILE_SEARCH_SCOPE),
+			notes,
+			turnId: turn.turnId,
+			reserve: () => coordinator.reserveSearch(turn.turnId, MAX_SEARCHES_PER_ANSWER),
+			questionAsked: () => asked.question !== null,
+		})]
+		: [];
+
 	// After a question, the run goes on from the paused one with the answer, the files shared with it, and what was posted.
 	const posted = postedLines(input.postedFiles);
 	const answerLines = (from: FileOutcome[]) => fileLines(from.filter((outcome) => latestAnswerFiles.some((file) => file.id === outcome.file.id)));
@@ -556,10 +595,10 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		...gateway,
 		model,
-		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, schedules),
+		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, schedules, search),
 		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
 		// Nobody waits in a scheduled run's thread to answer a question.
-		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg), ...fileTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools, ...pageTools],
+		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg, searched), ...fileTools, ...searchTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools, ...pageTools],
 		maxCostUsd: budgetUsd,
 		// The models it asks and the images it makes.
 		otherCostUsd: () => consultedUsd() + toolUsd,
@@ -604,12 +643,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		}
 	}
 	// Paused for an answer: the paused run and the question wait in the coordinator for the ask step.
+	// An answer that searched Slack never gets here (ask_question refuses after a search, and search_slack
+	// doesn't search once a question is asked); if one did, its run isn't kept, as it may hold results.
 	let waiting = false;
 	if (output?.paused && !cancelled && !error) {
-		waiting = asked.question !== null && await coordinator.holdForAnswer(turn.turnId, leg + 1, { run: JSON.stringify(output.paused), question: asked.question });
+		const afterSearch = asked.question !== null && await searched();
+		waiting = asked.question !== null && !afterSearch && await coordinator.holdForAnswer(turn.turnId, leg + 1, { run: JSON.stringify(output.paused), question: asked.question });
 		if (!waiting) {
 			error = "failed";
-			console.error("[slack-agent] paused run not kept", { turnId: turn.turnId, question: leg + 1 });
+			console.error("[slack-agent] paused run not kept", { turnId: turn.turnId, question: leg + 1, afterSearch });
 		}
 	}
 	const gap = reply.text ? "\n\n" : "";

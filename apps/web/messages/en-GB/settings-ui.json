@@ -6829,7 +6829,7 @@
 		"addCredits": "Add credits",
 		"notices": {
 			"installed": "The Phaseo agent is now in {team}.",
-			"permissionsUpdated": "Slack permissions updated in {team}. The agent can now post charts and images, and read files shared with it.",
+			"permissionsUpdated": "Slack permissions updated in {team}. The agent can now post charts and images, read files shared with it, and search Slack.",
 			"permissionsPartial": "Slack didn't grant every permission, so some features stay off. Try again, and check that your Slack app lists every scope."
 		},
 		"member": {
@@ -6951,10 +6951,22 @@
 		},
 		"permissions": {
 			"title": "Update Slack permissions",
-			"description": "The agent can now post charts and images it makes, and read images and PDFs shared with it, once Slack allows it. Updating opens Slack to approve the new permissions, and keeps the agent's settings, key and data.",
-			"customApp": "Add the files:read and files:write bot scopes to your Slack app's manifest first.",
+			"description": "The agent can now post charts and images it makes, read images and PDFs shared with it, and search Slack for the person asking, once Slack allows it. Updating opens Slack to approve the new permissions, and keeps the agent's settings, key and data.",
+			"customApp": "Add these bot scopes to your Slack app's manifest first: {scopes}.",
 			"submit": "Update Slack permissions",
 			"redirecting": "Opening Slack…"
+		},
+		"search": {
+			"title": "Slack search",
+			"description": "The agent can search your Slack workspace's public channels as the person asking, so it finds only what they can see, and links to what it uses. Nothing it finds is stored.",
+			"off": "Off",
+			"dm": "Direct messages",
+			"dmAndChannels": "Direct messages and channels",
+			"offHelp": "The agent never searches Slack.",
+			"dmHelp": "Only in direct messages with the agent, so only the person asking reads what it finds.",
+			"dmAndChannelsHelp": "In channels too. Everyone in a channel reads the answer, including guests who can't open the channels it found.",
+			"needsPermissions": "Searching needs updated Slack permissions first: select Update Slack permissions above.",
+			"saved": "Slack search setting saved."
 		},
 		"month": {
 			"note": "{date} so far, in UTC. The charge is taken from credits when the month ends.",

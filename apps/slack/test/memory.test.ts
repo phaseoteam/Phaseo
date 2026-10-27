@@ -9,9 +9,11 @@ const NOTE_ID = "00000000-0000-4000-8000-0000000000e1";
 
 let db: FakeDb;
 let notes: string[];
+/** Whether the answer has searched Slack, as searchedThisAnswer says. */
+let searchedSlack: boolean;
 
 function tools(access: NoteAccess = "workspace") {
-	return memoryTools({ db, installationId: INSTALLATION_ID, channel: CHANNEL, slackUserId: PERSON, now: () => NOW, notes, access });
+	return memoryTools({ db, installationId: INSTALLATION_ID, channel: CHANNEL, slackUserId: PERSON, now: () => NOW, notes, access, searched: async () => searchedSlack });
 }
 
 function tool(id: string, access: NoteAccess = "workspace") {
@@ -30,6 +32,7 @@ function noteRow(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
 	db = new FakeDb();
 	notes = [];
+	searchedSlack = false;
 });
 
 describe("memory tools", () => {
@@ -159,6 +162,23 @@ describe("memory tools", () => {
 		await expect(tool("save_skill")({ name: "x".repeat(61), description: "x", instructions: "y" })).rejects.toThrow("at most 60 characters");
 		await expect(tool("save_skill")({ name: "x", description: "x", instructions: "y".repeat(4_001) })).rejects.toThrow("at most 4000 characters");
 		expect(notes).toEqual(["save_skill Weekly report", "save_skill Weekly report", "save_skill weekly report", "save_skill Another"]);
+	});
+
+	it("save nothing once the answer has searched Slack, and say why; reading and tidying still work", async () => {
+		searchedSlack = true;
+		db.rpcResults.save_slack_agent_note = { status: "saved", note: noteRow() };
+		db.rpcResults.save_slack_agent_skill = { status: "saved", skill: { name: "Launch notes", description: "x" } };
+		const refused = { saved: false, note: expect.stringContaining("Slack's terms don't allow keeping anything its search finds") };
+		await expect(tool("remember")({ text: "The launch ships on Friday." })).resolves.toEqual(refused);
+		await expect(tool("remember")({ text: "Check the launch", kind: "todo", scope: "workspace" })).resolves.toEqual(refused);
+		await expect(tool("save_skill")({ name: "Launch notes", description: "x", instructions: "Ship on Friday." })).resolves.toEqual(refused);
+		expect(db.rpcs.map((call) => call.fn)).toEqual([]);
+		expect(notes).toEqual([]);
+		// Nothing they keep comes from the search.
+		db.rpcResults.search_slack_agent_notes = [noteRow()];
+		await expect(tool("recall")({})).resolves.toMatchObject({ notes: [expect.objectContaining({ id: NOTE_ID })] });
+		db.rpcResults.forget_slack_agent_note = true;
+		await expect(tool("forget")({ id: NOTE_ID })).resolves.toEqual({ deleted: true });
 	});
 
 	it("list_skills reads names and descriptions for the installation; use_skill loads one by name", async () => {

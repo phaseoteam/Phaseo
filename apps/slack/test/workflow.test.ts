@@ -1,8 +1,8 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, AskOutput, AskRequest, GeneratedImage, ImageRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
-import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { SEARCHED_REPLY_MEMORY, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
@@ -1752,5 +1752,232 @@ describe("Files in the thread", () => {
 		expect(agent.requests[0].prompt).toContain("<@U0PERSON02>: Here's the dashboard (shared dashboard.png)");
 		expect(agent.requests[0].prompt).toContain("You (Phaseo agent): (shared weekly-spend.png)");
 		expect(agent.requests[0].prompt).toContain("- dashboard.png from <@U0PERSON02>, earlier in the thread: attached after this text.");
+	});
+});
+
+describe("Slack search", () => {
+	const SEARCH_SCOPES = [...ORIGINAL_BOT_SCOPES, "search:read.public", "search:read.files"];
+	const TOKEN = "7310092.18.0c9f5a6d2e8bTOKEN";
+	const SNIPPET = "We ship the launch plan on Friday.";
+	const RESPONSE = {
+		results: {
+			messages: [{ author_name: "Ada Lovelace", author_user_id: "U0ADA00001", channel_id: "C0LAUNCH01", channel_name: "launch", message_ts: "1792500000.000100", content: SNIPPET, permalink: "https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100" }],
+			files: [],
+		},
+		response_metadata: { next_cursor: "" },
+	};
+	const DIRECT = { channel: "D0DIRECT01", kind: "dm" as const };
+
+	function callTool(request: AgentTurnRequest, id: string, input: unknown) {
+		const tool = request.tools.find((entry) => entry.id === id);
+		if (!tool || typeof tool.execute !== "function") throw new Error(`no ${id} tool`);
+		return tool.execute(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	}
+
+	/** Every value the thread's coordinator holds, as text. */
+	function stored(turn: TurnRef): string {
+		const storage = storageOf(coordinatorOf(turn));
+		return JSON.stringify(storage.tables().map((table) => storage.db.prepare(`SELECT * FROM ${table}`).all()));
+	}
+
+	it("is offered with the search scope, the admins' permission and the message's action token, and otherwise the model is told why not", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		const turnWith = async (overrides: Partial<TurnRequest>) => {
+			await runTurn(deps(agent), await startTurn(overrides), step);
+			const request = agent.requests.at(-1)!;
+			return { tools: request.tools.map((tool) => tool.id), instructions: request.instructions };
+		};
+
+		// Installed before search: no scope yet.
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages in this Slack workspace yet. If asked to, say an admin needs to update the Phaseo agent's Slack permissions") });
+
+		await install({ bot_scopes: SEARCH_SCOPES });
+		const direct = await turnWith({ ...DIRECT, actionToken: TOKEN });
+		expect(direct.tools).toContain("search_slack");
+		expect(direct.instructions).toContain("You can search this Slack workspace's public channels with search_slack. It searches as <@U0PERSON01>, so it finds only what they can see in Slack.");
+		expect(direct.instructions).not.toContain("Everyone in this conversation reads your answer");
+		// No token: a guest, or a message that didn't carry one.
+		expect(await turnWith(DIRECT)).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("Slack lets you search only for members of the workspace (not guests)") });
+		// Direct messages only, by default.
+		expect(await turnWith({ actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can only search Slack messages in a direct message with you") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "dm_and_channels" });
+		const channel = await turnWith({ actionToken: TOKEN });
+		expect(channel.tools).toContain("search_slack");
+		expect(channel.instructions).toContain("Everyone in this conversation reads your answer, so share only what the question needs and link to the rest.");
+		expect(await turnWith({ actionToken: TOKEN, external: true })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages for people from other organisations.") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "off" });
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("an admin has turned Slack search off") });
+	});
+
+	it("searches as the person and keeps nothing it found: not in step outputs, working memory, the coordinator or the Workflow's payload", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			const found = await callTool(request, "search_slack", { query: "launch plan" }) as { messages: Array<{ text: string; link: string; channel: string }> };
+			expect(found.messages).toEqual([expect.objectContaining({ text: SNIPPET, channel: "<#C0LAUNCH01|launch>" })]);
+			await hooks.onText(`The launch plan ships on Friday (<${found.messages[0].link}|#launch>).`);
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		expect(JSON.stringify(turn)).not.toContain(TOKEN);
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+		expect(world.slack.of("assistant.search.context")).toEqual([{ token: BOT_TOKEN, method: "assistant.search.context", args: expect.objectContaining({ query: "launch plan", action_token: TOKEN, channel_types: "public_channel", content_types: "messages,files" }) }]);
+		const outputs = JSON.stringify(step.outputs);
+		for (const value of [TOKEN, SNIPPET, "Ada Lovelace"]) {
+			expect(outputs).not.toContain(value);
+			expect(stored(turn)).not.toContain(value);
+		}
+		// Its own answer is a message in the thread like any other; the note names the query and the count.
+		// The answer quotes what it found: working memory keeps only a note of it (the reply is in the thread).
+		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack", SEARCHED_REPLY_MEMORY]);
+	});
+
+	function askQuestion(request: AgentTurnRequest, id = "call_q1") {
+		const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+		return tool.onToolCalled!({ question: "Which launch?", options: ["Web", "Mobile"] }, { stepIndex: 0, toolCall: { id, name: "ask_question", input: {} } } as never);
+	}
+
+	/** A run paused at ask_question, holding `messages`. */
+	function pausedAt(messages: unknown[]): AgentTurnOutput {
+		const paused = {
+			run: {
+				id: "run_q", agentId: "phaseo-slack-agent", status: "waiting_for_human", input: null, stepCount: 1, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-21T12:00:00.000Z",
+				messages,
+			},
+			steps: [], stepResults: [], messages: [], items: [],
+		} as unknown as PausedRun;
+		return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null, paused };
+	}
+
+	it("asks no question once the answer has searched, so no run holding results waits in the coordinator", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const refusals: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			const found = await callTool(request, "search_slack", { query: "launch plan" });
+			refusals.push(await askQuestion(request));
+			await hooks.onText("The launch plan ships on Friday. Which launch did you mean, web or mobile?");
+			expect(JSON.stringify(found)).toContain(SNIPPET);
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(refusals).toEqual([{ asked: false, error: expect.stringContaining("You searched Slack in this answer, so you can't ask a question") }]);
+		expect(agent.requests[0].instructions).toContain("Slack's terms don't allow keeping anything its search finds, so once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos, skills or recurring tasks.");
+		expect(step.waits).toEqual([]);
+		expect(step.outputs.map((entry) => entry.name)).not.toContain("ask-1");
+	});
+
+	it("never holds a paused run for an answer that searched, should a search slip past the question", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		let turn!: TurnRef;
+		const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			const agent = new ScriptedAgent(async (request) => {
+				expect(await askQuestion(request)).toBeNull();
+				// A search the tools didn't stop (they do: see the next test).
+				expect(await coordinatorOf(turn).reserveSearch(turn.turnId, 4)).toBe(true);
+				return pausedAt([{ role: "user", content: "what's the launch plan?" }, { role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify({ found: true, messages: [{ text: SNIPPET }] }) }]);
+			});
+			turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(errors.mock.calls).toContainEqual(["[slack-agent] paused run not kept", { turnId: turn.turnId, question: 1, afterSearch: true }]);
+		} finally {
+			errors.mockRestore();
+		}
+		expect(step.waits).toEqual([]);
+		expect(stored(turn)).not.toContain(SNIPPET);
+	});
+
+	it("doesn't search in the step that asks a question, and searches after the answer with the answer's token", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const ANSWER_TOKEN = "7310092.19.answerTOKEN";
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (!request.resume) {
+				// The SDK takes a step's questions before it runs the step's other tools.
+				expect(await askQuestion(request)).toBeNull();
+				const refused = await callTool(request, "search_slack", { query: "launch plan" });
+				expect(refused).toEqual({ found: false, error: expect.stringContaining("can't search Slack until they answer") });
+				await hooks.onStep({ costUsd: 0.01 });
+				return pausedAt([{ role: "user", content: "what's the launch plan?" }, { role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify(refused) }]);
+			}
+			const found = await callTool(request, "search_slack", { query: "web launch plan" });
+			expect(JSON.stringify(found)).toContain(SNIPPET);
+			// Searched now: no more questions in this answer.
+			expect(await askQuestion(request, "call_q2")).toMatchObject({ asked: false, error: expect.stringContaining("You searched Slack in this answer") });
+			await hooks.onText("The web launch ships on Friday.");
+			return answer();
+		});
+		step.onWait = async () => {
+			expect(stored(turn)).not.toContain(SNIPPET);
+			await expect(coordinatorOf(turn).answerWithMessage({ slackUserId: "U0PERSON01", text: "Web", actionToken: ANSWER_TOKEN, now: NOW })).resolves.toMatchObject({ status: "answered" });
+			return "event";
+		};
+		turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(world.slack.of("assistant.search.context").map((call) => call.args.action_token)).toEqual([ANSWER_TOKEN]);
+		expect(stored(turn)).not.toContain(SNIPPET);
+		expect(stored(turn)).not.toContain("TOKEN");
+	});
+
+	it("saves no notes, skills or recurring tasks once the answer has searched", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		world.db.rpcResults.save_slack_agent_note = { status: "saved", note: { id: "00000000-0000-4000-8000-0000000000e1", kind: "note", channel_id: "D0DIRECT01", text: "Mobile ships later.", done_at: null, created_by: "U0PERSON01", created_at: "2026-10-21T12:00:00Z", expires_at: null } };
+		world.db.rpcResults.save_slack_agent_skill = { status: "saved", skill: { name: "Launch notes", description: "x" } };
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			// Before a search, as ever.
+			results.push(await callTool(request, "remember", { text: "Mobile ships later." }));
+			await callTool(request, "search_slack", { query: "launch plan" });
+			results.push(await callTool(request, "remember", { text: SNIPPET, kind: "pin" }));
+			results.push(await callTool(request, "save_skill", { name: "Launch notes", description: "Where the launch stands", instructions: SNIPPET }));
+			results.push(await callTool(request, "schedule_task", { title: "Launch digest", prompt: SNIPPET, frequency: "daily", time: "09:00" }));
+			await hooks.onText("I can't save what Slack search finds.");
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		const refused = { saved: false, note: expect.stringContaining("you searched Slack in this answer") };
+		expect(results).toEqual([expect.objectContaining({ saved: true }), refused, refused, refused]);
+		expect(world.db.rpcs.filter((call) => call.fn.startsWith("save_")).map((call) => call.args.p_text ?? call.args.p_instructions)).toEqual(["Mobile ships later."]);
+		expect(JSON.stringify(world.db.rpcs)).not.toContain(SNIPPET);
+	});
+
+	it("makes at most 4 searches in an answer, however often its run starts again", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		let turn!: TurnRef;
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks, call) => {
+			if (call === 1) {
+				for (const query of ["one", "two", "three"]) results.push(await callTool(request, "search_slack", { query }));
+				// The step dies at its end, after the searches.
+				const coordinator = coordinatorOf(turn);
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+				return answer();
+			}
+			// The retry has made no search itself, but the answer has.
+			expect(await askQuestion(request)).toMatchObject({ asked: false, error: expect.stringContaining("You searched Slack in this answer") });
+			for (const query of ["four", "five", "six"]) results.push(await callTool(request, "search_slack", { query }));
+			await hooks.onText("Here's what I found.");
+			return answer();
+		});
+		turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(world.slack.of("assistant.search.context").map((entry) => entry.args.query)).toEqual(["one", "two", "three", "four"]);
+		const limit = { found: false, error: "You've searched Slack 4 times in this answer, the most one answer may. Answer with what you found." };
+		expect(results.slice(4)).toEqual([limit, limit]);
 	});
 });

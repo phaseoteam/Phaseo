@@ -6829,7 +6829,7 @@
 		"addCredits": "充值额度",
 		"notices": {
 			"installed": "Phaseo 智能体现已加入 {team}。",
-			"permissionsUpdated": "已更新 {team} 中的 Slack 权限。智能体现在可以发布图表和图片，并读取分享给它的文件。",
+			"permissionsUpdated": "已更新 {team} 中的 Slack 权限。智能体现在可以发布图表和图片、读取分享给它的文件，并搜索 Slack。",
 			"permissionsPartial": "Slack 没有授予全部权限，因此部分功能仍处于关闭状态。请重试，并确认你的 Slack 应用包含所有 scope。"
 		},
 		"member": {
@@ -6951,10 +6951,22 @@
 		},
 		"permissions": {
 			"title": "更新 Slack 权限",
-			"description": "获得 Slack 许可后，智能体就可以发布它生成的图表和图片，并读取分享给它的图片和 PDF。更新时会打开 Slack 以批准新权限，智能体的设置、密钥和数据都会保留。",
-			"customApp": "请先在你的 Slack 应用清单中添加 files:read 和 files:write 机器人 scope。",
+			"description": "获得 Slack 许可后，智能体就可以发布它生成的图表和图片，读取分享给它的图片和 PDF，并以提问者的身份搜索 Slack。更新时会打开 Slack 以批准新权限，智能体的设置、密钥和数据都会保留。",
+			"customApp": "请先在你的 Slack 应用清单中添加以下机器人 scope：{scopes}。",
 			"submit": "更新 Slack 权限",
 			"redirecting": "正在打开 Slack…"
+		},
+		"search": {
+			"title": "Slack 搜索",
+			"description": "智能体可以以提问者的身份搜索你的 Slack 工作区的公开频道，因此只会找到此人能看到的内容，并为用到的内容附上链接。找到的内容从不保存。",
+			"off": "关闭",
+			"dm": "私信",
+			"dmAndChannels": "私信和频道",
+			"offHelp": "智能体从不搜索 Slack。",
+			"dmHelp": "仅在与智能体的私信中，因此只有提问者能看到搜索结果。",
+			"dmAndChannelsHelp": "也在频道中。频道里的每个人都能看到回答，包括无法打开所找到频道的访客。",
+			"needsPermissions": "搜索前需要先更新 Slack 权限：请选择上方的“更新 Slack 权限”。",
+			"saved": "Slack 搜索设置已保存。"
 		},
 		"month": {
 			"note": "{date}截至目前，按 UTC 计算。月底时从额度中扣费。",

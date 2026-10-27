@@ -8,7 +8,7 @@ icon: "messages-square"
 L’agent Slack est activé progressivement pour les espaces de travail. Si **Paramètres → Slack** n’apparaît pas encore dans vos paramètres, il n’est pas encore disponible pour votre espace de travail.
 </Note>
 
-L’agent Phaseo répond aux questions dans Slack. Mentionnez-le dans un canal ou envoyez-lui un message direct : il répond dans le fil et diffuse sa réponse au fur et à mesure qu’il l’écrit. Il utilise le modèle que vous choisissez dans Phaseo, peut chercher sur le web et lire des pages web, et peut renseigner les membres associés sur les dépenses Phaseo, les crédits, l’utilisation des clés d’API et les modèles de votre espace de travail. Il peut aussi publier les graphiques et images qu’il crée, et lire les images et PDF que vous partagez avec lui.
+L’agent Phaseo répond aux questions dans Slack. Mentionnez-le dans un canal ou envoyez-lui un message direct : il répond dans le fil et diffuse sa réponse au fur et à mesure qu’il l’écrit. Il utilise le modèle que vous choisissez dans Phaseo, peut chercher sur le web et lire des pages web, et peut renseigner les membres associés sur les dépenses Phaseo, les crédits, l’utilisation des clés d’API et les modèles de votre espace de travail. Il peut aussi publier les graphiques et images qu’il crée, lire les images et PDF que vous partagez avec lui, et faire des recherches dans votre espace de travail Slack pour vous.
 
 Les propriétaires et les administrateurs l’ajoutent depuis **Paramètres → Slack**, choisissent qui peut l’utiliser et fixent ses limites. Vous payez un prix mensuel pour les personnes qui l’ont utilisé, et les tokens de modèle sont facturés comme toute autre requête du gateway.
 
@@ -141,12 +141,45 @@ Les fichiers partagés sont téléchargés pour la réponse qui les lit et ne so
 
 ### Mettre à jour les autorisations Slack
 
-Les graphiques et les images nécessitent l’autorisation Slack `files:write`, et la lecture de fichiers `files:read`. Si l’agent a été ajouté avant de pouvoir utiliser des fichiers, il ne les a pas encore : il indique qu’un administrateur doit mettre à jour ses autorisations, et **Paramètres → Slack** affiche **Mettre à jour les autorisations Slack**.
+Les graphiques et les images nécessitent l’autorisation Slack `files:write`, la lecture de fichiers `files:read`, et la recherche dans Slack (voir « Rechercher dans Slack » plus bas) `search:read.public` et `search:read.files`. Si l’agent a été ajouté avant de pouvoir le faire, il ne les a pas encore : il indique qu’un administrateur doit mettre à jour ses autorisations, et **Paramètres → Slack** affiche **Mettre à jour les autorisations Slack**.
 
 1. Sélectionnez **Mettre à jour les autorisations Slack**. Slack affiche les autorisations demandées par l’agent.
 2. Approuvez-les pour le même espace de travail Slack. Slack vous renvoie vers **Paramètres → Slack**.
 
-La mise à jour conserve les paramètres, la clé API, le garde-fou et l’historique de l’agent. Avec votre propre application Slack, ajoutez d’abord `files:read` et `files:write` à son manifeste (voir « Utiliser votre propre application Slack » plus bas).
+La mise à jour conserve les paramètres, la clé API, le garde-fou et l’historique de l’agent. Avec votre propre application Slack, ajoutez d’abord à son manifeste les scopes indiqués dans **Paramètres → Slack** (voir « Utiliser votre propre application Slack » plus bas).
+
+## Rechercher dans Slack
+
+L’agent peut faire des recherches dans votre espace de travail Slack pour la personne qui pose la question, et répondre avec des liens vers les messages et fichiers qu’il a utilisés. Par exemple :
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **Il cherche en votre nom.** Il utilise la recherche en temps réel de Slack avec l’autorisation que Slack lui donne pour votre message : il ne trouve donc que ce que vous pouvez voir dans Slack. Il ne cherche que dans les canaux publics, jamais dans les canaux privés, les messages directs ou les messages de groupe.
+- **Il met un lien vers ce qu’il utilise.** Chaque message ou fichier sur lequel il s’appuie a un lien, pour que vous puissiez l’ouvrir dans Slack. Quand une recherche ne trouve rien, il le dit.
+- **Il peut restreindre une recherche** à un canal, une personne ou une période, et fait jusqu’à 4 recherches pour une réponse, 10 résultats à la fois.
+- **Par le sens ou par mot-clé.** Les questions formulées avec vos propres mots sont recherchées par leur sens sur les forfaits Slack qui incluent la recherche par IA (Business+ et Enterprise+) ; les autres forfaits cherchent par mot-clé.
+
+Choisissez où il cherche sous **Recherche Slack**, dans **Paramètres → Slack**. Le changement s’applique tout de suite.
+
+| Option | Où il cherche |
+| --- | --- |
+| **Désactivée** | Nulle part. |
+| **Messages directs** (par défaut) | Uniquement dans les messages directs avec l’agent, pour que seule la personne qui pose la question lise ce qu’il trouve. |
+| **Messages directs et canaux** | Aussi dans les canaux, quand quelqu’un le mentionne. Tous les membres du canal lisent la réponse, y compris les invités qui ne peuvent pas ouvrir les canaux trouvés : ne choisissez cette option que si cela convient à votre espace de travail. |
+
+Certaines limites viennent de Slack :
+
+- Il ne cherche qu’en répondant à un message : Slack lui donne l’autorisation de chercher avec chaque message qui le mentionne ou qui lui est envoyé directement, et l’agent ne la garde que jusqu’à ce qu’il ait répondu.
+- Slack ne permet pas aux applications de chercher pour les invités, et l’agent ne cherche jamais pour des personnes d’autres entreprises.
+- Slack permet à chaque personne environ 10 recherches par minute. Au-delà, l’agent répond avec ce qu’il a et le signale.
+- Slack ne permet cette recherche qu’aux applications du Slack Marketplace et aux applications propres d’une entreprise. L’application Slack de Phaseo pourra chercher une fois sa fiche sur le Slack Marketplace approuvée ; d’ici là, l’agent indique que la recherche n’est pas disponible. Pour chercher dès maintenant, utilisez votre propre application Slack (voir « Utiliser votre propre application Slack » plus bas).
+- Les installations antérieures à la recherche ont besoin d’autorisations Slack mises à jour (voir « Mettre à jour les autorisations Slack » plus haut).
+
+Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente.
 
 ## Qui peut l’utiliser
 
@@ -243,7 +276,7 @@ L’agent confirme ce qu’il a créé : ce que fait la tâche, où elle publie,
 - **Fréquence :** toutes les heures (à la minute choisie), tous les jours, en semaine (du lundi au vendredi), une fois par semaine le jour choisi ou une fois par mois le jour choisi (les mois plus courts, leur dernier jour). Jamais plus d’une fois par heure.
 - **Quand :** à une heure locale dans le fuseau horaire Slack de la personne qui l’a créée, y compris lors des changements d’heure.
 - **Où :** dans le canal ou le message direct où elle a été créée. Chaque exécution y publie un court message **Scheduled: …** et y répond dans le fil. Les réponses dans ce fil sont des messages ordinaires adressés à l’agent.
-- **Ce qui s’exécute :** l’agent enregistre la demande sous forme d’instruction autonome, si bien que chaque exécution fonctionne sans la conversation où elle a été créée. Les exécutions planifiées ne posent pas de questions avec des boutons et ne peuvent pas créer ni modifier de tâches récurrentes.
+- **Ce qui s’exécute :** l’agent enregistre la demande sous forme d’instruction autonome, si bien que chaque exécution fonctionne sans la conversation où elle a été créée. Les exécutions planifiées ne posent pas de questions avec des boutons, ne cherchent pas dans Slack et ne peuvent pas créer ni modifier de tâches récurrentes.
 
 Chaque exécution est une réponse ordinaire à la personne qui a créé la tâche. L’agent vérifie qu’elle peut encore l’utiliser, l’exécution compte comme une de ses réponses pour votre forfait, le **Plafond de dépenses mensuel** et les **Réponses par personne et par heure**, elle respecte les limites de chaque réponse (voir « Limites de chaque réponse » plus bas) et se termine par le pied de page habituel.
 
@@ -371,6 +404,7 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, les personnes à qui il a envoyé le bouton de connexion, et les questions qu’il a posées avec leurs réponses. Ils sont supprimés 7 jours après la dernière activité du fil.
 - **Une mémoire que vous pouvez voir et supprimer.** L’agent conserve les notes, épingles, tâches et compétences qu’on lui demande d’enregistrer, rédigées avec ses propres mots et jamais sous forme de copies de messages, avec l’ID Slack de la personne qui l’a demandé. Elles restent jusqu’à ce que quelqu’un les supprime, que la date jusqu’à laquelle elles devaient être conservées soit passée ou que vous désinstalliez l’agent. Les propriétaires et les administrateurs peuvent les voir et les supprimer dans **Paramètres → Slack**, et y désactiver les notes (voir « Mémoire et compétences », plus haut). Les personnes d’autres entreprises ne voient jamais les notes de tout l’espace de travail.
 - **Les fichiers partagés sont lus, pas conservés.** L’agent télécharge les images et PDF qu’il lit pour une réponse et les envoie au modèle avec les requêtes de cette réponse, selon les mêmes règles. Il ne les conserve jamais ; seuls leurs identifiants de fichier Slack et leurs noms restent avec le message jusqu’à la fin de la réponse.
+- **Les résultats de recherche Slack ne sont pas conservés.** Ce que l’agent trouve en cherchant dans Slack est envoyé au modèle avec les requêtes de cette réponse, selon les mêmes règles, et nulle part ailleurs : ni dans sa mémoire de travail, ni dans ses journaux, ni dans la base de données de Phaseo, pas même pendant qu’il attend votre réponse à une question. Pour une réponse qui a cherché, sa mémoire de travail ne garde que les outils qu’il a utilisés et une note indiquant qu’il a répondu, ni ce qu’il a cherché, ni ce qu’il a trouvé, ni ce qu’il a écrit. L’autorisation de Slack de chercher pour vous est conservée avec votre message jusqu’à la fin de la réponse.
 - **Tâches récurrentes.** Pour chaque tâche, l’agent conserve son titre et son instruction, l’endroit où elle publie, sa planification et son fuseau horaire, l’ID Slack de la personne qui l’a créée et le résultat de sa dernière exécution. Elles restent jusqu’à ce que quelqu’un annule ou supprime la tâche, ou que vous désinstalliez l’agent. Les propriétaires et administrateurs peuvent les voir, les mettre en pause et les supprimer dans **Paramètres → Slack**.
 - **Des pages partagées jusqu’à leur expiration.** Une page publiée par l’agent peut reprendre ce qui a été dit dans Slack ou ce qu’il a trouvé. Phaseo conserve la page, son titre, l’ID Slack de la personne qui l’a demandée et le nombre de fois où elle a été ouverte jusqu’à son expiration (après 7, 30 ou 90 jours, selon le choix de vos administrateurs), jusqu’à ce qu’un propriétaire ou un administrateur la supprime ou que vous désinstalliez l’agent. Selon le réglage de la page, toute personne disposant de son lien peut l’ouvrir, ou seulement les membres de votre espace de travail Slack connectés. Les pages n’apparaissent jamais dans les journaux de Phaseo.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
@@ -418,7 +452,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -449,7 +483,9 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
         "groups:history",
         "users:read",
         "files:read",
-        "files:write"
+        "files:write",
+        "search:read.public",
+        "search:read.files"
       ]
     }
   },
@@ -495,6 +531,8 @@ Phaseo demande à Slack exactement ces scopes du token de bot lors de l’instal
 | `users:read` | Vérifier si une personne est invitée, un bot ou d’une autre organisation. |
 | `files:read` | Lire les images et PDF partagés avec l’agent. |
 | `files:write` | Publier des graphiques et des images dans le fil. |
+| `search:read.public` | Chercher dans les canaux publics pour la personne qui pose la question. |
+| `search:read.files` | Inclure dans ces recherches les fichiers partagés dans les canaux publics. |
 
 Quelques règles pour votre propre application :
 

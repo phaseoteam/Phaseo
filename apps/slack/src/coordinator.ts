@@ -31,6 +31,11 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 //   reply and questions until the turn ends, and the working memory, all gone
 //   within 7 days, as Slack's API terms require. Workflow step outputs carry ids
 //   and statuses only.
+// - Holds the action token Slack sent with a turn's message (search_slack's
+//   permission to search as the person, slack-search.ts) until the turn ends,
+//   and hands it only to the running turn. It never goes in the Workflow's
+//   payload. Search results are never kept here, only how many searches the
+//   turn made, across every run and retry of its answer (reserveSearch).
 
 const RETENTION_MS = 7 * 24 * 60 * 60_000;
 /** A running turn that hasn't reported back after this long is failed, so the queue moves on. While its question waits, this counts from when the question closes (turnDeadline). */
@@ -49,6 +54,8 @@ export type TurnRequest = Omit<TurnRef, "turnId"> & {
 	text: string;
 	/** The files shared with the message (ids and names), kept with its text. */
 	files?: SharedFileRef[];
+	/** Slack's action token from the message, when the turn may search Slack as the person (slack-search.ts). Kept until the turn ends. */
+	actionToken?: string;
 };
 
 export type EnqueueResult =
@@ -110,6 +117,13 @@ export type PostedFile = { kind: "chart" | "image"; title: string; shown: boolea
 const MAX_POSTED_CHARTS = 20;
 
 const MAX_CONTEXT_ENTRIES = 20;
+/** A tool note's tool id ("search_slack \"launch plan\": 1 result" → "search_slack"), without what the model gave it. */
+export function toolNames(notes: string[]): string[] {
+	return notes.flatMap((note) => /^[a-z_]+/.exec(note.trim())?.[0] ?? []);
+}
+
+/** Working memory's note for an answer that searched Slack, in place of its text. */
+export const SEARCHED_REPLY_MEMORY = "(An answer that used Slack search. Its text isn't kept here; it's in the thread.)";
 const MAX_CONTEXT_CHARS = 4_000;
 
 type TurnRow = {
@@ -179,6 +193,8 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "compare", "TEXT"],
 	["turns", "schedule_id", "TEXT"],
 	["turns", "schedule_run_at", "TEXT"],
+	["turns", "action_token", "TEXT"],
+	["turns", "searches", "INTEGER"],
 ];
 
 /** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
@@ -289,12 +305,13 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, schedule_id, schedule_run_at, text, files, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, schedule_id, schedule_run_at, text, files, action_token, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
 				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0,
 				request.compare?.length ? JSON.stringify(request.compare) : null, request.schedule?.id ?? null, request.schedule?.runAt ?? null,
-				request.text.slice(0, MAX_MESSAGE_CHARS), request.files?.length ? JSON.stringify(request.files.slice(0, MAX_FILES_PER_MESSAGE)) : null, now,
+				request.text.slice(0, MAX_MESSAGE_CHARS), request.files?.length ? JSON.stringify(request.files.slice(0, MAX_FILES_PER_MESSAGE)) : null,
+				request.actionToken ?? null, now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});
@@ -358,8 +375,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	}
 
 	private async endTurn(turnId: number, outcome: TurnOutcome, now: number): Promise<boolean> {
-		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null }>(
-			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts FROM turns WHERE id = ? AND status = 'running'`, turnId,
+		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null; searches: number | null }>(
+			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts, searches FROM turns WHERE id = ? AND status = 'running'`, turnId,
 		).toArray()[0];
 		if (!turn) return false;
 		// A turn that staged its reply reports back with ids only.
@@ -382,7 +399,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 				if (question.leg) remember(question.leg);
 				if (question.ts) remember({ reply: questionMemory(question, turn.slack_user_id), ts: question.ts, tools: [] });
 			}
-			remember({ reply, ts: turn.reply_ts, tools });
+			// An answer that searched Slack can quote what it found, in its reply and in what its tools were given (a
+			// later query, a chart's title): only that it answered and which tools it used are kept (the reply is in the thread).
+			const searched = (turn.searches ?? 0) > 0;
+			remember({ reply: searched && reply?.trim() ? SEARCHED_REPLY_MEMORY : reply, ts: turn.reply_ts, tools: searched ? toolNames(tools) : tools });
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
 			// The replies and questions are messages in the thread too.
 			const posted = [...questions.flatMap((question) => [question.leg?.ts ?? null, question.ts]), turn.reply_ts].filter((ts): ts is string => ts !== null);
@@ -537,7 +557,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	 * may answer, and only once, while the question is open. The answer wakes the
 	 * turn's Workflow.
 	 */
-	async answerQuestion(input: { turnId: number; n: number; slackUserId: string; answer: QuestionAnswer; now?: number }): Promise<AnswerResult> {
+	async answerQuestion(input: { turnId: number; n: number; slackUserId: string; answer: QuestionAnswer; actionToken?: string; now?: number }): Promise<AnswerResult> {
 		const now = input.now ?? Date.now();
 		const running = this.running();
 		if (!running || running.id !== input.turnId) return { status: "closed", question: null, askerId: null };
@@ -559,6 +579,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			this.saveQuestion(running.id, question);
 			// The answer starts the turn's next run: its timeout counts from here.
 			this.sql.exec("UPDATE turns SET waiting_until = ? WHERE id = ?", now, running.id);
+			if (input.actionToken) this.sql.exec("UPDATE turns SET action_token = ? WHERE id = ?", input.actionToken, running.id);
 			return { status: "answered", turnId: running.id, question, askerId: running.slack_user_id };
 		});
 		if (result.status === "answered") {
@@ -571,14 +592,15 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	/**
 	 * A message from the person the running turn waits on, while its question is
 	 * open, is their answer. Null when it isn't one (no open question, or someone
-	 * else wrote it): it is a new message to answer.
+	 * else wrote it): it is a new message to answer. Its action token, if any,
+	 * replaces the turn's, so the run after the question searches with a fresh one.
 	 */
-	async answerWithMessage(input: { slackUserId: string; text: string; files?: SharedFileRef[]; now?: number }): Promise<Extract<AnswerResult, { status: "answered" }> | null> {
+	async answerWithMessage(input: { slackUserId: string; text: string; files?: SharedFileRef[]; actionToken?: string; now?: number }): Promise<Extract<AnswerResult, { status: "answered" }> | null> {
 		const running = this.running();
 		const question = running ? this.openQuestion(running.id) : null;
 		if (!running || !question || running.slack_user_id !== input.slackUserId || (!input.text.trim() && !input.files?.length)) return null;
 		const answer: QuestionAnswer = { by: "message", choice: null, text: input.text, ...(input.files?.length ? { files: input.files } : {}) };
-		const result = await this.answerQuestion({ turnId: running.id, n: question.n, slackUserId: input.slackUserId, answer, now: input.now });
+		const result = await this.answerQuestion({ turnId: running.id, n: question.n, slackUserId: input.slackUserId, answer, actionToken: input.actionToken, now: input.now });
 		return result.status === "answered" ? result : null;
 	}
 
@@ -625,6 +647,29 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			postedFiles: row.posted_files ? JSON.parse(row.posted_files) as PostedFile[] : [],
 			memory: this.workingMemory(),
 		};
+	}
+
+	/** The action token of a running turn's message, for search_slack. Null once the turn has ended, or when Slack sent none. */
+	actionToken(turnId: number): string | null {
+		const row = this.sql.exec<{ action_token: string | null }>("SELECT action_token FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
+		return row?.action_token ?? null;
+	}
+
+	/**
+	 * Takes one of a running turn's Slack searches, while it has made fewer than
+	 * `max`: true when it may search. The count covers every run and retry of the
+	 * answer, so a run started again can't search afresh.
+	 */
+	reserveSearch(turnId: number, max: number): boolean {
+		return this.sql.exec(
+			"UPDATE turns SET searches = coalesce(searches, 0) + 1 WHERE id = ? AND status = 'running' AND coalesce(searches, 0) < ? RETURNING id", turnId, max,
+		).toArray().length > 0;
+	}
+
+	/** The searches a running turn has made (reserveSearch); null once the turn has ended. */
+	searchCount(turnId: number): number | null {
+		const row = this.sql.exec<{ searches: number | null }>("SELECT searches FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
+		return row ? row.searches ?? 0 : null;
 	}
 
 	/** The thread's recent messages for one turn; deleted with the turn. */

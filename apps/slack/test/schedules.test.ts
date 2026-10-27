@@ -3,12 +3,12 @@ import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest } f
 import { clearUserFactsCache } from "../src/access";
 import { TURN_TIMEOUT_MS } from "../src/coordinator";
 import { homeView, publishHome, type HomeFacts } from "../src/home";
-import type { Installation } from "../src/installations";
+import { ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { pausedNotice, runDueSchedules, scheduledEventId, scheduledMessage, startScheduledRun, type ClaimedRun } from "../src/scheduled-runs";
 import { describeTiming, formatRunTime, scheduleCreationKey, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
 import type { TurnRef } from "../src/turns";
 import { runTurn, type StepConfig, type StepRunner } from "../src/workflow";
-import { BOT_TOKEN, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, type TestWorld } from "./fakes";
+import { BOT_TOKEN, INSTALLATION_ID, installationRow, storageOf, TEAM_ID, testWorld, type TestWorld } from "./fakes";
 
 const NOW = Date.UTC(2026, 9, 27, 9, 0, 30);
 const SCHEDULE_ID = "00000000-0000-4000-8000-00000000e5c1";
@@ -140,9 +140,9 @@ describe("schedule timing", () => {
 });
 
 describe("schedule tools", () => {
-	const tools = (canCreate = true, channel = CHANNEL) => {
+	const tools = (canCreate = true, channel = CHANNEL, searched = false) => {
 		const notes: string[] = [];
-		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel, slackUserId: PERSON, canCreate, runKey: "Ev0SAVE0001:0", notes });
+		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel, slackUserId: PERSON, canCreate, runKey: "Ev0SAVE0001:0", notes, searched: async () => searched });
 		const byId = (id: string) => list.find((tool) => tool.id === id)!;
 		return { list, notes, run: (id: string, input: Record<string, unknown> = {}) => (byId(id).execute as (input: unknown) => Promise<any>)(input) };
 	};
@@ -262,6 +262,19 @@ describe("schedule tools", () => {
 		expect((await run("cancel_schedule", { id: SCHEDULE_ID })).note).toMatch(/no recurring task with that id/);
 		await expect(run("cancel_schedule", { id: "1" })).rejects.toThrow(/id must be/);
 		expect(notes).toEqual(["list_schedules", "cancel_schedule", "cancel_schedule", "cancel_schedule"]);
+	});
+
+	it("schedule_task saves nothing once the answer has searched Slack, and says why; listing and cancelling still work", async () => {
+		const { run, notes } = tools(true, CHANNEL, true);
+		const input = { title: "Launch digest", prompt: "We ship the launch plan on Friday.", frequency: "daily", time: "09:00" };
+		await expect(run("schedule_task", { ...input, time: "25:00" })).rejects.toThrow(/24-hour/);
+		expect(await run("schedule_task", input)).toEqual({ saved: false, note: expect.stringContaining("you searched Slack in this answer") });
+		expect(rpcCalls("save_slack_agent_schedule")).toEqual([]);
+		expect(world.slack.of("users.info")).toEqual([]);
+		expect(await run("list_schedules")).toEqual({ schedules: [] });
+		world.db.rpcResults.cancel_slack_agent_schedule = "deleted";
+		expect(await run("cancel_schedule", { id: SCHEDULE_ID })).toEqual({ cancelled: true });
+		expect(notes).toEqual(["list_schedules", "cancel_schedule"]);
 	});
 
 	it("leaves out schedule_task where the turn can't set one up", () => {
@@ -394,6 +407,24 @@ describe("scheduled runs", () => {
 		expect(JSON.stringify(stop.args.blocks)).toContain(`session=slack-${turn.eventId}`);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "answered", p_reason: null, p_pause: false }]);
+	});
+
+	it("never searches Slack, even where search is on and a token is in its turn", async () => {
+		await install({ bot_scopes: [...ORIGINAL_BOT_SCOPES, "search:read.public", "search:read.files"], search_mode: "dm_and_channels" });
+		await startScheduledRun(world.deps, claimed());
+		const turn = world.turns.created[0].params as TurnRef;
+		// Scheduled runs have no message and so no action token; one here is still never used.
+		storageOf(world.threads.get(world.threads.idFromName(turn.threadKey))).sql.exec("UPDATE turns SET action_token = ?", "7310092.18.0c9f5a6d2e8bTOKEN");
+		const agent = new ScriptedAgent(async (hooks) => {
+			await hooks.onText("Last week you spent $12.50.");
+			return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null };
+		});
+		await expect(runTurn({ ...world.deps, agent }, turn, new FakeStep())).resolves.toEqual({ status: "answered" });
+		const [request] = agent.requests;
+		expect(request.tools.map((tool) => tool.id)).not.toContain("search_slack");
+		expect(request.instructions).toContain("You can't search Slack messages in a scheduled run");
+		expect(request.instructions).not.toContain("ask_question");
+		expect(world.slack.of("assistant.search.context")).toEqual([]);
 	});
 
 	it("records a failed answer, and a turn that skips because the creator must now be linked", async () => {

@@ -1,5 +1,6 @@
 import type { AgentTool } from "@phaseo/agent-sdk";
 import type { Installation } from "./installations";
+import { savingRefusal, type SearchedThisAnswer } from "./slack-search";
 import type { Db } from "./supabase";
 import type { TurnRef } from "./turns";
 import { ToolInputError } from "./usage-tools";
@@ -8,7 +9,9 @@ import { ToolInputError } from "./usage-tools";
 //
 // Memory is short notes, pins and to-dos the agent writes because someone asked
 // it to remember something (or for a fact the team will need again), never copies
-// of Slack messages: Slack's API terms forbid archiving them. A note belongs to
+// of Slack messages: Slack's API terms forbid archiving them. For the same
+// reason, an answer that searched Slack saves no notes or skills
+// (searchedThisAnswer, slack-search.ts). A note belongs to
 // one conversation (its channel or DM) or to the whole Slack workspace, and a
 // conversation only ever sees its own and the workspace's. Someone from another
 // organisation (Slack Connect) sees and saves only the conversation's. Admins can
@@ -187,6 +190,8 @@ export type MemoryToolContext = {
 	access: NoteAccess;
 	/** The person is from another organisation: they can use skills but not save them. */
 	external?: boolean;
+	/** Whether the answer has searched Slack: then nothing is saved, as Slack's terms forbid keeping what search finds (slack-search.ts). */
+	searched: SearchedThisAnswer;
 };
 
 /** The note tools the turn's access allows, then the skill tools, which every turn gets (without save_skill for someone from another organisation). */
@@ -222,6 +227,8 @@ function noteTools(context: MemoryToolContext, workspace: boolean): AgentTool<an
 				const scope = input.scope ?? "conversation";
 				if (scope !== "conversation" && scope !== "workspace") throw new ToolInputError("scope must be conversation or workspace");
 				if (scope === "workspace" && !workspace) throw new ToolInputError("scope must be conversation: the person asking is from another organisation, so only this conversation's notes are available");
+				const refused = await savingRefusal(context.searched);
+				if (refused) return { saved: false, note: refused };
 				const result = await db.rpc<{ status: string; note?: NoteRow; limit?: number }>("save_slack_agent_note", {
 					p_installation_id: installationId,
 					p_kind: noteKind,
@@ -330,11 +337,15 @@ function skillTools(context: MemoryToolContext): AgentTool<any, any>[] {
 			onError: "return-to-model",
 			execute: async (input: Record<string, unknown>) => {
 				const name = oneLine(text(input.name, "name", MAX_SKILL_NAME_CHARS));
+				const description = oneLine(text(input.description, "description", MAX_SKILL_DESCRIPTION_CHARS));
+				const instructions = text(input.instructions, "instructions", MAX_SKILL_INSTRUCTIONS_CHARS);
+				const refused = await savingRefusal(context.searched);
+				if (refused) return { saved: false, note: refused };
 				const result = await db.rpc<{ status: string; skill?: { name: string; description: string }; limit?: number }>("save_slack_agent_skill", {
 					p_installation_id: installationId,
 					p_name: name,
-					p_description: oneLine(text(input.description, "description", MAX_SKILL_DESCRIPTION_CHARS)),
-					p_instructions: text(input.instructions, "instructions", MAX_SKILL_INSTRUCTIONS_CHARS),
+					p_description: description,
+					p_instructions: instructions,
 					p_created_by: slackUserId,
 					p_replace: input.replace === true,
 				});

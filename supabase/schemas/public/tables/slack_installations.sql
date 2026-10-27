@@ -34,6 +34,7 @@ CREATE TABLE "public"."slack_installations" (
   "schedules_max"           integer                  NOT NULL DEFAULT 20,
   "schedule_creators"       text                     NOT NULL DEFAULT 'everyone'::text,
   "bot_scopes"              text[],
+  "search_mode"             text                     NOT NULL DEFAULT 'dm'::text,
   "pages_enabled"           boolean                  NOT NULL DEFAULT true,
   "page_expiry_days"        integer                  NOT NULL DEFAULT 30,
   "page_default_access"     text                     NOT NULL DEFAULT 'link'::text,
@@ -59,6 +60,7 @@ CREATE TABLE "public"."slack_installations" (
   CONSTRAINT "slack_installations_plan_people_check" CHECK (((plan_people >= 1) AND (plan_people <= 10000000))),
   CONSTRAINT "slack_installations_schedule_creators_check" CHECK ((schedule_creators = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_schedules_max_check" CHECK (((schedules_max >= 1) AND (schedules_max <= 100))),
+  CONSTRAINT "slack_installations_search_mode_check" CHECK ((search_mode = ANY (ARRAY['off'::text, 'dm'::text, 'dm_and_channels'::text]))),
   CONSTRAINT "slack_installations_secrets_check" CHECK ((length(secrets_ciphertext) > 0)),
   CONSTRAINT "slack_installations_slack_app_id_fkey" FOREIGN KEY (slack_app_id) REFERENCES public.slack_apps(id) ON DELETE RESTRICT,
   CONSTRAINT "slack_installations_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'payment_due'::text, 'uninstalled'::text]))),
@@ -126,6 +128,8 @@ COMMENT ON COLUMN "public"."slack_installations"."schedules_max" IS 'The most sc
 COMMENT ON COLUMN "public"."slack_installations"."schedule_creators" IS 'Who may set up schedules: everyone (default), anyone the agent answers; or linked, only people who linked their Phaseo account.';
 
 COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
+
+COMMENT ON COLUMN "public"."slack_installations"."search_mode" IS 'Where the agent may search Slack as the person asking (Slack''s real-time search, with the search:read.public scope): off, dm (direct messages with the agent, the default, so only the person asking reads what it finds) or dm_and_channels. Search results are never stored.';
 
 COMMENT ON COLUMN "public"."slack_installations"."pages_enabled" IS 'Whether the agent may publish shared pages (on by default). Off, it publishes none; pages already published stay until they expire or an admin deletes them.';
 
