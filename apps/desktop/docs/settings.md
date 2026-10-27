@@ -28,6 +28,10 @@ A usage hub is a [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) ser
 
 For every Codex and Claude account on the hub that isn't disabled, Phaseo asks the hub to call the provider's own usage endpoint with that account's token (`POST /v0/management/api-call`): ChatGPT's `wham/usage` and Anthropic's `oauth/usage`. Accounts for other providers are counted but not read. Claude accounts that list their windows only in `limits[]` (a `session` window and per-model `weekly_scoped` windows, with `seven_day` empty) are read from there. Errors are specific: a rejected key, management access refused (turn on `allow-remote` for a hub on another computer), no management API, or a hub that can't be reached. CLIProxyAPI blocks an address for 30 minutes after five wrong keys.
 
+## Notifications
+
+**Settings → Notifications → Desktop alerts** sends a system notification when a chat needs you (Needs attention) or for every update, while Phaseo is in the background; **Show chat titles** names the chat in them. Under **In the app**, **In-app notices** (on by default) shows a toast while Phaseo has focus when a chat other than the open one finishes or needs you, with **Open**; several at once become one toast. **Unread count on the app icon** (on by default) counts chats with an unread reply or a request waiting on you on the dock (macOS), the launcher (Linux) or the taskbar button (Windows, as a small badge).
+
 ## Appearance
 
 Choose System, Light or Dark, and a colour theme. Every theme has a light and a dark side. The built-ins are Phaseo, themes inspired by ChatGPT, Codex, Claude, Gemini, Grok, Mistral and Perplexity (approximations of their palettes, not official ones), and Graphite.
