@@ -5,7 +5,7 @@ import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
-import type { SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
+import type { SpendBlock, SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -738,6 +738,8 @@ export type SettingsSpendRulesInitialData = {
 	canManageSpendRules: boolean;
 	maxRules: number;
 	testSendsPerMinute: number;
+	/** Whether block rules block requests yet (SPEND_RULE_BLOCKS_ENABLED); until then they only notify. */
+	blocksEnabled?: boolean;
 	/** The zone a rule with time_zone null uses. */
 	billingTimeZone: string;
 	rules: SpendRule[];
@@ -754,10 +756,15 @@ export type SettingsSpendRuleOptions = {
 	budgetsUsd: Partial<Record<string, number | null>>;
 };
 
-/** The "spend-rules" settings resource: rules, editor options and a preview per enabled, evaluated rule. */
+/** GET /api/account/settings/spend-rules/blocks: the workspace's active spend blocks. */
+export type SettingsSpendBlocksData = { workspaceId: string; canLift: boolean; blocks: SpendBlock[] };
+
+/** The "spend-rules" settings resource: rules, editor options, active blocks and a preview per enabled, evaluated rule. */
 export type SettingsSpendAlertsData = SettingsSpendRulesInitialData & {
 	options: SettingsSpendRuleOptions;
 	previews: Record<string, SpendRulePreview>;
+	/** Active blocks, newest first. Empty when they could not be read. */
+	blocks: SpendBlock[];
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };

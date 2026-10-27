@@ -3361,6 +3361,39 @@ public final class Models {
 		public Integer web_search_requests;
 	}
 
+	public static class SpendBlock {
+		public Boolean active;
+		public Boolean block_free_models;
+		public String id;
+		public Object lift_reason;
+		public String lifted_at;
+		public String lifted_by;
+		public Integer limit_nanos;
+		public Double limit_usd;
+		public String period_start;
+		public String resets_at;
+		public String rule_id;
+		public String rule_name;
+		public String scope_id;
+		public String scope_label;
+		public Object scope_type;
+		public Integer spend_nanos;
+		public Double spend_usd;
+		public String started_at;
+		public String workspace_id;
+	}
+
+	public static class SpendBlockLiftReason {
+	}
+
+	public static class SpendBlockListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class SpendBlockResponse {
+		public Object data;
+	}
+
 	public static class SpendRule {
 		public Object action;
 		public Integer base_amount_nanos;

@@ -18,6 +18,7 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"

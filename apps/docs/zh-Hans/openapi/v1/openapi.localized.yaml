@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -5233,6 +5239,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: 同时返回已解除的拦截，最新的在前。
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: 返回的拦截数量上限。
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: 列出支出拦截
+      description: 列出工作区的支出拦截，最新的在前：即操作为 block 的支出规则在支出达到拦截点时启动的拦截。除非 include_lifted 为 true，否则只返回生效中的拦截。仅限所有者和管理员。
+      responses:
+        '200':
+          description: 支出拦截
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 支出拦截 ID。
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: 解除支出拦截
+      description: 解除生效中的支出拦截，使其范围内的请求在约一分钟内重新被接受。在周期重置前，规则不会再次拦截，但会继续发送警报。仅限所有者和管理员；解除操作会记录在审计日志中，并排队一个状态为 lifted 的 spend_blocked 事件。拦截不存在时返回 404，已被解除时返回 409 spend_block_not_active。
+      responses:
+        '200':
+          description: 已解除的支出拦截
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -9323,6 +9396,10 @@ components:
         type: string
     DroppedParams:
       description: 客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。
+      schema:
+        type: string
+    SpendWarning:
+      description: 当一条会拦截的支出规则覆盖该请求，且支出已超过其最后一个警报阈值但尚未达到拦截点时发送。以 rule_id、scope 和 resets_at 的形式列出最多三条规则，例如 `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`。支出达到拦截点后，范围内的请求会收到代码为 spend_rule_blocked 的 429。
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -22341,7 +22418,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。
+      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 在网关关闭拦截期间，会开始拦截的规则会被以 400 拒绝，已经设置为拦截的规则只发送通知。
       enum:
         - notify
         - block
@@ -23063,6 +23140,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 支出拦截被解除的原因：manual（所有者或管理员）、period_reset、below_limit（支出重新低于拦截点，例如提高预算之后）、rule_changed、rule_disabled 或 rule_deleted。
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: 支出达到拦截点时由支出规则启动的拦截。生效期间，范围内的请求会收到代码为 spend_rule_blocked 的 429，Retry-After 设为 resets_at。除非 block_free_models 为 true，否则免费模型不受影响。
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 启动此拦截的规则；规则被彻底删除后为 null。
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: 范围的显示名称（密钥、部门或模型名称、成员邮箱，或 ID）。
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 拦截自动解除的时间（规则周期结束时）。
+        spend_nanos:
+          type: integer
+          description: 拦截开始时规则范围内的支出，单位为纳美元。
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: 拦截点，单位为纳美元。
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: 手动解除时，解除拦截的所有者或管理员。
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: 未解除，且尚未到重置时间。
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

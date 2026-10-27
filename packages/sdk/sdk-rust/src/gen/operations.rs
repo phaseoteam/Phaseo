@@ -680,6 +680,11 @@ pub fn invalidateApiKeyCache<T: Transport>(client: &Client<T>, path: &HashMap<St
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn liftSpendBlock<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-blocks/{}/lift", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn listApiKeys<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/keys");
 	client.request("GET", &resolved_path, body)
@@ -872,6 +877,11 @@ pub fn listRateLimitAssignments<T: Transport>(client: &Client<T>, path: &HashMap
 
 pub fn listRateLimitPolicies<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/rate-limits/policies");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listSpendBlocks<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/spend-blocks");
 	client.request("GET", &resolved_path, body)
 }
 

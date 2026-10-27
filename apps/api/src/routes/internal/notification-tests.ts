@@ -16,7 +16,8 @@ function timingSafeEqual(a: string, b: string): boolean {
 	return difference === 0;
 }
 
-function authorized(c: { env: Env["Bindings"]; req: { header: (name: string) => string | undefined } }): boolean {
+/** Bearer GATEWAY_INTERNAL_TEST_TOKEN (at least 32 characters), compared in constant time. */
+export function authorized(c: { env: Env["Bindings"]; req: { header: (name: string) => string | undefined } }): boolean {
 	const expected = String(c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	const provided = c.req.header("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
 	return expected.length >= 32 && timingSafeEqual(provided, expected);

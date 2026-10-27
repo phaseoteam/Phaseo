@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -5233,6 +5239,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Gibt auch aufgehobene Blockierungen zurück, neueste zuerst.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximale Anzahl zurückgegebener Blockierungen.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: Ausgabenblockierungen auflisten
+      description: 'Listet die Ausgabenblockierungen des Arbeitsbereichs auf, neueste zuerst: die Blockierungen, die Ausgabenregeln mit der Aktion block gestartet haben, als die Ausgaben ihren Blockierpunkt erreichten. Nur aktive Blockierungen, außer include_lifted ist true. Nur für Inhaber und Admins.'
+      responses:
+        '200':
+          description: Ausgabenblockierungen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID der Ausgabenblockierung.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Ausgabenblockierung aufheben
+      description: Hebt eine aktive Ausgabenblockierung auf, sodass Anfragen in ihrem Geltungsbereich innerhalb von etwa einer Minute wieder angenommen werden. Die Regel blockiert erst nach dem Zurücksetzen ihres Zeitraums erneut, sendet aber weiter Warnungen. Nur für Inhaber und Admins; die Aufhebung wird im Audit-Log erfasst und stellt ein spend_blocked-Ereignis mit dem Status lifted in die Warteschlange. Gibt 404 für eine unbekannte Blockierung und 409 spend_block_not_active zurück, wenn sie bereits aufgehoben wurde.
+      responses:
+        '200':
+          description: Die aufgehobene Ausgabenblockierung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -9323,6 +9396,10 @@ components:
         type: string
     DroppedParams:
       description: Vom Client gesendete Parameter, die der bedienende Anbieter nicht unterstützt und die das Gateway entfernt hat, statt sie an den Anbieter zu senden oder die Anfrage abzulehnen, zum Beispiel `top_k, min_p`. Wird nur bei erfolgreichen Antworten gesendet und nur, wenn mindestens ein Parameter aus dem Anfrage-Body entfernt wurde. Parameter aus einem Preset oder einem Standardwert werden nicht aufgeführt.
+      schema:
+        type: string
+    SpendWarning:
+      description: Wird gesendet, solange eine blockierende Ausgabenregel die Anfrage abdeckt und die Ausgaben ihren letzten Warnschwellenwert, aber noch nicht ihren Blockierpunkt überschritten haben. Nennt bis zu drei Regeln mit rule_id, scope und resets_at, zum Beispiel `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Sobald die Ausgaben den Blockierpunkt erreichen, erhalten Anfragen im Geltungsbereich einen 429 mit dem Code spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -22341,7 +22418,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Das Sperren ist noch nicht verfügbar: Eine Regel mit action block wird mit einem 400 abgelehnt, bis es verfügbar ist.'
+      description: notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Solange das Sperren im Gateway ausgeschaltet ist, wird eine Regel, die mit dem Sperren beginnen würde, mit einem 400 abgelehnt, und eine Regel, die bereits sperrt, benachrichtigt nur.
       enum:
         - notify
         - block
@@ -23063,6 +23140,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'Warum eine Ausgabenblockierung aufgehoben wurde: manual (ein Inhaber oder Admin), period_reset, below_limit (die Ausgaben liegen wieder unter dem Blockierpunkt, etwa nach einer Budgeterhöhung), rule_changed, rule_disabled oder rule_deleted.'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: Eine Blockierung, die eine Ausgabenregel gestartet hat, als die Ausgaben ihren Blockierpunkt erreichten. Solange sie aktiv ist, erhalten Anfragen in ihrem Geltungsbereich einen 429 mit dem Code spend_rule_blocked und Retry-After bis resets_at. Kostenlose Modelle sind ausgenommen, außer block_free_models ist true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Die Regel, die die Blockierung gestartet hat; null, sobald die Regel endgültig gelöscht wurde.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: Anzeigename des Geltungsbereichs (Name des Schlüssels, der Abteilung oder des Modells, E-Mail des Mitglieds oder die ID).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Wann die Blockierung von selbst aufgehoben wird (das Ende des Zeitraums der Regel).
+        spend_nanos:
+          type: integer
+          description: Ausgaben im Geltungsbereich der Regel beim Start der Blockierung, in Nanodollar.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: Der Blockierpunkt, in Nanodollar.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: Der Inhaber oder Admin, der die Blockierung aufgehoben hat, bei manuellen Aufhebungen.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: Nicht aufgehoben, und das Zurücksetzen ist noch nicht erreicht.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

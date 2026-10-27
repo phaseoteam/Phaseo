@@ -7204,7 +7204,9 @@
 			"notEvaluated": "Not evaluated yet",
 			"notEvaluatedHelp": "This alert type is saved but not checked yet. It starts sending in a later release.",
 			"blocks": "Notifies, then blocks",
-			"disabled": "Off"
+			"disabled": "Off",
+			"blockingNow": "Blocking now",
+			"blockingNowHelp": "This rule is refusing requests in its scope. You can lift the block under Active blocks."
 		},
 		"metric": {
 			"spend": "Spend amount",
@@ -7363,7 +7365,6 @@
 			"blockFreeModels": "Also block free models",
 			"blockFreeModelsHelp": "Off by default, so free models keep working during a block.",
 			"bestEffort": "Blocking is best effort: it starts a few minutes after spend passes the margin, so some requests can go over. For an exact cap, use <keys>key limits</keys> or <budgets>workspace budgets</budgets>.",
-			"blockingLater": "Blocking turns on in a later release. Until then, this alert only notifies.",
 			"sectionDestinations": "Where to send",
 			"destinations": "Destinations",
 			"destinationsRoutes": "Spend Alerts routes",
@@ -7380,7 +7381,8 @@
 			"close": "Close",
 			"save": "Save",
 			"create": "Add alert",
-			"saving": "Saving…"
+			"saving": "Saving…",
+			"blockingOff": "Blocking isn't switched on yet. Until it is, this alert only notifies."
 		},
 		"issues": {
 			"nameRequired": "Enter a name of up to 100 characters.",
@@ -7417,7 +7419,8 @@
 			"enabled": "Alert turned on",
 			"disabled": "Alert turned off",
 			"testSent": "{count, plural, =0 {Test sent} one {Test sent to # destination} other {Test sent to # destinations}}",
-			"testPartial": "Test sent to {delivered}, failed for {failed}"
+			"testPartial": "Test sent to {delivered}, failed for {failed}",
+			"lifted": "Block lifted"
 		},
 		"delete": {
 			"title": "Delete {name}?",
@@ -7471,6 +7474,30 @@
 			"keyLimitName": "{key}: {percent}% of {interval, select, daily {daily} weekly {weekly} other {monthly}} limit",
 			"budget": "Alert at 50/80/100%",
 			"budgetName": "{interval, select, daily {Daily} weekly {Weekly} other {Monthly}} budget alert"
+		},
+		"blocks": {
+			"title": "Active blocks",
+			"description": "These spend rules are refusing requests now. Requests in scope get a 429 until the block resets or someone lifts it.",
+			"badge": "Blocking",
+			"deletedRule": "Deleted rule",
+			"freeModelsAllowed": "Free models allowed",
+			"spent": "{spend} spent, limit {limit}",
+			"resets": "Resets {date}",
+			"noReset": "Lifts when spend is below the limit",
+			"since": "Since {date}",
+			"lift": "Lift",
+			"bestEffort": "Blocks start a few minutes after spend passes the limit. A lift reaches every request within about a minute.",
+			"alreadyLifted": "This block was already lifted.",
+			"liftTitle": "Lift the block from {name}?",
+			"liftBody": "Requests in scope work again within about a minute. The rule won't block again until its period resets, but it keeps sending alerts.",
+			"lifting": "Lifting…",
+			"liftConfirm": "Lift block"
+		},
+		"confirmBlock": {
+			"title": "Block the whole workspace?",
+			"body": "Once spend reaches the block limit, {name} refuses requests from every key and member in this workspace until the period resets or an owner or admin lifts the block.",
+			"label": "Type {name} to confirm",
+			"confirm": "Save and allow blocking"
 		}
 	}
 }

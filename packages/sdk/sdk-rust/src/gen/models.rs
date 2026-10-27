@@ -3332,6 +3332,38 @@ pub struct ServerToolUsage {
 	pub web_search_requests: Option<i64>,
 }
 
+pub struct SpendBlock {
+	pub active: bool,
+	pub block_free_models: bool,
+	pub id: String,
+	pub lift_reason: Option<String>,
+	pub lifted_at: Option<String>,
+	pub lifted_by: Option<String>,
+	pub limit_nanos: i64,
+	pub limit_usd: f64,
+	pub period_start: String,
+	pub resets_at: Option<String>,
+	pub rule_id: Option<String>,
+	pub rule_name: Option<String>,
+	pub scope_id: Option<String>,
+	pub scope_label: String,
+	pub scope_type: String,
+	pub spend_nanos: i64,
+	pub spend_usd: f64,
+	pub started_at: String,
+	pub workspace_id: String,
+}
+
+pub type SpendBlockLiftReason = JsonValue;
+
+pub struct SpendBlockListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct SpendBlockResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct SpendRule {
 	pub action: String,
 	pub base_amount_nanos: Option<i64>,

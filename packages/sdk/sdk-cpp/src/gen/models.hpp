@@ -3331,6 +3331,38 @@ struct ServerToolUsage {
 	std::optional<int> web_search_requests;
 };
 
+struct SpendBlock {
+	bool active;
+	bool block_free_models;
+	std::string id;
+	std::optional<std::any> lift_reason;
+	std::optional<std::string> lifted_at;
+	std::optional<std::string> lifted_by;
+	int limit_nanos;
+	double limit_usd;
+	std::string period_start;
+	std::optional<std::string> resets_at;
+	std::optional<std::string> rule_id;
+	std::optional<std::string> rule_name;
+	std::optional<std::string> scope_id;
+	std::string scope_label;
+	std::any scope_type;
+	int spend_nanos;
+	double spend_usd;
+	std::string started_at;
+	std::string workspace_id;
+};
+
+using SpendBlockLiftReason = std::any;
+
+struct SpendBlockListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SpendBlockResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct SpendRule {
 	std::any action;
 	std::optional<int> base_amount_nanos;

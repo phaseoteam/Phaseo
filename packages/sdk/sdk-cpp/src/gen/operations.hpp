@@ -680,6 +680,11 @@ inline Response InvalidateApiKeyCache(Client& client, const std::map<std::string
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response LiftSpendBlock(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-blocks/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/lift";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response ListApiKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/keys";
 	return client.request("GET", resolved_path, body);
@@ -872,6 +877,11 @@ inline Response ListRateLimitAssignments(Client& client, const std::map<std::str
 
 inline Response ListRateLimitPolicies(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/rate-limits/policies";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListSpendBlocks(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-blocks";
 	return client.request("GET", resolved_path, body);
 }
 

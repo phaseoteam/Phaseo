@@ -11,6 +11,7 @@ import {
 	emptyDraft,
 	isValidTimeZone,
 	keyLimitAlertPrefill,
+	needsWorkspaceBlockConfirm,
 	parseUsd,
 	periodsFor,
 	prefillFromSearchParams,
@@ -22,9 +23,10 @@ import {
 	withBaseKind,
 	withMetric,
 	withScope,
+	workspaceBlockConfirmMatches,
 	type SpendRuleDraft,
 } from "./spendRuleDraft";
-import { parseSpendRuleInput, SPEND_RULE_BLOCKS_AVAILABLE, type SpendRule, type SpendRulePreview } from "./spendRules";
+import { parseSpendRuleInput, type SpendRule, type SpendRulePreview } from "./spendRules";
 
 const KEY = "00000000-0000-4000-8000-0000000000a1";
 const DEST = "00000000-0000-4000-8000-0000000000e1";
@@ -44,7 +46,7 @@ function rule(overrides: Partial<SpendRule> = {}): SpendRule {
 
 const draft = (overrides: Partial<SpendRuleDraft> = {}): SpendRuleDraft => ({ ...emptyDraft(), name: "Monthly", baseAmountUsd: "100", ...overrides });
 const codes = (value: SpendRuleDraft) => draftIssues(value).map((issue) => `${issue.field}:${issue.code}`);
-const accepted = (payload: Record<string, unknown>) => parseSpendRuleInput(payload, { parseTimeZone: (zone) => (typeof zone === "string" ? zone : null) }).ok;
+const accepted = (payload: Record<string, unknown>, blocksEnabled = true) => parseSpendRuleInput(payload, { parseTimeZone: (zone) => (typeof zone === "string" ? zone : null), blocksEnabled }).ok;
 
 describe("parseUsd", () => {
 	it("takes plain dollar amounts with up to four decimals", () => {
@@ -176,8 +178,9 @@ describe("draftToPayload", () => {
 		const spend = { ...withMetric(draft({ thresholdAmountUsd: "100" }), "spend"), action: "block" as const, blockAtAmountUsd: "110" };
 		const payload = draftToPayload(spend);
 		expect(payload).toMatchObject({ metric: "spend", threshold_amount_usd: 100, block_at_amount_usd: 110, action: "block", block_free_models: false, base_kind: null, threshold_percents: null });
-		// The API refuses block rules until blocks are enforced.
-		expect(accepted(payload)).toBe(SPEND_RULE_BLOCKS_AVAILABLE);
+		expect(accepted(payload)).toBe(true);
+		// A new block rule is refused while the gateway does not enforce blocks.
+		expect(accepted(payload, false)).toBe(false);
 		expect(draftToPayload({ ...spend, blockFreeModels: true }).block_free_models).toBe(true);
 	});
 
@@ -297,5 +300,27 @@ describe("time zones", () => {
 		const zones = timeZoneOptions();
 		expect(zones[0]).toBe("UTC");
 		expect(zones.filter((zone) => zone === "UTC")).toHaveLength(1);
+	});
+});
+
+describe("workspace block confirmation", () => {
+	const blockDraft = { ...emptyDraft({}), name: "Hard cap", metric: "spend" as const, action: "block" as const, scopeType: "workspace" as const, enabled: true };
+	it("asks when a new or newly workspace-wide block rule is saved enabled", () => {
+		expect(needsWorkspaceBlockConfirm(blockDraft, null)).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "notify" }))).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block", enabled: false }))).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block", scope_type: "key", scope_id: KEY }))).toBe(true);
+	});
+	it("does not ask again for an unchanged workspace block rule, other scopes, notify rules or disabled rules", () => {
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block" }))).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, scopeType: "key" }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, action: "notify" }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, enabled: false }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, metric: "forecast" }, null)).toBe(false);
+	});
+	it("matches the rule name, ignoring case and surrounding spaces", () => {
+		expect(workspaceBlockConfirmMatches("  hard CAP ", "Hard cap")).toBe(true);
+		expect(workspaceBlockConfirmMatches("Hard ca", "Hard cap")).toBe(false);
+		expect(workspaceBlockConfirmMatches("", "  ")).toBe(false);
 	});
 });

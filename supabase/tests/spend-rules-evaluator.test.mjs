@@ -126,6 +126,10 @@ try {
   // The spend rules API migration redefines the evaluator on shared helpers; run the suite on it.
   const apiMigrationName = laterMigrations.find((name) => name.endsWith('_spend_rules_api.sql'));
   if (apiMigrationName) await db.exec(await read(`../migrations/${apiMigrationName}`));
+  // The spend rule blocks migration redefines the evaluator and sweep (blocks stay off unless
+  // p_blocks is passed, so this suite's notify behaviour is unchanged); run the suite on it too.
+  const blocksMigrationName = laterMigrations.find((name) => name.endsWith('_spend_rule_blocks.sql'));
+  if (blocksMigrationName) await db.exec(await read(`../migrations/${blocksMigrationName}`));
 
   // ---- Calendar periods: local midnight to local midnight, Monday weeks, DST-length days.
   const period = async (kind, zone, now) => {
@@ -376,12 +380,12 @@ try {
   await sweep(NOW, 1);
 
   // ---- Grants: service role only.
-  for (const signature of ['public.sweep_spend_rules(timestamp with time zone, integer)']) {
-    assert.equal((await one(`select has_function_privilege('authenticated', '${signature}', 'execute') ok`)).ok, false);
-    assert.equal((await one(`select has_function_privilege('anon', '${signature}', 'execute') ok`)).ok, false);
-    assert.equal((await one(`select has_function_privilege('service_role', '${signature}', 'execute') ok`)).ok, true);
-  }
-  assert.equal((await one(`select has_function_privilege('authenticated', 'private.evaluate_workspace_spend_rules(uuid, timestamp with time zone)', 'execute') ok`)).ok, false);
+  // By name: the spend rule blocks migration adds a defaulted p_blocks argument to both.
+  const privilege = async (role, name) => (await one(`select has_function_privilege($1, p.oid, 'execute') ok from pg_proc p where p.proname = $2`, [role, name])).ok;
+  assert.equal(await privilege('authenticated', 'sweep_spend_rules'), false);
+  assert.equal(await privilege('anon', 'sweep_spend_rules'), false);
+  assert.equal(await privilege('service_role', 'sweep_spend_rules'), true);
+  assert.equal(await privilege('authenticated', 'evaluate_workspace_spend_rules'), false);
 
   // ---- Cost: 300 workspaces with a month of hourly usage on two keys and three rules each.
   const many = 300;
@@ -438,11 +442,11 @@ try {
   // A slot with more workspaces than the limit rotates hourly instead of always taking the first ones.
   await db.exec(`
     create table spend_rule_evaluation_log (workspace_id uuid);
-    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz) rename to evaluate_workspace_spend_rules_logged;
-    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz) returns jsonb language plpgsql as $$
+    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules_logged;
+    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz, p_blocks boolean default false) returns jsonb language plpgsql as $$
     begin
       insert into public.spend_rule_evaluation_log values (p_workspace_id);
-      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now);
+      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now, p_blocks);
     end $$;
   `);
   const slotStart = Date.parse('2026-10-20T15:10:00Z');
@@ -457,8 +461,8 @@ try {
   }
   assert.equal((await one('select count(distinct workspace_id)::int n from spend_rule_evaluation_log')).n, inSlot, 'every workspace in an over-full slot is reached within ceil(n / limit) hours');
   await db.exec(`
-    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz);
-    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz) rename to evaluate_workspace_spend_rules;
+    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean);
+    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules;
     drop table spend_rule_evaluation_log;
   `);
 
