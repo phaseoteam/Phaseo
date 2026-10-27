@@ -146,6 +146,21 @@ The editor preserves drafts after save failures, detects external edits, offers 
 
 ![Global instructions](screenshots/global-instructions.png)
 
+## Editing, steering and the message box
+
+These follow T3 Code and work the same in Chat and Code.
+
+- **Edit from here** (the pencil on your message) rewinds the chat to just before that message and puts it, with its attachments, back in the message box. The message and everything after it are deleted from the chat; anything already in the box is stashed. In a Code chat in a Git project you can also tick **Also restore the project's files to before this turn**: the dialog lists each file that would be reverted, restored or deleted, and only the working tree changes (staged changes, commits and ignored files stay as they are). It refuses while another chat is working in the same project. **Branch from here** still copies the chat instead.
+- **Regenerate** (Chat only, under the last answer) removes that answer and sends your last message again.
+- After a rewind the agent starts a fresh session seeded with the remaining conversation, as a branch from an earlier message does: Claude Code, Codex and the other agents keep their own sessions, which still hold the removed turns. Phaseo's own runs for the chat are deleted and rebuilt from what is left.
+- **The queue**: messages sent while a turn runs wait above the message box. Each can be sent into the running turn now (**Send now**), edited in the message box (the pencil, or `Alt+↑` for the last one; Enter saves and Cancel puts your draft back), moved up or down, or removed. `Ctrl+Shift+Enter` (`⌘⇧Enter`) sends the draft, or the first queued message, into the running turn. Codex, Cursor, OpenCode, Pi and Phaseo take messages mid-turn; for the others (such as Claude Code) the queue says so and messages wait for the turn to end. A message the agent refused goes back to its place in the queue; an instruction whose delivery was never confirmed stays above the box with **Queue it** and **Discard**.
+- **Prompt history**: `↑` in an empty message box recalls your earlier prompts in this chat, then recent prompts from other chats on this device; `↓` steps back. Typing is never replaced.
+- **Stash**: `Ctrl+S` (`⌘S`) parks the draft; in an empty box it brings back the newest. The stash button beside Attach files lists stashed drafts. Attachments stay with the chat they were added in.
+- **Quote**: select text in a reply and choose **Quote** to put it in the message box as a Markdown quote, with an empty line to reply under.
+- **Context meter**: in Phaseo chats a ring by the send button shows how full the model's context window was after the last turn. Hover it for the tokens in use, what that turn processed and cost, and **Compact now**.
+- **Sending**: Enter sends and Shift+Enter adds a line, or choose Ctrl+Enter (⌘Enter) under **Settings → General → Message box**. `Ctrl+Alt+Enter` sends and starts a new chat.
+- **Attachments**: drop or paste images, PDFs and UTF-8 text files (up to 10 MB; text up to 2 MB), in a new chat too. A paste of 32 KiB or more becomes `pasted-text.txt`; `Ctrl+Shift+V` (`⌘⇧V`) keeps it in the message.
+
 ## Mentions
 
 Type `@` anywhere in a message to mention a chat or a file. You can also drag a chat from the sidebar onto the composer: its chip goes in where you drop it, or at the caret if you drop it outside the text. Chats appear first, most recent first; in a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A choice becomes a chip in the text where you typed it, and Backspace removes it whole. Attached and pasted files land as chips at the caret too. When you send, a file chip reaches the agent as `@path`, a chat chip as a reference it can read with `read_thread` (up to 10 per message), and attachments as attachments.
@@ -162,7 +177,7 @@ The diff shows every changed file in one scrolling list, as in T3 Code. The menu
 
 - **Changes**: the branch against the branch it started from, including uncommitted work and new files. Next to it, the comparison target reads **Automatic** (the remote's default branch, otherwise `main` or `master`) until you search for and pick another local or remote branch.
 - **Uncommitted**: everything not yet committed, new files included.
-- **Latest turn** and **Turn N**: what one agent turn changed. Phaseo snapshots the project before and after each turn in a Git project (the snapshot never touches your staged files, branches or stash), so a turn's diff stays exact even after later edits. Turns finished before this version, chats outside a Git project and snapshots Git has since cleaned up show no turn diff.
+- **Latest turn** and **Turn N**: what one agent turn changed. Phaseo snapshots the project before and after each turn in a Git project (the snapshot never touches your staged files, branches or stash), so a turn's diff stays exact even after later edits. Turns finished before this version, chats outside a Git project and snapshots Git has since cleaned up show no turn diff. In a Code chat, a turn that changed files ends with one row naming them, with the lines added and removed and **Open diff**, which opens this pane at that turn.
 
 On the right: lines added and removed, **Refresh**, **Collapse all files**, stacked or split layout, line wrapping, **Hide whitespace changes** and the file tree, which lists changed files beside the diff; choosing one scrolls to it. Each file has a sticky header: its chevron (green for new files, red for deleted, amber for changed) folds the file, clicking the name opens the file, and the copy button copies its path. Binary and mode-only changes are listed as a count rather than shown. Click the unchanged-lines bars to expand context; if the file changed meanwhile, **Refresh** brings the diff up to date. The diff refreshes when a turn finishes, when the window regains focus and when you save, stage or commit.
 

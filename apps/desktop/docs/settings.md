@@ -36,9 +36,13 @@ Choose System, Light or Dark, and a colour theme. Every theme has a light and a 
 
 ## Keyboard shortcuts
 
-**Settings → Keyboard shortcuts** lists every shortcut by area (General, Chats, Panes, Browser, Pull requests, View, and Project actions), as T3 Code does. Click a shortcut and press new keys to change it, then Save; Escape cancels and Backspace leaves it unassigned. Each shortcut can have a **When** condition built from `chatMode`, `codeMode`, `chatOpen`, `paneOpen`, `settingsOpen`, `textFocused` and `terminalFocused` with `&&`, `||`, `!` and brackets; it runs only while the condition holds. A warning marks keys used by another command. The row menu resets a changed shortcut to its default or removes it, and **Add keybinding** gives a command an extra shortcut. **Project actions** lists every project action (see Project settings) with its shortcut, if it has one; an action's shortcut is saved as `script.<project id>.<action id>.run` and works only while a chat in that project is open, so different projects' actions may share keys without a warning.
+**Settings → Keyboard shortcuts** lists every shortcut by area (General, Chats, Composer, Panes, Browser, Pull requests, View, and Project actions), as T3 Code does. Click a shortcut and press new keys to change it, then Save; Escape cancels and Backspace leaves it unassigned. Each shortcut can have a **When** condition built from `chatMode`, `codeMode`, `chatOpen`, `paneOpen`, `settingsOpen`, `textFocused`, `composerFocused` and `terminalFocused` with `&&`, `||`, `!` and brackets; it runs only while the condition holds. A warning marks keys used by another command. The row menu resets a changed shortcut to its default or removes it, and **Add keybinding** gives a command an extra shortcut. **Project actions** lists every project action (see Project settings) with its shortcut, if it has one; an action's shortcut is saved as `script.<project id>.<action id>.run` and works only while a chat in that project is open, so different projects' actions may share keys without a warning.
 
 Changes are saved in `keybindings.json` in the app's settings folder (the file button opens it). It is a list of `{ "command", "key", "when" }` entries: a command listed there uses those keys instead of its defaults, and an empty key unassigns it. Edits made by hand apply straight away; if the file cannot be read, the defaults stay in use and the page says why. Menus and tooltips show the keys currently bound.
+
+## Message box
+
+**Settings → General → Message box → Send with** chooses Enter (Shift+Enter adds a line) or Ctrl+Enter / ⌘Enter (Enter adds a line), as T3 Code's send shortcut does. It is kept on this device. The message box's other keys (send into the running turn, edit the last queued message, send and start a new chat, prompt history and stash) are under **Composer** in Keyboard shortcuts.
 
 ## Chat titles
 
