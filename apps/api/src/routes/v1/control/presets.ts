@@ -519,12 +519,17 @@ async function formatLabels(presetId: string, rows: LabelRow[]) {
 	}));
 }
 
-function labelPathParts(req: Request): { presetId: string | null; label: string | null } {
+/** The preset id from …/{id}/labels. */
+function labelListPresetId(req: Request): string | null {
 	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
-	const index = segments.lastIndexOf("labels");
-	if (index < 1) return { presetId: null, label: null };
-	const label = segments[index + 1];
-	return { presetId: decodeURIComponent(segments[index - 1]), label: label === undefined ? null : decodeURIComponent(label) };
+	return segments.length >= 2 && segments[segments.length - 1] === "labels" ? decodeURIComponent(segments[segments.length - 2]) : null;
+}
+
+function labelPathParts(req: Request): { presetId: string | null; label: string | null } {
+	// Counted from the end: …/{id}/labels/{label}. The label or the preset may itself be named "labels".
+	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+	if (segments.length < 3 || segments[segments.length - 2] !== "labels") return { presetId: null, label: null };
+	return { presetId: decodeURIComponent(segments[segments.length - 3]), label: decodeURIComponent(segments[segments.length - 1]) };
 }
 
 function labelRpcError(message: string): Response | null {
@@ -539,7 +544,7 @@ async function handleListPresetLabels(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_READ); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]); if (roleError) return roleError;
-	const { presetId } = labelPathParts(req);
+	const presetId = labelListPresetId(req);
 	if (!presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
 		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });

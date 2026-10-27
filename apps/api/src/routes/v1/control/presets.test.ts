@@ -211,6 +211,13 @@ describe("preset version labels", () => {
 		expect(state.rpcs[0]?.args).toMatchObject({ p_label: "staging", p_version_id: VERSION_UUID });
 	});
 
+	it("accepts a label named labels on a preset reached through /presets", async () => {
+		const { presetsRoutes } = await import("./presets");
+		const response = await presetsRoutes.request("https://example.com/local_1/labels/labels", put({ version_id: VERSION_UUID }));
+		expect(response.status).toBe(200);
+		expect(state.rpcs[0]?.args).toMatchObject({ p_label: "labels", p_version_id: VERSION_UUID });
+	});
+
 	it("rejects labels that look like versions or break the format before calling the database", async () => {
 		const { presetsRoutes } = await import("./presets");
 		for (const label of ["v3", "1prod", "has space", "a".repeat(33)]) {
