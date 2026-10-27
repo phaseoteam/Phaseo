@@ -6828,7 +6828,9 @@
 		"openChat": "Chat öffnen",
 		"addCredits": "Guthaben aufladen",
 		"notices": {
-			"installed": "Der Phaseo-Agent ist jetzt in {team}."
+			"installed": "Der Phaseo-Agent ist jetzt in {team}.",
+			"permissionsUpdated": "Slack-Berechtigungen in {team} aktualisiert. Der Agent kann jetzt Diagramme und Bilder posten und geteilte Dateien lesen.",
+			"permissionsPartial": "Slack hat nicht alle Berechtigungen erteilt, daher bleiben einige Funktionen aus. Versuche es noch einmal und prüfe, ob deine Slack-App alle Scopes enthält."
 		},
 		"member": {
 			"installed": "Der Phaseo-Agent ist in {team} installiert.",
@@ -6945,6 +6947,13 @@
 			"save": "Änderungen speichern",
 			"saved": "Einstellungen gespeichert.",
 			"discard": "Änderungen verwerfen"
+		},
+		"permissions": {
+			"title": "Slack-Berechtigungen aktualisieren",
+			"description": "Der Agent kann jetzt Diagramme und Bilder posten, die er erstellt, und geteilte Bilder und PDFs lesen, sobald Slack es erlaubt. Beim Aktualisieren öffnet sich Slack, um die neuen Berechtigungen zu bestätigen. Einstellungen, Schlüssel und Daten des Agenten bleiben erhalten.",
+			"customApp": "Füge zuerst die Bot-Scopes files:read und files:write zum Manifest deiner Slack-App hinzu.",
+			"submit": "Slack-Berechtigungen aktualisieren",
+			"redirecting": "Slack wird geöffnet…"
 		},
 		"month": {
 			"note": "{date} bisher, in UTC. Der Betrag wird am Monatsende vom Guthaben abgebucht.",
@@ -7106,6 +7115,7 @@
 			"appUnavailable": "Phaseo konnte die gespeicherten Angaben deiner Slack-App nicht lesen. Speichere sie erneut und versuche es noch einmal.",
 			"alreadyInstalled": "Der Slack-Agent ist in diesem Workspace bereits installiert.",
 			"teamInUse": "Dieser Slack-Workspace hat den Agenten bereits aus einem anderen Phaseo-Workspace. Deinstalliere ihn dort zuerst.",
+			"teamMismatch": "Das war ein anderer Slack-Workspace. Wähle den Workspace, in dem der Agent installiert ist, und versuche es dann noch einmal.",
 			"notInstalled": "Der Slack-Agent ist in diesem Workspace nicht mehr installiert. Lade die Seite neu.",
 			"conflict": "Der Slack-Agent wurde zwischenzeitlich geändert. Lade neu und versuche es erneut.",
 			"keyMissing": "Der API-Schlüssel des Agenten fehlt. Deinstalliere den Agenten und füge ihn erneut hinzu.",

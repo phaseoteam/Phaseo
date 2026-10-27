@@ -58,6 +58,11 @@ Worker's production host and routes.
   client credentials are optional secrets here.
 - Editing the manifest file doesn't change the live Slack app: paste the new
   manifest on the app's App Manifest page in Slack too.
+- A new scope reaches an installation only when an admin approves it in Slack
+  (install, or **Update Slack permissions**). `slack_installations.bot_scopes`
+  records what Slack granted (null: the original seven scopes, before
+  `files:read` and `files:write`), and every feature that needs a newer scope
+  checks it with `hasBotScope` and says what an admin can do instead.
 
 ## Durable Objects
 
@@ -162,6 +167,16 @@ Phaseo account is connected (with the Connect button when connecting would let
 them use the agent or ask about usage), and this month's answers in the Slack
 workspace for someone linked to a member of the workspace. It holds settings and
 counts, never message text.
+
+### Charts, images and files
+
+With `files:write` (`src/chart.ts`, `src/images.ts`, `src/slack-files.ts`):
+
+- `make_chart` takes a small spec (bar, line or pie; a title; up to 24, 60 or 6 labels; up to 6 series of numbers; optional axis labels and a value prefix or suffix), checks it, and draws it as SVG in Phaseo's chart colours. resvg (`@resvg/resvg-wasm`, bundled as a compiled module) turns it into a 1200×750 PNG with the bundled Montserrat (`assets/`, SIL Open Font License); chart text must use the characters that font draws (`DRAWABLE_RANGES`, checked against the font in tests). Anything the model should fix comes back to it as the tool's error.
+- `generate_image` makes an image with `openai/gpt-image-2` (`DEFAULT_IMAGE_MODEL`, served by a provider that doesn't train on prompts) through the gateway's `/images/generations`, with the installation's key, labels, end user and session. Its cost counts against the turn's $0.50 with the model's (the SDK run stops on both together) and shows in the footer. An image is only started while $0.15 of the limit is left, and one answer makes at most 2.
+- Both upload with `files.getUploadURLExternal`, the bytes to Slack's upload URL, and `files.completeUploadExternal`, which shares the file in the thread. The thread's working memory notes what was posted.
+
+With `files:read`, images (PNG, JPEG, GIF, WebP, up to 5 MB) and PDFs (up to 10 MB) shared with the message, or by people in the thread messages the turn read, are read for the run: `files.info`, then a download of `url_private_download` with the bot token (only to `files.slack.com`, never following a redirect, capped while it streams), and a check of the file's first bytes. At most 4 files, 12 MB together, newest first. They go to the model as input parts of the run's first user message (`withAttachments` in `src/agent.ts`), and the prompt lists each shared file and why any isn't attached. A model whose catalogue entry takes no images (or files) isn't sent them; Auto is sent them, and when the gateway says no route reads them (`unsupported_modalities`), the run answers again without them and says so. Only file ids and names are kept, with the message in the coordinator; the bytes never leave the run.
 
 ### Usage tools
 

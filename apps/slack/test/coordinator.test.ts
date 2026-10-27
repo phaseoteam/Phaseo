@@ -88,7 +88,7 @@ describe("ThreadCoordinator", () => {
 
 	it("keeps a message only while its turn is open", async () => {
 		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
-		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", context: null, replyTs: null, stagedReply: null, stagedTools: [], attemptCosts: {}, memory: [] });
+		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", files: [], context: null, replyTs: null, stagedReply: null, stagedTools: [], attemptCosts: {}, memory: [] });
 		await coordinator.finishTurn(1, { status: "done", reply: "Answer" }, NOW);
 		expect(coordinator.turnInput(1)).toBeNull();
 		const storage = storageOf(coordinator);

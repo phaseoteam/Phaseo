@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { compareTs, MAX_KNOWN_MESSAGES } from "./history";
 import { MAX_OWN_ANSWER_CHARS, QUESTION_TIMEOUT_MS, questionMemory, type QuestionAnswer, type QuestionDraft, type QuestionState } from "./questions";
+import { MAX_FILES_PER_MESSAGE, type SharedFileRef } from "./slack-files";
 import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunner, type TurnStart } from "./turns";
 
 // ThreadCoordinator: one per Slack thread, named installation:channel:thread_ts.
@@ -42,6 +43,8 @@ const MAX_PAUSED_RUN_BYTES = 1_500_000;
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
 	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
 	text: string;
+	/** The files shared with the message (ids and names), kept with its text. */
+	files?: SharedFileRef[];
 };
 
 export type EnqueueResult =
@@ -62,7 +65,7 @@ export type MemoryEntry = { kind: "reply" | "tool"; text: string; at: number; ts
  * A message from the thread's history (conversations.replies), for one turn only.
  * role: a person, the agent itself, or another bot or app (name: what Slack shows for it).
  */
-export type ContextEntry = { role: "user" | "assistant" | "app"; author: string | null; name?: string; text: string; ts: string | null };
+export type ContextEntry = { role: "user" | "assistant" | "app"; author: string | null; name?: string; text: string; ts: string | null; files?: SharedFileRef[] };
 
 /** What a turn's read of its thread returned (history.ts). Kept for that turn only. */
 export type ThreadContext = {
@@ -81,6 +84,8 @@ export type ThreadReadRecord = { oldest: string; ts: string[]; complete: boolean
 
 export type TurnInput = {
 	text: string;
+	/** The files shared with the message. */
+	files: SharedFileRef[];
 	context: ThreadContext | null;
 	/** The reply message an earlier attempt of this turn started, if any. */
 	replyTs: string | null;
@@ -151,6 +156,7 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "external", "INTEGER"],
 	["memory", "ts", "TEXT"],
 	["turns", "waiting_until", "INTEGER"],
+	["turns", "files", "TEXT"],
 ];
 
 /** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
@@ -258,10 +264,11 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, text, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, text, files, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
-				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0, request.text.slice(0, MAX_MESSAGE_CHARS), now,
+				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0, request.text.slice(0, MAX_MESSAGE_CHARS),
+				request.files?.length ? JSON.stringify(request.files.slice(0, MAX_FILES_PER_MESSAGE)) : null, now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});
@@ -558,12 +565,13 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/** What a turn works from, while it is queued or running: its message, thread history, reply and working memory. */
 	turnInput(turnId: number): TurnInput | null {
-		const row = this.sql.exec<{ text: string; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null; attempt_costs: string | null }>(
-			"SELECT text, context, reply_ts, staged_reply, staged_tools, attempt_costs FROM turns WHERE id = ?", turnId,
+		const row = this.sql.exec<{ text: string; files: string | null; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null; attempt_costs: string | null }>(
+			"SELECT text, files, context, reply_ts, staged_reply, staged_tools, attempt_costs FROM turns WHERE id = ?", turnId,
 		).toArray()[0];
 		if (!row) return null;
 		return {
 			text: row.text,
+			files: row.files ? JSON.parse(row.files) as SharedFileRef[] : [],
 			context: row.context ? storedContext(row.context) : null,
 			replyTs: row.reply_ts,
 			stagedReply: row.staged_reply,
@@ -581,6 +589,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			...(entry.name ? { name: entry.name } : {}),
 			text: entry.text.slice(0, MAX_CONTEXT_CHARS),
 			ts: entry.ts,
+			...(entry.files?.length ? { files: entry.files.slice(0, MAX_FILES_PER_MESSAGE) } : {}),
 		});
 		const kept: ThreadContext = {
 			root: context.root ? trim(context.root) : null,

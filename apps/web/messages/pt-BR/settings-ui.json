@@ -6828,7 +6828,9 @@
 		"openChat": "Abrir Chat",
 		"addCredits": "Adicionar créditos",
 		"notices": {
-			"installed": "O agente da Phaseo agora está em {team}."
+			"installed": "O agente da Phaseo agora está em {team}.",
+			"permissionsUpdated": "Permissões do Slack atualizadas em {team}. O agente agora pode publicar gráficos e imagens e ler os arquivos compartilhados com ele.",
+			"permissionsPartial": "O Slack não concedeu todas as permissões, então alguns recursos continuam desativados. Tente de novo e confira se o seu app do Slack tem todos os scopes."
 		},
 		"member": {
 			"installed": "O agente da Phaseo está instalado em {team}.",
@@ -6945,6 +6947,13 @@
 			"save": "Salvar alterações",
 			"saved": "Configurações salvas.",
 			"discard": "Descartar alterações"
+		},
+		"permissions": {
+			"title": "Atualizar permissões do Slack",
+			"description": "O agente agora pode publicar gráficos e imagens que cria, e ler imagens e PDFs compartilhados com ele, assim que o Slack permitir. Ao atualizar, o Slack abre para você aprovar as novas permissões, e as configurações, a chave e os dados do agente são mantidos.",
+			"customApp": "Primeiro adicione os scopes de bot files:read e files:write ao manifesto do seu app do Slack.",
+			"submit": "Atualizar permissões do Slack",
+			"redirecting": "Abrindo o Slack…"
 		},
 		"month": {
 			"note": "{date} até agora, em UTC. A cobrança é feita nos créditos quando o mês termina.",
@@ -7106,6 +7115,7 @@
 			"appUnavailable": "A Phaseo não conseguiu ler os dados salvos do seu app do Slack. Salve-os de novo e tente outra vez.",
 			"alreadyInstalled": "O agente do Slack já está instalado neste workspace.",
 			"teamInUse": "Este workspace do Slack já tem o agente de outro workspace da Phaseo. Desinstale-o lá primeiro.",
+			"teamMismatch": "Esse era outro workspace do Slack. Escolha aquele em que o agente está instalado e tente de novo.",
 			"notInstalled": "O agente do Slack não está mais instalado neste workspace. Recarregue a página.",
 			"conflict": "O agente do Slack mudou nesse meio-tempo. Recarregue e tente de novo.",
 			"keyMissing": "A chave de API do agente está faltando. Desinstale o agente e adicione-o de novo.",

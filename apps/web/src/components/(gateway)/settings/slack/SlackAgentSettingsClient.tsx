@@ -18,12 +18,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { INCLUDED_ANSWERS_PER_PERSON } from "@/lib/slack-agent/pricing";
-import { startSlackInstall, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { startSlackInstall, startSlackPermissionsUpdate, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
@@ -51,12 +52,12 @@ import {
 
 type ActionError = { key: SlackErrorKey; message?: string | null };
 
-const CALLBACK_PARAMS = ["installed", "error", "workspaceId"];
+const CALLBACK_PARAMS = ["installed", "permissions_updated", "error", "workspaceId"];
 
 export default function SlackAgentSettingsClient({ view }: { view: SlackAgentView }) {
 	const t = useTranslations("SettingsUI.slack");
 	const params = useSearchParams();
-	// The OAuth callback lands here with ?installed=1 or ?error=<code>: show it once.
+	// The OAuth callback lands here with ?installed=1, ?permissions_updated=1 or ?error=<code>: show it once.
 	const [notice] = useState(() => callbackNotice(params));
 	useEffect(() => {
 		if (!notice) return;
@@ -69,6 +70,9 @@ export default function SlackAgentSettingsClient({ view }: { view: SlackAgentVie
 	return (
 		<div className="space-y-6">
 			{notice?.kind === "installed" ? <Notice tone="success" role="status">{t("notices.installed", { team })}</Notice> : null}
+			{notice?.kind === "permissionsUpdated"
+				? <Notice tone={notice.partial ? "warning" : "success"} role="status">{notice.partial ? t("notices.permissionsPartial") : t("notices.permissionsUpdated", { team })}</Notice>
+				: null}
 			{notice?.kind === "error" ? <SlackError error={{ key: notice.key }} /> : null}
 			{!view.canManage ? <MemberView view={view} />
 				: view.installation ? <InstalledView key={view.installation.id} view={view} installation={view.installation} />
@@ -166,6 +170,45 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 	);
 }
 
+/**
+ * The agent asks for Slack scopes this installation wasn't granted (it was added
+ * before a feature needed them): Slack's consent page again, for the same
+ * installation, keeping its settings, key and data.
+ */
+function PermissionsUpdate({ customApp }: { customApp: boolean }) {
+	const t = useTranslations("SettingsUI.slack");
+	const [error, setError] = useState<ActionError | null>(null);
+	const [pending, startUpdate] = useTransition();
+	const [redirecting, setRedirecting] = useState(false);
+	const busy = pending || redirecting;
+
+	function update() {
+		setError(null);
+		startUpdate(async () => {
+			const result = await startSlackPermissionsUpdate();
+			if (!result.ok) {
+				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
+				return;
+			}
+			setRedirecting(true);
+			window.location.assign(result.url);
+		});
+	}
+
+	return (
+		<div className="space-y-3">
+			<Callout tone="warning" title={t("permissions.title")}>
+				<div className="space-y-3">
+					<p>{t("permissions.description")}</p>
+					{customApp ? <p>{t("permissions.customApp")}</p> : null}
+					<Button type="button" size="sm" variant="outline" disabled={busy} onClick={update}>{busy ? t("permissions.redirecting") : t("permissions.submit")}</Button>
+				</div>
+			</Callout>
+			{error ? <SlackError error={error} /> : null}
+		</div>
+	);
+}
+
 function statusTone(status: string): "outline" | "secondary" | "destructive" {
 	return status === "active" ? "outline" : status === "payment_due" ? "destructive" : "secondary";
 }
@@ -256,6 +299,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			</div>
 			{status === "payment_due" ? <SlackError error={{ key: "paymentDue" }} /> : null}
 			{status === "paused" ? <Notice>{t("installed.pausedNote")}</Notice> : null}
+			{installation.permissions?.missing.length ? <PermissionsUpdate customApp={installation.uses_custom_app} /> : null}
 
 			<Section title={t("sections.month")} description={month ? t("month.note", { date: chargeMonth(month.period_start, locale) }) : undefined}>
 				<dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -6828,7 +6828,9 @@
 		"openChat": "Chat を開く",
 		"addCredits": "クレジットを追加",
 		"notices": {
-			"installed": "Phaseo エージェントが {team} に追加されました。"
+			"installed": "Phaseo エージェントが {team} に追加されました。",
+			"permissionsUpdated": "{team} の Slack 権限を更新しました。エージェントがグラフや画像を投稿し、共有されたファイルを読めるようになりました。",
+			"permissionsPartial": "Slack がすべての権限を許可しなかったため、一部の機能はオフのままです。もう一度お試しのうえ、Slack アプリにすべてのスコープがあることを確認してください。"
 		},
 		"member": {
 			"installed": "Phaseo エージェントは {team} にインストールされています。",
@@ -6945,6 +6947,13 @@
 			"save": "変更を保存",
 			"saved": "設定を保存しました。",
 			"discard": "変更を破棄"
+		},
+		"permissions": {
+			"title": "Slack 権限を更新",
+			"description": "Slack が許可すると、エージェントは作成したグラフや画像を投稿し、共有された画像や PDF を読めるようになります。更新すると Slack が開き、新しい権限を承認できます。エージェントの設定、キー、データはそのまま残ります。",
+			"customApp": "先に Slack アプリのマニフェストにボットスコープ files:read と files:write を追加してください。",
+			"submit": "Slack 権限を更新",
+			"redirecting": "Slack を開いています…"
 		},
 		"month": {
 			"note": "{date}のこれまでの分（UTC）。月末にクレジットから請求されます。",
@@ -7106,6 +7115,7 @@
 			"appUnavailable": "Phaseo が保存済みの Slack アプリ情報を読み取れませんでした。もう一度保存してから再試行してください。",
 			"alreadyInstalled": "このワークスペースには Slack エージェントがすでにインストールされています。",
 			"teamInUse": "この Slack ワークスペースには、別の Phaseo ワークスペースからエージェントがすでに追加されています。先にそちらでアンインストールしてください。",
+			"teamMismatch": "別の Slack ワークスペースが選ばれました。エージェントがインストールされているワークスペースを選んで、もう一度お試しください。",
 			"notInstalled": "このワークスペースには Slack エージェントがインストールされていません。ページを再読み込みしてください。",
 			"conflict": "その間に Slack エージェントが変更されました。再読み込みしてもう一度お試しください。",
 			"keyMissing": "エージェントの API キーが見つかりません。エージェントをアンインストールして、もう一度追加してください。",

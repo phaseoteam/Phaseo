@@ -1,10 +1,10 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, PausedRun } from "../src/agent";
+import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, GeneratedImage, ImageRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
 import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { processEvent, type SlackEnvelope } from "../src/events";
-import { hostedApp, type Installation } from "../src/installations";
+import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
@@ -1250,5 +1250,206 @@ describe("AgentTurnWorkflow", () => {
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		expect(coordinatorOf(turn).status().running).toBeNull();
+	});
+});
+
+describe("Files in the thread", () => {
+	const ALL_SCOPES = [...ORIGINAL_BOT_SCOPES, "files:read", "files:write"];
+	/** A PNG's signature and IHDR start: enough for the type checks. */
+	const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+	const PDF = new TextEncoder().encode("%PDF-1.7\n%test\n");
+
+	function shareFile(id: string, name: string, mimetype: string, bytes: Uint8Array, extra: Record<string, unknown> = {}) {
+		const url = `https://files.slack.com/files-pri/${TEAM_ID}-${id}/download/${encodeURIComponent(name)}`;
+		world.slack.files.set(id, { info: { id, name, mimetype, size: bytes.byteLength, url_private_download: url, mode: "hosted", ...extra }, bytes });
+		return url;
+	}
+
+	/** An agent that runs one tool from its request, as the model would call it, then answers. */
+	class ToolAgent extends ScriptedAgent {
+		images: ImageRequest[] = [];
+		constructor(script: Script, private readonly image: GeneratedImage | null = null) {
+			super(script);
+		}
+		async generateImage(request: ImageRequest): Promise<GeneratedImage> {
+			this.images.push(request);
+			if (!this.image) throw new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: "insufficient_credits" }, message: "No credits" });
+			return this.image;
+		}
+	}
+
+	function callTool(request: AgentTurnRequest, id: string, input: unknown) {
+		const tool = request.tools.find((entry) => entry.id === id);
+		if (!tool || typeof tool.execute !== "function") throw new Error(`no ${id} tool`);
+		return tool.execute(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	}
+
+	it("offers charts and images only once Slack granted files:write, and otherwise says what an admin can do", async () => {
+		const agent = new ToolAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[0].tools.map((tool) => tool.id)).not.toContain("make_chart");
+		expect(agent.requests[0].tools.map((tool) => tool.id)).not.toContain("generate_image");
+		expect(agent.requests[0].instructions).toContain("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack)");
+
+		await install({ bot_scopes: ALL_SCOPES });
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual(expect.arrayContaining(["make_chart", "generate_image"]));
+		expect(agent.requests[1].instructions).toContain("You can post a chart of numbers in the thread with make_chart, and an image you make with generate_image.");
+		expect(agent.requests[1].instructions).not.toContain("can't post charts");
+	});
+
+	it("draws a chart the model asks for and posts it in the thread", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request) => {
+			result = await callTool(request, "make_chart", { type: "bar", title: "Weekly spend", labels: ["Oct 5", "Oct 12"], series: [{ name: "Spend", values: [12.5, 40] }], value_prefix: "$" });
+			return answer();
+		});
+		const turn = await startTurn();
+		await runTurn(deps(agent), turn, step);
+		expect(result).toEqual({ posted: true, file: "weekly-spend.png" });
+		const [url] = world.slack.of("files.getUploadURLExternal");
+		expect(url.args).toMatchObject({ filename: "weekly-spend.png", alt_txt: "Bar chart: Weekly spend. Spend: Oct 5 $12.5, Oct 12 $40." });
+		const png = world.slack.uploads.get("F0UPLOAD001")!;
+		expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		expect(url.args.length).toBe(png.byteLength);
+		const [complete] = world.slack.of("files.completeUploadExternal");
+		expect(complete.args).toEqual({ files: JSON.stringify([{ id: "F0UPLOAD001", title: "Weekly spend" }]), channel_id: "C0CHANNEL1", thread_ts: turn.threadTs });
+		// The thread's working memory says what was posted.
+		expect(coordinatorOf(turn).workingMemory().filter((entry) => entry.kind === "tool").map((entry) => entry.text)).toEqual(['make_chart: posted a bar chart, "Weekly spend"']);
+	});
+
+	it("tells the model what to fix in a chart, without posting anything", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let failure: unknown;
+		const agent = new ToolAgent(async (request) => {
+			failure = await callTool(request, "make_chart", { type: "pie", title: "Share", labels: ["A", "B"], series: [{ name: "Share", values: [3, -1] }] }).catch((error: unknown) => error);
+			return answer();
+		});
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(String(failure)).toContain("pie slices can't be negative");
+		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
+	});
+
+	it("makes an image with the installation's key, posts it, and counts its cost in the answer", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request, hooks) => {
+			result = await callTool(request, "generate_image", { prompt: "A lighthouse at dusk, watercolour", size: "landscape" });
+			await hooks.onText("Here's your lighthouse.");
+			return { ...answer(), costUsd: 0.01 + request.toolCostUsd!() };
+		}, { bytes: PNG, mimeType: "image/png", costUsd: 0.042, model: "openai/gpt-image-2" });
+		const turn = await startTurn();
+		await runTurn(deps(agent), turn, step);
+		expect(result).toEqual({ posted: true, cost_usd: 0.042 });
+		expect(agent.images).toEqual([{
+			gatewayKey: GATEWAY_KEY, model: "openai/gpt-image-2", prompt: "A lighthouse at dusk, watercolour", size: "1536x1024",
+			endUser: `slack:${TEAM_ID}:U0PERSON01`, sessionId: `slack-${turn.eventId}`, labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
+			signal: expect.any(AbortSignal),
+		}]);
+		expect(world.slack.of("files.getUploadURLExternal")[0].args).toMatchObject({ filename: "image.png", alt_txt: "Generated image: A lighthouse at dusk, watercolour" });
+		expect(world.slack.uploads.get("F0UPLOAD001")).toEqual(PNG);
+		// The image's cost is part of the answer's: in the run's cost and the footer's total.
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "answered", costNanos: 52_000_000 });
+		expect(JSON.stringify(world.slack.of("chat.stopStream").map((call) => call.args))).toContain("$0.0520");
+	});
+
+	it("passes on why an image couldn't be made, and counts nothing for it", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request) => {
+			result = await callTool(request, "generate_image", { prompt: "A cat" });
+			return { ...answer(), costUsd: 0.01 + request.toolCostUsd!() };
+		});
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(result).toEqual({ posted: false, error: "This Phaseo workspace is out of credits, so no image could be made." });
+		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 10_000_000 });
+	});
+
+	it("reads the images and PDFs shared with the message and sends them to the model, keeping nothing of them", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		const imageUrl = shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const pdfUrl = shareFile("F0PDF00001", "invoice.pdf", "application/pdf", PDF);
+		const agent = new ScriptedAgent(async () => answer());
+		const turn = await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }, { id: "F0PDF00001", name: "invoice.pdf" }] });
+		await runTurn(deps(agent), turn, step);
+		expect(world.slack.downloads).toEqual([imageUrl, pdfUrl]);
+		const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+		expect(agent.requests[0].attachments).toEqual([
+			{ type: "input_image", image_url: `data:image/png;base64,${base64(PNG)}` },
+			{ type: "input_file", filename: "invoice.pdf", file_data: `data:application/pdf;base64,${base64(PDF)}` },
+		]);
+		expect(agent.requests[0].prompt).toContain([
+			"Files shared in this thread, newest first:",
+			"- latency.png from <@U0PERSON01>, in the new message: attached after this text.",
+			"- invoice.pdf from <@U0PERSON01>, in the new message: attached after this text.",
+		].join("\n"));
+		// Step outputs hold ids and statuses only.
+		expect(JSON.stringify(step.outputs)).not.toContain(base64(PNG));
+		expect(JSON.stringify(step.outputs)).not.toContain("latency.png");
+	});
+
+	it("never asks Slack for files without files:read, and says an admin can allow it", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step);
+		expect(world.slack.of("files.info")).toHaveLength(0);
+		expect(world.slack.downloads).toEqual([]);
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[0].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: you can't open files here yet: an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack).");
+	});
+
+	it("skips files the model can't read, types it can't read and anything that isn't what it claims, without downloading them", async () => {
+		await install({ bot_scopes: ALL_SCOPES, model: "openai/gpt-test" });
+		world.db.tables.v2_models = [{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, input_modalities: ["text"] }];
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		shareFile("F0SHEET001", "budget.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new Uint8Array([0x50, 0x4b, 3, 4]));
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }, { id: "F0SHEET001", name: "budget.xlsx" }] }), step);
+		expect(world.slack.downloads).toEqual([]);
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[0].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: the model answering can't read this kind of file.");
+		expect(agent.requests[0].prompt).toContain("- budget.xlsx from <@U0PERSON01>, in the new message: you can only read images (PNG, JPEG, GIF, WebP) and PDFs.");
+
+		// A model that reads images gets them; a file that says it's an image but isn't is left out.
+		world.db.tables.v2_models = [{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, input_modalities: ["text", "image"] }];
+		shareFile("F0FAKE0001", "photo.png", "image/png", new TextEncoder().encode("<!DOCTYPE html><html>Sign in</html>"));
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0FAKE0001", name: "photo.png" }] }), step);
+		expect(agent.requests[1].attachments).toBeUndefined();
+		expect(agent.requests[1].prompt).toContain("- photo.png from <@U0PERSON01>, in the new message: Slack didn't let you read it.");
+	});
+
+	it("answers without the files, and says so, when no route of the model reads them", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const agent = new ScriptedAgent(async (_request, hooks, call) => {
+			if (call === 1) throw new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+			await hooks.onText("I can't see the image with this model.");
+			return answer();
+		});
+		await expect(runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests).toHaveLength(2);
+		expect(agent.requests[0].attachments).toHaveLength(1);
+		expect(agent.requests[1].attachments).toBeUndefined();
+		expect(agent.requests[1].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: the model answering can't read this kind of file.");
+	});
+
+	it("reads files people shared in the thread messages it read, never the agent's own", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		const threadTs = "1792600000.000050";
+		shareFile("F0IMAGE001", "dashboard.png", "image/png", PNG);
+		shareFile("F0CHART001", "weekly-spend.png", "image/png", PNG);
+		world.slack.replies = [
+			{ ts: threadTs, user: "U0PERSON02", text: "Here's the dashboard", files: [{ id: "F0IMAGE001", name: "dashboard.png", mimetype: "image/png" }] },
+			{ ts: "1792600000.000060", bot_id: "B0BOT00001", user: BOT_USER_ID, text: "", files: [{ id: "F0CHART001", name: "weekly-spend.png", mimetype: "image/png" }] },
+			{ ts: "1792600000.000070", user: "U0PERSON01", text: "what's wrong in it?" },
+		];
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ threadTs, messageTs: "1792600000.000070", text: "what's wrong in it?" }), step);
+		expect(world.slack.of("files.info").map((call) => call.args.file)).toEqual(["F0IMAGE001"]);
+		expect(agent.requests[0].attachments).toHaveLength(1);
+		expect(agent.requests[0].prompt).toContain("<@U0PERSON02>: Here's the dashboard (shared dashboard.png)");
+		expect(agent.requests[0].prompt).toContain("You (Phaseo agent): (shared weekly-spend.png)");
+		expect(agent.requests[0].prompt).toContain("- dashboard.png from <@U0PERSON02>, earlier in the thread: attached after this text.");
 	});
 });

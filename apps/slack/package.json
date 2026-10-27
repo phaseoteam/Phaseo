@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@phaseo/agent-sdk": "workspace:*",
+		"@resvg/resvg-wasm": "2.6.2",
 		"hono": "^4.13.11"
 	},
 	"devDependencies": {

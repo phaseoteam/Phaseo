@@ -86,6 +86,18 @@ describe("events: who gets an answer", () => {
 		expect(world.meters.get(world.meters.idFromName(INSTALLATION_ID)).usage(NOW)).toMatchObject({ people: 1, pending: 2 });
 	});
 
+	it("keeps the ids and names of the files shared with the message, with its text", async () => {
+		const key = `${INSTALLATION_ID}:D0DIRECT01:1792600000.000200`;
+		const thread = world.threads.get(world.threads.idFromName(key));
+		thread.runner = { start: async () => ({ started: true }) };
+		const files = [
+			{ id: "F0IMAGE001", name: "latency.png", mimetype: "image/png", url_private_download: "https://files.slack.com/files-pri/T0-F0IMAGE001/download/latency.png" },
+			{ id: "F0GONE0001", mode: "tombstone" },
+		];
+		await expect(run(directMessage({ subtype: "file_share", text: "what's slow here?", files }))).resolves.toBe("started");
+		expect(thread.turnInput(1)).toMatchObject({ text: "what's slow here?", files: [{ id: "F0IMAGE001", name: "latency.png" }] });
+	});
+
 	it("tells people when the agent is paused or a payment is due", async () => {
 		await install({ status: "paused" });
 		await expect(run(mention())).resolves.toBe("refused_paused");

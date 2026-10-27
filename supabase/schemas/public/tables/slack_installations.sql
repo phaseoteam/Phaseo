@@ -30,9 +30,11 @@ CREATE TABLE "public"."slack_installations" (
   "model_choice_enabled"    boolean                  NOT NULL DEFAULT false,
   "allowed_models"          text[]                   NOT NULL DEFAULT '{}'::text[],
   "memory_enabled"          boolean                  NOT NULL DEFAULT true,
+  "bot_scopes"              text[],
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
+  CONSTRAINT "slack_installations_bot_scopes_check" CHECK (((bot_scopes IS NULL) OR (cardinality(bot_scopes) <= 50))),
   CONSTRAINT "slack_installations_bot_user_id_check" CHECK ((bot_user_id ~ '^[UWB][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_installations_enterprise_id_check" CHECK (((enterprise_id IS NULL) OR (enterprise_id ~ '^E[A-Z0-9]{2,31}$'::text))),
   CONSTRAINT "slack_installations_guardrail_id_fkey" FOREIGN KEY (guardrail_id) REFERENCES public.workspace_guardrails(id) ON DELETE SET NULL,
@@ -98,6 +100,8 @@ COMMENT ON COLUMN "public"."slack_installations"."model_choice_enabled" IS 'Whet
 COMMENT ON COLUMN "public"."slack_installations"."allowed_models" IS 'The models people may choose per message (up to 10 v2_models.model_slug values, or phaseo/auto where the workspace has Auto Routing). web-api checks each one; model stays the default.';
 
 COMMENT ON COLUMN "public"."slack_installations"."memory_enabled" IS 'Whether the agent may save and read its notes, pins and to-dos (on by default). While off, turns get no note tools and no pins, and saved notes are kept for admins to see or delete. Saved skills work either way.';
+
+COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

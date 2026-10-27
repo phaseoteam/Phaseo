@@ -15,6 +15,7 @@ import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
 import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
+import { sharedFileRefs } from "./slack-files";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
@@ -71,6 +72,8 @@ export type SlackEvent = {
 	tab?: string;
 	/** tokens_revoked: the user ids whose user (oauth) and bot tokens were revoked. */
 	tokens?: { oauth?: unknown; bot?: unknown };
+	/** Files shared with the message. Only their ids and names are kept (slack-files.ts). */
+	files?: unknown[];
 };
 
 export type SlackEnvelope = {
@@ -321,6 +324,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return refuse(slack, target, admitted.reason, { tier: admitted.tier, limit: installation.answers_per_person_hour });
 	}
 
+	const files = sharedFileRefs(event.files);
 	const queued: EnqueueResult = await coordinator.enqueue({
 		threadKey: key,
 		eventId,
@@ -334,6 +338,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		...(model ? { model } : {}),
 		...(facts.isExternal ? { external: true } : {}),
 		text,
+		...(files.length ? { files } : {}),
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });

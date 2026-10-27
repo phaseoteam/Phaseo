@@ -6828,7 +6828,9 @@
 		"openChat": "Open Chat",
 		"addCredits": "Add credits",
 		"notices": {
-			"installed": "The Phaseo agent is now in {team}."
+			"installed": "The Phaseo agent is now in {team}.",
+			"permissionsUpdated": "Slack permissions updated in {team}. The agent can now post charts and images, and read files shared with it.",
+			"permissionsPartial": "Slack didn't grant every permission, so some features stay off. Try again, and check that your Slack app lists every scope."
 		},
 		"member": {
 			"installed": "The Phaseo agent is installed in {team}.",
@@ -6945,6 +6947,13 @@
 			"save": "Save changes",
 			"saved": "Settings saved.",
 			"discard": "Discard changes"
+		},
+		"permissions": {
+			"title": "Update Slack permissions",
+			"description": "The agent can now post charts and images it makes, and read images and PDFs shared with it, once Slack allows it. Updating opens Slack to approve the new permissions, and keeps the agent's settings, key and data.",
+			"customApp": "Add the files:read and files:write bot scopes to your Slack app's manifest first.",
+			"submit": "Update Slack permissions",
+			"redirecting": "Opening Slack…"
 		},
 		"month": {
 			"note": "{date} so far, in UTC. The charge is taken from credits when the month ends.",
@@ -7106,6 +7115,7 @@
 			"appUnavailable": "Phaseo couldn't read your Slack app's saved details. Save them again, then retry.",
 			"alreadyInstalled": "The Slack agent is already installed in this workspace.",
 			"teamInUse": "This Slack workspace already has the agent from another Phaseo workspace. Uninstall it there first.",
+			"teamMismatch": "That was a different Slack workspace. Choose the one the agent is installed in, then try again.",
 			"notInstalled": "The Slack agent isn't installed in this workspace any more. Reload the page.",
 			"conflict": "The Slack agent changed in the meantime. Reload and try again.",
 			"keyMissing": "The agent's API key is missing. Uninstall the agent and add it again.",
