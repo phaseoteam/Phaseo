@@ -32,8 +32,11 @@ try {
   }
   assert.ok(capSql.includes(await readFile(new URL('public/functions/create_workload_identity_policy.sql', schemas), 'utf8')), 'cap migration includes create_workload_identity_policy.sql');
   const keysSchema = await readFile(new URL('public/tables/keys.sql', schemas), 'utf8');
+  // Later migrations may allow more values (the desktop app's 'desktop' issued_via), but never drop these.
   for (const constraint of sql.match(/ADD CONSTRAINT "keys_[a-z_]+" CHECK \(.*\);/g)) {
-    assert.ok(keysSchema.includes(constraint.replace(/^ADD /, '').replace(/;$/, '')), `keys.sql has ${constraint}`);
+    const name = constraint.match(/"keys_[a-z_]+"/)[0];
+    const line = keysSchema.split('\n').find(row => row.includes(`CONSTRAINT ${name} CHECK`)) ?? '';
+    for (const value of constraint.match(/'[a-z_]+'::text/g)) assert.ok(line.includes(value), `keys.sql ${name} allows ${value}`);
   }
 
   await db.exec(`
