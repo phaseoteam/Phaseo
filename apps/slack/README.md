@@ -61,8 +61,9 @@ Worker's production host and routes.
 - A new scope reaches an installation only when an admin approves it in Slack
   (install, or **Update Slack permissions**). `slack_installations.bot_scopes`
   records what Slack granted (null: the original seven scopes, before
-  `files:read` and `files:write`), and every feature that needs a newer scope
-  checks it with `hasBotScope` and says what an admin can do instead.
+  `files:read`, `files:write`, `search:read.public` and `search:read.files`),
+  and every feature that needs a newer scope checks it with `hasBotScope` and
+  says what an admin can do instead.
 
 ## Durable Objects
 
@@ -74,6 +75,7 @@ Worker's production host and routes.
   - Keeps the timestamps (no text) of the thread's newest known messages, where the next read starts.
   - Remembers who was sent the Connect button in the thread.
   - Holds the running turn's questions: the paused run, the question and its answer. The first answer from the person asked wins and wakes the turn's Workflow; so does stopping the thread while it waits.
+  - Holds Slack's action token for a turn's message while the turn may search Slack (see Slack search), and drops it with the turn.
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
@@ -219,6 +221,52 @@ With `files:write` (`src/chart.ts`, `src/images.ts`, `src/slack-files.ts`):
 - Both upload with `files.getUploadURLExternal`, the bytes to Slack's upload URL, and `files.completeUploadExternal`, which shares the file in the thread. The thread's working memory notes what was posted.
 
 With `files:read`, images (PNG, JPEG, GIF, WebP, up to 5 MB) and PDFs (up to 10 MB) shared with the message, or by people in the thread messages the turn read, are read for the run: `files.info`, then a download of `url_private_download` with the bot token (only to `files.slack.com`, never following a redirect, capped while it streams), and a check of the file's first bytes. At most 4 files, 12 MB together, newest first. They go to the model as input parts of the run's first user message (`withAttachments` in `src/agent.ts`), and the prompt lists each shared file and why any isn't attached. A model whose catalogue entry takes no images (or files) isn't sent them; Auto is sent them, and when the gateway says no route reads them (`unsupported_modalities`), the run answers again without them and says so. Only file ids and names are kept, with the message in the coordinator; the bytes never leave the run.
+
+### Slack search
+
+`search_slack` (`src/slack-search.ts`) searches the Slack workspace as the person
+asking, with Slack's real-time search (`assistant.search.context`): the bot
+token plus the `action_token` Slack puts on the message that started the turn
+(an `app_mention`, or a direct message to the agent; read from the event, or its
+`assistant_thread` in older payloads). Slack returns only what that person can
+see, and a bot token searches public channels only (`search:read.public`; with
+`search:read.files`, files shared in them too). The query can name a channel
+(`in:<#C…>`), a person (`from:<@U…>`) and UTC dates; it asks for 10 results,
+relevance-sorted (semantic where the workspace's plan has AI search), and a run
+makes at most 4 searches. Results come back short: channel, author, date, a
+Slack permalink (anything that isn't a `slack.com` link is dropped) and a
+300-character snippet, for the model to cite.
+
+It is offered only when all of these hold, and the model is told which one
+doesn't otherwise:
+
+- the installation has `search:read.public` (`hasBotScope`);
+- `slack_installations.search_mode` allows the conversation: `off`, `dm` (the
+  default: direct messages with the agent, so only the person asking reads the
+  answer) or `dm_and_channels` (everyone in a channel reads the answer,
+  including guests who can't open the channels found);
+- the person isn't from another organisation (`turn.external`) or a guest
+  (Slack doesn't allow apps to search for guests);
+- the message carried an action token. Scheduled runs have no message, so no
+  token, and never search.
+
+Slack's terms forbid storing or copying what the API returns, so nothing of the
+results outlives the run that asked for them: they go to the model with its
+requests (whose content the agent's key never logs) and nowhere else. Working
+memory notes the query and the count only (`search_slack "query": 3 results`),
+and a run paused for a question is held in the coordinator with each result
+replaced by a note (`withoutSearchResults`); the run after the answer searches
+again if it needs to. Logs carry the turn id, counts and Slack's error code. The
+action token waits in the coordinator's `turns.action_token`, set only where the
+turn may search, handed only to the running turn (`actionToken`) and deleted
+with the turn; a message that answers the turn's question brings a fresh one.
+It is never in the Workflow's payload (`TurnRef`) or a step output.
+
+Slack lets only apps published in its directory, and a company's own (internal)
+apps, use this API. The hosted app can't until its Slack Marketplace listing is
+approved: Slack refuses the call, and the model is told search isn't available
+to this app. Rate limits: about 10 searches a minute per person, and more per
+workspace by size; a 429 is passed to the model, never retried.
 
 ### Usage tools
 

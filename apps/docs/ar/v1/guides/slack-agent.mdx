@@ -8,7 +8,7 @@ icon: "messages-square"
 يُتاح وكيل Slack لمساحات العمل تدريجيًا. إذا لم يظهر **الإعدادات → Slack** في إعداداتك بعد، فهو غير متاح لمساحة عملك حتى الآن.
 </Note>
 
-يجيب وكيل Phaseo عن الأسئلة في Slack. اذكره في قناة أو أرسل إليه رسالة مباشرة، فيرد في سلسلة الرسائل ويبث الإجابة أثناء كتابتها. يستخدم النموذج الذي تختاره في Phaseo، ويمكنه البحث في الويب وقراءة صفحات الويب، ويمكنه إخبار الأعضاء المرتبطين بإنفاق مساحة عملك على Phaseo ورصيدها واستخدام مفاتيح API والنماذج. ويمكنه أيضًا نشر المخططات والصور التي ينشئها، وقراءة الصور وملفات PDF التي تشاركها معه.
+يجيب وكيل Phaseo عن الأسئلة في Slack. اذكره في قناة أو أرسل إليه رسالة مباشرة، فيرد في سلسلة الرسائل ويبث الإجابة أثناء كتابتها. يستخدم النموذج الذي تختاره في Phaseo، ويمكنه البحث في الويب وقراءة صفحات الويب، ويمكنه إخبار الأعضاء المرتبطين بإنفاق مساحة عملك على Phaseo ورصيدها واستخدام مفاتيح API والنماذج. ويمكنه أيضًا نشر المخططات والصور التي ينشئها، وقراءة الصور وملفات PDF التي تشاركها معه، والبحث في مساحة عمل Slack نيابةً عنك.
 
 يضيفه المالكون والمسؤولون من **الإعدادات → Slack**، ويختارون من يمكنه استخدامه، ويضبطون حدوده. تدفع سعرًا شهريًا مقابل الأشخاص الذين استخدموه، وتُحتسب رموز النموذج (tokens) مثل أي طلب آخر عبر البوابة.
 
@@ -141,12 +141,45 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 
 ### تحديث أذونات Slack
 
-تحتاج المخططات والصور إلى إذن `files:write` في Slack، وتحتاج قراءة الملفات إلى `files:read`. إذا أُضيف الوكيل قبل أن يتمكن من استخدام الملفات، فليست لديه هذه الأذونات بعد: يخبر الناس بأن على مسؤول تحديث أذوناته، وتعرض **الإعدادات → Slack** الخيار **تحديث أذونات Slack**.
+تحتاج المخططات والصور إلى إذن `files:write` في Slack، وتحتاج قراءة الملفات إلى `files:read`، ويحتاج البحث في Slack (راجع قسم "البحث في Slack" أدناه) إلى `search:read.public` و`search:read.files`. إذا أُضيف الوكيل قبل أن يتمكن من ذلك، فليست لديه هذه الأذونات بعد: يخبر الناس بأن على مسؤول تحديث أذوناته، وتعرض **الإعدادات → Slack** الخيار **تحديث أذونات Slack**.
 
 1. اختر **تحديث أذونات Slack**. يعرض Slack الأذونات التي يطلبها الوكيل.
 2. وافق عليها لمساحة عمل Slack نفسها. يعيدك Slack إلى **الإعدادات → Slack**.
 
-يحتفظ التحديث بإعدادات الوكيل ومفتاح API وضابط الحماية والسجل. مع تطبيق Slack الخاص بك، أضف أولًا `files:read` و`files:write` إلى ملف manifest الخاص به (راجع قسم "استخدام تطبيق Slack الخاص بك" أدناه).
+يحتفظ التحديث بإعدادات الوكيل ومفتاح API وضابط الحماية والسجل. مع تطبيق Slack الخاص بك، أضف أولًا النطاقات التي تعرضها **الإعدادات → Slack** إلى ملف manifest الخاص به (راجع قسم "استخدام تطبيق Slack الخاص بك" أدناه).
+
+## البحث في Slack
+
+يستطيع الوكيل البحث في مساحة عمل Slack لديك نيابةً عن الشخص الذي يسأل، والإجابة مع روابط إلى الرسائل والملفات التي استخدمها. على سبيل المثال:
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **يبحث بصفتك أنت.** يستخدم البحث الفوري في Slack بالإذن الذي يمنحه Slack له مع رسالتك، فلا يجد إلا ما تستطيع رؤيته في Slack. يبحث في القنوات العامة فقط، ولا يبحث أبدًا في القنوات الخاصة أو الرسائل المباشرة أو الرسائل المباشرة الجماعية.
+- **يضع روابط لما يستخدمه.** لكل رسالة أو ملف يعتمد عليه رابط، لتتمكن من فتحه في Slack. وإذا لم يجد البحث شيئًا، يقول ذلك.
+- **يمكنه تضييق البحث** إلى قناة أو شخص أو فترة زمنية، ويبحث حتى 4 مرات للإجابة الواحدة، بـ 10 نتائج في كل مرة.
+- **حسب المعنى أو حسب الكلمات المفتاحية.** في خطط Slack التي تتضمن البحث بالذكاء الاصطناعي (Business+ وEnterprise+)، يُبحث عن الأسئلة المكتوبة بكلماتك حسب معناها؛ أما الخطط الأخرى فتبحث بالكلمات المفتاحية.
+
+اختر أين يبحث من **البحث في Slack** في **الإعدادات → Slack**. يسري التغيير فورًا.
+
+| الخيار | أين يبحث |
+| --- | --- |
+| **إيقاف** | لا يبحث في أي مكان. |
+| **الرسائل المباشرة** (الافتراضي) | فقط في الرسائل المباشرة مع الوكيل، حتى لا يقرأ ما يجده إلا الشخص الذي يسأل. |
+| **الرسائل المباشرة والقنوات** | في القنوات أيضًا، عندما يذكره أحد. يقرأ كل من في القناة الإجابة، بمن فيهم الضيوف الذين لا يستطيعون فتح القنوات التي وجدها، لذا لا تختره إلا إذا كان ذلك مقبولًا في مساحة عملك. |
+
+بعض الحدود يضعها Slack:
+
+- لا يبحث إلا عند الرد على رسالة: يمنحه Slack إذن البحث مع كل رسالة تذكره أو تُرسل إليه مباشرة، ولا يحتفظ الوكيل بهذا الإذن إلا حتى ينتهي من الإجابة.
+- لا يسمح Slack للتطبيقات بالبحث نيابةً عن الضيوف، ولا يبحث الوكيل أبدًا نيابةً عن أشخاص من شركات أخرى.
+- يسمح Slack لكل شخص بنحو 10 عمليات بحث في الدقيقة. وعندما يزيد الضغط عن ذلك، يجيب الوكيل بما لديه ويقول ذلك.
+- لا يسمح Slack بهذا البحث إلا للتطبيقات الموجودة في Slack Marketplace وللتطبيقات الخاصة بالشركات. سيتمكن تطبيق Slack من Phaseo من البحث بعد اعتماد صفحته في Slack Marketplace؛ وحتى ذلك الحين يقول الوكيل إن البحث غير متاح. للبحث الآن، استخدم تطبيق Slack الخاص بك (راجع قسم "استخدام تطبيق Slack الخاص بك" أدناه).
+- تحتاج التثبيتات التي سبقت البحث إلى تحديث أذونات Slack (راجع قسم "تحديث أذونات Slack" أعلاه).
+
+لا يُستخدم ما يجده إلا لتلك الإجابة، ولا يُحفظ أبدًا (راجع قسم "البيانات والخصوصية" أدناه).
 
 ## من يمكنه استخدامه
 
@@ -300,6 +333,7 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 - **ذاكرة عمل قصيرة.** يحتفظ الوكيل لكل سلسلة رسائل بإجاباته الأخيرة، وملاحظات قصيرة عن الأدوات التي استخدمها، والرسائل التي تنتظر دورها، ومعرّفات أحدث رسائل السلسلة (دون نصها) ليعرف من أين يقرأ، ومن أرسل إليهم زر الربط، والأسئلة التي طرحها مع إجاباتها. تُحذف بعد 7 أيام من آخر نشاط في السلسلة.
 - **ذاكرة يمكنك رؤيتها وحذفها.** يحتفظ الوكيل بالملاحظات والملاحظات المثبّتة والمهام والمهارات التي يُطلب منه حفظها، بكلماته هو وليست نسخًا من الرسائل أبدًا، مع معرّف Slack الخاص بمن طلب ذلك. وتبقى حتى يحذفها أحد، أو يمضي التاريخ الذي كان يجب الاحتفاظ بها حتى حلوله، أو تلغي تثبيت الوكيل. يمكن للمالكين والمسؤولين رؤيتها وحذفها في **الإعدادات → Slack**، وإيقاف الملاحظات من هناك (راجع «الذاكرة والمهارات» أعلاه). ولا يرى الأشخاص من شركات أخرى ملاحظات مساحة العمل كلها أبدًا.
 - **تُقرأ الملفات المشتركة ولا تُحفظ.** ينزّل الوكيل الصور وملفات PDF التي يقرؤها لإجابة ما، ويرسلها إلى النموذج مع طلبات تلك الإجابة وفق القواعد نفسها. لا يخزّنها أبدًا؛ ولا يبقى مع الرسالة سوى معرّفات ملفاتها في Slack وأسمائها حتى تنتهي الإجابة.
+- **لا تُحفظ نتائج البحث في Slack.** ما يجده الوكيل عند البحث في Slack يُرسل إلى النموذج مع طلبات تلك الإجابة وفق القواعد نفسها، ولا يذهب إلى أي مكان آخر: لا إلى ذاكرة العمل، ولا إلى سجلاته، ولا إلى قاعدة بيانات Phaseo، ولا حتى أثناء انتظاره ردك على سؤال. لا تسجّل ذاكرة العمل إلا ما بحث عنه وعدد النتائج التي وجدها. ويُحفظ إذن Slack بالبحث نيابةً عنك مع رسالتك حتى تنتهي الإجابة.
 - **لا شيء مؤرشف.** لا يؤرشف Phaseo أي شيء من Slack. لا تحتفظ سجلات الوكيل نفسه إلا بمعرّفات Slack والحالات.
 - **أسرار مشفّرة.** تُخزَّن رموز البوت وأسرار تطبيق Slack الخاص بك مشفّرة ولا تُعرض مرة أخرى.
 
@@ -345,7 +379,7 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -375,7 +409,9 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
         "groups:history",
         "users:read",
         "files:read",
-        "files:write"
+        "files:write",
+        "search:read.public",
+        "search:read.files"
       ]
     }
   },
@@ -421,6 +457,8 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 | `users:read` | التحقق مما إذا كان الشخص ضيفًا أو بوتًا أو من مؤسسة أخرى. |
 | `files:read` | قراءة الصور وملفات PDF التي تُشارك مع الوكيل. |
 | `files:write` | نشر المخططات والصور في سلسلة الرسائل. |
+| `search:read.public` | البحث في القنوات العامة نيابةً عن الشخص الذي يسأل. |
+| `search:read.files` | تضمين الملفات المشتركة في القنوات العامة في عمليات البحث هذه. |
 بعض القواعد لتطبيقك الخاص:
 
 - أبقِ تدوير الرموز معطّلًا، كما في البيان. لا يستطيع Slack تعطيله مرة أخرى بعد تفعيله.

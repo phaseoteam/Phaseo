@@ -38,7 +38,8 @@ const RESPONSE = {
 };
 
 function execute(tool: ReturnType<typeof searchSlackTool>, input: unknown) {
-	return tool.execute!(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: tool.id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	if (typeof tool.execute !== "function") throw new Error("search_slack has no execute");
+	return tool.execute(input,{ runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: tool.id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
 }
 
 afterEach(() => {

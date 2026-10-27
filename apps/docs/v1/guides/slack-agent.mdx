@@ -9,7 +9,7 @@ icon: "messages-square"
 The Slack agent is rolling out to workspaces gradually. If **Settings → Slack** doesn't appear in your settings yet, it isn't available to your workspace yet.
 </Note>
 
-The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread, streaming the answer as it writes. It uses the model you choose in Phaseo, can search the web and read web pages, and can tell linked members about your workspace's Phaseo spend, credits, API key usage and models. It can also post charts and images it makes, and read images and PDFs you share with it.
+The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread, streaming the answer as it writes. It uses the model you choose in Phaseo, can search the web and read web pages, and can tell linked members about your workspace's Phaseo spend, credits, API key usage and models. It can also post charts and images it makes, read images and PDFs you share with it, and search your Slack workspace for you.
 
 Owners and admins add it from **Settings → Slack**, choose who can use it and set its limits. You pay a monthly price for the people who used it, and model tokens are billed like any other gateway request.
 
@@ -142,12 +142,45 @@ Files you share are downloaded for the answer that reads them and never stored. 
 
 ### Update Slack permissions
 
-Charts and images need Slack's `files:write` permission, and reading files needs `files:read`. If the agent was added before it could use files, it doesn't have them yet: it tells people an admin needs to update its permissions, and **Settings → Slack** shows **Update Slack permissions**.
+Charts and images need Slack's `files:write` permission, reading files needs `files:read`, and [searching Slack](#searching-slack) needs `search:read.public` and `search:read.files`. If the agent was added before it could do these, it doesn't have them yet: it tells people an admin needs to update its permissions, and **Settings → Slack** shows **Update Slack permissions**.
 
 1. Select **Update Slack permissions**. Slack shows the permissions the agent asks for.
 2. Approve them for the same Slack workspace. Slack sends you back to **Settings → Slack**.
 
-Updating keeps the agent's settings, API key, guardrail and history. With your own Slack app, add `files:read` and `files:write` to its [manifest](#use-your-own-slack-app) first.
+Updating keeps the agent's settings, API key, guardrail and history. With your own Slack app, add the scopes **Settings → Slack** lists to its [manifest](#use-your-own-slack-app) first.
+
+## Searching Slack
+
+The agent can search your Slack workspace for the person asking, and answer with links to the messages and files it used. For example:
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **It searches as you.** It uses Slack's real-time search with the permission Slack gives it for your message, so it finds only what you can see in Slack. It searches public channels only, never private channels, direct messages or group DMs.
+- **It links what it uses.** Each message or file it relies on is linked, so you can open it in Slack. When a search finds nothing, it says so.
+- **It can narrow a search** to a channel, a person or a date range, and searches up to 4 times for one answer, 10 results at a time.
+- **By meaning or by keyword.** Questions in your own words are searched by meaning on Slack plans that include AI search (Business+ and Enterprise+); other plans search by keyword.
+
+Choose where it searches under **Slack search** in **Settings → Slack**. The change applies straight away.
+
+| Option | Where it searches |
+| --- | --- |
+| **Off** | Nowhere. |
+| **Direct messages** (default) | Only in direct messages with the agent, so only the person asking reads what it finds. |
+| **Direct messages and channels** | In channels too, when someone mentions it. Everyone in the channel reads the answer, including guests who can't open the channels it found, so choose this only if that's fine for your workspace. |
+
+A few limits come from Slack:
+
+- It searches only when answering someone's message: Slack gives it permission to search with each message that mentions it or is sent to it directly, and the agent keeps that permission only until it has answered.
+- Slack doesn't let apps search for guests, and the agent never searches for people from other companies.
+- Slack lets each person search about 10 times a minute. When it's busier than that, the agent answers with what it has and says so.
+- Slack allows this search only for apps in the Slack Marketplace and for a company's own apps. Phaseo's Slack app can search once its Slack Marketplace listing is approved; until then, the agent says search isn't available. To search now, use [your own Slack app](#use-your-own-slack-app).
+- Installations from before search need [updated Slack permissions](#update-slack-permissions).
+
+What it finds is used for that answer only and never stored (see [Data and privacy](#data-and-privacy)).
 
 ## Who can use it
 
@@ -301,6 +334,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
 - **Shared files are read, not kept.** The agent downloads the images and PDFs it reads for an answer and sends them to the model with that answer's requests, under the same rules. It never stores them; only their Slack file IDs and names are kept with the message until the answer ends.
+- **Slack search results aren't kept.** What the agent finds when it [searches Slack](#searching-slack) goes to the model with that answer's requests, under the same rules, and nowhere else: not in its working memory, its logs or Phaseo's database, not even while it waits for your answer to a question. Its working memory notes only what it searched for and how many results it found. Slack's permission to search for you is kept with your message until the answer ends.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
@@ -346,7 +380,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -376,7 +410,9 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
         "groups:history",
         "users:read",
         "files:read",
-        "files:write"
+        "files:write",
+        "search:read.public",
+        "search:read.files"
       ]
     }
   },
@@ -422,6 +458,8 @@ Phaseo asks Slack for exactly these bot token scopes when you install, so the ap
 | `users:read` | Check whether someone is a guest, a bot or from another organisation. |
 | `files:read` | Read images and PDFs shared with the agent. |
 | `files:write` | Post charts and images in the thread. |
+| `search:read.public` | Search public channels for the person asking. |
+| `search:read.files` | Include files shared in public channels in those searches. |
 
 A few rules for your own app:
 
