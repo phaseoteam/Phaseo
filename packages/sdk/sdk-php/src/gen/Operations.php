@@ -502,6 +502,15 @@ function deletePreset(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
+function deletePresetLabel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	if (in_array((string)($path["label"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels/" . rawurlencode((string)($path["label"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function deletePrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1217,6 +1226,14 @@ function listOrganisations(Client $client, ?array $path = null, ?array $query = 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listPresetLabels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listPresets(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1644,6 +1661,15 @@ function rotateWorkspaceNotificationDestinationSecret(Client $client, ?array $pa
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/notifications/destinations/" . rawurlencode((string)($path["id"] ?? "")) . "/rotate-secret";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function setPresetLabel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	if (in_array((string)($path["label"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels/" . rawurlencode((string)($path["label"] ?? ""));
+	return $client->request("PUT", $resolvedPath, $query, $headers, $body);
 }
 
 function setWorkspaceDepartmentMember(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)

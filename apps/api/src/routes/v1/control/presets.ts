@@ -476,8 +476,145 @@ async function handleListPresetVersions(req: Request) {
 		if (preset.visibility === "private" && preset.created_by !== auth.value.userId) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,preset_id,version_number,version_label,versioning_method,name,slug,description,config,visibility,release_notes,created_by,created_at").eq("preset_id", preset.id).order("version_number", { ascending: false });
 		if (error) throw new Error(error.message || "Failed to list preset versions");
-		return json({ data: data ?? [] }, 200, { "Cache-Control": "no-store" });
+		const labels = await listLabelRows(preset.id);
+		const labelsByVersion = new Map<string, string[]>();
+		for (const row of labels) labelsByVersion.set(row.version_id, [...(labelsByVersion.get(row.version_id) ?? []), row.label]);
+		return json({ data: (data ?? []).map((version: any) => ({ ...version, labels: labelsByVersion.get(String(version.id)) ?? [] })) }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return internalServerError("presets.versions.list", error); }
+}
+
+/** A named label: lowercase, starts with a letter, and never a version label such as v3. */
+const PRESET_LABEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
+function normalizePresetLabel(value: unknown): string | null {
+	const label = String(value ?? "").trim().toLowerCase();
+	return PRESET_LABEL_PATTERN.test(label) && !/^v[0-9]+$/.test(label) ? label : null;
+}
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const INVALID_LABEL_MESSAGE = "Labels are 1-32 lowercase letters, numbers, hyphens or underscores, start with a letter, and cannot look like a version (v1, v2)";
+
+type LabelRow = { label: string; version_id: string; updated_by: string | null; created_at: string | null; updated_at: string | null };
+
+async function listLabelRows(presetId: string): Promise<LabelRow[]> {
+	const { data, error } = await getSupabaseAdmin().from("preset_version_labels").select("label,version_id,updated_by,created_at,updated_at").eq("preset_id", presetId).order("label", { ascending: true });
+	if (error) throw new Error(error.message || "Failed to list preset labels");
+	return (data ?? []) as LabelRow[];
+}
+
+async function formatLabels(presetId: string, rows: LabelRow[]) {
+	const versionIds = [...new Set(rows.map((row) => row.version_id))];
+	const versions = new Map<string, { version_number: number | null; version_label: string | null }>();
+	if (versionIds.length) {
+		const { data, error } = await getSupabaseAdmin().from("preset_versions").select("id,version_number,version_label").eq("preset_id", presetId).in("id", versionIds);
+		if (error) throw new Error(error.message || "Failed to load labelled preset versions");
+		for (const version of (data ?? []) as Array<{ id: string; version_number: number | null; version_label: string | null }>) versions.set(String(version.id), version);
+	}
+	return rows.map((row) => ({
+		label: row.label,
+		version_id: row.version_id,
+		version_number: versions.get(row.version_id)?.version_number ?? null,
+		version_label: versions.get(row.version_id)?.version_label ?? null,
+		updated_by: row.updated_by ?? null,
+		created_at: row.created_at ?? null,
+		updated_at: row.updated_at ?? null,
+	}));
+}
+
+/** The preset id from …/{id}/labels. */
+function labelListPresetId(req: Request): string | null {
+	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+	return segments.length >= 2 && segments[segments.length - 1] === "labels" ? decodeURIComponent(segments[segments.length - 2]) : null;
+}
+
+function labelPathParts(req: Request): { presetId: string | null; label: string | null } {
+	// Counted from the end: …/{id}/labels/{label}. The label or the preset may itself be named "labels".
+	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+	if (segments.length < 3 || segments[segments.length - 2] !== "labels") return { presetId: null, label: null };
+	return { presetId: decodeURIComponent(segments[segments.length - 3]), label: decodeURIComponent(segments[segments.length - 1]) };
+}
+
+function labelRpcError(message: string): Response | null {
+	if (message.includes("invalid_preset_label")) return json({ error: "invalid_preset_label", message: INVALID_LABEL_MESSAGE }, 400, { "Cache-Control": "no-store" });
+	if (message.includes("preset_version_not_found")) return json({ error: "preset_version_not_found", message: "Preset version not found" }, 404, { "Cache-Control": "no-store" });
+	if (message.includes("preset_not_found")) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+	if (message.includes("preset_label_forbidden")) return json({ error: "forbidden", message: "Only the preset's creator or a workspace owner or admin can change its labels" }, 403, { "Cache-Control": "no-store" });
+	return null;
+}
+
+async function handleListPresetLabels(req: Request) {
+	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_READ); if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]); if (roleError) return roleError;
+	const presetId = labelListPresetId(req);
+	if (!presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
+	try {
+		const preset = await findPreset(auth.value.workspaceId, presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (preset.visibility === "private" && preset.created_by !== auth.value.userId) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		return json({ data: await formatLabels(preset.id, await listLabelRows(preset.id)) }, 200, { "Cache-Control": "no-store" });
+	} catch (error) { return internalServerError("presets.labels.list", error); }
+}
+
+async function handleSetPresetLabel(req: Request) {
+	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
+	const parts = labelPathParts(req);
+	if (!parts.presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
+	const label = normalizePresetLabel(parts.label);
+	if (!label) return json({ error: "invalid_preset_label", message: INVALID_LABEL_MESSAGE }, 400, { "Cache-Control": "no-store" });
+	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>));
+	const versionId = typeof body.version_id === "string" ? body.version_id.trim() : "";
+	const versionRef = typeof body.version === "string" ? body.version.trim() : "";
+	if (Boolean(versionId) === Boolean(versionRef)) return json({ error: "bad_request", message: "Send either version_id or version" }, 400, { "Cache-Control": "no-store" });
+	try {
+		const preset = await findPreset(auth.value.workspaceId, parts.presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		if (versionId && !UUID_PATTERN.test(versionId)) return json({ error: "preset_version_not_found", message: "Preset version not found" }, 404, { "Cache-Control": "no-store" });
+		let targetVersionId = versionId;
+		if (versionRef) {
+			// A version label (v3, 1.2.0, 2026.10.27) or another named label, the same order the gateway reads them.
+			const byLabel = await getSupabaseAdmin().from("preset_versions").select("id").eq("preset_id", preset.id).eq("version_label", versionRef).maybeSingle();
+			if (byLabel.error) throw new Error(byLabel.error.message || "Failed to resolve preset version");
+			targetVersionId = String(byLabel.data?.id ?? "");
+			if (!targetVersionId) {
+				const byNamedLabel = await getSupabaseAdmin().from("preset_version_labels").select("version_id").eq("preset_id", preset.id).eq("label", versionRef.toLowerCase()).maybeSingle();
+				if (byNamedLabel.error) throw new Error(byNamedLabel.error.message || "Failed to resolve preset label");
+				targetVersionId = String(byNamedLabel.data?.version_id ?? "");
+			}
+			if (!targetVersionId) return json({ error: "preset_version_not_found", message: `Version "${versionRef}" of this preset was not found` }, 404, { "Cache-Control": "no-store" });
+		}
+		const previous = (await listLabelRows(preset.id)).find((row) => row.label === label) ?? null;
+		const result = await getSupabaseAdmin().rpc("set_preset_version_label", { p_preset_id: preset.id, p_label: label, p_version_id: targetVersionId, actor_user_id: auth.value.userId });
+		if (result.error) {
+			const mapped = labelRpcError(result.error.message ?? ""); if (mapped) return mapped;
+			throw new Error(result.error.message || "Failed to set preset label");
+		}
+		const saved = (Array.isArray(result.data) ? result.data[0] : result.data) as LabelRow | null;
+		const [formatted] = await formatLabels(preset.id, [saved ?? { label, version_id: targetVersionId, updated_by: auth.value.userId, created_at: null, updated_at: null }]);
+		await auditPreset(auth.value, "preset.label.set", preset, { label, version_id: targetVersionId, previous_version_id: previous?.version_id ?? null });
+		return json({ data: formatted }, 200, { "Cache-Control": "no-store" });
+	} catch (error) { return internalServerError("presets.labels.set", error); }
+}
+
+async function handleRemovePresetLabel(req: Request) {
+	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
+	const parts = labelPathParts(req);
+	if (!parts.presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
+	const label = normalizePresetLabel(parts.label);
+	if (!label) return json({ error: "invalid_preset_label", message: INVALID_LABEL_MESSAGE }, 400, { "Cache-Control": "no-store" });
+	try {
+		const preset = await findPreset(auth.value.workspaceId, parts.presetId); if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
+		const result = await getSupabaseAdmin().rpc("remove_preset_version_label", { p_preset_id: preset.id, p_label: label, actor_user_id: auth.value.userId });
+		if (result.error) {
+			const mapped = labelRpcError(result.error.message ?? ""); if (mapped) return mapped;
+			throw new Error(result.error.message || "Failed to remove preset label");
+		}
+		if (result.data !== true) return json({ error: "not_found", message: `Label "${label}" not found` }, 404, { "Cache-Control": "no-store" });
+		await auditPreset(auth.value, "preset.label.removed", preset, { label });
+		return json({ deleted: true, label }, 200, { "Cache-Control": "no-store" });
+	} catch (error) { return internalServerError("presets.labels.remove", error); }
 }
 
 async function handleForkPreset(req: Request) {
@@ -576,6 +713,9 @@ presetsRoutes.get("/publisher", withRuntime(handleGetPublisher));
 presetsRoutes.put("/publisher", withRuntime(handleUpdatePublisher));
 presetsRoutes.get("/:id/versions", withRuntime(handleListPresetVersions));
 presetsRoutes.post("/:id/versions", withRuntime(handlePublishPresetVersion));
+presetsRoutes.get("/:id/labels", withRuntime(handleListPresetLabels));
+presetsRoutes.put("/:id/labels/:label", withRuntime(handleSetPresetLabel));
+presetsRoutes.delete("/:id/labels/:label", withRuntime(handleRemovePresetLabel));
 presetsRoutes.post("/:id/fork", withRuntime(handleForkPreset));
 presetsRoutes.post("/:id/upstream", withRuntime(handleApplyUpstream));
 presetsRoutes.get("/:id", withRuntime(handleGetPreset));

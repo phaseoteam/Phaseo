@@ -298,9 +298,29 @@ describe("beforeRequest prompt templates", () => {
 			expect(result.ctx.promptTemplate).toEqual({
 				presetId: "preset_1",
 				presetSlug: "support-triage",
+				versionLabel: null,
+				ref: null,
 				variableNames: ["company", "ticket"],
 				messageCount: 2,
 			});
+		}
+	});
+
+	it("loads the pinned version named by prompt.version and records it", async () => {
+		const rawBody = { prompt: { id: "@support-triage", version: "production", variables: { company: "Acme", ticket: "Login fails" } } };
+		useBody(rawBody);
+		const context = presetContext();
+		context.value.context.preset = { ...preset, versionId: "version_2", versionLabel: "v2", ref: "production" } as any;
+		guardContextMock.mockResolvedValue(context);
+
+		const result = await beforeRequest(request(rawBody), "chat.completions", new Timer(), null);
+
+		expect(result.ok).toBe(true);
+		expect(guardContextMock.mock.calls[0]?.[0].model).toBe("@support-triage@production");
+		if (result.ok) {
+			expect(result.ctx.requestedModel).toBe("@support-triage@production");
+			expect(result.ctx.preset).toMatchObject({ id: "preset_1", versionId: "version_2", versionLabel: "v2", ref: "production" });
+			expect(result.ctx.promptTemplate).toMatchObject({ presetId: "preset_1", versionLabel: "v2", ref: "production" });
 		}
 	});
 
@@ -326,7 +346,8 @@ describe("beforeRequest prompt templates", () => {
 	it.each([
 		[{ model: "openai/gpt-4.1-mini", prompt: { id: "@support-triage" } }, "prompt_model_conflict", ["model"]],
 		[{ model: "@support-triage", models: ["openai/gpt-4.1-mini"], prompt: { id: "@support-triage" } }, "prompt_model_fallbacks_unsupported", ["models"]],
-		[{ prompt: { id: "@support-triage", version: "2" } }, "prompt_version_unsupported", ["prompt", "version"]],
+		[{ prompt: { id: "@support-triage", version: "v 2" } }, "prompt_version_invalid", ["prompt", "version"]],
+		[{ model: "@support-triage@v1", prompt: { id: "@support-triage", version: "v2" } }, "prompt_model_conflict", ["model"]],
 	])("rejects %j before loading the preset", async (rawBody, reason, path) => {
 		useBody(rawBody);
 

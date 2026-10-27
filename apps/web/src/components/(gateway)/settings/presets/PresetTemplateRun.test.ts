@@ -10,6 +10,11 @@ describe("running a preset template", () => {
 		});
 	});
 
+	it("pins a version or label only when one is given", () => {
+		expect(templateRunBody("@support-triage", {}, "production").prompt).toEqual({ id: "@support-triage", variables: {}, version: "production" });
+		expect(templateRunBody("@support-triage", {}, null).prompt).not.toHaveProperty("version");
+	});
+
 	it("exports code that sends the same body", () => {
 		const request = { endpoint: "/chat/completions", body: templateRunBody("@support-triage", { vip: true }) };
 		const python = sdkCode(request, "sdk-python");

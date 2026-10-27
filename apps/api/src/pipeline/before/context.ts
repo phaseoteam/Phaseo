@@ -18,6 +18,7 @@ import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from 
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
+import { parsePresetReference } from "./presetReference";
 import { loadPriceCard } from "@pipeline/pricing";
 import { isFreePriceCard } from "@pipeline/pricing/free";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
@@ -123,8 +124,15 @@ export async function assertPresetAccess(args: {
 	apiKeyId: string;
 	model: string;
 }): Promise<void> {
-	if (!args.model.startsWith("@")) return;
-	const slug = args.model.slice(1);
+	const reference = parsePresetReference(args.model);
+	if (!reference) return;
+	// "@handle/slug" names another workspace's public preset. The context RPC
+	// resolves those globally and only when public, so this workspace-local
+	// check does not apply (it would never find the preset here).
+	if (reference.publisher !== null) return;
+	// A pinned "@slug@ref" needs the same access as "@slug"; the RPC checks the
+	// pinned version itself.
+	const slug = reference.slug;
 	// Isolate-only and short-lived: an access decision, so visibility or key
 	// changes apply within 30 s and stale answers are never used past 60 s.
 	const access = await tieredRead<PresetAccess>({

@@ -8871,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: Listar etiquetas del preajuste
+      description: Lista las etiquetas con nombre, como production o staging, y la versión publicada a la que apunta cada una.
+      responses:
+        '200':
+          description: Lista de etiquetas del preajuste
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: No se encontró el ajuste preestablecido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Definir una etiqueta del preajuste
+      description: Apunta una etiqueta a una versión publicada, creándola o moviéndola. Las solicitudes que fijan la etiqueta, como @support-triage@production, usan la nueva versión en unos 2 minutos. Devolver una etiqueta a una versión anterior es una reversión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Etiqueta guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Etiqueta no válida, o no se envió ninguno o se enviaron ambos de version_id y version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Solo quien creó el preajuste o un propietario o administrador del espacio de trabajo puede cambiar sus etiquetas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el preajuste o la versión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Quitar una etiqueta del preajuste
+      description: Quita una etiqueta. Las solicitudes que aún la fijan fallan con preset_version_not_found.
+      responses:
+        '200':
+          description: Etiqueta quitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Etiqueta no válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Solo quien creó el preajuste o un propietario o administrador del espacio de trabajo puede cambiar sus etiquetas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el preajuste o la etiqueta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9365,6 +9462,14 @@ components:
       description: UUID, slug o nombre canónico del ajuste preestablecido.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: Nombre de la etiqueta, como production. De 1 a 32 letras minúsculas, números, guiones o guiones bajos, empezando por una letra; no puede parecer una etiqueta de versión (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17431,6 +17536,10 @@ components:
           type: object
           additionalProperties: true
           description: Valores para las variables de la plantilla. Las variables de imagen aceptan una URL https, una URL de datos o una parte de imagen.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Ejecuta esta versión publicada del preajuste en lugar de la actual: sus modelos, parámetros y plantilla. Usa una etiqueta de versión como v3, 1.2.0 o 2026.10.27, o una etiqueta como production. Equivale a establecer model en @support-triage@production.'
     Preset:
       type: object
       required:
@@ -17623,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: Etiquetas con nombre, como production, que apuntan a esta versión. Se devuelven al listar versiones.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17651,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Envía solo uno de version_id y version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: La versión publicada a la que apuntará la etiqueta.
+        version:
+          type: string
+          maxLength: 64
+          description: Una etiqueta de versión como v3, 1.2.0 o 2026.10.27, u otra etiqueta como staging para copiar a dónde apunta.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

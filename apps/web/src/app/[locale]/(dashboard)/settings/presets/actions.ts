@@ -2,7 +2,7 @@
 
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 export type PresetConfig = {
@@ -420,6 +420,55 @@ export async function publishPresetVersionAction(id: string, releaseNotes?: stri
 	}
 	revalidatePath("/settings/presets"); revalidatePath(`/gateway/marketplace/${id}`); revalidatePresetDataCache(id);
 	return data;
+}
+
+export type PresetVersionSummary = {
+	id: string;
+	version_number: number;
+	version_label: string | null;
+	release_notes: string | null;
+	visibility: string | null;
+	created_at: string | null;
+	labels: string[];
+};
+export type PresetVersionsWithLabels = {
+	versions: PresetVersionSummary[];
+	labels: Array<{ label: string; version_id: string; updated_at: string | null }>;
+	activeVersionId: string | null;
+	canManageLabels: boolean;
+};
+
+export async function listPresetVersionsAction(id: string): Promise<PresetVersionsWithLabels> {
+	if (!id) throw new Error("Valid preset ID is required");
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	const data = await fetchAccountWebApi<Partial<PresetVersionsWithLabels>>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken);
+	return { versions: data.versions ?? [], labels: data.labels ?? [], activeVersionId: data.activeVersionId ?? null, canManageLabels: data.canManageLabels === true };
+}
+
+/** The outcome of a label change. Errors are returned, not thrown, so their codes survive production server actions. */
+export type PresetLabelResult = { ok: true } | { ok: false; error: string };
+
+async function labelRequest(id: string, path: string, init: RequestInit): Promise<PresetLabelResult> {
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) return { ok: false, error: "unauthorized" };
+	try {
+		await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}/labels/${path}`, accessToken, init);
+	} catch (error) {
+		if (error instanceof WebApiError) return { ok: false, error: error.detail ?? error.code ?? "failed" };
+		throw error;
+	}
+	revalidatePresetDataCache(id);
+	return { ok: true };
+}
+
+/** Points a label at a version: creates it, moves it, or moves it back (a rollback). */
+export async function setPresetVersionLabelAction(id: string, label: string, versionId: string): Promise<PresetLabelResult> {
+	if (!id || !label || !versionId) return { ok: false, error: "bad_request" };
+	return labelRequest(id, encodeURIComponent(label.trim().toLowerCase()), { method: "PUT", body: JSON.stringify({ versionId }) });
+}
+
+export async function removePresetVersionLabelAction(id: string, label: string): Promise<PresetLabelResult> {
+	if (!id || !label) return { ok: false, error: "bad_request" };
+	return labelRequest(id, encodeURIComponent(label), { method: "DELETE" });
 }
 
 export async function applyPresetUpstreamVersionAction(id: string, versionId: string) {

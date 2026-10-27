@@ -4697,6 +4697,52 @@ class PresetForkRequest
 	public $source_version_id;
 }
 
+class PresetLabel
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string */
+	public $label;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string|null */
+	public $updated_by;
+	/** @var string */
+	public $version_id;
+	/** @var string|null */
+	public $version_label;
+	/** @var int|null */
+	public $version_number;
+}
+
+class PresetLabelDeleteResponse
+{
+	/** @var bool */
+	public $deleted;
+	/** @var string */
+	public $label;
+}
+
+class PresetLabelListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class PresetLabelResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class PresetLabelSetRequest
+{
+	/** @var string|null */
+	public $version;
+	/** @var string|null */
+	public $version_id;
+}
+
 class PresetListResponse
 {
 	/** @var array */
@@ -4907,6 +4953,8 @@ class PresetVersion
 	public $description;
 	/** @var string */
 	public $id;
+	/** @var array|null */
+	public $labels;
 	/** @var string */
 	public $name;
 	/** @var string */
@@ -5105,6 +5153,8 @@ class PromptTemplateReference
 	public $id;
 	/** @var array<string, mixed>|null */
 	public $variables;
+	/** @var string|null */
+	public $version;
 }
 
 class Provider

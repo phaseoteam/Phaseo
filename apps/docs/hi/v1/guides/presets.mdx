@@ -98,6 +98,8 @@ Marketplace copies उसी सटीक upstream version पर pinned रह�
 
 Phaseo हर fork का immediate source और पूरी ancestry दोनों बनाए रखता है। इसलिए marketplace pages direct forks और सभी descendants में अंतर कर सकते हैं, भले ही किसी preset को कई बार कॉपी करके फिर से प्रकाशित किया गया हो।
 
+अनुरोध किसी प्रकाशित संस्करण को उसके लेबल से pin कर सकते हैं, जैसे `@support-triage@v3`, या `production` जैसे नाम वाले लेबल से, जिसे आप किसी संस्करण पर लगाते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है। [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx) देखें।
+
 ## प्रीसेट कैसे merge होते हैं
 
 Gateway context में अनुरोध प्रीसेट के साथ resolve हो, तो provider routing से पहले प्रीसेट लागू होता है:

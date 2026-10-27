@@ -6444,6 +6444,65 @@ public sealed class PresetForkRequest
 
 }
 
+public sealed class PresetLabel
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("label")]
+	public string Label { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("updated_by")]
+	public string? UpdatedBy { get; set; }
+
+	[JsonPropertyName("version_id")]
+	public string VersionId { get; set; }
+
+	[JsonPropertyName("version_label")]
+	public string? VersionLabel { get; set; }
+
+	[JsonPropertyName("version_number")]
+	public long? VersionNumber { get; set; }
+
+}
+
+public sealed class PresetLabelDeleteResponse
+{
+	[JsonPropertyName("deleted")]
+	public bool Deleted { get; set; }
+
+	[JsonPropertyName("label")]
+	public string Label { get; set; }
+
+}
+
+public sealed class PresetLabelListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class PresetLabelResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class PresetLabelSetRequest
+{
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
+
+	[JsonPropertyName("version_id")]
+	public string? VersionId { get; set; }
+
+}
+
 public sealed class PresetListResponse
 {
 	[JsonPropertyName("data")]
@@ -6724,6 +6783,9 @@ public sealed class PresetVersion
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
+	[JsonPropertyName("labels")]
+	public List<string>? Labels { get; set; }
+
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
 
@@ -6994,6 +7056,9 @@ public sealed class PromptTemplateReference
 
 	[JsonPropertyName("variables")]
 	public Dictionary<string, object>? Variables { get; set; }
+
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
 
 }
 

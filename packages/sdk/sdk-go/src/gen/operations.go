@@ -1046,6 +1046,23 @@ func DeletePreset(client *Client, path map[string]string, query map[string]strin
 	return out, nil
 }
 
+func DeletePresetLabel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["label"] == "." || path["label"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/labels/" + url.PathEscape(path["label"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func DeletePrivateModel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/private-models/" + url.PathEscape(path["id"])
@@ -2508,6 +2525,22 @@ func ListOrganisations(client *Client, path map[string]string, query map[string]
 	return out, nil
 }
 
+func ListPresetLabels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/labels"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListPresets(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/presets"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -3371,6 +3404,23 @@ func RotateWorkspaceNotificationDestinationSecret(client *Client, path map[strin
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/notifications/destinations/" + url.PathEscape(path["id"]) + "/rotate-secret"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func SetPresetLabel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["label"] == "." || path["label"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/labels/" + url.PathEscape(path["label"])
+	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err

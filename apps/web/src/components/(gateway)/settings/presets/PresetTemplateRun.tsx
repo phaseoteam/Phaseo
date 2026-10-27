@@ -13,10 +13,11 @@ import { fetchChatWebApi } from "@/lib/web-api/client";
 /**
  * A chat completions body that runs the template. `model` and an empty
  * `messages` list are included because the SDK chat methods require them; the
- * gateway fills the messages from the template.
+ * gateway fills the messages from the template. A `version` (v3, 1.2.0 or a
+ * label such as production) pins that published version instead of the current one.
  */
-export function templateRunBody(reference: string, variables: Record<string, unknown>) {
-	return { model: reference, messages: [], prompt: { id: reference, variables } };
+export function templateRunBody(reference: string, variables: Record<string, unknown>, version?: string | null) {
+	return { model: reference, messages: [], prompt: { id: reference, variables, ...(version ? { version } : {}) } };
 }
 
 export type TemplateRunReply = { text: string; model: string | null; inputTokens: number | null; outputTokens: number | null };
@@ -63,11 +64,12 @@ const CODE_SAMPLES = [
 ] as const;
 
 /** The request body and ready-to-run code for the current test values. */
-export function PresetTemplateCode({ reference, variables }: { reference: string; variables: Record<string, unknown> }) {
+export function PresetTemplateCode({ reference, variables, version = null }: { reference: string; variables: Record<string, unknown>; version?: string | null }) {
 	const t = useTranslations("SettingsUI");
-	const sdkRequest = { endpoint: "/chat/completions", body: templateRunBody(reference, variables) };
+	const body = templateRunBody(reference, variables, version);
+	const sdkRequest = { endpoint: "/chat/completions", body };
 	const samples: Array<[string, string, string]> = [
-		["body", t("presetTemplate.requestTitle"), JSON.stringify({ prompt: { id: reference, variables } }, null, 2)],
+		["body", t("presetTemplate.requestTitle"), JSON.stringify({ prompt: body.prompt }, null, 2)],
 		...CODE_SAMPLES.map(([sample, label]): [string, string, string] => [sample, label, sdkCode(sdkRequest, sample)]),
 	];
 	return (

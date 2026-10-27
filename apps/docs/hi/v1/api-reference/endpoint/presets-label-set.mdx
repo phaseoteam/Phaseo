@@ -1,0 +1,10 @@
+---
+title: "प्रीसेट लेबल सेट करें"
+sidebarTitle: "लेबल सेट करें"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "किसी लेबल को प्रीसेट के प्रकाशित संस्करण पर लगाएँ, या रोलबैक के लिए उसे वापस ले जाएँ।"
+---
+<Note>इस endpoint के लिए `presets:write` वाली management API key और उससे जुड़ी उपयोगकर्ता पहचान आवश्यक है। प्रीसेट बनाने वाला उसके लेबल बदल सकता है, और प्रीसेट साझा होने पर वर्कस्पेस के मालिक और एडमिन भी।</Note>
+
+लेबल को pin करने वाले अनुरोध, जैसे `@support-triage@production` या `prompt.version: "production"`, लगभग दो मिनट में नए संस्करण का उपयोग करते हैं। [प्रॉम्प्ट टेम्पलेट](../../guides/prompt-templates.mdx) देखें।

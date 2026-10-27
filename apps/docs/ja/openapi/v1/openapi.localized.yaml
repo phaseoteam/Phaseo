@@ -8871,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: プリセットのラベルを一覧表示
+      description: production や staging などの名前付きラベルと、それぞれが指す公開バージョンを一覧表示します。
+      responses:
+        '200':
+          description: プリセットのラベル一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: プリセットが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: プリセットのラベルを設定
+      description: ラベルを公開バージョンに割り当てます。ラベルがなければ作成し、あれば移動します。@support-triage@production のようにラベルを固定したリクエストは、約 2 分以内に新しいバージョンを使います。ラベルを以前のバージョンに戻すことがロールバックになります。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: ラベルを保存しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: ラベルが無効か、version_id と version のどちらも指定されていないか両方指定されています
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ラベルを変更できるのは、プリセットの作成者またはワークスペースのオーナーか管理者だけです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: プリセットまたはバージョンが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: プリセットのラベルを削除
+      description: ラベルを削除します。まだそのラベルを固定しているリクエストは preset_version_not_found で失敗します。
+      responses:
+        '200':
+          description: ラベルを削除しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: ラベルが無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ラベルを変更できるのは、プリセットの作成者またはワークスペースのオーナーか管理者だけです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: プリセットまたはラベルが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9365,6 +9462,14 @@ components:
       description: プリセットの UUID、slug、または正規名です。
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: production などのラベル名。英字で始まる 1〜32 文字の英小文字、数字、ハイフン、アンダースコアで、バージョンラベル（v1、v2）のような形にはできません。
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17431,6 +17536,10 @@ components:
           type: object
           additionalProperties: true
           description: テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。
+        version:
+          type: string
+          maxLength: 64
+          description: 現在のバージョンではなく、プリセットのこの公開済みバージョン（モデル、パラメーター、テンプレート）を実行します。v3、1.2.0、2026.10.27 などのバージョンラベル、または production などのラベルを指定します。model を @support-triage@production にするのと同じです。
     Preset:
       type: object
       required:
@@ -17623,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: このバージョンを指す production などの名前付きラベル。バージョン一覧の取得時に返されます。
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17651,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id と version のどちらか一方だけを送信します。
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: ラベルを割り当てる公開バージョン。
+        version:
+          type: string
+          maxLength: 64
+          description: v3、1.2.0、2026.10.27 などのバージョンラベル、または指し先をコピーする staging などの別のラベル。
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

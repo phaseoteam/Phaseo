@@ -8871,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: Lister les libellés du préréglage
+      description: Liste les libellés nommés, comme production ou staging, et la version publiée vers laquelle pointe chacun.
+      responses:
+        '200':
+          description: Liste des libellés du préréglage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: Préréglage introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Définir un libellé du préréglage
+      description: Fait pointer un libellé vers une version publiée, en le créant ou en le déplaçant. Les requêtes qui épinglent le libellé, comme @support-triage@production, utilisent la nouvelle version en 2 minutes environ. Ramener un libellé sur une version antérieure est un retour arrière.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Libellé enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Libellé non valide, ou ni version_id ni version, ou les deux
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Seul le créateur du préréglage ou un propriétaire ou administrateur de l’espace de travail peut modifier ses libellés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Préréglage ou version introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Supprimer un libellé du préréglage
+      description: Supprime un libellé. Les requêtes qui l’épinglent encore échouent avec preset_version_not_found.
+      responses:
+        '200':
+          description: Libellé supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Libellé non valide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Seul le créateur du préréglage ou un propriétaire ou administrateur de l’espace de travail peut modifier ses libellés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Préréglage ou libellé introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9365,6 +9462,14 @@ components:
       description: UUID, slug ou nom canonique du préréglage.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: Nom du libellé, comme production. De 1 à 32 lettres minuscules, chiffres, tirets ou tirets bas, en commençant par une lettre ; il ne peut pas ressembler à un libellé de version (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17431,6 +17536,10 @@ components:
           type: object
           additionalProperties: true
           description: Valeurs des variables du modèle. Les variables d’image acceptent une URL https, une URL de données ou une partie image.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Exécute cette version publiée du préréglage au lieu de la version actuelle : ses modèles, ses paramètres et son modèle de prompt. Utilisez un libellé de version comme v3, 1.2.0 ou 2026.10.27, ou une étiquette comme production. Équivaut à définir model sur @support-triage@production.'
     Preset:
       type: object
       required:
@@ -17623,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: Libellés nommés, comme production, qui pointent vers cette version. Renvoyés lors de la liste des versions.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17651,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Envoyez exactement un seul de version_id et version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: La version publiée vers laquelle faire pointer le libellé.
+        version:
+          type: string
+          maxLength: 64
+          description: Un libellé de version comme v3, 1.2.0 ou 2026.10.27, ou un autre libellé comme staging pour reprendre la version vers laquelle il pointe.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
