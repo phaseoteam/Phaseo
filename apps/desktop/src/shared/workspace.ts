@@ -29,6 +29,7 @@ import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./proje
 import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
+import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -135,7 +136,7 @@ export type GitReview = { status: string; files: GitFile[]; diff: string; staged
 export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: string };
 export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
 export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
-export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string } | { type: "push" };
+export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string; /** Stages every change first when nothing is staged. */ all?: boolean; /** Pushes after committing (Commit & push). */ push?: boolean } | { type: "push" | "pull" };
 export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
 export type TerminalCommand = { type: "open"; projectId?: string; /** The chat the terminal belongs to, for its drawer and tab titles. */ taskId?: string; /** Runs this project script in the new terminal, named after it. */ scriptId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
@@ -293,6 +294,14 @@ export type WorkspaceApi = {
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
+	/** T3's generated commit message: the title model reads the staged changes (or all of them) and writes one. */
+	gitCommitMessage: (projectId: string) => Promise<string>;
+	/** T3's Initialise Git, for a project folder that is not a repository. */
+	gitInit: (projectId: string) => Promise<GitReview>;
+	/** The GitHub accounts a repository can be published to: the signed-in user first, then their organisations. */
+	publishOwners: (projectId: string) => Promise<string[]>;
+	/** T3's Publish repository: creates it on GitHub, adds it as origin and pushes the branch. */
+	publishRepository: (projectId: string, request: PublishRepositoryRequest) => Promise<PublishRepositoryResult & { review: GitReview }>;
 	/** The branch against its base, uncommitted work, or one turn's snapshots. */
 	gitDiff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;
 	/** Both sides of one file in a scoped diff, checked against the diff's hash. */

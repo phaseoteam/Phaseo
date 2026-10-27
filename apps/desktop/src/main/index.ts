@@ -34,6 +34,8 @@ import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
+import { validatePublishRepository } from "../shared/gitWorkflow";
+import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
@@ -64,7 +66,7 @@ import { TerminalService } from "./terminalService";
 import { backgroundCommands, closeBackgroundCommands } from "./backgroundCommands";
 import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
-import { gitBranches, gitCommand } from "./gitOperations";
+import { gitBranches, gitCommand, gitPush, withGitLock } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
 import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
@@ -618,6 +620,14 @@ ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, st
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input))); });
+ipcMain.handle("workspace:git-init", (event, id: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitInit(root)); });
+ipcMain.handle("workspace:publish-owners", (event, id: unknown) => publishOwners(projectRoot(event, id)));
+ipcMain.handle("workspace:publish-repository", async (event, id: unknown, request: unknown) => {
+	const root = projectRoot(event, id), input = validatePublishRepository(request);
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	return workspaceRuntime.mutateProject(id as string, async () => withGitLock(root, async () => ({ ...await publishRepository(root, input, gitPush), review: await gitReview(root) })));
+});
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });

@@ -2,6 +2,7 @@ import path from "node:path";
 import { realpath } from "node:fs/promises";
 import { gitReview, parseGitStatus } from "./projectFiles";
 import { applyGitHunk } from "./gitHunks";
+import { gitPull } from "./gitWorkflow";
 import { git } from "./gitProcess";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -24,7 +25,7 @@ export async function withGitLock<T>(root: string, run: () => Promise<T>): Promi
 	try { return await operation; } finally { if (locks.get(key) === operation) locks.delete(key); }
 }
 /** Publishes the current branch, setting its upstream on the first push. Never prompts for credentials. */
-async function gitPush(root: string) {
+export async function gitPush(root: string) {
 	const branch = (await git(root, ["branch", "--show-current"])).trim();
 	if (!branch) throw new Error("Switch to a branch before pushing.");
 	let upstream = true;
@@ -44,9 +45,10 @@ async function gitPush(root: string) {
 export async function gitCommand(root: string, value: unknown) {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid Git action.");
 	const command = value as Record<string, unknown>;
-	if (!["stage", "unstage", "stage-hunk", "unstage-hunk", "create-branch", "switch-branch", "commit", "push"].includes(String(command.type))) throw new Error("Invalid Git action.");
+	if (!["stage", "unstage", "stage-hunk", "unstage-hunk", "create-branch", "switch-branch", "commit", "push", "pull"].includes(String(command.type))) throw new Error("Invalid Git action.");
 	return withGitLock(root, async () => {
 		if (command.type === "push") await gitPush(root);
+		else if (command.type === "pull") await gitPull(root);
 		else if (command.type === "stage-hunk" || command.type === "unstage-hunk") await applyGitHunk(root, command);
 		else if (command.type === "stage" || command.type === "unstage") {
 			const filename = command.filename;
@@ -62,8 +64,12 @@ export async function gitCommand(root: string, value: unknown) {
 			}
 		} else if (command.type === "commit") {
 			if (typeof command.message !== "string" || !command.message.trim() || command.message.length > 10000 || command.message.includes("\0")) throw new Error("Enter a commit message.");
+			if ((command.all !== undefined && typeof command.all !== "boolean") || (command.push !== undefined && typeof command.push !== "boolean")) throw new Error("Invalid Git action.");
+			// T3 commits every change when nothing is staged.
+			if (command.all && !(await git(root, ["diff", "--cached", "--name-only"])).trim()) await git(root, ["add", "-A"]);
 			if (!(await git(root, ["diff", "--cached", "--name-only"])).trim()) throw new Error("Stage changes before committing.");
 			await git(root, ["commit", "-m", command.message]);
+			if (command.push) await gitPush(root);
 		} else {
 			if (typeof command.name !== "string" || !command.name || command.name.length > 200 || command.name.startsWith("-") || command.name.includes("\0")) throw new Error("Invalid branch name.");
 			await git(root, ["check-ref-format", "--branch", command.name]);

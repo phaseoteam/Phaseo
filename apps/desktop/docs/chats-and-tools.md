@@ -170,6 +170,12 @@ Hover a line number and click **+** to comment on a line or a selected range. A 
 
 Branch switching, new branches and worktrees, staging, unstaging, commits and **Push** (or **Publish branch** the first time) are in the Git actions, kept apart from the diff. Push never asks for credentials in the app; set up Git credentials first.
 
+- **Commit messages**: leave the message empty and committing writes one, as T3 does: the title model (Settings → General) reads the staged changes and writes an imperative subject of up to 72 characters, with a short body when it helps. The wand button writes one into the box first, so you can edit it. Without a title model or a Phaseo sign-in, it says which is missing.
+- **Commit** commits the staged files; with nothing staged it reads **Commit all N files** and stages every change first, as T3's commit does. **Commit & push** (when the branch has a remote) commits and then pushes, setting the upstream on the first push.
+- **Pull N** appears when the upstream has newer commits. It only fast-forwards (`git pull --ff-only`); a branch that has diverged says so and is left for you to rebase or merge.
+- **Initialise Git** turns a project folder that is not a repository into one (`git init`).
+- **Publish repository** appears when a repository has no remote. It suggests the folder's name, lets you choose your GitHub account or one of your organisations, and private or public, then creates the repository through GitHub CLI (`gh api --hostname github.com`), adds it as `origin` and pushes the branch when there are commits. If the push fails, the remote stays, so a later push finishes the job.
+
 ### Starting a chat in a new worktree
 
 The new Code chat composer has T3 Code's workspace choice beside the permissions: **Local** works in the project's own checkout, **New worktree** gives the chat a checkout of its own. With New worktree, **from main** (the project's current branch at first) picks the branch it starts from, searching local and remote branches. The choice is remembered per project; folders that are not Git repositories only offer Local.
