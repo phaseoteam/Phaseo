@@ -11,7 +11,7 @@ import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn,
 import type { AgentForm } from "../shared/agentForms";
 import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
 import { runProjectCommand } from "./runProjectCommand";
-import { mkdirSync, realpathSync } from "node:fs";
+import { mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
 import { optionValue, questionAnswerError, questionOptions } from "../shared/agentQuestions";
@@ -55,6 +55,7 @@ import { runWorktreeSetup } from "./worktreeChat";
 import { planWorktreeCleanup } from "./worktreeCleanup";
 import type { WorktreeCleanupReport } from "../shared/worktreeCleanup";
 import { usageLimitError } from "../shared/usageLimitRecovery";
+import { secretLifetimeMs, secretRef, secretRefPattern, type SecretRequest, type SecretRequestInput, type SecretRequestResult } from "../shared/secretRequests";
 import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { captureCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
@@ -99,7 +100,7 @@ export class WorkspaceRuntime {
 	private readonly maintainingHarnesses = new Set<Harness>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	/** Lent to Phaseo turns: model facts for context limits, and the long-running commands chats start. */
-	phaseo: PhaseoExtras = {};
+	phaseo: PhaseoExtras = { secrets: (taskId, refs) => this.resolveSecrets(taskId, refs) };
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly modelDiscoveries = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
@@ -130,6 +131,8 @@ export class WorkspaceRuntime {
 	runSetupScript?: (projectId: string, script: ProjectScript, taskId: string) => { terminalId: string; exited: Promise<number | undefined> };
 	/** When a Claude or Codex account's exhausted plan limit resets (ms), from the limits Settings → Usage reads. */
 	usageLimitReset?: (harness: "claude" | "codex", accountId?: string) => Promise<number | undefined>;
+	/** Secret requests waiting for the person, by request. */
+	private readonly secretWaits = new Map<string, { taskId: string; resolve: (status: SecretRequest["status"]) => void }>();
 	/** Scheduled resumes of limited chats, by chat. */
 	private readonly limitTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	/** New worktree chats whose first turn waits for their setup (shared/worktreeChat.ts). */
@@ -160,6 +163,7 @@ export class WorkspaceRuntime {
 		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 		this.backfillUsageTotals();
+		this.removeOldSecretFiles();
 		// Resumes scheduled before the app last quit, once the host has wired its hooks.
 		setTimeout(() => this.armLimitResumes(), 5000).unref?.();
 		// The Usage page looks back 90 days, so the ledger is filled once from recent chats and kept that long.
@@ -540,7 +544,7 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
-	threadTools(parentId: string): ThreadTools { const tools = this.threads.forThread(parentId); return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+	threadTools(parentId: string): ThreadTools { const tools = { ...this.threads.forThread(parentId), requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) }; return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
 	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
@@ -640,6 +644,73 @@ export class WorkspaceRuntime {
 			if (overview.status !== "limited") continue;
 			try { const resumeAt = this.store.getTask(overview.id).usageLimit?.resumeAt; if (resumeAt) this.armLimitResume(overview.id, resumeAt); } catch { /* Deleted meanwhile. */ }
 		}
+	}
+	/**
+	 * T3's request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
+	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
+	 */
+	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
+		if (!this.vault?.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
+		const task = this.store.getTask(taskId);
+		if (task.archived) throw new Error("This chat is archived.");
+		const delivery = input.delivery ?? (task.harness === "phaseo" ? "secretRef" : "file");
+		const request: SecretRequest = { id: randomUUID().replaceAll("-", ""), label: input.label, reason: input.reason, ...input.placeholder ? { placeholder: input.placeholder } : {}, delivery, status: "pending", createdAt: new Date().toISOString() };
+		task.secretRequests = [...(task.secretRequests ?? []).slice(-19), request];
+		if (task.status === "running") task.status = "waiting";
+		this.store.saveTask(task); this.broadcast();
+		const status = await new Promise<SecretRequest["status"]>(resolve => {
+			const finish = (value: SecretRequest["status"]) => { clearTimeout(timer); signal?.removeEventListener("abort", abort); this.secretWaits.delete(request.id); resolve(value); };
+			const timer = setTimeout(() => finish("timed_out"), input.timeoutMs), abort = () => finish("cancelled");
+			this.secretWaits.set(request.id, { taskId, resolve: finish });
+			signal?.addEventListener("abort", abort, { once: true }); if (signal?.aborted) abort();
+		});
+		if (status !== "saved" && status !== "declined") this.settleSecretRequest(taskId, request.id, status);
+		if (status !== "saved") return { status: status === "pending" ? "cancelled" : status };
+		const expiresAt = new Date(Date.now() + secretLifetimeMs).toISOString();
+		if (delivery === "secretRef") return { status: "saved", secretRef: secretRef(request.id), expiresAt };
+		const directory = path.join(this.directory, "secrets"); mkdirSync(directory, { recursive: true, mode: 0o700 });
+		const file = path.join(directory, request.id);
+		writeFileSync(file, (JSON.parse(await this.vault.get(`secret-request-${request.id}`)) as { value: string }).value, { mode: 0o600 });
+		setTimeout(() => rmSync(file, { force: true }), secretLifetimeMs).unref?.();
+		return { status: "saved", file, expiresAt };
+	}
+	/** The person's answer to a secret request: the value goes to the vault, the chat records only "saved" or "declined". */
+	async answerSecret(taskId: string, requestId: string, value: string | null) {
+		const wait = this.secretWaits.get(requestId), request = this.store.getTask(taskId).secretRequests?.find(item => item.id === requestId);
+		if (!wait || wait.taskId !== taskId || request?.status !== "pending") throw new Error("This request is no longer waiting for an answer.");
+		if (value !== null) {
+			await this.vault!.set(`secret-request-${requestId}`, JSON.stringify({ taskId, value, savedAt: Date.now() }));
+			setTimeout(() => this.vault?.remove(`secret-request-${requestId}`), secretLifetimeMs).unref?.();
+		}
+		this.settleSecretRequest(taskId, requestId, value === null ? "declined" : "saved");
+		wait.resolve(value === null ? "declined" : "saved");
+		return this.store.getOverview();
+	}
+	private settleSecretRequest(taskId: string, requestId: string, status: SecretRequest["status"]) {
+		let task; try { task = this.store.getTask(taskId); } catch { return; }
+		const request = task.secretRequests?.find(item => item.id === requestId);
+		if (!request || request.status !== "pending") return;
+		request.status = status; request.answeredAt = new Date().toISOString();
+		if (task.status === "waiting" && !task.secretRequests!.some(item => item.status === "pending")) task.status = hasRequests(task) ? "waiting" : "running";
+		this.store.saveTask(task); this.broadcast();
+	}
+	/** run_command's secrets: each secretRef must be this chat's and under a day old. */
+	async resolveSecrets(taskId: string, refs: Record<string, string>) {
+		if (!this.vault) throw new Error("Secure credential storage is unavailable.");
+		const values: Record<string, string> = {};
+		for (const [name, ref] of Object.entries(refs)) {
+			const id = secretRefPattern.exec(ref)?.[1];
+			let stored: { taskId?: unknown; value?: unknown; savedAt?: unknown } | undefined;
+			try { stored = id ? JSON.parse(await this.vault.get(`secret-request-${id}`)) : undefined; } catch { stored = undefined; }
+			if (!stored || stored.taskId !== taskId || typeof stored.value !== "string" || typeof stored.savedAt !== "number" || Date.now() - stored.savedAt > secretLifetimeMs) throw new Error(`${name}: this secretRef has expired or belongs to another chat. Ask again with request_secret.`);
+			values[name] = stored.value;
+		}
+		return values;
+	}
+	/** Secret files outlive their timers when the app quits; they go at the next start once a day old. */
+	private removeOldSecretFiles() {
+		const directory = path.join(this.directory, "secrets");
+		try { for (const name of readdirSync(directory)) { const file = path.join(directory, name); if (Date.now() - statSync(file).mtimeMs > secretLifetimeMs) rmSync(file, { force: true }); } } catch { /* No secret files yet. */ }
 	}
 	/** Top-level chats the last quit interrupted that have not run since, for the offer to continue them. */
 	quitInterrupted() {
@@ -1244,6 +1315,8 @@ export class WorkspaceRuntime {
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
 			for (const [requestId, pending] of this.questions) if (pending.taskId === id) { pending.resolve({}); this.questions.delete(requestId); }
 			for (const [requestId, pending] of this.forms) if (pending.taskId === id) { pending.resolve(null); this.forms.delete(requestId); }
+			// A secret request cannot outlive the turn that asked: only that call can hand the agent its reference.
+			for (const wait of [...this.secretWaits.values()]) if (wait.taskId === id) wait.resolve("cancelled");
 			this.broadcast();
 		}
 	}
@@ -1255,6 +1328,7 @@ export class WorkspaceRuntime {
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
 		for (const pending of this.forms.values()) pending.resolve(null);
+		for (const wait of [...this.secretWaits.values()]) wait.resolve("cancelled");
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);

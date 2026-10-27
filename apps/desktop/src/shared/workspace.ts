@@ -32,6 +32,7 @@ import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
 import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
 import type { UsageLimitState } from "./usageLimitRecovery";
+import type { SecretRequest } from "./secretRequests";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -122,6 +123,8 @@ export type Task = {
 	usageLimit?: UsageLimitState;
 	/** The app quit during this chat's turn; startup offers to continue it. */
 	interruptedByQuit?: true;
+	/** The agent's request_secret asks and their outcomes; never the values (shared/secretRequests.ts). */
+	secretRequests?: SecretRequest[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
@@ -223,6 +226,8 @@ export type WorkspaceApi = {
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	/** Chats the app's last quit interrupted, for the offer to continue them (cleared once they run again). */
 	quitInterrupted: () => Promise<string[]>;
+	/** Answers a secret request with the secret, or declines it with null. The value goes to the vault only. */
+	answerSecret: (taskId: string, requestId: string, value: string | null) => Promise<WorkspaceOverview>;
 	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
 	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */

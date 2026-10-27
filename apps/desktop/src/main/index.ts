@@ -37,6 +37,7 @@ import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
 import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
 import { limitResetAt } from "../shared/usageLimitRecovery";
+import { validateSecretAnswer } from "../shared/secretRequests";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
@@ -670,6 +671,10 @@ ipcMain.handle("workspace:start-worktree-chat", (event, value: unknown) => {
 	const command = validateCommand(create);
 	if (command.type !== "create-task" || shutdownStarted) throw new Error("Invalid worktree chat request.");
 	return workspaceRuntime.startWorktreeChat(request, command);
+});
+ipcMain.handle("workspace:answer-secret", (event, taskId: unknown, requestId: unknown, value: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof requestId !== "string" || !/^[0-9a-f]{32}$/.test(requestId)) throw new Error("Invalid secret answer.");
+	return workspaceRuntime.answerSecret(taskId, requestId, validateSecretAnswer(value));
 });
 ipcMain.handle("workspace:quit-interrupted", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return workspaceRuntime.quitInterrupted(); });
 ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {

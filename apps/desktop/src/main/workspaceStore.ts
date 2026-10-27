@@ -176,6 +176,7 @@ export class WorkspaceStore {
 				task.status = "interrupted";
 				// Questions answered by message do not need the stopped turn.
 				task.approvals = []; task.questions = task.questions?.filter(request => request.responseMode === "message") ?? []; task.forms = [];
+				for (const request of task.secretRequests ?? []) if (request.status === "pending") request.status = "cancelled";
 				task.error = "The application stopped during this task. Resume to continue.";
 				task.interruptedByQuit = true;
 				this.saveTask(task);

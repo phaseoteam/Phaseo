@@ -58,6 +58,7 @@ const desktopApi: PhaseoDesktopApi = {
 		startWorktreeChat: request => ipcRenderer.invoke("workspace:start-worktree-chat", request),
 		worktreeCleanup: request => ipcRenderer.invoke("workspace:worktree-cleanup", request),
 		quitInterrupted: () => ipcRenderer.invoke("workspace:quit-interrupted"),
+		answerSecret: (taskId, requestId, value) => ipcRenderer.invoke("workspace:answer-secret", taskId, requestId, value),
 		pasteImage: (id, name, bytes) => ipcRenderer.invoke("workspace:paste-image", id, name, bytes),
 		chooseAttachments: id => ipcRenderer.invoke("workspace:choose-attachments", id),
 		exportTask: (id, format) => ipcRenderer.invoke("workspace:export-task", id, format),
