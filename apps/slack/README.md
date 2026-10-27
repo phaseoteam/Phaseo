@@ -288,14 +288,58 @@ Durable Object id, so the URL doesn't reveal the installation.
   Workflow step outputs, and the thread's working memory notes only
   `publish_page`.
 
-**Serving** (`src/page-viewer.ts`). Pages are served with
-`Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'`,
+**Serving** (`src/page-viewer.ts`). A page is never served as a document of
+its own. `/p/<store>/<page>` answers with a page of the Worker's that holds only
+an `<iframe sandbox="allow-scripts" srcdoc="…">`, the page's HTML escaped into
+`srcdoc`, and the page's title (escaped) as its `<title>`. That outer page is
+served with
+`Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'`,
 plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
-`Cache-Control: private, no-store`, `X-Frame-Options: DENY` and `noindex`. The
-sandbox without `allow-same-origin` gives the page an opaque origin, so its
-scripts can't read this Worker's cookies or call its routes with them, and the
-fetch directives stop it loading or sending anything. Link unfurlers (Slackbot
-and others) get a generic page and count no view.
+`Cache-Control: private, no-store`, `X-Frame-Options: DENY` and `noindex`. It
+has no scripts of its own, and nothing from the page reaches its markup unescaped.
+
+- The sandbox without `allow-same-origin` gives the page an opaque origin, so
+  its scripts can't read this Worker's cookies or call its routes with them.
+  Without `allow-top-navigation`, `allow-popups` or `allow-forms` it can't
+  navigate the outer page, open windows or submit forms.
+- The `srcdoc` document inherits the outer page's policy, so the fetch
+  directives stop it loading or sending anything (only inline styles, inline
+  scripts and `data:` images).
+- `frame-src 'none'` is checked against the outer page whenever the frame
+  navigates, so a script setting `location`, a `<meta http-equiv=refresh>` or a
+  clicked link can't take the page's text to another site in a URL. Links
+  therefore don't work in pages, not even `#anchors` (they resolve against the
+  outer page's URL), and `publish_page` tells the model so.
+
+Checked in Chromium 151 (Playwright, a local "attacker" server that
+`*.attacker.example` resolves to, and a net log), against the earlier serving as
+a control: script, meta-refresh and link navigations, `top`/`parent` navigation,
+`target=_top`/`_blank` links, `window.open`, form GET and POST,
+`rel=prefetch`/`preload`/`stylesheet`, CSS `url()`, `@import` and fonts, images,
+`srcset`, SVG images, scripts and `import()`, `fetch` (also `keepalive`), XHR,
+WebSocket, EventSource, `sendBeacon`, `fetchLater`, nested frames, `object`,
+`embed`, media, blob workers, `data:`, `blob:` and same-origin navigations,
+`<a ping>` and `<base>` are all blocked. Inline scripts and styles and `data:`
+images work, and cookies and storage are unavailable. Not checked in Firefox or
+Safari.
+
+What neither CSP nor the sandbox can stop, so a page's script can still send
+data out:
+
+- **WebRTC**: `RTCPeerConnection` contacts any STUN or TURN server (an IP and
+  port the page chooses; a TURN server also gets a username). `webrtc 'block'`
+  isn't implemented in Chromium.
+- **`<link rel=prerender>` in Chromium**: NoStatePrefetch sends a GET for any
+  URL, including a query the script builds, and no directive (`prefetch-src`
+  included) blocks it.
+- **Host names**: a navigation that `frame-src` blocks still makes Chromium look
+  up the host and open a connection to it, without sending a request, so a host
+  name can carry data. DNS prefetch and preconnect hints didn't fire from the
+  frame in the check, but no directive covers them either.
+
+These leak no more than the model could already leak with a link in its reply
+or with its web fetch tool, and a page holds nothing the model didn't have.
+Link unfurlers (Slackbot and others) get a generic page and count no view.
 
 **Who can view**: `link` (anyone with the link, while `page_link_access` is on)
 or `workspace`. A workspace page (and a link page once link sharing is turned
@@ -308,9 +352,16 @@ company app's from `slack_apps`. A short-lived cookie binds the sign-in to the
 browser and holds the page to return to, so the page id never goes to Slack. The
 ID token comes straight from `openid.connect.token` over TLS; its issuer,
 audience, expiry and nonce are checked. Membership is decided like answers:
-`users.info` with the bot token, no bots, nobody from another organisation,
-guests only where `allow_guests` is on. Without client credentials the
-`workspace` mode isn't offered, and Settings says so.
+`users.info` with the bot token, no bots, nobody from another organisation, no
+deactivated accounts, guests only where `allow_guests` is on. The session holds
+whether its person was a guest and when Slack last said so, and every view
+checks it again: a guest's session ends once `allow_guests` is off, without a
+Slack call, and once the last check is 10 minutes old the view asks `users.info`
+again (one call at most) and renews the cookie, which still ends 8 hours after
+sign-in. Someone who left the workspace, or became a guest where guests aren't
+allowed, loses access within 10 minutes; if Slack can't answer, the view is a
+503 and the session stays. Without client credentials the `workspace` mode
+isn't offered, and Settings says so.
 
 **Settings → Slack** (web-api `/api/account/settings/slack/pages`) lists and
 deletes pages through the service binding to the `SlackAgentAdmin` entrypoint

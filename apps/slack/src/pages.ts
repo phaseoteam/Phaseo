@@ -146,14 +146,14 @@ export class PageStore extends DurableObject<Env> {
 		this.sql.exec("DELETE FROM pages WHERE expires_at <= ?", now);
 	}
 
-	/** Wakes at the next expiry, and at least daily to check the installation, while any page is kept. */
-	private async schedule(now: number): Promise<void> {
+	/** Wakes at the next expiry, and at least every checkMs (daily) to check the installation, while any page is kept. */
+	private async schedule(now: number, checkMs = INSTALLATION_CHECK_MS): Promise<void> {
 		const next = this.sql.exec<{ next: number | null }>("SELECT min(expires_at) AS next FROM pages").one().next;
 		if (next === null) {
 			await this.ctx.storage.deleteAlarm();
 			return;
 		}
-		await this.ctx.storage.setAlarm(Math.min(next, now + INSTALLATION_CHECK_MS));
+		await this.ctx.storage.setAlarm(Math.min(next, now + checkMs));
 	}
 
 	/** Stores a page, within the answer's and the installation's limits. */
@@ -230,8 +230,9 @@ export class PageStore extends DurableObject<Env> {
 					return;
 				}
 			} catch {
+				// Try again soon, but no later than the next page expires.
 				console.error("[slack-agent] page store could not check its installation", { installationId });
-				await this.ctx.storage.setAlarm(now + CHECK_RETRY_MS);
+				await this.schedule(now, CHECK_RETRY_MS);
 				return;
 			}
 		}
@@ -336,7 +337,7 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
 			"Publish a web page (a report, a table, a chart or a small interactive view) and get its link.",
 			"Use it when someone asks for a page, report or dashboard, or when the answer is too long or too rich for a Slack message. Then give the link in your reply as a Markdown link with the page's title, and sum up the page in a sentence or two.",
 			"Write one complete, self-contained HTML document with inline <style> and <script> only. The page can't load anything: no external scripts, styles, fonts, images or requests, so draw charts with inline SVG or canvas and embed any image as a data: URL.",
-			"Scripts run in a sandbox: no forms, pop-ups, alert dialogs, cookies, storage or network.",
+			"Scripts run in a sandbox: no forms, pop-ups, alert dialogs, cookies, storage or network. Links don't open anything, not even #anchors on the page, so write any URL out as text and scroll within the page with buttons that call scrollIntoView().",
 			`At most ${(MAX_PAGE_BYTES / 1024).toLocaleString("en-US")} KB, and ${MAX_PAGES_PER_ANSWER} pages per answer. The page is kept for ${expiryDays} days, then deleted.`,
 			who,
 			"Put only what the people in this conversation would share with its viewers on it, and never secrets or credentials.",

