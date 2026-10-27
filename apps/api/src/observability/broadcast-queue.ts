@@ -1,7 +1,7 @@
 import { clearRuntime, configureRuntime, getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { mapWithConcurrency } from "@/pipeline/model-discovery/concurrency";
-import { broadcastDelivery } from "./broadcast-destinations";
+import { broadcastDelivery, resolveOtlpTarget } from "./broadcast-destinations";
 import { BroadcastHealthRecorder } from "./broadcast-health";
 import {
 	BROADCAST_ROWS_REQUEST_LIMITS,
@@ -23,7 +23,8 @@ import {
 
 // Workers allow six simultaneous outbound connections per invocation.
 const DELIVERY_CONCURRENCY = 6;
-// OTLP vendors cap request bodies at 1-5 MB; batches are split below that.
+// OTLP vendors cap request bodies at 1-5 MB; batches are split below that, or
+// below a preset's maxRequestBytes.
 const MAX_OTLP_REQUEST_BYTES = 3 * 1024 * 1024;
 // Cloudflare caps one sendBatch call at 256 KB and 100 messages.
 const MAX_REQUEUE_BATCH_BYTES = 200_000;
@@ -106,12 +107,23 @@ async function loadDestinations(ids: string[]): Promise<Map<string, QueuedDestin
 
 const utf8 = new TextEncoder();
 
-// Payloads for the same destination share one request, split to stay under
-// MAX_OTLP_REQUEST_BYTES of UTF-8. Protobuf stores strings as UTF-8 too, so the
+// The most one OTLP request to the destination carries, as UTF-8 JSON.
+function otlpRequestLimit(destination: QueuedDestination, config: Record<string, unknown>): number {
+	try {
+		return resolveOtlpTarget(destination.destination_id, config).maxRequestBytes ?? MAX_OTLP_REQUEST_BYTES;
+	} catch {
+		// A config that cannot resolve fails at delivery, with its reason.
+		return MAX_OTLP_REQUEST_BYTES;
+	}
+}
+
+// Payloads for the same destination share one request, split to stay under the
+// destination's limit of UTF-8. Protobuf stores strings as UTF-8 too, so the
 // JSON's UTF-8 size bounds either encoding even for multibyte prompts. Each OTLP
 // payload is a list of resourceSpans, so concatenating them is still a valid
 // export request.
 function otlpDeliveries(destination: QueuedDestination, config: Record<string, unknown>, events: Event[]): Delivery[] {
+	const limit = otlpRequestLimit(destination, config);
 	const deliveries: Delivery[] = [];
 	let current: { events: Event[]; spans: unknown[]; bytes: number } = { events: [], spans: [], bytes: 0 };
 	const flush = () => {
@@ -123,7 +135,7 @@ function otlpDeliveries(destination: QueuedDestination, config: Record<string, u
 		const payload = renderBroadcastPayload(event.telemetry, destination) as { resourceSpans?: unknown[] };
 		const spans = payload.resourceSpans ?? [];
 		const bytes = utf8.encode(JSON.stringify(spans)).byteLength;
-		if (current.bytes + bytes > MAX_OTLP_REQUEST_BYTES) flush();
+		if (current.bytes + bytes > limit) flush();
 		current.events.push(event);
 		current.spans.push(...spans);
 		current.bytes += bytes;
