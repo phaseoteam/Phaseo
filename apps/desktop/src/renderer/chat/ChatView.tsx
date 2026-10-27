@@ -227,15 +227,20 @@ function ChatComposer({ task }: { task: Task }) {
 		try { const result = await api.chooseAttachments(task.id); attachmentChips(result.attachments); if (result.errors.length) setError(result.errors.join("\n")); }
 		catch (reason) { setError(errorText(reason)); } finally { setUploading(false); }
 	}
-	/** Pasted or dropped images upload straight away and land at the caret; other files go through Attach files. */
+	/** Pasted or dropped files upload straight away and land at the caret: images, PDFs and text, as Attach files takes. */
 	async function upload(files: File[]) {
 		if (!api || task.archived) return;
-		const images = files.filter(file => file.type.startsWith("image/"));
-		if (images.length < files.length) setError("Use Attach files to add files other than images.");
-		if (!images.length) return;
+		const errors: string[] = [];
 		setUploading(true);
-		try { for (const file of images) attachmentChips([await api.pasteImage(task.id, file.name, new Uint8Array(await file.arrayBuffer()))]); }
-		catch (reason) { setError(errorText(reason)); } finally { setUploading(false); }
+		try {
+			for (const file of files) {
+				// The main process decides by content; the browser's type is often empty for text and code files.
+				if (file.size > 10 * 1024 * 1024) { errors.push(`${file.name} is larger than 10 MB.`); continue; }
+				try { attachmentChips([await api.pasteFile(task.id, file.name || "Pasted file", new Uint8Array(await file.arrayBuffer()))]); }
+				catch (reason) { errors.push(`${file.name || "Pasted file"}: ${errorText(reason)}`); }
+			}
+		} finally { setUploading(false); }
+		if (errors.length) setError(errors.join("\n"));
 	}
 	/** Settings changes send explicit values; an empty effort or speed returns to the model's default. */
 	async function changeSettings(next: ModelSelection) {

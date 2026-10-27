@@ -10,6 +10,9 @@ import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import { File as FileIcon, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
 import { PullRequestLinkPreview } from "../views/pullRequests/PullRequestLinkPreview";
 import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/mentions";
+import { showToast } from "../components/ui/toast";
+import { isMac } from "../lib/shortcuts";
+import { isLargePaste } from "./largePaste";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
 export function draggedChat(data: DataTransfer | null): Mention | undefined {
@@ -80,6 +83,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	label?: string;
 }): ComposerEditor {
 	const keys = useRef<(event: KeyboardEvent) => boolean>(undefined);
+	const pasteInline = useRef(false);
 	const last = useRef(value);
 	const latest = useRef({ onChange, onFiles, placeholder });
 	latest.current = { onChange, onFiles, placeholder };
@@ -89,13 +93,24 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		editable: !disabled,
 		editorProps: {
 			attributes: { "aria-label": label, "aria-multiline": "true", role: "textbox", spellcheck: "true", class: "composer-editor" },
-			handleKeyDown: (_view, event) => keys.current?.(event) ?? false,
+			handleKeyDown: (_view, event) => {
+				// Mod+Shift+V pastes as plain text in Chromium; here it also keeps a long paste inline (T3).
+				pasteInline.current = event.key.toLowerCase() === "v" && event.shiftKey && (event.ctrlKey || event.metaKey);
+				return keys.current?.(event) ?? false;
+			},
 			// Pasted text arrives as plain text; images and dropped files become attachments.
 			handlePaste: (view, event) => {
 				const files = Array.from(event.clipboardData?.files ?? []);
 				if (files.length && latest.current.onFiles) { event.preventDefault(); latest.current.onFiles(files); return true; }
 				const text = event.clipboardData?.getData("text/plain");
 				if (!text) return false;
+				// A long paste becomes a text attachment, as T3 folds large pastes, so the message stays readable.
+				if (latest.current.onFiles && !pasteInline.current && isLargePaste(text)) {
+					event.preventDefault(); latest.current.onFiles([new File([text], "pasted-text.txt", { type: "text/plain" })]);
+					showToast("info", "Long paste attached as pasted-text.txt", `${isMac() ? "⌘⇧V" : "Ctrl+Shift+V"} keeps a long paste in the message.`);
+					return true;
+				}
+				pasteInline.current = false;
 				const lines = text.replace(/\r\n?/g, "\n").split("\n");
 				editorInstance.current?.chain().focus().insertContent(lines.flatMap((line, index): JSONContent[] => [...index ? [{ type: "hardBreak" }] : [], ...line ? [{ type: "text", text: line }] : []])).run();
 				void view; return true;
