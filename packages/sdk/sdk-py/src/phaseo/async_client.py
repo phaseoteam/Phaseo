@@ -13,6 +13,7 @@ from urllib.parse import quote
 
 import httpx
 
+from .auth import ApiKeyProvider, has_authorization, resolve_async
 from .helpers import check_capabilities, check_parameter_support, parse_output, _batch_line, _accumulate_event
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
@@ -281,7 +282,7 @@ class AsyncListableJobs(AsyncJobs):
 
 
 class AsyncPhaseo:
-    def __init__(self, api_key: str | None = None, base_url: str | None = None, *, region: str | None = None,
+    def __init__(self, api_key: str | ApiKeyProvider | None = None, base_url: str | None = None, *, region: str | None = None,
                  timeout: float = 60, max_retries: int = 0, http_client: httpx.AsyncClient | None = None,
                  headers: dict[str, str] | None = None, app: dict[str, str] | None = None,
                  client_source: str | None = None, client_source_version: str | None = None,
@@ -297,7 +298,10 @@ class AsyncPhaseo:
             raise ValueError("region must be one of: global, eu, us")
         validate_controls(timeout, max_retries)
         self.base_url = (base_url or REGIONAL_BASE_URLS[region or "global"]).rstrip("/")
-        self.headers = {"Authorization": f"Bearer {key}", "User-Agent": DEFAULT_USER_AGENT,
+        # A credential function sets Authorization on every request instead of once here.
+        self._api_key = key
+        self._api_key_provider = key if callable(key) else None
+        self.headers = {**({} if self._api_key_provider else {"Authorization": f"Bearer {key}"}), "User-Agent": DEFAULT_USER_AGENT,
             "X-Phaseo-Client": client_source or "phaseo-python",
             "X-Phaseo-Client-Version": client_source_version or DEFAULT_USER_AGENT.removeprefix("phaseo-python/"), **(headers or {})}
         for field, header in (("id", "X-App-Id"), ("name", "X-App-Name"), ("url", "HTTP-Referer")):
@@ -326,7 +330,7 @@ class AsyncPhaseo:
         self.batches = AsyncListableJobs(self, "/batches", "batch")
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
-        return AsyncPhaseo(api_key=self.headers["Authorization"].removeprefix("Bearer "), base_url=self.base_url,
+        return AsyncPhaseo(api_key=self._api_key, base_url=self.base_url,
             timeout=self.timeout if timeout is None else timeout, max_retries=self.max_retries if max_retries is None else max_retries,
             headers={**self.headers, **(headers or {})}, http_client=self.http,
             on_request=self.on_request, on_response=self.on_response, on_retry=self.on_retry)
@@ -346,6 +350,9 @@ class AsyncPhaseo:
         for attempt in range(retries + 1):
             if self.on_request:
                 self.on_request({"method": method.upper(), "attempt": attempt})
+            if self._api_key_provider and not has_authorization(kwargs["headers"]):
+                credential = await resolve_async(self._api_key_provider, timeout)
+                kwargs = {**kwargs, "headers": {**kwargs["headers"], "Authorization": f"Bearer {credential}"}}
             context = self.http.stream(method, self.base_url + path, timeout=timeout, follow_redirects=False, **kwargs)
             try:
                 response = await context.__aenter__()

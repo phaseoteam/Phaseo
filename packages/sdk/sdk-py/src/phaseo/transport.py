@@ -10,6 +10,8 @@ from typing import Any, Callable, Generic, Iterator, TypeVar
 from urllib.parse import quote
 
 import httpx
+
+from .auth import ApiKeyProvider, has_authorization, resolve_sync
 from gen.client import Client
 
 T = TypeVar("T")
@@ -98,8 +100,10 @@ def decode_response(response: httpx.Response) -> Any:
 
 class HttpClient(Client):
     def __init__(self, base_url: str, headers: dict[str, str], timeout: float | None = 60, max_retries: int = 0, http_client: httpx.Client | None = None,
-                 on_request: RequestHook | None = None, on_response: RequestHook | None = None, on_retry: RequestHook | None = None):
+                 on_request: RequestHook | None = None, on_response: RequestHook | None = None, on_retry: RequestHook | None = None,
+                 api_key_provider: ApiKeyProvider | None = None):
         super().__init__(base_url, headers)
+        self.api_key_provider = api_key_provider
         validate_controls(timeout, max_retries)
         self.timeout = timeout
         self.max_retries = max_retries
@@ -123,6 +127,8 @@ class HttpClient(Client):
         for attempt in range(retries + 1):
             if self.on_request:
                 self.on_request({"method": method.upper(), "attempt": attempt})
+            if self.api_key_provider and not has_authorization(request_headers):
+                kwargs["headers"] = {**request_headers, "Authorization": f"Bearer {resolve_sync(self.api_key_provider)}"}
             context = self.http.stream(method, url, **kwargs)
             try:
                 response = context.__enter__()
