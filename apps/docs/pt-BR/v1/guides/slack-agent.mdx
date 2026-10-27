@@ -75,9 +75,9 @@ Para escolher um modelo, comece a mensagem com `with <model>:` e indique um mode
 with openai/gpt-6-luna: escreva uma resposta para este cliente
 ```
 
-- A comparação é feita só com os modelos permitidos, sem diferenciar maiúsculas de minúsculas. O começo de um nome ou ID basta quando só um modelo permitido o tem, então `with claude:` funciona quando há um único modelo Claude na lista.
+- A comparação é feita só com os modelos permitidos, sem diferenciar maiúsculas de minúsculas. O começo de um nome ou ID basta quando só um modelo permitido o tem, então `with claude:` funciona quando há um único modelo Claude na lista. Um ID também funciona sem o laboratório, como `with gpt-6-luna:`.
 - O agente responde a essa mensagem com esse modelo, sem a parte `with …:`, e o rodapé mostra o modelo que respondeu.
-- Se o modelo não estiver na lista, ou se o nome servir para mais de um, o agente responde em particular com os modelos que você pode escolher e não responde à mensagem. Essa mensagem não conta como resposta.
+- Se você nomear um modelo do catálogo que não está na lista, ou se o nome servir para mais de um, o agente responde em particular com os modelos que você pode escolher e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que começa com "With …:" mas não nomeia nenhum modelo, como "With regards to the invoice: …", é respondida normalmente.
 - Cada resposta mantém os mesmos limites ($0.50 e 12 etapas, veja “Limites de cada resposta” abaixo), seja qual for o modelo que responder. Os tokens do modelo são cobrados pelo preço dele.
 - O guardrail **Slack agent** continua valendo. Se nenhum provedor do modelo escolhido o atender, o agente avisa em vez de responder.
 

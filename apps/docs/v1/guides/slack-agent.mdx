@@ -76,9 +76,9 @@ To choose a model, start the message with `with <model>:` and name an allowed mo
 with openai/gpt-6-luna: draft a reply to this customer
 ```
 
-- Only the allowed models are matched, ignoring case. The start of a name or ID is enough when only one allowed model has it, so `with claude:` works when one Claude model is on the list.
+- Only the allowed models are matched, ignoring case. The start of a name or ID is enough when only one allowed model has it, so `with claude:` works when one Claude model is on the list. An ID also works without its lab, such as `with gpt-6-luna:`.
 - The agent answers that message with that model, without the `with …:` part, and the footer names the model that answered.
-- If the model isn't on the list, or the name fits more than one, the agent replies privately with the models you can choose and doesn't answer. That message isn't counted as an answer.
+- If you name a catalogue model that isn't on the list, or the name fits more than one, the agent replies privately with the models you can choose and doesn't answer. That message isn't counted as an answer. A message that starts with "With …:" but names no model, such as "With regards to the invoice: …", is answered as usual.
 - Each answer keeps the same [limits](#limits-on-each-answer), $0.50 and 12 steps, whichever model answers. The model's tokens are billed at its own price.
 - The **Slack agent** guardrail still applies. If no provider of the chosen model meets it, the agent says so instead of answering.
 

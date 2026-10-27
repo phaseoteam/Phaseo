@@ -206,9 +206,9 @@ describe("events: choosing a model per message", () => {
 	beforeEach(async () => {
 		await install({ model: "openai/gpt-6-luna", model_choice_enabled: true, allowed_models: ["anthropic/claude-opus-5-5", "anthropic/claude-sonnet-5-5", "phaseo/auto"] });
 		world.db.tables.v2_models.push(
-			{ model_slug: "openai/gpt-6-luna", name: "GPT-6 Luna" },
-			{ model_slug: "anthropic/claude-opus-5-5", name: "Claude Opus 5.5" },
-			{ model_slug: "anthropic/claude-sonnet-5-5", name: "Claude Sonnet 5.5" },
+			{ model_slug: "openai/gpt-6-luna", name: "GPT-6 Luna", hidden: false },
+			{ model_slug: "anthropic/claude-opus-5-5", name: "Claude Opus 5.5", hidden: false },
+			{ model_slug: "anthropic/claude-sonnet-5-5", name: "Claude Sonnet 5.5", hidden: false },
 		);
 	});
 
@@ -243,6 +243,18 @@ describe("events: choosing a model per message", () => {
 		expect(world.turns.created).toEqual([]);
 		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
 		expect(thread("1792600000.000050").status()).toMatchObject({ running: null, queued: 0 });
+	});
+
+	it("answers ordinary text that starts with \"With …:\" as written, when it names no catalogue model", async () => {
+		const select = world.db.select.bind(world.db);
+		// The fake ignores PostgREST or= filters, so the catalogue search is answered here: no model is called that.
+		world.db.select = async <T,>(table: string, query: Record<string, string>) => (table === "v2_models" && query.or ? (world.db.queries.push({ table, query }), []) : select<T>(table, query));
+		await expect(run(mention({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual([undefined]);
+		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" });
+		expect(world.slack.ephemerals()).toEqual([]);
+		const search = world.db.queries.find((query) => query.table === "v2_models" && query.query.or);
+		expect(search?.query).toMatchObject({ hidden: "is.false", or: "(model_slug.ilike.regards to the invoice*,model_slug.ilike.*/regards to the invoice*,name.ilike.regards to the invoice*)" });
 	});
 
 	it("leaves the message as it is when model choice is off, or the message names no model", async () => {

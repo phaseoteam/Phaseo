@@ -11,7 +11,7 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesModel, modelRefusalText, withoutMention } from "./model-choice";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, modelRefusalText, withoutMention } from "./model-choice";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
 
@@ -278,7 +278,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		if (choice.kind === "chosen") {
 			model = choice.model.id;
 			text = choice.prompt;
-		} else if (choice.kind !== "none") {
+		} else if (choice.kind === "ambiguous" || (choice.kind === "not_allowed" && await namesCatalogueModel(deps.db, choice.named))) {
 			console.log("[slack-agent] model choice refused", { installationId: installation.id, eventId, reason: choice.kind });
 			await replyPrivately(slack, target, modelRefusalText(choice, allowed, names.get(installation.model) ?? installation.model));
 			return "model_refused";

@@ -4,12 +4,15 @@ import type { Db } from "./supabase";
 // Choosing a model per message. When an admin turns model choice on, a message
 // that starts with `with <model>:` is answered by that model, and the prefix is
 // taken off the prompt. <model> is one of the installation's allowed models: its
-// id or catalogue name, or the start of either when only one allowed model has
-// it, ignoring case. Nothing outside the allowlist is ever matched.
+// id (with or without its lab) or catalogue name, or the start of either when
+// only one allowed model has it, ignoring case. Nothing outside the allowlist is
+// ever chosen.
 //
-// A message that names a model that isn't allowed, or that fits more than one,
-// gets a private reply listing the choices and isn't answered (events.ts checks
-// this before the meter counts the person or the answer).
+// A message that names a catalogue model that isn't allowed, or that fits more
+// than one allowed model, gets a private reply listing the choices and isn't
+// answered (events.ts checks this before the meter counts the person or the
+// answer). Text that names no model at all ("With regards to the invoice: …") is
+// an ordinary message.
 
 export const AUTO_MODEL = "phaseo/auto";
 const AUTO_NAME = "Auto";
@@ -95,7 +98,8 @@ export function namesModel(text: string): boolean {
 export function chooseModel(text: string, allowed: AllowedModel[]): ModelChoice {
 	const options = readings(text);
 	if (!options.length) return { kind: "none" };
-	const keyed = allowed.map((model) => ({ model, id: comparable(model.id), name: comparable(model.name) }));
+	// An id also matches without its lab: `gpt-6-luna` for `openai/gpt-6-luna`.
+	const keyed = allowed.map((model) => ({ model, id: comparable(model.id), short: comparable(model.id.slice(model.id.indexOf("/") + 1)), name: comparable(model.name) }));
 	const pick = (option: Reading, fits: (entry: (typeof keyed)[number]) => boolean): ModelChoice | null => {
 		const matches = [...new Map(keyed.filter(fits).map((entry) => [entry.model.id, entry.model])).values()];
 		if (matches.length === 1) return { kind: "chosen", model: matches[0], prompt: option.prompt };
@@ -103,11 +107,11 @@ export function chooseModel(text: string, allowed: AllowedModel[]): ModelChoice 
 		return null;
 	};
 	for (const option of options) {
-		const exact = pick(option, (entry) => entry.id === option.key || entry.name === option.key);
+		const exact = pick(option, (entry) => entry.id === option.key || entry.short === option.key || entry.name === option.key);
 		if (exact) return exact;
 	}
 	for (const option of options) {
-		const started = pick(option, (entry) => entry.id.startsWith(option.key) || entry.name.startsWith(option.key));
+		const started = pick(option, (entry) => entry.id.startsWith(option.key) || entry.short.startsWith(option.key) || entry.name.startsWith(option.key));
 		if (started) return started;
 	}
 	// What they most likely meant to name: the text before the first colon.
@@ -130,6 +134,33 @@ export async function modelNames(db: Db, ids: string[]): Promise<Map<string, str
 		: [];
 	const names = new Map(rows.map((row) => [row.model_slug, row.name?.trim() || row.model_slug]));
 	return new Map(ids.map((id) => [id, id === AUTO_MODEL ? AUTO_NAME : names.get(id) ?? id]));
+}
+
+/** What a model's name or id can hold; anything else is ordinary text. */
+const MODEL_TEXT = /^[a-z0-9][a-z0-9 .:/-]*$/;
+
+/**
+ * Whether text that named no allowed model names a catalogue model at all (an id,
+ * an id without its lab, or a name, or the start of one). When it doesn't, the
+ * message is ordinary text that happens to start with "With …:", such as "With
+ * regards to the invoice: …", and is answered as written. A catalogue that can't
+ * be read counts as a match, so a real model name is never answered by another
+ * model without saying so.
+ */
+export async function namesCatalogueModel(db: Db, named: string): Promise<boolean> {
+	const key = comparable(named);
+	if (!MODEL_TEXT.test(key)) return false;
+	try {
+		const rows = await db.select("v2_models", {
+			select: "model_slug",
+			hidden: "is.false",
+			or: `(model_slug.ilike.${key}*,model_slug.ilike.*/${key}*,name.ilike.${key}*)`,
+			limit: "1",
+		});
+		return rows.length > 0;
+	} catch {
+		return true;
+	}
 }
 
 /** The installation's allowed models with their names, in the admins' order. */

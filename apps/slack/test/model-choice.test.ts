@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, modelRefusalText, namesModel, withoutMention, type AllowedModel } from "../src/model-choice";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, modelRefusalText, namesCatalogueModel, namesModel, withoutMention, type AllowedModel } from "../src/model-choice";
 import { FakeDb } from "./fakes";
 
 const LUNA: AllowedModel = { id: "openai/gpt-6-luna", name: "GPT-6 Luna" };
@@ -22,6 +22,11 @@ describe("choosing a model per message", () => {
 		expect(chooseModel("with claude: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
 		expect(chooseModel("with anthropic/: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
 		expect(chooseModel("with gpt-6.1: hi", ALLOWED)).toEqual({ kind: "chosen", model: TERRA, prompt: "hi" });
+	});
+
+	it("matches an id without its lab", () => {
+		expect(chooseModel("with gpt-6-luna: hi", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "hi" });
+		expect(chooseModel("with claude-opus: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
 	});
 
 	it("prefers an exact name over a longer one it starts", () => {
@@ -71,6 +76,28 @@ describe("choosing a model per message", () => {
 	it("drops the agent's own mention, wherever it is", () => {
 		expect(withoutMention("<@U0BOT00001> with gpt: hi <@U0BOT00001>", "U0BOT00001")).toBe("with gpt: hi");
 		expect(withoutMention("<@U0OTHER001> hi", "U0BOT00001")).toBe("<@U0OTHER001> hi");
+	});
+});
+
+describe("whether text names a catalogue model", () => {
+	const db = (rows: unknown[] | Error) => {
+		const queries: Array<Record<string, string>> = [];
+		return { queries, db: { select: async (_table: string, query: Record<string, string>) => { queries.push(query); if (rows instanceof Error) throw rows; return rows; } } as unknown as FakeDb };
+	};
+
+	it("searches visible ids, ids without their lab, and names by their start", async () => {
+		const found = db([{ model_slug: "openai/gpt-6-luna" }]);
+		await expect(namesCatalogueModel(found.db, " *GPT-6  Luna* ")).resolves.toBe(true);
+		expect(found.queries).toEqual([{ select: "model_slug", hidden: "is.false", or: "(model_slug.ilike.gpt-6 luna*,model_slug.ilike.*/gpt-6 luna*,name.ilike.gpt-6 luna*)", limit: "1" }]);
+		await expect(namesCatalogueModel(db([]).db, "regards to the invoice")).resolves.toBe(false);
+	});
+
+	it("never searches text a model name can't hold, and assumes a match when the catalogue can't be read", async () => {
+		const odd = db([{ model_slug: "x" }]);
+		await expect(namesCatalogueModel(odd.db, "regards, to (the) invoice")).resolves.toBe(false);
+		await expect(namesCatalogueModel(odd.db, "'quoted'")).resolves.toBe(false);
+		expect(odd.queries).toEqual([]);
+		await expect(namesCatalogueModel(db(new Error("db_error_503")).db, "gpt-6 luna")).resolves.toBe(true);
 	});
 });
 
