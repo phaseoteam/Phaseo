@@ -645,9 +645,10 @@ describe("AgentTurnWorkflow", () => {
 			[429, { reason: "monthly_cost_limit_reached" }, "The Phaseo agent's monthly spending limit on its Phaseo key has been reached. An admin can raise it in Phaseo settings."],
 			[404, { error: { code: "model_not_found" } }, "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings."],
 			// The key's guardrail leaves the model no provider, or the workspace can't use Auto.
-			[403, { error: { code: "guardrail_blocked", message: "No provider routes satisfy the workspace data-handling policy" }, code: "guardrail_blocked", reason: "data_handling_policy_no_routes" },
+			[403, { error: { code: "guardrail_blocked", message: "No provider routes satisfy the workspace data-handling policy" }, code: "guardrail_blocked", error_operational_kind: "data_handling_policy_no_routes" },
 				"The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings."],
-			[400, { error: { code: "not_supported", message: "Auto Routing is currently available to selected Alpha workspaces." }, code: "not_supported", reason: "auto_routing_feature_flag_disabled" },
+			// The test installation asks for phaseo/auto.
+			[400, { error: { code: "not_supported", message: "Auto Routing is currently available to selected Alpha workspaces." }, code: "not_supported" },
 				"The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings."],
 		];
 		for (const [status, body, text] of cases) {
