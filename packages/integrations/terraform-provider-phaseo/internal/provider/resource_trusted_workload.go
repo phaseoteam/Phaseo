@@ -77,10 +77,11 @@ func (r *trustedWorkloadResource) Schema(_ context.Context, _ resource.SchemaReq
 		"name":     schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.LengthBetween(1, 100), stringvalidator.RegexMatches(trimmedText, "must not start or end with whitespace")}},
 		"platform": schema.StringAttribute{Required: true, Description: "vercel or github_actions. Changing it replaces the policy.", PlanModifiers: replace, Validators: []validator.String{stringvalidator.OneOf("vercel", "github_actions")}},
 		"issuer": schema.StringAttribute{Optional: true, Computed: true, Description: "Token issuer. Required for Vercel; defaults to https://token.actions.githubusercontent.com for GitHub Actions. Changing it replaces the policy.",
-			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown(), stringplanmodifier.RequiresReplaceIfConfigured()}},
+			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown(), stringplanmodifier.RequiresReplaceIfConfigured()},
+			Validators:    []validator.String{stringvalidator.RegexMatches(trimmedText, "must not be empty or start or end with whitespace")}},
 		"owner_id": schema.StringAttribute{Required: true, Description: "The Vercel team ID, or the GitHub organisation or user ID. Changing it replaces the policy.", PlanModifiers: replace, Validators: []validator.String{stringvalidator.RegexMatches(trimmedText, "must not be empty or start or end with whitespace")}},
-		"claim_conditions": schema.MapAttribute{Optional: true, ElementType: conditionValueList, Description: "Extra claims the token must match: claim name to allowed values.", Validators: []validator.Map{
-			mapvalidator.SizeBetween(1, 16),
+		"claim_conditions": schema.MapAttribute{Optional: true, ElementType: conditionValueList, Description: "Extra claims the token must match: claim name to allowed values. Up to 15 claims; the owner claim counts toward the API's 16.", Validators: []validator.Map{
+			mapvalidator.SizeAtMost(15),
 			mapvalidator.KeysAre(stringvalidator.RegexMatches(claimName, "must be 1 to 64 letters, digits, '.', '_' or '-'"), stringvalidator.NoneOf("iss", "aud", "exp", "iat", "nbf", "jti", "owner_id", "repository_owner_id")),
 			mapvalidator.ValueListsAre(listvalidator.SizeBetween(1, 20), listvalidator.ValueStringsAre(stringvalidator.LengthBetween(1, 256), stringvalidator.RegexMatches(trimmedText, "must not start or end with whitespace"))),
 		}},
@@ -205,9 +206,13 @@ func setTrustedWorkload(m *trustedWorkloadModel, d trustedWorkloadAPIModel) {
 	m.Platform = types.StringValue(d.Provider)
 	m.Issuer = types.StringValue(d.Issuer)
 	m.OwnerID = types.StringValue(d.OwnerID)
-	// The API returns {} for no conditions; the configuration leaves them out.
+	// The API returns {} for no conditions; keep null or {} as configured.
 	if len(d.ClaimConditions) == 0 {
-		m.ClaimConditions = types.MapNull(conditionValueList)
+		if m.ClaimConditions.IsNull() || m.ClaimConditions.IsUnknown() {
+			m.ClaimConditions = types.MapNull(conditionValueList)
+		} else {
+			m.ClaimConditions = types.MapValueMust(conditionValueList, map[string]attr.Value{})
+		}
 	} else {
 		elements := make(map[string]attr.Value, len(d.ClaimConditions))
 		for claim, values := range d.ClaimConditions {

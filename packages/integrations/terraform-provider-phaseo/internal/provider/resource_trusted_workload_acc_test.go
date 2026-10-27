@@ -138,11 +138,16 @@ resource "phaseo_trusted_workload" "preview" {
 					resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "enabled", "false"),
 				),
 			},
-			{ResourceName: "phaseo_trusted_workload.deploy", ImportState: true, ImportStateVerify: true},
+			{
+				// An empty map clears the conditions too, and stays empty in state.
+				Config: config("GitHub deploy (main)", "enabled = false\n  claim_conditions = {}"),
+				Check:  resource.TestCheckResourceAttr("phaseo_trusted_workload.deploy", "claim_conditions.%", "0"),
+			},
+			{ResourceName: "phaseo_trusted_workload.deploy", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"claim_conditions"}},
 		},
 	})
 	// Two creates (no replacement), the disable after creating the preview policy,
-	// the in-place update that clears the conditions, and two deletes.
+	// the in-place updates that clear the conditions (unset, then {}), and two deletes.
 	counts := map[string]int{}
 	for _, seen := range *log {
 		method, rest, _ := strings.Cut(seen, " ")
@@ -153,13 +158,37 @@ resource "phaseo_trusted_workload" "preview" {
 		}
 	}
 	for call, want := range map[string]int{
-		http.MethodPost: 2, http.MethodDelete: 2, http.MethodPatch: 2,
+		http.MethodPost: 2, http.MethodDelete: 2, http.MethodPatch: 3,
 		`{"status":"disabled"}`: 1,
-		`{"claim_conditions":{},"max_token_lifetime_seconds":43200,"name":"GitHub deploy (main)","status":"disabled"}`: 1,
+		`{"claim_conditions":{},"max_token_lifetime_seconds":43200,"name":"GitHub deploy (main)","status":"disabled"}`: 2,
 	} {
 		if counts[call] != want {
 			t.Errorf("expected %d of %q, got %v", want, call, *log)
 		}
+	}
+}
+
+func TestAccTrustedWorkloadRejectsIssuersTheAPIWouldRewrite(t *testing.T) {
+	for _, issuer := range []string{`""`, `" https://token.actions.githubusercontent.com"`} {
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories: testProviderFactories,
+			TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_5_0)},
+			Steps: []resource.TestStep{{
+				Config: fmt.Sprintf(`
+provider "phaseo" {
+  api_key  = "test-management-key"
+  base_url = "https://api.phaseo.test/v1"
+}
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy"
+  platform = "github_actions"
+  issuer   = %s
+  owner_id = "123456"
+}
+`, issuer),
+				ExpectError: regexp.MustCompile(`whitespace`),
+			}},
+		})
 	}
 }
 
@@ -169,7 +198,7 @@ func TestAccTrustedWorkloadRejectsConditionsTheAPIWouldRefuse(t *testing.T) {
 		`{ repository_owner_id = ["123456"] }`,
 		`{ repository = [] }`,
 		`{ repository = [" acme/api"] }`,
-		`{}`,
+		`{ c1 = ["a"], c2 = ["a"], c3 = ["a"], c4 = ["a"], c5 = ["a"], c6 = ["a"], c7 = ["a"], c8 = ["a"], c9 = ["a"], c10 = ["a"], c11 = ["a"], c12 = ["a"], c13 = ["a"], c14 = ["a"], c15 = ["a"], c16 = ["a"] }`,
 	} {
 		resource.Test(t, resource.TestCase{
 			ProtoV6ProviderFactories: testProviderFactories,
