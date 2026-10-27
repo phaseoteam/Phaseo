@@ -54,7 +54,7 @@ import {
 	type SpendRuleDraft,
 	type SpendRulePrefill,
 } from "./spendRuleDraft";
-import { MAX_SPEND_RULE_THRESHOLDS, SPEND_RULE_METRICS, SPEND_RULE_SCOPES, type SpendRule } from "./spendRules";
+import { MAX_SPEND_RULE_THRESHOLDS, SPEND_RULE_BLOCKS_AVAILABLE, SPEND_RULE_METRICS, SPEND_RULE_SCOPES, type SpendRule } from "./spendRules";
 
 export type SpendRuleEditorTarget = { mode: "create"; prefill: SpendRulePrefill; key: number } | { mode: "edit"; rule: SpendRule };
 
@@ -417,7 +417,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 							</div>
 						</Section>
 
-						{canBlock(draft) ? (
+						{SPEND_RULE_BLOCKS_AVAILABLE && canBlock(draft) ? (
 							<Section title={t("editor.sectionAction")}>
 								<OptionTiles
 									label={t("editor.sectionAction")}
