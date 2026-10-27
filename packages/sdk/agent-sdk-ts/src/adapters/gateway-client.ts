@@ -176,6 +176,14 @@ function extractResponseMeta(response: ResponsesResponse): Record<string, unknow
 	return meta as Record<string, unknown>;
 }
 
+/** A response that repeats no message item still has the text its deltas sent, as its message and as an item. */
+function withStreamedText(response: import("../types.js").AgentModelResponse, text: string) {
+	if (response.message.content || !text) return response;
+	response.message.content = text;
+	if (!response.items?.some((item) => item.type === "message")) response.items = [...(response.items ?? []), ...normalizeAgentItems({ type: "message", role: "assistant", content: [{ type: "output_text", text }] })];
+	return response;
+}
+
 function toAgentModelResponse(response: ResponsesResponse): import("../types.js").AgentModelResponse {
 	const rawItems = Array.isArray(response.output_items)
 		? response.output_items
@@ -236,8 +244,10 @@ function errorText(value: unknown): string | undefined {
 	return errorText(record.message) ?? errorText(record.error) ?? errorText(record.reason);
 }
 
+/** The frame's own code when it names one (rate_limit_exceeded, server_error), else the fallback. */
 function streamFailure(value: unknown, code: string, retryable: boolean) {
-	return new AgentStreamError(errorText(value) ?? "The model provider reported an error partway through the response.", { code, retryable });
+	const given = value && typeof value === "object" ? (value as Record<string, unknown>).code : undefined;
+	return new AgentStreamError(errorText(value) ?? "The model provider reported an error partway through the response.", { code: typeof given === "string" && given.trim() ? given : code, retryable });
 }
 
 /** A response the gateway ended as failed, incomplete or cancelled. Hitting the output limit is final; the rest may succeed on another attempt. */
@@ -314,7 +324,8 @@ export function createGatewayAgentClient(
 						if (eventType === "error" || eventType === "response.error" || (!eventType && chunk.error !== undefined)) throw streamFailure(chunk.error ?? chunk, "stream_error", true);
 						if (eventType === "response.failed" || eventType === "response.incomplete" || eventType === "response.cancelled") throw responseFailure((chunk.response ?? chunk) as Record<string, unknown>, eventType.slice(9));
 						if (eventType.includes("reasoning") && eventType.endsWith(".delta") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
-						else if (eventType === "response.output_text.delta" && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
+						// Untyped chunks keep the old fallback: their text is the answer.
+						else if ((eventType === "response.output_text.delta" || !eventType) && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
 						// An added item is still empty (a call has no arguments yet); its done event carries it whole.
 						if (chunk.item && eventType !== "response.output_item.added") {
 							if (eventType === "response.output_item.done") completedItems.push(chunk.item);
@@ -327,7 +338,7 @@ export function createGatewayAgentClient(
 							const status = String((rawResponse as Record<string, unknown>).status ?? "");
 							if (["failed", "incomplete", "cancelled"].includes(status)) throw responseFailure(rawResponse as Record<string, unknown>, status);
 							if (!Array.isArray(rawResponse.output_items) && !Array.isArray(rawResponse.output)) rawResponse.output = completedItems as ResponsesResponse["output"];
-							yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
+							yield { type: "response.completed" as const, response: withStreamedText(toAgentModelResponse(rawResponse), text), raw: chunk };
 							return;
 						}
 					}
@@ -338,10 +349,8 @@ export function createGatewayAgentClient(
 					throw mapped instanceof TypeError ? new AgentStreamError("The connection to the model provider dropped before the response finished.", { code: "stream_dropped", retryable: true, cause: mapped }) : mapped;
 				}
 				// Some routes end without a completion event once every item is done; anything else may have been cut off, so it is not passed off as finished.
-				if (unfinished || !completedItems.length) throw new AgentStreamError("The model's response ended before it finished.", { code: "stream_truncated", retryable: true });
-				const final = toAgentModelResponse({ output: completedItems } as ResponsesResponse);
-				if (!final.message.content) final.message.content = text;
-				yield { type: "response.completed" as const, response: final };
+				if (unfinished || (!completedItems.length && !text)) throw new AgentStreamError("The model's response ended before it finished.", { code: "stream_truncated", retryable: true });
+				yield { type: "response.completed" as const, response: withStreamedText(toAgentModelResponse({ output: completedItems } as ResponsesResponse), text) };
 			} finally { clearTimeout(timer); }
 		},
 	};

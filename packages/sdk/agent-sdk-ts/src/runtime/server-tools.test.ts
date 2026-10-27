@@ -92,7 +92,7 @@ describe("gateway server tools", () => {
 		expect(result.items).toEqual(expect.arrayContaining([expect.objectContaining({ type: "tool_call", toolCallId: "call_ws_2", name: "phaseo_web_search" })]));
 		const followUp = (create.mock.calls[1]?.[0] as { input: unknown }).input;
 		expect(JSON.stringify(followUp)).not.toContain("call_ws_2");
-		expect(followUp).toEqual(expect.arrayContaining([{ type: "function_call_output", call_id: "call_docs_1", output: JSON.stringify({ title: "Presets" }, null, 2) }]));
+		expect(followUp).toEqual(expect.arrayContaining([{ type: "function_call_output", call_id: "call_docs_1", output: JSON.stringify({ title: "Presets" }) }]));
 	});
 
 	it("treats a call as done when a custom client returns its result in the same response", async () => {

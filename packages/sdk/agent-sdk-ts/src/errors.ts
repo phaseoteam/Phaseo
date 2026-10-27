@@ -226,12 +226,15 @@ export function toAgentGatewayErrorDetails(error: AgentGatewayError): AgentGatew
 	};
 }
 
-/** A model stream that failed after it started: an error event, a failed or incomplete response, a stall, or an early end. */
-export class AgentStreamError extends Error {
+/**
+ * A model stream that failed after it started: an error event, a failed or incomplete response, a stall, or an early end.
+ * The request itself had already succeeded, so it is also a gateway error with status 502 and the code as its reason.
+ */
+export class AgentStreamError extends AgentGatewayError {
 	readonly retryable: boolean;
 	readonly code: string;
 	constructor(message: string, options: { code: string; retryable: boolean; cause?: unknown }) {
-		super(message, { cause: options.cause });
+		super({ status: 502, statusText: "Bad Gateway", body: { error: options.code, reason: options.code, message }, message, cause: options.cause });
 		this.name = "AgentStreamError";
 		this.code = options.code;
 		this.retryable = options.retryable;

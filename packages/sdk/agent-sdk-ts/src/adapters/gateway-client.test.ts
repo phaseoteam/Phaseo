@@ -753,7 +753,8 @@ describe("gateway client in agent runs", () => {
 			requests.push(`${(input instanceof Request ? input.method : init?.method) ?? "GET"} ${new URL(url).pathname}`);
 			if (!url.endsWith("/responses")) return Response.json({ models: [{ model_id: "openai/gpt-5.4-nano", status: "active" }] });
 			const body = JSON.parse(String(init?.body ?? (input instanceof Request ? await input.text() : "{}")));
-			if (body.stream) return new Response("data: {\"type\":\"response.output_text.delta\",\"delta\":\"Done\"}\n\ndata: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
+			// A stream that ends without its completion counts as cut off, so this one completes.
+			if (body.stream) return new Response("data: {\"type\":\"response.output_text.delta\",\"delta\":\"Done\"}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_stream\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
 			const calledTool = body.input.some((item: any) => item.type === "function_call_output");
 			return Response.json({ id: `resp_${requests.length}`, model: body.model, output: calledTool
 				? [{ type: "message", content: [{ type: "output_text", text: "Done" }] }]
