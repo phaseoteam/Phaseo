@@ -103,11 +103,11 @@ Para ver como 2 ou 3 modelos permitidos respondem à mesma pergunta, comece a me
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- Os modelos são reconhecidos como em `with <model>:`, só entre os permitidos. Se um modelo não estiver na lista, se um nome servir para mais de um modelo, se você citar menos de 2 ou mais de 3, ou se não houver pergunta depois dos dois-pontos, o agente responde em particular e não responde à mensagem. Essa mensagem não conta como resposta.
+- Os modelos são reconhecidos como em `with <model>:`, só entre os permitidos. Se um modelo não estiver na lista, se um nome servir para mais de um modelo, se você citar menos de 2 ou mais de 3, ou se não houver pergunta depois dos dois-pontos, o agente responde em particular e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que não nomeia nenhum modelo, como `compare the two plans, then pick one: …`, é texto comum e o agente responde normalmente.
 - Cada modelo recebe a sua pergunta, não o resto da thread, e pode pesquisar na web e ler páginas. Eles respondem ao mesmo tempo.
 - A resposta tem uma seção para cada modelo: o nome dele, com link para a página dele na Phaseo, quanto custou e a resposta. Cada modelo é instruído a responder de forma curta, e respostas longas são cortadas para que todas caibam em uma mensagem do Slack.
 - Se um modelo falhar, a seção dele explica o motivo, e as outras respostas continuam aparecendo.
-- Uma comparação conta como uma resposta. O limite de $0.50 (veja “Limites de cada resposta” abaixo) é dividido igualmente entre os modelos, e o rodapé mostra todos eles e o total.
+- Uma comparação conta como uma resposta. O limite de $0.50 (veja “Limites de cada resposta” abaixo) é dividido igualmente entre os modelos, e o rodapé mostra todos eles e o total. A divisão só decide se um modelo é consultado: ele não é consultado quando sua parte é menor que $0.02. Uma resposta não é interrompida ao atingir sua parte, então pode custar mais; em vez disso, o tamanho da resposta de cada modelo é limitado.
 
 ### Perguntas com botões
 

@@ -104,11 +104,11 @@ To see how 2 or 3 allowed models answer the same question, start the message wit
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer.
+- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer. A message that names no model at all, such as `compare the two plans, then pick one: …`, is ordinary text and the agent answers it as usual.
 - Each model gets your question, not the rest of the thread, and can search the web and read web pages. They answer at the same time.
 - The reply has a section for each model: its name, linked to its page on Phaseo, what it cost, and its answer. Each model is asked to keep its answer short, and long answers are cut so they all fit in one Slack message.
 - If a model fails, its section says why, and the other answers are still shown.
-- A comparison counts as one answer. The [$0.50 limit](#limits-on-each-answer) is split evenly between the models, and the footer names them all and shows the total.
+- A comparison counts as one answer. The [$0.50 limit](#limits-on-each-answer) is split evenly between the models, and the footer names them all and shows the total. The split only decides whether a model is asked: one isn't asked when its share is under $0.02. An answer isn't stopped at its share, so it can cost more; each model's reply is capped in length instead.
 
 ### Questions with buttons
 

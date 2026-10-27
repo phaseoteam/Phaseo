@@ -103,11 +103,11 @@ Um zu sehen, wie 2 oder 3 erlaubte Modelle dieselbe Frage beantworten, beginne d
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- Die Modelle werden wie bei `with <model>:` erkannt, nur aus der Liste der erlaubten Modelle. Steht ein Modell nicht auf der Liste, passt ein Name zu mehreren Modellen, nennst du weniger als 2 oder mehr als 3 oder folgt auf den Doppelpunkt keine Frage, antwortet der Agent privat und beantwortet die Nachricht nicht. Sie zählt nicht als Antwort.
+- Die Modelle werden wie bei `with <model>:` erkannt, nur aus der Liste der erlaubten Modelle. Steht ein Modell nicht auf der Liste, passt ein Name zu mehreren Modellen, nennst du weniger als 2 oder mehr als 3 oder folgt auf den Doppelpunkt keine Frage, antwortet der Agent privat und beantwortet die Nachricht nicht. Sie zählt nicht als Antwort. Eine Nachricht, die gar kein Modell nennt, etwa `compare the two plans, then pick one: …`, ist normaler Text, und der Agent beantwortet sie wie gewohnt.
 - Jedes Modell bekommt deine Frage, nicht den Rest des Threads, und kann im Web suchen und Webseiten lesen. Sie antworten gleichzeitig.
 - Die Antwort hat einen Abschnitt pro Modell: seinen Namen, verlinkt auf seine Seite bei Phaseo, seine Kosten und seine Antwort. Jedes Modell wird gebeten, sich kurz zu fassen, und lange Antworten werden gekürzt, damit alle in eine Slack-Nachricht passen.
 - Schlägt ein Modell fehl, nennt sein Abschnitt den Grund, und die anderen Antworten werden trotzdem gezeigt.
-- Ein Vergleich zählt als eine Antwort. Das Limit von $0.50 (siehe „Limits pro Antwort“ unten) wird gleichmäßig auf die Modelle aufgeteilt, und die Fußzeile nennt sie alle und zeigt die Summe.
+- Ein Vergleich zählt als eine Antwort. Das Limit von $0.50 (siehe „Limits pro Antwort“ unten) wird gleichmäßig auf die Modelle aufgeteilt, und die Fußzeile nennt sie alle und zeigt die Summe. Die Aufteilung entscheidet nur, ob ein Modell gefragt wird: Liegt sein Anteil unter $0.02, wird es nicht gefragt. Eine Antwort wird bei ihrem Anteil nicht gestoppt und kann daher mehr kosten; stattdessen ist die Länge der Antwort jedes Modells begrenzt.
 
 ### Fragen mit Schaltflächen
 
