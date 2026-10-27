@@ -6999,6 +6999,65 @@
 			"removeDescription": "Phaseo 会删除已保存的信息。之后的安装将使用 Phaseo 的 Slack 应用。",
 			"notAvailable": "使用你自己的 Slack 应用的功能暂不可用。"
 		},
+		"memory": {
+			"title": "记忆和技能",
+			"description": "有人让智能体记住某件事时它保存的笔记、置顶和待办，以及有人让它保存的技能。这些是智能体用自己的话写下的简短笔记，而不是 Slack 消息的副本。卸载后会全部删除。",
+			"loading": "正在加载…",
+			"notesTitle": "笔记、置顶和待办",
+			"skillsTitle": "技能",
+			"used": "已保存 {used} / {limit}",
+			"filter": "显示",
+			"filters": {
+				"all": "全部",
+				"note": "笔记",
+				"pin": "置顶",
+				"todo": "待办"
+			},
+			"kinds": {
+				"note": "笔记",
+				"pin": "置顶",
+				"todo": "待办"
+			},
+			"columns": {
+				"note": "笔记",
+				"kind": "类型",
+				"where": "位置",
+				"saved": "保存时间",
+				"actions": "操作"
+			},
+			"workspaceWide": "整个工作区",
+			"channel": "频道 {id}",
+			"directMessage": "私信 {id}",
+			"by": "由 {user} 保存",
+			"doneOn": "{date} 完成",
+			"expires": "保留至 {date}",
+			"noNotes": "还没有保存任何内容。可以在 Slack 中让智能体记住或置顶某件事，或把它记为待办。",
+			"noNotesOfKind": "还没有保存此类内容。",
+			"noSkills": "还没有保存技能。可以在 Slack 中让智能体为重复的任务保存一个技能。",
+			"skillMeta": "由 {user} 保存 · {date} 更新",
+			"skillName": "名称",
+			"skillDescription": "描述",
+			"skillInstructions": "指令",
+			"edit": "编辑",
+			"delete": "删除",
+			"saveSkill": "保存技能",
+			"skillSaved": "技能已保存。",
+			"skillDeleted": "技能已删除。",
+			"noteDeleted": "笔记已删除。",
+			"deleteNote": "删除笔记",
+			"deleteNoteTitle": "删除这条笔记？",
+			"deleteNoteDescription": "智能体会立即忘记它。此操作无法撤销。",
+			"deleteSkillTitle": "删除 {name}？",
+			"deleteSkillDescription": "智能体将无法再使用它。此操作无法撤销。",
+			"problems": {
+				"required": "不能为空。",
+				"tooLong": "最多 {max} 个字符。"
+			},
+			"errors": {
+				"memoryNotFound": "它已被删除。请重新加载以查看剩余内容。",
+				"skillNameTaken": "已有另一个保存的技能使用这个名称。"
+			}
+		},
 		"uninstall": {
 			"description": "从 Slack 中移除智能体并删除其 API 密钥。历史扣费仍保留在你的账单记录中。",
 			"button": "卸载",

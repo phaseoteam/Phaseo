@@ -6999,6 +6999,65 @@
 			"removeDescription": "Phaseo supprime les informations enregistrées. Les installations suivantes utiliseront l’application Slack de Phaseo.",
 			"notAvailable": "L’utilisation de votre propre application Slack n’est pas encore disponible."
 		},
+		"memory": {
+			"title": "Mémoire et compétences",
+			"description": "Les notes, épingles et tâches que l’agent enregistre quand on lui demande de retenir quelque chose, et les compétences qu’on lui demande d’enregistrer. Ce sont de courtes notes rédigées par l’agent, pas des copies de messages Slack. La désinstallation les supprime toutes.",
+			"loading": "Chargement…",
+			"notesTitle": "Notes, épingles et tâches",
+			"skillsTitle": "Compétences",
+			"used": "{used} sur {limit} enregistrées",
+			"filter": "Afficher",
+			"filters": {
+				"all": "Tout",
+				"note": "Notes",
+				"pin": "Épingles",
+				"todo": "Tâches"
+			},
+			"kinds": {
+				"note": "Note",
+				"pin": "Épingle",
+				"todo": "Tâche"
+			},
+			"columns": {
+				"note": "Note",
+				"kind": "Type",
+				"where": "Où",
+				"saved": "Enregistrée",
+				"actions": "Actions"
+			},
+			"workspaceWide": "Tout l’espace de travail",
+			"channel": "Canal {id}",
+			"directMessage": "Message direct {id}",
+			"by": "par {user}",
+			"doneOn": "Faite le {date}",
+			"expires": "Conservée jusqu’au {date}",
+			"noNotes": "Rien d’enregistré pour l’instant. Dans Slack, on peut demander à l’agent de retenir quelque chose, de l’épingler ou d’en faire une tâche.",
+			"noNotesOfKind": "Rien de ce type n’est enregistré.",
+			"noSkills": "Aucune compétence enregistrée pour l’instant. Dans Slack, on peut demander à l’agent d’en enregistrer une pour une tâche répétitive.",
+			"skillMeta": "Enregistrée par {user} · mise à jour le {date}",
+			"skillName": "Nom",
+			"skillDescription": "Description",
+			"skillInstructions": "Instructions",
+			"edit": "Modifier",
+			"delete": "Supprimer",
+			"saveSkill": "Enregistrer la compétence",
+			"skillSaved": "Compétence enregistrée.",
+			"skillDeleted": "Compétence supprimée.",
+			"noteDeleted": "Note supprimée.",
+			"deleteNote": "Supprimer la note",
+			"deleteNoteTitle": "Supprimer cette note ?",
+			"deleteNoteDescription": "L’agent l’oublie aussitôt. Cette action est irréversible.",
+			"deleteSkillTitle": "Supprimer {name} ?",
+			"deleteSkillDescription": "L’agent ne pourra plus l’utiliser. Cette action est irréversible.",
+			"problems": {
+				"required": "Ce champ ne peut pas être vide.",
+				"tooLong": "{max} caractères maximum."
+			},
+			"errors": {
+				"memoryNotFound": "Cet élément a déjà été supprimé. Rechargez pour voir ce qui reste.",
+				"skillNameTaken": "Une autre compétence enregistrée porte déjà ce nom."
+			}
+		},
 		"uninstall": {
 			"description": "Retire l’agent de Slack et supprime sa clé API. Les facturations passées restent dans votre historique.",
 			"button": "Désinstaller",

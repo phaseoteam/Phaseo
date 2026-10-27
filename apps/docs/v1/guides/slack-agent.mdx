@@ -145,6 +145,41 @@ Dates are in UTC and weeks start on Monday. Choose where the agent may answer th
 
 Everyone in a channel can read the agent's answers, so list only channels whose members may see your workspace's spend. A channel's ID is at the bottom of its details in Slack, such as `C0123ABCD`.
 
+## Memory and skills
+
+The agent can remember what your team asks it to, and follow skills: instructions saved for tasks you repeat. Ask it in Slack, for example:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`, and later `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` or `@Phaseo forget the note about deploys`
+
+It saves three kinds of note, each up to 500 characters and in its own words:
+
+| Kind | What it's for |
+| --- | --- |
+| **Note** | Something to remember. The agent looks notes up when they're relevant. |
+| **Pin** | Something to keep in mind all the time. The agent sees up to 10 of the conversation's pins and 10 workspace-wide pins with every message. |
+| **To-do** | Something to track, which can be marked done. |
+
+A note belongs to the channel or direct message it was saved in, unless someone asks for it to be workspace-wide. In a conversation, the agent sees that conversation's notes and the workspace-wide ones, never another channel's or direct message's. Workspace-wide notes are available to everyone the agent answers. A note can be kept until a date, such as `remember until Friday that the office is closed`, and is deleted after it.
+
+The agent only saves a note when someone asks it to remember, pin or track something, or for a lasting fact such as a decision or a deadline. It never copies whole messages or threads.
+
+### Skills
+
+A skill is a name, a one-line description and instructions of up to 4,000 characters for a task your team repeats, such as a weekly report. Ask the agent to save one:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+With every message, the agent sees the names and descriptions of the 20 most recently changed skills. It loads a skill's instructions when a request matches it, or when someone asks, such as `@Phaseo use the Weekly report skill`. It only saves a skill when someone explicitly asks, and only replaces a skill with the same name when asked to.
+
+### What admins control
+
+- Each Slack workspace keeps up to 500 notes and 100 skills. When memory is full, the agent says so; delete some to make room.
+- Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
+- Uninstalling the agent deletes all its notes and skills. Adding it again starts with an empty memory.
+
 ## Limits
 
 Owners and admins set these in **Settings → Slack**:
@@ -214,10 +249,11 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
+- **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack** (see [Memory and skills](#memory-and-skills)).
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
-Uninstalling deletes the agent's API key and removes its guardrail.
+Uninstalling deletes the agent's API key, notes and saved skills, and removes its guardrail.
 
 ## Use your own Slack app
 
@@ -342,7 +378,7 @@ A few rules for your own app:
 ## Pause or uninstall
 
 - **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused.
-- **Uninstall** stops the agent straight away, deletes its API key, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
+- **Uninstall** stops the agent straight away, deletes its API key, notes and saved skills, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
 
 Past charges stay in your billing history. The people who used the agent in the month you uninstall are still charged when that month ends. You can add the agent again at any time.

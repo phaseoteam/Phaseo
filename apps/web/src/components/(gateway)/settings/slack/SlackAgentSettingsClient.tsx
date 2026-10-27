@@ -27,6 +27,7 @@ import { startSlackInstall, uninstallSlackAgent, updateSlackAgent } from "@/app/
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
+import { SlackMemorySection } from "./SlackMemorySection";
 import {
 	MAX_INSTRUCTIONS_CHARS,
 	callbackNotice,
@@ -357,6 +358,8 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 					{view.charges.length ? <>{t("charges.modelSpendNote")} </> : null}{t("charges.note")} <Link href="/settings/credits/transactions" className="underline underline-offset-4">{t("charges.transactions")}</Link>
 				</p>
 			</Section>
+
+			<SlackMemorySection />
 
 			<SlackCustomAppSection view={view} />
 

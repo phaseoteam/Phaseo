@@ -6999,6 +6999,65 @@
 			"removeDescription": "Phaseo deletes its saved details. Later installs use Phaseo's Slack app.",
 			"notAvailable": "Using your own Slack app isn't available yet."
 		},
+		"memory": {
+			"title": "Memory and skills",
+			"description": "Notes, pins and to-dos the agent saves when people ask it to remember something, and skills people ask it to save. They are short notes in the agent's own words, not copies of Slack messages. Uninstalling deletes them all.",
+			"loading": "Loading…",
+			"notesTitle": "Notes, pins and to-dos",
+			"skillsTitle": "Skills",
+			"used": "{used} of {limit} saved",
+			"filter": "Show",
+			"filters": {
+				"all": "All",
+				"note": "Notes",
+				"pin": "Pins",
+				"todo": "To-dos"
+			},
+			"kinds": {
+				"note": "Note",
+				"pin": "Pin",
+				"todo": "To-do"
+			},
+			"columns": {
+				"note": "Note",
+				"kind": "Type",
+				"where": "Where",
+				"saved": "Saved",
+				"actions": "Actions"
+			},
+			"workspaceWide": "Whole workspace",
+			"channel": "Channel {id}",
+			"directMessage": "Direct message {id}",
+			"by": "by {user}",
+			"doneOn": "Done {date}",
+			"expires": "Kept until {date}",
+			"noNotes": "Nothing saved yet. People can ask the agent in Slack to remember, pin or track something.",
+			"noNotesOfKind": "Nothing of this type saved.",
+			"noSkills": "No skills saved yet. People can ask the agent in Slack to save one for a task they repeat.",
+			"skillMeta": "Saved by {user} · updated {date}",
+			"skillName": "Name",
+			"skillDescription": "Description",
+			"skillInstructions": "Instructions",
+			"edit": "Edit",
+			"delete": "Delete",
+			"saveSkill": "Save skill",
+			"skillSaved": "Skill saved.",
+			"skillDeleted": "Skill deleted.",
+			"noteDeleted": "Note deleted.",
+			"deleteNote": "Delete note",
+			"deleteNoteTitle": "Delete this note?",
+			"deleteNoteDescription": "The agent forgets it straight away. This can't be undone.",
+			"deleteSkillTitle": "Delete {name}?",
+			"deleteSkillDescription": "The agent can no longer use it. This can't be undone.",
+			"problems": {
+				"required": "This can't be empty.",
+				"tooLong": "Use at most {max} characters."
+			},
+			"errors": {
+				"memoryNotFound": "It was already deleted. Reload to see what's left.",
+				"skillNameTaken": "Another saved skill already has this name."
+			}
+		},
 		"uninstall": {
 			"description": "Removes the agent from Slack and deletes its API key. Past charges stay in your billing history.",
 			"button": "Uninstall",

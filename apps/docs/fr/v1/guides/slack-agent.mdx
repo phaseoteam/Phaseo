@@ -144,6 +144,41 @@ Les dates sont en UTC et les semaines commencent le lundi. Choisissez où l’ag
 
 Tous les membres d’un canal peuvent lire les réponses de l’agent : ne listez donc que des canaux dont les membres peuvent voir les dépenses de votre espace de travail. L’ID d’un canal figure en bas de ses détails dans Slack, par exemple `C0123ABCD`.
 
+## Mémoire et compétences
+
+L’agent peut retenir ce que votre équipe lui demande et suivre des compétences : des instructions enregistrées pour les tâches qui se répètent. Demandez-le-lui dans Slack, par exemple :
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`, puis plus tard `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` ou `@Phaseo forget the note about deploys`
+
+Il enregistre trois types de notes, chacune de 500 caractères au plus, rédigées avec ses propres mots :
+
+| Type | À quoi il sert |
+| --- | --- |
+| **Note** | Quelque chose à retenir. L’agent consulte les notes quand elles sont utiles. |
+| **Épingle** | Quelque chose à garder toujours en tête. L’agent voit jusqu’à 10 épingles de la conversation et 10 épingles de tout l’espace de travail à chaque message. |
+| **Tâche** | Quelque chose à suivre, qu’on peut marquer comme faite. |
+
+Une note appartient au canal ou au message direct où elle a été enregistrée, sauf si quelqu’un demande qu’elle vaille pour tout l’espace de travail. Dans une conversation, l’agent voit les notes de cette conversation et celles de tout l’espace de travail, jamais celles d’un autre canal ou message direct. Les notes de tout l’espace de travail sont accessibles à toutes les personnes auxquelles l’agent répond. Une note peut être conservée jusqu’à une date, par exemple avec `remember until Friday that the office is closed`, puis elle est supprimée.
+
+L’agent n’enregistre une note que si quelqu’un lui demande de retenir quelque chose, de l’épingler ou d’en faire une tâche, ou pour un fait durable comme une décision ou une échéance. Il ne copie jamais de messages ni de fils entiers.
+
+### Compétences
+
+Une compétence est un nom, une description d’une ligne et des instructions de 4 000 caractères au plus pour une tâche que votre équipe répète, comme un rapport hebdomadaire. Demandez à l’agent d’en enregistrer une :
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+À chaque message, l’agent voit les noms et les descriptions des 20 compétences modifiées le plus récemment. Il charge les instructions d’une compétence quand une demande y correspond ou quand quelqu’un le demande, par exemple avec `@Phaseo use the Weekly report skill`. Il n’enregistre une compétence que si quelqu’un le demande explicitement, et ne remplace une compétence du même nom que si on le lui demande.
+
+### Ce que contrôlent les administrateurs
+
+- Chaque espace de travail Slack conserve jusqu’à 500 notes et 100 compétences. Quand la mémoire est pleine, l’agent le dit ; supprimez-en pour faire de la place.
+- Les propriétaires et les administrateurs voient tout ce que l’agent a enregistré sous **Mémoire et compétences**, dans **Paramètres → Slack**. Ils peuvent filtrer les notes par type, supprimer n’importe quelle note ou compétence, et modifier le nom, la description et les instructions d’une compétence. Le journal d’activité de l’espace de travail enregistre ces changements sans le texte.
+- La désinstallation de l’agent supprime toutes ses notes et compétences. Si vous l’ajoutez de nouveau, il repart avec une mémoire vide.
+
 ## Limites
 
 Les propriétaires et les administrateurs les définissent dans **Paramètres → Slack** :
@@ -213,10 +248,11 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Aucun contenu de message dans les journaux de Phaseo.** La clé d’API de l’agent ne stocke jamais le contenu des requêtes ni des réponses, ni dans les journaux, ni dans les caches, ni dans la télémétrie, quels que soient les réglages de votre espace de travail. Ses requêtes apparaissent tout de même dans votre utilisation et vos journaux, sans contenu, avec les [libellés de requête](./request-labels.mdx) `app=slack-agent`, `slack_team` et `slack_channel` et le [titre d’application](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Aucun fournisseur qui s’entraîne sur les prompts.** Le [garde-fou](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** désactive l’entraînement sur les modèles payants et gratuits et la publication des prompts : les fournisseurs qui s’entraînent sur les prompts ne sont jamais utilisés. Des fournisseurs qui conservent des journaux sans s’en servir pour l’entraînement peuvent répondre, et peuvent garder le contenu des messages dans ces journaux selon leurs propres règles ; les journaux, caches et la télémétrie de Phaseo ne conservent toujours aucun contenu de message.
 - **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, les personnes à qui il a envoyé le bouton de connexion, et les questions qu’il a posées avec leurs réponses. Ils sont supprimés 7 jours après la dernière activité du fil.
+- **Une mémoire que vous pouvez voir et supprimer.** L’agent conserve les notes, épingles, tâches et compétences qu’on lui demande d’enregistrer, rédigées avec ses propres mots et jamais sous forme de copies de messages, avec l’ID Slack de la personne qui l’a demandé. Elles restent jusqu’à ce que quelqu’un les supprime, que la date jusqu’à laquelle elles devaient être conservées soit passée ou que vous désinstalliez l’agent. Les propriétaires et les administrateurs peuvent les voir et les supprimer dans **Paramètres → Slack** (voir « Mémoire et compétences », plus haut).
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 
-La désinstallation supprime la clé d’API de l’agent et retire son garde-fou.
+La désinstallation supprime la clé d’API de l’agent, ses notes et ses compétences enregistrées, et retire son garde-fou.
 
 ## Utiliser votre propre application Slack
 
@@ -340,7 +376,7 @@ Quelques règles pour votre propre application :
 ## Mettre en pause ou désinstaller
 
 - **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause.
-- **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
+- **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes et ses compétences enregistrées, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
 - Retirer l’application dans Slack, ou révoquer son token de bot, la désinstalle de la même façon dans Phaseo.
 
 Les facturations passées restent dans votre historique de facturation. Les personnes qui ont utilisé l’agent pendant le mois où vous le désinstallez sont tout de même facturées à la fin de ce mois. Vous pouvez rajouter l’agent à tout moment.

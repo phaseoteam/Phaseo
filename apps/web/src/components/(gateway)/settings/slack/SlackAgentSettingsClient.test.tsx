@@ -13,6 +13,10 @@ jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
 	uninstallSlackAgent: jest.fn(),
 	saveSlackCustomApp: jest.fn(),
 	removeSlackCustomApp: jest.fn(),
+	loadSlackAgentMemory: jest.fn(),
+	deleteSlackAgentNote: jest.fn(),
+	updateSlackAgentSkill: jest.fn(),
+	deleteSlackAgentSkill: jest.fn(),
 }));
 jest.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
@@ -66,6 +70,8 @@ describe("SlackAgentSettingsClient model spend", () => {
 		expect(html).toContain("Billed from credits as normal requests, not part of the Slack agent charge");
 		expect(html).toContain(">$3.07<");
 		expect(html).not.toMatch(/rounded-(full|lg|xl)\b/);
+		// Memory and skills sit with the other installed settings.
+		expect(html).toContain(">Memory and skills<");
 	});
 
 	it("adds each past month's model spend to the charges table", () => {

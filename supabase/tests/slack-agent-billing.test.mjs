@@ -69,8 +69,10 @@ try {
   await db.exec(migration);
   await db.exec(modelChoiceMigration);
 
+  // The memory migration added the trigger that deletes the agent's memory on uninstall (slack-agent-memory.test.mjs).
+  const MEMORY_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_memory\n[\s\S]*?;\n/;
   for (const table of TABLES) {
-    let definition = await schema(`public/tables/${table}.sql`);
+    let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '');
     if (table === 'slack_installations') {
       // The first migration's table, plus what the model choice migration added to it.
       const added = definition.match(MODEL_CHOICE_LINES) ?? [];

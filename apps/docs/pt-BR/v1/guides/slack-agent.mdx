@@ -144,6 +144,41 @@ As datas estão em UTC e as semanas começam na segunda-feira. Escolha onde o ag
 
 Todos em um canal podem ler as respostas do agente, então liste apenas canais cujos membros possam ver os gastos do seu espaço de trabalho. O ID de um canal fica no fim dos detalhes dele no Slack, como `C0123ABCD`.
 
+## Memória e habilidades
+
+O agente pode lembrar o que sua equipe pedir e seguir habilidades: instruções salvas para tarefas que se repetem. Peça a ele no Slack, por exemplo:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance` e, depois, `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` ou `@Phaseo forget the note about deploys`
+
+Ele salva três tipos de nota, cada uma com até 500 caracteres e escrita com as próprias palavras:
+
+| Tipo | Para que serve |
+| --- | --- |
+| **Nota** | Algo para lembrar. O agente consulta as notas quando são relevantes. |
+| **Fixada** | Algo para ter sempre em mente. O agente vê até 10 notas fixadas da conversa e 10 do workspace inteiro a cada mensagem. |
+| **Tarefa** | Algo para acompanhar, que pode ser marcado como concluído. |
+
+Uma nota pertence ao canal ou à mensagem direta em que foi salva, a menos que alguém peça que ela valha para o workspace inteiro. Em uma conversa, o agente vê as notas dessa conversa e as do workspace inteiro, nunca as de outro canal ou mensagem direta. As notas do workspace inteiro ficam disponíveis para todas as pessoas a quem o agente responde. Uma nota pode ser mantida até uma data, por exemplo com `remember until Friday that the office is closed`, e é excluída depois dela.
+
+O agente só salva uma nota quando alguém pede para ele lembrar de algo, fixar ou anotar como tarefa, ou para um fato duradouro, como uma decisão ou um prazo. Ele nunca copia mensagens ou threads inteiras.
+
+### Habilidades
+
+Uma habilidade é um nome, uma descrição de uma linha e instruções de até 4.000 caracteres para uma tarefa que sua equipe repete, como um relatório semanal. Peça ao agente para salvar uma:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+A cada mensagem, o agente vê os nomes e as descrições das 20 habilidades alteradas mais recentemente. Ele carrega as instruções de uma habilidade quando um pedido combina com ela ou quando alguém pede, por exemplo com `@Phaseo use the Weekly report skill`. Ele só salva uma habilidade quando alguém pede explicitamente, e só substitui uma habilidade com o mesmo nome quando pedem.
+
+### O que os administradores controlam
+
+- Cada workspace do Slack guarda até 500 notas e 100 habilidades. Quando a memória está cheia, o agente avisa; exclua algumas para abrir espaço.
+- Proprietários e administradores veem tudo o que o agente salvou em **Memória e habilidades**, em **Configurações → Slack**. Eles podem filtrar as notas por tipo, excluir qualquer nota ou habilidade e editar o nome, a descrição e as instruções de uma habilidade. O registro de atividades do espaço de trabalho guarda essas alterações sem o texto.
+- Desinstalar o agente exclui todas as notas e habilidades dele. Se você o adicionar de novo, ele começa com a memória vazia.
+
 ## Limites
 
 Proprietários e administradores os definem em **Configurações → Slack**:
@@ -213,10 +248,11 @@ Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-
 - **Nenhum conteúdo de mensagem nos logs da Phaseo.** A chave de API do agente nunca guarda o conteúdo das solicitações nem das respostas, seja em logs, caches ou telemetria, independentemente das configurações do seu espaço de trabalho. As solicitações dele continuam aparecendo no seu uso e nos seus logs sem conteúdo, com os [rótulos de solicitação](./request-labels.mdx) `app=slack-agent`, `slack_team` e `slack_channel` e o [título do app](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Nenhum provedor que treina com prompts.** O [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desativa o treinamento com modelos pagos e gratuitos e a publicação de prompts, então provedores que treinam com prompts nunca são usados. Provedores que guardam logs sem treinar com eles podem responder e podem manter o conteúdo das mensagens nesses logs conforme as próprias políticas; os logs, caches e a telemetria da Phaseo continuam sem guardar o conteúdo das mensagens.
 - **Memória de trabalho curta.** Para cada thread, o agente guarda suas respostas recentes, notas curtas sobre as ferramentas que usou, as mensagens que aguardam a vez, os IDs (não o texto) das mensagens recentes da thread para saber de onde ler a quem já enviou o botão para conectar a conta e as perguntas que fez, com as respostas. Elas são excluídas 7 dias depois da última atividade da thread.
+- **Memória que você pode ver e excluir.** O agente guarda as notas, notas fixadas, tarefas e habilidades que pedem para ele salvar, com as próprias palavras e nunca como cópias de mensagens, junto com o ID do Slack de quem pediu. Elas ficam até alguém excluí-las, passar a data até a qual deviam ser mantidas ou você desinstalar o agente. Proprietários e administradores podem vê-las e excluí-las em **Configurações → Slack** (veja "Memória e habilidades", acima).
 - **Nada arquivado.** A Phaseo não arquiva nada do Slack. Os logs do próprio agente guardam apenas IDs e status do Slack.
 - **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
 
-Desinstalar exclui a chave de API do agente e remove o guardrail dele.
+Desinstalar exclui a chave de API do agente, as notas e as habilidades salvas dele, e remove o guardrail dele.
 
 ## Usar seu próprio app do Slack
 
@@ -340,7 +376,7 @@ Algumas regras para o seu próprio app:
 ## Pausar ou desinstalar
 
 - **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado.
-- **Desinstalar** interrompe o agente na hora, exclui a chave de API dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
+- **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas e as habilidades salvas dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
 - Remover o app dentro do Slack, ou revogar o token de bot dele, desinstala o agente na Phaseo da mesma forma.
 
 As cobranças anteriores continuam no seu histórico de faturamento. As pessoas que usaram o agente no mês em que você o desinstala ainda são cobradas quando esse mês termina. Você pode adicionar o agente de novo a qualquer momento.

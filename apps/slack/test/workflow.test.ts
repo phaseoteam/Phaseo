@@ -8,6 +8,7 @@ import { hostedApp, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
+import { MEMORY_TOOL_IDS } from "../src/memory";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
 	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
@@ -122,6 +123,11 @@ function deps(agent: AgentRunner): TurnDeps {
 	return { ...world.deps, agent };
 }
 
+/** The tools a turn was offered besides memory and skills, which every turn gets (memory.test.ts). */
+function offeredTools(request: AgentTurnRequest): string[] {
+	return request.tools.map((tool) => tool.id).filter((id) => id !== "ask_question" && !(MEMORY_TOOL_IDS as readonly string[]).includes(id));
+}
+
 beforeEach(async () => {
 	world = testWorld({ now: NOW });
 	step = new FakeStep();
@@ -172,8 +178,8 @@ describe("AgentTurnWorkflow", () => {
 			endUser: `slack:${TEAM_ID}:U0PERSON01`,
 			labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
 		});
-		// Every answer can ask the person a question.
-		expect(request.tools.map((tool) => tool.id)).toEqual(["ask_question"]);
+		// No usage tools here; memory, skills and questions always.
+		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, "ask_question"]);
 		expect(request.resume).toBeUndefined();
 		expect(request.prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
 		expect(request.instructions).toContain("can't see this workspace's Phaseo usage");
@@ -219,9 +225,37 @@ describe("AgentTurnWorkflow", () => {
 		expect(agent.requests[0].instructions).toMatch(/Instructions from this workspace's admins:\nAnswer in French\.$/);
 	});
 
+	it("puts the conversation's pins and the saved skills before the conversation, and answers without them when they can't be read", async () => {
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [{ id: "00000000-0000-4000-8000-0000000000e1", scope: "workspace", text: "Our fiscal year starts on 1 April.", created_at: "2026-10-20T09:00:00Z" }],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1" });
+		expect(agent.requests[0].prompt).toBe([
+			"Pinned for the whole Slack workspace, newest first:",
+			"- Our fiscal year starts on 1 April. (id 00000000-0000-4000-8000-0000000000e1)",
+			"",
+			"Saved skills (call use_skill to load one):",
+			"- Weekly report: Summarise the week.",
+			"",
+			"New message from <@U0PERSON01>:",
+			"what did we spend this week?",
+		].join("\n"));
+		expect(agent.requests[0].instructions).toContain("Save one with remember only when someone asks you to remember");
+		expect(agent.requests[0].instructions).toContain("Call save_skill only when someone explicitly asks you to save a skill.");
+
+		world.db.failingRpcs.add("load_slack_agent_turn_memory");
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
+		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+	});
+
 	it("offers usage tools only where usage_data_mode allows and to a linked member", async () => {
 		const agent = new ScriptedAgent(async () => answer());
-		const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
+		const toolIds = () => offeredTools(agent.requests.at(-1)!);
 		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["connect_phaseo_account"]);
@@ -233,6 +267,7 @@ describe("AgentTurnWorkflow", () => {
 		world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["get_spend", "get_credit_balance", "get_key_usage", "find_models"]);
+		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
 		expect(agent.requests.at(-1)!.instructions).toContain("You can look up this Phaseo workspace's spend");
 		// The same member in a channel: only with dm_and_channels and the channel listed.
 		await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
@@ -556,7 +591,7 @@ describe("AgentTurnWorkflow", () => {
 
 		it("isn't offered where linking wouldn't bring the usage tools, nor to someone already linked", async () => {
 			const agent = new ScriptedAgent(async () => answer());
-			const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
+			const toolIds = () => offeredTools(agent.requests.at(-1)!);
 			// A channel that usage_data_mode doesn't cover.
 			await runTurn(deps(agent), await startTurn({ channel: "C0CHANNEL1" }), step);
 			expect(toolIds()).toEqual([]);

@@ -71,6 +71,12 @@ CREATE TRIGGER slack_installations_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at_if_changed();
 
+CREATE TRIGGER slack_installations_delete_agent_memory
+  AFTER UPDATE OF status ON public.slack_installations
+  FOR EACH ROW
+  WHEN (((new.status = 'uninstalled'::text) AND (old.status IS DISTINCT FROM 'uninstalled'::text)))
+  EXECUTE FUNCTION public.delete_slack_agent_memory();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."slack_installations"
   AS RESTRICTIVE
   FOR ALL

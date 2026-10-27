@@ -6999,6 +6999,65 @@
 			"removeDescription": "A Phaseo exclui os dados salvos. As próximas instalações usarão o app do Slack da Phaseo.",
 			"notAvailable": "Usar seu próprio app do Slack ainda não está disponível."
 		},
+		"memory": {
+			"title": "Memória e habilidades",
+			"description": "Notas, notas fixadas e tarefas que o agente salva quando alguém pede para ele lembrar de algo, e habilidades que pedem para ele salvar. São notas curtas, escritas pelo próprio agente, e não cópias de mensagens do Slack. Desinstalar apaga tudo.",
+			"loading": "Carregando…",
+			"notesTitle": "Notas, fixadas e tarefas",
+			"skillsTitle": "Habilidades",
+			"used": "{used} de {limit} salvas",
+			"filter": "Mostrar",
+			"filters": {
+				"all": "Todas",
+				"note": "Notas",
+				"pin": "Fixadas",
+				"todo": "Tarefas"
+			},
+			"kinds": {
+				"note": "Nota",
+				"pin": "Fixada",
+				"todo": "Tarefa"
+			},
+			"columns": {
+				"note": "Nota",
+				"kind": "Tipo",
+				"where": "Onde",
+				"saved": "Salva",
+				"actions": "Ações"
+			},
+			"workspaceWide": "Workspace inteiro",
+			"channel": "Canal {id}",
+			"directMessage": "Mensagem direta {id}",
+			"by": "por {user}",
+			"doneOn": "Concluída em {date}",
+			"expires": "Mantida até {date}",
+			"noNotes": "Nada salvo ainda. No Slack, é só pedir ao agente para lembrar de algo, fixar ou anotar como tarefa.",
+			"noNotesOfKind": "Nada deste tipo foi salvo.",
+			"noSkills": "Nenhuma habilidade salva ainda. No Slack, é só pedir ao agente para salvar uma para uma tarefa que se repete.",
+			"skillMeta": "Salva por {user} · atualizada em {date}",
+			"skillName": "Nome",
+			"skillDescription": "Descrição",
+			"skillInstructions": "Instruções",
+			"edit": "Editar",
+			"delete": "Excluir",
+			"saveSkill": "Salvar habilidade",
+			"skillSaved": "Habilidade salva.",
+			"skillDeleted": "Habilidade excluída.",
+			"noteDeleted": "Nota excluída.",
+			"deleteNote": "Excluir nota",
+			"deleteNoteTitle": "Excluir esta nota?",
+			"deleteNoteDescription": "O agente esquece na hora. Não dá para desfazer.",
+			"deleteSkillTitle": "Excluir {name}?",
+			"deleteSkillDescription": "O agente não vai mais poder usá-la. Não dá para desfazer.",
+			"problems": {
+				"required": "Não pode ficar vazio.",
+				"tooLong": "Use no máximo {max} caracteres."
+			},
+			"errors": {
+				"memoryNotFound": "Isso já foi excluído. Recarregue para ver o que sobrou.",
+				"skillNameTaken": "Outra habilidade salva já tem esse nome."
+			}
+		},
 		"uninstall": {
 			"description": "Remove o agente do Slack e exclui a chave de API dele. As cobranças anteriores continuam no seu histórico de faturamento.",
 			"button": "Desinstalar",

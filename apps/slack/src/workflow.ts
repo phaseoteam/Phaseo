@@ -21,6 +21,7 @@ import { botToken, coordinatorFor, defaultDeps, meterFor, type Deps } from "./ev
 import { answerLogsUrl, modelPageUrl } from "./footer-links";
 import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./history";
 import { installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
+import { loadTurnMemory, MEMORY_INSTRUCTIONS, memoryPromptLines, memoryTools } from "./memory";
 import { modelChoiceOn, withoutMention } from "./model-choice";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
@@ -175,6 +176,7 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 		"Write for Slack: be brief, use short paragraphs, and use Markdown lists or tables when they help. Show money in US dollars, like $12.50.",
 		"You can search the web and read web pages with your web search and web fetch tools.",
 		"When you can't sensibly go on without the person choosing between a few options or approving something, call ask_question: they answer with a button, and you continue from their answer. Don't use it for anything you can decide or answer yourself.",
+		...MEMORY_INSTRUCTIONS,
 	];
 	if (offered.usageTools) {
 		lines.push("You can look up this Phaseo workspace's spend, credit balance, API key usage and models with your tools. Dates are UTC and weeks start on Monday. Use the tools instead of guessing numbers.");
@@ -229,10 +231,12 @@ async function offerConnect(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	return sent ? "sent" : "not_delivered";
 }
 
+/** The usage tools or the Connect button where they apply, then memory and skills, which every turn gets. */
 function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[]) {
-	if (offered.usageTools) return usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes });
-	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack))];
-	return [];
+	const memory = memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes });
+	if (offered.usageTools) return [...usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }), ...memory];
+	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack)), ...memory];
+	return memory;
 }
 
 /**
@@ -323,12 +327,14 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let error: TurnErrorKind | null = null;
 	const asked: { question: QuestionDraft | null } = { question: null };
 	const askQuestion = askQuestionTool({ refusal: (stepIndex) => questionRefusal(leg, stepIndex), onAsk: (question) => { asked.question = question; } });
+	// This conversation's and the workspace's pins, and the saved skills, go before the conversation.
+	const memory = await loadTurnMemory(deps.db, installation.id, turn.channel);
 	try {
 		output = await deps.agent.run({
 			gatewayKey: secrets.gateway_key,
 			model,
 			instructions: buildInstructions(installation, load, deps.now()),
-			prompt: buildPrompt(input, turn, installation.bot_user_id, context.source),
+			prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source)].join("\n"),
 			endUser: `slack:${team}:${turn.slackUserId}`,
 			sessionId: turnSessionId(turn),
 			labels: { slackTeam: team, slackChannel: turn.channel },
