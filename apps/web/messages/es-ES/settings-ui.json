@@ -6885,7 +6885,8 @@
 			"includeAuto": "Incluir «Automático»",
 			"includeAutoHelp": "Las personas pueden elegir «Automático» y Phaseo elige un modelo adecuado para ese mensaje.",
 			"autoUnavailable": "«Automático» no está disponible en este espacio de trabajo, así que los mensajes que lo elijan no se pueden responder. Desactiva Incluir «Automático».",
-			"help": "Cada respuesta mantiene su límite de coste de {cost} y su límite de {steps} pasos, sea cual sea el modelo que responda. Su pie indica el modelo que respondió."
+			"help": "Cada respuesta mantiene su límite de coste de {cost} y su límite de {steps} pasos, sea cual sea el modelo que responda. Su pie indica el modelo que respondió.",
+			"askAndCompare": "El agente también puede pedir una segunda opinión a estos modelos mientras responde, y las personas pueden comparar 2 o 3 de ellos empezando un mensaje con {prefix}. Ambas cosas cuentan para el límite de {cost} de la respuesta, y el pie nombra todos los modelos usados."
 		},
 		"access": {
 			"everyone": "Todos en Slack",

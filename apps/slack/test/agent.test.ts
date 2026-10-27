@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, type AgentTurnRequest, type PausedRun } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, type AgentTurnRequest, type AskRequest, type PausedRun } from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
 
 function sse(events: unknown[]): Response {
@@ -230,6 +230,87 @@ describe("the SDK agent runner", () => {
 		const failure = await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined }).then(() => null, (caught: unknown) => caught);
 		expect(classifyTurnError(failure)).toBe("no_credits");
 	});
+
+	it("counts what its tools spent on other models against the limit, in each step's cost and in its own", async () => {
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const steps: number[] = [];
+		const modelCosts: number[] = [];
+		// $0.0021 of its own and $0.498 asked of other models: over $0.50, so it stops.
+		const output = await runner.run(request({ otherCostUsd: () => 0.498 }), {
+			onText: async () => undefined,
+			onStep: async (progress) => { steps.push(progress.costUsd); },
+			onCost: (usd) => { modelCosts.push(usd); },
+		});
+		expect(output).toMatchObject({ costUsd: expect.closeTo(0.5001, 9), stopReason: "max_cost:0.5" });
+		expect(steps).toEqual([expect.closeTo(0.5001, 9)]);
+		expect(modelCosts).toEqual([0.0021]);
+		// Under the limit, it isn't stopped.
+		await expect(runner.run(request({ otherCostUsd: () => 0.1 }), { onText: async () => undefined, onStep: async () => undefined })).resolves.toMatchObject({ stopReason: null });
+	});
+});
+
+describe("asking another model", () => {
+	const RESPONSE = {
+		id: "resp_test_2",
+		model: "anthropic/claude-test",
+		status: "completed",
+		output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "  A second opinion.  " }] }],
+		usage: { input_tokens: 10, output_tokens: 4, total_tokens: 14, cost: 0.0042 },
+	};
+
+	function ask(overrides: Partial<AskRequest> = {}): AskRequest {
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		return { gatewayKey, endUser, sessionId, labels, signal, model: "anthropic/claude-test", instructions: "Answer directly.", prompt: "Is this right?", webTools: false, maxOutputTokens: 4_000, ...overrides };
+	}
+
+	it("sends one non-streaming request with the answer's key, labels, user and session, and no tools", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json(RESPONSE);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await expect(runner.ask(ask())).resolves.toEqual({ text: "A second opinion.", costUsd: 0.0042 });
+		expect(seen).toHaveLength(1);
+		const [sent] = seen;
+		expect(sent.url).toBe("https://gateway.test/v1/responses");
+		expect(sent.headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(sent.headers.get("x-title")).toBe("Phaseo Slack agent");
+		expect(JSON.parse(sent.headers.get("x-phaseo-metadata")!)).toEqual({
+			labels: [{ key: "app", value: "slack-agent" }, { key: "slack_team", value: "T0TEST0001" }, { key: "slack_channel", value: "C0CHANNEL1" }],
+		});
+		expect(sent.body).toMatchObject({
+			model: "anthropic/claude-test",
+			user: "slack:T0TEST0001:U0PERSON01",
+			session_id: "slack-Ev0TEST0001",
+			stream: false,
+			instructions: "Answer directly.",
+			max_output_tokens: 4_000,
+		});
+		expect(sent.body.tools).toBeUndefined();
+		expect(sent.body).not.toHaveProperty("provider");
+		expect(JSON.stringify(sent.body.input)).toContain("Is this right?");
+	});
+
+	it("lets the gateway search the web for a Compare", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json(RESPONSE);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.ask(ask({ webTools: true }));
+		expect(seen[0].body.tools).toEqual([{ type: "phaseo:web_search" }, { type: "phaseo:web_fetch" }]);
+	});
+
+	it("throws the gateway's refusal for the caller to classify", async () => {
+		const body = { error: { code: "guardrail_blocked" }, code: "guardrail_blocked", error_operational_kind: "data_handling_policy_no_routes" };
+		const fetchImpl = vi.fn(async () => Response.json(body, { status: 403 }));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const failure = await runner.ask(ask()).then(() => null, (caught: unknown) => caught);
+		expect(classifyTurnError(failure, "anthropic/claude-test")).toBe("model_not_allowed");
+	});
 });
 
 describe("files and images", () => {
@@ -266,10 +347,10 @@ describe("files and images", () => {
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const steps: number[] = [];
 		const modelCosts: number[] = [];
-		const output = await runner.run(request({ toolCostUsd: () => 0.04 }), {
+		const output = await runner.run(request({ otherCostUsd: () => 0.04 }), {
 			onText: async () => {},
 			onStep: async (progress) => { steps.push(progress.costUsd); },
-			onModelCost: (usd) => { modelCosts.push(usd); },
+			onCost: (usd) => { modelCosts.push(usd); },
 		});
 		expect(modelCosts).toEqual([0.0021]);
 		expect(steps.map((usd) => Math.round(usd * 10_000) / 10_000)).toEqual([0.0421]);
@@ -283,7 +364,7 @@ describe("files and images", () => {
 			return sse([{ ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "function_call", call_id: `call_${calls}`, name: "draw", arguments: "{}" }] } }]);
 		});
 		const stopped = await createSdkAgentRunner({ fetchImpl: looping as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" })
-			.run(request({ tools: [tool], maxCostUsd: 0.5, toolCostUsd: () => 0.5 }), { onText: async () => {}, onStep: async () => {} });
+			.run(request({ tools: [tool], maxCostUsd: 0.5, otherCostUsd: () => 0.5 }), { onText: async () => {}, onStep: async () => {} });
 		expect(stopped.stopReason).toBe("max_cost:0.5");
 		expect(calls).toBe(1);
 	});

@@ -150,9 +150,11 @@ export type FooterModel = { name: string; url: string | null };
 /**
  * The small grey line under an answer: the model and what the turn cost.
  * `answeredBy` (the model Auto picked) is only shown when it differs from
- * `model`. `logsUrl` links the cost to the answer's requests in Phaseo Logs.
+ * `model`. `others`: the other models the answer used (asked with ask_model, or
+ * compared), each after a +. `logsUrl` links the cost to the answer's requests in
+ * Phaseo Logs.
  */
-export type Footer = { model: FooterModel; answeredBy: FooterModel | null; costNanos: number; logsUrl: string | null };
+export type Footer = { model: FooterModel; answeredBy: FooterModel | null; others?: FooterModel[]; costNanos: number; logsUrl: string | null };
 
 /** Slack's mrkdwn (a context block's text) reads &, < and > as markup. */
 function mrkdwnLink(text: string, url: string | null): string {
@@ -161,18 +163,26 @@ function mrkdwnLink(text: string, url: string | null): string {
 }
 
 /** markdown_text: the footer is in italics, so markup characters in a name are escaped; a link's URL keeps no parentheses. */
-function markdownLink(text: string, url: string | null): string {
+export function markdownLink(text: string, url: string | null): string {
 	const shown = text.replace(/[\\`*_[\]]/g, "\\$&");
 	return url ? `[${shown}](${url.replace(/\(/g, "%28").replace(/\)/g, "%29")})` : shown;
+}
+
+/** A cost as the footer shows it: four decimals under a dollar. */
+export function costText(nanos: number): string {
+	const dollars = nanos / 1_000_000_000;
+	return `$${dollars < 1 ? dollars.toFixed(4) : dollars.toFixed(2)}`;
 }
 
 /** The footer as mrkdwn (a context block, under a stopped stream) or markdown (in a message's markdown_text). */
 export function footerText(footer: Footer, format: "mrkdwn" | "markdown" = "mrkdwn"): string {
 	const link = format === "mrkdwn" ? mrkdwnLink : markdownLink;
-	const dollars = footer.costNanos / 1_000_000_000;
-	const cost = link(`$${dollars < 1 ? dollars.toFixed(4) : dollars.toFixed(2)}`, footer.logsUrl);
+	const cost = link(costText(footer.costNanos), footer.logsUrl);
 	const chosen = link(footer.model.name, footer.model.url);
-	const model = footer.answeredBy && footer.answeredBy.name !== footer.model.name ? `${chosen} → ${link(footer.answeredBy.name, footer.answeredBy.url)}` : chosen;
+	const answeredBy = footer.answeredBy && footer.answeredBy.name !== footer.model.name ? footer.answeredBy : null;
+	const shown = new Set([footer.model.name, answeredBy?.name]);
+	const others = (footer.others ?? []).filter((other) => !shown.has(other.name) && shown.add(other.name));
+	const model = [answeredBy ? `${chosen} → ${link(answeredBy.name, answeredBy.url)}` : chosen, ...others.map((other) => link(other.name, other.url))].join(" + ");
 	return `${model} · ${cost}`;
 }
 

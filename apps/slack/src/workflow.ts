@@ -18,10 +18,12 @@ import {
 import { connectAccountMessage, linkUrl } from "./access";
 import { makeChartTool } from "./chart";
 import { renderPng } from "./chart-png";
+import { askModelTools, type Consult } from "./ask-model";
+import { compareAnswers, comparedModels, comparisonInstructions, comparisonText, type ComparedAnswer } from "./compare";
 import type { ContextEntry, PostedFile, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
 import { botToken, coordinatorFor, defaultDeps, meterFor, type Deps } from "./events";
-import { answerLogsUrl, modelPageUrl } from "./footer-links";
+import { answerLogsUrl, linkedModels, modelPageUrl } from "./footer-links";
 import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./history";
 import { DEFAULT_IMAGE_MODEL, generateImageTool } from "./images";
 import { hasBotScope, installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
@@ -47,11 +49,12 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //            meter keeps Slack's Retry-After so no other thread reads until then
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
-//            agent step
-//   reply    finish the Slack message with a footer (the model, linked to its
-//            page, and the cost, linked to the answer's requests in Logs): stop
-//            the stream, or write the staged answer when the live stream failed
-//            or the run was retried
+//            agent step (with ask_model, it can ask other allowed models); or,
+//            for a Compare, each compared model at once, with one reply
+//   reply    finish the Slack message with a footer (every model used, linked to
+//            its page, and the cost, linked to the answer's requests in Logs):
+//            stop the stream, or write the staged answer when the live stream
+//            failed or the run was retried
 //   finish   count the answer in the meter, and tell the coordinator
 //
 // When the agent asks a question (ask_question, questions.ts), its run pauses
@@ -97,6 +100,9 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 export const DEFAULT_MODEL = "phaseo/auto";
 const NANOS_PER_USD = 1_000_000_000;
 
+/** How often a Compare, which has no agent steps, checks whether it was stopped. */
+const COMPARE_CANCEL_CHECK_MS = 2_000;
+
 const LOAD_STEP = { retries: { limit: 2, delay: "2 seconds", backoff: "exponential" }, timeout: "30 seconds" } as const;
 const CONTEXT_STEP = { retries: { limit: 1, delay: "2 seconds" }, timeout: "30 seconds" } as const;
 /** The streaming step gets one retry at most, and never for a Slack write. */
@@ -137,7 +143,16 @@ export type RunResult = {
 	/** The model that answered, as the response reports it. */
 	model: string | null;
 	error: TurnErrorKind | null;
+	/** The other allowed models the answer used: asked with ask_model, or the rest of a Compare. Absent on runs from before them. */
+	consulted?: string[];
+	/** The answer's consults with ask_model so far, failed ones too. */
+	consultCount?: number;
 };
+
+/** What a run after a question takes over from the runs before it: the models they asked, and how many consults they made. */
+type Consulted = { consulted: string[]; consultCount: number };
+
+const NOTHING_CONSULTED: Consulted = { consulted: [], consultCount: 0 };
 
 type ReplyResult = { shown: boolean; stopped: boolean };
 type AskResult = { status: "open" | "cancelled" | "failed" };
@@ -326,12 +341,14 @@ function questionRefusal(leg: number, stepIndex: number): string | null {
  * after question `leg` was answered. Every attempt of every run so far counts
  * against the turn's cost limit.
  */
-async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: Offered, context: ContextResult, leg: number, attempt: number): Promise<RunResult> {
+async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: Offered, context: ContextResult, leg: number, attempt: number, before: Consulted): Promise<RunResult> {
 	const installation = await requireInstallation(deps, turn);
 	const secrets = await installationSecrets(deps.env, installation.secrets_ciphertext);
 	const slack = deps.slack(await requireToken(deps, installation));
 	const input: TurnInput | null = await coordinator.turnInput(turn.turnId);
 	const model = turnModel(installation, turn);
+	// A Compare asks these models instead of running the agent.
+	const compared = comparedModels(installation, turn);
 	// The turn ended meanwhile (timed out, or the thread was stopped and cleared).
 	if (!input) return { status: "failed", ts: null, streamed: false, explained: true, costNanos: 0, requestedModel: model, model: null, error: null };
 
@@ -367,7 +384,10 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		await reply.push(`${reply.text ? "\n\n" : ""}${stopNote(`max_cost:${TURN_MAX_COST_USD}`)}`);
 		await reply.close();
 		await stage();
-		return { status: input.stagedReply || leg ? "answered" : "failed", ts: reply.ts, streamed: reply.streaming, explained: true, costNanos: earlierNanos, requestedModel: model, model: null, error: null };
+		return {
+			status: input.stagedReply || leg ? "answered" : "failed", ts: reply.ts, streamed: reply.streaming, explained: true, costNanos: earlierNanos,
+			requestedModel: compared?.[0] ?? model, model: null, error: null, consulted: compared ? compared.slice(1) : before.consulted, consultCount: before.consultCount,
+		};
 	}
 
 	const controller = new AbortController();
@@ -380,8 +400,63 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		}
 	};
 	const team = turn.teamId ?? installation.team_id ?? installation.enterprise_id ?? "unknown";
-	const endUser = `slack:${team}:${turn.slackUserId}`;
-	const labels = { slackTeam: team, slackChannel: turn.channel };
+	// Every gateway request of the answer: the agent's, the models it asks, a Compare's.
+	const gateway = {
+		gatewayKey: secrets.gateway_key,
+		endUser: `slack:${team}:${turn.slackUserId}`,
+		sessionId: turnSessionId(turn),
+		labels: { slackTeam: team, slackChannel: turn.channel },
+	};
+
+	if (compared) {
+		// No agent steps to check the cancel flag between, so it is checked while the models answer.
+		const watch = setInterval(() => { checkCancel().catch(() => undefined); }, COMPARE_CANCEL_CHECK_MS);
+		let answers: ComparedAnswer[];
+		try {
+			answers = await compareAnswers(deps.agent, {
+				models: compared,
+				question: withoutMention(input.text, installation.bot_user_id),
+				instructions: comparisonInstructions(installation, deps.now()),
+				request: { ...gateway, signal: controller.signal },
+				budgetUsd,
+			});
+		} finally {
+			clearInterval(watch);
+		}
+		await checkCancel();
+		costUsd = answers.reduce((sum, answer) => sum + answer.costUsd, 0);
+		const failures = answers.flatMap((answer) => answer.error && answer.error !== "skipped" ? [answer.error === "empty" ? "failed" as const : answer.error] : []);
+		const answered = answers.some((answer) => answer.error === null);
+		await reply.push(cancelled ? "_Stopped._" : comparisonText(answers, await linkedModels(deps.db, deps.env, compared)));
+		await reply.close();
+		await stage();
+		console.log("[slack-agent] comparison finished", { turnId: turn.turnId, models: compared.length, answered: answers.filter((answer) => answer.error === null).length, errors: failures });
+		return {
+			status: cancelled ? "cancelled" : answered ? "answered" : "failed",
+			ts: reply.ts,
+			streamed: reply.streaming,
+			explained: true,
+			costNanos: earlierNanos + toNanos(costUsd),
+			requestedModel: compared[0],
+			model: null,
+			error: answered || cancelled ? null : failures[0] ?? null,
+			consulted: compared.slice(1),
+		};
+	}
+
+	// Other allowed models the agent asks (ask_model): their cost counts against the same limit.
+	const consults: Consult[] = [];
+	const consultedUsd = () => consults.reduce((sum, consult) => sum + consult.costUsd, 0);
+	let modelSpentUsd = 0;
+	// What the images it makes cost.
+	let toolUsd = 0;
+	const askTools = await askModelTools(deps.db, installation, model, {
+		ask: (request) => deps.agent.ask({ ...gateway, ...request, webTools: false, signal: request.signal ?? controller.signal }),
+		budgetLeftUsd: () => budgetUsd - modelSpentUsd - consultedUsd() - toolUsd,
+		consults,
+		alreadyAsked: before.consultCount,
+		notes,
+	});
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
 	const asked: { question: QuestionDraft | null } = { question: null };
@@ -404,8 +479,6 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 
 	// Charts and images, posted in the thread. An image's cost counts with the model's against this run's budget.
 	// Each chart posted and image paid for is recorded with the turn, for the answer's later attempts and runs.
-	let modelUsd = 0;
-	let toolUsd = 0;
 	let responded = false;
 	let imagesMade = input.postedFiles.filter((file) => file.kind === "image").length;
 	const record = async (file: PostedFile) => {
@@ -429,12 +502,12 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		if (generate) {
 			posts.images = true;
 			fileTools.push(generateImageTool({
-				generate: (prompt, size) => generate({ gatewayKey: secrets.gateway_key, model: DEFAULT_IMAGE_MODEL, prompt, size, endUser, sessionId: turnSessionId(turn), labels, signal: controller.signal }),
-				remainingUsd: () => budgetUsd - modelUsd - toolUsd,
+				generate: (prompt, size) => generate({ ...gateway, model: DEFAULT_IMAGE_MODEL, prompt, size, signal: controller.signal }),
+				remainingUsd: () => budgetUsd - modelSpentUsd - consultedUsd() - toolUsd,
 				made: () => imagesMade,
 				onCost: async (usd) => {
 					toolUsd += usd;
-					costUsd = Math.max(costUsd, modelUsd + toolUsd);
+					costUsd = Math.max(costUsd, modelSpentUsd + consultedUsd() + toolUsd);
 					await stage().catch(() => console.warn("[slack-agent] image cost not staged yet", { turnId: turn.turnId }));
 				},
 				post,
@@ -459,17 +532,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	} : undefined;
 
 	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
-		gatewayKey: secrets.gateway_key,
+		...gateway,
 		model,
 		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts),
 		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
-		endUser,
-		sessionId: turnSessionId(turn),
-		labels,
-		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), ...fileTools, askQuestion],
+		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), ...fileTools, askQuestion, ...askTools],
 		maxCostUsd: budgetUsd,
+		// The models it asks and the images it makes.
+		otherCostUsd: () => consultedUsd() + toolUsd,
 		signal: controller.signal,
-		toolCostUsd: () => toolUsd,
 		...(parts.length ? { attachments: parts } : {}),
 		...(paused ? { resume: resumeWith(answerLines(files)) } : {}),
 	});
@@ -484,8 +555,8 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			await stage();
 			await checkCancel();
 		},
-		onModelCost: (usd: number) => {
-			modelUsd = usd;
+		onCost: (usd: number) => {
+			modelSpentUsd = usd;
 			responded = true;
 		},
 	};
@@ -502,6 +573,8 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		costUsd = output.costUsd;
 	} catch (caught) {
 		controller.abort();
+		// Spend since the last step (a consult, an image, or the step's own model response) still counts.
+		costUsd = Math.max(costUsd, modelSpentUsd + consultedUsd() + toolUsd);
 		if (!cancelled) {
 			error = classifyTurnError(caught, model);
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
@@ -536,6 +609,8 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		requestedModel: model,
 		model: output?.model ?? null,
 		error,
+		consulted: [...new Set([...before.consulted, ...consults.filter((consult) => consult.answered || consult.costUsd > 0).map((consult) => consult.model)])],
+		consultCount: before.consultCount + consults.length,
 	};
 }
 
@@ -560,13 +635,18 @@ export async function footerModels(db: TurnDeps["db"], chosen: string, answeredB
 	return auto ? { model: { name: "Auto", slug: null }, answeredBy: found } : { model: found ?? { name: chosen, slug: null }, answeredBy: null };
 }
 
-/** The footer: models linked to their pages, and the cost to the answer's requests in Logs. */
+/** The footer: models linked to their pages (every one the answer used), and the cost to the answer's requests in Logs. */
 async function replyFooter(deps: TurnDeps, installation: Installation, turn: TurnRef, run: RunResult): Promise<Footer> {
-	const models = await footerModels(deps.db, run.requestedModel ?? turnModel(installation, turn), run.model);
+	const consulted = run.consulted ?? [];
+	const [models, others] = await Promise.all([
+		footerModels(deps.db, run.requestedModel ?? turnModel(installation, turn), run.model),
+		consulted.length ? linkedModels(deps.db, deps.env, consulted) : new Map(),
+	]);
 	const linked = (model: CatalogueName) => ({ name: model.name, url: model.slug ? modelPageUrl(deps.env, model.slug) : null });
 	return {
 		model: linked(models.model),
 		answeredBy: models.answeredBy ? linked(models.answeredBy) : null,
+		...(consulted.length ? { others: consulted.map((id) => others.get(id) ?? { name: id, url: null }) } : {}),
 		costNanos: run.costNanos,
 		logsUrl: answerLogsUrl(deps.env, installation.workspace_id, turnSessionId(turn), deps.now()),
 	};
@@ -776,23 +856,25 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		return { source: "replies", messages: read.context.messages.length };
 	}).catch((): ContextResult => ({ source: "memory", messages: 0 }));
 
-	const runStep = (leg: number, costNanos: number) => step.do<RunResult>(leg ? `resume-${leg}` : "run", RUN_STEP, async ({ attempt }) => {
-		if (!leg) return runAgent(deps, turn, coordinator, load, context, leg, attempt);
+	// `before`: the run before the question, whose cost and consults the next one goes on from.
+	const runStep = (leg: number, before: RunResult | null) => step.do<RunResult>(leg ? `resume-${leg}` : "run", RUN_STEP, async ({ attempt }) => {
+		const consulted: Consulted = { consulted: before?.consulted ?? [], consultCount: before?.consultCount ?? 0 };
+		if (!leg) return runAgent(deps, turn, coordinator, load, context, leg, attempt, NOTHING_CONSULTED);
 		// After a question, access and tools are read again: they may have changed while it waited.
 		const access = await turnAccess(deps, turn);
 		if (access.status === "skip") {
 			console.log("[slack-agent] answer stopped after a question", { turnId: turn.turnId, question: leg, reason: access.reason });
 			// Not explained yet: the reply step tells the person why it stopped (privately, as nothing follows the question).
-			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, requestedModel: null, model: null, error: "access_changed" };
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: before?.costNanos ?? 0, requestedModel: null, model: null, error: "access_changed" };
 		}
-		return runAgent(deps, turn, coordinator, { usageTools: access.usageTools, connectOffer: access.connectOffer }, context, leg, attempt);
+		return runAgent(deps, turn, coordinator, { usageTools: access.usageTools, connectOffer: access.connectOffer }, context, leg, attempt, consulted);
 	})
 		.catch((error: unknown): RunResult => {
 			console.error("[slack-agent] turn run step failed", { turnId: turn.turnId, leg, error: error instanceof Error ? error.message : "unknown" });
-			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, requestedModel: null, model: null, error: "failed" };
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: before?.costNanos ?? 0, requestedModel: null, model: null, error: "failed" };
 		});
 
-	let run = await runStep(0, 0);
+	let run = await runStep(0, null);
 	// Questions posted: the person saw them, so an answer that ends unanswered is still one they got.
 	let asked = 0;
 	while (run.status === "waiting") {
@@ -820,7 +902,7 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 			run = ended(closed.outcome === "expired" ? "expired" : "cancelled");
 			break;
 		}
-		run = await runStep(n, run.costNanos);
+		run = await runStep(n, run);
 	}
 
 	// Retried on its own: a Slack write that fails here never runs the model again.
