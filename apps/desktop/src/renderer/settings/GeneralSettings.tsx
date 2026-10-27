@@ -14,6 +14,8 @@ import { workingSectionKey } from "../shell/codeThreads";
 import { publishWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { isMac } from "../lib/shortcuts";
+import { setSendKey, useSendKey } from "../chat/sendKey";
+import { shortcut } from "../lib/keybindings";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
@@ -119,6 +121,17 @@ export function ExperimentalSettings() {
 	</SettingsPageLayout>;
 }
 
+/** T3's send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
+function MessageBox() {
+	const sendKey = useSendKey(), mod = isMac() ? "⌘" : "Ctrl";
+	const sendAndNew = shortcut("composer.sendAndNewChat");
+	return <SettingsSection title="Message box" label="Message box">
+		<SettingsRow title="Send with" description={`${sendKey === "enter" ? `Shift+Enter adds a new line.` : `Enter adds a new line.`}${sendAndNew ? ` ${sendAndNew} sends and starts a new chat.` : ""}`}
+			control={<Select label="Send with" value={sendKey} onValueChange={value => setSendKey(value === "mod+enter" ? "mod+enter" : "enter")}
+				options={[{ value: "enter", label: "Enter" }, { value: "mod+enter", label: `${mod}+Enter` }]} />} />
+	</SettingsSection>;
+}
+
 export function GeneralSettings() {
 	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
 	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
@@ -133,6 +146,7 @@ export function GeneralSettings() {
 					className={cn(settingsInput, "w-20 text-right")} />} />
 			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
 		</SettingsSection>
+		<MessageBox />
 		<SettingsSection title="Panes" label="Panes">
 			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
 				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />

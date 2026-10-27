@@ -6,6 +6,10 @@ import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
 import { draggedChat, type ComposerEditor } from "./composerEditor";
+import { dispatchComposerKey } from "../lib/keybindings";
+import { isMac } from "../lib/shortcuts";
+import { keyLabel } from "../../shared/keybindings";
+import { isSendKey, useSendKey } from "./sendKey";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
 export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className }: {
@@ -25,10 +29,12 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	menu?: ComposerMenu;
 	className?: string;
 }) {
+	const sendKey = useSendKey();
 	editor.keys.current = event => {
 		if (menu?.onKeyDown(event)) return true;
-		if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.isComposing && !event.repeat) { if (canSend) onSubmit(); return true; }
-		return false;
+		if (isSendKey(event, sendKey, isMac())) { if (canSend) onSubmit(); return true; }
+		// The composer's own shortcuts (history, steer, stash) come before the editor's keys.
+		return !event.isComposing && dispatchComposerKey(event);
 	};
 	// The editor is the combobox for the menu; its list is announced through these attributes.
 	const dom = editor.editor && !editor.editor.isDestroyed ? editor.editor.view.dom : undefined;
@@ -53,7 +59,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 					{model}
 					{running && onStop
 						? <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85"><Square className="size-3 fill-current" /></button>
-						: <button type="submit" aria-label="Send" title="Send (Enter)" disabled={!canSend} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25"><ArrowUp className="size-4" strokeWidth={2.5} /></button>}
+						: <button type="submit" aria-label="Send" title={`Send (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`} disabled={!canSend} className="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25"><ArrowUp className="size-4" strokeWidth={2.5} /></button>}
 				</div>
 			</div>
 		</form>

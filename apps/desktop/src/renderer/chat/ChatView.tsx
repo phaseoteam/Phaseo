@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { useQuestionAnswerer } from "./questionComposer";
@@ -39,6 +39,10 @@ import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 import { RewindDialog } from "./RewindDialog";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
+import { QueuePanel, ownQueue, steerBlocker } from "./QueuePanel";
+import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
+import { recordPrompt } from "./promptHistory";
+import { showToast } from "../components/ui/toast";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -154,28 +158,66 @@ function ChatComposer({ task }: { task: Task }) {
 	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
 	// Edit from here hands the rewound message back to this chat's composer.
 	useEffect(() => {
-		const restore = (event: Event) => { const detail = (event as CustomEvent<{ taskId: string; text: string }>).detail; if (detail?.taskId === task.id) { draft.setText(detail.text); editor.focus("end"); } };
+		const restore = (event: Event) => { const detail = (event as CustomEvent<{ taskId: string; text: string }>).detail; if (detail?.taskId === task.id) { if (draft.text.trim() && draft.text !== detail.text) stash.park(draft.text); setEditing(undefined); draft.setText(detail.text); editor.focus("end"); } };
 		window.addEventListener(restoreDraftEvent, restore);
 		return () => window.removeEventListener(restoreDraftEvent, restore);
 	});
 	const message = composeMessage(draft.text);
 	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
+	usePromptHistory(task, draft);
+	const stash = usePromptStash(task.id, draft);
+	// A queued message being edited in the composer, and the draft it set aside (T3's "Editing in the composer").
+	const [editing, setEditing] = useState<{ id: string; saved: string }>();
+	useEffect(() => { setEditing(undefined); }, [task.id]);
+	const editQueued = (id: string) => {
+		const queued = task.queue.find(value => value.id === id);
+		if (!queued || task.archived) return false;
+		setEditing(current => ({ id, saved: current ? current.saved : draft.text })); draft.setText(queued.text); editor.focus("end");
+	};
+	const stopEditing = (text?: string) => { if (!editing) return; draft.setText(text ?? editing.saved); setEditing(undefined); };
+	// Sent while being edited: the edit stays in the box to send on its own.
+	useEffect(() => {
+		if (editing && !task.queue.some(value => value.id === editing.id)) { setEditing(undefined); showToast("info", "The queued message was sent before you finished", "Your edit is still in the message box."); }
+	}, [task.queue, editing]);
+	async function saveEdit() {
+		if (!editing) return;
+		if (message.attachments.length) { setError("A queued message keeps its attachments. Remove the new ones, or send this as its own message."); return; }
+		if (!message.text) { await command({ type: "queue-remove", id: task.id, messageId: editing.id }); stopEditing(); return; }
+		if (await command({ type: "queue-edit", id: task.id, messageId: editing.id, text: message.text })) stopEditing();
+	}
+	const steerQueued = (id: string) => { const queued = task.queue.find(value => value.id === id); if (queued) void command({ type: "steer", id: task.id, text: queued.text, queuedId: id }); };
+	/** Mod+Shift+Enter: the draft, or else the first queued message, goes into the running turn; with no turn running it simply sends. */
+	async function steer() {
+		if (!running) { await send(); return; }
+		const blocker = steerBlocker(task);
+		if (blocker) { showToast("info", "Queued instead", blocker); if (canSend && !editing) await send(); return; }
+		if (!message.text && !message.attachments.length) { const first = ownQueue(task)[0]; if (first) steerQueued(first.id); return; }
+		if (editing || answerer || busy) return;
+		setBusy(true);
+		try { if (await command({ type: "steer", id: task.id, text: message.text, ...(message.attachments.length ? { attachments: message.attachments } : {}) })) { recordPrompt(draft.text); draft.clear(); } }
+		finally { setBusy(false); }
+	}
+	useCommand("composer.steer", () => { void steer(); });
+	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
+	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
-	async function send() {
-		if (!canSend) return;
+	async function send(): Promise<boolean> {
+		if (editing) { await saveEdit(); return false; }
+		if (!canSend) return false;
 		if (answerer) {
-			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return; }
+			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return false; }
 			if (answerer.answer(mentionPlainText(message.text))) draft.clear();
-			return;
+			return false;
 		}
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);
 			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
-				rememberModel(selection); draft.clear();
+				rememberModel(selection); recordPrompt(draft.text); draft.clear(); return true;
 			}
 		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
+		return false;
 	}
 	const attachmentChips = (attachments: Attachment[]) => editor.insert(attachments.map(attachment => ({ kind: "attachment" as const, ref: attachment.id, label: attachment.name })));
 	async function attach() {
@@ -212,22 +254,20 @@ function ChatComposer({ task }: { task: Task }) {
 	}
 
 	return <div className="mx-auto w-full max-w-[760px] px-6 pb-4">
-		{/* Pull request updates the app queued for the agent are not the person's to edit, as in T3. */}
-		{task.queue.some(message => !message.notice) && <div className="mb-2 rounded-xl border border-border bg-card/60 px-3 py-2">
-			<p className="mb-1 text-[11px] font-medium text-muted-foreground">Queued · sends when the current turn finishes</p>
-			{task.queue.filter(message => !message.notice).map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{mentionPlainText(message.text)}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
-		</div>}
+		<QueuePanel task={task} editingId={editing?.id} onEdit={editQueued} onSteer={steerQueued} />
 		{limits && <div className="mb-2 flex flex-col gap-2 rounded-xl border border-border bg-card/60 px-4 py-3">
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
-		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend} disabled={task.archived}
+		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
+			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
 			footer={<ChatSpend taskId={task.id} />}
 			model={task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
+				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
 				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
 				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}

@@ -99,6 +99,17 @@ export function dispatchKeybinding(event: KeyInput, overrides: WhenContext = {})
 	return false;
 }
 
+/**
+ * Keys the message box hands over before its editor acts on them: the composer's own commands, whose conditions see
+ * composerFocused. The window listener never sees that condition, so these keys stay the editor's elsewhere. Held keys
+ * repeat here (Up through history).
+ */
+export function dispatchComposerKey(event: KeyInput) {
+	const when = { ...whenContext(), textFocused: true, composerFocused: true }, mac = isMac();
+	for (const row of state.rows) if (row.key && row.command.startsWith("composer.") && matchesKey(row.key, event, mac) && evaluateWhen(row.when, when) && runCommand(row.command)) return true;
+	return false;
+}
+
 /** The single key listener: the first binding whose keys and condition match, and that something handles, wins. */
 export function useKeybindingDispatcher(context: () => WhenContext) {
 	const latest = useRef(context);
