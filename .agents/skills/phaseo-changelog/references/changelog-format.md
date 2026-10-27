@@ -1,72 +1,53 @@
 # Phaseo Changelog Format
 
-## Combined Changelog
-
-Use this pattern for `apps/docs/v1/changelog.mdx`:
+## Entry pattern
 
 ```mdx
-## May 28, 2026
+<Update label="October 24, 2026" tags={["Product"]} rss={{ title: "October 24, 2026: Product" }}>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+- Short product change, with a [docs link](./guides/example.mdx).
+- Another product change.
 
-- Short product or SDK change.
-- Another short product or SDK change.
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+<Update label="October 24, 2026" tags={["API & SDKs"]} rss={{ title: "October 24, 2026: API & SDKs" }}>
 
-- Model release or pricing sync.
-- Another model release.
+- New request parameter or SDK release.
 
-***
+</Update>
+
+<Update label="October 24, 2026" tags={["Models"]} rss={{ title: "October 24, 2026: Models" }}>
+
+![Model name model release artwork](../images/model-releases/2026-10-24--provider--model.png)
+
+- [Provider: Model Name](https://phaseo.app/models/provider/model-id)
+
+</Update>
 ```
 
 Rules:
-- Use `##` for the date only.
-- Do not use `### Product` or `### New Models`.
-- Do not repeat `Product` twice under the same date.
-- Do not repeat `New Models` twice under the same date.
+- `label` is the date only, in the page language's date format (`October 24, 2026`, `24 octobre 2026`, `2026年10月24日`, ...).
+- `tags` holds exactly one category tag (see the table in `SKILL.md`).
+- `rss.title` is `<label>: <tag>`, so feed readers can tell same-day entries apart.
+- No `##`/`###` headings and no styled `<p>` labels inside or between updates. The tag already names the category.
+- No `***` separators.
+- Image paths are relative: `../images/...` from `changelog.mdx`, and `../../images/...` from `changelog/*.mdx`. On locale pages, add one more `../`, or use the absolute `/images/...`.
 
-## Data Changelog
+## Models entries
 
-Keep it short:
+- One bullet per model, written as `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
+- Put one release artwork image first when it exists.
+- Pricing or provider coverage notes go after the link, in the same bullet.
 
-```md
-## 15th May 2026
+## Product and API & SDKs entries
 
-- Claude Opus 4.8 was added.
-- Gemini 3.1 Flash Image and Gemini 3 Pro Image were added.
-```
+- Start with what changed for the user: "Chat can now ...", "`POST /v1/...` accepts ...", "The Python SDK 2.4 adds ...".
+- Add where to find it (settings path, page) and a docs link if there is one.
+- Use one bullet per change. Merge related PRs into one bullet.
 
-Rules:
-- One date block per day.
-- Short factual bullets only.
-- Merge same-day releases into one block.
-- Add release images only where they are available and useful.
+## Checklist
 
-## Classification Rules
-
-Put an item under `Product` when it is about:
-- UI changes
-- docs-site behavior
-- pricing selector or provider display logic
-- SDK launches or SDK releases
-- gateway, billing, routing, settings, or dashboard features
-
-Put an item under `New Models` when it is about:
-- model additions
-- model status changes such as `Announced` or `Available`
-- pricing syncs tied to a model
-- provider coverage for a specific model
-- model-release image additions
-
-Do not misclassify:
-- A model becoming generally available on tracked providers is still a model update.
-- A page refresh made to better display a provider or price is a product update.
-
-## Editing Checklist
-
-- The page should scan quickly from top to bottom.
-- The right rail TOC on the combined page should show dates only.
-- No duplicate date headings.
-- No raw PR-title phrasing.
-- No long intro block unless the user explicitly wants one.
+- Each `<Update>` has exactly one valid tag.
+- No more than one `<Update>` per (date, tag), newest date first.
+- No PR-title phrasing and no internal names.
+- Locale pages match the English page block for block.
