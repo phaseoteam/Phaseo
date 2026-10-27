@@ -18,7 +18,7 @@ import {
 import { connectAccountMessage, linkUrl } from "./access";
 import { makeChartTool } from "./chart";
 import { renderPng } from "./chart-png";
-import type { ContextEntry, ThreadCoordinator, TurnInput } from "./coordinator";
+import type { ContextEntry, PostedFile, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
 import { botToken, coordinatorFor, defaultDeps, meterFor, type Deps } from "./events";
 import { answerLogsUrl, modelPageUrl } from "./footer-links";
@@ -30,7 +30,7 @@ import { modelChoiceOn, withoutMention } from "./model-choice";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
-import { attachmentParts, fileLines, readableKinds, readSharedFiles, unreadByModel, uploadToThread, type SharedFile, type SharedFileRef } from "./slack-files";
+import { attachmentParts, fileLines, readableKinds, readSharedFiles, unreadByModel, uploadToThread, type FileOutcome, type SharedFile, type SharedFileRef } from "./slack-files";
 import { answerEventType, turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
@@ -73,7 +73,11 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 // with the message, or in the thread messages read, are downloaded for the run
 // and sent to the model (slack-files.ts); nothing of them is stored. When no
 // route of the model takes them (Auto can pick one that doesn't), the run
-// answers without them and says so. Installations whose Slack permissions
+// answers without them and says so (only when no model response came back yet,
+// so nothing was posted or paid for). Files shared with an answer to a question
+// are read by the run after it. The charts and images an answer made are kept
+// with the turn: a retried run is told what is already in the thread, and the
+// answer's image limit counts every run's. Installations whose Slack permissions
 // predate a scope are told what an admin can do instead.
 //
 // An unanswered question ends the answer there, and the answer is still counted
@@ -164,7 +168,7 @@ function threadLine(entry: ContextEntry, botUserId: string): string {
  * files shared and whether each is attached (`files`, from fileLines), and the
  * new message.
  */
-export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, source: ContextResult["source"], files: string[] = []): string {
+export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, source: ContextResult["source"], files: string[] = [], posted: string[] = []): string {
 	const context = source === "replies" ? input.context : null;
 	const shown = new Set((context?.messages ?? []).map((entry) => entry.ts).filter(Boolean));
 	const memory = input.memory.filter((entry) => !(entry.kind === "reply" && entry.ts && shown.has(entry.ts)));
@@ -182,6 +186,7 @@ export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, 
 	}
 	if (source === "memory") lines.push(`(You couldn't read this Slack thread's messages just now${memory.length ? ", so only your own earlier replies are shown" : ""}.)`, "");
 	section("Files shared in this thread, newest first:", files);
+	section("Already posted in this thread while answering this message (an earlier try stopped part way); don't post them again:", posted);
 	lines.push(`New message from <@${turn.slackUserId}>:`, withoutMention(input.text, botUserId) || "(no text)");
 	return lines.join("\n");
 }
@@ -275,8 +280,17 @@ export function turnModel(installation: Pick<Installation, "model" | "model_choi
 }
 
 
-/** The files shared with the message, then those in the thread messages read (people's only), newest first. */
-function sharedFiles(input: TurnInput, turn: TurnRef, source: ContextResult["source"]): SharedFile[] {
+/** What the answer has posted in the thread so far, for the model. */
+function postedLines(files: PostedFile[]): string[] {
+	return files.filter((file) => file.shown).map((file) => `- ${file.kind}: "${file.title}"`);
+}
+
+/**
+ * The files shared with an answer to the agent's question (the run after it),
+ * then with the message, then in the thread messages read (people's only),
+ * newest first.
+ */
+function sharedFiles(input: TurnInput, turn: TurnRef, source: ContextResult["source"], answerFiles: SharedFileRef[] = []): SharedFile[] {
 	const seen = new Set<string>();
 	const files: SharedFile[] = [];
 	const add = (refs: SharedFileRef[] | undefined, from: string | null, inMessage: boolean) => {
@@ -286,6 +300,7 @@ function sharedFiles(input: TurnInput, turn: TurnRef, source: ContextResult["sou
 			files.push({ ...ref, from, inMessage });
 		}
 	};
+	add(answerFiles, turn.slackUserId, true);
 	add(input.files, turn.slackUserId, true);
 	const context = source === "replies" ? input.context : null;
 	for (const entry of [...(context?.messages ?? [])].reverse()) if (entry.role === "user") add(entry.files, entry.author, false);
@@ -324,14 +339,13 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const key = attemptKey(leg, attempt);
 	const earlierNanos = Object.entries(input.attemptCosts).reduce((sum, [entry, nanos]) => (entry === key ? sum : sum + nanos), 0);
 	const budgetUsd = TURN_MAX_COST_USD - earlierNanos / NANOS_PER_USD;
-	let resume: AgentTurnRequest["resume"];
+	let paused: { run: string; question: QuestionState } | null = null;
 	if (leg) {
-		const paused = await coordinator.pausedRun(turn.turnId, leg);
+		paused = await coordinator.pausedRun(turn.turnId, leg);
 		if (!paused || paused.question.status !== "answered") {
 			console.error("[slack-agent] answered question has no paused run", { turnId: turn.turnId, question: leg });
 			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: earlierNanos, requestedModel: model, model: null, error: "failed" };
 		}
-		resume = { run: JSON.parse(paused.run) as PausedRun, toolOutputs: [{ toolCallId: paused.question.callId, output: answerOutput(paused.question) }] };
 	}
 	const reply = new SlackReplyStream({
 		slack,
@@ -377,8 +391,9 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const access = noteAccess(installation, turn);
 	const memory = await loadTurnMemory(deps.db, installation.id, turn.channel, access);
 
-	// Files shared in the thread, read for this run only.
-	const shared = sharedFiles(input, turn, context.source);
+	// Files shared in the thread, and with an answer to the question this run follows, read for this run only.
+	const answerFiles = paused?.question.answer?.files ?? [];
+	const shared = sharedFiles(input, turn, context.source, answerFiles);
 	const outcomes = shared.length
 		? await readSharedFiles(slack, shared, { canRead: hasBotScope(installation, "files:read"), readable: await readableKinds(deps.db, model) })
 		: [];
@@ -386,35 +401,66 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	if (outcomes.length) console.log("[slack-agent] shared files", { turnId: turn.turnId, files: outcomes.length, attached: attachments.length, statuses: [...new Set(outcomes.map((outcome) => outcome.status))] });
 
 	// Charts and images, posted in the thread. An image's cost counts with the model's against this run's budget.
+	// Each chart posted and image paid for is recorded with the turn, for the answer's later attempts and runs.
 	let modelUsd = 0;
 	let toolUsd = 0;
+	let responded = false;
+	let imagesMade = input.postedFiles.filter((file) => file.kind === "image").length;
+	const record = async (file: PostedFile) => {
+		try {
+			await coordinator.recordPostedFile(turn.turnId, file);
+		} catch {
+			console.warn("[slack-agent] posted file not recorded", { turnId: turn.turnId, kind: file.kind });
+		}
+	};
 	const posts: PostAbilities = { charts: hasBotScope(installation, "files:write"), images: false };
 	const post = (file: { filename: string; title: string; altText: string; bytes: Uint8Array }) => uploadToThread(slack, { channel: turn.channel, threadTs: turn.threadTs }, file);
+	const postChart = async (file: { filename: string; title: string; altText: string; bytes: Uint8Array }) => {
+		const posted = await post(file);
+		if (posted.ok) await record({ kind: "chart", title: file.title, shown: true });
+		return posted;
+	};
 	const fileTools: AgentTool<any, any>[] = [];
 	if (posts.charts) {
-		fileTools.push(makeChartTool({ render: renderPng, post, notes }));
+		fileTools.push(makeChartTool({ render: renderPng, post: postChart, notes }));
 		const generate = deps.agent.generateImage?.bind(deps.agent);
 		if (generate) {
 			posts.images = true;
 			fileTools.push(generateImageTool({
 				generate: (prompt, size) => generate({ gatewayKey: secrets.gateway_key, model: DEFAULT_IMAGE_MODEL, prompt, size, endUser, sessionId: turnSessionId(turn), labels, signal: controller.signal }),
 				remainingUsd: () => budgetUsd - modelUsd - toolUsd,
+				made: () => imagesMade,
 				onCost: async (usd) => {
 					toolUsd += usd;
 					costUsd = Math.max(costUsd, modelUsd + toolUsd);
 					await stage().catch(() => console.warn("[slack-agent] image cost not staged yet", { turnId: turn.turnId }));
 				},
 				post,
+				onMade: async (image) => {
+					imagesMade += 1;
+					await record({ kind: "image", ...image });
+				},
 				notes,
 			}));
 		}
 	}
 
-	const request = (parts: Array<Record<string, unknown>>, files: string[]): AgentTurnRequest => ({
+	// After a question, the run goes on from the paused one with the answer, the files shared with it, and what was posted.
+	const posted = postedLines(input.postedFiles);
+	const answerLines = (from: FileOutcome[]) => fileLines(from.filter((outcome) => answerFiles.some((file) => file.id === outcome.file.id)));
+	const resumeWith = (lines: string[]): AgentTurnRequest["resume"] => paused ? {
+		run: JSON.parse(paused.run) as PausedRun,
+		toolOutputs: [{
+			toolCallId: paused.question.callId,
+			output: { ...answerOutput(paused.question), ...(lines.length ? { files: lines } : {}), ...(posted.length ? { already_posted_in_thread: posted } : {}) },
+		}],
+	} : undefined;
+
+	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		gatewayKey: secrets.gateway_key,
 		model,
 		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts),
-		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, files)].join("\n"),
+		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
 		endUser,
 		sessionId: turnSessionId(turn),
 		labels,
@@ -423,7 +469,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		signal: controller.signal,
 		toolCostUsd: () => toolUsd,
 		...(parts.length ? { attachments: parts } : {}),
-		...(resume ? { resume } : {}),
+		...(paused ? { resume: resumeWith(answerLines(files)) } : {}),
 	});
 	const hooks = {
 		onText: async (delta: string) => {
@@ -438,16 +484,18 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		},
 		onModelCost: (usd: number) => {
 			modelUsd = usd;
+			responded = true;
 		},
 	};
 	try {
 		try {
-			output = await deps.agent.run(request(attachments, fileLines(outcomes)), hooks);
+			output = await deps.agent.run(request(attachments, outcomes), hooks);
 		} catch (caught) {
 			// No route of the model takes the files (Auto can pick one that doesn't read them): answer without them, saying so.
-			if (!attachments.length || reply.text || cancelled || classifyTurnError(caught, model) !== "files_unsupported") throw caught;
+			// Only before any model response: after one, tools may have posted or paid, so the answer isn't started again.
+			if (!attachments.length || responded || reply.text || cancelled || classifyTurnError(caught, model) !== "files_unsupported") throw caught;
 			console.log("[slack-agent] the model can't read the shared files, answering without them", { turnId: turn.turnId });
-			output = await deps.agent.run(request([], fileLines(unreadByModel(outcomes))), hooks);
+			output = await deps.agent.run(request([], unreadByModel(outcomes)), hooks);
 		}
 		costUsd = output.costUsd;
 	} catch (caught) {

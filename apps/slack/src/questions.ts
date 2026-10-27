@@ -1,4 +1,5 @@
 import type { AgentTool } from "@phaseo/agent-sdk";
+import type { SharedFileRef } from "./slack-files";
 import type { SlackClient } from "./slack-api";
 
 // Questions with buttons. The agent calls ask_question when it needs the person
@@ -56,6 +57,8 @@ export type QuestionAnswer = {
 	/** The option chosen, for a button. */
 	choice: number | null;
 	text: string;
+	/** Files shared with an answer in the thread: the run after the question reads them like the message's own. */
+	files?: SharedFileRef[];
 };
 
 export type QuestionStatus = "pending" | "open" | "answered" | "expired" | "cancelled";

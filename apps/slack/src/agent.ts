@@ -126,6 +126,14 @@ export type ImageRequest = {
 
 export type GeneratedImage = { bytes: Uint8Array; mimeType: string; costUsd: number; model: string | null };
 
+/** The gateway made (and billed) an image, but its bytes couldn't be downloaded or aren't an image: the cost still counts. */
+export class ImageNotReadError extends Error {
+	constructor(readonly costUsd: number) {
+		super("image_response_invalid");
+		this.name = "ImageNotReadError";
+	}
+}
+
 export interface AgentRunner {
 	run(request: AgentTurnRequest, hooks: AgentTurnHooks): Promise<AgentTurnOutput>;
 	/** Makes one image through the gateway. Throws the gateway's error (classifyTurnError reads it). */
@@ -289,21 +297,27 @@ async function requestImage(fetchImpl: typeof fetch, baseUrl: string, request: I
 		const message = typeof body?.message === "string" ? body.message : typeof body?.error?.message === "string" ? body.error.message : "The image request failed";
 		throw new AgentGatewayError({ status: response.status || 502, statusText: response.statusText || "Bad Gateway", body: body ?? {}, message });
 	}
+	// Billed from here on: a failed download or a bad image still costs.
+	const costUsd = imageCost(body);
 	const first = Array.isArray(body.data) ? body.data[0] as Record<string, unknown> | undefined : undefined;
 	let bytes: Uint8Array | null = null;
-	if (typeof first?.b64_json === "string") {
-		bytes = decodeBase64(first.b64_json);
-	} else if (typeof first?.url === "string" && first.url.startsWith("https://")) {
-		const download = await fetchImpl(first.url, { signal });
-		const length = Number(download.headers.get("content-length"));
-		if (download.ok && !(Number.isFinite(length) && length > MAX_IMAGE_BYTES)) {
-			const buffer = new Uint8Array(await download.arrayBuffer());
-			bytes = buffer.byteLength <= MAX_IMAGE_BYTES ? buffer : null;
+	try {
+		if (typeof first?.b64_json === "string") {
+			bytes = decodeBase64(first.b64_json);
+		} else if (typeof first?.url === "string" && first.url.startsWith("https://")) {
+			const download = await fetchImpl(first.url, { signal });
+			const length = Number(download.headers.get("content-length"));
+			if (download.ok && !(Number.isFinite(length) && length > MAX_IMAGE_BYTES)) {
+				const buffer = new Uint8Array(await download.arrayBuffer());
+				bytes = buffer.byteLength <= MAX_IMAGE_BYTES ? buffer : null;
+			}
 		}
+	} catch {
+		bytes = null;
 	}
 	const mimeType = bytes ? imageType(bytes) : null;
-	if (!bytes || !mimeType) throw new Error("image_response_invalid");
-	return { bytes, mimeType, costUsd: imageCost(body), model: typeof body.model === "string" ? body.model : null };
+	if (!bytes || !mimeType) throw new ImageNotReadError(costUsd);
+	return { bytes, mimeType, costUsd, model: typeof body.model === "string" ? body.model : null };
 }
 
 export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl: string }): AgentRunner {

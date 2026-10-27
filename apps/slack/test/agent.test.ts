@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, withAttachments, type AgentTurnRequest, type PausedRun } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, type AgentTurnRequest, type PausedRun } from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
 
 function sse(events: unknown[]): Response {
@@ -317,8 +317,18 @@ describe("files and images", () => {
 		const refused = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ error: "insufficient_credits" }, { status: 402 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const error = await refused.generateImage!(imageRequest).catch((caught: unknown) => caught);
 		expect(classifyTurnError(error)).toBe("no_credits");
-		const notImage = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa("<html>") }] })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
-		await expect(notImage.generateImage!(imageRequest)).rejects.toThrow("image_response_invalid");
+		const notImage = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa("<html>") }], cost_nanos: 40_000_000 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const unread = await notImage.generateImage!(imageRequest).catch((caught: unknown) => caught);
+		// Billed all the same: the cost goes with the error.
+		expect(unread).toBeInstanceOf(ImageNotReadError);
+		expect((unread as ImageNotReadError).costUsd).toBe(0.04);
+		const lostDownload = createSdkAgentRunner({
+			fetchImpl: (async (input: RequestInfo | URL) => String(input).endsWith("/images/generations")
+				? Response.json({ data: [{ url: "https://images.test/fox.png" }], cost_nanos: 40_000_000 })
+				: Promise.reject(new TypeError("network"))) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(lostDownload.generateImage!(imageRequest)).rejects.toMatchObject({ name: "ImageNotReadError", costUsd: 0.04 });
 	});
 
 	it("says when the model can't read the files shared", () => {

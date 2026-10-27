@@ -280,9 +280,10 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
-	// Their reply to the question the running turn asked them: the turn goes on with it.
+	// Their reply to the question the running turn asked them: the turn goes on with it, and with its files.
 	let text = typeof event.text === "string" ? event.text : "";
-	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), now });
+	const files = sharedFileRefs(event.files);
+	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), ...(files.length ? { files } : {}), now });
 	if (answered) {
 		console.log("[slack-agent] question answered", { installationId: installation.id, turnId: answered.turnId, question: answered.question.n, by: "message" });
 		await updateQuestionMessage(slack, { channel, threadTs, turnId: answered.turnId, askerId: answered.askerId }, answered.question);
@@ -324,7 +325,6 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return refuse(slack, target, admitted.reason, { tier: admitted.tier, limit: installation.answers_per_person_hour });
 	}
 
-	const files = sharedFileRefs(event.files);
 	const queued: EnqueueResult = await coordinator.enqueue({
 		threadKey: key,
 		eventId,

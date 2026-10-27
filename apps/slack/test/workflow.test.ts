@@ -1434,6 +1434,82 @@ describe("Files in the thread", () => {
 		expect(agent.requests[1].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: the model answering can't read this kind of file.");
 	});
 
+	it("doesn't start the answer again without the files once a model response came back: tools may have run", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			hooks.onModelCost?.(0.01);
+			throw new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+		});
+		await expect(runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step)).resolves.toEqual({ status: "failed" });
+		expect(agent.requests).toHaveLength(1);
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "files_unsupported" });
+	});
+
+	it("tells a retried run what the answer already posted, and counts its images toward the answer's limit", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let turn!: TurnRef;
+		const results: unknown[] = [];
+		const agent = new ToolAgent(async (request, _hooks, call) => {
+			if (call === 1) {
+				results.push(await callTool(request, "generate_image", { prompt: "A fox" }));
+				// The step dies at its end, after the image was posted and paid for.
+				const coordinator = coordinatorOf(turn);
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+				return { ...answer(), costUsd: 0.01 + request.toolCostUsd!() };
+			}
+			expect(request.prompt).toContain([
+				"Already posted in this thread while answering this message (an earlier try stopped part way); don't post them again:",
+				'- image: "A fox"',
+			].join("\n"));
+			results.push(await callTool(request, "generate_image", { prompt: "A badger" }));
+			results.push(await callTool(request, "generate_image", { prompt: "A heron" }));
+			return answer();
+		}, { bytes: PNG, mimeType: "image/png", costUsd: 0.04, model: "openai/gpt-image-2" });
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(results).toEqual([
+			{ posted: true, cost_usd: 0.04 },
+			{ posted: true, cost_usd: 0.04 },
+			{ posted: false, error: expect.stringContaining("You've made 2 images in this answer") },
+		]);
+		expect(agent.images.map((image) => image.prompt)).toEqual(["A fox", "A badger"]);
+	});
+
+	it("reads the files shared with an answer to its question in the run after it", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0REPORT01", "report.pdf", "application/pdf", PDF);
+		const paused = { run: { id: "run_q", status: "waiting_for_human", messages: [] }, steps: [], stepResults: [], messages: [], items: [] } as unknown as PausedRun;
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (request.resume) return answer();
+			await hooks.onStep({ costUsd: 0.01 });
+			const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+			await tool.onToolCalled!({ question: "Which report?", options: ["Q3", "Q4"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+			return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null, paused };
+		});
+		step.onWait = async () => {
+			// Their reply in the thread, with the file: the answer to the question.
+			const ts = "1792600050.000200";
+			const reply = mention({ text: `<@${BOT_USER_ID}> This one`, ts, thread_ts: turn.threadTs, event_ts: ts, files: [{ id: "F0REPORT01", name: "report.pdf", mimetype: "application/pdf" }] });
+			await expect(processEvent(world.deps, hostedApp(world.env)!, eventEnvelope(reply, { event_id: "Ev0REPLY001" }) as SlackEnvelope)).resolves.toBe("answered_question");
+			return "event";
+		};
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[1].attachments).toEqual([{ type: "input_file", filename: "report.pdf", file_data: `data:application/pdf;base64,${btoa(String.fromCharCode(...PDF))}` }]);
+		expect(agent.requests[1].resume?.toolOutputs).toEqual([{
+			toolCallId: "call_q1",
+			output: { answered: true, answer: "This one", in_their_own_words: true, files: ["- report.pdf from <@U0PERSON01>, in the new message: attached after this text."] },
+		}]);
+	});
+
 	it("reads files people shared in the thread messages it read, never the agent's own", async () => {
 		await install({ bot_scopes: ALL_SCOPES });
 		const threadTs = "1792600000.000050";

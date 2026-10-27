@@ -88,7 +88,7 @@ describe("ThreadCoordinator", () => {
 
 	it("keeps a message only while its turn is open", async () => {
 		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
-		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", files: [], context: null, replyTs: null, stagedReply: null, stagedTools: [], attemptCosts: {}, memory: [] });
+		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", files: [], context: null, replyTs: null, stagedReply: null, stagedTools: [], attemptCosts: {}, postedFiles: [], memory: [] });
 		await coordinator.finishTurn(1, { status: "done", reply: "Answer" }, NOW);
 		expect(coordinator.turnInput(1)).toBeNull();
 		const storage = storageOf(coordinator);
@@ -359,6 +359,25 @@ describe("ThreadCoordinator", () => {
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: ` EU${"!".repeat(3_000)}`, now: NOW })).resolves.toMatchObject({ question: { answer: { by: "message", choice: null, text: `EU${"!".repeat(1_998)}` } } });
 			// Answered: the next message is a new one.
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "and another thing", now: NOW })).resolves.toBeNull();
+		});
+
+		it("keeps the files shared with an answer in the thread, and takes files alone as an answer", async () => {
+			await asking();
+			const files = [{ id: "F0REPORT01", name: "report.pdf" }];
+			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: " ", files, now: NOW })).resolves.toMatchObject({
+				question: { answer: { by: "message", choice: null, text: "(shared report.pdf)", files } },
+			});
+			expect(coordinator.pausedRun(1, 1)?.question.answer).toEqual({ by: "message", choice: null, text: "(shared report.pdf)", files });
+		});
+
+		it("keeps the charts and images an answer made for its later runs", async () => {
+			await asking();
+			coordinator.recordPostedFile(1, { kind: "chart", title: "Spend by week", shown: true });
+			coordinator.recordPostedFile(1, { kind: "image", title: "A fox", shown: false });
+			expect(coordinator.turnInput(1)?.postedFiles).toEqual([
+				{ kind: "chart", title: "Spend by week", shown: true },
+				{ kind: "image", title: "A fox", shown: false },
+			]);
 		});
 
 		it("refuses answers once the hour is up, and closes as expired, or stopped when the thread was cancelled", async () => {
