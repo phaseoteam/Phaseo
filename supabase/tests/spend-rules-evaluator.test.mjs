@@ -27,18 +27,23 @@ const changed = [
   'public/functions/enqueue_notification_event_deliveries.sql',
   'private/functions/capture_workspace_notification_events.sql',
 ];
-for (const file of changed) assert(normalize(migration).includes(normalize(await read(`../schemas/${file}`))), `${file} is in the migration`);
+// A function redefined by a later migration (the spend rules API extracts the evaluator's value
+// query and text) must match the newest migration that defines it.
+const laterMigrations = migrations.filter((name) => name > migrationName);
+const newestDefining = async (file) => {
+  const signature = `FUNCTION ${file.split("/")[0]}.${file.split("/").pop().replace(/\.sql$/, "")}`;
+  let newest = migrationName;
+  for (const name of laterMigrations) if ((await read(`../migrations/${name}`)).includes(signature)) newest = name;
+  return newest;
+};
+for (const file of changed) {
+  const newest = await newestDefining(file);
+  assert(normalize(await read(`../migrations/${newest}`)).includes(normalize(await read(`../schemas/${file}`))), `${file} is in ${newest}`);
+}
 const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 for (const file of changed.slice(0, 4)) for (const list of ['loadOrder', 'files']) assert(manifest[list].includes(file), `${file} is in the manifest's ${list}`);
 assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /, 'the processor replacement is marked as reviewed');
 assert.match(await read('../../.github/workflows/declarative-schema.yml'), /node supabase\/tests\/spend-rules-evaluator\.test\.mjs/, 'CI runs this suite');
-for (const name of migrations.filter((name) => name > migrationName)) {
-  const sql = await read(`../migrations/${name}`);
-  for (const signature of ['FUNCTION public.process_v2_analytics_outbox', 'FUNCTION private.capture_workspace_notification_events', 'FUNCTION public.enqueue_notification_event_deliveries', 'FUNCTION private.evaluate_workspace_spend_rules']) {
-    if (sql.includes(signature)) console.log(`note: ${name} redefines ${signature}; its own suite checks the schema file`);
-  }
-}
-
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const W1 = id(1); // America/New_York billing zone
 const W2 = id(2); // Europe/London billing zone
@@ -85,6 +90,7 @@ try {
       created_by uuid not null, oauth_user_id uuid, key_kind text not null default 'standard', department_id uuid, status text not null default 'active',
       daily_limit_cost_nanos bigint not null default 0, weekly_limit_cost_nanos bigint not null default 0, monthly_limit_cost_nanos bigint not null default 0);
     create table public.management_keys (id uuid primary key, workspace_id uuid, created_by uuid);
+    create table public.oauth_clients (id text primary key, allowed_scopes text[], updated_at timestamptz);
     create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, interval text not null, limit_nanos bigint not null, unique (workspace_id, interval));
     create table public.notification_destinations (id uuid primary key, workspace_id uuid not null references public.workspaces(id) on delete cascade, status text not null default 'active');
     create table public.notification_event_destinations (
@@ -117,6 +123,9 @@ try {
   ]) await db.exec(await read(`../schemas/${file}`));
   await db.exec(await read(`../migrations/${schemaMigrationName}`));
   await db.exec(migration);
+  // The spend rules API migration redefines the evaluator on shared helpers; run the suite on it.
+  const apiMigrationName = laterMigrations.find((name) => name.endsWith('_spend_rules_api.sql'));
+  if (apiMigrationName) await db.exec(await read(`../migrations/${apiMigrationName}`));
 
   // ---- Calendar periods: local midnight to local midnight, Monday weeks, DST-length days.
   const period = async (kind, zone, now) => {

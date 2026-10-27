@@ -4883,6 +4883,234 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRules
+      summary: Listar reglas de gasto
+      description: Lista las reglas de gasto del espacio de trabajo. Una regla avisa al alcanzar umbrales en dólares o en porcentaje para un ámbito y un periodo natural o móvil. Cualquier miembro del espacio de trabajo puede leerlas.
+      responses:
+        '200':
+          description: Reglas de gasto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleListResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createSpendRule
+      summary: Crear una regla de gasto
+      description: Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleInput'
+      responses:
+        '201':
+          description: Regla de gasto creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la regla de gasto.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getSpendRule
+      summary: Obtener una regla de gasto
+      description: Devuelve una regla de gasto.
+      responses:
+        '200':
+          description: Regla de gasto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateSpendRule
+      summary: Actualizar una regla de gasto
+      description: Modifica una regla de gasto. Los campos enviados se combinan con la regla guardada y se vuelve a comprobar la regla completa. destination_ids sustituye los destinos de la regla; omítelo para conservarlos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleUpdateInput'
+      responses:
+        '200':
+          description: Regla de gasto actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteSpendRule
+      summary: Eliminar una regla de gasto
+      description: Elimina una regla de gasto. Deja de evaluarse y deja de contar para el límite de 50 reglas.
+      responses:
+        '200':
+          description: Regla de gasto eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleDeleteResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/test:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la regla de gasto.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testSpendRule
+      summary: Enviar una alerta de gasto de prueba
+      description: Genera la alerta de la regla con su valor actual, marcada como TEST, y la envía ahora a los destinos de la regla o, si no tiene ninguno, a la ruta de Spend Alerts. No se registra nada. Un espacio de trabajo puede enviar 5 pruebas por minuto.
+      responses:
+        '200':
+          description: Alerta de prueba enviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleTestResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la regla de gasto.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: previewSpendRule
+      summary: Previsualizar una regla de gasto
+      description: Devuelve el periodo actual de la regla, el gasto acumulado, la base, el porcentaje y el siguiente umbral, calculados igual que en la evaluación, sin enviar ni registrar nada.
+      responses:
+        '200':
+          description: Vista previa de la regla de gasto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRulePreviewResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la regla de gasto.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRuleHistory
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Número de eventos que se omiten para la paginación.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+        - name: limit
+          in: query
+          required: false
+          description: Número máximo de eventos que se devuelven.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: Listar el historial de una regla de gasto
+      description: Lista las alertas y los eventos de bloqueo que la regla ha puesto en cola, del más reciente al más antiguo, con el recuento de entregas, y sus registros de periodo más recientes.
+      responses:
+        '200':
+          description: Historial de la regla de gasto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -21581,6 +21809,756 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    SpendRuleMetric:
+      type: string
+      description: 'spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces el nivel habitual y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo baja del umbral.'
+      enum:
+        - spend
+        - budget_percent
+        - forecast
+        - spike
+        - balance
+    SpendRuleScope:
+      type: string
+      enum:
+        - workspace
+        - key
+        - member
+        - department
+        - model
+        - provider
+    SpendRulePeriod:
+      type: string
+      description: day, week (desde el lunes) o month en la zona horaria de la regla, o rolling sobre las últimas window_hours.
+      enum:
+        - day
+        - week
+        - month
+        - rolling
+    SpendRuleAction:
+      type: string
+      description: 'notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. El bloqueo aún no está disponible: una regla con action block se rechaza con un 400 hasta que lo esté.'
+      enum:
+        - notify
+        - block
+    SpendRule:
+      type: object
+      description: 'Una regla de gasto: umbrales en dólares o en porcentaje para un ámbito y un periodo que avisan, o avisan y después bloquean. Los importes se devuelven en nanodólares y en USD.'
+      required:
+        - id
+        - workspace_id
+        - name
+        - enabled
+        - metric
+        - evaluated
+        - scope_type
+        - scope_id
+        - period
+        - window_hours
+        - time_zone
+        - base_kind
+        - base_ref
+        - base_amount_nanos
+        - base_amount_usd
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - runway_days
+        - spike_multiplier
+        - spike_floor_nanos
+        - spike_floor_usd
+        - action
+        - block_at_percent
+        - block_at_amount_nanos
+        - block_at_amount_usd
+        - block_free_models
+        - cooldown_minutes
+        - destination_ids
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Null para el ámbito del espacio de trabajo; en otro caso, el ID de una clave, el ID de usuario de un miembro, el ID de un departamento, el ID de un modelo o el ID de un proveedor.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Zona horaria IANA de los periodos naturales. Null usa la zona horaria de facturación del espacio de trabajo.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'De qué son porcentaje los threshold_percents: amount (base_amount), workspace_budget o key_limit (el intervalo base_ref, que debe coincidir con el periodo) o previous_period.'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: Hasta cinco porcentajes enteros de la base, ordenados. Cada uno se activa como máximo una vez por periodo; si se cruzan varios a la vez, se envía una sola alerta con el más alto.
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: Si un bloqueo también detiene las solicitudes a modelos gratuitos.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: Minutos mínimos entre alertas en las reglas rolling, spike y balance.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: Destinos de notificación de las alertas de esta regla. Vacío significa la ruta de Spend Alerts del espacio de trabajo.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SpendRuleUpdateInput:
+      type: object
+      description: Campos de la regla de gasto que se cambian; al menos uno. Indica los importes como *_usd o como *_nanos (nanodólares exactos), no ambos. Pon un campo en null para borrarlo.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Null para el ámbito del espacio de trabajo; en otro caso, el ID de una clave, el ID de usuario de un miembro, el ID de un departamento, el ID de un modelo o el ID de un proveedor.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Zona horaria IANA de los periodos naturales. Null usa la zona horaria de facturación del espacio de trabajo.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'De qué son porcentaje los threshold_percents: amount (base_amount), workspace_budget o key_limit (el intervalo base_ref, que debe coincidir con el periodo) o previous_period.'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: Hasta cinco porcentajes enteros de la base, ordenados. Cada uno se activa como máximo una vez por periodo; si se cruzan varios a la vez, se envía una sola alerta con el más alto.
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: Si un bloqueo también detiene las solicitudes a modelos gratuitos.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: Minutos mínimos entre alertas en las reglas rolling, spike y balance.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: Destinos de notificación de las alertas de esta regla. Vacío significa la ruta de Spend Alerts del espacio de trabajo.
+      additionalProperties: false
+    SpendRuleInput:
+      description: Una regla de gasto que se crea. name, metric y period son obligatorios. Las reglas spike usan por defecto un multiplicador de 3x y un mínimo de 5 $.
+      allOf:
+        - $ref: '#/components/schemas/SpendRuleUpdateInput'
+        - type: object
+          required:
+            - name
+            - metric
+            - period
+    SpendRuleResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRule'
+    SpendRuleListResponse:
+      type: object
+      required:
+        - data
+        - max_rules
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendRule'
+        max_rules:
+          type: integer
+          example: 50
+    SpendRuleDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+    SpendRulePreview:
+      type: object
+      description: La situación actual de una regla de gasto. Las reglas sin periodo natural tienen period, value y alert en null.
+      required:
+        - rule_id
+        - metric
+        - evaluated
+        - computed_at
+        - time_zone
+        - period
+        - value_nanos
+        - value_usd
+        - base_kind
+        - base_ref
+        - base_nanos
+        - base_usd
+        - percent
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - reached_threshold_percent
+        - next_threshold
+        - block_at_nanos
+        - block_at_usd
+        - state
+        - alert
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.
+        computed_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+        period:
+          type: object
+          nullable: true
+          required:
+            - kind
+            - start
+            - end
+          properties:
+            kind:
+              $ref: '#/components/schemas/SpendRulePeriod'
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        value_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        value_usd:
+          type: number
+          nullable: true
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_usd:
+          type: number
+          nullable: true
+        percent:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        reached_threshold_percent:
+          type: integer
+          nullable: true
+        next_threshold:
+          type: object
+          nullable: true
+          description: 'El siguiente umbral que el valor aún no ha alcanzado: un porcentaje de la base (null para umbrales de importe) y su importe.'
+          required:
+            - percent
+            - amount_nanos
+            - amount_usd
+          properties:
+            percent:
+              type: integer
+              nullable: true
+            amount_nanos:
+              type: integer
+              format: int64
+            amount_usd:
+              type: number
+        block_at_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_usd:
+          type: number
+          nullable: true
+        state:
+          type: object
+          nullable: true
+          required:
+            - highest_percent_fired
+            - amount_fired_at
+            - last_fired_at
+            - fire_count
+          properties:
+            highest_percent_fired:
+              type: integer
+              nullable: true
+            amount_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            last_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            fire_count:
+              type: integer
+        alert:
+          type: object
+          nullable: true
+          description: El texto que llevaría una alerta ahora, con el umbral más alto alcanzado, o el primero.
+          required:
+            - scope_label
+            - title
+            - message
+          properties:
+            scope_label:
+              type: string
+            title:
+              type: string
+            message:
+              type: string
+    SpendRulePreviewResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRulePreview'
+    SpendRuleTestResult:
+      type: object
+      description: La alerta de prueba y lo que ocurrió en cada destino.
+      required:
+        - rule_id
+        - rule_name
+        - test
+        - title
+        - message
+        - source
+        - delivered
+        - failed
+        - deliveries
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        test:
+          type: boolean
+        title:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+          enum:
+            - rule
+            - routes
+          description: 'rule: los destinos propios de la regla. routes: la ruta de Spend Alerts del espacio de trabajo.'
+        delivered:
+          type: integer
+        failed:
+          type: integer
+        deliveries:
+          type: array
+          items:
+            type: object
+            required:
+              - destination_id
+              - name
+              - type
+              - delivered
+              - status
+              - error
+            properties:
+              destination_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              type:
+                type: string
+              delivered:
+                type: boolean
+              status:
+                type: integer
+                nullable: true
+              error:
+                type: string
+                nullable: true
+    SpendRuleTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleTestResult'
+    SpendRuleHistory:
+      type: object
+      description: Eventos del más reciente al más antiguo, con has_more para la página siguiente, y los 12 registros de periodo más recientes de la regla.
+      required:
+        - events
+        - has_more
+        - periods
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - kind
+              - created_at
+              - deliveries
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - spend_alert
+                  - spend_blocked
+              created_at:
+                type: string
+                format: date-time
+              title:
+                type: string
+                nullable: true
+              message:
+                type: string
+                nullable: true
+              state:
+                type: string
+                nullable: true
+              threshold_percent:
+                type: integer
+                nullable: true
+              thresholds_crossed:
+                type: array
+                items:
+                  type: integer
+                nullable: true
+              threshold_amount_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              threshold_amount_usd:
+                type: number
+                nullable: true
+              value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              value_usd:
+                type: number
+                nullable: true
+              base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              base_usd:
+                type: number
+                nullable: true
+              percent:
+                type: number
+                nullable: true
+              period:
+                type: object
+                nullable: true
+                additionalProperties: true
+              deliveries:
+                type: object
+                description: Intentos de entrega por estado.
+                required:
+                  - sent
+                  - failed
+                  - pending
+                properties:
+                  sent:
+                    type: integer
+                  failed:
+                    type: integer
+                  pending:
+                    type: integer
+        has_more:
+          type: boolean
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+              - period_start
+              - period_end
+              - highest_percent_fired
+              - amount_fired_at
+              - last_fired_at
+              - fire_count
+              - last_value_nanos
+              - last_value_usd
+              - last_base_nanos
+              - last_base_usd
+            properties:
+              period_start:
+                type: string
+                format: date-time
+                nullable: true
+              period_end:
+                type: string
+                format: date-time
+                nullable: true
+              highest_percent_fired:
+                type: integer
+                nullable: true
+              amount_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              last_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              fire_count:
+                type: integer
+              last_value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_value_usd:
+                type: number
+                nullable: true
+              last_base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_base_usd:
+                type: number
+                nullable: true
+    SpendRuleHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleHistory'
     WorkspaceApp:
       type: object
       required:

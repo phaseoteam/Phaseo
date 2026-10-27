@@ -26,6 +26,9 @@ CREATE UNIQUE INDEX email_outbox_dedupe_key_unique ON public.email_outbox USING 
 
 CREATE INDEX email_outbox_pending_idx ON public.email_outbox USING btree (sent_at, created_at);
 
+CREATE INDEX email_outbox_spend_rule_events_idx ON public.email_outbox USING btree (((payload ->> 'rule_id'::text)), created_at DESC, id DESC)
+  WHERE (kind = ANY (ARRAY['spend_alert'::text, 'spend_blocked'::text]));
+
 CREATE INDEX email_outbox_user_id_idx ON public.email_outbox USING btree (user_id);
 
 CREATE INDEX email_outbox_workspace_id_idx ON public.email_outbox USING btree (workspace_id);

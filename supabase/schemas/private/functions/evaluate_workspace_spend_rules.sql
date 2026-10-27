@@ -15,8 +15,8 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 --   * Spend: v2_private_usage_15m from the period start up to p_now, plus successful async jobs
 --     and realtime sessions from gateway_requests (as sweep_spend_limit_warnings adds them).
 --     The rollup is read as it stands: hours the outbox has yet to rebuild count once it marks
---     the workspace dirty again. Usage is read once per workspace and split at each distinct
---     period start, so every rule sums a handful of rows.
+--     the workspace dirty again. Values come from private.spend_rule_values and the text from
+--     private.spend_rule_alert_text, which the API preview and test sends share.
 --   * Scopes: workspace; key (key_id); member (actor_user_id: their keys and OAuth requests);
 --     department (private.spend_scope_departments, read now, so moving someone moves their
 --     spend for the current period); model (model_id); provider (the route's provider_slug,
@@ -52,99 +52,9 @@ begin
     return jsonb_build_object('rules', 0, 'fired', 0, 'state_rows', 0, 'events', '[]'::jsonb, 'missing', true);
   end if;
 
-  with rules as materialized (
-    select
-      rule.id, rule.name, rule.metric, rule.action, rule.scope_type, rule.scope_id, rule.scope_key_id, rule.scope_user_id,
-      rule.scope_department_id, rule.period, rule.base_kind, rule.base_ref, rule.base_amount_nanos,
-      rule.threshold_percents, rule.threshold_amount_nanos, zone.time_zone, period.period_start, period.period_end
-    from public.workspace_spend_rules rule
-    cross join lateral (select coalesce(rule.time_zone, v_workspace.time_zone) as time_zone) zone
-    cross join lateral private.spend_rule_period(rule.period, zone.time_zone, p_now) period
-    where rule.workspace_id = p_workspace_id
-      and rule.enabled
-      and rule.deleted_at is null
-      and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
-  ),
-  starts as materialized (
-    select distinct rules.period_start from rules
-  ),
-  raw as (
-    select rollup.bucket_start as at, rollup.key_id, rollup.actor_user_id, rollup.model_id, rollup.provider_model_id,
-      null::text as provider, rollup.cost_nanos
-    from public.v2_private_usage_15m rollup
-    where rollup.workspace_id = p_workspace_id
-      and rollup.bucket_start >= (select min(starts.period_start) from starts)
-      and rollup.bucket_start < p_now
-    union all
-    -- gateway_requests_async_spend_idx
-    select request.created_at, request.key_id, coalesce(request.oauth_user_id, key.oauth_user_id, key.created_by), request.model_id,
-      null, request.provider, coalesce(request.cost_nanos, 0)::numeric
-    from public.gateway_requests request
-    left join public.keys key on key.id = request.key_id
-    where request.success is true
-      and request.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
-      and request.workspace_id = p_workspace_id
-      and request.created_at >= (select min(starts.period_start) from starts)
-      and request.created_at < p_now
-  ),
-  segments as materialized (
-    -- Spend per segment (the latest period start at or before the usage) and attribution.
-    select segment.period_start as segment_start, raw.key_id, raw.actor_user_id, raw.model_id, raw.provider_model_id, raw.provider,
-      sum(raw.cost_nanos) as cost_nanos
-    from raw
-    cross join lateral (select max(starts.period_start) as period_start from starts where starts.period_start <= raw.at) segment
-    group by 1, 2, 3, 4, 5, 6
-  ),
-  usage as materialized (
-    select segments.segment_start, segments.key_id, segments.actor_user_id, segments.model_id,
-      coalesce(segments.provider, route.provider_slug) as provider, segments.cost_nanos
-    from segments
-    left join public.v2_model_provider_routes route on route.provider_model_id = segments.provider_model_id
-  ),
-  departments as materialized (
-    select pair.key_id, pair.actor_user_id, scope.department_id
-    from (select distinct usage.key_id, usage.actor_user_id from usage) pair
-    cross join lateral private.spend_scope_departments(p_workspace_id, pair.key_id, pair.actor_user_id) scope(department_id)
-    where exists (select 1 from rules where rules.scope_type = 'department')
-  ),
-  valued as (
-    select rules.*,
-      coalesce((
-        select sum(usage.cost_nanos)
-        from usage
-        where usage.segment_start >= rules.period_start
-          and case rules.scope_type
-            when 'workspace' then true
-            when 'key' then usage.key_id = rules.scope_key_id
-            when 'member' then usage.actor_user_id = rules.scope_user_id
-            when 'model' then usage.model_id = rules.scope_id
-            when 'provider' then usage.provider = rules.scope_id
-            when 'department' then exists (
-              select 1 from departments
-              where departments.department_id = rules.scope_department_id
-                and departments.key_id is not distinct from usage.key_id
-                and departments.actor_user_id is not distinct from usage.actor_user_id
-            )
-            else false
-          end
-      ), 0) as value_nanos,
-      case rules.base_kind
-        when 'amount' then rules.base_amount_nanos
-        when 'workspace_budget' then (
-          select budget.limit_nanos from public.workspace_budgets budget
-          where budget.workspace_id = p_workspace_id and budget.interval = rules.base_ref
-        )
-        when 'key_limit' then (
-          select nullif(case rules.base_ref
-              when 'daily' then key.daily_limit_cost_nanos
-              when 'weekly' then key.weekly_limit_cost_nanos
-              when 'monthly' then key.monthly_limit_cost_nanos
-            end, 0)
-          from public.keys key
-          where key.id = rules.scope_key_id and key.workspace_id = p_workspace_id
-        )
-      end as base_nanos
-    from rules
+  with valued as materialized (
+    -- Spend so far and the base of every enabled, evaluable rule (shared with the API preview).
+    select * from private.spend_rule_values(p_workspace_id, p_now)
   ),
   decided as (
     select valued.*, state.rule_id is not null as has_state, state.highest_percent_fired, state.amount_fired_at,
@@ -163,64 +73,21 @@ begin
   firing as (
     select decided.*,
       case when decided.metric = 'spend' then 'amount-' || decided.threshold_amount_nanos else decided.crossed_percent::text end as threshold_key,
-      case decided.period when 'day' then 'today' when 'week' then 'this week' else 'this month' end as so_far,
-      case decided.period when 'day' then 'daily' when 'week' then 'weekly' else 'monthly' end as adjective,
       to_char(decided.period_start at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as period_key
     from decided
     where (decided.metric = 'spend' and decided.amount_fired_at is null and decided.value_nanos >= decided.threshold_amount_nanos)
       or (decided.metric = 'budget_percent' and decided.crossed_percent > coalesce(decided.highest_percent_fired, 0))
   ),
-  labelled as (
-    select firing.*,
-      coalesce(scope.label, firing.scope_id, v_workspace.name, 'Workspace') as scope_label,
-      case firing.scope_type
-        when 'workspace' then 'The workspace'
-        when 'key' then 'API key ''' || coalesce(left(scope.label, 60), 'deleted key') || ''''
-        when 'member' then coalesce(scope.label, 'A former member')
-        when 'department' then 'Department ''' || coalesce(left(scope.label, 60), 'deleted department') || ''''
-        when 'model' then coalesce(scope.label, firing.scope_id)
-        else 'Provider ' || firing.scope_id
-      end as subject,
-      case firing.base_kind
-        when 'workspace_budget' then 'the ' || firing.base_ref || ' budget'
-        when 'key_limit' then 'the key''s ' || firing.base_ref || ' limit'
-        else private.workspace_push_usd(firing.base_nanos)
-      end as base_short,
-      'The ' || case firing.period when 'day' then 'day' when 'week' then 'week' else 'month' end || ' resets '
-        || to_char(firing.period_end at time zone firing.time_zone, 'Mon FMDD, HH24:MI') || ' ' || firing.time_zone || '.' as resets
-    from firing
-    left join lateral (
-      select case firing.scope_type
-        when 'workspace' then nullif(btrim(v_workspace.name), '')
-        when 'key' then (select nullif(btrim(key.name), '') from public.keys key where key.id = firing.scope_key_id)
-        when 'member' then (select nullif(btrim(member.email), '') from auth.users member where member.id = firing.scope_user_id)
-        when 'department' then (
-          select nullif(btrim(department.name), '') from public.workspace_departments department
-          where department.id = firing.scope_department_id
-        )
-        when 'model' then (select nullif(btrim(model.name), '') from public.v2_models model where model.model_slug = firing.scope_id limit 1)
-      end as label
-    ) scope on true
-  ),
   rendered as (
-    select labelled.*,
-      'spend_alert:' || labelled.id || ':' || labelled.period_key || ':' || labelled.threshold_key as dedupe_key,
-      left(labelled.name, 100) || ': ' || case when labelled.metric = 'spend'
-          then private.workspace_push_usd(labelled.threshold_amount_nanos) || ' reached'
-          else labelled.crossed_percent || '% of ' || labelled.base_short || ' reached'
-        end as title,
-      labelled.subject || ' has spent ' || private.workspace_push_usd(labelled.value_nanos) || ' ' || labelled.so_far
-        || case when labelled.metric = 'spend'
-          then ', past the ' || private.workspace_push_usd(labelled.threshold_amount_nanos) || ' alert threshold. '
-          else ': ' || to_char(floor(labelled.value_nanos * 100 / labelled.base_nanos), 'FM999,999,990') || '% of '
-            || case labelled.base_kind
-              when 'amount' then private.workspace_push_usd(labelled.base_nanos)
-              else labelled.base_short || ' (' || private.workspace_push_usd(labelled.base_nanos) || ')'
-            end
-            || '. Alerts at ' || (select string_agg(threshold || '%', ', ' order by threshold) from unnest(labelled.threshold_percents) threshold) || '. '
-        end
-        || labelled.resets as message
-    from labelled
+    select firing.*, alert.scope_label, alert.title, alert.message,
+      'spend_alert:' || firing.id || ':' || firing.period_key || ':' || firing.threshold_key as dedupe_key
+    from firing
+    cross join lateral private.spend_rule_alert_text(
+      v_workspace.name, firing.name, firing.metric, firing.scope_type, firing.scope_id, firing.scope_key_id,
+      firing.scope_user_id, firing.scope_department_id, firing.period, firing.period_end, firing.time_zone,
+      firing.base_kind, firing.base_ref, firing.base_nanos, firing.threshold_percents, firing.threshold_amount_nanos,
+      firing.value_nanos, firing.crossed_percent
+    ) alert
   ),
   queued as (
     insert into public.email_outbox (kind, template, to_email, subject, workspace_id, user_id, payload, dedupe_key)
@@ -310,7 +177,7 @@ begin
     returning 1
   )
   select jsonb_build_object(
-    'rules', (select count(*) from rules),
+    'rules', (select count(*) from valued),
     'fired', (select count(*) from queued),
     'state_rows', (select count(*) from saved),
     'events', coalesce((

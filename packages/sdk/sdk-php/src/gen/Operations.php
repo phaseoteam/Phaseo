@@ -307,6 +307,13 @@ function createSpeech(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-rules";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createTranscription(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -517,6 +524,14 @@ function deleteRateLimitPolicy(Client $client, ?array $path = null, ?array $quer
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -852,6 +867,14 @@ function getRateLimitPolicy(Client $client, ?array $path = null, ?array $query =
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1227,6 +1250,21 @@ function listRateLimitPolicies(Client $client, ?array $path = null, ?array $quer
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listSpendRuleHistory(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/history";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listSpendRules(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-rules";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1369,6 +1407,14 @@ function mergeWorkspaceApp(Client $client, ?array $path = null, ?array $query = 
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/apps/" . rawurlencode((string)($path["id"] ?? "")) . "/merge";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function previewSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/preview";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
 function publishPresetVersion(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1571,6 +1617,14 @@ function summarizeGatewayFeedback(Client $client, ?array $path = null, ?array $q
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function testSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function testWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1732,6 +1786,14 @@ function updateRateLimitPolicy(Client $client, ?array $path = null, ?array $quer
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 
