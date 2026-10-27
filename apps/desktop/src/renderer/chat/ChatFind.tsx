@@ -81,8 +81,16 @@ export function ChatFindBar({ taskId, revision, host, page, loaded, target, onTa
 	// The global index as a message and an occurrence within it.
 	let hit = result?.value.hits[0], occurrence = current;
 	for (const candidate of result?.value.hits ?? []) { if (occurrence < candidate.count) { hit = candidate; break; } occurrence -= candidate.count; }
-	// loaded and jump read the latest page; only a new target needs them.
-	useEffect(() => { onTarget(hit?.id); if (hit && !loaded(hit.id)) jump(hit.id, hit.turnId); }, [hit?.id]);
+	useEffect(() => { onTarget(hit?.id); }, [hit?.id]);
+	// A match on a page not loaded loads it. A load already under way ignores the request, so the next page tries again,
+	// twice at most for one match: a turn longer than a page may never hold it.
+	const jumps = useRef<{ id?: string; count: number }>({ count: 0 });
+	useEffect(() => {
+		// Only until find has shown the match: paging away from it afterwards is the reader's.
+		if (!hit || loaded(hit.id) || !scrollPending.current) return;
+		if (jumps.current.id !== hit.id) jumps.current = { id: hit.id, count: 0 };
+		if (jumps.current.count++ < 2) jump(hit.id, hit.turnId);
+	}, [hit?.id, page]);
 	useEffect(() => () => { onTarget(undefined); clearHighlights(); }, []);
 	// Draws every loaded match, marks the current one and scrolls to it when the place changed.
 	useEffect(() => {
