@@ -491,6 +491,8 @@ type VendorDocs = {
 	reads: Partial<Record<Field, string[]>>;
 	required?: string[];
 	maxStringLength?: number;
+	maxStringBytes?: number;
+	maxRequestBytes?: number;
 };
 
 const basic = (user: string, password: string) => `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
@@ -594,6 +596,9 @@ const VENDOR_DOCS: Record<string, VendorDocs> = {
 		reads: { model: GEN_AI_MODEL, ...GEN_AI_MESSAGES, tokens: GEN_AI_TOKENS, session: ["gen_ai.conversation.id"] },
 		// https://docs.honeycomb.io/send-data/use-cases/agents
 		required: ["gen_ai.operation.name", "gen_ai.conversation.id", "gen_ai.agent.name"],
+		// https://docs.honeycomb.io/get-started/best-practices/organizing-data
+		// "each string field has a maximum length of 64KB"
+		maxStringBytes: 64 * 1024,
 	},
 	langfuse: {
 		docs: "https://langfuse.com/integrations/native/opentelemetry",
@@ -633,6 +638,8 @@ const VENDOR_DOCS: Record<string, VendorDocs> = {
 		required: ["gen_ai.provider.name"],
 		// "Attribute values of type string have a max length of 4095 characters."
 		maxStringLength: 4095,
+		// "payloads must be smaller than the 1MB (10^6 bytes) maximum payload size"
+		maxRequestBytes: 1_000_000,
 	},
 	posthog: {
 		docs: "https://posthog.com/docs/llm-analytics/installation/opentelemetry",
@@ -688,24 +695,14 @@ const VENDOR_DOCS: Record<string, VendorDocs> = {
 // Where what we send differs from a vendor's docs. The test fails once an
 // entry no longer applies, so the list stays a true record of the gaps.
 const KNOWN_GAPS: Record<string, string> = {
-	"arize:headers": "Arize's manual-instrumentation page asks for arize-space-id and arize-api-key over HTTP and says the wrong form drops spans silently; we send space_id and api_key, which its exporter page shows.",
+	// Axiom's own SDK sets these for agent steps; a gateway request has no
+	// capability or step to name.
 	"axiom:required": "Axiom's AI view also asks for its own gen_ai.capability.name and gen_ai.step.name.",
-	"comet_opik:cost": "Opik reads cost from gen_ai.usage.cost; we send phaseo.cost.nanos.",
-	"datadog:cost": "Datadog reads cost from gen_ai.cost.*; we send phaseo.cost.nanos.",
-	"grafana_cloud:resource": "Grafana's Agent Observability only records traces with agento11y.record=true; traces still reach Tempo without it.",
+	// The docs give no unit for gen_ai.cost.estimated_total, so a dollar value
+	// could be read as another unit; Datadog estimates cost from tokens itself.
+	"datadog:cost": "Datadog reads cost from gen_ai.cost.*, in a unit its docs do not give; we send gen_ai.usage.cost in US dollars.",
+	// A gateway request is not an agent, and a made-up name would mislabel it.
 	"honeycomb:required": "Honeycomb's agent view groups by gen_ai.agent.name and shows Unknown without it.",
-	"langfuse:input": "Langfuse's mapping table reads input from gen_ai.prompt or langfuse.observation.input, not gen_ai.input.messages.",
-	"langfuse:output": "Langfuse's mapping table reads output from gen_ai.completion or langfuse.observation.output, not gen_ai.output.messages.",
-	"langfuse:cost": "Langfuse reads cost from gen_ai.usage.cost or langfuse.observation.cost_details; we send phaseo.cost.nanos.",
-	"langsmith:session": "LangSmith reads threads from langsmith.trace.session_id, not gen_ai.conversation.id.",
-	"langsmith:user": "LangSmith has no user attribute beyond custom langsmith.metadata.* keys.",
-	"posthog:user": "PostHog reads the user from the posthog.distinct_id resource attribute, not user.id.",
-	"respan:input": "Respan reads indexed gen_ai.prompt.N.* messages, not gen_ai.input.messages.",
-	"respan:output": "Respan reads indexed gen_ai.completion.N.* messages, not gen_ai.output.messages.",
-	"respan:tokens": "Respan reads gen_ai.usage.prompt_tokens and completion_tokens, not input_tokens and output_tokens.",
-	"respan:session": "Respan reads threads from respan.threads.thread_identifier.",
-	"respan:user": "Respan reads customers from respan.customer_params.customer_identifier.",
-	"respan:required": "Respan only promotes model, messages and tokens on spans with llm.request.type.",
 };
 
 type Attribute = { key: string; value: Record<string, unknown> };
@@ -740,6 +737,8 @@ async function vendorChecks(id: string, docs: VendorDocs): Promise<Record<string
 		resource: Object.entries(docs.resource ?? {}).every(([key, value]) => resource[key] === value),
 		required: (docs.required ?? []).every((key) => keys.has(key)),
 		maxStringLength: docs.maxStringLength === undefined || (target.maxAttributeLength !== null && target.maxAttributeLength <= docs.maxStringLength),
+		maxStringBytes: docs.maxStringBytes === undefined || (target.maxAttributeBytes !== null && target.maxAttributeBytes <= docs.maxStringBytes),
+		maxRequestBytes: docs.maxRequestBytes === undefined || (target.maxRequestBytes !== null && target.maxRequestBytes <= docs.maxRequestBytes),
 	};
 	for (const [field, documented] of Object.entries(docs.reads)) checks[field] = covers(documented, keys);
 	return checks;
@@ -767,5 +766,62 @@ describe("OpenTelemetry tools", () => {
 		const request = applyOtlpTarget(samplePayload(), resolveOtlpTarget("new_relic", VENDOR_DOCS.new_relic.config)) as ExportRequest;
 		for (const span of request.resourceSpans[0].scopeSpans[0].spans) expect(span.attributes.length).toBeLessThanOrEqual(128);
 		expect(request.resourceSpans[0].resource.attributes.length).toBeLessThanOrEqual(64);
+	});
+
+	const llmAttributes = (id: string, payload: unknown = samplePayload()) => {
+		const request = applyOtlpTarget(payload, resolveOtlpTarget(id, VENDOR_DOCS[id].config)) as ExportRequest;
+		const span = request.resourceSpans[0].scopeSpans[0].spans.filter((item) => item.kind === 3).at(-1)!;
+		return Object.fromEntries(span.attributes.map((attribute) => [attribute.key, attribute.value.stringValue ?? attribute.value.intValue ?? attribute.value.doubleValue]));
+	};
+
+	it("sends Respan indexed messages, with the system instructions first, in place of the JSON lists", () => {
+		const attributes = llmAttributes("respan");
+		expect(attributes).toMatchObject({
+			"gen_ai.prompt.0.role": "system",
+			"gen_ai.prompt.0.content": "You summarise support tickets.",
+			"gen_ai.prompt.1.role": "user",
+			"gen_ai.prompt.1.content": "Summarise ticket 48213",
+			"gen_ai.completion.0.role": "assistant",
+			"gen_ai.completion.0.content": "The customer cannot sign in.",
+			"llm.request.type": "chat",
+			"gen_ai.usage.prompt_tokens": "52",
+			"gen_ai.usage.completion_tokens": "9",
+		});
+		expect(attributes).not.toHaveProperty("gen_ai.input.messages");
+		expect(attributes).not.toHaveProperty("gen_ai.output.messages");
+		// Privacy mode leaves out the messages, and so their indexed form.
+		const redacted = llmAttributes("respan", samplePayload(false));
+		expect(Object.keys(redacted).filter((key) => key.startsWith("gen_ai.prompt.") || key.startsWith("gen_ai.completion."))).toEqual([]);
+		expect(redacted["llm.request.type"]).toBe("chat");
+	});
+
+	it("renames Langfuse's messages rather than sending them twice", () => {
+		const attributes = llmAttributes("langfuse");
+		expect(JSON.parse(String(attributes["langfuse.observation.input"]))[0].role).toBe("user");
+		expect(attributes).not.toHaveProperty("gen_ai.input.messages");
+		expect(attributes).not.toHaveProperty("gen_ai.output.messages");
+	});
+
+	it("puts the cost on the billed provider call only, in dollars", () => {
+		const spans = (samplePayload() as unknown as ExportRequest).resourceSpans[0].scopeSpans[0].spans;
+		const costs = spans.map((span) => span.attributes.find((attribute) => attribute.key === "gen_ai.usage.cost")?.value.doubleValue);
+		// The server span and the failed attempt have none.
+		expect(costs).toEqual([undefined, undefined, 0.0000315]);
+	});
+
+	it("sets PostHog's distinct ID from each request's own user", () => {
+		const second = buildGatewayGenAiOtlpPayload({ ...SAMPLE_TELEMETRY, userId: "user-2" }, { includeSensitiveContent: true });
+		const batch = { resourceSpans: [...samplePayload().resourceSpans, ...second.resourceSpans] };
+		const request = applyOtlpTarget(batch, resolveOtlpTarget("posthog", VENDOR_DOCS.posthog.config)) as ExportRequest;
+		expect(request.resourceSpans.map((resource) => resource.resource.attributes.find((attribute) => attribute.key === "posthog.distinct_id")?.value.stringValue)).toEqual(["user-48213", "user-2"]);
+	});
+
+	it("cuts Honeycomb strings to 64 KB of UTF-8 without splitting a character", () => {
+		const payload = buildGatewayGenAiOtlpPayload({ ...SAMPLE_TELEMETRY, requestPayload: { messages: [{ role: "user", content: "漢".repeat(70_000) }] } }, { includeSensitiveContent: true });
+		const input = String(llmAttributes("honeycomb", payload)["gen_ai.input.messages"]);
+		expect(new TextEncoder().encode(input).byteLength).toBeLessThanOrEqual(64_000);
+		expect(new TextEncoder().encode(input).byteLength).toBeGreaterThan(63_990);
+		expect(input).not.toContain("�");
+		expect(input.startsWith("[{\"role\":\"user\"")).toBe(true);
 	});
 });
