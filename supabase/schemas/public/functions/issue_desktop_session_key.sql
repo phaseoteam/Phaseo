@@ -39,6 +39,16 @@ begin
     end,
     revoked_at = null;
 
+  -- One active desktop key per person and workspace (keys_oauth_delegated_active_idx), as an OAuth sign-in leaves it:
+  -- signing in replaces the earlier key. The authorisation row is locked above, so two sign-ins at once take turns.
+  update public.keys key_row
+  set status = 'revoked'
+  where key_row.key_kind = 'oauth_delegated'
+    and key_row.oauth_user_id = p_user_id
+    and key_row.workspace_id = p_workspace_id
+    and key_row.oauth_client_id = 'phaseo_desktop'
+    and key_row.status = 'active';
+
   insert into public.keys (
     workspace_id, name, hash, prefix, status, scopes, created_by, kid,
     key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at

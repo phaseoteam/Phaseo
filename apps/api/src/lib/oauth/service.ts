@@ -1193,6 +1193,7 @@ export async function desktopKeyWorkspace(userId: string, requested?: string | n
  * The desktop app's key for model calls, issued against the person's own Phaseo login rather than an OAuth code: the
  * app is Phaseo's, so it signs in like the website and gets no consent screen. It's the same delegated key an OAuth
  * sign-in gave it (renewable, revocable, listed under Connected apps), and owners hear about it like any new key.
+ * It replaces the person's earlier desktop key in that workspace, as an OAuth sign-in does: there's one at a time.
  * Null when the person isn't a member of the workspace.
  */
 export async function issueDesktopSessionKey(args: { userId: string; workspaceId: string }) {
