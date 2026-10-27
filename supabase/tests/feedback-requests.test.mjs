@@ -15,39 +15,64 @@ const enqueue = async (limit, cap = 100) => (await one("select public.enqueue_fe
 const tokenFor = async email => (await one(
     `select r.access_token from public.feedback_requests r join auth.users a on a.id = r.user_id where a.email = $1`, [email],
 )).access_token;
-const submit = async (token, answers, cap = 1) => (await one(
-    'select public.submit_feedback_response($1, $2, 1000000000, $3, 90) result', [token, answers, cap],
+const submit = async (token, cap = 1) => (await one(
+    'select public.submit_feedback_response($1, 1000000000, $2, 90) result', [token, cap],
 )).result;
 
-try {
-    // The migration must carry every schema file it was built from.
-    const migration = await read('../migrations/20261016082204_feedback_requests.sql');
-    for (const file of schemaFiles) assert.ok(migration.includes((await read(file)).trim()), `${file} is in the migration`);
+// Everything the feedback objects depend on; users gets its opt-out column from the
+// first feedback migration when replaying.
+const setup = (withOptOut) => `
+  create role anon; create role authenticated; create role service_role bypassrls;
+  grant usage on schema public to anon, authenticated, service_role;
+  create schema auth;
+  create table auth.users (
+    id uuid primary key, email text, created_at timestamptz not null, last_sign_in_at timestamptz,
+    raw_user_meta_data jsonb not null default '{}', deleted_at timestamptz, is_anonymous boolean not null default false
+  );
+  grant usage on schema auth to service_role; grant select on auth.users to service_role;
+  create table public.users (
+    user_id uuid primary key references auth.users(id) on delete cascade, display_name text,
+    role text not null default 'user'${withOptOut ? ', product_emails_opted_out_at timestamptz' : ''}
+  );
+  grant select on public.users to service_role;
+  create table public.workspaces (id uuid primary key);
+  create table public.workspace_members (workspace_id uuid, user_id uuid);
+  create table public.credit_ledger (workspace_id uuid, ref_type text);
+  create table public.v2_private_usage_daily (workspace_id uuid);
+  create table public.gateway_requests (workspace_id uuid);
+  create function public.is_admin_user() returns boolean language sql as 'select false';
+`;
+const shape = async (target) => ({
+    columns: (await target.query(`
+      select column_name from information_schema.columns
+      where table_schema = 'public' and table_name = 'feedback_requests' order by column_name`)).rows,
+    constraints: (await target.query(`
+      select conname, pg_get_constraintdef(oid) def from pg_constraint
+      where conrelid = 'public.feedback_requests'::regclass order by conname`)).rows,
+    comment: (await target.query(`select obj_description('public.feedback_requests'::regclass) c`)).rows,
+    functions: (await target.query(`
+      select p.oid::regprocedure::text signature, pg_get_functiondef(p.oid) def, p.proacl::text acl from pg_proc p
+      where p.pronamespace = 'public'::regnamespace and p.proname like '%feedback%' order by 1`)).rows,
+});
 
-    await db.exec(`
-      create role anon; create role authenticated; create role service_role bypassrls;
-      grant usage on schema public to anon, authenticated, service_role;
-      create schema auth;
-      create table auth.users (
-        id uuid primary key, email text, created_at timestamptz not null, last_sign_in_at timestamptz,
-        raw_user_meta_data jsonb not null default '{}', deleted_at timestamptz, is_anonymous boolean not null default false
-      );
-      grant usage on schema auth to service_role; grant select on auth.users to service_role;
-      create table public.users (
-        user_id uuid primary key references auth.users(id) on delete cascade, display_name text,
-        role text not null default 'user', product_emails_opted_out_at timestamptz
-      );
-      grant select on public.users to service_role;
-      create table public.workspaces (id uuid primary key);
-      create table public.workspace_members (workspace_id uuid, user_id uuid);
-      create table public.credit_ledger (workspace_id uuid, ref_type text);
-      create table public.v2_private_usage_daily (workspace_id uuid);
-      create table public.gateway_requests (workspace_id uuid);
-      create function public.is_admin_user() returns boolean language sql as 'select false';
-    `);
-    await db.exec(await read('../schemas/public/tables/email_outbox.sql'));
-    await db.exec(await read('../schemas/public/tables/credit_grants.sql'));
-    for (const file of schemaFiles) await db.exec(await read(file));
+try {
+    // Replaying the migrations must give the same objects as the schema files.
+    const replay = new PGlite();
+    try {
+        await replay.exec(setup(false));
+        await replay.exec(await read('../schemas/public/tables/email_outbox.sql'));
+        await replay.exec(await read('../schemas/public/tables/credit_grants.sql'));
+        await replay.exec(await read('../migrations/20261016082204_feedback_requests.sql'));
+        await replay.exec(await read('../migrations/20261027124704_feedback_answers_to_posthog.sql'));
+
+        await db.exec(setup(true));
+        await db.exec(await read('../schemas/public/tables/email_outbox.sql'));
+        await db.exec(await read('../schemas/public/tables/credit_grants.sql'));
+        for (const file of schemaFiles) await db.exec(await read(file));
+        assert.deepEqual(await shape(replay), await shape(db), 'migrations match the schema files');
+    } finally {
+        await replay.close();
+    }
 
     // Signup ages in days; only accounts 90+ days old, not deleted, anonymous, admin
     // or opted out, are eligible. Oldest first.
@@ -92,26 +117,33 @@ try {
     assert.ok(queued.every(row => row.kind === 'feedback_request' && row.template === 'feedback_request'));
     assert.ok(queued.every(row => row.dedupe_key.startsWith('feedback_request:v1:')));
 
-    // The feedback page sees the segment but never the address.
+    // The feedback page sees the segment but never the address. The request and user ids
+    // are for the PostHog answer event; the web API keeps them server-side.
     const paidToken = await tokenFor('paid@example.com');
+    const paidRequest = await one(`
+      select r.id, r.user_id from public.feedback_requests r join auth.users a on a.id = r.user_id
+      where a.email = 'paid@example.com'`);
     const page = (await one('select public.get_feedback_request($1) page', [paidToken])).page;
-    assert.deepEqual(page, { campaign: 'v1', segment: 'paid', recency: 'active', responded: false, rewardCode: null, optedOut: false, rewardsIssued: 0 });
+    assert.deepEqual(page, {
+        requestId: paidRequest.id, userId: paidRequest.user_id, campaign: 'v1', segment: 'paid', recency: 'active',
+        responded: false, rewardCode: null, optedOut: false, rewardsIssued: 0,
+    });
     assert.equal((await one("select public.get_feedback_request('99999999-9999-9999-9999-999999999999') page")).page, null);
 
-    // First answer is kept and earns one single-use code; repeats return the same code.
-    assert.deepEqual(await submit(paidToken, '[1]'), { status: 'invalid_answers' });
-    const first = await submit(paidToken, { reason: 'Pricing is unclear' });
+    // The first submission is recorded and earns one single-use code; repeats return the
+    // same code. No answers are stored.
+    const first = await submit(paidToken);
     assert.equal(first.status, 'submitted');
     assert.equal(first.rewardStatus, 'issued');
     assert.match(first.rewardCode, /^THANKS-[A-Z0-9]{12}$/);
     const grant = await one('select amount_nanos::text amount_nanos, max_redemptions, code_normalized, expires_at > now() + interval \'89 days\' valid from public.credit_grants');
     assert.deepEqual(grant, { amount_nanos: '1000000000', max_redemptions: 1, code_normalized: first.rewardCode, valid: true });
-    assert.deepEqual(await submit(paidToken, { reason: 'changed my mind' }), { status: 'already_submitted', rewardCode: first.rewardCode });
-    assert.deepEqual((await one('select answers from public.feedback_requests where access_token = $1', [paidToken])).answers, { reason: 'Pricing is unclear' });
+    assert.deepEqual(await submit(paidToken), { status: 'already_submitted', rewardCode: first.rewardCode });
+    assert.equal((await one('select public.get_feedback_request($1) page', [paidToken])).page.responded, true);
 
     // The cap counts codes already issued in the campaign.
-    assert.deepEqual(await submit(await tokenFor('used@example.com'), { reason: 'x' }, 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
-    assert.deepEqual(await submit('99999999-9999-9999-9999-999999999999', { reason: 'x' }), { status: 'not_found' });
+    assert.deepEqual(await submit(await tokenFor('used@example.com'), 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
+    assert.deepEqual(await submit('99999999-9999-9999-9999-999999999999'), { status: 'not_found' });
 
     // Unsubscribing opts the user out of all non-essential email and cancels unsent feedback
     // email. It returns every address to unsubscribe at the provider, including the one the
@@ -146,7 +178,7 @@ try {
     await db.exec('set role service_role');
     const rawToken = await tokenFor('raw@example.com');
     assert.equal((await one('select public.get_feedback_request($1) page', [rawToken])).page.rewardsIssued, 1);
-    assert.deepEqual(await submit(rawToken, { reason: 'x' }, 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
+    assert.deepEqual(await submit(rawToken, 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
     await db.exec('reset role');
 
     // Backend-only: browsers can neither read requests nor call the functions.
@@ -155,7 +187,7 @@ try {
         await assert.rejects(db.query('select * from public.feedback_requests'), /permission denied/);
         await assert.rejects(enqueue(1), /permission denied/);
         await assert.rejects(db.query('select public.get_feedback_request($1)', [neverToken]), /permission denied/);
-        await assert.rejects(submit(neverToken, { a: 1 }), /permission denied/);
+        await assert.rejects(submit(neverToken), /permission denied/);
         await assert.rejects(db.query('select public.opt_out_of_product_emails($1)', [neverToken]), /permission denied/);
         await db.exec('reset role');
     }
