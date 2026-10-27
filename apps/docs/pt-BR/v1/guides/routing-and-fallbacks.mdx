@@ -188,7 +188,7 @@ A mesma página também oferece opções dos canais beta e alpha para introduzir
 
 ### O fallback de BYOK é explícito
 
-Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação BYOK com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
+Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
 
 ### Rotas dinâmicas associam políticas às chaves de API
 
@@ -221,6 +221,19 @@ Metadados personalizados estão disponíveis nas superfícies de inferência de 
 
 Se um provedor retornar erros ou limites de taxa, o Gateway poderá tentar novamente ou encaminhar a solicitação para outro provedor compatível com o mesmo modelo. Ainda assim, trate respostas `429` e `5xx` com backoff exponencial.
 
+```mermaid
+flowchart TD
+  req["Solicitação"] --> pol["Aplicar predefinições, proteções e a política de provedores"]
+  pol --> rnk["Classificar os provedores elegíveis pelo modo de roteamento"]
+  rnk --> prov["Chamar o provedor mais bem classificado"]
+  prov -->|"Sucesso"| resp["Retornar a resposta"]
+  prov -->|"Erro ou limite de taxa do provedor"| nextProv{{"Há outro provedor elegível?"}}
+  nextProv -->|"Sim"| prov
+  nextProv -->|"Não"| fallbackCheck{{"Status com nova tentativa e resta um modelo de fallback?"}}
+  fallbackCheck -->|"Sim: executar de novo com o próximo modelo"| pol
+  fallbackCheck -->|"Não"| err["Retornar o erro"]
+```
+
 Os nós de modelo em uma rota dinâmica também podem definir uma lista ordenada de modelos alternativos. Primeiro, a Phaseo esgota as tentativas de provedores elegíveis para o modelo selecionado. Se a resposta permitir nova tentativa (`429`, `500`, `502`, `503` ou `504`), o Gateway executa novamente todo o fluxo de políticas e seleção de provedores para cada modelo alternativo, na ordem. Erros do cliente são retornados imediatamente e não trocam o modelo.
 
 Cada alternativa é verificada de forma independente em relação às restrições de modelos do espaço de trabalho, aos guardrails, à política de provedores, aos preços e ao suporte de recursos. Uma rota pode armazenar até oito modelos alternativos.
@@ -240,7 +253,7 @@ Cada alternativa é verificada de forma independente em relação às restriçõ
 
 Uma solicitação que envia `models` sem `model` é rejeitada com `400`. As alternativas no nível da solicitação usam o mesmo mecanismo das alternativas de rotas dinâmicas:
 
-- **Gatilhos.** O próximo modelo só é tentado quando a tentativa anterior, depois das próprias novas tentativas com provedores, termina com `429`, `500`, `502`, `503` ou `504`. Erros do cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` e `422`, são retornados sem trocar de modelo. Um `429` causado por um orçamento da Phaseo ou pela cota de um modelo gratuito atingidos durante a execução da solicitação também passa para o próximo modelo, porque outro modelo pode caber no limite restante. Autenticação, limites de taxa de chaves de API e outras verificações que falham antes da execução do modelo principal retornam imediatamente.
+- **Gatilhos.** O próximo modelo só é tentado quando a tentativa anterior, depois das próprias novas tentativas com provedores, termina com `429`, `500`, `502`, `503` ou `504`. Erros do cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` e `422`, são retornados sem trocar de modelo. Um `429` causado por um orçamento da Phaseo ou pela cota de um modelo gratuito atingidos durante a execução da solicitação também passa para o próximo modelo, porque outro modelo pode caber no limite restante. Quando nenhum provedor atende ao modelo principal, por exemplo porque ele foi [aposentado](#retired-models), a Phaseo também passa para o próximo modelo. Autenticação, limites de taxa de chaves de API e outras verificações que falham antes da execução do modelo principal retornam imediatamente.
 - **Limites.** `models` aceita de 1 a 25 entradas. Entradas duplicadas e entradas iguais a `model` são ignoradas. Rotas dinâmicas mantêm o próprio limite de oito alternativas.
 - **Validação.** Cada entrada pode ser um ID de modelo, um ID de modelo qualificado por provedor ou uma predefinição como `@support`. Cada tentativa é validada como uma solicitação própria: suporte ao endpoint e à modalidade, parâmetros solicitados, restrições de modelos do espaço de trabalho, guardrails, predefinições, preços e credenciais BYOK. Uma alternativa que não consegue atender à solicitação é ignorada e registrada nos logs de solicitações; ela nunca substitui o erro que você receberia de outra forma. Uma alternativa que resulta em uma tentativa já feita, com o mesmo modelo e os mesmos provedores elegíveis, é ignorada.
 - **Logs e cobrança.** Cada tentativa é uma solicitação separada nos seus logs, com uso e registro de cobrança próprios, então cada tentativa é cobrada exatamente como seria sem alternativas.
@@ -273,11 +286,19 @@ Saiba mais:
 - [Limites de taxa](../api-reference/limits.mdx)
 - [Tratamento de erros](../api-reference/errors.mdx)
 
+<span id="retired-models"></span>
+
+## Modelos aposentados
+
+Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. Quando nenhum o atende mais, as solicitações falham com `410 model_retired`, a menos que o espaço de trabalho tenha ativado o roteamento de modelos aposentados para enviá-las a um substituto. Sua própria lista `models` é sempre tentada antes de um substituto. Consulte [Descontinuação e aposentadoria de modelos](./model-retirement.mdx).
+
 ## Afinidade baseada em cache e sessão
 
-O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Depois que um provedor informa uma leitura real do cache de prompt, a Phaseo fixa o contexto correspondente nesse provedor por 15 minutos, desde que ele continue saudável e permitido pela rota, pela predefinição, pelos guardrails e pela política da solicitação ativos.
+O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Solicitações que enviam `prompt_cache_key` ou `session_id`, ou que ativam o cache com `cache_control` (no nível superior, em `provider_options.anthropic.cache_control` ou como marca `cache_control` ou `prompt_cache_breakpoint` em um bloco de mensagem ou ferramenta), são fixadas no provedor e na rota que atenderam a primeira solicitação bem-sucedida. As demais solicitações são fixadas por 15 minutos quando um provedor informa uma leitura ou gravação do cache de prompt para o mesmo contexto inicial, desde que a entrada em cache desse provedor seja mais barata que a entrada padrão.
 
-Quando `session_id` está presente, a afinidade de cache é vinculada à sessão, e não apenas ao contexto inicial. A Phaseo atualiza essa afinidade quando observa outra leitura do cache e a mantém por até 24 horas de atividade da sessão. Disjuntores e filtros de políticas sempre têm prioridade sobre a afinidade.
+As fixações são mantidas por espaço de trabalho e duram de 15 minutos a 24 horas, conforme a retenção de cache do provedor. Uma fixação só muda quando o disjuntor do provedor abre, a taxa de erros recente dele está alta, a cota gerenciada da Phaseo nele se esgota ou a rota, a predefinição, os guardrails ou a política da solicitação ativos deixam de permiti-lo.
+
+Quando `session_id` está presente, a afinidade de cache é vinculada à sessão, e não apenas ao contexto inicial, e é mantida por até 24 horas de atividade da sessão. Consulte [Afinidade com o provedor](./prompt-caching.mdx#provider-affinity) para ver a duração das fixações e as dicas de afinidade que a Phaseo envia a cada provedor.
 
 Desative o recurso em uma solicitação sem alterar os padrões do espaço de trabalho ou da rota dinâmica:
 
@@ -321,5 +342,6 @@ Em cargas de produção, registre IDs de solicitação, códigos de status da re
 ## Guias relacionados
 
 - [Predefinições](./presets.mdx)
+- [Descontinuação e aposentadoria de modelos](./model-retirement.mdx)
 - [Matriz de paridade de recursos](../migration-guides/feature-parity-matrix.mdx)
 

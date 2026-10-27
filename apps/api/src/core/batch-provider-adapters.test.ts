@@ -9,6 +9,7 @@ import {
 	extractGoogleInlineResponses,
 	extractGoogleResponseFileName,
 	extractMistralInlineOutputs,
+	fetchProviderFileContent,
 	normalizeProviderBatchPayload,
 	normalizeProviderBatchStatus,
 	parseProviderBatchInputEntries,
@@ -43,6 +44,23 @@ describe("batch provider status normalization", () => {
 		expect(buildProviderBatchApiUrl("parasail", "/files/file_123/content")).toBe("https://api.saas.parasail.io/v1/files/file_123/content");
 		expect(FILE_BACKED_JSONL_BATCH_PROVIDERS.has("parasail")).toBe(true);
 		expect(buildProviderCancelPath("parasail", "batch_123")).toBe("/batches/batch_123/cancel");
+		teardownTestRuntime();
+	});
+	it("returns the full error object when the provider key is missing", async () => {
+		setupRuntimeFromEnv({} as any);
+		const response = await fetchProviderFileContent("google-ai-studio", "files/abc");
+		expect(response.status).toBe(502);
+		expect(await response.json()).toEqual({
+			error: {
+				code: "upstream_error",
+				message: "No gateway key is configured for this batch provider.",
+				type: "server_error",
+				param: null,
+				reason: "google_ai_studio_key_missing",
+				metadata: { reason: "google_ai_studio_key_missing" },
+			},
+			code: "upstream_error",
+		});
 		teardownTestRuntime();
 	});
 	it("extracts Mistral inline result rows without confusing missing outputs", () => {

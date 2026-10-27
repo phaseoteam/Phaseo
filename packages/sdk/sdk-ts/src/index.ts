@@ -34,6 +34,8 @@ import type {
   ResponsesRequest,
   ResponsesResponse,
   DecisionsRequest,
+  ExtractionRequest,
+  ExtractionResponse,
   DecisionsResponse,
   DecisionCreateRequest,
   OpenAIDecisionsRequest,
@@ -46,6 +48,7 @@ import type {
 import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
+import { withApiKeyProvider, type ApiKeyProvider } from "./runtime/auth.js";
 import { JobHandle } from "./jobHandle.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
@@ -62,6 +65,7 @@ import {
 export { JobHandle } from "./jobHandle.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export type { ApiKeyProvider } from "./runtime/auth.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
@@ -125,7 +129,11 @@ export type AppAttribution = {
 };
 
 export type Options = RequestControls & {
-  apiKey?: string;
+  /**
+   * A Phaseo API key, or a function returning the credential for each request, such as
+   * `() => getVercelOidcToken({ audience: "https://api.phaseo.app" })` for a trusted workload.
+   */
+  apiKey?: string | ApiKeyProvider;
   baseUrl?: string;
   /** Select a Phaseo regional provider-routing endpoint. Cannot be combined with baseUrl. */
   region?: PhaseoRegion;
@@ -134,6 +142,12 @@ export type Options = RequestControls & {
   devtools?: Partial<DevToolsConfig>;
   enableDeprecationWarnings?: boolean;
   warningsAsErrors?: boolean;
+  /**
+   * Look a model up (`GET /models`, once per model per client) before its first request, to refuse
+   * models that are not active and warn about deprecated ones. Defaults to true. Set false to skip the
+   * lookup and let the gateway answer for the model; `models.validate()` still looks it up on demand.
+   */
+  modelLifecycleChecks?: boolean;
   logger?: PhaseoLogger;
   headers?: Record<string, string>;
   /** Optional user-defined application attribution. Phaseo never sets this automatically. */
@@ -418,6 +432,8 @@ export type {
   VideoGenerationResponse
 };
 
+export type { ExtractionRequest, ExtractionResponse };
+
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
 export type DecisionResponseFor<Request extends DecisionCreateRequest> =
   Request extends OpenAIDecisionsRequest ? OpenAIDecisionsResponse : DecisionsResponse;
@@ -451,9 +467,11 @@ export class Phaseo {
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
+  private readonly modelLifecycleChecks: boolean;
   private readonly logger?: PhaseoLogger;
   private readonly warnedModels = new Set<string>();
-  private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
+  // Holds the lookup itself, so concurrent first requests for a model share one GET /models.
+  private readonly modelLifecycleCache = new Map<string, Promise<ModelLifecycleInfo | null>>();
 
   readonly responses = {
     parse: async <T>(req: ResponsesRequest, schema: OutputSchema<T>): Promise<T> => {
@@ -596,6 +614,17 @@ export class Phaseo {
     make: async <Request extends DecisionCreateRequest>(req: Request): Promise<DecisionResponseFor<Request>> => this.makeDecision(req),
   };
 
+  readonly extractions = {
+    create: (req: ExtractionRequest): Promise<ExtractionResponse> => this.createExtraction(req),
+  };
+
+  createExtraction(req: ExtractionRequest): Promise<ExtractionResponse> {
+    return this.withLifecycleGuard(req, () => this.telemetry.wrap(
+      "extraction.extract", () => ops.createExtraction(this.client, { body: req }),
+      () => req, extractGatewayMetadata,
+    ));
+  }
+
   readonly providers = {
     list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
     derankStatus: async (
@@ -611,9 +640,11 @@ export class Phaseo {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
+    // A credential function sets Authorization on every request instead of once here.
+    const fetchImpl = typeof apiKey === "function" ? withApiKeyProvider(opts.fetchImpl ?? globalThis.fetch, apiKey) : opts.fetchImpl;
     this.basePath = trimTrailingSlashes(resolveBaseUrl(opts));
     this.headers = {
-      Authorization: `Bearer ${apiKey}`,
+      ...(typeof apiKey === "string" ? { Authorization: `Bearer ${apiKey}` } : {}),
       "X-Phaseo-Client": "phaseo-typescript",
       "X-Phaseo-Client-Version": "2.2.0",
       ...appAttributionHeaders(opts.app),
@@ -625,11 +656,12 @@ export class Phaseo {
       timeoutMs: opts.timeoutMs,
       signal: opts.signal,
       maxRetries: opts.maxRetries,
-      fetchImpl: opts.fetchImpl
+      fetchImpl
     });
-    this.fetchImpl = createTransport(opts.fetchImpl ?? fetch, opts);
+    this.fetchImpl = createTransport(fetchImpl ?? fetch, opts);
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
+    this.modelLifecycleChecks = opts.modelLifecycleChecks ?? true;
     this.logger = opts.logger;
 
     this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
@@ -785,6 +817,7 @@ export class Phaseo {
   }
 
   private async maybeWarnForPayload(payload: unknown): Promise<void> {
+    if (!this.modelLifecycleChecks) return;
     const modelId = extractModelIdFromPayload(payload);
     if (!modelId) return;
     await this.ensureModelRequestable(modelId);
@@ -827,10 +860,15 @@ export class Phaseo {
   private async resolveModelLifecycle(modelId: string): Promise<ModelLifecycleInfo | null> {
     const normalizedModelId = modelId.trim();
     if (!normalizedModelId) return null;
-    if (this.modelLifecycleCache.has(normalizedModelId)) {
-      return this.modelLifecycleCache.get(normalizedModelId) ?? null;
+    let lookup = this.modelLifecycleCache.get(normalizedModelId);
+    if (!lookup) {
+      lookup = this.lookUpModelLifecycle(normalizedModelId);
+      this.modelLifecycleCache.set(normalizedModelId, lookup);
     }
+    return lookup;
+  }
 
+  private async lookUpModelLifecycle(normalizedModelId: string): Promise<ModelLifecycleInfo | null> {
     try {
       const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
@@ -842,16 +880,9 @@ export class Phaseo {
         const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
         return candidateId === normalizedModelId;
       });
-      if (!model) {
-        this.modelLifecycleCache.set(normalizedModelId, null);
-        return null;
-      }
-
-      const lifecycle = toModelLifecycleInfo(model, normalizedModelId);
-      this.modelLifecycleCache.set(normalizedModelId, lifecycle);
-      return lifecycle;
+      if (!model) return null;
+      return toModelLifecycleInfo(model, normalizedModelId);
     } catch {
-      this.modelLifecycleCache.set(normalizedModelId, null);
       return null;
     }
   }
@@ -1224,12 +1255,13 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
-    let eventType: string | undefined;
+    // An SSE event is named on its `event:` line; data that does not name itself takes that name.
+    let eventName: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      if (line.startsWith("event:")) { eventType = line.slice(6).trim(); continue; }
-      if (!line.startsWith("data:")) continue;
-      const chunk = parseResponseStreamLine(line, eventType);
-      eventType = undefined;
+      if (line.startsWith("event:")) eventName = line.slice(6).trim() || undefined;
+      const isData = line.startsWith("data:");
+      const chunk = parseResponseStreamLine(line, isData ? eventName : undefined);
+      if (isData) eventName = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1710,7 +1742,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string, eventType?: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventName?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1722,7 +1754,8 @@ function parseResponseStreamLine(line: string, eventType?: string): ResponseStre
     };
   }
 
-  const chunk = typeof parsed.type !== "string" && eventType ? { ...parsed, type: eventType } : parsed;
+  // Named before its text is read, so a reasoning delta named only on its event: line is not taken for reply text.
+  const chunk = eventName && typeof parsed.type !== "string" ? { ...parsed, type: eventName } : parsed;
   const usage = extractUsage(chunk);
   return {
     ...chunk,
@@ -1877,7 +1910,8 @@ export type {
 
 export default Phaseo;
 
-function resolveApiKey(explicit?: string): string {
+function resolveApiKey(explicit?: string | ApiKeyProvider): string | ApiKeyProvider {
+  if (typeof explicit === "function") return explicit;
   const key = explicit ?? readEnv("PHASEO_API_KEY");
   if (!key) {
     throw new Error(

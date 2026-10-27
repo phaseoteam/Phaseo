@@ -11,7 +11,14 @@ describe("before/http err", () => {
 		expect(response.status).toBe(501);
 		const payload = await response.json();
 		expect(payload).toEqual({
-			error: "not_implemented_yet",
+			error: {
+				code: "not_implemented_yet",
+				message: "Video endpoints are temporarily disabled while the public contract is finalized.",
+				type: "server_error",
+				param: null,
+				metadata: { reason: "video_api_temporarily_disabled" },
+			},
+			code: "not_implemented_yet",
 			reason: "video_api_temporarily_disabled",
 			message: "Video endpoints are temporarily disabled while the public contract is finalized.",
 			status_code: 501,
@@ -30,7 +37,7 @@ describe("before/http err", () => {
 		expect(response.status).toBe(502);
 		const payload = await response.json();
 		expect(payload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			status_code: 502,
 			error_type: "system",
 			error_origin: "upstream",
@@ -50,7 +57,7 @@ describe("before/http err", () => {
 			expect(response.status).toBe(code === "insufficient_funds" ? 402 : 429);
 			const payload = await response.json();
 			expect(payload).toMatchObject({
-				error: code,
+				code,
 				error_type: "user",
 				error_origin: "user",
 			});
@@ -67,7 +74,7 @@ describe("before/http err", () => {
 		expect(response.status).toBe(502);
 		const payload = await response.json();
 		expect(payload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			status_code: 502,
 			error_type: "system",
 			error_origin: "upstream",

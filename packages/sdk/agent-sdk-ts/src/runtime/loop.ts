@@ -1,7 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { captureAgentRunDevtools } from "../devtools.js";
 import { AgentGatewayError, agentErrorIsContextOverflow, agentErrorIsRetryable, agentRetryAfterMs, toAgentGatewayErrorDetails } from "../errors.js";
-import { agentItemKey, responseItems, toolResultItem } from "../items.js";
+import { agentItemKey, isGatewayServerToolName, responseItems, toolResultItem } from "../items.js";
 import { parseAgentSchema } from "../schema.js";
 import type {
 	AgentContinueOptions, AgentDefinition, AgentDynamicValue, AgentEvent, AgentEventHandler, AgentItem,
@@ -322,6 +321,19 @@ async function generateResponse<TContext>(args: {
 	throw new Error("Unreachable model retry state");
 }
 
+/**
+ * Calls with no local tool that the gateway handles itself, so they are neither run here nor reported as missing:
+ * ones whose result came back in the same response (the gateway ran the server tool), and server-tool calls
+ * the gateway left unrun because the same turn also called a local tool.
+ */
+function gatewayToolCalls(response: AgentModelResponse, tools: AgentTool<any, any, any>[]): AgentToolCall[] {
+	const calls = response.message.toolCalls ?? [];
+	const isLocal = (call: AgentToolCall) => tools.some((tool) => tool.id === call.name);
+	const answered = new Set((response.items ?? []).flatMap((item) => (item.type === "tool_result" || item.type === "error") && item.toolCallId ? [item.toolCallId] : []));
+	const callsLocalTool = calls.some(isLocal);
+	return calls.filter((call) => !isLocal(call) && (answered.has(call.id) || (callsLocalTool && isGatewayServerToolName(call.name))));
+}
+
 async function stopReason(stopWhen: AgentStopWhen | undefined, context: Parameters<Exclude<AgentStopWhen, any[]>>[0]): Promise<string | undefined> {
 	if (!stopWhen) return undefined;
 	for (const condition of Array.isArray(stopWhen) ? stopWhen : [stopWhen]) {
@@ -479,6 +491,12 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			// A conversation that outgrew the context window gets one chance to be compacted before the step fails.
 			try { response = await generate(); }
 			catch (error) { if (options.signal?.aborted || !agentErrorIsContextOverflow(error) || !await prepare("overflow", error)) throw error; response = await generate(); }
+			// Gateway-handled calls stay in response.items, but leave the history so the next request has no call without an output.
+			const gatewayCalls = gatewayToolCalls(response, tools);
+			if (gatewayCalls.length) {
+				const localCalls = (response.message.toolCalls ?? []).filter((call) => !gatewayCalls.includes(call));
+				if (localCalls.length) response.message.toolCalls = localCalls; else delete response.message.toolCalls;
+			}
 			run.messages.push(response.message); run.stepCount++; run.updatedAt = nowIso();
 			const normalized = normalizeUsage(response);
 			Object.assign(step, { requestId: response.requestId, nativeResponseId: response.nativeResponseId ?? null, provider: response.provider, model: response.model ?? dynamic.model, usage: response.usage, normalizedUsage: normalized, toolCalls: response.message.toolCalls ?? [], responseMeta: response.responseMeta, finishReason: response.finishReason, warnings: response.warnings });
@@ -591,7 +609,7 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 }
 
 export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefinition<TInput, TOutput, TContext>, options: AgentRunOptions<TInput, TContext, TOutput> & { streaming?: boolean }): Promise<AgentRunResult<TOutput, TInput, TContext>> {
-	const startedAt = Date.now(); const createdAt = nowIso(); const runId = randomUUID();
+	const startedAt = Date.now(); const createdAt = nowIso(); const runId = globalThis.crypto.randomUUID();
 	const run: AgentRunRecord<TInput, TContext, TOutput> = { id: runId, agentId: definition.id, status: "queued", input: options.input, context: options.context, messages: [], pause: null, stopReason: null, usage: { ...EMPTY_USAGE }, createdAt, updatedAt: createdAt, stepCount: 0 };
 	const staticInstructions = typeof definition.instructions === "string" ? definition.instructions : undefined;
 	if (staticInstructions) run.messages.push({ role: "system", content: staticInstructions });
@@ -602,10 +620,10 @@ export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefin
 	await emit(options.onEvent, { type: "run.started", runId, agentId: definition.id, timestamp: nowIso(), status: run.status });
 	try {
 		const result = await executeLoop(definition, initial, options, false);
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
 		throw error;
 	}
 }
@@ -617,10 +635,10 @@ export async function continueAgent<TInput, TOutput, TContext>(definition: Agent
 	if (source.run.agentId !== definition.id) throw new Error(`Cannot continue run ${source.run.id} with agent ${definition.id}; it belongs to ${source.run.agentId}`);
 	try {
 		const result = await executeLoop(definition, structuredClone(source), options, true);
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
 		throw error;
 	}
 }

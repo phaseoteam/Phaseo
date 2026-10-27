@@ -1,10 +1,13 @@
 import type { IRContentPart } from "@core/ir";
 import type { ExecutorUpstreamTiming } from "@executors/types";
-import { fetchPublicMedia, type PublicMediaResponse } from "@core/public-media-fetch";
+import {
+	fetchRemoteMediaInline,
+	inferMimeTypeFromUrl,
+	isHttpUrl,
+	parseBase64DataUrl,
+} from "@executors/_shared/media/remote-media";
 
 const DEFAULT_MAX_REMOTE_ASSET_BYTES = 20 * 1024 * 1024;
-const RETRY_FETCH_USER_AGENT =
-	"Mozilla/5.0 (compatible; Phaseo-Gateway/1.0; +https://phaseo.app)";
 
 const AUDIO_MIME_BY_FORMAT: Record<string, string> = {
 	wav: "audio/wav",
@@ -36,109 +39,35 @@ type GeminiPartOptions = {
 	upstreamTiming?: ExecutorUpstreamTiming;
 };
 
-function parseDataUrl(value: string): { mimeType: string; data: string } | null {
-	const match = /^data:([^;,]+)?;base64,(.+)$/i.exec(value);
-	if (!match) return null;
-	return {
-		mimeType: match[1] || "application/octet-stream",
-		data: match[2] || "",
-	};
-}
-
-function isHttpUrl(value: string): boolean {
-	return /^https?:\/\//i.test(value);
-}
-
-function encodeBase64(buffer: ArrayBuffer): string {
-	const maybeBuffer = (globalThis as any)?.Buffer;
-	if (maybeBuffer) {
-		return maybeBuffer.from(buffer).toString("base64");
-	}
-	const bytes = new Uint8Array(buffer);
-	let binary = "";
-	const chunkSize = 0x8000;
-	for (let i = 0; i < bytes.length; i += chunkSize) {
-		binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-	}
-	const btoaFn = (globalThis as any)?.btoa;
-	if (typeof btoaFn === "function") {
-		return btoaFn(binary);
-	}
-	throw new Error("No base64 encoder available");
-}
-
-function normalizeContentType(value: string | null | undefined, fallback: string): string {
-	const base = (value || "").split(";")[0]?.trim();
-	return base || fallback;
-}
-
-function looksBinaryMimeType(value: string): boolean {
-	const normalized = value.toLowerCase();
-	return (
-		normalized.startsWith("image/") ||
-		normalized.startsWith("audio/") ||
-		normalized.startsWith("video/") ||
-		normalized === "application/pdf" ||
-		normalized === "application/octet-stream"
-	);
-}
-
-function inferMimeTypeFromUrl(url: string): string | null {
-	try {
-		const pathname = new URL(url).pathname.toLowerCase();
-		if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) return "image/jpeg";
-		if (pathname.endsWith(".png")) return "image/png";
-		if (pathname.endsWith(".webp")) return "image/webp";
-		if (pathname.endsWith(".gif")) return "image/gif";
-		if (pathname.endsWith(".svg")) return "image/svg+xml";
-		if (pathname.endsWith(".mp3")) return "audio/mpeg";
-		if (pathname.endsWith(".wav")) return "audio/wav";
-		if (pathname.endsWith(".ogg")) return "audio/ogg";
-		if (pathname.endsWith(".m4a")) return "audio/mp4";
-		if (pathname.endsWith(".mp4")) return "video/mp4";
-		if (pathname.endsWith(".mov")) return "video/quicktime";
-		if (pathname.endsWith(".webm")) return "video/webm";
-		if (pathname.endsWith(".pdf")) return "application/pdf";
-	} catch {
-		// Best-effort inference only.
-	}
-	return null;
-}
-
 function audioMimeFromFormat(format?: string): string {
 	if (!format) return "audio/wav";
 	return AUDIO_MIME_BY_FORMAT[format] || `audio/${format}`;
 }
 
-async function fetchRemoteMediaWithRetry(
-	url: string,
-	fallbackMimeType: string,
-	maxBytes: number,
-	upstreamTiming?: ExecutorUpstreamTiming,
-): Promise<PublicMediaResponse | null> {
-	const first = await fetchPublicMedia({ url, maxBytes, upstreamTiming }).catch(() => null);
-	const firstMime = normalizeContentType(first?.contentType, fallbackMimeType);
-	if (first && looksBinaryMimeType(firstMime)) {
-		return first;
+/**
+ * YouTube links go to Gemini as `file_data.file_uri`; Google fetches the
+ * video itself. Downloading them would only return the watch page's HTML.
+ * https://ai.google.dev/gemini-api/docs/video-understanding#youtube
+ */
+export function isYouTubeUrl(url: string): boolean {
+	try {
+		const host = new URL(url).hostname.toLowerCase().replace(/^(www\.|m\.|music\.)/, "");
+		return host === "youtube.com" || host === "youtu.be";
+	} catch {
+		return false;
 	}
+}
 
-	const accept =
-		fallbackMimeType.startsWith("image/")
-			? "image/*,*/*;q=0.8"
-			: fallbackMimeType.startsWith("audio/")
-				? "audio/*,*/*;q=0.8"
-				: fallbackMimeType.startsWith("video/")
-					? "video/*,*/*;q=0.8"
-					: "*/*";
-	return fetchPublicMedia({
-		url,
-		maxBytes,
-		upstreamTiming,
-		headers: {
-			Accept: accept,
-			"User-Agent": RETRY_FETCH_USER_AGENT,
-		},
-	}).catch(() => null);
+function isGeminiFileReference(value: string): boolean {
+	return /^files\/[^/]+$/.test(value) || /^https:\/\/generativelanguage\.googleapis\.com\//i.test(value);
+}
+
+function geminiFileError(message: string): Error {
+	return Object.assign(new Error(message), { code: "unsupported_parameter", param: "file_id" });
+}
+
+function mediaFamily(mimeType: string): string {
+	return mimeType.toLowerCase().split("/")[0] ?? "";
 }
 
 async function mediaUrlToGeminiPart(
@@ -147,7 +76,7 @@ async function mediaUrlToGeminiPart(
 	maxRemoteAssetBytes: number,
 	upstreamTiming?: ExecutorUpstreamTiming,
 ): Promise<GeminiPart> {
-	const parsedData = parseDataUrl(url);
+	const parsedData = parseBase64DataUrl(url);
 	if (parsedData) {
 		return {
 			inline_data: {
@@ -157,53 +86,33 @@ async function mediaUrlToGeminiPart(
 		};
 	}
 
-	if (!isHttpUrl(url)) {
-		return {
-			file_data: {
-				mime_type: fallbackMimeType,
-				file_uri: url,
-			},
-		};
-	}
+	const fileData = {
+		file_data: {
+			mime_type: fallbackMimeType,
+			file_uri: url,
+		},
+	};
+	if (!isHttpUrl(url) || isYouTubeUrl(url) || isGeminiFileReference(url)) return fileData;
 
-	try {
-		const res = await fetchRemoteMediaWithRetry(url, fallbackMimeType, maxRemoteAssetBytes, upstreamTiming);
-		if (!res) {
-			return {
-				file_data: {
-					mime_type: fallbackMimeType,
-					file_uri: url,
-				},
-			};
-		}
-
-		const copiedBytes = new Uint8Array(res.bytes.byteLength);
-		copiedBytes.set(res.bytes);
-		const bytes = copiedBytes.buffer;
-		const rawMimeHeader = res.contentType;
-		const normalizedRawMime = normalizeContentType(rawMimeHeader, "");
-		const inferredMime = inferMimeTypeFromUrl(url);
-		const chosenMime =
-			normalizedRawMime &&
-			looksBinaryMimeType(normalizedRawMime) &&
-			normalizedRawMime !== "application/octet-stream"
-				? normalizedRawMime
-				: inferredMime ??
-					normalizeContentType(rawMimeHeader, fallbackMimeType);
-		return {
-			inline_data: {
-				mime_type: chosenMime,
-			data: encodeBase64(bytes),
-			},
-		};
-	} catch {
-		return {
-			file_data: {
-				mime_type: fallbackMimeType,
-				file_uri: url,
-			},
-		};
+	const fetched = await fetchRemoteMediaInline(url, {
+		fallbackMimeType,
+		maxBytes: maxRemoteAssetBytes,
+		upstreamTiming,
+	}).catch(() => null);
+	if (!fetched || fetched.ok === false) return fileData;
+	// An image, audio or video URL that answers with a web page (or another
+	// kind of media) is left for Google to fetch rather than inlined as text.
+	const expectedFamily = mediaFamily(fallbackMimeType);
+	if ((expectedFamily === "image" || expectedFamily === "audio" || expectedFamily === "video")
+		&& mediaFamily(fetched.mimeType) !== expectedFamily) {
+		return fileData;
 	}
+	return {
+		inline_data: {
+			mime_type: fetched.mimeType,
+			data: fetched.data,
+		},
+	};
 }
 
 export async function irPartToGeminiPart(
@@ -236,6 +145,12 @@ export async function irPartToGeminiPart(
 				},
 			};
 		}
+		if (part.source === "id") {
+			if (!isGeminiFileReference(part.data)) {
+				throw geminiFileError("Gemini cannot read an image by another provider's file_id; send the image as a URL or base64 data.");
+			}
+			return { file_data: { mime_type: part.mimeType || "image/jpeg", file_uri: part.data } };
+		}
 		return mediaUrlToGeminiPart(part.data, part.mimeType || "image/jpeg", maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
@@ -256,7 +171,40 @@ export async function irPartToGeminiPart(
 		return mediaUrlToGeminiPart(part.url, "video/mp4", maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
+	if (part.type === "file") {
+		return irFilePartToGeminiPart(part, maxRemoteAssetBytes, options.upstreamTiming);
+	}
+
+	// Another provider's native block (Claude thinking, server tool blocks)
+	// has no Gemini form.
+	if (part.type === "provider_block") return { text: "" };
+
 	return { text: String(part) };
+}
+
+/**
+ * Gemini takes file bytes as `inline_data` and remote or uploaded files as
+ * `file_data.file_uri`. Another provider's `file_id` is not a Gemini file:
+ * the attempt fails (routing then tries a route that can read it) rather
+ * than the model answering without the document.
+ * https://ai.google.dev/gemini-api/docs/document-processing
+ */
+async function irFilePartToGeminiPart(
+	part: Extract<IRContentPart, { type: "file" }>,
+	maxRemoteAssetBytes: number,
+	upstreamTiming?: ExecutorUpstreamTiming,
+): Promise<GeminiPart> {
+	const mimeType = part.mimeType || "application/pdf";
+	if (part.source === "data") {
+		return { inline_data: { mime_type: mimeType, data: part.data } };
+	}
+	if (part.source === "url") {
+		return mediaUrlToGeminiPart(part.data, part.mimeType || inferMimeTypeFromUrl(part.data) || "application/pdf", maxRemoteAssetBytes, upstreamTiming);
+	}
+	if (isGeminiFileReference(part.data)) {
+		return { file_data: { mime_type: mimeType, file_uri: part.data } };
+	}
+	throw geminiFileError("Gemini cannot read another provider's file_id; send the file as file_data or a URL.");
 }
 
 export async function irPartsToGeminiParts(
@@ -265,6 +213,7 @@ export async function irPartsToGeminiParts(
 ): Promise<GeminiPart[]> {
 	const mapped: GeminiPart[] = [];
 	for (const part of parts) {
+		if (part.type === "provider_block") continue;
 		mapped.push(await irPartToGeminiPart(part, options));
 	}
 	return mapped;

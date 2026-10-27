@@ -1,0 +1,97 @@
+---
+title: "Anfrage-Klassifikatoren"
+description: "Kennzeichne jede Anfrage mit einem Modell deiner Wahl nach deinen eigenen Kategorien und filtere Protokolle und Nutzung nach den Ergebnissen."
+icon: "list-tree"
+---
+
+<Note>
+Anfrage-Klassifikatoren befinden sich in der Beta. Inhaber und Administratoren verwalten sie unter **Einstellungen → Klassifikatoren** oder über die Management-API `/v1/classifiers` mit einem [Management-Schlüssel](../developers/management-api-keys.mdx) mit den Scopes `classifiers:*`.
+</Note>
+
+Ein Klassifikator beschreibt eine Taxonomie, etwa Abteilung, Zielgruppe oder Aufgabentyp, und legt das Modell fest, das sie anwendet. Nach jeder abgeschlossenen, passenden Anfrage sendet Phaseo die Anfrage an dieses Modell, das für jede Dimension einen Wert auswählt. Jede Antwort wird der Anfrage als [Request-Label](./request-labels.mdx) hinzugefügt, sodass du Protokolle, Nutzung und Analysen genau wie mit Labels aus deinem Code danach filtern und gruppieren kannst.
+
+Verwende Klassifikatoren, wenn die Kategorie in deinem Code nicht bekannt ist: für wen ein Prompt geschrieben wurde, welche Art von Arbeit ein Agent erledigt oder ob eine Anfrage ein reguliertes Thema berührt.
+
+## So wird eine Anfrage klassifiziert
+
+1. Die Anfrage wird abgeschlossen und ihre Antwort an deine Anwendung zurückgegeben. Die Klassifizierung verursacht nie zusätzliche Latenz.
+2. Phaseo erstellt ein Transkript der Anfrage: Systemanweisungen, Nachrichten, Tool-Namen (nicht ihre Schemas) und Tool-Ergebnisse. Jeder Gesprächsschritt ist auf 4.000 Zeichen begrenzt, und Geheimnisse wie API-Schlüssel werden geschwärzt. Wenn der Klassifikator die Antwort einbezieht, wird auch die generierte Ausgabe hinzugefügt.
+3. Das Klassifikatormodell wählt aus deinen Werten. Antworten außerhalb davon werden verworfen (siehe unten, „Ein Modell wählen“).
+4. Die Antworten werden zusammen mit der Konfidenz jeder Antwort als Labels an der Anfrage gespeichert, bevor die Anfrage in deinen Protokollen erscheint.
+
+Klassifikatoren laufen bei erfolgreichen Anfragen an `chat/completions`, `responses` und `messages`. Wenn die Klassifizierung fehlschlägt oder abläuft, wird die Anfrage trotzdem protokolliert, nur ohne diese Labels.
+
+## Einen Klassifikator erstellen
+
+Beginne im Dashboard mit einer Vorlage oder sende die Taxonomie selbst:
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| Feld | Bedeutung |
+| --- | --- |
+| `dimensions` | 1 bis 12 Fragen. Jeder `key` wird zum Label-Schlüssel; jede Dimension listet 2 bis 50 Werte (1 mit `allow_other`). |
+| `multiple` | Erlaubt mehr als einen Wert pro Dimension. Jeder Wert wird zu einem eigenen Label mit demselben Schlüssel. |
+| `allow_other` | Erlaubt dem Modell, `other` zu antworten, wenn nichts passt. |
+| `instructions` | Zusätzliche Hinweise, die dem Klassifizierungs-Prompt hinzugefügt werden. |
+| `sample_rate` | Anteil der passenden Anfragen, die klassifiziert werden, von `0.0001` bis `1`. |
+| `sample_by` | `request` wählt jede Anfrage einzeln aus. `session` nimmt eine Session ganz oder gar nicht auf und verwendet ihre Antworten eine Stunde lang wieder, sodass ein langer Agent-Lauf nur einmal klassifiziert wird. |
+| `input_scope` | `prompt` klassifiziert die Anfrage. `prompt_and_response` zeigt dem Modell zusätzlich die Antwort. |
+| `scope` | Klassifiziert nur Anfragen von diesen `key_ids`, `app_ids` oder `models`. |
+| `monthly_budget_usd` | Pausiert den Klassifikator für den Rest des UTC-Monats, sobald er so viel ausgegeben hat. |
+
+Ein Workspace kann bis zu fünf Klassifikatoren haben. Änderungen erreichen das Gateway innerhalb von etwa einer Minute.
+
+## Ein Modell wählen
+
+Jedes Textmodell und jedes [Entscheidungsmodell](../api-reference/endpoint/decisions.mdx) kann klassifizieren. Phaseo entscheidet anhand dessen, was die Anbieter des Modells unterstützen, wie es gefragt wird:
+
+| Modell | So wird es gefragt |
+| --- | --- |
+| Textmodell mit strukturierten Ausgaben | Eine `responses`-Anfrage mit strengem JSON-Schema, sodass jede Antwort einer deiner Werte ist. |
+| Entscheidungsmodell | Eine `decisions`-Anfrage mit einer Auswahlfrage pro Dimension. Eine Dimension mit `multiple` stellt pro Wert eine Ja/Nein-Frage und behält jeden Wert mit einer Wahrscheinlichkeit von mindestens 0,5 (bräuchte ein Klassifikator mehr als 128 Fragen, erhält eine solche Dimension stattdessen nur ihren besten Wert). Die Konfidenz ist die eigene Wahrscheinlichkeit des Modells. |
+| Andere Textmodelle | Eine `responses`-Anfrage, die im Prompt nach demselben JSON fragt. Antworten außerhalb deiner Werte werden verworfen, daher bleibt eine Dimension öfter ohne Label. So wird auch gefragt, wenn ein Anbieter das Schema ablehnt. |
+
+Ein kleines, schnelles Modell reicht meist aus. Mit **An einem Beispiel testen** im Klassifikator-Editor kannst du ein Modell vor dem Speichern prüfen.
+
+## Nach den Ergebnissen filtern und gruppieren
+
+Antworten von Klassifikatoren sind gewöhnliche Request-Labels:
+
+- Filtere unter **Protokolle** und **Nutzung** nach einem Label wie `department` = `legal`.
+- Verwende in der API `label_key` und `label_value`:
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- [Broadcast](./integrations/observability.mdx)-Ziele erhalten Labels als Span-Attribute `phaseo.label.<key>`.
+
+Wenn dein Code bereits ein Label mit dem Schlüssel einer Dimension sendet, behält Phaseo deinen Wert und überspringt diese Dimension. Wenn zwei Klassifikatoren denselben Schlüssel verwenden, gewinnt der zuerst erstellte.
+
+## Kosten und Datenschutz
+
+- Jede Klassifizierung ist eine eigene Anfrage an das Klassifikatormodell, gestellt mit demselben API-Schlüssel oder OAuth-Token wie die ursprüngliche Anfrage. Sie wird zum normalen Preis dieses Modells abgerechnet und folgt den Provider-, Datenaufbewahrungs- und BYOK-Einstellungen deines Workspace.
+- Klassifikator-Anfragen tragen das Label `phaseo.classifier` mit der Klassifikator-ID, sodass du ihre Ausgaben unter **Nutzung** siehst. Sie werden selbst nicht klassifiziert und zählen nicht zu deinen Ratenlimit-Richtlinien.
+- Halte die Kosten niedrig mit einem kleinen, schnellen Modell, einer Stichprobenrate, Session-Stichproben, einem Geltungsbereich oder einem Monatsbudget.
+- Das Transkript geht nur an das Klassifikatormodell. Die Klassifikator-Anfrage wird wie jede andere Anfrage protokolliert; ob ihre Eingabe gespeichert wird, richtet sich nach den Protokollierungseinstellungen deines Workspace.

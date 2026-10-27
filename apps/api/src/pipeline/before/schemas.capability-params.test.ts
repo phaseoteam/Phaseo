@@ -81,6 +81,20 @@ describe("contextSchema provider capability params", () => {
 		});
 	});
 
+	it("accepts the data policy entry the context RPC appends to descriptor arrays", () => {
+		const withPolicy = contextSchema.parse(contextPayload([
+			{ param_id: "tools" },
+			{ data_policy: { catalogManaged: true } },
+		]));
+		const withoutPolicy = contextSchema.parse(contextPayload([{ param_id: "tools" }, {}]));
+
+		expect(withPolicy.providers[0]?.capabilityParams).toEqual({
+			tools: {},
+			data_policy: { catalogManaged: true },
+		});
+		expect(withoutPolicy.providers[0]?.capabilityParams).toEqual({ tools: {} });
+	});
+
 	it("preserves the existing record form", () => {
 		const params = {
 			request: { allowlist: ["temperature", "max_tokens"] },

@@ -1,20 +1,27 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
-import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpProtocol, otlpTracesEndpoint } from "./broadcast-destinations";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastDelivery, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
+import { broadcastRows, sendBroadcastRows, type BroadcastRow, type BroadcastRowsResult } from "./broadcast-rows";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { compileSafeRegex, type RegexBudget, type SafeRegex } from "./safe-regex";
+import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
+import { BroadcastHealthRecorder } from "./broadcast-health";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
+import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
 import {
 	buildAsyncGenAiOtlpPayload,
 	buildGatewayGenAiOtlpPayload,
+	requestParametersOnly,
 	type AsyncGenAiTelemetry,
 	type GatewayGenAiTelemetry,
 	type GatewayOtlpBuildOptions,
 } from "./otel-genai";
 
 type Rule = { field: string; condition: string; value: string | null };
-type Destination = {
+export type Destination = {
 	id: string;
-	destination_id: "otel_collector" | "webhook";
+	// A BroadcastDestinationId whose delivery is not null.
+	destination_id: string;
 	destination_config: Record<string, unknown> | null;
 	destination_config_ciphertext?: string | null;
 	destination_config_iv?: string | null;
@@ -35,12 +42,13 @@ type Destination = {
 type OutboxRow = {
 	id: string;
 	destination_id: string;
+	event_id: string;
 	payload: unknown;
 	attempts: number;
 };
 
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
-const MAX_ATTEMPTS = 8;
+export const MAX_ATTEMPTS = 8;
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 // Rows that will not be sent again drop their payload, which can hold prompts
 // and completions. The row itself stays until prune_otel_export_outbox removes it.
@@ -98,7 +106,33 @@ function ruleValues(args: GatewayGenAiTelemetry): Record<string, unknown> {
 	};
 }
 
-function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
+// Compiled rule regexes, shared across requests in this isolate. Null marks a
+// pattern saved before validation that the matcher can't run; it never matches.
+// Weighed by compiled instructions as well as count, so large patterns can't
+// hold much of the isolate's heap.
+const RULE_REGEX_CACHE = new Map<string, SafeRegex | null>();
+const RULE_REGEX_CACHE_LIMIT = 500;
+const RULE_REGEX_CACHE_MAX_INSTRUCTIONS = 50_000;
+let ruleRegexCacheInstructions = 0;
+// Matcher steps one destination's rules may spend on one event. Typical rules
+// use a few thousand; past this, the remaining regex rules don't match.
+const RULE_REGEX_STEP_BUDGET = 1_000_000;
+
+function ruleRegex(pattern: string): SafeRegex | null {
+	if (RULE_REGEX_CACHE.has(pattern)) return RULE_REGEX_CACHE.get(pattern)!;
+	const compiled = compileSafeRegex(pattern);
+	const regex = compiled.ok ? compiled.regex : null;
+	const size = regex?.size ?? 0;
+	if (RULE_REGEX_CACHE.size >= RULE_REGEX_CACHE_LIMIT || ruleRegexCacheInstructions + size > RULE_REGEX_CACHE_MAX_INSTRUCTIONS) {
+		RULE_REGEX_CACHE.clear();
+		ruleRegexCacheInstructions = 0;
+	}
+	RULE_REGEX_CACHE.set(pattern, regex);
+	ruleRegexCacheInstructions += size;
+	return regex;
+}
+
+function matchRule(rule: Rule, values: Record<string, unknown>, budget: RegexBudget): boolean {
 	const raw = values[rule.field];
 	const actual = raw === null || raw === undefined ? "" : String(raw);
 	const expected = rule.value ?? "";
@@ -112,12 +146,8 @@ function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
 		case "exists": return actual !== "";
 		case "not_exists": return actual === "";
 		case "matches_regex":
-			if (expected.length > 128 || actual.length > 2_000) return false;
-			try {
-				return new RegExp(expected).test(actual);
-			} catch {
-				return false;
-			}
+			if (actual.length > 2_000) return false;
+			return ruleRegex(expected)?.test(actual, budget) ?? false;
 		default: return false;
 	}
 }
@@ -135,10 +165,11 @@ export function selected(destination: Destination, args: GatewayGenAiTelemetry, 
 	const groups = destination.broadcast_destination_rule_groups ?? [];
 	if (!groups.length) return true;
 	const values = ruleValues(args);
+	const budget: RegexBudget = { steps: RULE_REGEX_STEP_BUDGET };
 	const matches = groups.map((group) => {
 		const rules = group.broadcast_destination_rules ?? [];
 		if (!rules.length) return true;
-		const results = rules.map((rule) => matchRule(rule, values));
+		const results = rules.map((rule) => matchRule(rule, values, budget));
 		return group.match_operator === "or" ? results.some(Boolean) : results.every(Boolean);
 	});
 	return destination.group_join_operator === "and" ? matches.every(Boolean) : matches.some(Boolean);
@@ -185,9 +216,9 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 }
 
 function metadataCategory(key: string): "generation" | "cost" | "identity" | "context" | null {
-	if (key.startsWith("phaseo.cost.")) return "cost";
+	if (key.startsWith("phaseo.cost.") || key === "gen_ai.usage.cost") return "cost";
 	if (key === "user.id" || key.startsWith("phaseo.api_key.") || key.startsWith("phaseo.app.") || key.startsWith("phaseo.client.") || key === "phaseo.request.id" || key === "phaseo.workspace.id") return "identity";
-	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id") return "context";
+	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id" || key.startsWith("phaseo.label.") || key.startsWith("phaseo.metadata.")) return "context";
 	if (key.startsWith("gen_ai.") || key.startsWith("phaseo.generation.") || key.startsWith("phaseo.provider.")) return "generation";
 	return null;
 }
@@ -216,7 +247,7 @@ export function filterMetadata(payload: unknown, destination: Destination): unkn
 	return visit(payload);
 }
 
-async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
+export async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
 	if (destination.destination_config_ciphertext && destination.destination_config_iv) {
 		return object(JSON.parse(await decryptWebhookSecret({
 			secretCiphertext: destination.destination_config_ciphertext,
@@ -227,24 +258,61 @@ async function destinationConfig(destination: Destination): Promise<Record<strin
 	return object(destination.destination_config);
 }
 
+// The OTLP payload one destination receives for an event.
+export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destination: Destination): unknown {
+	// Request metadata also renames spans, so the context toggle drops it whole.
+	const dropMetadata = destination.include_request_context === false;
+	const payload = telemetry.kind === "gateway"
+		? buildGatewayGenAiOtlpPayload(
+			dropMetadata ? { ...telemetry.args, metadata: null } : telemetry.args,
+			buildOptions(destination),
+		)
+		: buildAsyncGenAiOtlpPayload(
+			dropMetadata ? { ...telemetry.args, metadata: null } : telemetry.args,
+			buildOptions(destination),
+		).payload;
+	return filterMetadata(payload, destination);
+}
+
+// Prompts and outputs are left out of the event when no selected destination
+// receives them, so they never reach the queue or its R2 spill.
+function withoutContent(telemetry: BroadcastTelemetry): BroadcastTelemetry {
+	return telemetry.kind === "gateway"
+		? { kind: "gateway", args: { ...telemetry.args, requestPayload: requestParametersOnly(telemetry.args.requestPayload), responsePayload: null } }
+		: { kind: "async", args: { ...telemetry.args, requestPayload: null, responsePayload: null } };
+}
+
 async function enqueuePayloads(args: {
 	eventId: string;
 	workspaceId: string;
 	gatewaySelection: GatewayGenAiTelemetry;
-	build: (destination: Destination) => unknown;
+	telemetry: BroadcastTelemetry;
 }) {
 	if (String(getBindings().OTEL_EXPORT_ENABLED ?? "true").toLowerCase() === "false") return 0;
 	const configured = await destinations(args.workspaceId);
 	const selectedDestinations = configured.filter((destination) => selected(destination, args.gatewaySelection, args.eventId));
+	if (!selectedDestinations.length) return 0;
+	// A key created with never_store_content never has its content forwarded,
+	// whatever each destination asks for.
+	const telemetry = selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
+		&& !(await keyNeverStoresContent({ workspaceId: args.workspaceId, keyId: args.gatewaySelection.keyId }))
+		? args.telemetry
+		: withoutContent(args.telemetry);
+	const queued = await publishBroadcastEvent({
+		eventId: args.eventId,
+		workspaceId: args.workspaceId,
+		destinationIds: selectedDestinations.map((destination) => destination.id),
+		telemetry,
+	});
+	if (queued) return selectedDestinations.length;
 	const rows = selectedDestinations.map((destination) => ({
-			workspace_id: args.workspaceId,
-			destination_id: destination.id,
-			event_id: args.eventId,
-			payload: args.build(destination),
-			status: "pending",
-			next_attempt_at: new Date().toISOString(),
-		}));
-	if (!rows.length) return 0;
+		workspace_id: args.workspaceId,
+		destination_id: destination.id,
+		event_id: args.eventId,
+		payload: renderBroadcastPayload(telemetry, destination),
+		status: "pending",
+		next_attempt_at: new Date().toISOString(),
+	}));
 	const { error } = await getSupabaseAdmin()
 		.from("otel_export_outbox")
 		.upsert(rows, { onConflict: "destination_id,event_id", ignoreDuplicates: true });
@@ -257,7 +325,7 @@ export async function enqueueGatewayOtlpExport(args: GatewayGenAiTelemetry) {
 		eventId: `gateway:${args.requestId}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: args,
-		build: (destination) => filterMetadata(buildGatewayGenAiOtlpPayload(args, buildOptions(destination)), destination),
+		telemetry: { kind: "gateway", args },
 	});
 }
 
@@ -294,12 +362,11 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 		eventId: `${args.operation}:${identity}:${args.phase}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: selection,
-		build: (destination) => filterMetadata(buildAsyncGenAiOtlpPayload(args, buildOptions(destination)).payload, destination),
+		telemetry: { kind: "async", args },
 	});
 }
 
-function endpoint(config: Record<string, unknown>): URL {
-	const resolved = otlpTracesEndpoint(config);
+function endpoint(resolved: string): URL {
 	if (!resolved) throw new Error("OTLP endpoint is required");
 	const url = new URL(resolved);
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
@@ -390,21 +457,32 @@ export async function deliverGatewayOtlpPayload(
 	payload: unknown,
 	config: Record<string, unknown>,
 	attempts = 1,
+	destinationType = "otel_collector",
 ) {
 	let collectorEndpoint: URL;
 	let collectorHeaders: Headers;
 	let body: BodyInit;
 	try {
-		collectorEndpoint = endpoint(config);
-		collectorHeaders = headers(config);
-		const protocol = otlpProtocol(config);
-		if (!protocol) throw new Error("OTLP protocol must be http/json or http/protobuf");
-		if (protocol === "http/protobuf") {
+		const target = resolveOtlpTarget(destinationType, config);
+		collectorEndpoint = endpoint(target.endpoint);
+		collectorHeaders = new Headers({
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+			"Accept-Encoding": "gzip",
+		});
+		for (const [key, value] of Object.entries(target.headers)) collectorHeaders.set(key, value);
+		const request = applyOtlpTarget(payload, target);
+		let encoded: string | Uint8Array;
+		if (target.protocol === "http/protobuf") {
 			// Set after configured headers: the body is protobuf whatever they say.
 			collectorHeaders.set("Content-Type", "application/x-protobuf");
 			collectorHeaders.set("Accept", "application/x-protobuf");
-			body = encodeOtlpTraceRequest(payload);
-		} else body = JSON.stringify(payload);
+			encoded = encodeOtlpTraceRequest(request);
+		} else encoded = JSON.stringify(request);
+		if (target.compression === "gzip") {
+			collectorHeaders.set("Content-Encoding", "gzip");
+			body = await gzipBytes(encoded) as Uint8Array<ArrayBuffer>;
+		} else body = encoded as BodyInit;
 		// Reuse the hardened outbound-webhook boundary so mapped IPv6 literals
 		// and DNS records resolving to private networks are rejected immediately
 		// before the collector request.
@@ -467,11 +545,14 @@ export async function deliverGatewayWebhookPayload(
 ) {
 	let target: URL;
 	let requestHeaders: Headers;
+	const body = JSON.stringify(payload);
 	try {
 		target = new URL(String(config.url ?? "").trim());
+		requestHeaders = headers(config);
+		for (const [name, value] of Object.entries(await broadcastWebhookSignatureHeaders(config, body))) requestHeaders.set(name, value);
+		// Validated last, right before the request, to keep the DNS rebinding window small.
 		const validated = await validateWebhookEndpointUrlForDelivery(target.toString());
 		if (validated.ok === false) throw new Error(`Invalid webhook endpoint: ${validated.reason}`);
-		requestHeaders = headers(config);
 	} catch (error) {
 		return { delivered: false, retryable: false, status: null, delayMs: 0, error: error instanceof Error ? error.message : "Invalid webhook destination" };
 	}
@@ -480,7 +561,7 @@ export async function deliverGatewayWebhookPayload(
 		response = await fetch(target, {
 			method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST",
 			headers: requestHeaders,
-			body: JSON.stringify(payload),
+			body,
 			redirect: "manual",
 			signal: AbortSignal.timeout(15_000),
 		});
@@ -497,6 +578,42 @@ export async function deliverGatewayWebhookPayload(
 		error: `Webhook endpoint returned ${response.status}`,
 	};
 }
+
+// Writes rows to an object store or warehouse in one request.
+export async function deliverGatewayRowsPayload(
+	rows: BroadcastRow[],
+	config: Record<string, unknown>,
+	attempts = 1,
+	destinationType: string,
+) {
+	let result: BroadcastRowsResult;
+	try {
+		result = await sendBroadcastRows(destinationType, config, rows, async (url, init) => {
+			// Validated right before each request, to keep the DNS rebinding window small.
+			const validated = await validateWebhookEndpointUrlForDelivery(url.toString());
+			if (validated.ok === false) throw new InvalidRowsDestination(`Invalid destination endpoint: ${validated.reason}`);
+			return fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(30_000) });
+		}, { attempt: attempts });
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Row delivery failed";
+		// A config or endpoint the destination will never accept is not retried;
+		// a network failure is.
+		const invalid = error instanceof InvalidRowsDestination || !(error instanceof TypeError || (error instanceof DOMException && error.name === "TimeoutError"));
+		return invalid
+			? { delivered: false, retryable: false, status: null, delayMs: 0, error: message }
+			: { delivered: false, retryable: true, status: null, delayMs: retryDelayMs(attempts, null), error: message };
+	}
+	if (result.ok) return { delivered: true, retryable: false, status: result.status, delayMs: 0, error: null };
+	return {
+		delivered: false,
+		retryable: result.retryable ?? RETRYABLE_STATUS.has(result.status),
+		status: result.status,
+		delayMs: retryDelayMs(attempts, result.retryAfter),
+		error: result.error,
+	};
+}
+
+class InvalidRowsDestination extends Error {}
 
 async function updateOutboxRow(
 	client: ReturnType<typeof getSupabaseAdmin>,
@@ -520,6 +637,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 	let delivered = 0;
 	let retried = 0;
 	let failed = 0;
+	const health = new BroadcastHealthRecorder();
 	for (const row of rows) {
 		const destinationResult = await client
 			.from("workspace_broadcast_destinations")
@@ -538,12 +656,16 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			continue;
 		}
 		let outcome;
+		const startedAtMs = Date.now();
 		try {
 			const destination = destinationResult.data as Destination & { enabled: boolean };
 			const config = await destinationConfig(destination);
-			outcome = destination.destination_id === "webhook"
+			const delivery = broadcastDelivery(destination.destination_id);
+			outcome = delivery === "webhook"
 				? await deliverGatewayWebhookPayload(row.payload, config, row.attempts)
-				: await deliverGatewayOtlpPayload(row.payload, config, row.attempts);
+				: delivery === "rows"
+					? await deliverGatewayRowsPayload(broadcastRows(row.payload, row.event_id), config, row.attempts, destination.destination_id)
+					: await deliverGatewayOtlpPayload(row.payload, config, row.attempts, destination.destination_id);
 		} catch (deliveryError) {
 			outcome = {
 				delivered: false,
@@ -553,7 +675,9 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 				error: deliveryError instanceof Error ? deliveryError.message : "OTLP delivery failed",
 			};
 		}
+		health.request(row.destination_id, outcome, startedAtMs);
 		if (outcome.delivered) {
+			health.event(row.destination_id, true);
 			await updateOutboxRow(client, row.id, {
 				status: "delivered",
 				payload: SCRUBBED_PAYLOAD,
@@ -577,9 +701,25 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			updated_at: new Date().toISOString(),
 		});
 		if (shouldRetry) retried += 1;
-		else failed += 1;
+		else {
+			failed += 1;
+			health.event(row.destination_id, false);
+		}
 	}
+	await health.flush();
 	return { claimed: rows.length, delivered, retried, failed };
+}
+
+export async function pruneBroadcastDeliveryHourly(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_broadcast_destination_delivery_hourly", { p_limit: limit });
+	if (error) throw new Error(`broadcast_delivery_hourly_prune_failed:${error.message}`);
+	return Number(data ?? 0);
+}
+
+export async function pruneBroadcastEventReceipts(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_broadcast_event_receipts", { p_limit: limit });
+	if (error) throw new Error(`broadcast_receipts_prune_failed:${error.message}`);
+	return Number(data ?? 0);
 }
 
 export async function pruneGatewayOtlpOutbox(limit = 5000): Promise<number> {

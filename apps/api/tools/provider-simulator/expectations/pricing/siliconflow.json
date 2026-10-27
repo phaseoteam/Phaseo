@@ -1,0 +1,798 @@
+{
+	"provider": "siliconflow",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "siliconflow:baidu/ernie-4.5-300b-a47b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/baidu-ernie-4.5-300b-a47b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.28/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1220800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",728000],["output_text_tokens",448,"#1","output_text_tokens",492800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7259860,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3457160],["output_text_tokens",3457,"#1","output_text_tokens",3802700]]}}
+			]
+		},
+		{
+			"key": "siliconflow:bytedance/seed-oss-36b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/bytedance-seed-oss-36b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.21/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":801360,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",546000],["output_text_tokens",448,"#1","output_text_tokens",255360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4563360,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2592870],["output_text_tokens",3457,"#1","output_text_tokens",1970490]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-r1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-r1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.5/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.18/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2276640,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1300000],["output_text_tokens",448,"#1","output_text_tokens",976640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13709760,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#1","output_text_tokens",7536260]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1098000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6543750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v3.1-terminus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v3.1-terminus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1150000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6790690,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v3.2-exp:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v3.2-exp/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.41/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":885680,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_text_tokens",448,"#1","output_text_tokens",183680]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4751060,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#1","output_text_tokens",1417370]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v3.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v3.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.42/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":751920,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",138240],["input_text_tokens",1576,"#0","input_text_tokens",425520],["output_text_tokens",448,"#2","output_text_tokens",188160]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":5402175,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",616545],["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#2","output_text_tokens",1451940]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4785630,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#2","output_text_tokens",1451940]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v4-flash-0731:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":428512,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",28672],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_reasoning_tokens",192,"#2","output_text_tokens",53760,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":3045336,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",127876],["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":2917460,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v4-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v4-flash/text.generate/pricing.json",
+			"rules": [
+				["#2","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#3","standard","output_text_tokens","0.28/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.13/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":358992,"lines":[["cached_read_text_tokens",1024,"#2","cached_read_text_tokens",28672],["input_text_tokens",1576,"#1","input_text_tokens",204880],["output_text_tokens",448,"#3","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2700946,"lines":[["cached_read_text_tokens",4567,"#2","cached_read_text_tokens",127876],["input_text_tokens",12347,"#1","input_text_tokens",1605110],["output_text_tokens",3457,"#3","output_text_tokens",967960]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["#3","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2573070,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1605110],["output_text_tokens",3457,"#3","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "siliconflow:deepseek/deepseek-v4-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","1.50162/1000000 token",100,null,null,null],
+				["#3","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#5","standard","output_text_tokens","3.135/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3909273,"lines":[["cached_read_text_tokens",1024,"#3","cached_read_text_tokens",138240],["input_text_tokens",1576,"#1","input_text_tokens",2366553],["output_text_tokens",448,"#5","output_text_tokens",1404480]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":29994742,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",616545],["input_text_tokens",12347,"#1","input_text_tokens",18540502],["output_text_tokens",3457,"#5","output_text_tokens",10837695]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":29378197,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",18540502],["output_text_tokens",3457,"#5","output_text_tokens",10837695]]}}
+			]
+		},
+		{
+			"key": "siliconflow:google/gemma-4-12b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/google-gemma-4-12b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "siliconflow:google/gemma-4-26b-a4b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/google-gemma-4-26b-a4b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":491200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",312000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2864440,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "siliconflow:google/gemma-4-31b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/google-gemma-4-31b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":517200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",338000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2987910,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1605110],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "siliconflow:inclusionai/ling-flash-2.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/inclusionai-ling-flash-2.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":619360,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",255360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3699070,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",1970490]]}}
+			]
+		},
+		{
+			"key": "siliconflow:inclusionai/ring-flash-2.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/inclusionai-ring-flash-2.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":619360,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",255360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3699070,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",1970490]]}}
+			]
+		},
+		{
+			"key": "siliconflow:minimax/minimax-m2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/minimax-minimax-m2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1041120,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",30720],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7989510,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",137010],["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "siliconflow:minimax/minimax-m3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/minimax-minimax-m3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1071840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",61440],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8126520,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",274020],["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "siliconflow:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#2","standard","cached_read_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.45/1000000 token",100,null,null,null],
+				["#4","standard","output_text_tokens","2.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1788880,"lines":[["cached_read_text_tokens",1024,"#2","cached_read_text_tokens",71680],["input_text_tokens",1576,"#1","input_text_tokens",709200],["output_text_tokens",448,"#4","output_text_tokens",1008000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":13654090,"lines":[["cached_read_text_tokens",4567,"#2","cached_read_text_tokens",319690],["input_text_tokens",12347,"#1","input_text_tokens",5556150],["output_text_tokens",3457,"#4","output_text_tokens",7778250]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13334400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",5556150],["output_text_tokens",3457,"#4","output_text_tokens",7778250]]}}
+			]
+		},
+		{
+			"key": "siliconflow:moonshotai/kimi-k2.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"rules": [
+				["#2","standard","input_text_tokens","0.77/1000000 token",100,null,null,null],
+				["#5","standard","cached_read_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#7","standard","output_text_tokens","3.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2880080,"lines":[["cached_read_text_tokens",1024,"#5","cached_read_text_tokens",143360],["input_text_tokens",1576,"#2","input_text_tokens",1213520],["output_text_tokens",448,"#7","output_text_tokens",1523200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":21900370,"lines":[["cached_read_text_tokens",4567,"#5","cached_read_text_tokens",639380],["input_text_tokens",12347,"#2","input_text_tokens",9507190],["output_text_tokens",3457,"#7","output_text_tokens",11753800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#2","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":21260990,"lines":[["input_text_tokens",12347,"#2","input_text_tokens",9507190],["output_text_tokens",3457,"#7","output_text_tokens",11753800]]}}
+			]
+		},
+		{
+			"key": "siliconflow:moonshotai/kimi-k2.7-code:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.85916/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.17993/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3240684,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",184248],["input_text_tokens",1576,"#0","input_text_tokens",1354036],["output_text_tokens",448,"#2","output_text_tokens",1702400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":24566389,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",821740],["input_text_tokens",12347,"#0","input_text_tokens",10608049],["output_text_tokens",3457,"#2","output_text_tokens",13136600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":23744649,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",10608049],["output_text_tokens",3457,"#2","output_text_tokens",13136600]]}}
+			]
+		},
+		{
+			"key": "siliconflow:moonshotai/kimi-k3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/moonshotai-kimi-k3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11755200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",307200],["input_text_tokens",1576,"#1","input_text_tokens",4728000],["output_text_tokens",448,"#2","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":90266100,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:nex-agi/deepseek-v3.1-nex-n1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/nex-agi-deepseek-v3.1-nex-n1/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#3","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1150000,"lines":[["input_text_tokens",2600,"#1","input_text_tokens",702000],["output_text_tokens",448,"#3","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6790690,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_text_tokens",3457,"#3","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:openai/gpt-oss-120b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/openai-gpt-oss-120b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.45/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":331600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",130000],["output_text_tokens",448,"#1","output_text_tokens",201600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2173000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",617350],["output_text_tokens",3457,"#1","output_text_tokens",1555650]]}}
+			]
+		},
+		{
+			"key": "siliconflow:openai/gpt-oss-20b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/openai-gpt-oss-20b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.18/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":184640,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",80640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1116140,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",622260]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen2.5-72b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen2.5-72b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.59/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.59/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1798320,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1534000],["output_text_tokens",448,"#1","output_text_tokens",264320]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9324360,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7284730],["output_text_tokens",3457,"#1","output_text_tokens",2039630]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen2.5-7b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen2.5-7b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.05/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":152400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",130000],["output_text_tokens",448,"#1","output_text_tokens",22400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":790200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",617350],["output_text_tokens",3457,"#1","output_text_tokens",172850]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen2.5-vl-32b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen2.5-vl-32b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.27/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":822960,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_text_tokens",448,"#1","output_text_tokens",120960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4267080,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#1","output_text_tokens",933390]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen2.5-vl-72b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen2.5-vl-72b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.59/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.59/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1798320,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1534000],["output_text_tokens",448,"#1","output_text_tokens",264320]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9324360,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7284730],["output_text_tokens",3457,"#1","output_text_tokens",2039630]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-14b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-14b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":307440,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",182000],["output_text_tokens",448,"#1","output_text_tokens",125440]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1832250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",864290],["output_text_tokens",3457,"#1","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-235b-a22b-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.09/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":502800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",234000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3185430,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1111230],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-235b-a22b-thinking-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-235b-a22b-thinking-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":606800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",338000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3679310,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1605110],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-30b-a3b-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-30b-a3b-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.09/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":368400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",234000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2148330,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1111230],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-30b-a3b-thinking-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-30b-a3b-thinking-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.09/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":368400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",234000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2148330,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1111230],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-32b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-32b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":619360,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",255360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3699070,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",1970490]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.06/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":182880,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",156000],["output_text_tokens",448,"#1","output_text_tokens",26880]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":948240,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820],["output_text_tokens",3457,"#1","output_text_tokens",207420]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-coder-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-coder-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":307440,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",182000],["output_text_tokens",448,"#1","output_text_tokens",125440]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1832250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",864290],["output_text_tokens",3457,"#1","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-coder-480b-a35b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-coder-480b-a35b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1098000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6543750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-235b-a22b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-235b-a22b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1452000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8889600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-235b-a22b-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-235b-a22b-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.45/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2738000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1170000],["output_text_tokens",448,"#1","output_text_tokens",1568000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":17655650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",5556150],["output_text_tokens",3457,"#1","output_text_tokens",12099500]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-30b-a3b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-30b-a3b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.29/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1202000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",754000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7037630,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3580630],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-30b-a3b-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-30b-a3b-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.29/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1202000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",754000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7037630,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3580630],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-32b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-32b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":788800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4543600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-32b-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-32b-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1192000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7654900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3-vl-8b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3-vl-8b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.18/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.68/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":772640,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",468000],["output_text_tokens",448,"#1","output_text_tokens",304640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4573220,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2222460],["output_text_tokens",3457,"#1","output_text_tokens",2350760]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3.5-122b-a10b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3.5-122b-a10b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.08/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1607840,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",676000],["output_text_tokens",448,"#1","output_text_tokens",931840]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10400780,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3210220],["output_text_tokens",3457,"#1","output_text_tokens",7190560]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3.5-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3.5-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1546000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",896000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10000750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3.5-9b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3.5-9b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":327200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",67200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1753250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",518550]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3.6-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3.6-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2213600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",1433600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":14766500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",11062400]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwen3.6-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwen3.6-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1236800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",716800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8000600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}}
+			]
+		},
+		{
+			"key": "siliconflow:qwen/qwq-32b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/qwen-qwq-32b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.58/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":649840,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",259840]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3857110,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",2005060]]}}
+			]
+		},
+		{
+			"key": "siliconflow:stepfun/step-3.5-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/stepfun-step-3.5-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "siliconflow:tencent/hunyuan-a13b-instruct:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/tencent-hunyuan-a13b-instruct/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":619360,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",255360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3699070,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",1970490]]}}
+			]
+		},
+		{
+			"key": "siliconflow:tencent/hy3-preview:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/tencent-hy3-preview/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","0.066/1000000 token",100,null,null,null],
+				["#2","standard","cached_read_text_tokens","0.029/1000000 token",100,null,null,null],
+				["#4","standard","output_text_tokens","0.26/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":250192,"lines":[["cached_read_text_tokens",1024,"#2","cached_read_text_tokens",29696],["input_text_tokens",1576,"#1","input_text_tokens",104016],["output_text_tokens",448,"#4","output_text_tokens",116480]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":1846165,"lines":[["cached_read_text_tokens",4567,"#2","cached_read_text_tokens",132443],["input_text_tokens",12347,"#1","input_text_tokens",814902],["output_text_tokens",3457,"#4","output_text_tokens",898820]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1713722,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",814902],["output_text_tokens",3457,"#4","output_text_tokens",898820]]}}
+			]
+		},
+		{
+			"key": "siliconflow:tencent/hy3:free:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/tencent-hy3-free/text.generate/pricing.json",
+			"rules": [
+				["#0","free","input_text_tokens","0/1000000 token",100,null,null,null],
+				["#1","free","output_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"free","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":0,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",0],["output_text_tokens",448,"#1","output_text_tokens",0]]}},
+				{"id":"rule.free.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"free","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":0,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",0],["output_text_tokens",3457,"#1","output_text_tokens",0]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-4.5-air:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-4.5-air/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.86/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":749280,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",385280]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4701600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",2973020]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-4.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-4.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.39/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1865200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1014000],["output_text_tokens",448,"#1","output_text_tokens",851200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":11383630,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4815330],["output_text_tokens",3457,"#1","output_text_tokens",6568300]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-4.6v:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-4.6v/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1183200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",403200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6815400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",3111300]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-4.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-4.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.42/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1760160,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",112640],["input_text_tokens",1576,"#0","input_text_tokens",661920],["output_text_tokens",448,"#2","output_text_tokens",985600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":13293510,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",502370],["input_text_tokens",12347,"#0","input_text_tokens",5185740],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":12791140,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",5185740],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.55/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2844400,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",204800],["input_text_tokens",1576,"#0","input_text_tokens",1497200],["output_text_tokens",448,"#2","output_text_tokens",1142400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":21458400,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",913400],["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#2","output_text_tokens",8815350]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":20545000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#2","output_text_tokens",8815350]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-5.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-5.1/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","1.19/1000000 token",100,null,null,null],
+				["#3","standard","cached_read_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#5","standard","output_text_tokens","3.74/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4165360,"lines":[["cached_read_text_tokens",1024,"#3","cached_read_text_tokens",614400],["input_text_tokens",1576,"#1","input_text_tokens",1875440],["output_text_tokens",448,"#5","output_text_tokens",1675520]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":30362310,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",2740200],["input_text_tokens",12347,"#1","input_text_tokens",14692930],["output_text_tokens",3457,"#5","output_text_tokens",12929180]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":27622110,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",14692930],["output_text_tokens",3457,"#5","output_text_tokens",12929180]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.302/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.092/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4151408,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",266240],["input_text_tokens",1576,"#0","input_text_tokens",2051952],["output_text_tokens",448,"#2","output_text_tokens",1833216]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":31409258,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1187420],["input_text_tokens",12347,"#0","input_text_tokens",16075794],["output_text_tokens",3457,"#2","output_text_tokens",14146044]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":30221838,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",16075794],["output_text_tokens",3457,"#2","output_text_tokens",14146044]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-5.3-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-5.3-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":587120,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",30720],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_reasoning_tokens",192,"#2","output_text_tokens",96000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",224000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4112060,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",137010],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",394500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3975050,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",394500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "siliconflow:z-ai/glm-5v-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/siliconflow/z-ai-glm-5v-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.24/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3928960,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",245760],["input_text_tokens",1576,"#0","input_text_tokens",1891200],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":29740480,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1096080],["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":28644400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		}
+	]
+}

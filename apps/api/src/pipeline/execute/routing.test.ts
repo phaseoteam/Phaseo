@@ -18,12 +18,9 @@ vi.mock("./health", () => ({
 }));
 
 vi.mock("./sticky-routing", () => ({
-	readStickyRoutingOptimistic: (...args: any[]) => readStickyRoutingMock(...args),
+	readStickyRoutingForRouting: async (...args: any[]) => ({ entry: readStickyRoutingMock(...args), mode: "l1" }),
 	resolveStickyRoutingContext: (...args: any[]) => resolveStickyRoutingContextMock(...args),
-	stickyRoutingCacheBoostMultiplier: (cachedReadTokens: number) => {
-		if (!Number.isFinite(cachedReadTokens) || cachedReadTokens <= 0) return 1;
-		return 1 + Math.min(12, Math.log10(cachedReadTokens + 1) * 4);
-	},
+	STICKY_ROUTING_PIN_MULTIPLIER: 1_000_000,
 }));
 
 function health(
@@ -1534,5 +1531,90 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.filterStages.find(
 			(stage) => stage.stage === "geographic_availability_gate",
 		)?.afterCount).toBe(0);
+	});
+});
+
+describe("routeProviders JSON output evidence", () => {
+	beforeEach(() => {
+		readHealthManyMock.mockReset();
+		readStickyRoutingMock.mockReset();
+		resolveStickyRoutingContextMock.mockReset();
+		readHealthManyMock.mockImplementation((_endpoint: string, _model: string, providerIds: string[]) =>
+			Object.fromEntries(providerIds.map((providerId) => [providerId, health(providerId)]))
+		);
+		resolveStickyRoutingContextMock.mockResolvedValue(null);
+		readStickyRoutingMock.mockReturnValue(null);
+	});
+
+	// Novita's route declares a param list without response_format (it rejects JSON mode) and
+	// is the cheapest; SiliconFlow's declares nothing; Together's lists response_format.
+	const routes = () => [
+		{ ...candidate({ providerId: "novita", pricingCard: textPricingCard(0.0000001, 0) }), capabilityParams: { max_tokens: {}, temperature: {}, tools: {} } },
+		{ ...candidate({ providerId: "siliconflow", pricingCard: textPricingCard(0.000001, 0) }), capabilityParams: {} },
+		{ ...candidate({ providerId: "together", pricingCard: textPricingCard(0.00001, 0) }), capabilityParams: { max_tokens: {}, response_format: {} } },
+	];
+	const route = (body: Record<string, unknown>, requestId: string) => routeProviders(routes(), {
+		endpoint: "chat.completions",
+		model: "inclusionai/ling-3.0-flash",
+		workspaceId: "team_123",
+		requestId,
+		body,
+	} as any);
+
+	it("tries routes that list response_format first and keeps the rest as failover", async () => {
+		for (const requestId of ["json-1", "json-2", "json-3", "json-4", "json-5"]) {
+			for (const type of ["json_schema", "json_object"]) {
+				const result = await route({ response_format: { type, json_schema: { name: "x", schema: {} } } }, requestId);
+				expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["together", "siliconflow", "novita"]);
+				expect(result.diagnostics.filterStages.find((stage) => stage.stage === "json_output_evidence")?.droppedProviders)
+					.toEqual([
+						expect.objectContaining({ providerId: "novita", reason: "json_output_unlisted_deranked" }),
+						expect.objectContaining({ providerId: "siliconflow", reason: "json_output_unlisted_deranked" }),
+					]);
+			}
+		}
+	});
+
+	it("puts a route with no param list ahead of one whose list leaves the format out", async () => {
+		const withoutExplicit = () => routes().filter((entry) => entry.providerId !== "together");
+		for (const requestId of ["json-6", "json-7", "json-8"]) {
+			const result = await routeProviders(withoutExplicit(), {
+				endpoint: "responses",
+				model: "inclusionai/ling-3.0-flash",
+				workspaceId: "team_123",
+				requestId,
+				body: { text: { format: { type: "json_schema", name: "x", schema: {} } } },
+			} as any);
+			expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["siliconflow", "novita"]);
+		}
+	});
+
+	it("treats a declared value list without the requested mode as not listing it", async () => {
+		const candidates = [
+			{ ...candidate({ providerId: "tensorix", pricingCard: textPricingCard(0.0000001, 0) }), capabilityParams: { max_tokens: {}, response_format: { supported_values: ["json_object"] } } },
+			{ ...candidate({ providerId: "together", pricingCard: textPricingCard(0.00001, 0) }), capabilityParams: { max_tokens: {}, structured_outputs: {} } },
+		];
+		const result = await routeProviders(candidates as any, {
+			endpoint: "chat.completions",
+			model: "deepseek/deepseek-v4-flash",
+			workspaceId: "team_123",
+			requestId: "json-9",
+			body: { response_format: { type: "json_schema", json_schema: { name: "x", schema: {} } } },
+		} as any);
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["together", "tensorix"]);
+	});
+
+	it("leaves the order alone for requests without a JSON output mode", async () => {
+		for (const requestId of ["text-1", "text-2", "text-3"]) {
+			const plain = await route({}, requestId);
+			const textFormat = await route({ response_format: { type: "text" } }, requestId);
+			expect(textFormat.ranked.map((entry) => entry.candidate.providerId))
+				.toEqual(plain.ranked.map((entry) => entry.candidate.providerId));
+			expect(plain.diagnostics.filterStages.some((stage) => stage.stage === "json_output_evidence")).toBe(false);
+		}
+		// The cheapest route still wins plain traffic some of the time.
+		const firsts = new Set<string>();
+		for (let i = 0; i < 40; i++) firsts.add((await route({}, `text-spread-${i}`)).ranked[0].candidate.providerId);
+		expect(firsts.has("novita")).toBe(true);
 	});
 });

@@ -318,7 +318,7 @@ describe("videosRoutes collection endpoints", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "offset_too_large",
 			max_offset: 10_000,
 		});
@@ -358,7 +358,7 @@ describe("videosRoutes collection endpoints", () => {
 		);
 
 		expect(response.status).toBe(400);
-		expect(await response.json()).toMatchObject({ error: "validation_error", reason: "invalid_after_cursor" });
+		expect(await response.json()).toMatchObject({ code: "validation_error", reason: "invalid_after_cursor" });
 		expect(listTeamVideoJobs).not.toHaveBeenCalled();
 	});
 

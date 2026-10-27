@@ -8,6 +8,76 @@ import { describe, it, expect } from "vitest";
 import { encodeAnthropicMessagesResponse } from "../encode";
 import type { IRChatResponse } from "@core/ir";
 
+describe("encodeAnthropicMessagesResponse cache usage", () => {
+	const textChoice: IRChatResponse["choices"] = [
+		{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "Hi" }] }, finishReason: "stop" },
+	];
+	const anthropicCache = {
+		cache_creation: { ephemeral_5m_input_tokens: 1013, ephemeral_1h_input_tokens: 2006 },
+		cache_creation_input_tokens: 3019,
+		cache_read_input_tokens: 20011,
+		input_tokens: 100003,
+		output_tokens: 5003,
+	};
+
+	it("restates OpenAI-style IR usage (cache inside input) in Anthropic terms", () => {
+		const response = encodeAnthropicMessagesResponse({
+			id: "req_cache",
+			model: "m",
+			choices: textChoice,
+			usage: {
+				inputTokens: 123033,
+				outputTokens: 5003,
+				totalTokens: 128036,
+				cachedInputTokens: 20011,
+				cachedReadTokensAreSubsetOfInput: true,
+				cachedWriteTokensAreSubsetOfInput: true,
+				_ext: { cachedWriteTokens: 3019, cachedWriteTokens5m: 1013, cachedWriteTokens1h: 2006 },
+			},
+		});
+		expect(response.usage).toMatchObject(anthropicCache);
+	});
+
+	it("keeps Anthropic IR usage (cache on top of input) as it is", () => {
+		const response = encodeAnthropicMessagesResponse({
+			id: "req_cache",
+			model: "m",
+			choices: textChoice,
+			usage: {
+				inputTokens: 100003,
+				outputTokens: 5003,
+				totalTokens: 105006,
+				cachedInputTokens: 20011,
+				cachedReadTokensAreSubsetOfInput: false,
+				cachedWriteTokensAreSubsetOfInput: false,
+				_ext: { cachedWriteTokens: 3019, cachedWriteTokens5m: 1013, cachedWriteTokens1h: 2006 },
+			},
+		});
+		expect(response.usage).toMatchObject(anthropicCache);
+	});
+
+	it("reports a write without a TTL split with no cache_creation breakdown", () => {
+		const response = encodeAnthropicMessagesResponse({
+			id: "req_cache",
+			model: "m",
+			choices: textChoice,
+			usage: {
+				inputTokens: 1000,
+				outputTokens: 10,
+				totalTokens: 1010,
+				cachedWriteTokensAreSubsetOfInput: true,
+				_ext: { cachedWriteTokens: 400 },
+			},
+		});
+		expect(response.usage).toMatchObject({
+			cache_creation: null,
+			cache_creation_input_tokens: 400,
+			cache_read_input_tokens: null,
+			input_tokens: 600,
+		});
+	});
+});
+
 describe("encodeAnthropicMessagesResponse", () => {
 	it("should encode simple text response", () => {
 		const ir: IRChatResponse = {
@@ -203,6 +273,23 @@ describe("encodeAnthropicMessagesResponse", () => {
 			const response = encodeAnthropicMessagesResponse(ir);
 			expect(response.stop_reason).toBe(expected);
 		}
+	});
+
+	it("keeps stop_sequence, pause_turn and refusal from the finish detail", () => {
+		const encode = (choice: Partial<IRChatResponse["choices"][0]>) => encodeAnthropicMessagesResponse({
+			id: "req-123",
+			model: "claude",
+			choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "Test" }] }, finishReason: "stop", ...choice }],
+		} as IRChatResponse);
+
+		const sequence = encode({ finishDetail: "stop_sequence", stopSequence: "###" });
+		expect(sequence.stop_reason).toBe("stop_sequence");
+		expect(sequence.stop_sequence).toBe("###");
+		expect(encode({ stopSequence: "###" }).stop_reason).toBe("stop_sequence");
+		expect(encode({ finishDetail: "pause_turn" }).stop_reason).toBe("pause_turn");
+		expect(encode({ finishDetail: "refusal" }).stop_reason).toBe("refusal");
+		expect(encode({ finishReason: "content_filter", finishDetail: "refusal" }).stop_reason).toBe("refusal");
+		expect(encode({ finishReason: "error" }).stop_reason).toBeNull();
 	});
 
 	it("should handle missing usage", () => {

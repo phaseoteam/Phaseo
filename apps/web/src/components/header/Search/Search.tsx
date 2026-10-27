@@ -17,6 +17,9 @@ import { Kbd } from "@/components/ui/kbd";
 import { KeyboardShortcut } from "@/components/ui/keyboard-shortcut";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
+import { EpochLogo } from "@/components/EpochLogo";
+import { isEpochSearchResult, benchmarkSearchAliases, isExactBenchmarkAlias } from "./Search.benchmarks";
+import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import {
@@ -191,6 +194,7 @@ function buildSearchKeywords(item: SearchableItem): string[] {
 		item.logoId,
 		item.flagIso,
 		...(item.keywords ?? []),
+		...benchmarkSearchAliases(item.href ?? ""),
 	];
 
 	for (const term of terms) {
@@ -314,7 +318,6 @@ let lastSearchRefreshAt = 0;
 const EMPTY_WORKSPACE_ITEMS: PaletteItem[] = [];
 const EMPTY_DOCUMENTATION_ITEMS: PaletteItem[] = [];
 
-const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
 
 function getIndexedMatchScore<T extends SearchableItem>(
@@ -324,6 +327,7 @@ function getIndexedMatchScore<T extends SearchableItem>(
 	const rawTerm = term.trim().toLowerCase();
 	const normalizedTerm = normalizeSearchTerm(rawTerm);
 	const hasNormalizedTerm = normalizedTerm.length > 0;
+	if (isExactBenchmarkAlias(indexedItem.item.href ?? "", rawTerm)) return 1000;
 
 	if (
 		indexedItem.titleLower === rawTerm ||
@@ -625,6 +629,10 @@ function SearchBrowseIcon({
 	}
 
 	if (effectiveType === "benchmark") {
+		if (isEpochSearchResult(item.href ?? "")) return <EpochLogo size={20} />;
+		if (/\/benchmarks\/(?:artificial-analysis|aa-[^/?#]+)(?:[/?#]|$)/.test(item.href ?? "")) {
+			return <ArtificialAnalysisLogo size={20} />;
+		}
 		return (
 			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<Trophy className="size-3" />
@@ -719,13 +727,16 @@ export default function Search({
 	const { resolvedTheme, setTheme } = useTheme();
 	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
 	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
+	// Actions can open gated pages too, such as creating a classifier.
+	const actionItems = useMemo(() => GLOBAL_ACTION_ITEMS.filter((item) => isSearchDestinationEnabled(item.href, capabilities)), [capabilities]);
+	const actionSearchIndex = useMemo(() => createSearchIndex(actionItems), [actionItems]);
 	const contextItems = useMemo(() => getContextItems(pathname), [pathname]);
 	const keyboardShortcutItems = useMemo(() => [
 		...navigationItems,
 		...contextItems.filter((item) => item.shortcut),
-		...GLOBAL_ACTION_ITEMS,
+		...actionItems,
 		...EXTERNAL_RESOURCE_ITEMS,
-	].filter((item) => item.shortcut), [contextItems, navigationItems]);
+	].filter((item) => item.shortcut), [actionItems, contextItems, navigationItems]);
 	const listRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
@@ -1067,7 +1078,7 @@ export default function Search({
 			? filterAndSortIndexed(navigationSearchIndex, searchTerm, navigationItems.length, showAllWhenScoped, pathname)
 			: [];
 		const actions = includesScope("actions")
-			? filterAndSortIndexed(ACTION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			? filterAndSortIndexed(actionSearchIndex, searchTerm, 12, showAllWhenScoped)
 			: [];
 		const context = includesScope("actions")
 			? filterAndSortIndexed(contextSearchIndex, searchTerm, 8, showAllWhenScoped)
@@ -1105,7 +1116,7 @@ export default function Search({
 			{
 				name: "actions" as const,
 				items: actions,
-				score: getFirstResultScore(ACTION_SEARCH_INDEX, actions, searchTerm),
+				score: getFirstResultScore(actionSearchIndex, actions, searchTerm),
 			},
 			{
 				name: "navigation" as const,
@@ -1169,6 +1180,7 @@ export default function Search({
 			.filter((category) => category.items.length > 0)
 			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
+		actionSearchIndex,
 		contextSearchIndex,
 		documentationSearchIndex,
 		navigationItems,
@@ -1226,7 +1238,7 @@ export default function Search({
 			{
 				key: "quick-actions",
 				heading: t("quickActions"),
-				items: GLOBAL_ACTION_ITEMS.slice(0, 7),
+				items: actionItems.slice(0, 7),
 				type: "action" as const,
 			},
 			{
@@ -1251,7 +1263,7 @@ export default function Search({
 			const order = ["recent", "models", "pinned", "context", "nearby", "quick-actions", "workspaces", "apiProviders", "resources"];
 			return order.indexOf(left.key) - order.indexOf(right.key);
 		});
-	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, recentItems, searchData, workspaceItems, t]);
+	}, [actionItems, capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, recentItems, searchData, workspaceItems, t]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];

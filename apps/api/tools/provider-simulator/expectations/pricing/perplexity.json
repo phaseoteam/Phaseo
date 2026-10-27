@@ -1,0 +1,30 @@
+{
+	"provider": "perplexity",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "perplexity:perplexity/pplx-embed-v1-0.6b:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/perplexity/perplexity-pplx-embed-v1-0.6b/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.004/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":4000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",4000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":49388,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",49388]]}}
+			]
+		},
+		{
+			"key": "perplexity:perplexity/pplx-embed-v1-4b:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/perplexity/perplexity-pplx-embed-v1-4b/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":30000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",30000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":370410,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410]]}}
+			]
+		}
+	]
+}

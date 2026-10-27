@@ -1,0 +1,157 @@
+---
+title: "Modellabkündigung und -einstellung"
+description: "Erhalte einen Hinweis, bevor ein von dir genutztes Modell eingestellt wird, wechsle zu einem Ersatzmodell und leite seine Anfragen optional automatisch weiter."
+icon: "calendar-clock"
+---
+
+Modelle werden abgekündigt und eingestellt, wenn Labs neuere Versionen veröffentlichen und Anbieter ältere nicht mehr bereitstellen. Phaseo informiert dich, wenn ein Modell, das dein Workspace nutzt, ausläuft, stellt es weiter bereit, solange ein Anbieter es bereitstellt, und kann seine Anfragen an ein Ersatzmodell weiterleiten, sobald es niemand mehr bereitstellt.
+
+<span id="how-a-model-is-retired"></span>
+
+## Wie ein Modell eingestellt wird
+
+| Phase | Bedeutung | Was mit deinen Anfragen passiert |
+| --- | --- | --- |
+| Abgekündigt | Das Lab oder der Anbieter hat angekündigt, dass das Modell eingestellt wird. Ein Einstellungsdatum wird angezeigt, wenn es bekannt ist. | Wie gewohnt bereitgestellt. |
+| Eingestellt | Das Einstellungsdatum ist verstrichen. | Weiterhin bereitgestellt, solange ein Anbieter das Modell bereitstellt. |
+| Nicht mehr bereitgestellt | Kein Anbieter stellt das Modell bereit. | Mit `410 model_retired` abgelehnt, sofern die [automatische Weiterleitung an ein Ersatzmodell](#route-requests-to-a-replacement-automatically) nicht aktiviert ist. |
+
+Die Seite eines Modells zeigt seinen Status, seine Abkündigungs- und Einstellungsdaten und, falls vorhanden, das vorgeschlagene Ersatzmodell.
+
+<span id="get-notice-before-a-model-is-retired"></span>
+
+## Hinweise erhalten, bevor ein Modell eingestellt wird
+
+Phaseo berücksichtigt die Modell-IDs, die dein Workspace in Anfragen sendet. Ein Modell gilt daher auch dann als genutzt, wenn letztlich ein Fallback-Modell die Anfrage bedient hat.
+
+- **Hinweis im Dashboard.** Angemeldete Mitglieder sehen oben im Dashboard einen Hinweis, wenn ein Modell, das der Workspace in den letzten 90 Tagen angefordert hat, in den nächsten 90 Tagen eingestellt wird. Hat ein Modell kein Einstellungsdatum, zählt stattdessen sein Abkündigungsdatum. Der Hinweis wird rot, wenn eine Einstellung höchstens 7 Tage entfernt ist. Er verlinkt auf **Einstellungen -> Nutzung -> Warnungen**, wo jedes betroffene Modell mit seinen Daten, der letzten Nutzung und dem vorgeschlagenen Ersatzmodell aufgeführt ist. Wenn du den Hinweis schließt, wird er ausgeblendet, bis sich die Daten des Modells ändern.
+- **E-Mail und Ziele.** Aktiviere unter **Einstellungen -> Benachrichtigungen** die Option **Warnungen zur Modellablösung**. Wenn ein Modell, das der Workspace in den letzten 30 Tagen angefordert hat, abgekündigt wird, erhält der Workspace-Inhaber für dieses Modell einmalig eine E-Mail. Aktiviere **Auch Admins per E-Mail benachrichtigen**, um auch Admins zu benachrichtigen, und wähle [Benachrichtigungsziele](./workspace-notifications.mdx), um die Warnung an Slack, Discord, Teams oder einen Webhook zu senden.
+
+Warnungen werden einmal pro Modell gesendet, nicht als Countdown. Plane den Umstieg daher, sobald die erste eintrifft.
+
+<span id="what-happens-when-no-provider-serves-a-model"></span>
+
+## Was passiert, wenn kein Anbieter ein Modell bereitstellt
+
+Ein eingestelltes Modell funktioniert weiter, solange mindestens ein Anbieter es bereitstellt. Sobald keiner es mehr bereitstellt, schlagen Anfragen mit `410` fehl:
+
+```json
+{
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`replacement_model` ist das vorgeschlagene Ersatzmodell oder `null`, wenn es keines gibt. Erneute Versuche mit demselben Modell sind nicht erfolgreich. Das vollständige Fehlerformat findest du unter [Fehler und Debugging](../api-reference/errors.mdx#when-a-model-is-retired).
+
+<span id="move-to-a-replacement"></span>
+
+## Zu einem Ersatzmodell wechseln
+
+1. Öffne **Einstellungen -> Nutzung -> Warnungen**, um zu sehen, welche Modelle betroffen sind und wann sie zuletzt genutzt wurden.
+2. Prüfe das vorgeschlagene Ersatzmodell auf der Seite des Modells. Vergleiche Preis, Kontextfenster sowie unterstützte Endpunkte und Parameter mit dem Modell, das du derzeit nutzt.
+3. Teste das Ersatzmodell mit repräsentativen Anfragen. Neuere Modelle können auf denselben Prompt anders antworten.
+4. Ändere die Modell-ID in deinem Code, deinen Voreinstellungen und deinen dynamischen Routen.
+
+Während der Umstellung kannst du das alte Modell an erster Stelle belassen und das Ersatzmodell als [Fallback-Modell auf Anfrageebene](./routing-and-fallbacks.mdx#request-level-model-fallbacks) angeben. Wenn kein Anbieter das alte Modell bereitstellt, wechselt Phaseo direkt zum nächsten Modell in `models`:
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "lab/old-model",
+    "models": ["lab/new-model"],
+    "messages": [{ "role": "user", "content": "Hello" }]
+  }'
+```
+
+Das Feld `model` der Antwort zeigt, welches Modell die Anfrage bedient hat.
+
+<span id="route-requests-to-a-replacement-automatically"></span>
+
+## Anfragen automatisch an ein Ersatzmodell weiterleiten
+
+Ein Workspace kann festlegen, dass Anfragen für ein Modell, das nicht mehr bereitgestellt wird, an ein Ersatzmodell gesendet werden, statt fehlzuschlagen. Das ist standardmäßig deaktiviert. Inhaber und Admins aktivieren es unter **Einstellungen -> Routing -> Routing für eingestellte Modelle** oder mit `model_successor_redirect_enabled` in der [Workspace-Einstellungs-API](../api-reference/endpoint/workspace-settings-update.mdx).
+
+Wenn es aktiviert ist, wird eine Anfrage nur dann an ein Ersatzmodell gesendet, wenn alle folgenden Bedingungen erfüllt sind:
+
+- Seit 72 Stunden hat kein Anbieter das angeforderte Modell bereitgestellt. Bis dahin schlägt die Anfrage wie gewohnt fehl.
+- Das Ersatzmodell wurde von Phaseo freigegeben, oder dein Workspace hat es ausgewählt. Phaseo folgt bis zu drei freigegebenen Ersatzmodellen hintereinander.
+- Das angeforderte Modell ist nicht kostenlos, während das Ersatzmodell kostenpflichtig ist. Ein kostenloses Modell wird nie durch ein kostenpflichtiges ersetzt.
+- Das Ersatzmodell besteht dieselben Prüfungen wie jede Anfrage: Workspace-Modellbeschränkungen, Schlüsselbeschränkungen, Guardrails und Endpunktunterstützung. Ein Ersatzmodell wird nie automatisch für dich zu einer Allowlist hinzugefügt.
+- Die Anfrage nennt ein Modell direkt. Anfragen für `phaseo/auto` oder eine anbieterqualifizierte Modell-ID werden nicht umgeleitet.
+
+<span id="choose-a-price-policy"></span>
+
+### Eine Preisrichtlinie wählen
+
+Die Preisrichtlinie des Workspace entscheidet, ob ein teureres Ersatzmodell die Anfrage bedienen darf. Verglichen werden die Preise, die beide Modelle berechnen.
+
+| `model_successor_price_policy` | Verhalten |
+| --- | --- |
+| `never` (Standard) | Das Ersatzmodell nur verwenden, wenn es nicht mehr kostet. |
+| `limit` | Bis zu `model_successor_max_price_increase_percent` mehr erlauben (0 bis 1000). |
+| `any` | Jeden Preis erlauben, auch für Ersatzmodelle, deren Preis nicht verglichen werden kann. |
+
+Für diese Anfrage brauchst du einen [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `settings:write`. Standard-Gateway-API-Schlüssel sind für Inferenzanfragen vorgesehen und können keine Workspace-Einstellungen ändern.
+
+So erlaubst du zum Beispiel Ersatzmodelle, die bis zu 20 % mehr kosten:
+
+```bash
+curl https://api.phaseo.app/v1/settings \
+  -X PATCH \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_successor_redirect_enabled": true,
+    "model_successor_price_policy": "limit",
+    "model_successor_max_price_increase_percent": 20
+  }'
+```
+
+<span id="set-your-own-replacements"></span>
+
+### Eigene Ersatzmodelle festlegen
+
+Unter **Eigene Ersatzmodelle** im selben Einstellungsbereich können Inhaber und Admins das Ersatzmodell für ein bestimmtes Modell auswählen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Dein eigenes Ersatzmodell wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Eigene Ersatzmodelle lassen sich nur im Dashboard festlegen.
+
+Änderungen an diesen Einstellungen werden in etwa einer Minute wirksam.
+
+<span id="replacements-and-request-level-fallbacks"></span>
+
+### Ersatzmodelle und Fallback-Modelle auf Anfrageebene
+
+Deine eigene `models`-Liste hat Vorrang. Wenn kein Anbieter das primäre Modell bereitstellt, versucht Phaseo statt eines Ersatzmodells den nächsten Eintrag in `models`. Ein Ersatzmodell wird nur für das letzte Modell der Liste berücksichtigt. Auch bei den Fallback-Modellen einer dynamischen Route kann nur das letzte ersetzt werden.
+
+<span id="tell-when-a-request-was-redirected"></span>
+
+## Erkennen, dass eine Anfrage umgeleitet wurde
+
+Das Feld `model` der Antwort und deine Anfrageprotokolle zeigen das Modell, das die Anfrage bedient hat, und die Anfrage wird zum Preis dieses Modells abgerechnet. Umgeleitete Antworten enthalten außerdem zwei Header:
+
+| Header | Beispiel |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+Wenn ein Ersatzmodell zum ersten Mal erfolgreich die Anfragen des Workspace für ein Modell beantwortet, erhält der Workspace-Inhaber einmalig eine E-Mail. Um diesen Hinweis auch an dein Team zu senden, wähle unter [Workspace-Benachrichtigungen](./workspace-notifications.mdx#enable-product-alerts) Ziele für **Hinweise zu Ersatzmodellen** aus.
+
+<span id="troubleshooting"></span>
+
+## Fehlerbehebung
+
+**Anfragen schlagen nach dem Aktivieren der automatischen Weiterleitung weiterhin mit `410` fehl.**
+Prüfe Folgendes:
+
+- Das Modell wird seit mindestens 72 Stunden nicht mehr bereitgestellt.
+- Das Modell hat ein freigegebenes Ersatzmodell, oder du hast ein eigenes festgelegt.
+- Das Ersatzmodell kostet nicht mehr, als deine Preisrichtlinie erlaubt.
+- Das Modell ist nicht kostenlos mit einem kostenpflichtigen Ersatzmodell.
+- Das Ersatzmodell ist durch die Modellbeschränkungen deines Workspace und deines Schlüssels erlaubt.
+- Die Anfrage verwendet keine anbieterqualifizierte Modell-ID und nicht `phaseo/auto`.
+
+**Ein anderes Modell hat geantwortet als das angeforderte.** Achte auf den Header `X-Phaseo-Model-Substitution`. Damit ein Modell nicht ersetzt wird, füge es unter **Eigene Ersatzmodelle** mit **Nie weiterleiten** hinzu oder deaktiviere die automatische Weiterleitung.

@@ -22,6 +22,38 @@
       "source": null
     },
     {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Amazon Bedrock Claude 3.7 Sonnet cache write (5-minute TTL only): 1.25x the standard input price (AWS, accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-23T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://aws.amazon.com/blogs/machine-learning/optimizing-cost-and-latency-with-amazon-bedrock-prompt-caching/"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Amazon Bedrock Claude cache read: 0.1x the standard input price (AWS, accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-23T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://aws.amazon.com/blogs/machine-learning/optimizing-cost-and-latency-with-amazon-bedrock-prompt-caching/"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -50,6 +82,12 @@
       "url": "https://aws.amazon.com/bedrock/pricing/",
       "accessed_at": "2026-08-23T00:00:00Z",
       "notes": "Amazon Bedrock US on-demand pricing."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://aws.amazon.com/blogs/machine-learning/optimizing-cost-and-latency-with-amazon-bedrock-prompt-caching/",
+      "accessed_at": "2026-10-17T00:00:00Z",
+      "notes": "Amazon Bedrock Claude cache read: 0.1x the standard input price (AWS, accessed 2026-10-17)."
     }
   ],
   "verification": {

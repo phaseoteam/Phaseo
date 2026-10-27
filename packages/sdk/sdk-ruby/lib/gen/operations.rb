@@ -103,9 +103,21 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/classifiers"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution/classifiers"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/department-budgets"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -118,6 +130,12 @@ module Phaseo
       def self.createEmbedding(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/embeddings"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createExtraction(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/extractions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -211,6 +229,18 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createRateLimitAssignment(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/rate-limits/assignments"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createRateLimitPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/rate-limits/policies"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createRealtimeSession(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/audio/realtime/sessions"
@@ -232,6 +262,12 @@ module Phaseo
       def self.createSpeech(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/audio/speech"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/spend-rules"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -329,10 +365,24 @@ module Phaseo
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.deleteClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.deleteDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/data-contribution/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -389,6 +439,27 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/byok/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteRateLimitAssignment(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/assignments/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteRateLimitPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/policies/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -523,6 +594,13 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.getClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.getCredits(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/credits"
@@ -538,6 +616,13 @@ module Phaseo
       def self.getDataContributionSettings(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -653,6 +738,27 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["provider_id"].to_s)
         resolved_path = "/health/providers/#{URI.encode_uri_component(path["provider_id"].to_s)}/derank"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getRateLimitAssignment(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/assignments/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getRateLimitPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/policies/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -810,9 +916,21 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listClassifiers(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/classifiers"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listDataModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listDepartmentBudgets(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/department-budgets"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -953,6 +1071,31 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listRateLimitAssignments(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/rate-limits/assignments"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listRateLimitPolicies(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/rate-limits/policies"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listSpendRuleHistory(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}/history"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listSpendRules(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/spend-rules"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listTeamModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/models/me"
@@ -1075,6 +1218,13 @@ module Phaseo
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/apps/#{URI.encode_uri_component(path["id"].to_s)}/merge"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.previewSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}/preview"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.publishPresetVersion(client, path: nil, query: nil, headers: nil, body: nil)
@@ -1231,6 +1381,13 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.rotateWorkspaceNotificationDestinationSecret(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}/rotate-secret"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.setWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["departmentId"].to_s)
@@ -1243,6 +1400,13 @@ module Phaseo
         path ||= {}
         resolved_path = "/feedback/summary"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.testSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}/test"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.testWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
@@ -1272,6 +1436,13 @@ module Phaseo
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.updateClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.updateDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -1282,6 +1453,13 @@ module Phaseo
       def self.updateDataContributionConsent(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution/consent"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1357,6 +1535,27 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/byok/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateRateLimitAssignment(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/assignments/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateRateLimitPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/rate-limits/policies/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateSpendRule(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-rules/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

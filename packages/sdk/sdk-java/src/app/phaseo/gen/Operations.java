@@ -85,8 +85,18 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -97,6 +107,11 @@ public final class Operations {
 
 	public static Object createEmbedding(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/embeddings";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createExtraction(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/extractions";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -175,6 +190,16 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createRateLimitAssignment(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/assignments";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createRateLimitPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/policies";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createRealtimeSession(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/audio/realtime/sessions";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -192,6 +217,11 @@ public final class Operations {
 
 	public static Object createSpeech(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/audio/speech";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -270,8 +300,18 @@ public final class Operations {
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Object deleteClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object deleteDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -312,6 +352,21 @@ public final class Operations {
 
 	public static Object deleteProviderCredential(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/byok/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteRateLimitAssignment(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/assignments/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteRateLimitPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -410,6 +465,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object getClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object getCredits(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/credits";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -422,6 +482,11 @@ public final class Operations {
 
 	public static Object getDataContributionSettings(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -507,6 +572,21 @@ public final class Operations {
 
 	public static Object getProviderDerankStatus(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/health/providers/" + pathSegment(path != null && path.containsKey("provider_id") ? path.get("provider_id") : "") + "/derank";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getRateLimitAssignment(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/assignments/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getRateLimitPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -630,8 +710,18 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listClassifiers(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listDataModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listDepartmentBudgets(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -745,6 +835,26 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listRateLimitAssignments(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/assignments";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listRateLimitPolicies(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/policies";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listSpendRuleHistory(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/history";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listSpendRules(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listTeamModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/models/me";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -843,6 +953,11 @@ public final class Operations {
 	public static Object mergeWorkspaceApp(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/apps/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/merge";
 		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object previewSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/preview";
+		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Object publishPresetVersion(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
@@ -955,6 +1070,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object rotateWorkspaceNotificationDestinationSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/notifications/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/rotate-secret";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object setWorkspaceDepartmentMember(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/identity/departments/" + pathSegment(path != null && path.containsKey("departmentId") ? path.get("departmentId") : "") + "/members/" + pathSegment(path != null && path.containsKey("userId") ? path.get("userId") : "");
 		return client.request("PUT", resolvedPath, query, headers, body);
@@ -963,6 +1083,11 @@ public final class Operations {
 	public static Object summarizeGatewayFeedback(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/feedback/summary";
 		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object testSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/test";
+		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Object testWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
@@ -985,6 +1110,11 @@ public final class Operations {
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 
+	public static Object updateClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
 	public static Object updateDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
@@ -992,6 +1122,11 @@ public final class Operations {
 
 	public static Object updateDataContributionConsent(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/consent";
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 
@@ -1047,6 +1182,21 @@ public final class Operations {
 
 	public static Object updateProviderCredential(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/byok/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateRateLimitAssignment(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/assignments/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateRateLimitPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

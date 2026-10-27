@@ -20,6 +20,7 @@ import {
 	toPublicVideoStatus,
 } from "@core/video-public";
 import {
+	buildWebhookSignatureHeaders,
 	getWebhookEndpointSigningConfig,
 	validateWebhookEndpointUrlForDelivery,
 } from "@core/webhook-endpoints";
@@ -1009,18 +1010,6 @@ export async function buildAsyncNotificationData(args: {
 	return null;
 }
 
-async function signWebhook(secret: string, timestamp: string, body: string): Promise<string> {
-	const key = await crypto.subtle.importKey(
-		"raw",
-		new TextEncoder().encode(secret),
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"],
-	);
-	const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
-	return Array.from(new Uint8Array(signature)).map((value) => value.toString(16).padStart(2, "0")).join("");
-}
-
 async function sendAsyncWebhookRequest(args: {
 	url: string;
 	secret?: string | null;
@@ -1048,9 +1037,7 @@ async function sendAsyncWebhookRequest(args: {
 		"x-phaseo-attempt": String(args.attemptNumber),
 		"x-phaseo-max-attempts": String(args.maxAttempts),
 	};
-	const timestamp = String(Math.floor(Date.now() / 1000));
-	headers["x-phaseo-timestamp"] = timestamp;
-	headers["x-phaseo-signature"] = await signWebhook(args.secret, timestamp, args.body);
+	Object.assign(headers, await buildWebhookSignatureHeaders(args.secret, args.body));
 	// Keep DNS validation as close as possible to the network operation. Any
 	// asynchronous preparation before this point would unnecessarily widen the
 	// DNS-rebinding time-of-check/time-of-use window.

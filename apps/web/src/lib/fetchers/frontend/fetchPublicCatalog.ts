@@ -17,16 +17,15 @@ import type {
 	SignInModel,
 	SupportedModelsStats,
 } from "@/lib/fetchers/landing/sign-in/types";
-import type { ExtendedModel } from "@/data/types";
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ProviderAppTokenTimeseries, ProviderTokenTimeseries } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
-import type { BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
-import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
+import type { ComparePeerBoard, CompareView } from "@/components/(data)/compare/view/types";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
 import type {
 	MarketplacePreset,
@@ -387,10 +386,13 @@ export async function fetchFrontendModelSubscriptionPlans(
 	includeHidden = false,
 ): Promise<SubscriptionPlan[]> {
 	if (includeHidden) return getModelSubscriptionPlans(modelId, true);
-	const payload = await fetchOptionalPublicWebApi<{
+	const payload = await fetchPublicWebApi<{
 		subscription_plans: SubscriptionPlan[];
 	}>(`/api/_web/models/${encodeURIComponent(modelId)}/subscription-plans`);
-	return payload?.subscription_plans ?? [];
+	if (!Array.isArray(payload?.subscription_plans)) {
+		throw new Error("Invalid subscription plans response");
+	}
+	return payload.subscription_plans;
 }
 
 export async function fetchFrontendModelGatewayMetadata(
@@ -650,12 +652,15 @@ export async function fetchFrontendOrganisationHeader(
 	return payload?.organisation ?? null;
 }
 
+/** `limit` returns only the organisation's newest models (by release or announcement date). */
 export async function fetchFrontendOrganisationModels(
 	organisationId: string,
+	{ limit }: { limit?: number } = {},
 ): Promise<OrganisationModelCards[]> {
+	const query = limit === undefined ? "" : `?limit=${encodeURIComponent(String(limit))}`;
 	const payload = await fetchOptionalPublicWebApi<{
 		models: OrganisationModelCards[];
-	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models`);
+	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models${query}`);
 	return payload?.models ?? [];
 }
 
@@ -671,14 +676,27 @@ export async function fetchFrontendBenchmarks(
 
 export async function fetchFrontendBenchmark(
 	benchmarkId: string,
+	selection: { version?: string; metric?: string } = {},
 ): Promise<BenchmarkPage | null> {
 	// Epoch ECI was initially cached with inverted score ordering. Keep the
 	// corrected cache namespace explicit while older edge entries expire.
-	const cacheRevision = benchmarkId === "epoch-capabilities-index" ? "?revision=2" : "";
+	const query = new URLSearchParams();
+	if (benchmarkId === "epoch-capabilities-index") query.set("revision", "2");
+	if (benchmarkId === "artificial-analysis") {
+		if (selection.version) query.set("version", selection.version);
+		if (selection.metric) query.set("metric", selection.metric);
+	}
+	const cacheRevision = query.size ? `?${query}` : "";
 	const payload = await fetchOptionalPublicWebApi<{ benchmark: BenchmarkPage }>(
 		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);
 	return payload?.benchmark ?? null;
+}
+
+export async function fetchFrontendArtificialAnalysisData(selection: { model?: string; version?: number; limit?: number; offset?: number } = {}): Promise<ArtificialAnalysisPublicData | null> {
+	const query = new URLSearchParams();
+	for (const [key, value] of Object.entries(selection)) if (value !== undefined) query.set(key, String(value));
+	return fetchOptionalPublicWebApi<ArtificialAnalysisPublicData>(`/api/_web/benchmarks/artificial-analysis/data?${query}`);
 }
 
 export async function fetchFrontendFamilies(): Promise<FamilyCard[]> {
@@ -1108,14 +1126,23 @@ export async function fetchFrontendOrganisationLogoIdsByNames(
 	return (await fetchPublicWebApi<{ organisations: Record<string, string> }>(`/api/_web/rankings/organisation-logo-ids?names=${encodeURIComponent([...new Set(names)].sort().join(","))}`)).organisations;
 }
 
-export async function fetchFrontendCompareModels(): Promise<ExtendedModel[]> {
-	return (await fetchPublicWebApi<{ models: ExtendedModel[] }>("/api/_web/compare/models")).models;
+/** The compact compare payload; the Worker composes prices, routes and benchmarks. */
+export async function fetchFrontendCompareView(modelIds: string[]): Promise<CompareView> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return { models: [], benchmarks: [] };
+	return fetchPublicWebApi<CompareView>(`/api/_web/compare/view?ids=${encodeURIComponent(ids.join(","))}`);
 }
 
-export async function fetchFrontendComparisonModels(
-	modelIds: string[],
-): Promise<ExtendedModel[]> {
-	return getComparisonModelsCached(modelIds, false);
+/** The compared models' places on the capability leaderboards. */
+export async function fetchFrontendComparePeers(modelIds: string[]): Promise<ComparePeerBoard[]> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return [];
+	return (await fetchPublicWebApi<{ boards: ComparePeerBoard[] }>(`/api/_web/compare/peers?ids=${encodeURIComponent(ids.join(","))}`)).boards;
+}
+
+/** The curated comparisons that get their own pages. */
+export async function fetchFrontendComparePairs(): Promise<Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }>> {
+	return (await fetchPublicWebApi<{ pairs: Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }> }>("/api/_web/compare/pairs")).pairs;
 }
 
 export type FrontendCompareUsage = Record<string, {
@@ -1129,6 +1156,9 @@ export type FrontendCompareUsage = Record<string, {
 	throughputP50TokPerSec30m: number | null;
 	cumulativeTokens: number | null;
 	requestPoints24h: Array<{ date: string; value: number }>;
+	latencyWindow?: "30m" | "24h" | "5d" | null;
+	throughputWindow?: "30m" | "24h" | "5d" | null;
+	activity30d?: Array<{ date: string; requests: number; input: number; output: number; reasoning: number }>;
 }>;
 
 export async function fetchFrontendCompareUsage(modelIds: string[]): Promise<FrontendCompareUsage> {

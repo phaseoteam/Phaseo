@@ -17,6 +17,21 @@ icon: "sliders-horizontal"
 
 パラメーターのサポート状況は、エンドポイント、モデル、プロバイダーによって異なります。モデルのクイックスタート表には、特定のルートで現在有効なプロバイダーの対応状況が集約されています。
 
+## サポートされていないパラメーター
+
+リクエストを処理するプロバイダーがサンプリングパラメーターのいずれかをサポートしていない場合、Phaseo はそのパラメーターを削除します。プロバイダーには送信されず、リクエストも拒否されないため、常に OpenAI の既定値を送信するクライアントもそのまま動作します。サポートの有無は、Phaseo のプロバイダープロファイルとルートのカタログパラメーターからプロバイダーごとに判断されます。ルートがパラメーターを宣言していない場合、省略されるのはカタログによる判定だけです。プロバイダープロファイルでサポート対象外とされているパラメーターは引き続き削除されます（例: Cohere の `top_k`、Reflection の `stop`）。
+
+削除される可能性があるのは次のパラメーターだけです: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（`/v1/messages` では `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls`、`image_config`。メッセージ、ツール、`tool_choice`、`response_format`、推論設定、出力上限は削除されません。
+
+これとは別に、OpenAIの12時間キャッシュを受け付けないルートでは、プロンプトキャッシュの`ttl`の`12h`が削除され、同じ場所で`prompt_cache_options.ttl`または`prompt_cache_breakpoint.ttl`として報告されます。[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
+
+成功したレスポンスでは、リクエスト自体が送信したパラメーターのうち削除されたものが次の場所で通知されます。
+
+- `X-Phaseo-Dropped-Params` レスポンスヘッダー。例: `X-Phaseo-Dropped-Params: top_k, min_p`
+- リクエストで `meta: true` を設定した場合の `meta.routing.dropped_params`。例: `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+リクエスト本文ではなく、プリセットや既定値から設定されたパラメーターは、どちらの場所にも表示されずに削除されることがあります。その場合も、Phaseo がリクエストとともに保存するルーティング診断には記録されます。
+
 ## クイック参照
 
 | パラメーター | 型 | 用途 |
@@ -46,10 +61,10 @@ icon: "sliders-horizontal"
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推論用トークン制限または使用量集計フィールド。 |
 | [`include_reasoning`](#include_reasoning) | `boolean` | 対応時に推論内容または要約を返します。 |
 | [`service_tier`](#service_tier) | `string` | `fast`、`ultrafast`、`flex`などの対応するリクエスト階層を選択する。 |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | 関連リクエストでキャッシュを考慮したルーティングを固定します。 |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAIのプロンプトキャッシュモードとTTLを設定する。 |
-| [`cache_control`](#cache_control) | `object` | プロバイダーに依存しないプロンプトキャッシュのヒントや区切りを適用します。 |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI互換のプロンプトキャッシュ保持期間を設定します。 |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | 関連リクエストを、そのプロンプトキャッシュを持つプロバイダーにとどめます。 |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI GPT-5.6以降のプロンプトキャッシュのモードとTTLを設定する。 |
+| [`cache_control`](#cache_control) | `object` | Claudeのデフォルトキャッシュポリシーを設定するか、コンテンツブロックにキャッシュブレークポイントを付けます。 |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | GPT-5.6より前のOpenAIモデルでプロンプトキャッシュの保持期間を設定します。 |
 | [`provider`](#provider) | `object` | ルーティングとプロバイダー選択に影響します。 |
 | [`provider_options`](#provider_options) | `object` | プロバイダーネイティブの設定をゲートウェイ経由で渡します。 |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | レスポンスに追加メタデータまたは使用量情報を返します。 |
@@ -423,14 +438,14 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-対応時にレスポンスへ推論内容または要約を含めるよう要求します。
+互換性のためにChat Completionsで受け付けます。この値にかかわらず、モデルが推論内容や要約を生成した場合は常に返されます。
 
 | 項目 | 値 |
 | --- | --- |
 | 型 | `boolean` |
-| デフォルト | `false` |
+| デフォルト | `true` |
 
-慎重に使用してください。推論ペイロードは大きくなる場合があり、すべてのモデルで使えるとは限りません。追加の診断情報が不要な本番レスポンスには適さないことがあります。
+推論ペイロードは大きくなる場合があり、すべてのモデルで使えるとは限りません。推論を減らすには、`reasoning.effort`を下げるか、`reasoning.enabled`を`false`に設定します。
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -451,6 +466,7 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 
 - `Batch`は独立したAPIフローであり、サービスティアの値ではありません。
 - 対応状況はエンドポイントとプロバイダーによって異なります。
+- OpenAIの値も受け付けます。`auto`（または`null`）は特定の階層を指定せず、フィールドを省略した場合と同じように扱われます。`scale`は標準階層である`default`として扱われます。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -462,48 +478,54 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 | 型 | `string` |
 | 用途 | 関連するキャッシュ済みプロンプトでルーティングを固定します。 |
 
-複数のリクエストで安定したプロンプトの接頭辞を共有し、可能なら同じ上流プロバイダーまたはリージョンを優先する場合に使用します。Phaseoはリクエストコンテキストからキャッシュ親和性を導出することもできますが、長時間の会話、エージェントセッション、反復ワークフローでは明示的なキーが適しています。
+エージェントループの各ステップのように、一連のリクエストが安定したプロンプトのプレフィックスを共有する場合に使用します。Phaseoは最初に成功したリクエストを処理したプロバイダーとルート（デプロイメントまたはリージョン）にキーを固定し、そのプロバイダーで障害が起きる、そのプロバイダーでのPhaseo管理クォータを使い切る、またはルーティングポリシーで許可されなくなるまで、同じキーを持つ後続のリクエストをそこに送ります。固定はワークスペースごとに保持され、その有効期間はプロバイダーのキャッシュ保持期間に従います。[プロバイダーとの親和性](../guides/prompt-caching.mdx#provider-affinity)を参照してください。
+
+Chat Completions、Responses、Anthropic Messagesのいずれでも受け付けます。Phaseoは生のキーではなく、ワークスペースIDとキーのハッシュを上流に送ります。そのため、同じキーを選んだワークスペース同士がプロバイダーのキャッシュを共有することはありません。レスポンスには送信したキーがそのまま返ります。APIがこのフィールドを受け付けないプロバイダーには送られず、送信してもプロバイダーがルーティングから除外されることはありません。Phaseoはリクエストのコンテキストから親和性を導出することもできますが、長い会話、エージェントセッション、繰り返し実行するワークフローには明示的なキーが適しています。
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-対応するOpenAIルートにOpenAIのプロンプトキャッシュ設定を渡します。
+GPT-6 Astraを含むGPT-5.6以降のOpenAIとAzure OpenAI、DeepInfra、Moonshot AIにプロンプトキャッシュ制御を渡します。
 
 | フィールド | 値 |
 | --- | --- |
 | 型 | `object` |
-| 主なフィールド | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| 主なフィールド | `mode`（`implicit`または`explicit`）, `ttl` |
+| OpenAIのTTL | `30m`（OpenAIのResponses APIでは`12h`も可） |
 
-GPT-6 Astraで明示的なプロンプトキャッシュを使う場合は、`{"mode":"explicit","ttl":"30m"}`を指定します。Phaseoはリクエストの正規化中もこのオブジェクトを保持し、そのままOpenAIに送信します。
+自分で配置したブレークポイントだけをOpenAIにキャッシュさせる場合は`{"mode":"explicit","ttl":"30m"}`を使います。OpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12h`で、Azure OpenAIは`30m`だけです。[OpenAIの12時間キャッシュ](../guides/prompt-caching.mdx#12-hour-cache-on-openai)を参照してください。DeepInfraは`5m`または`1h`を受け付け、セッション内のすべてのリクエストで`prompt_cache_key`が必要です。Moonshot AIは`mode: "implicit"`と、`5m`の`ttl`を受け付けます。Kimi K3では`1h`も受け付けます。
+
+Phaseoはこれらのルートにオブジェクトを送ります。Azure OpenAIでの`12h`や、1時間の書き込み価格がないMoonshot AIモデルでの`1h`のように、ルートが受け付けない有効期間は削除し、`X-Phaseo-Dropped-Params`ヘッダーで報告します。それ以外のプロバイダーと、代わりに[`prompt_cache_retention`](#prompt_cache_retention)を使うGPT-5.6より前のOpenAIモデルでは削除します。`provider_options.openai.prompt_cache_options`も受け付けますが、トップレベルの値が優先されます。
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-対応するテキストリクエストのインターフェースで、プロバイダーに依存しないプロンプトキャッシュポリシーを適用します。
+Claudeのデフォルトのプロンプトキャッシュポリシーを設定するか、コンテンツブロックにキャッシュブレークポイントを付けます。
 
 | 項目 | 値 |
 | --- | --- |
 | 型 | `object` |
 | 共通フィールド | `type`, `ttl`, `scope` |
-| 用途 | プロンプトの自動キャッシュと明示的なキャッシュ境界 |
+| 用途 | Claudeのキャッシュポリシーと明示的なキャッシュブレークポイント |
 
-同じキャッシュヒントをゲートウェイ共通スキーマ経由で渡すには、Chat Completions、Responses、Anthropic Messagesリクエストのトップレベルで`cache_control`を使用します。明示的なキャッシュ境界が必要な場合は、対応するコンテンツブロックにも配置できます。
+トップレベルの`cache_control`は、Chat Completions、Responses、Anthropic Messagesの各リクエストで受け付けます。対象はAnthropic、Claude on AWS、Amazon Bedrock、Google Vertex AI上のClaudeで、Phaseoが`scope`（`all_text`、`last_user_message`、`agent`、`none`）に従って最大4つのブレークポイントを配置します。ほかのプロバイダーはこれを無視します。`provider_options.anthropic.cache_control`は同じ設定で、両方を送った場合はこちらが優先されます。
 
-一般的なTTL値は`5m`と`1h`ですが、プロバイダーとモデルの対応状況によります。ネイティブ統合では`provider_options.anthropic.cache_control`や`provider_options.google.cache_control`などのプロバイダー固有の別名も引き続き使用できます。
+コンテンツブロック、ツール定義、ツール結果に付けた`cache_control`は、キャッシュブレークポイントを示します。PhaseoはこれをClaudeのルート、Alibaba Model Studio、Veniceに送り、GPT-5.6以降のOpenAIとAzure OpenAIでは`prompt_cache_breakpoint`に変換し、それ以外のプロバイダーでは削除します。OpenAI独自の`prompt_cache_breakpoint: {"mode": "explicit"}`も同じブロックで受け付け、両方を持つブロックではこちらが優先されます。
+
+`type: "ephemeral"`と、`5m`（デフォルト）または`1h`の`ttl`を使います。Anthropicが受け付けるブレークポイントは1リクエストあたり最大4つで、それを超えるとPhaseoは最初の1つと最新の3つを残します。範囲の種類と各プロバイダーに届く内容は[プロンプトキャッシュ](../guides/prompt-caching.mdx#cache-controls)を参照してください。
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-OpenAIルートの対応リクエストで、OpenAI互換のプロンプトキャッシュ保持ポリシーを設定します。
+GPT-5.6より前のOpenAIとAzure OpenAIのモデルで、プロンプトキャッシュの保持ポリシーを設定します。
 
 | 項目 | 値 |
 | --- | --- |
 | 型 | `string` |
-| 例 | `24h` |
+| 対応値 | `in_memory`, `24h` |
 | 用途 | OpenAIプロンプトキャッシュの保持 |
 
-OpenAIのキャッシュ保持オプションをプロバイダー固有のオプションに入れずに渡す場合に使用します。プロバイダー固有の別名`provider_options.openai.prompt_cache_retention`も引き続き使用できます。両方が指定された場合はトップレベルの`prompt_cache_retention`が優先されます。
+PhaseoはこのフィールドをGPT-5.6より前のOpenAIとAzure OpenAIのモデルにだけ送り、`24h`を受け付けるのはOpenAIが挙げるモデルだけです。GPT-5.6以降では代わりに[`prompt_cache_options.ttl`](#prompt_cache_options)を使い、ほかのプロバイダーにはこのフィールドを送りません。プロバイダー固有のエイリアス`provider_options.openai.prompt_cache_retention`も引き続き使えます。両方を指定した場合は、トップレベルの`prompt_cache_retention`が優先されます。
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +571,12 @@ OpenAIのキャッシュ保持オプションをプロバイダー固有のオ�
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-プロバイダー固有の機能を使いつつ、リクエストの残りをゲートウェイ共通スキーマで扱いたい場合に使用します。一般的なキャッシュヒントにはトップレベルの`cache_control`、OpenAI互換の保持設定にはトップレベルの`prompt_cache_retention`を使用してください。
+プロバイダー固有の機能を使いつつ、リクエストの残りをゲートウェイ共通スキーマで扱いたい場合に使用します。Claudeのキャッシュポリシーにはトップレベルの`cache_control`、OpenAIの保持設定にはGPT-5.6以降ではトップレベルの`prompt_cache_options`、それより前のモデルではトップレベルの`prompt_cache_retention`を使用してください。
+
+`google.cached_content`はGeminiの明示的キャッシュを指定します。自分の認証情報を使う場合にだけ機能します。Google AI StudioではGoogle APIキー、Vertex AIではVertex AIの認証情報です。Vertex AIでは、Phaseoはキャッシュの完全な名前（`projects/{project}/locations/{location}/cachedContents/{id}`）にあるプロジェクトとロケーションにリクエストを送ります。短い名前では、サービスアカウントJSONの`project_id`と`region`を使います。Phaseoの認証情報では、リクエストは400を返します。`google.cache_control`と`google.cache_ttl`は受け付けますが、Googleには送りません。
 
 Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プロンプトキャッシュ例は、[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
 
@@ -642,9 +666,10 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 - [エラーとデバッグ](./errors.mdx)
 
 <Visibility for="agents">
-エージェントとしてパラメーター処理を実装する場合:
+エージェント向けのパラメーター処理ルール:
 
-- スキーマ検証とリクエスト構造の確認には、リポジトリのスキルを使用してください
-- 許可されている場合、パススルーフローでは未知のプロバイダー固有キーを保持してください
-- tools、ストリーミング、debugオプションなどの高度なフィールドを併用する前に、エンドポイントとの互換性を確認してください
+- フィールド名を推測せず、https://phaseo.app/docs/openapi/v1/openapi.yaml の API 契約でリクエスト本文を検証します。
+- ツール、ストリーミング、デバッグオプションなどの高度なフィールドを組み合わせる前に、そのエンドポイントの API リファレンスを確認します。
+- エンドポイントが許可する場合、パススルーのフローではプロバイダー固有の未知のキーを保持します。
+- 実績のあるリクエスト形式のパターンには、`phaseo-gateway` スキルをインストールします: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`
 </Visibility>

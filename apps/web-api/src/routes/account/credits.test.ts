@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
 import { parseLowBalanceThresholdNanos } from "./credits";
 
+// The fixtures' users have a verified TOTP factor, so their session must have used it (aal2).
+const sessionToken = `header.${btoa(JSON.stringify({ sub: "user-1", aal: "aal2" })).replace(/=+$/, "")}.signature`;
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account credit routes", () => {
@@ -41,7 +44,7 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 2_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
@@ -55,7 +58,7 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([{ factor_type: "totp", status: "verified" }]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 2_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
@@ -68,7 +71,7 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({
 				workspaceId: "workspace-1",
 				enabled: true,
@@ -87,7 +90,7 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([], true);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 3_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
@@ -100,7 +103,7 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({
 				workspaceId: "workspace-1",
 				enabled: true,
@@ -128,7 +131,7 @@ describe("account credit routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/account/credits/notification-destinations/test", {
 			method: "POST",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({ workspaceId: "workspace-1", type: "email", target: "owner@example.com", kind: "other" }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 		expect(response.status).toBe(400);
@@ -190,7 +193,7 @@ describe("account credit routes", () => {
 			"https://phaseo.app/api/account/credits/balance",
 			{
 				headers: {
-					authorization: "Bearer session-token",
+					authorization: `Bearer ${sessionToken}`,
 					cookie: "activeWorkspaceId=workspace-1",
 				},
 			},

@@ -21,6 +21,7 @@ export type Protocol =
 	| "openai.moderations"
 	| "openai.rerank"
 	| "phaseo.decisions"
+	| "phaseo.extractions"
 	| "anthropic.messages";
 
 export type TextProtocol =
@@ -58,6 +59,8 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 			return "openai.rerank";
 		case "decisions":
 			return "phaseo.decisions";
+		case "extractions":
+			return "phaseo.extractions";
 
 		case "chat.completions":
 			return "openai.chat.completions";
@@ -109,6 +112,8 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/rerank";
 		case "phaseo.decisions":
 			return "/v1/decisions";
+		case "phaseo.extractions":
+			return "/v1/extractions";
 		case "anthropic.messages":
 			return "/v1/messages";
 	}
@@ -124,11 +129,11 @@ export function protocolSupportsFeature(
 	switch (feature) {
 		case "tools":
 			// Structured decision evaluation is not a tool-calling protocol.
-			return protocol !== "phaseo.decisions";
+			return protocol !== "phaseo.decisions" && protocol !== "phaseo.extractions";
 
 		case "streaming":
 			// All protocols support streaming
-			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank" && protocol !== "phaseo.decisions";
+			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank" && protocol !== "phaseo.decisions" && protocol !== "phaseo.extractions";
 
 		case "reasoning":
 			// OpenAI Responses API has native reasoning support
@@ -162,6 +167,8 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Rerank";
 		case "phaseo.decisions":
 			return "Phaseo Decisions";
+		case "phaseo.extractions":
+			return "Phaseo Extractions";
 		case "anthropic.messages":
 			return "Anthropic Messages";
 	}

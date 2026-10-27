@@ -12,6 +12,10 @@ import {
 } from "./context.shared";
 
 describe("credit cache composition", () => {
+	it("bounds managed privacy cache entries without changing legacy TTLs", () => {
+		expect(computeStaticTtl({ pricing: {}, providers: [{ capabilityParams: { data_policy: { catalogManaged: true } } }] } as never)).toBe(300);
+		expect(computeStaticTtl({ pricing: {} })).toBe(600);
+	});
 	const teamEnrichment = {
 		tier: "basic",
 		created_at: "2026-01-01T00:00:00.000Z",

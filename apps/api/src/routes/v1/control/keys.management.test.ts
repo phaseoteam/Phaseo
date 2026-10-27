@@ -22,8 +22,11 @@ const state = vi.hoisted(() => ({
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	insertPayloads: [] as Array<Record<string, unknown>>,
 	membershipRows: [] as Array<Record<string, unknown> | null>,
+	departmentRows: [] as Array<Record<string, unknown> | null>,
+	departmentLookups: [] as Array<Array<{ column: string; value: unknown }>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
+	nameFilters: [] as unknown[][],
 	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string, _keyType: string, _excludeKeyId?: string) => undefined),
 	isUsableWorkspaceKey: vi.fn((key: Record<string, unknown>) => {
 		if (key.status !== "active" || key.soft_blocked !== false) return false;
@@ -31,6 +34,9 @@ const state = vi.hoisted(() => ({
 		return new Date(String(key.expires_at)).getTime() > Date.now();
 	}),
 	setKeyVersion: vi.fn(async () => undefined),
+	copyRateLimit: vi.fn(async (_args: Record<string, unknown>) => false),
+	publishRateLimitPlan: vi.fn(async (_workspaceId: string) => true),
+	deletedKeyIds: [] as unknown[],
     cacheDelete: vi.fn(async (_key: string) => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
@@ -49,7 +55,7 @@ function buildKeysSupabaseMock() {
 	return {
 		rpc: async () => ({ data: state.keyUsageRows, error: null }),
 		from(table: string) {
-			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
+			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "workspace_departments" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
 				throw new Error(`Unexpected table: ${table}`);
 			}
 
@@ -77,6 +83,17 @@ function buildKeysSupabaseMock() {
 				};
 			}
 
+			if (table === "workspace_departments") {
+				const filters: Array<{ column: string; value: unknown }> = [];
+				state.departmentLookups.push(filters);
+				const lookup: any = {
+					select: () => lookup,
+					eq: (column: string, value: unknown) => { filters.push({ column, value }); return lookup; },
+					maybeSingle: async () => ({ data: state.departmentRows.shift() ?? null, error: null }),
+				};
+				return lookup;
+			}
+
 			if (table === "workspace_members") {
 				return {
 					select: () => ({
@@ -94,9 +111,11 @@ function buildKeysSupabaseMock() {
 
 			let updatePayload: Record<string, unknown> | null = null;
 			const query: any = {
+				delete: () => ({ eq: async (_column: string, value: unknown) => { state.deletedKeyIds.push(value); return { error: null }; } }),
 				select: () => query,
 				eq: () => query,
 				neq: () => query,
+				not: (...args: unknown[]) => { state.nameFilters.push(args); return query; },
 				or: () => query,
 				order: () => query,
 				range: () => query,
@@ -173,8 +192,13 @@ vi.mock("@/lib/audit/workspaceAudit", () => ({
 	recordWorkspaceAuditEvent: vi.fn(async () => true),
 }));
 
-vi.mock("./management-helpers", () => ({
-	CHAT_MANAGED_KEY_NAME: "__chat_route_managed_key__",
+vi.mock("@core/rate-limit-policies", () => ({
+	copyKeyRateLimitAssignment: state.copyRateLimit,
+	publishRateLimitPlan: state.publishRateLimitPlan,
+}));
+
+vi.mock("./management-helpers", async (importOriginal) => ({
+	...(await importOriginal<typeof import("./management-helpers")>()),
 	enforceWorkspaceKeyLimit: state.enforceWorkspaceKeyLimit,
 	isUsableWorkspaceKey: state.isUsableWorkspaceKey,
 }));
@@ -194,10 +218,16 @@ describe("management key routes", () => {
 		state.keyUsageRows.length = 0;
 		state.workspaceRows.length = 0;
 		state.membershipRows.length = 0;
+		state.departmentRows.length = 0;
+		state.departmentLookups.length = 0;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
+		state.nameFilters.length = 0;
 		state.setKeyVersion.mockClear();
+		state.copyRateLimit.mockReset().mockResolvedValue(false);
+		state.publishRateLimitPlan.mockClear();
+		state.deletedKeyIds.length = 0;
 		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
 		state.insertPayloads.length = 0;
 		state.enforceWorkspaceKeyLimit.mockReset();
@@ -307,6 +337,33 @@ describe("management key routes", () => {
 			limit_reset: "weekly",
 			key: "phaseo_v1_sk_kid_123_secret_123",
 		});
+	});
+
+	it("returns the new secret at the top level as well as in data.key, and keeps it out of the audit event", async () => {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({
+			id: "key_new", hash: "hash_new", workspace_id: "ws_1", name: "Top Level Key", prefix: "phaseo_v1_sk_kid_123",
+			status: "active", scopes: "[]", created_by: "user_1", created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z", last_used_at: null, soft_blocked: false, expires_at: null,
+			daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0,
+		});
+		const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
+		const audit = vi.mocked(recordWorkspaceAuditEvent);
+		audit.mockClear();
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Top Level Key" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(201);
+		expect(body.key).toBe("phaseo_v1_sk_kid_123_secret_123");
+		expect(body.data.key).toBe(body.key);
+		expect(audit).toHaveBeenCalledTimes(1);
+		expect(JSON.stringify(audit.mock.calls)).not.toContain("secret_123");
 	});
 
 	it("blocks OAuth workspace members from creating API keys", async () => {
@@ -428,6 +485,31 @@ describe("management key routes", () => {
 		expect(state.updatePayloads).toEqual([]);
 	});
 
+	it("records pausing and resuming a key as such, like the dashboard, only when the status changes", async () => {
+		// Each update reads the key, then reads it back. The third request retries the resume.
+		for (const status of ["active", "paused", "paused", "active", "active", "active", "active", "active"]) {
+			state.keyRows.push({
+				id: "key_live", hash: "hash_1", workspace_id: "ws_1", kid: "kid_1", name: "Live Key", prefix: "phaseo_v1_sk_abc", status, scopes: "[]",
+				created_by: "user_1", created_at: "2026-04-28T10:00:00Z", updated_at: "2026-04-28T10:30:00Z", last_used_at: null, soft_blocked: false,
+				expires_at: null, daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0,
+			});
+		}
+		const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
+		const audit = vi.mocked(recordWorkspaceAuditEvent);
+		audit.mockClear();
+		const { keysRoutes } = await import("./keys");
+		for (const body of [{ disabled: true }, { disabled: false }, { disabled: false }, { name: "Renamed" }]) {
+			const response = await keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			expect(response.status).toBe(200);
+		}
+
+		expect(audit.mock.calls.map(([, event]) => event.action)).toEqual(["api_key.paused", "api_key.resumed", "api_key.updated", "api_key.updated"]);
+	});
+
 	it("updates a key by hash and remaps limit_reset using the existing limit", async () => {
 		state.keyRows.push(
 			{
@@ -492,6 +574,178 @@ describe("management key routes", () => {
 			limit: 10,
 			limit_reset: "daily",
 		});
+	});
+
+	describe("department link", () => {
+		const DEPARTMENT_ID = "4b1f0c7e-2d3a-4c5b-8e6f-7a8b9c0d1e2f";
+		const keyRow = (overrides: Record<string, unknown> = {}) => ({
+			id: "key_1",
+			hash: "hash_1",
+			workspace_id: "ws_1",
+			kid: "kid_1",
+			name: "Primary Key",
+			prefix: "phaseo_v1_sk_abc",
+			status: "active",
+			scopes: "[]",
+			created_by: "user_1",
+			created_at: "2026-04-28T10:00:00Z",
+			updated_at: "2026-04-28T10:30:00Z",
+			soft_blocked: false,
+			expires_at: null,
+			department_id: null,
+			...overrides,
+		});
+		const patch = async (body: Record<string, unknown>) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+		};
+
+		it("links a key to a department in its workspace", async () => {
+			state.keyRows.push(keyRow(), keyRow({ department_id: DEPARTMENT_ID }));
+			state.departmentRows.push({ id: DEPARTMENT_ID });
+
+			const response = await patch({ department_id: DEPARTMENT_ID.toUpperCase() });
+			const body = await response.json();
+
+			expect(response.status).toBe(200);
+			expect(state.departmentLookups[0]).toEqual([
+				{ column: "workspace_id", value: "ws_1" },
+				{ column: "id", value: DEPARTMENT_ID },
+			]);
+			expect(state.updatePayloads[0]).toEqual({ department_id: DEPARTMENT_ID });
+			expect(body.data.department_id).toBe(DEPARTMENT_ID);
+			// The department's rate limit now applies to the key.
+			expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+		});
+
+		it("does not republish rate limits when the department is unchanged", async () => {
+			state.keyRows.push(keyRow({ department_id: DEPARTMENT_ID }), keyRow({ department_id: DEPARTMENT_ID }));
+			state.departmentRows.push({ id: DEPARTMENT_ID });
+			expect((await patch({ department_id: DEPARTMENT_ID })).status).toBe(200);
+			expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+		});
+
+		it("rejects a department outside the workspace or a malformed id", async () => {
+			state.keyRows.push(keyRow());
+			const foreign = await patch({ department_id: DEPARTMENT_ID });
+			expect(foreign.status).toBe(400);
+			await expect(foreign.json()).resolves.toMatchObject({ error: "bad_request", message: expect.stringContaining("department") });
+
+			const malformed = await patch({ department_id: "sales" });
+			expect(malformed.status).toBe(400);
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
+		it("unlinks a key with null without a department lookup", async () => {
+			state.keyRows.push(keyRow({ department_id: DEPARTMENT_ID }), keyRow());
+
+			const response = await patch({ department_id: null });
+
+			expect(response.status).toBe(200);
+			expect(state.departmentLookups).toHaveLength(0);
+			expect(state.updatePayloads[0]).toEqual({ department_id: null });
+			await expect(response.json()).resolves.toMatchObject({ data: { department_id: null } });
+			expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+		});
+	});
+
+	describe("storage locations", () => {
+		const keyRow = (overrides: Record<string, unknown> = {}) => ({
+			id: "key_1", hash: "hash_1", workspace_id: "ws_1", kid: "kid_1", name: "Primary Key", prefix: "phaseo_v1_sk_abc",
+			status: "active", scopes: "[]", created_by: "user_1", created_at: "2026-04-28T10:00:00Z", updated_at: "2026-04-28T10:30:00Z",
+			soft_blocked: false, expires_at: null, storage_locations: [], ...overrides,
+		});
+		const patch = async (body: Record<string, unknown>) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+		};
+
+		it("sets, returns and clears where a key is stored", async () => {
+			state.keyRows.push(keyRow(), keyRow({ storage_locations: ["railway", "github"] }));
+			const response = await patch({ storage_locations: ["github", "railway"] });
+			expect(response.status).toBe(200);
+			expect(state.updatePayloads[0]).toEqual({ storage_locations: ["railway", "github"] });
+			await expect(response.json()).resolves.toMatchObject({ data: { storage_locations: ["railway", "github"] } });
+
+			state.keyRows.push(keyRow({ storage_locations: ["railway"] }), keyRow());
+			expect((await patch({ storage_locations: null })).status).toBe(200);
+			expect(state.updatePayloads[1]).toEqual({ storage_locations: [] });
+		});
+
+		it("rejects unknown locations", async () => {
+			state.keyRows.push(keyRow());
+			const response = await patch({ storage_locations: ["my-laptop"] });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toMatchObject({ error: "bad_request", message: expect.stringContaining("my-laptop") });
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
+		it("never turns a revoked key back on", async () => {
+			state.keyRows.push(keyRow({ status: "revoked" }));
+			const response = await patch({ disabled: false });
+			expect(response.status).toBe(409);
+			await expect(response.json()).resolves.toMatchObject({ error: "key_revoked" });
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
+		it("still updates other fields of a revoked key when disabled: true is sent back", async () => {
+			state.keyRows.push(keyRow({ status: "revoked" }), keyRow({ status: "revoked", name: "Renamed" }));
+			const response = await patch({ disabled: true, name: "Renamed" });
+			expect(response.status).toBe(200);
+			expect(state.updatePayloads[0]).toEqual({ name: "Renamed" });
+		});
+	});
+
+	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat and the Slack agent", async () => {
+		const { keysRoutes } = await import("./keys");
+		const { MANAGED_KEY_NAMES_FILTER } = await import("./management-helpers");
+		expect(MANAGED_KEY_NAMES_FILTER).toBe('("__chat_route_managed_key__","__slack_agent_managed_key__")');
+
+		const calls: Array<[string, RequestInit]> = [
+			["https://example.com/hash_managed", { method: "GET" }],
+			["https://example.com/hash_managed", { method: "PATCH", body: JSON.stringify({ name: "Mine now" }), headers: { "Content-Type": "application/json" } }],
+			["https://example.com/hash_managed", { method: "DELETE" }],
+			["https://example.com/hash_managed/rotate", { method: "POST" }],
+		];
+		for (const [url, init] of calls) {
+			state.nameFilters.length = 0;
+			const response = await keysRoutes.request(url, init);
+			expect(response.status, `${init.method} ${url}`).toBe(404);
+			expect(state.nameFilters, `${init.method} ${url}`).toContainEqual(["name", "in", MANAGED_KEY_NAMES_FILTER]);
+		}
+		expect(state.updatePayloads).toEqual([]);
+		expect(state.deletedKeyIds).toEqual([]);
+	});
+
+	it("refuses to create or rename a key with a name Phaseo reserves for its managed keys", async () => {
+		const { keysRoutes } = await import("./keys");
+		for (const name of ["__slack_agent_managed_key__", " __chat_route_managed_key__ "]) {
+			const created = await keysRoutes.request("https://example.com/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name }),
+			});
+			expect(created.status, name).toBe(400);
+			expect(await created.json()).toMatchObject({ message: "This key name is reserved for keys Phaseo manages" });
+		}
+
+		state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", hash: "hash_1", name: "Primary Key", status: "active" });
+		const renamed = await keysRoutes.request("https://example.com/hash_1", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ name: "__slack_agent_managed_key__" }),
+		});
+		expect(renamed.status).toBe(400);
+		expect(state.insertPayloads).toEqual([]);
+		expect(state.updatePayloads).toEqual([]);
 	});
 
 	it("deletes a key by hash and removes its dependent records", async () => {
@@ -575,6 +829,64 @@ describe("management key routes", () => {
 			data: { id: "key_new", key: "phaseo_v1_sk_kid_123_secret_123", limit: 5 },
 			previous_key_expires_at: "2026-09-01T00:00:00.000Z",
 		});
+	});
+
+	it("refuses to rotate a workload identity key", async () => {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Vercel production", prefix: "oidc", status: "active", scopes: "[]", soft_blocked: false, key_kind: "workload_identity" });
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "key_not_rotatable" });
+		expect(state.insertPayloads).toHaveLength(0);
+	});
+
+	function pushRotationRows() {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push(
+			{ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Primary Key", prefix: "old_prefix", status: "active", scopes: "[]", soft_blocked: false },
+			{ id: "key_new", hash: "hash_new", workspace_id: "ws_1", name: "Replacement", prefix: "phaseo_v1_sk_kid_123", status: "active", scopes: "[]", soft_blocked: false },
+		);
+	}
+
+	it("copies the rotated key's rate limit policy to the replacement and republishes", async () => {
+		pushRotationRows();
+		state.copyRateLimit.mockResolvedValue(true);
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.copyRateLimit).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", fromKeyId: "key_old", toKeyId: "key_new" }));
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+		expect(state.deletedKeyIds).toEqual([]);
+	});
+
+	it("republishes when the rotated key is linked to a department", async () => {
+		pushRotationRows();
+		state.keyRows[0].department_id = "dept_1";
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+	});
+
+	it("does not republish when the rotated key had no rate limit policy", async () => {
+		pushRotationRows();
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+	});
+
+	it("undoes the rotation when the rate limit policy cannot be copied", async () => {
+		pushRotationRows();
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		state.copyRateLimit.mockRejectedValue(new Error("copy failed"));
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(500);
+		expect(state.deletedKeyIds).toEqual(["key_new"]);
+		expect(state.updatePayloads).toEqual([]);
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 	});
 
 	it("accepts legacy control bindings while invalidating a cached key", async () => {

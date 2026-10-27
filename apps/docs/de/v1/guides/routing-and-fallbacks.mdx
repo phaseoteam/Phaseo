@@ -188,7 +188,7 @@ Auf derselben Seite gibt es außerdem Umschalter für Beta- und Alpha-Kanäle. S
 
 ### BYOK-Fallback ist explizit
 
-Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen BYOK-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“
+Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen <Tooltip tip="Eigener Schlüssel: Phaseo leitet die Anfrage mit deinem eigenen Anbieter-API-Schlüssel weiter, und dein Anbieter rechnet die Modellnutzung direkt ab.">BYOK</Tooltip>-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“
 
 ### Dynamische Routen ordnen API-Schlüsseln Richtlinien zu
 
@@ -221,6 +221,19 @@ Benutzerdefinierte Metadaten sind auf den OpenAI-kompatiblen Text-Inferenzoberfl
 
 Wenn ein Anbieter Fehler oder Ratenbegrenzungen zurückgibt, kann das Gateway es erneut versuchen oder die Anfrage an einen anderen Anbieter weiterleiten, der dasselbe Modell unterstützt. Behandle Antworten mit `429` und `5xx` weiterhin mit exponentiellem Backoff.
 
+```mermaid
+flowchart TD
+  req["Anfrage"] --> pol["Voreinstellungen, Schutzregeln und Anbieterrichtlinien anwenden"]
+  pol --> rnk["Geeignete Anbieter nach Routing-Modus ordnen"]
+  rnk --> prov["Bestplatzierten Anbieter aufrufen"]
+  prov -->|"Erfolg"| resp["Antwort zurückgeben"]
+  prov -->|"Anbieterfehler oder Ratenlimit"| nextProv{{"Weiterer geeigneter Anbieter?"}}
+  nextProv -->|"Ja"| prov
+  nextProv -->|"Nein"| fallbackCheck{{"Wiederholbarer Status und noch ein Fallback-Modell?"}}
+  fallbackCheck -->|"Ja: mit dem nächsten Modell wiederholen"| pol
+  fallbackCheck -->|"Nein"| err["Fehler zurückgeben"]
+```
+
 Modellknoten einer dynamischen Route können außerdem eine geordnete Liste von Fallback-Modellen definieren. Phaseo schöpft zunächst alle geeigneten Anbieter für das ausgewählte Modell aus. Ist die resultierende Antwort wiederholbar (`429`, `500`, `502`, `503` oder `504`), führt das Gateway die vollständige Richtlinien- und Anbieterauswahl für jedes Fallback-Modell in der angegebenen Reihenfolge erneut aus. Clientfehler werden sofort zurückgegeben und führen nicht zu einem Modellwechsel.
 
 Jeder Fallback wird unabhängig anhand der Workspace-Modellbeschränkungen, Guardrails, Anbieterregeln, Preise und unterstützten Fähigkeiten geprüft. Eine Route kann bis zu acht Fallback-Modelle speichern.
@@ -240,7 +253,7 @@ Jeder Fallback wird unabhängig anhand der Workspace-Modellbeschränkungen, Guar
 
 Eine Anfrage, die `models` ohne `model` sendet, wird mit `400` abgelehnt. Fallbacks auf Anfrageebene nutzen denselben Mechanismus wie Fallbacks dynamischer Routen:
 
-- **Auslöser.** Das nächste Modell wird nur versucht, wenn der vorherige Versuch nach seinen eigenen Anbieter-Wiederholungen mit `429`, `500`, `502`, `503` oder `504` endet. Clientfehler wie `400`, `401`, `402`, `403`, `404`, `408`, `413` und `422` werden ohne Modellwechsel zurückgegeben. Ein `429`, weil während der Ausführung der Anfrage ein Phaseo-Budget oder das Kontingent eines kostenlosen Modells erreicht wurde, führt ebenfalls zum nächsten Modell, da ein anderes Modell in das verbleibende Limit passen kann. Authentifizierung, Ratenbegrenzungen für API-Schlüssel und andere Prüfungen, die vor der Ausführung des primären Modells fehlschlagen, werden sofort zurückgegeben.
+- **Auslöser.** Das nächste Modell wird nur versucht, wenn der vorherige Versuch nach seinen eigenen Anbieter-Wiederholungen mit `429`, `500`, `502`, `503` oder `504` endet. Clientfehler wie `400`, `401`, `402`, `403`, `404`, `408`, `413` und `422` werden ohne Modellwechsel zurückgegeben. Ein `429`, weil während der Ausführung der Anfrage ein Phaseo-Budget oder das Kontingent eines kostenlosen Modells erreicht wurde, führt ebenfalls zum nächsten Modell, da ein anderes Modell in das verbleibende Limit passen kann. Wenn kein Anbieter das primäre Modell überhaupt bereitstellt, zum Beispiel weil es [eingestellt](#retired-models) ist, wechselt Phaseo ebenfalls zum nächsten Modell. Authentifizierung, Ratenbegrenzungen für API-Schlüssel und andere Prüfungen, die vor der Ausführung des primären Modells fehlschlagen, werden sofort zurückgegeben.
 - **Limits.** `models` akzeptiert 1 bis 25 Einträge. Duplikate und Einträge, die `model` entsprechen, werden ignoriert. Dynamische Routen behalten ihr eigenes Limit von acht Fallbacks.
 - **Validierung.** Jeder Eintrag kann eine Modell-ID, eine anbieterqualifizierte Modell-ID oder eine Voreinstellung wie `@support` sein. Jeder Versuch wird als eigene Anfrage validiert: Unterstützung von Endpunkt und Modalität, angeforderte Parameter, Workspace-Modellbeschränkungen, Guardrails, Voreinstellungen, Preise und BYOK-Anmeldedaten. Ein Fallback, der die Anfrage nicht bedienen kann, wird übersprungen und in den Anfrageprotokollen festgehalten; er ersetzt nie den Fehler, den du sonst erhalten würdest. Ein Fallback, der auf einen bereits unternommenen Versuch mit demselben Modell und denselben geeigneten Anbietern hinausläuft, wird übersprungen.
 - **Protokollierung und Abrechnung.** Jeder Versuch erscheint als separate Anfrage in deinen Protokollen, mit eigener Nutzung und eigenem Abrechnungseintrag. Jeder Versuch wird daher genau so abgerechnet wie ohne Fallbacks.
@@ -273,11 +286,19 @@ Weitere Informationen:
 - [Ratenbegrenzungen](../api-reference/limits.mdx)
 - [Fehlerbehandlung](../api-reference/errors.mdx)
 
+<span id="retired-models"></span>
+
+## Eingestellte Modelle
+
+Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es bereitstellt. Sobald keiner es mehr bereitstellt, schlagen Anfragen mit `410 model_retired` fehl, es sei denn, der Workspace hat das Routing für eingestellte Modelle aktiviert, um sie an ein Ersatzmodell zu senden. Deine eigene `models`-Liste wird immer vor einem Ersatzmodell versucht. Siehe [Modellabkündigung und -einstellung](./model-retirement.mdx).
+
 ## Cache- und sitzungsbewusste Affinität
 
-Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Sobald ein Anbieter einen tatsächlichen Prompt-Cache-Lesezugriff meldet, bindet Phaseo den passenden Kontext für 15 Minuten an diesen Anbieter – vorausgesetzt, der Anbieter ist weiterhin verfügbar und durch die aktive Route, Voreinstellung, Guardrail- und Anfragerichtlinie erlaubt.
+Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Anfragen, die `prompt_cache_key` oder `session_id` senden oder Caching mit `cache_control` aktivieren (auf oberster Ebene, über `provider_options.anthropic.cache_control` oder als `cache_control`- bzw. `prompt_cache_breakpoint`-Markierung an einem Nachrichtenblock oder Tool), werden auf den Anbieter und die Route festgelegt, die ihre erste erfolgreiche Anfrage bedient haben. Andere Anfragen werden für 15 Minuten festgelegt, sobald ein Anbieter für denselben Anfangskontext einen Prompt-Cache-Lese- oder -Schreibvorgang meldet, sofern gecachte Eingaben bei diesem Anbieter günstiger sind als normale Eingaben.
 
-Wenn `session_id` vorhanden ist, wird die Cache-Affinität an die Sitzung statt nur an den Anfangskontext gebunden. Phaseo aktualisiert sie, sobald ein weiterer Cache-Lesezugriff beobachtet wird, und behält sie bis zu 24 Stunden Sitzungsaktivität bei. Schutzschalter und Richtlinienfilter haben immer Vorrang vor der Affinität.
+Festlegungen gelten pro Workspace und dauern je nach Cache-Aufbewahrung des Anbieters 15 Minuten bis 24 Stunden. Eine Festlegung wechselt nur, wenn der Schutzschalter ihres Anbieters öffnet, seine aktuelle Fehlerquote hoch ist, das von Phaseo verwaltete Kontingent bei ihm aufgebraucht ist oder die aktive Route, Voreinstellung, Guardrail- oder Anfragerichtlinie ihn nicht mehr erlaubt.
+
+Wenn `session_id` vorhanden ist, wird die Cache-Affinität an die Sitzung statt nur an den Anfangskontext gebunden und bis zu 24 Stunden Sitzungsaktivität beibehalten. Die Dauer der Festlegungen und die Affinitätshinweise, die Phaseo an jeden Anbieter sendet, findest du unter [Provider-Affinität](./prompt-caching.mdx#provider-affinity).
 
 Du kannst die Funktion für eine Anfrage deaktivieren, ohne die Workspace- oder dynamischen Routing-Standards zu ändern:
 
@@ -321,5 +342,6 @@ Protokolliere in Produktionslasten Anfrage-IDs, Antwortstatuscodes und Modell-ID
 ## Zugehörige Anleitungen
 
 - [Voreinstellungen](./presets.mdx)
+- [Modellabkündigung und -einstellung](./model-retirement.mdx)
 - [Funktionsvergleichsmatrix](../migration-guides/feature-parity-matrix.mdx)
 

@@ -32,7 +32,7 @@ jobs:
           fi
       - name: Create GitHub App token (Phaseo Bot)
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         with:
           client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
           private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
@@ -55,15 +55,15 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: "22"
           package-manager-cache: false
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8
+        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
-          ruby-version: "3.2"
+          ruby-version: "4.0"
 
       - name: Resolve version
         id: version

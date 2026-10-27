@@ -7,9 +7,14 @@ import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSetti
 import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAuthorizedAppsInitialData";
 import { fetchSettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/fetchSettingsDynamicRoutesInitialData";
 import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsKeysInitialData";
+import { fetchSettingsKeySecurityInitialData } from "@/lib/fetchers/internal/fetchSettingsKeySecurityInitialData";
 import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
 import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 import { fetchSettingsGuardrailsInitialData } from "@/lib/fetchers/internal/fetchSettingsGuardrailsInitialData";
+import { fetchSettingsClassifiersInitialData } from "@/lib/fetchers/internal/fetchSettingsClassifiersInitialData";
+import { fetchSettingsRateLimitsInitialData } from "@/lib/fetchers/internal/fetchSettingsRateLimitsInitialData";
+import { fetchSettingsWorkloadIdentityInitialData } from "@/lib/fetchers/internal/fetchSettingsWorkloadIdentityInitialData";
+import { fetchSettingsBudgetsInitialData } from "@/lib/fetchers/internal/fetchSettingsBudgetsInitialData";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
 import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
@@ -60,6 +65,9 @@ async function readNotifications() {
 		notificationDestinations: data.notificationDestinations,
 		notificationRoutes: data.notificationRoutes,
 		modelDeprecationAlertsEnabled: data.modelDeprecationAlertsEnabled,
+		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
+		departmentSpendAttribution: data.departmentSpendAttribution ?? "all",
+		billingTimeZone: data.billingTimeZone ?? "UTC",
 	};
 }
 
@@ -76,9 +84,14 @@ const readers = {
 	"authorized-apps": async () => fetchSettingsAuthorizedAppsInitialData(await getLocale()),
 	"dynamic-routes": fetchSettingsDynamicRoutesInitialData,
 	keys: fetchSettingsKeysInitialData,
+	"key-security": fetchSettingsKeySecurityInitialData,
 	"management-api-keys": fetchSettingsManagementApiKeysInitialData,
 	routing: fetchSettingsRoutingInitialData,
 	guardrails: fetchSettingsGuardrailsInitialData,
+	classifiers: fetchSettingsClassifiersInitialData,
+	"rate-limits": fetchSettingsRateLimitsInitialData,
+	"trusted-workloads": fetchSettingsWorkloadIdentityInitialData,
+	budgets: fetchSettingsBudgetsInitialData,
 	privacy: fetchSettingsPrivacyInitialData,
 	byok: fetchSettingsByokInitialData,
 	presets: fetchSettingsPresetsInitialData,

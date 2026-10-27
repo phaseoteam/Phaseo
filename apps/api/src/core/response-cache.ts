@@ -1,4 +1,5 @@
 import type { Endpoint } from "@core/types";
+import type { DroppedParamsRecord } from "@pipeline/execute/unsupportedParams";
 
 const RESPONSE_CACHE_VERSION = "v1";
 const RESPONSE_CACHE_PREFIX = "gateway:response-cache";
@@ -73,6 +74,8 @@ export type CachedResponseRecord = {
 	createdAt: string;
 	expiresAt: string;
 	ttlSeconds: number;
+	/** Parameters dropped for the provider that generated the response; absent on older entries. */
+	droppedParams?: DroppedParamsRecord | null;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -180,9 +183,22 @@ export function isResponseCacheEligible(args: {
 	debugEnabled?: boolean;
 	hasTools?: boolean;
 	serverToolsEnabled?: boolean;
+	/** The key was created with never_store_content, so its responses are never cached. */
+	neverStoreContent?: boolean;
+	/**
+	 * Zero data retention applies (the workspace setting, a key guardrail or the request's
+	 * own require_zero_data_retention), so the response is never stored or served from the cache.
+	 */
+	zeroDataRetention?: boolean;
 }): { eligible: boolean; reason: string } {
 	if (!RESPONSE_CACHE_ELIGIBLE_ENDPOINTS.has(args.endpoint)) {
 		return { eligible: false, reason: "unsupported_endpoint" };
+	}
+	if (args.neverStoreContent) {
+		return { eligible: false, reason: "content_storage_disabled" };
+	}
+	if (args.zeroDataRetention) {
+		return { eligible: false, reason: "zero_data_retention" };
 	}
 	if (args.stream) {
 		return { eligible: false, reason: "streaming_request" };
@@ -272,6 +288,7 @@ export function buildCachedResponseRecord(args: {
 	routingMode?: string | null;
 	presetId?: string | null;
 	presetSlug?: string | null;
+	droppedParams?: DroppedParamsRecord | null;
 	ttlSeconds: number;
 	now?: Date;
 }): CachedResponseRecord {
@@ -299,5 +316,6 @@ export function buildCachedResponseRecord(args: {
 		createdAt: createdAt.toISOString(),
 		expiresAt: expiresAt.toISOString(),
 		ttlSeconds: args.ttlSeconds,
+		droppedParams: args.droppedParams ?? null,
 	};
 }

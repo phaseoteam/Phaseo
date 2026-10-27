@@ -1,6 +1,6 @@
 ---
 title: "संदेश बनाएँ"
-sidebarTitle: "संदेश बनाएँ"
+sidebarTitle: "संदेश बनाएँ (Anthropic)"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /messages"
 description: "/v1/messages पर Anthropic-संगत Messages एंडपॉइंट।"
 ---
@@ -10,6 +10,31 @@ description: "/v1/messages पर Anthropic-संगत Messages एंडप�
 ## स्ट्रीमिंग
 
 Anthropic फ़ॉर्मैट में सर्वर से भेजे गए इवेंट (`message_start`, `content_block_*`, `message_delta`, `message_stop`) पाने के लिए `stream: true` सेट करें।
+
+## बातचीत के बीच सिस्टम संदेश
+
+बातचीत में किसी बिंदु से लागू होने वाले निर्देश के लिए `messages` में `role: "system"` वाला संदेश जोड़ें। टॉप-लेवल `system` फ़ील्ड नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स पहले की तरह इस्तेमाल होता रहता है।
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है। यह उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए। किसी और जगह पर 400 त्रुटि मिलती है।
+- Claude Fable 5 और 5.1, Mythos 5 और 5.1, Opus 4.8, Opus 5 और 5.5, Sonnet 5.5 और Haiku 5.5 इसे उसी जगह पर पाते हैं। Sonnet 5 सहित बाकी Claude मॉडल, और Microsoft Foundry पर हर Claude मॉडल, इसे टॉप-लेवल सिस्टम प्रॉम्प्ट के हिस्से के रूप में पाते हैं। अन्य प्रदाता इसे सिस्टम संदेश के रूप में पाते हैं, ठीक वैसे ही जैसे Chat Completions को भेजा गया संदेश।
+- `clear_at`, `output_config` और `tool_addition` या `tool_removal` ब्लॉक समर्थित नहीं हैं।
 
 ## ध्यान दें
 

@@ -37,7 +37,7 @@ Phaseo हर tier के नवीनतम मॉडल के लिए tier 
 - GPT-5.6 `reasoning.context` के ज़रिए स्थायी reasoning नियंत्रण जोड़ता है।
 - GPT-5.6 योग्य tool-heavy वर्कफ़्लो के लिए multi-agent सपोर्ट और Programmatic Tool Calling बीटा जोड़ता है।
 - प्रॉम्प्ट कैशिंग में बिना कैश वाला इनपुट, कैश रीड, कैश राइट और आउटपुट अलग-अलग मीटर से गिने जाते हैं।
-- `prompt_cache_options` से स्पष्ट प्रॉम्प्ट कैशिंग सपोर्ट होती है; OpenAI फ़िलहाल `prompt_cache_retention` के बजाय `prompt_cache_options.ttl` की सलाह देता है।
+- कैश ब्रेकपॉइंट और `prompt_cache_options` से स्पष्ट प्रॉम्प्ट कैशिंग सपोर्ट होती है। GPT-5.6 पर `prompt_cache_options.ttl`, `prompt_cache_retention` की जगह लेता है, और Phaseo `prompt_cache_retention` को GPT-5.6 मॉडलों को नहीं भेजता।
 
 ## अपना अनुरोध अपडेट करें
 
@@ -92,7 +92,7 @@ Phaseo हर tier के नवीनतम मॉडल के लिए tier 
 | Terra | $2.50 | $0.25 | $3.125 | $15.00 |
 | Luna | $1.00 | $0.10 | $1.25 | $6.00 |
 
-Cache reads और writes की कीमत अलग-अलग होती है। मौजूदा catalog में cache read पर बिना cache वाले input से 90% छूट मिलती है, जबकि cache write की कीमत बिना cache वाले input की 1.25 गुना है।
+Cache reads और writes की कीमत अलग-अलग होती है। मौजूदा catalog में cache read पर बिना cache वाले input से 90% छूट मिलती है, जबकि cache write की कीमत बिना cache वाले input की 1.25 गुना है। हर इनपुट टोकन का शुल्क इन तीन में से केवल एक दर पर लगता है। उपयोग आँकड़े कैश रीड और राइट को `input_tokens` (Chat Completions पर `prompt_tokens`) में गिनते हैं और राइट को `cache_write_tokens` में बताते हैं; [उपयोग और मूल्य निर्धारण के फ़ील्ड](../guides/prompt-caching.mdx#usage-and-pricing-fields) देखें।
 
 ## प्रॉम्प्ट कैशिंग का सोच-समझकर उपयोग करें
 
@@ -108,9 +108,8 @@ Cache reads और writes की कीमत अलग-अलग होती �
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
           }
         },
         {
@@ -122,12 +121,12 @@ Cache reads और writes की कीमत अलग-अलग होती �
   ],
   "prompt_cache_options": {
     "mode": "explicit",
-    "ttl": "24h"
+    "ttl": "30m"
   }
 }
 ```
 
-प्रदाता-निरपेक्ष कैश संकेत या स्पष्ट कैश ब्रेकपॉइंट चाहिए हों, तो `cache_control` उपयोग करें। OpenAI कैश मोड और TTL विकल्प सीधे भेजने हों, तो `prompt_cache_options` उपयोग करें।
+`prompt_cache_breakpoint` अपने ब्लॉक तक (उसे मिलाकर) सब कुछ कैश करता है। ब्लॉक पर `{"type": "ephemeral"}` जैसा `cache_control` भी काम करता है, और Phaseo उसे GPT-5.6 को `prompt_cache_breakpoint` के रूप में भेजता है। दोनों में से कोई भी चिह्न Claude तक कैश ब्रेकपॉइंट के रूप में पहुँचता है, इसलिए Claude पर फ़ॉलबैक होने पर भी कैशिंग होती है। `explicit` मोड में OpenAI केवल आपके लगाए ब्रेकपॉइंट कैश करता है। `ttl` का मान `30m` (डिफ़ॉल्ट) या `12h` होता है; OpenAI `12h` केवल अपने Responses API पर स्वीकार करता है, [OpenAI पर 12 घंटे का कैश](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें। Phaseo, GPT-5.6 को `prompt_cache_retention` नहीं भेजता। [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx#openai-retention-and-options) देखें।
 
 ## किन चीज़ों का परीक्षण करें
 

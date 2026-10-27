@@ -30,6 +30,16 @@ afterEach(() => {
 	clearRuntime();
 });
 
+describe("irToAnthropicMessages max_tokens fallback", () => {
+	it("uses a known route limit when the request has no max_tokens", () => {
+		expect(irToAnthropicMessages(createBaseRequest(), 8192).max_tokens).toBe(8192);
+	});
+
+	it.each([0, -1, null])("falls back to 4096 when the route limit is %s", (limit) => {
+		expect(irToAnthropicMessages(createBaseRequest(), limit).max_tokens).toBe(4096);
+	});
+});
+
 describe("irToAnthropicMessages service controls", () => {
 	it.each(["claude-haiku-5-5", "anthropic/claude-haiku-5.5"])("uses adaptive thinking and effort for %s", (model) => {
 		const request = createBaseRequest();
@@ -55,6 +65,48 @@ describe("irToAnthropicMessages service controls", () => {
 
 		const payload = irToAnthropicMessages(request);
 		expect(payload.thinking).toEqual({ type: "enabled", budget_tokens: 1024 });
+	});
+
+	it.each(["anthropic/claude-opus-4.6", "claude-sonnet-4-6", "anthropic.claude-opus-4-6-v1:0"])("turns on adaptive thinking for effort-only requests on %s", (model) => {
+		const request = createBaseRequest();
+		request.model = model;
+		request.reasoning = { effort: "medium" };
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive" });
+		expect(payload.output_config?.effort).toBe("medium");
+	});
+
+	it("sends Messages adaptive thinking on Sonnet 4.6 as adaptive, not a 1,024-token budget", () => {
+		const ir = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-sonnet-4-6",
+			max_tokens: 2048,
+			thinking: { type: "adaptive" },
+			messages: [{ role: "user", content: "Hello" }],
+		} as any);
+		const payload = irToAnthropicMessages(ir, null, "claude-sonnet-4-6");
+		expect(payload.thinking).toEqual({ type: "adaptive" });
+	});
+
+	it("keeps a client budget and sampling rules on Opus 4.6", () => {
+		const budget = createBaseRequest();
+		budget.model = "anthropic/claude-opus-4.6";
+		budget.reasoning = { enabled: true, maxTokens: 4000 };
+		expect(irToAnthropicMessages(budget).thinking).toEqual({ type: "enabled", budget_tokens: 4000 });
+
+		const sampled = createBaseRequest();
+		sampled.model = "anthropic/claude-opus-4.6";
+		sampled.temperature = 0.4;
+		sampled.topP = 0.9;
+		const noThinking = irToAnthropicMessages(sampled);
+		expect(noThinking.thinking).toBeUndefined();
+		expect(noThinking.temperature).toBe(0.4);
+		expect(noThinking.top_p).toBe(0.9);
+
+		sampled.reasoning = { effort: "high" };
+		const withThinking = irToAnthropicMessages(sampled);
+		expect(withThinking.thinking).toEqual({ type: "adaptive" });
+		expect(withThinking.temperature).toBeUndefined();
+		expect(withThinking.top_p).toBeUndefined();
 	});
 
 	it("passes Anthropic native web fetch tools through unchanged", () => {
@@ -274,13 +326,13 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(ir.choices[0]?.finishReason).toBe(expected);
 	});
 
-	it("maps priority tier to auto service tier without fast mode", () => {
+	it("translates a routed priority tier without a second model allowlist", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "priority";
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBeUndefined();
-		expect(payload.service_tier).toBe("auto");
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps priority tier to fast mode for Opus 4.6", () => {
@@ -303,6 +355,23 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
+	it.each([
+		["anthropic/claude-opus-5.5", "priority"],
+		["anthropic/claude-opus-5.5", "fast"],
+		["claude-opus-5-5", "priority"],
+		["claude-opus-5-5", "fast"],
+	])("maps Opus 5.5 %s tier %s to fast mode", (model, serviceTier) => {
+		const request = decodeOpenAIChatRequest({
+			model,
+			messages: [{ role: "user", content: "Hello" }],
+			service_tier: serviceTier,
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
+	});
+
 	it("maps standard tier to standard_only service tier", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "standard";
@@ -312,7 +381,7 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBe("standard_only");
 	});
 
-	it("maps OpenAI surface service_tier=priority to Anthropic service_tier=auto", () => {
+	it("maps a routed OpenAI service_tier=priority to Anthropic fast mode", () => {
 		const request = decodeOpenAIChatRequest({
 			model: "anthropic/claude-3-7-sonnet",
 			messages: [{ role: "user", content: "Hello" }],
@@ -320,8 +389,8 @@ describe("irToAnthropicMessages service controls", () => {
 		} as any);
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBeUndefined();
-		expect(payload.service_tier).toBe("auto");
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps OpenAI surface service_tier=priority to Anthropic fast mode for Opus 4.7", () => {
@@ -361,8 +430,9 @@ describe("irToAnthropicMessages service controls", () => {
 	});
 
 	it("keeps legacy Anthropic effort mapping for pre-4.7 models", () => {
+		// Opus 4.6 takes effort but not xhigh (https://platform.claude.com/docs/en/build-with-claude/effort).
 		const request = decodeOpenAIChatRequest({
-			model: "anthropic/claude-3-7-sonnet",
+			model: "anthropic/claude-opus-4.6",
 			messages: [{ role: "user", content: "Hello" }],
 			reasoning: { effort: "xhigh" },
 		} as any);
@@ -373,7 +443,7 @@ describe("irToAnthropicMessages service controls", () => {
 
 	it("maps OpenAI high reasoning effort straight through to Anthropic", () => {
 		const request = decodeOpenAIChatRequest({
-			model: "anthropic/claude-3-7-sonnet",
+			model: "anthropic/claude-opus-4.6",
 			messages: [{ role: "user", content: "Hello" }],
 			reasoning: { effort: "high" },
 		} as any);
@@ -475,16 +545,99 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.output_config?.effort).toBe("high");
 	});
 
-	it("keeps adaptive summarized thinking for Opus 4.7 even when reasoning is explicitly disabled", () => {
+	it.each(["max", "xhigh"])("sends a Messages client's %s effort to Claude unchanged", (effort) => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-opus-5",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Hello" }],
+			output_config: { effort },
+		} as any);
+
+		expect(irToAnthropicMessages(request).output_config?.effort).toBe(effort);
+	});
+
+	// https://platform.claude.com/docs/en/build-with-claude/effort
+	it.each([
+		["anthropic/claude-sonnet-4.6", "xhigh", "max"],
+		["anthropic/claude-opus-4.5", "max", "high"],
+		["anthropic/claude-opus-4.5", "medium", "medium"],
+		["anthropic/claude-haiku-4.5", "high", undefined],
+		["anthropic/claude-sonnet-4.5", "high", undefined],
+	])("sends %s only the effort levels it supports (%s -> %s)", (model, effort, expected) => {
 		const request = decodeOpenAIChatRequest({
-			model: "anthropic/claude-opus-4.7",
+			model,
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort },
+		} as any);
+
+		expect(irToAnthropicMessages(request).output_config?.effort).toBe(expected);
+	});
+
+	it("leaves a global inference_geo off models that reject the field, and keeps a US one", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-haiku-4.5",
+			messages: [{ role: "user", content: "Hello" }],
+		} as any);
+		expect(irToAnthropicMessages(request, undefined, undefined, { inferenceGeo: "global" } as any).inference_geo).toBeUndefined();
+		expect(irToAnthropicMessages(request, undefined, undefined, { inferenceGeo: "us" } as any).inference_geo).toBe("us");
+		const newer = decodeOpenAIChatRequest({ model: "anthropic/claude-sonnet-4.6", messages: [{ role: "user", content: "Hello" }] } as any);
+		expect(irToAnthropicMessages(newer, undefined, undefined, { inferenceGeo: "global" } as any).inference_geo).toBe("global");
+	});
+
+	it("disables parallel tool use when a client sets parallel_tool_calls false without tool_choice", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-sonnet-5",
+			messages: [{ role: "user", content: "Hello" }],
+			tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object", properties: {} } } }],
+			parallel_tool_calls: false,
+		} as any);
+
+		expect(irToAnthropicMessages(request).tool_choice).toEqual({ type: "auto", disable_parallel_tool_use: true });
+	});
+
+	it("turns up-front thinking off on Sonnet 5.5 when a Messages client sends between_tools", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-sonnet-5.5",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Hello" }],
+			thinking: { type: "between_tools" },
+		} as any);
+
+		expect(irToAnthropicMessages(request).thinking).toEqual({ type: "between_tools" });
+	});
+
+	it("keeps a Messages client's low effort alongside between_tools", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-sonnet-5.5",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Hello" }],
+			thinking: { type: "between_tools" },
+			output_config: { effort: "low" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "between_tools" });
+		expect(payload.output_config?.effort).toBe("low");
+	});
+
+	// Per-model table at https://platform.claude.com/docs/en/build-with-claude/thinking.
+	it.each([
+		["anthropic/claude-opus-4.7", { type: "disabled" }],
+		["anthropic/claude-opus-4-8", { type: "disabled" }],
+		["anthropic/claude-opus-5", { type: "disabled" }],
+		["anthropic/claude-sonnet-5.5", { type: "between_tools" }],
+		["claude-sonnet-5-5", { type: "between_tools" }],
+		["anthropic/claude-opus-5.5", { type: "adaptive", display: "summarized" }],
+	])("turns thinking off on %s the way the docs allow", (model, thinking) => {
+		const request = decodeOpenAIChatRequest({
+			model,
 			messages: [{ role: "user", content: "Hello" }],
 			reasoning: { enabled: false },
 		} as any);
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
-		expect(payload.thinking?.budget_tokens).toBeUndefined();
+		expect(payload.thinking).toEqual(thinking);
+		expect(payload.output_config).toBeUndefined();
 	});
 
 	it("omits Opus 4.7 sampling params that Anthropic now rejects", () => {
@@ -576,9 +729,16 @@ describe("irToAnthropicMessages service controls", () => {
 
 		expect(request.reasoning).toMatchObject({ enabled: true, effort: "high" });
 		expect(request.responseFormat).toMatchObject({ type: "json_schema", strict: true });
+		// Documents decode to IR files that keep the block itself for Claude.
 		expect(request.messages[0]?.content.slice(0, 2)).toEqual([
-			{ type: "provider_block", block: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } } },
-			{ type: "provider_block", block: { type: "document", source: { type: "file", file_id: "file_123" } } },
+			{
+				type: "file", source: "url", data: "https://example.com/report.pdf", mimeType: "application/pdf",
+				nativeBlock: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } },
+			},
+			{
+				type: "file", source: "id", data: "file_123",
+				nativeBlock: { type: "document", source: { type: "file", file_id: "file_123" } },
+			},
 		]);
 		const payload = irToAnthropicMessages(request);
 		expect(payload.messages[0].content.slice(0, 2)).toEqual([
@@ -706,9 +866,10 @@ describe("irToAnthropicMessages cache control", () => {
 		}];
 
 		const payload = irToAnthropicMessages(request);
+		// Anthropic rejects 5m marks before a 1h mark, so the earlier marks are raised to 1h.
 		expect(payload.messages[0].content[0].cache_control).toEqual({
 			type: "ephemeral",
-			ttl: "5m",
+			ttl: "1h",
 		});
 		expect(payload.messages[1].content[0].cache_control).toEqual({
 			type: "ephemeral",
@@ -716,7 +877,7 @@ describe("irToAnthropicMessages cache control", () => {
 		});
 		expect(payload.tools[0].cache_control).toEqual({
 			type: "ephemeral",
-			ttl: "5m",
+			ttl: "1h",
 		});
 	});
 });

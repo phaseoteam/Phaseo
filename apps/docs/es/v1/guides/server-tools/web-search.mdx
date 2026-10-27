@@ -1,6 +1,7 @@
 ---
 icon: "search-check"
 title: "Herramienta de búsqueda web del servidor"
+sidebarTitle: "Búsqueda web del servidor"
 description: "Permite que los modelos busquen en la web durante una solicitud."
 ---
 
@@ -82,7 +83,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | Usa la búsqueda de Firecrawl cuando está configurada. |
 | `perplexity` | Usa la API de búsqueda oficial de Perplexity cuando está configurada. Admite resultados ordenados, `search_context_size`, búsqueda regional según `user_location.country` y dominios permitidos o excluidos. |
 | `tinyfish` | Usa TinyFish Search cuando está configurado `TINYFISH_API_KEY`. Ofrece resultados clasificados, localizados y paginados y convierte `allowed_domains` / `excluded_domains` en operadores de búsqueda. TinyFish Search no proporciona el texto completo de las páginas; usa `phaseo:web_fetch` si necesitas más contenido. |
-| `native` | Convierte la declaración en una herramienta de búsqueda web nativa del proveedor antes de llamar al modelo ascendente, si la interfaz de solicitud lo admite. |
+| `native` | Convierte la declaración en una herramienta de búsqueda web nativa del proveedor antes de llamar al modelo ascendente, si la interfaz de solicitud lo admite. En Chat Completions y Responses, la solicitud solo se envía a proveedores que ejecutan la búsqueda web por sí mismos; si ninguno de ellos ofrece el modelo, Phaseo ejecuta en su lugar su motor de búsqueda predeterminado y factura esas búsquedas como búsquedas gestionadas. |
 
 Usa `engine: "native"` únicamente en la declaración de la herramienta. Si un modelo intenta enviar `engine: "native"` dentro de una llamada de búsqueda del gateway ya emitida, Phaseo devuelve un error porque las herramientas nativas deben seleccionarse antes de enviar la solicitud al proveedor.
 

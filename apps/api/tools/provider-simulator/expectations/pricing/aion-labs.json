@@ -1,0 +1,62 @@
+{
+	"provider": "aion-labs",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "aion-labs:aion-labs/aion-2.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/aion-labs/aion-labs-aion-2.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.8/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.6/1000000 token",100,null,null,null],
+				["#2","standard","cached_read_text_tokens","0.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2182400,"lines":[["cached_read_text_tokens",1024,"#2","cached_read_text_tokens",204800],["input_text_tokens",1576,"#0","input_text_tokens",1260800],["output_text_tokens",448,"#1","output_text_tokens",716800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":16322200,"lines":[["cached_read_text_tokens",4567,"#2","cached_read_text_tokens",913400],["input_text_tokens",12347,"#0","input_text_tokens",9877600],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":15408800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",9877600],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}}
+			]
+		},
+		{
+			"key": "aion-labs:aion-labs/aion-3.0-mini:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/aion-labs/aion-labs-aion-3.0-mini/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.7/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.18/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1914720,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",184320],["input_text_tokens",1576,"#0","input_text_tokens",1103200],["output_text_tokens",448,"#2","output_text_tokens",627200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":14304760,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",822060],["input_text_tokens",12347,"#0","input_text_tokens",8642900],["output_text_tokens",3457,"#2","output_text_tokens",4839800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13482700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",8642900],["output_text_tokens",3457,"#2","output_text_tokens",4839800]]}}
+			]
+		},
+		{
+			"key": "aion-labs:aion-labs/aion-3.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/aion-labs/aion-labs-aion-3.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.75/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":8184000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",768000],["input_text_tokens",1576,"#0","input_text_tokens",4728000],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":61208250,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",3425250],["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":57783000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "aion-labs:aion-labs/aion-rp-llama-3.1-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/aion-labs/aion-labs-aion-rp-llama-3.1-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.8/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2796800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2080000],["output_text_tokens",448,"#1","output_text_tokens",716800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":15408800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",9877600],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}}
+			]
+		}
+	]
+}

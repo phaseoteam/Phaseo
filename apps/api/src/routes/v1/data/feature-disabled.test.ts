@@ -16,7 +16,14 @@ describe("feature-disabled routes", () => {
 		expect(response.status).toBe(501);
 		expect(response.headers.get("cache-control")).toBe("no-store");
 		expect(await response.json()).toEqual({
-			error: "not_implemented",
+			error: {
+				code: "not_implemented",
+				message: "videos endpoints are temporarily disabled.",
+				type: "server_error",
+				param: null,
+				metadata: { reason: "feature_temporarily_disabled" },
+			},
+			code: "not_implemented",
 			reason: "feature_temporarily_disabled",
 			feature: "videos",
 			message: "videos endpoints are temporarily disabled.",
@@ -30,7 +37,7 @@ describe("feature-disabled routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented",
+			code: "not_implemented",
 			feature: "videos",
 		});
 	});
@@ -48,19 +55,19 @@ describe("feature-disabled routes", () => {
 
 		expect(batchResponse.status).toBe(501);
 		expect(await batchResponse.json()).toMatchObject({
-			error: "not_implemented",
+			code: "not_implemented",
 			feature: "batches",
 		});
 
 		expect(filesResponse.status).toBe(501);
 		expect(await filesResponse.json()).toMatchObject({
-			error: "not_implemented",
+			code: "not_implemented",
 			feature: "files",
 		});
 
 		expect(musicResponse.status).toBe(501);
 		expect(await musicResponse.json()).toMatchObject({
-			error: "not_implemented",
+			code: "not_implemented",
 			feature: "music",
 		});
 	});

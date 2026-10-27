@@ -25,6 +25,21 @@ const STATIC_ASSET_PATH_SUFFIX =
 const RETIRED_BLOG_SLUGS = new Set([
 	"security-notice-key-rotation-vercel-2026-04-19",
 ]);
+const PAGE_WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Next.js renders the whole page for a POST it can't match to a server action,
+ * and crawlers send those to page URLs. Server actions arrive as a POST with a
+ * Next-Action header, or as a multipart form submitted before hydration, so
+ * only those reach a page; Next.js doesn't support URL-encoded actions.
+ */
+function isRejectedPageMethod(request: NextRequest): boolean {
+	if (!PAGE_WRITE_METHODS.has(request.method)) return false;
+	if (request.method !== "POST") return true;
+	if (request.headers.has("next-action")) return false;
+	const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+	return !contentType.startsWith("multipart/form-data");
+}
 
 function wantsMarkdown(request: NextRequest): boolean {
 	const accept = request.headers.get("accept")?.toLowerCase() ?? "";
@@ -69,6 +84,19 @@ export function getLegacyModelPageRedirect(pathname: string): string | null {
 		locale ?? defaultLocale,
 		`/models/${organisationId}/${modelId}`,
 	);
+}
+
+// English (US) differed from the unprefixed English pages only in spelling,
+// while crawlers rendered every English page under both prefixes.
+const RETIRED_LOCALE_PREFIXES = new Set(["en-us"]);
+
+/** Drops a retired locale prefix in any casing: /en-US/models -> /models. */
+export function getRetiredLocaleRedirect(pathname: string): string | null {
+	const [prefix = "", ...rest] = pathname.split("/").filter(Boolean);
+	if (!RETIRED_LOCALE_PREFIXES.has(prefix.toLowerCase())) {
+		return null;
+	}
+	return `/${rest.join("/")}`;
 }
 
 function isRetiredBlogPath(pathname: string): boolean {
@@ -176,6 +204,10 @@ async function blockFutureBlogPostUnlessPreviewAllowed(
 }
 
 export async function proxy(request: NextRequest) {
+	if (isLocalizedPagePath(request.nextUrl.pathname) && isRejectedPageMethod(request)) {
+		return new NextResponse(null, { status: 405, headers: { Allow: "GET, HEAD" } });
+	}
+
 	if (request.nextUrl.pathname === "/" && wantsMarkdown(request)) {
 		const rewriteUrl = request.nextUrl.clone();
 		rewriteUrl.pathname = "/__markdown";
@@ -183,10 +215,12 @@ export async function proxy(request: NextRequest) {
 		return NextResponse.rewrite(rewriteUrl);
 	}
 
-	const legacyModelPage = getLegacyModelPageRedirect(request.nextUrl.pathname);
-	if (legacyModelPage) {
+	const retiredLocalePath = getRetiredLocaleRedirect(request.nextUrl.pathname);
+	const pagePath = retiredLocalePath ?? request.nextUrl.pathname;
+	const legacyModelPage = getLegacyModelPageRedirect(pagePath);
+	if (retiredLocalePath !== null || legacyModelPage) {
 		const redirectUrl = request.nextUrl.clone();
-		redirectUrl.pathname = legacyModelPage;
+		redirectUrl.pathname = legacyModelPage ?? pagePath;
 		return NextResponse.redirect(redirectUrl, 308);
 	}
 

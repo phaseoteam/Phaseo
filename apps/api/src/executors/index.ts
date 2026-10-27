@@ -48,6 +48,7 @@ import { executor as respanDecisions } from "./respan/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
+import { executor as basetenDecisions } from "./baseten/decisions";
 import { executor as baiduText } from "./baidu/text-generate";
 import { executor as baiduImage } from "./baidu/image-generate";
 import { executor as cerebrasText } from "./cerebras/text-generate";
@@ -81,6 +82,7 @@ import { executor as chutesText } from "./chutes/text-generate";
 import { executor as clarifaiText } from "./clarifai/text-generate";
 import { executor as cloudflareText } from "./cloudflare/text-generate";
 import { executor as cloudflareDecisions } from "./cloudflare/decisions";
+import { executor as cloudflareExtraction } from "./cloudflare/extraction";
 import { executor as openrouterText } from "./openrouter/text-generate";
 import { executor as cloudflareImage } from "./cloudflare/image-generate";
 import { executor as cloudflareAudioTranscription } from "./cloudflare/audio-transcription";
@@ -102,6 +104,8 @@ import { executor as mancerText } from "./mancer/text-generate";
 import { executor as ambientText } from "./ambient/text-generate";
 import { executor as empirioLabsText } from "./empiriolabs/text-generate";
 import { executor as empirioLabsDecisions } from "./empiriolabs/decisions";
+import { executor as scaledownText } from "./scaledown/text-generate";
+import { executor as scaledownDecisions } from "./scaledown/decisions";
 import { executor as avianText } from "./avian/text-generate";
 import { executor as morphText } from "./morph/text-generate";
 import { executor as morpheusText } from "./morpheus/text-generate";
@@ -174,6 +178,7 @@ type Capability =
 	| "moderations"
 	| "rerank"
 	| "decisions.make"
+	| "extraction.extract"
 	| "systemone"
 	| "image.generate"
 	| "image.edit"
@@ -333,6 +338,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	baseten: {
 		"text.generate": basetenText,
+		"decisions.make": basetenDecisions,
 	},
 	"bytedance-seed": {
 		"text.generate": bytedanceSeedText,
@@ -356,6 +362,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": clarifaiText,
 	},
 	cloudflare: {
+		"extraction.extract": cloudflareExtraction,
 		"decisions.make": cloudflareDecisions,
 		"text.generate": cloudflareText,
 		embeddings: openaiEmbeddings,
@@ -418,6 +425,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	mancer: { "text.generate": mancerText },
 	ambient: { "text.generate": ambientText },
 	empiriolabs: { "text.generate": empirioLabsText, "decisions.make": empirioLabsDecisions },
+	scaledown: { "text.generate": scaledownText, "decisions.make": scaledownDecisions },
 	avian: { "text.generate": avianText },
 	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor },
 	"minimax-lightning": { "text.generate": minimaxText },
@@ -527,6 +535,27 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 		if (executor) return executor;
 	}
 	return null;
+}
+
+// Text executors that authenticate with their own credential shapes (SDK keys, AWS
+// SigV4, Google OAuth, Azure deployments, private endpoints). Every other text
+// executor goes through executeOpenAIWire, which reads the managed key with
+// resolveOpenAICompatKey.
+const OWN_CREDENTIAL_TEXT_EXECUTORS: ReadonlySet<ProviderExecutor> = new Set([
+	openaiText,
+	anthropicText,
+	azureText,
+	googleAiStudioText,
+	googleVertexText,
+	amazonBedrockText,
+	xAiText,
+	privateModelText,
+]);
+
+/** Whether the provider's text executor reads its managed key through resolveOpenAICompatKey. */
+export function textExecutorUsesOpenAICompatKey(providerId: string): boolean {
+	const executor = resolveProviderExecutor(providerId, "text.generate");
+	return Boolean(executor) && !OWN_CREDENTIAL_TEXT_EXECUTORS.has(executor!);
 }
 
 export function isProviderCapabilityEnabled(providerId: string, capability: string): boolean {

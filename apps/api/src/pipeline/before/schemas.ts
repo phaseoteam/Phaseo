@@ -5,6 +5,7 @@
 import { z } from "zod";
 import type { PriceCard } from "../pricing";
 import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
+import { canonicalPricingPlan } from "../pricing/service-tiers";
 import type {
     GateCheck,
     ByokKeyMeta,
@@ -133,7 +134,8 @@ const priceRuleSchema = z
         id: z.string().optional(),
     })
     .transform<PriceRule>((rule) => ({
-        pricing_plan: rule.pricing_plan,
+        // The RPC returns the stored service tier slug; `fast` SKUs are priced as `priority`.
+        pricing_plan: canonicalPricingPlan(rule.pricing_plan),
         meter: rule.meter as PricingDimensionKey,
         unit: rule.unit,
         unit_size: rule.unit_size,
@@ -228,7 +230,15 @@ const capabilityParamDescriptorSchema = z
 const capabilityParamsSchema = z
     .union([
         z.record(z.string(), z.any()),
-        z.array(z.union([z.string().trim().min(1), capabilityParamDescriptorSchema])),
+        z.array(
+            z.union([
+                z.string().trim().min(1),
+                capabilityParamDescriptorSchema,
+                // The context RPC appends `{data_policy}` (or `{}` once nulls
+                // are stripped) to list-shaped params; it is not a parameter.
+                z.object({ data_policy: z.any().optional() }).strict(),
+            ]),
+        ),
     ])
     .transform<Record<string, any>>((value) => {
         if (!Array.isArray(value)) return value;
@@ -237,6 +247,10 @@ const capabilityParamsSchema = z
         for (const entry of value) {
             if (typeof entry === "string") {
                 params[entry] = {};
+                continue;
+            }
+            if (!("param_id" in entry)) {
+                if (entry.data_policy !== undefined) params.data_policy = entry.data_policy;
                 continue;
             }
             const { param_id: paramId, ...config } = entry;
@@ -445,8 +459,12 @@ const presetConfigSchema = z
             .nullable()
             .optional(),
         reasoning: z.record(z.string(), z.any()).nullable().optional(),
+        // Validated when rendered (core/prompt-templates), so one bad template
+        // fails its own requests with a clear error rather than the context load.
+        prompt: z.unknown().nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
+        ...(config.prompt != null ? { prompt: config.prompt } : {}),
         ...(() => {
             const provider = config.provider;
             const maxPrice = provider?.maxPrice ?? provider?.max_price ?? null;

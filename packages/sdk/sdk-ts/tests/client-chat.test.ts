@@ -162,17 +162,15 @@ describe("Phaseo chat helpers", () => {
     expect(reasoningTokens).toBe(9);
   });
 
-  test("uses SSE event names for response chunks without a type", async () => {
+  test("names response stream chunks from the SSE event line when the data has no type", async () => {
     const encoder = new TextEncoder();
     const fetchImpl: typeof fetch = vi.fn(async () => new Response(
       new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode(
-            'event: response.function_call_arguments.delta\ndata: {"delta":"{\\"q\\":"}\n\n',
-          ));
-          controller.enqueue(encoder.encode(
-            'event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"hi"}\n\n',
-          ));
+          controller.enqueue(encoder.encode('event: response.reasoning_text.delta\ndata: {"delta":"think"}\n\n'));
+          controller.enqueue(encoder.encode('event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"hi"}\n\n'));
+          controller.enqueue(encoder.encode('data: {"delta":"!"}\n\n'));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         },
       }),
@@ -180,14 +178,20 @@ describe("Phaseo chat helpers", () => {
     )) as unknown as typeof fetch;
 
     const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
-    const chunks = [];
-    for await (const chunk of client.streamResponses({ model: "openai/gpt-5-nano", input: "hi" })) chunks.push(chunk);
+    const dataChunks = [];
+    let text = "";
+    for await (const chunk of client.streamResponses({ model: "openai/gpt-5-nano", input: "hi" })) {
+      if (typeof chunk.delta === "string") dataChunks.push({ type: chunk.type, delta: chunk.delta });
+      text += chunk.text;
+    }
 
-    expect(chunks.map(chunk => chunk.type)).toEqual([
-      "response.function_call_arguments.delta",
-      "response.output_text.delta",
+    expect(dataChunks).toEqual([
+      { type: "response.reasoning_text.delta", delta: "think" },
+      { type: "response.output_text.delta", delta: "hi" },
+      { type: undefined, delta: "!" },
     ]);
-    expect(chunks.map(chunk => chunk.text).join("")).toBe("hi");
+    // The reasoning delta, named only on its event: line, is not reply text.
+    expect(text).toBe("hi!");
   });
 
   test("parses message stream chunks with text and usage", async () => {

@@ -3,6 +3,23 @@ packages:
   - "packages/*/*"
   - "examples/ai-sdk-v7-quickstart"
 
+# TypeScript: workspaces that compile list both entries as "catalog:".
+# - "@typescript/native" is TypeScript 7. Its `tsc` bin is the compiler for
+#   every typecheck and build script, and the one Node scripts resolve.
+# - "typescript" is TypeScript 6 (@typescript/typescript6, bin `tsc6`) for
+#   tools that import the JS API: typescript-eslint, apps/web scripts and
+#   tests, scripts/check-sdk-room-examples.mjs. TS 7.0 ships no JS API and
+#   typescript-eslint 8 peers typescript <6.1. Next.js would type-check with
+#   this package's `tsc6`, so apps/web runs `tsc` before `next build` instead.
+# apps/docs (Mintlify twoslash) and the Raycast extension keep a plain
+# typescript@6 devDependency: neither runs `tsc`.
+# Drop the "typescript" entry, then rename "@typescript/native" to
+# "typescript", once typescript-eslint supports the TypeScript 7.1 API and
+# the scripts above have moved to it.
+catalog:
+  "@typescript/native": npm:typescript@^7.0.2
+  typescript: npm:@typescript/typescript6@^6.0.2
+
 publicHoistPattern:
   - "@electron-forge/*"
 
@@ -44,6 +61,15 @@ minimumReleaseAgeExclude:
   # React Native patch releases are coordinated with Expo SDK compatibility.
   - "@react-native/*"
   - "react-native"
+  # Expo SDK 58 pins these native companions in bundledNativeModules.json
+  # (expo-router 58 requires drawer-layout ^4.2.12; @expo/cli and
+  # @expo/metro-config 58 require 2g ^1.0.1, by an Expo maintainer).
+  # Exact versions only; they pass the 7-day window by 2026-10-23.
+  - "2g@1.0.1"
+  - "react-native-drawer-layout@4.2.12"
+  - "react-native-keyboard-controller@1.22.7"
+  - "react-native-screens@4.30.0"
+  - "react-native-svg@15.16.0"
   - "@next/*"
   - "eslint-config-next"
   - "next"

@@ -162,6 +162,8 @@ The adapter can carry gateway-native controls such as:
 
 That lets the surrounding app keep routing, search, structured outputs, and plugin defaults in one place.
 
+The client the adapter builds skips `@phaseo/sdk`'s `GET /models` lookup before each new model, because the gateway refuses retired models itself. Set `clientOptions.modelLifecycleChecks: true` to turn the lookup back on. Gateway HTTP failures reach you as `AgentGatewayError`, whether the turn streams or not.
+
 ### Application-owned continuation
 
 If a workflow pauses for review, or if you want to continue it later, persist the returned `AgentRunResult` in your own application and pass it back to `continueRun()`.

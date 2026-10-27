@@ -24,28 +24,18 @@ import {
 	ArrowUpDown,
 	Ban,
 	Binary,
-	Captions,
 	CheckCircle2,
-	CircleDot,
 	Clock3,
-	FileText,
 	Globe2,
-	Headphones,
-	Languages,
-	Music4,
-	Radio,
 	Route,
-	ScanText,
 	Sparkles,
-	Speech,
 	Type as TypeIcon,
-	ImageIcon,
 	Layers3,
-	Video,
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
-	Scale,
+	ScrollText,
+	PackageOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,14 +66,30 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
+import { getModalityIcon } from "@/lib/models/modalityIcons";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
-import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { MonitorTableClient, toModelTableData } from "@/components/monitor/MonitorTableClient";
+import type { ModelData } from "@/components/monitor/modelTableGrouping";
+import {
+	countModelsByFilterValue,
+	filterModelTableRowsBySearch,
+	NO_MODEL_TABLE_FILTERS,
+	type ModelTableFilters,
+} from "@/components/monitor/modelTableFilters";
+import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
+import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
+import {
+	MODEL_WEIGHTS,
+	mergeWeights,
+	readLicenseTypeParam,
+	parseModelWeights,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
 import TableSettings from "@/components/(gateway)/usage/TableSettings";
@@ -224,18 +230,6 @@ function getClosestStopIndex(value: number): number {
 	return index === -1 ? CONTEXT_LENGTH_STOPS.length - 1 : index;
 }
 
-function formatRegionLabel(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase();
-	if (normalized === "us") return "US";
-	if (normalized === "eu") return "EU";
-	if (normalized === "apac") return "APAC";
-	if (normalized === "jp") return "Japan";
-	if (normalized === "au") return "Australia";
-	return normalized ? normalized.toUpperCase() : value;
-}
-
 function parseCsvParam(value: string | null): string[] {
 	if (!value) return [];
 	return value
@@ -369,47 +363,6 @@ function toTitleCase(value: string): string {
 		.join(" ");
 }
 
-function getModalityIcon(modality: string): LucideIcon {
-	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
-	if (normalized.includes("decision")) return Scale;
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return Radio;
-	}
-	if (
-		/\bocr\b/.test(normalized) ||
-		/\bpars(e|ing)\b/.test(normalized) ||
-		normalized === "documents"
-	) {
-		return ScanText;
-	}
-	if (normalized.includes("translat")) return Languages;
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return ArrowUpDown;
-	}
-	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music4;
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return Captions;
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return Speech;
-	}
-	if (normalized.includes("audio")) return Headphones;
-	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TypeIcon;
-	return CircleDot;
-}
-
 function FilterCheckboxList({
 	options,
 	selected,
@@ -529,13 +482,16 @@ function FilterCheckboxList({
 	);
 }
 
+// Options come from every model in the catalogue; counts reflect the other
+// active filters, as on the cards page.
 function getOptionCounts(
 	values: string[],
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 ): OptionCount[] {
 	return values
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0);
+		.filter((value) => (availableMap.get(value) ?? 0) > 0)
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 }
 
 function FilterLogo({ value }: { value: string }) {
@@ -553,13 +509,11 @@ function FilterLogo({ value }: { value: string }) {
 }
 
 function getModalityOptions(
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 	values: string[],
 ): OptionCount[] {
-	const canonical = MODALITY_FILTER_DISPLAY_ORDER.map((value) => ({
-		value,
-		count: countsMap.get(value) ?? 0,
-	})).filter((option) => option.count > 0);
+	const canonical = getOptionCounts([...MODALITY_FILTER_DISPLAY_ORDER], availableMap, countsMap);
 
 	const known = new Set<string>(MODALITY_FILTER_DISPLAY_ORDER);
 	const normalizedValues = Array.from(
@@ -569,16 +523,35 @@ function getModalityOptions(
 				.filter(Boolean),
 		),
 	);
+	const available = (value: string) => availableMap.get(value) ?? 0;
 	const additional = normalizedValues
-		.filter((value) => !known.has(value))
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0)
-		.sort((a, b) => {
-			if (a.count !== b.count) return b.count - a.count;
-			return a.value.localeCompare(b.value);
-		});
+		.filter((value) => !known.has(value) && available(value) > 0)
+		.sort((a, b) => available(b) - available(a) || a.localeCompare(b))
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 
 	return [...canonical, ...additional];
+}
+
+function countModelTableFacets(rows: ModelData[], filters: ModelTableFilters) {
+	const count = (
+		dimension: Parameters<typeof countModelsByFilterValue>[2],
+		normalize?: (value: string) => string,
+	) => countModelsByFilterValue(rows, filters, dimension, normalize);
+	return {
+		inputMap: count("inputModalities", normalizeModalityFilterValue),
+		outputMap: count("outputModalities", normalizeModalityFilterValue),
+		featureMap: count("features"),
+		supportedParameterMap: count("supportedParameters"),
+		providerMap: count("providers"),
+		regionMap: count("regions"),
+		creatorMap: count("creators"),
+		licenseMap: count("licenses"),
+		weightsMap: count("weights"),
+		endpointMap: count("endpoints"),
+		statusMap: count("statuses"),
+		tierMap: count("tiers"),
+		yearMap: count("year"),
+	};
 }
 
 export default function ModelsTableDisplay({
@@ -590,6 +563,8 @@ export default function ModelsTableDisplay({
 	const t = useTranslations("Catalogue.models");
 	const tCountry = useTranslations("Catalogue.countryDetail");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
+	const weightsLabel = useWeightsLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -629,7 +604,7 @@ export default function ModelsTableDisplay({
 		const normalized = String(value ?? "").trim().toLowerCase();
 		return keys[normalized]
 			? tFilters(keys[normalized] as never)
-			: formatRegionLabel(value);
+			: formatExecutionRegionLabel(value);
 	};
 	const translateTier = (value: string) => {
 		const keys: Record<string, string> = {
@@ -839,6 +814,53 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenses, setSelectedLicenses] = useQueryState("licenses", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [licenseTypeParam, setLicenseTypeParam] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [weightsParam, setWeightsParam] = useQueryState("weights", {
+		defaultValue: [] as string[],
+		parse: (value) => parseModelWeights(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	// Old links use licenseType=open|closed for weights; read them as weights
+	// and move them to `weights` the next time either filter changes.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
+	const setSelectedLicenseTypes = (groups: string[]) => {
+		void setLicenseTypeParam(groups);
+		if (legacyWeights.length > 0) void setWeightsParam(selectedWeights);
+	};
+	const setSelectedWeights = (weights: string[]) => {
+		void setWeightsParam(weights);
+		if (legacyWeights.length > 0) void setLicenseTypeParam(selectedLicenseTypes);
+	};
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedContextMin, setSelectedContextMin] = useQueryState(
 		"contextMin",
 		{
@@ -892,145 +914,129 @@ export default function ModelsTableDisplay({
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
-	const counts = useMemo(() => {
-		const inputMap = new Map<string, number>();
-		const outputMap = new Map<string, number>();
-		const featureMap = new Map<string, number>();
-		const supportedParameterMap = new Map<string, number>();
-		const providerMap = new Map<string, number>();
-		const regionMap = new Map<string, number>();
-		const creatorMap = new Map<string, number>();
-		const endpointMap = new Map<string, number>();
-		const statusMap = new Map<string, number>();
-		const tierMap = new Map<string, number>();
-		const yearMap = new Map<string, number>();
-
-		for (const item of initialModelData) {
-			for (const modality of item.inputModalities ?? []) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				inputMap.set(key, (inputMap.get(key) ?? 0) + 1);
-			}
-			for (const modality of modelOutputFilterValues(item.outputModalities ?? [], [item.endpoint])) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				outputMap.set(key, (outputMap.get(key) ?? 0) + 1);
-			}
-			for (const feature of item.provider.features ?? []) {
-				const key = String(feature ?? "").trim();
-				if (!key) continue;
-				featureMap.set(key, (featureMap.get(key) ?? 0) + 1);
-			}
-			for (const parameter of item.supportedParameters ?? []) {
-				const key = String(parameter ?? "").trim();
-				if (!key) continue;
-				supportedParameterMap.set(
-					key,
-					(supportedParameterMap.get(key) ?? 0) + 1,
-				);
-			}
-			const providerId = String(item.provider.id ?? "").trim();
-			if (providerId) {
-				providerMap.set(providerId, (providerMap.get(providerId) ?? 0) + 1);
-			}
-			for (const region of item.provider.executionRegions ?? []) {
-				const key = String(region ?? "")
-					.trim()
-					.toLowerCase();
-				if (!key) continue;
-				regionMap.set(key, (regionMap.get(key) ?? 0) + 1);
-			}
-			const creatorId = String(item.organisationId ?? "").trim();
-			if (creatorId) {
-				creatorMap.set(creatorId, (creatorMap.get(creatorId) ?? 0) + 1);
-			}
-			const endpoint = String(item.endpoint ?? "").trim();
-			if (endpoint)
-				endpointMap.set(endpoint, (endpointMap.get(endpoint) ?? 0) + 1);
-
-			const status = String(item.gatewayStatus ?? "").trim();
-			const statusKey = normalizeStatusFilterValue(status);
-			if (statusKey) {
-				statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
-			}
-
-			const tier = String(item.tier ?? "standard")
-				.trim()
-				.toLowerCase();
-			if (tier) tierMap.set(tier, (tierMap.get(tier) ?? 0) + 1);
-
-			if (item.added) {
-				const year = String(new Date(item.added).getFullYear());
-				if (year !== "NaN") yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
-			}
-		}
-
-		return {
-			inputMap,
-			outputMap,
-			featureMap,
-			supportedParameterMap,
-			providerMap,
-			regionMap,
-			creatorMap,
-			endpointMap,
-			statusMap,
-			tierMap,
-			yearMap,
-		};
-	}, [initialModelData]);
+	const tableRows = useMemo(
+		() => initialModelData.map(toModelTableData),
+		[initialModelData],
+	);
+	const tableFilters = useMemo<ModelTableFilters>(() => ({
+		search: "",
+		year: yearSelected,
+		inputModalities: selectedInputModalities,
+		outputModalities: selectedOutputModalities,
+		features: selectedFeatures,
+		tiers: selectedTiers,
+		supportedParameters: selectedSupportedParameters,
+		providers: selectedProviders,
+		regions: selectedRegions,
+		creators: selectedCreators,
+		licenses: selectedLicenses,
+		licenseTypes: selectedLicenseTypes,
+		weights: selectedWeights,
+		contextMin: selectedContextMin,
+		endpoints: selectedEndpoints,
+		statuses: effectiveSelectedStatuses,
+	}), [
+		yearSelected,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedLicenses,
+		selectedLicenseTypes,
+		selectedWeights,
+		selectedContextMin,
+		selectedEndpoints,
+		effectiveSelectedStatuses,
+	]);
+	const searchedTableRows = useMemo(
+		() => filterModelTableRowsBySearch(tableRows, search),
+		[tableRows, search],
+	);
+	// Facets count distinct models, as the cards page and the table's
+	// one-row-per-model layout do, rather than provider routes.
+	const available = useMemo(
+		() => countModelTableFacets(tableRows, NO_MODEL_TABLE_FILTERS),
+		[tableRows],
+	);
+	const counts = useMemo(
+		() => countModelTableFacets(searchedTableRows, tableFilters),
+		[searchedTableRows, tableFilters],
+	);
 
 	const inputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.inputMap, allModalities).filter((option) => {
+			getModalityOptions(available.inputMap, counts.inputMap, allModalities).filter((option) => {
 				const modality = normalizeModalityFilterValue(option.value);
 				return modality !== "file" && modality !== "document";
 			}),
-		[allModalities, counts.inputMap],
+		[allModalities, available.inputMap, counts.inputMap],
 	);
 	const outputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.outputMap, allModalities).filter((option) => {
+			getModalityOptions(available.outputMap, counts.outputMap, allModalities).filter((option) => {
 				const modality = normalizeModalityFilterValue(option.value);
 				return modality !== "action" && modality !== "file";
 			}),
-		[allModalities, counts.outputMap],
+		[allModalities, available.outputMap, counts.outputMap],
 	);
 	const featureOptions = useMemo(
-		() => getOptionCounts(allFeatures, counts.featureMap),
-		[allFeatures, counts.featureMap],
+		() => getOptionCounts(allFeatures, available.featureMap, counts.featureMap),
+		[allFeatures, available.featureMap, counts.featureMap],
 	);
 	const supportedParameterOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.supportedParameterMap.keys()).sort((a, b) =>
+				Array.from(available.supportedParameterMap.keys()).sort((a, b) =>
 					toTitleCase(a).localeCompare(toTitleCase(b)),
 				),
+				available.supportedParameterMap,
 				counts.supportedParameterMap,
 			),
-		[counts.supportedParameterMap],
+		[available.supportedParameterMap, counts.supportedParameterMap],
 	);
 	const providerOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.providerMap.keys()),
+				Array.from(available.providerMap.keys()),
+				available.providerMap,
 				counts.providerMap,
 			),
-		[counts.providerMap],
+		[available.providerMap, counts.providerMap],
 	);
 	const regionOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.regionMap.keys()), counts.regionMap),
-		[counts.regionMap],
+			getOptionCounts(Array.from(available.regionMap.keys()), available.regionMap, counts.regionMap),
+		[available.regionMap, counts.regionMap],
 	);
 	const creatorOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.creatorMap.keys()), counts.creatorMap),
-		[counts.creatorMap],
+			getOptionCounts(Array.from(available.creatorMap.keys()), available.creatorMap, counts.creatorMap),
+		[available.creatorMap, counts.creatorMap],
+	);
+	const licenseOptions = useMemo(
+		() =>
+			getOptionCounts(
+				Array.from(available.licenseMap.keys()).sort(
+					(a, b) =>
+						(available.licenseMap.get(b) ?? 0) - (available.licenseMap.get(a) ?? 0) ||
+						a.localeCompare(b),
+				),
+				available.licenseMap,
+				counts.licenseMap,
+			),
+		[available.licenseMap, counts.licenseMap],
+	);
+	const weightsOptions = useMemo(
+		() => getOptionCounts([...MODEL_WEIGHTS], available.weightsMap, counts.weightsMap),
+		[available.weightsMap, counts.weightsMap],
 	);
 	const endpointOptions = useMemo(
-		() => getOptionCounts(allEndpoints, counts.endpointMap),
-		[allEndpoints, counts.endpointMap],
+		() => getOptionCounts(allEndpoints, available.endpointMap, counts.endpointMap),
+		[allEndpoints, available.endpointMap, counts.endpointMap],
 	);
 	const statusOptions = useMemo(
 		() =>
@@ -1042,7 +1048,7 @@ export default function ModelsTableDisplay({
 	);
 	const tierOptions = useMemo(() => {
 		const preferredOrder = ["standard", "batch", "free"];
-		const values = Array.from(counts.tierMap.keys()).sort((a, b) => {
+		const values = Array.from(available.tierMap.keys()).sort((a, b) => {
 			const aIndex = preferredOrder.indexOf(a);
 			const bIndex = preferredOrder.indexOf(b);
 			if (aIndex !== -1 || bIndex !== -1) {
@@ -1052,8 +1058,8 @@ export default function ModelsTableDisplay({
 			}
 			return a.localeCompare(b);
 		});
-		return getOptionCounts(values, counts.tierMap);
-	}, [counts.tierMap]);
+		return getOptionCounts(values, available.tierMap, counts.tierMap);
+	}, [available.tierMap, counts.tierMap]);
 	const providerLabels = useMemo(
 		() =>
 			new Map(
@@ -1075,10 +1081,12 @@ export default function ModelsTableDisplay({
 	);
 	const yearOptions = useMemo(
 		() =>
-			Array.from(counts.yearMap.entries())
-				.map(([value, count]) => ({ value, count }))
-				.sort((a, b) => Number(b.value) - Number(a.value)),
-		[counts.yearMap],
+			getOptionCounts(
+				Array.from(available.yearMap.keys()).sort((a, b) => Number(b) - Number(a)),
+				available.yearMap,
+				counts.yearMap,
+			),
+		[available.yearMap, counts.yearMap],
 	);
 
 	const activeFilterCount =
@@ -1092,6 +1100,9 @@ export default function ModelsTableDisplay({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
+		selectedLicenses.length +
+		selectedWeights.length +
 		(selectedContextMin > 0 ? 1 : 0) +
 		(yearSelected > 0 ? 1 : 0);
 
@@ -1107,6 +1118,9 @@ export default function ModelsTableDisplay({
 		setSelectedProviders([]);
 		setSelectedRegions([]);
 		setSelectedCreators([]);
+		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
+		setSelectedWeights([]);
 		setSelectedContextMin(0);
 		setYearSelected(0);
 	};
@@ -1132,6 +1146,9 @@ export default function ModelsTableDisplay({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value: providerLabels.get(value) ?? value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value: creatorLabels.get(value) ?? value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedWeights.map((value) => ({ key: `weights-${value}`, label: tFilters("filterWeights", { value: weightsLabel(value) }), onRemove: () => setSelectedWeights(without(selectedWeights, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
+		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
 		...(yearSelected > 0 ? [{ key: "year", label: tFilters("filterYear", { value: yearSelected }), onRemove: () => setYearSelected(0) }] : []),
@@ -1557,6 +1574,41 @@ export default function ModelsTableDisplay({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="weights" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<PackageOpen className="h-4 w-4 text-muted-foreground" />
+						{tFilters("weights")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={weightsOptions}
+						selected={selectedWeights}
+						onToggle={(value) =>
+							setSelectedWeights(toggleInList(selectedWeights, value))
+						}
+						labelForValue={weightsLabel}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="licenses" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ScrollText className="h-4 w-4 text-muted-foreground" />
+						{tFilters("license")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<LicenseFilterList
+						options={licenseOptions}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
 					/>
 				</AccordionContent>
 			</AccordionItem>

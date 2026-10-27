@@ -137,6 +137,13 @@ backfill and consumer cutover are verified.
   benchmark, subscription, availability, and performance requests together;
   streamed sections retain separate API routes, cache policies, and failure
   boundaries.
+- Admin-verified capability privacy policy lives in
+  `v2_route_capabilities.metadata.data_policy`, with a matching
+  `params.data_policy` copy for gateway snapshots. Catalog promotion preserves
+  that policy while replacing catalog-owned parameters. `zeroDataRetention`
+  is an explicit active route guarantee; `zdrEligibility` alone describes
+  eligibility and must not grant ZDR routing or enable the web ZDR display. An `ineligible` policy
+  always denies ZDR. Provider defaults remain conservative for new routes.
 - The admin editor and approved database automations write the v2 catalogue
   directly. Public JSON snapshots are exported from v2 for compatibility,
   documentation, and SDK generation; they are not an authoring or import feed.
@@ -198,3 +205,12 @@ entities without a V2 equivalent:
 
 Those dependencies must be migrated or deliberately removed before physical V1
 table deletion. They are not used by current website or gateway read paths.
+## Provider catalog v1.2 privacy ownership
+
+Provider catalog tiers can retain `dataPolicy` declarations in the existing snapshot/candidate JSON. Promotion writes replaceable capability `metadata.catalog_data_policy`, preserving admin-owned `metadata.data_policy`. Omissions and legacy downgrades retain an explicit catalog-management marker with no declaration, preventing a withdrawn guarantee from inheriting provider-wide Yes.
+
+`provider_catalog_policy_approvals` records the admin-approved source identity and evidence URL. It is service-role-only, independently authorized by the review API. `provider_catalog_policy_approval_events` records approval changes. The effective policy is resolved by `resolve_catalog_data_policy`, exposed through the service-role `v2_effective_route_capabilities` view and pricing/gateway RPCs. Approval/source changes invalidate the gateway catalogue revision.
+
+The resolver grants unconditional text-generation ZDR only on non-batch offers with current approved declarations. Other conditions remain non-granting. Catalog-managed positives expire 24 hours after successful validation; gateway and web consumers also enforce expiry in cached payloads. Existing manual overrides and never-migrated legacy defaults retain their ownership.
+
+See `apps/web-api/docs/provider-catalog-v1.2.md` for the feed contract and adoption sequence. Schema deployment and production policy approval are separate release actions.

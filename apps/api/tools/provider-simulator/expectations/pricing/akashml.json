@@ -1,0 +1,132 @@
+{
+	"provider": "akashml",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "akashml:deepseek/deepseek-v4-flash-0731:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.065/1000000 token",100,null,null,null],
+				["#1","standard","implicit_cached_input_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.18/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":203560,"lines":[["cached_read_text_tokens",1024,"#1","implicit_cached_input_text_tokens",20480,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#0","input_text_tokens",102440],["output_text_tokens",448,"#2","output_text_tokens",80640]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":1516155,"lines":[["implicit_cached_input_text_tokens",4567,"#1","implicit_cached_input_text_tokens",91340],["input_text_tokens",12347,"#0","input_text_tokens",802555],["output_text_tokens",3457,"#2","output_text_tokens",622260]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1424815,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",802555],["output_text_tokens",3457,"#2","output_text_tokens",622260]]}}
+			]
+		},
+		{
+			"key": "akashml:meta/llama-3.3-70b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/meta-llama-3.3-70b/text.generate/pricing.json",
+			"rules": [
+				["#2","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#3","standard","implicit_cached_input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#4","standard","output_text_tokens","0.52/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":650560,"lines":[["cached_read_text_tokens",1024,"#3","implicit_cached_input_text_tokens",102400,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#2","input_text_tokens",315200],["output_text_tokens",448,"#4","output_text_tokens",232960]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4723740,"lines":[["implicit_cached_input_text_tokens",4567,"#3","implicit_cached_input_text_tokens",456700],["input_text_tokens",12347,"#2","input_text_tokens",2469400],["output_text_tokens",3457,"#4","output_text_tokens",1797640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#2","#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4267040,"lines":[["input_text_tokens",12347,"#2","input_text_tokens",2469400],["output_text_tokens",3457,"#4","output_text_tokens",1797640]]}}
+			]
+		},
+		{
+			"key": "akashml:openai/gpt-oss-120b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/openai-gpt-oss-120b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.17/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":154160,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",78000],["output_text_tokens",448,"#1","output_text_tokens",76160]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":154160,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",30720,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",47280],["output_text_tokens",448,"#1","output_text_tokens",76160]]},"source":{"kind":"spec","spec":"akashml","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":958100,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410],["output_text_tokens",3457,"#1","output_text_tokens",587690]]}}
+			]
+		},
+		{
+			"key": "akashml:openai/gpt-oss-20b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/openai-gpt-oss-20b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.13/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":136240,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",78000],["output_text_tokens",448,"#1","output_text_tokens",58240]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":136240,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",30720,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",47280],["output_text_tokens",448,"#1","output_text_tokens",58240]]},"source":{"kind":"spec","spec":"akashml","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":819820,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410],["output_text_tokens",3457,"#1","output_text_tokens",449410]]}}
+			]
+		},
+		{
+			"key": "akashml:qwen/qwen3.5-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/qwen-qwen3.5-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","implicit_cached_input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":719840,"lines":[["cached_read_text_tokens",1024,"#1","implicit_cached_input_text_tokens",51200,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_text_tokens",448,"#2","output_text_tokens",448000]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":5413930,"lines":[["implicit_cached_input_text_tokens",4567,"#1","implicit_cached_input_text_tokens",228350],["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5185580,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "akashml:qwen/qwen3.6-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/qwen-qwen3.6-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","implicit_cached_input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":612000,"lines":[["cached_read_text_tokens",1024,"#1","implicit_cached_input_text_tokens",51200,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",403200]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4574350,"lines":[["implicit_cached_input_text_tokens",4567,"#1","implicit_cached_input_text_tokens",228350],["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",3111300]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4346000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",3111300]]}}
+			]
+		},
+		{
+			"key": "akashml:qwen/qwen3.8-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/qwen-qwen3.8-27b/text.generate/pricing.json",
+			"rules": [
+				["#3","standard","input_text_tokens","0.35/1000000 token",100,null,null,null],
+				["#4","standard","implicit_cached_input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#5","standard","output_text_tokens","2.55/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1745200,"lines":[["cached_read_text_tokens",1024,"#4","implicit_cached_input_text_tokens",51200,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#3","input_text_tokens",551600],["output_text_tokens",448,"#5","output_text_tokens",1142400]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":13365150,"lines":[["implicit_cached_input_text_tokens",4567,"#4","implicit_cached_input_text_tokens",228350],["input_text_tokens",12347,"#3","input_text_tokens",4321450],["output_text_tokens",3457,"#5","output_text_tokens",8815350]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13136800,"lines":[["input_text_tokens",12347,"#3","input_text_tokens",4321450],["output_text_tokens",3457,"#5","output_text_tokens",8815350]]}}
+			]
+		},
+		{
+			"key": "akashml:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.77/1000000 token",100,null,null,null],
+				["#1","standard","implicit_cached_input_text_tokens","0.143/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.42/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2444112,"lines":[["cached_read_text_tokens",1024,"#1","implicit_cached_input_text_tokens",146432,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#0","input_text_tokens",1213520],["output_text_tokens",448,"#2","output_text_tokens",1084160]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":18526211,"lines":[["implicit_cached_input_text_tokens",4567,"#1","implicit_cached_input_text_tokens",653081],["input_text_tokens",12347,"#0","input_text_tokens",9507190],["output_text_tokens",3457,"#2","output_text_tokens",8365940]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":17873130,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",9507190],["output_text_tokens",3457,"#2","output_text_tokens",8365940]]}}
+			]
+		},
+		{
+			"key": "akashml:z-ai/glm-5.3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/akashml/z-ai-glm-5.3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.3/1000000 token",100,null,null,null],
+				["#1","standard","implicit_cached_input_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":5131040,"lines":[["cached_read_text_tokens",1024,"#1","implicit_cached_input_text_tokens",266240,"cache read at the implicit-cache price"],["input_text_tokens",1576,"#0","input_text_tokens",2048800],["output_reasoning_tokens",192,"#2","output_text_tokens",844800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":35920920,"lines":[["implicit_cached_input_text_tokens",4567,"#1","implicit_cached_input_text_tokens",1187420],["input_text_tokens",12347,"#0","input_text_tokens",16051100],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":34733500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",16051100],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+			]
+		}
+	]
+}

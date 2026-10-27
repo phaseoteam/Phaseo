@@ -66,6 +66,30 @@ function validateBedrockCredentials(value: string): boolean {
 	}
 }
 
+// The Azure resource hosts the gateway accepts for BYOK (apps/api core/provider-credentials.ts).
+const AZURE_ENDPOINT_HOST_SUFFIXES = [
+	".openai.azure.com",
+	".services.ai.azure.com",
+	".cognitiveservices.azure.com",
+	".openai.azure.us",
+	".cognitiveservices.azure.us",
+	".openai.azure.cn",
+	".cognitiveservices.azure.cn",
+];
+
+function isAllowedAzureEndpoint(value: string): boolean {
+	let url: URL;
+	try {
+		url = new URL(value.trim());
+	} catch {
+		return false;
+	}
+	if (url.protocol !== "https:" || url.username || url.password || url.port || url.search) return false;
+	const host = url.hostname.toLowerCase();
+	const suffix = AZURE_ENDPOINT_HOST_SUFFIXES.find((candidate) => host.endsWith(candidate));
+	return Boolean(suffix) && /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(host.slice(0, -(suffix as string).length));
+}
+
 function validateAzureCredentials(value: string): boolean {
 	if (!isJsonObject(value)) return false;
 	try {
@@ -94,7 +118,7 @@ function validateAzureCredentials(value: string): boolean {
 			if (
 				!hasNonEmptyString(modelSlug) ||
 				!hasNonEmptyString(endpointUrl) ||
-				!String(endpointUrl).startsWith("http") ||
+				!isAllowedAzureEndpoint(String(endpointUrl)) ||
 				!hasNonEmptyString(apiKey) ||
 				!hasNonEmptyString(modelId)
 			) {
@@ -116,7 +140,8 @@ function validateCloudflareCredentials(value: string): boolean {
 			parsed &&
 			typeof parsed === "object" &&
 			hasNonEmptyString(parsed.apiToken) &&
-			hasNonEmptyString(parsed.accountId)
+			typeof parsed.accountId === "string" &&
+			/^[0-9a-f]{32}$/i.test(parsed.accountId)
 		);
 	} catch {
 		return false;
@@ -252,6 +277,12 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		hint: "Tencent Cloud TokenHub API key from the TokenHub console.",
 		example: "sk-xxxxxxxxxxxxxxxx",
 		docsUrl: "https://intl.cloud.tencent.com/document/product/1300/78941",
+		minLength: 16,
+	},
+	scaledown: {
+		hint: "ScaleDown API key from the ScaleDown dashboard.",
+		example: "xxxxxxxxxxxxxxxxxxxxxxxx",
+		docsUrl: "https://docs.scaledown.ai/quickstart",
 		minLength: 16,
 	},
 	mistral: {

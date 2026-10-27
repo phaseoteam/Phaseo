@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { decodeJWT } from "@/lib/oauth/jwt";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { json, withRuntime } from "@/routes/utils";
 
@@ -307,6 +308,22 @@ authRouter.post(
 				.maybeSingle();
 
 			if (!insertResult.error && insertResult.data) {
+				// Recorded like a key made in the dashboard, so owners and admins hear about it.
+				await recordWorkspaceAuditEvent(supabase, {
+					workspaceId: oauthTeamId,
+					actorUserId: oauthUserId,
+					action: "api_key.created",
+					targetType: "api_key",
+					targetId: insertResult.data.id,
+					targetName: insertResult.data.name,
+					metadata: {
+						prefix: insertResult.data.prefix,
+						status: "active",
+						source: "oauth",
+						oauthClientId,
+						appName: resolvedApp.app.name ?? null,
+					},
+				});
 				const responsePayload: Record<string, unknown> = {
 					ok: true,
 					key: {

@@ -66,6 +66,41 @@ describe("google-ai-studio stream transform", () => {
 		expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
 	});
 
+	it.each([
+		"SAFETY",
+		"PROHIBITED_CONTENT",
+		"RECITATION",
+		"SPII",
+		"BLOCKLIST",
+		"LANGUAGE",
+		"MODEL_ARMOR",
+		"ESCALATION",
+		"IMAGE_SAFETY",
+		"IMAGE_PROHIBITED_CONTENT",
+		"IMAGE_RECITATION",
+	])("ends a stream blocked with %s as content_filter, not as an error", async (providerFinishReason) => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{ index: 0, content: { role: "model", parts: [] }, finishReason: providerFinishReason }],
+			usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 0, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("response.failed");
+		expect(output).not.toContain("google_empty_response");
+	});
+
+	it("ends a stream whose prompt was blocked as content_filter", async () => {
+		const upstream = makeGoogleSseStream([{
+			promptFeedback: { blockReason: "SAFETY" },
+			usageMetadata: { promptTokenCount: 5, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("google_empty_response");
+	});
+
 	it("emits a structured error instead of a blank successful stream", async () => {
 		const upstream = makeGoogleSseStream([
 			{
@@ -282,6 +317,49 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"reasoning_content\":\"thinking trace\"");
 	});
 
+	it("counts Interactions thought tokens as output and leaves tool-use tokens out of input", async () => {
+		// Google's documented accounting: total = input + output + thoughts; tool-use tokens are
+		// not added (function-calling example: input 100, output 25, tool use 50, total 125).
+		const upstream = makeGoogleSseStream([
+			{ index: 0, step: { type: "model_output" }, event_type: "step.start" },
+			{ index: 0, delta: { type: "text", text: "done" }, event_type: "step.delta" },
+			{
+				interaction: {
+					id: "v1_test",
+					status: "completed",
+					usage: {
+						total_input_tokens: 100,
+						total_cached_tokens: 40,
+						total_output_tokens: 30,
+						total_thought_tokens: 20,
+						total_tool_use_tokens: 7,
+						total_tokens: 150,
+						input_tokens_by_modality: [{ modality: "text", tokens: 90 }, { modality: "image", tokens: 10 }],
+						cached_tokens_by_modality: [{ modality: "text", tokens: 36 }, { modality: "image", tokens: 4 }],
+					},
+				},
+				event_type: "interaction.completed",
+			},
+		]);
+		const seen: any[] = [];
+
+		const stream = transformStream(upstream, baseArgs(), undefined, { onUsage: (usage) => seen.push(usage) });
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("\"prompt_tokens\":100");
+		expect(output).toContain("\"completion_tokens\":50");
+		expect(output).toContain("\"reasoning_tokens\":20");
+		expect(seen.at(-1)).toMatchObject({
+			inputTokens: 100,
+			outputTokens: 50,
+			totalTokens: 150,
+			reasoningTokens: 20,
+			cachedInputTokens: 40,
+			// The 4 cached image tokens are billed through cachedInputTokens, not again as image input.
+			_ext: { inputImageTokens: 6 },
+		});
+	});
+
 	it("emits image deltas when Interactions stream returns image content", async () => {
 		const upstream = makeGoogleSseStream([
 			{
@@ -365,5 +443,104 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("data:audio/wav;base64,UklGRlIAAABXQVZFZm10");
 		expect(output).toContain("\"output_tokens_details\"");
 		expect(output).toContain("\"output_audio\":22");
+	});
+
+	function functionCallFrame(functionCall: Record<string, unknown>, last = false) {
+		return {
+			candidates: [{
+				index: 0,
+				content: { role: "model", parts: [{ functionCall, thoughtSignature: `sig-${String(functionCall.id ?? functionCall.name)}` }] },
+				...(last ? { finishReason: "STOP" } : {}),
+			}],
+			usageMetadata: last
+				? { promptTokenCount: 10, candidatesTokenCount: 4, totalTokenCount: 14 }
+				: { promptTokenCount: 10 },
+		};
+	}
+
+	function chatToolCallDeltas(output: string): any[] {
+		return output
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.tool_calls ?? []);
+	}
+
+	it("gives parallel function calls in separate frames their own index and keeps upstream ids", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.id, delta.function?.name])).toEqual([
+			[0, "call_up_1", "get_weather"],
+			[1, "call_up_2", "search"],
+		]);
+		expect(deltas.map((delta) => delta.function?.arguments)).toEqual([
+			"{\"city\":\"Lyon\"}",
+			"{\"query\":\"lyon\"}",
+		]);
+	});
+
+	it("numbers reasoning_details entries across chunks so each signature keeps its own index", async () => {
+		const upstream = makeGoogleSseStream([
+			{
+				candidates: [{ index: 0, content: { role: "model", parts: [{ text: "Plan.", thought: true, thoughtSignature: "sig-thought" }] } }],
+				usageMetadata: { promptTokenCount: 10 },
+			},
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const details = (await readStreamText(transformStream(upstream, baseArgs())))
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.reasoning_details ?? []);
+
+		expect(details.length).toBeGreaterThanOrEqual(3);
+		expect(details.map((detail: any) => detail.index)).toEqual(details.map((_: unknown, index: number) => index));
+		expect(details.filter((detail: any) => detail.id === "call_up_1" || detail.id === "call_up_2").map((detail: any) => detail.id))
+			.toEqual(["call_up_1", "call_up_2"]);
+	});
+
+	it("keeps two same-name calls without upstream ids apart and an identical re-send as one call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Paris" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.function?.arguments])).toEqual([
+			[0, "{\"city\":\"Lyon\"}"],
+			[1, "{\"city\":\"Paris\"}"],
+		]);
+		expect(new Set(deltas.map((delta) => delta.id)).size).toBe(2);
+	});
+
+	it("emits one Responses function_call item per parallel Gemini call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const output = await readStreamText(transformStream(upstream, baseArgs({
+			endpoint: "responses",
+			protocol: "openai.responses",
+		})));
+		const done = parseSseEvents(output)
+			.filter((event) => event.event === "response.output_item.done" && event.data.item?.type === "function_call")
+			.map((event) => event.data.item);
+
+		expect(done.map((item) => [item.call_id, item.name, item.arguments])).toEqual([
+			["call_up_1", "get_weather", "{\"city\":\"Lyon\"}"],
+			["call_up_2", "search", "{\"query\":\"lyon\"}"],
+		]);
 	});
 });

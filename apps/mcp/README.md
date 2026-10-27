@@ -108,14 +108,71 @@ For UI development without account access, run `pnpm --filter @phaseo/mcp dev:ui
 and open `http://127.0.0.1:4318`. This development-only host uses the official MCP
 Apps bridge with labeled fixture data. It is never included in the Worker bundle.
 
-## Plugin release
+## Plugin
 
-The `plugin/phaseo` directory contains the existing plugin's portable source,
-compatibility manifests, workflow skill, and Phaseo logos. Run
-`pnpm --filter @phaseo/mcp build:plugin` to create `dist/plugin/phaseo.tar.gz`.
+`plugin/phaseo` is one plugin for Codex, ChatGPT and Claude Code. It bundles:
+
+- the Phaseo MCP (`https://mcp.phaseo.app/mcp`, OAuth) and the Phaseo Docs MCP
+  (`https://phaseo.app/docs/mcp`, no sign-in);
+- the `phaseo` skill, which covers the MCP tools and lives only here;
+- the public skills from `.agents/skills`, copied by `pnpm skills:sync` at the
+  repository root. Do not edit `plugin/phaseo/skills/<public-skill>` directly.
+
+Each host reads its own manifest, so keep them in step (`pnpm skills:validate`
+checks the versions and paths):
+
+| File | Read by |
+| --- | --- |
+| `plugin.json` | Portable Agent Plugins format; ChatGPT and Codex (`extensions.com.openai`) |
+| `.codex-plugin/plugin.json` | Codex compatibility layout, for hosts that do not read `plugin.json` |
+| `.claude-plugin/plugin.json` | Claude Code; declares the MCP servers with `type: "http"` |
+| `.mcp.json`, `mcp.json` | Codex and portable hosts (`streamable-http`) |
+| `README.md` | Directory listings and the mirror; required by Anthropic's plugin directory |
+| `../openai-submission.json` | Only the OpenAI directory package: review cases and release notes |
+
+The repository root has a marketplace for each host
+(`.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`). Users
+install from the small `phaseoteam/skills` mirror rather than this repository:
+
+```bash
+# Claude Code
+/plugin marketplace add phaseoteam/skills
+/plugin install phaseo@phaseo
+
+# Codex
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+```
+
+To test local changes, run `claude plugin validate apps/mcp/plugin/phaseo` and
+`claude --plugin-dir apps/mcp/plugin/phaseo`, or add the repository root as a
+Codex marketplace with a throwaway `CODEX_HOME`.
+
+### Release
+
+Bump `version` in all three manifests together. Run
+`pnpm --filter @phaseo/mcp build:plugin` to create:
+
+- `dist/plugin/phaseo.tar.gz`, the plugin directory as it is;
+- `dist/plugin/phaseo-openai-<version>.zip`, the package for OpenAI's plugin
+  directory (ChatGPT and Codex). That directory connects one MCP server per
+  plugin, so the ZIP keeps only the Phaseo MCP. It also merges in the review
+  cases, commerce answer and release notes from `plugin/openai-submission.json`.
+  Pass `--demo-url <url>` to include the demo recording, or add it in the
+  dashboard.
+
 Deploy the MCP Worker through the repository's PR release flow before uploading
-this package as an update to the existing private plugin. Then reconnect the
-plugin and verify the explorer in the target host with Phaseo OAuth.
+a package. Then reconnect the plugin and verify the explorer in the target host
+with Phaseo OAuth. Each directory upload is reviewed again, so update
+`publication.release_notes` for every version.
+
+Anthropic's plugin directory takes the plugin from the `phaseoteam/skills`
+mirror (`plugins/phaseo`), which the daily sync keeps up to date. The plugin
+README is required there, and `pnpm skills:validate` checks it and the
+OpenAI listing limits.
+
+Keep reviewer credentials out of every package. Enter them in the OpenAI
+dashboard under Review details.
 
 ## Validation
 

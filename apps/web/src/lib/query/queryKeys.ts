@@ -54,6 +54,7 @@ const publicKeys = {
 	gatewayModels: () => [...publicKeys.all(), "gateway-models"] as const,
 	chatGatewayModels: () => [...publicKeys.all(), "chat-gateway-models", "available-only"] as const,
 	benchmarkRankings: () => [...publicKeys.all(), "benchmark-rankings"] as const,
+	compareModelOptions: () => [...publicKeys.all(), "compare-model-options"] as const,
 	modelsWeeklyMetrics: () => [...publicKeys.all(), "models-weekly-metrics"] as const,
 	freeRouterUsage: () => [...publicKeys.all(), "free-router-usage"] as const,
 	modelPerformance: (args: {
@@ -74,6 +75,14 @@ const publicKeys = {
 		[...publicKeys.all(), "model-usage-daily", modelId] as const,
 	modelPricing: (modelId: string) =>
 		[...publicKeys.all(), "model-pricing", modelId] as const,
+	countryDetail: (iso: string) =>
+		[...publicKeys.all(), "country-detail", iso] as const,
+	modelPricingHistory: (modelId: string) =>
+		[...publicKeys.all(), "model-pricing-history", modelId] as const,
+	modelPricingInsightsUsage: (modelId: string, providerIds: string[]) =>
+		[...publicKeys.all(), "model-pricing-insights-usage", modelId, stableListKey(providerIds)] as const,
+	modelEffectivePricingDaily: (modelId: string, providerIds: string[]) =>
+		[...publicKeys.all(), "model-effective-pricing-daily", modelId, stableListKey(providerIds)] as const,
 	modelRuntimeStats: (args: {
 		modelId: string;
 		providerIds: string[];

@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 Le format OpenAI applique la même authentification, la même disponibilité régionale, les mêmes modèles privés de l’espace de travail et les mêmes filtres que le JSON natif. Il renvoie tous les modèles correspondants, sauf si vous fournissez `limit` ; `offset` reste applicable. Les identifiants restent sous la forme canonique de Phaseo, utilisable pour l’inférence. `created` correspond à la date de publication dans le catalogue, ou à `0` si elle est inconnue ; `owned_by` correspond à l’organisation du catalogue, à `private` pour les modèles de l’espace de travail, ou à `phaseo` si elle est inconnue.
 
+## Mettre en cache la liste des modèles
+
+Les réponses au format JSON et OpenAI incluent un en-tête `ETag` faible (`W/"…"`). Il change lorsque les modèles de la page, `limit`, `offset`, `total` ou le format changent. Il ignore `gateway_region` : le même catalogue servi depuis une autre région a donc le même `ETag`. C’est pourquoi il est faible : les réponses qui le partagent sont équivalentes, mais leurs octets peuvent différer. Les réponses RSS, Atom et d’erreur n’en contiennent pas.
+
+Renvoyez la valeur enregistrée, telle quelle, dans `If-None-Match`. Si le catalogue n’a pas changé, la réponse est `304 Not Modified`, sans corps, et reprend les en-têtes `ETag`, `Cache-Control` et `Vary`. Sinon, vous recevez une réponse `200` normale avec la nouvelle liste et un nouvel `ETag`. `If-None-Match` accepte aussi une liste séparée par des virgules et `*`, et la comparaison est faible : la valeur correspond avec ou sans son préfixe `W/`.
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+Une réponse `304` économise le transfert et l’analyse, car elle n’a pas de corps. Le serveur évalue tout de même la requête : il charge le catalogue et recalcule l’`ETag`. Une vérification toutes les 15 minutes environ est donc appropriée, en ne retéléchargeant la liste que lorsque le catalogue change. Conservez un `ETag` par URL de requête, car chaque page, ensemble de filtres et format a sa propre valeur.
+
+### Niveaux de service par offre
+
+Chaque entrée de `offers` inclut `service_tiers`, les [niveaux de service](../../guides/service-tiers.mdx) acceptés par cette offre du fournisseur. Il s’agit d’un sous-ensemble trié par ordre alphabétique de `flex`, `priority`, `standard` et `ultrafast`, où `priority` correspond au niveau Fast. Un niveau est listé lorsque la route du fournisseur dispose pour lui d’une tarification active et en vigueur, et une route qui ne sert qu’un niveau ne liste que celui-ci. Certains niveaux peuvent aussi être disponibles via des routes de fournisseur distinctes, propres à chaque niveau, qui ne figurent pas ici. Les prix sous `pricing` restent ceux du niveau standard.
+
 ## Filtres utiles
 
 - `endpoints` accepte des noms publics comme `chat.completions`, `responses` et `messages`

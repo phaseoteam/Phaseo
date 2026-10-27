@@ -47,8 +47,19 @@ const nextConfig = {
   ...(configuredAllowedDevOrigins.length > 0
     ? { allowedDevOrigins: configuredAllowedDevOrigins }
     : {}),
+  // Partial Prerendering comes from cacheComponents. `partialPrefetching` stays
+  // off: it re-renders every dynamic page as a runtime prefetch and embeds that
+  // copy in the response, and links here only prefetch static shells on intent.
+  // Set explicitly: Next 16.4 warns when it's unset, and the default may flip.
   cacheComponents: true,
-  partialPrefetching: true,
+  partialPrefetching: false,
+  // `pnpm run build` type-checks with TypeScript 7 first (`pnpm run typecheck`,
+  // incremental in .next/cache like Next's own check). Next's check would run the
+  // `typescript` package's CLI, which is the TypeScript 6 package kept for
+  // typescript-eslint (pnpm-workspace.yaml).
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     globalNotFound: true,
   },
@@ -93,6 +104,11 @@ const nextConfig = {
             value: "camera=(), microphone=(self), geolocation=(), payment=(self)",
           },
         ],
+      },
+      {
+        // Client dictionaries are named by their content, so a file never changes.
+        source: "/_i18n/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       {
         source: "/:locale(en-GB|en-US|es-ES|fr-FR|de-DE|pt-BR|ja|zh-Hans|hi|ar-SA)?/oauth/consent",

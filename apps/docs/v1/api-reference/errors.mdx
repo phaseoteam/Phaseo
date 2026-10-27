@@ -1,20 +1,40 @@
 ---
 title: "Errors and Debugging"
 description: "Understand Phaseo error responses and fix common request, provider, and routing issues faster."
+"og:image": "https://phaseo.app/og/dynamic?title=Errors%20and%20Debugging&description=Understand%20Phaseo%20error%20responses%20and%20fix%20common%20request%2C%20provider%2C%20and%20routing%20issues%20faster.&pathname=/docs/v1/api-reference/errors"
 icon: "bug"
 ---
 
 Use this page to understand what A Phaseo error means and what to do next.
 
-Every error response follows the same JSON format, so your app can handle failures consistently across models and providers.
+Every error response follows the same JSON format, so your app can handle failures consistently across models and providers. The `error` field is an object with `code`, `message` and `type`, the shape OpenAI-compatible SDKs read, so their exceptions carry the gateway's message.
 
 ## Example error response
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -51,9 +71,16 @@ Every error response follows the same JSON format, so your app can handle failur
 
 ## Fields you will always get
 
+- `error`: an object describing the failure:
+  - `error.code`: a machine-readable error code, such as `validation_error`.
+  - `error.message`: a plain-language explanation of what happened.
+  - `error.type`: the error type (see [Error types](#error-types)).
+  - `error.param`: the request parameter that caused the error, when the gateway knows it, otherwise `null`.
+  - `error.metadata` (optional): structured detail such as the failing provider, the subreason, the failed statuses or `retry_after_seconds`. The same values are also returned at the top level.
+- `code`: the same code as `error.code`. Earlier responses returned this code string as `error`; read `code` if your client expected a string there.
+- `message`: the same text as `error.message`.
 - `generation_id`: a stable request ID you can share with support.
 - `status_code`: mirrors the HTTP status code.
-- `error`: a machine-readable error code, such as `validation_error`.
 - `error_type`: a high-level class, usually `user` or `system`.
 - `error_origin`: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider.
 - `description`: a plain-language explanation of what happened.
@@ -70,6 +97,24 @@ Some errors include more detail to help you fix the issue faster:
 - `upstream_error` and `failure_sample`: best-effort summaries of the first provider failure when the request reached a provider.
 - `failed_providers`, `failed_statuses`, and `attempt_count`: extra retry and failover context.
 
+## Error types
+
+`error.type` follows OpenAI's [documented error types](https://platform.openai.com/docs/guides/error-codes) and is set from the HTTP status:
+
+| Status | `error.type` |
+| --- | --- |
+| `400`, `409`, `410`, `413`, `422` and other 4xx | `invalid_request_error` |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `500`, `502` and other 5xx | `server_error` |
+
+Errors on `/v1/messages` use the same body, so Anthropic SDKs also find `error.type` and `error.message`.
+
 ## Status class guidance
 
 | Status | Meaning | Recommended action |
@@ -80,16 +125,21 @@ Some errors include more detail to help you fix the issue faster:
 
 ## Common error codes
 
-| Type | HTTP Status | Description |
-| --- | --- | --- |
-| `authentication_error` | `401` | Missing or invalid API key. |
-| `authorization_error` | `403` | The key does not have access to this resource. |
-| `not_found_error` | `404` | The endpoint or resource could not be found. |
-| `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
-| `phaseo_free_model_limit_exceeded` | `429` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
-| `validation_error` | `400` | Invalid parameters or request body. |
-| `provider_error` | `502` | The upstream model provider failed to respond correctly. |
-| `server_error` | `500` | An unexpected issue happened inside Phaseo. |
+| `error.code` | HTTP Status | `error.type` | Description |
+| --- | --- | --- | --- |
+| `unauthorised` | `401` | `authentication_error` | Missing or invalid API key. |
+| `guardrail_blocked` | `403` | `permission_error` | A workspace guardrail or access policy blocked the request. |
+| `not_found` | `404` | `not_found_error` | The endpoint or resource could not be found. |
+| `model_retired` | `410` | `invalid_request_error` | The model is retired and no provider serves it any more. Switch to `replacement_model`. |
+| `insufficient_funds` | `402` | `insufficient_quota` | The workspace does not have enough credits for the request. |
+| `key_limit_exceeded` | `429` | `rate_limit_error` | The API key reached one of its limits. |
+| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
+| `rate_limit_exceeded` | `429` | `rate_limit_error` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. Honor `Retry-After`, or ask a workspace admin to change the policy. |
+| `validation_error` | `400` | `invalid_request_error` | Invalid parameters or request body. `error.param` names the first invalid field. |
+| `upstream_error` | `429` | `rate_limit_error` | Every provider tried for the request rate limited it. Honor `Retry-After`; BYOK requests also carry `X-Phaseo-Upstream-RateLimit-*` headers. |
+| `upstream_error` | `502` | `server_error` | The upstream model provider failed to respond correctly. |
+| `upstream_stream_failure` | `502` | `server_error` | A non-streaming request whose provider failed after it started generating. No partial output is returned and the request is not charged. |
+| `gateway_error` | `500` | `server_error` | An unexpected issue happened inside Phaseo. |
 
 ## When a provider fails
 
@@ -145,9 +195,15 @@ Common fields:
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -190,6 +246,43 @@ Common fields:
 }
 ```
 
+## When a model is retired
+
+A retired model is still served while any provider serves it. Once none does,
+requests for it fail with `410` and the `model_retired` error:
+
+```json
+{
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: the model you requested.
+- `retired_at`: when the model was retired, or `null` if no date is recorded.
+- `replacement_model`: the suggested replacement, or `null` if there is none.
+
+Retrying does not help. Update the model ID in your request. To keep serving
+these requests while you migrate, add the replacement to your request's
+`models` list or turn on retired model routing for the workspace. See
+[Model Deprecation and Retirement](../guides/model-retirement.mdx).
+
 ## Optional debug mode
 
 Most request schemas support a `debug` object for controlled troubleshooting:
@@ -227,7 +320,23 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 ## Streaming-specific notes
 
 - If the request fails before streaming begins, you get a standard JSON error payload.
-- If it fails mid-stream, treat the partial stream as incomplete and show a retry option.
+- If it fails mid-stream, the stream ends with the endpoint's failure event instead of a normal finish: an `error` frame on Chat Completions, `response.failed` (or `error`) on Responses, and an `error` event on Messages. Treat the partial stream as incomplete and show a retry option.
+- The Chat Completions `error` frame carries the same error object, with `error.type` set from the code:
+
+  ```json
+  {
+    "object": "error",
+    "message": "The upstream stream ended before the response completed.",
+    "code": "upstream_stream_failure",
+    "error": {
+      "code": "upstream_stream_failure",
+      "message": "The upstream stream ended before the response completed.",
+      "type": "server_error",
+      "param": null
+    }
+  }
+  ```
+- A non-streaming request whose provider fails part-way returns `502` with `upstream_stream_failure`, not a partial response.
 - Always capture `generation_id` and endpoint/model metadata in logs.
 
 ## Troubleshooting tips
@@ -263,9 +372,13 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 </Columns>
 
 <Visibility for="agents">
-If you are implementing error handling as an agent:
+Error-handling rules for agents, summarising this page:
 
-- Use repository skills for retry logic, structured logging, and schema-safe error parsing.
-- Treat debug payloads as potentially sensitive and redact before persistent logs.
-- Prefer deterministic retries (bounded attempts + jitter) over unbounded loops.
+- Branch on `error.code` (also returned as top-level `code`), `error.type` and `status_code`, not on the message text. Log `generation_id` with every failure.
+- `400`, `401`, `403` and `404`: fix the request, key or access first. Do not retry the same request unchanged.
+- `410` with `model_retired`: switch to `replacement_model` when it is not `null`; otherwise choose a new model from `GET /v1/models`.
+- `429`: when `Retry-After` is present (seconds or an HTTP date), wait that long before retrying; otherwise use jittered exponential backoff. A `key_limit_exceeded` error without `Retry-After` does not reset by itself, so do not retry it.
+- `500` to `599`: retry only when repeating the call is safe, with an attempt limit, an overall deadline and jittered exponential backoff. For async jobs, look up the accepted job instead of submitting it again.
+- Treat debug payloads as sensitive and redact them before writing persistent logs.
+- For tested retry and error-parsing patterns, install the `phaseo-gateway` skill: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

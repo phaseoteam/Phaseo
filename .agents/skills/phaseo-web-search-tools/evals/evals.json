@@ -1,0 +1,36 @@
+[
+	{
+		"id": "add-search",
+		"query": "Our assistant should answer questions about today's news with citations, through Phaseo.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Chooses native provider search or gateway:web_search and explains why",
+			"Bounds the result count and uses snippets before full text"
+		]
+	},
+	{
+		"id": "fetch-url",
+		"query": "Summarise the page at a URL the user pastes, using Phaseo.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses gateway:web_fetch with a tight max_chars",
+			"Checks truncation flags"
+		]
+	},
+	{
+		"id": "missing-citations",
+		"query": "Search requests succeed but no citations come back.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Checks request-detail web search observability and server_tool_use counters"
+		]
+	},
+	{
+		"id": "not-for-own-tools",
+		"query": "Add a get_weather function tool to our Phaseo chat requests.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Treats it as ordinary function calling, not web search"
+		]
+	}
+]

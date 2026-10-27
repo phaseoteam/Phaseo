@@ -1,9 +1,12 @@
 // Purpose: Executor for amazon-bedrock / text-generate.
-// Why: Uses each model's supported Bedrock Mantle API surface.
-// How: IR -> Anthropic Messages or OpenAI Chat/Responses, then protocol shaping is handled by the pipeline.
+// Why: Uses each model's supported Bedrock API surface. Bare model IDs go to
+// bedrock-mantle; cross-Region inference profile IDs (global./us./...) go to
+// bedrock-runtime, which serves the Claude and GPT models Mantle lacks.
+// How: IR -> Anthropic Messages (Mantle) or InvokeModel (Runtime), or OpenAI
+// Chat/Responses, then protocol shaping is handled by the pipeline.
 
 import type { IRChatRequest } from "@core/ir";
-import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { isClaudeOpus55, normalizeClaudeModelId } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -11,16 +14,27 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason, resolveAnthropicInferenceGeo } from "@executors/anthropic/text-generate";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicPassthroughStreamTransformer,
 	createAnthropicToResponsesStreamTransformer,
 } from "@executors/anthropic/text-generate/stream-transformer";
+import { inlineClaudeMediaForBase64OnlyPlatform } from "@executors/anthropic/text-generate/inline-media";
+import { inlineAudioUrlsForProvider } from "@executors/_shared/text-generate/openai-compat/inline-audio";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
-import { resolveMantleAuth, signAwsV4Request, extractRegionFromMantleUrl } from "./bedrock-utils";
+import {
+	resolveMantleAuth,
+	signAwsV4Request,
+	extractRegionFromMantleUrl,
+	isBedrockInferenceProfileId,
+	bedrockRuntimeBaseUrl,
+	bedrockSigningService,
+	createBedrockInvokeStreamToSseTransformer,
+} from "./bedrock-utils";
 
 type BedrockCredentials = {
 	accessKeyId: string;
@@ -76,24 +90,47 @@ async function executeBedrockMessages(
 	model: string,
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
-	const requestPayload = {
-		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model),
-		model,
-		stream: Boolean(irRequest.stream),
-	};
+	const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
+	if (unsupportedMedia) return unsupportedMedia;
+	// Claude on Bedrock reads base64 sources only.
+	const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
+	if (inlined.ok === false) return inlined.result;
+	const anthropicRequest = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" });
+	const stream = Boolean(irRequest.stream);
+	// bedrock-runtime: InvokeModel takes the model in the path and the version in
+	// the body; older Claude models there do not offer the /anthropic Messages route.
+	const runtime = isBedrockInferenceProfileId(model);
+	const geoRejection = bedrockInferenceGeoRejection(irRequest, args, auth, model, runtime);
+	if (geoRejection) return geoRejection;
+	if (runtime && anthropicRequest.speed === "fast") {
+		return bedrockClientError(args.requestId, "service_tier_unsupported", "Fast mode (service_tier \"priority\" or \"fast\") is not available for Claude on Amazon Bedrock. Remove service_tier, or choose another provider.");
+	}
+	const requestPayload = runtime
+		? bedrockInvokeBody(anthropicRequest, model)
+		: { ...anthropicRequest, model, stream };
 	const requestBody = JSON.stringify(requestPayload);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-	const res = await sendMantleRequest(args, auth, {
-		url: buildMantleMessagesUrl(auth.baseUrl),
-		body: requestBody,
-		headers: {
-			"Content-Type": "application/json",
-			Accept: requestPayload.stream ? "text/event-stream" : "application/json",
-			"anthropic-version": "2023-06-01",
-			...upstreamTestHeaders(args.meta),
-		},
-		apiKeyHeader: "x-api-key",
-	});
+	const res = await sendBedrockRequest(args, auth, runtime
+		? {
+			url: buildRuntimeInvokeUrl(auth.region, model, stream),
+			body: requestBody,
+			headers: {
+				"Content-Type": "application/json",
+				Accept: stream ? "application/vnd.amazon.eventstream" : "application/json",
+				...upstreamTestHeaders(args.meta),
+			},
+		}
+		: {
+			url: buildMantleMessagesUrl(auth.baseUrl),
+			body: requestBody,
+			headers: {
+				"Content-Type": "application/json",
+				Accept: stream ? "text/event-stream" : "application/json",
+				"anthropic-version": "2023-06-01",
+				...upstreamTestHeaders(args.meta),
+			},
+			apiKeyHeader: "x-api-key",
+		});
 	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 
 	const bill: Bill = {
@@ -127,11 +164,12 @@ async function executeBedrockMessages(
 		// Usage is recorded by the transformer itself; no tee()'d accounting
 		// branch buffering the whole response.
 		const accounting = createAnthropicStreamAccounting();
+		const sseBody = runtime ? res.body.pipeThrough(createBedrockInvokeStreamToSseTransformer()) : res.body;
 		const nativeMessages = isClaudeOpus55(model) && args.protocol === "anthropic.messages";
-		const responsesStream = nativeMessages ? null : res.body.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+		const responsesStream = nativeMessages ? null : sseBody.pipeThrough(
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 		);
-		const stream = nativeMessages ? res.body.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
+		const clientStream = nativeMessages ? sseBody.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
 			new Response(responsesStream!, {
 				status: res.status,
 				headers: res.headers,
@@ -142,15 +180,17 @@ async function executeBedrockMessages(
 		);
 		return {
 			kind: "stream",
-			stream,
+			stream: clientStream,
 			usageFinalizer: async () => {
 				const final = accounting.snapshot();
 				return {
 					...bill,
-					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					usage: anthropicUsageForPricing(final.usage),
 					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},
+			usageFinalizerAuthoritative: true,
+			usageSnapshot: () => anthropicUsageForPricing(accounting.snapshot().usage) ?? null,
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,
@@ -166,7 +206,7 @@ async function executeBedrockMessages(
 	const json: any = await res.json().catch(() => null);
 	const providerId = args.providerId || "amazon-bedrock";
 	const ir = anthropicMessagesToIR(json ?? {}, args.requestId, model, providerId);
-	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage);
+	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 	if (usageMeters) {
 		bill.usage = usageMeters;
 	}
@@ -196,11 +236,14 @@ async function executeMantleOpenAI(
 	preferredRoute: "chat" | "responses",
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(irRequest, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
 	const buildPayload = (route: "chat" | "responses"): Record<string, any> => {
 		const providerId = args.providerId || "amazon-bedrock";
 		const payload = route === "responses"
-			? irToOpenAIResponses(irRequest, model, providerId, args.capabilityParams)
-			: irToOpenAIChat(irRequest, model, providerId, args.capabilityParams);
+			? irToOpenAIResponses(inlinedAudio.ir, model, providerId, args.capabilityParams)
+			: irToOpenAIChat(inlinedAudio.ir, model, providerId, args.capabilityParams);
 
 		payload.stream = true;
 		if (route === "chat" && payload.stream) {
@@ -217,8 +260,8 @@ async function executeMantleOpenAI(
 	let requestPayload = buildPayload(route);
 	let requestBody = JSON.stringify(requestPayload);
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-	let res = await sendMantleRequest(args, auth, {
-		url: buildMantleOpenAIUrl(auth.baseUrl, route),
+	let res = await sendBedrockRequest(args, auth, {
+		url: buildBedrockOpenAIUrl(auth, model, route),
 		body: requestBody,
 		headers: {
 			"Content-Type": "application/json",
@@ -340,57 +383,167 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 export function resolveMantleTextRoute(
 	args: ExecutorExecuteArgs,
 ): "messages" | "chat" | "responses" {
-	// Opus 5.5 supports only Anthropic Messages on Mantle, irrespective of
-	// the public protocol. Preserve the existing selection for other models.
-	if (isClaudeOpus55(args.ir.model) || isClaudeOpus55(args.providerModelSlug) || usesBedrockMessagesApi(args)) return "messages";
+	// Claude on Bedrock serves only the Anthropic Messages API (InvokeModel on
+	// bedrock-runtime), so every Claude model uses it whatever the client protocol.
+	if (isBedrockClaudeModel(args.providerModelSlug) || isBedrockClaudeModel(args.ir.model)) return "messages";
+	// Every other model serves Chat Completions. Messages clients and Responses
+	// clients of chat-only models are translated by the pipeline; /anthropic/v1/messages
+	// is Claude-only and most open-weight model cards mark Responses "not supported".
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const wantsResponses = protocol === "openai.responses" || args.endpoint === "responses";
-	return wantsResponses ? "responses" : "chat";
+	return wantsResponses && supportsBedrockResponses(args.providerModelSlug ?? args.ir.model) ? "responses" : "chat";
 }
 
-function usesBedrockMessagesApi(args: ExecutorExecuteArgs): boolean {
-	return args.protocol === "anthropic.messages" || args.endpoint === "messages";
+/**
+ * Bedrock model cards list Messages as the only Mantle API for Claude
+ * (Responses and Chat Completions are "not supported"). Matches bare Mantle IDs
+ * such as `anthropic.claude-sonnet-5`, inference-profile IDs such as
+ * `us.anthropic.claude-fable-5-1` and gateway IDs such as
+ * `anthropic/claude-opus-5`.
+ */
+export function isBedrockClaudeModel(model: string | null | undefined): boolean {
+	const normalized = normalizeClaudeModelId(model);
+	if (!normalized) return false;
+	return isClaudeOpus55(normalized) || /(?:^|[./:])(?:anthropic[./])?claude-/.test(normalized);
+}
+
+/**
+ * Top-level fields the InvokeModel body for Claude documents: the request page
+ * (model-parameters-anthropic-claude-messages-request-response.html) plus the
+ * adaptive thinking, structured outputs, effort and compaction pages. Bedrock
+ * rejects anything else ("Extra inputs are not permitted"), so Anthropic-only
+ * fields such as `metadata`, `service_tier`, `speed` and `inference_geo` are dropped.
+ */
+const BEDROCK_INVOKE_BODY_FIELDS = [
+	"max_tokens",
+	"system",
+	"messages",
+	"temperature",
+	"top_p",
+	"top_k",
+	"tools",
+	"tool_choice",
+	"stop_sequences",
+	"thinking",
+	"output_config",
+	"context_management",
+] as const;
+
+export function bedrockInvokeBody(request: Record<string, any>, model: string): Record<string, any> {
+	const body: Record<string, any> = { anthropic_version: "bedrock-2023-05-31" };
+	// Beta opt-ins go in the body on InvokeModel, not in an anthropic-beta header.
+	const betas = bedrockInvokeBetas(request, model);
+	if (betas.length > 0) body.anthropic_beta = betas;
+	for (const field of BEDROCK_INVOKE_BODY_FIELDS) {
+		if (request[field] !== undefined) body[field] = request[field];
+	}
+	return body;
+}
+
+function bedrockInvokeBetas(request: Record<string, any>, model: string): string[] {
+	const betas = new Set<string>();
+	const contextManagement = request.context_management;
+	if (contextManagement) {
+		// compact_20260112 edits need compact-2026-01-12 (compaction page); the
+		// clearing edits need context-management-2025-06-27 (request page beta table).
+		const edits = Array.isArray(contextManagement.edits) ? contextManagement.edits : [];
+		const usesCompaction = edits.some((edit: any) => edit?.type === "compact_20260112");
+		if (usesCompaction) betas.add("compact-2026-01-12");
+		if (!usesCompaction || edits.some((edit: any) => edit?.type !== "compact_20260112")) {
+			betas.add("context-management-2025-06-27");
+		}
+	}
+	// Opus 4.5 takes output_config.effort only with the effort beta (request page).
+	if (request.output_config?.effort !== undefined && /claude-opus-4-5/.test(bareBedrockModelId(model))) {
+		betas.add("effort-2025-11-24");
+	}
+	return [...betas];
+}
+
+function bedrockClientError(requestId: string, error: string, message: string): ExecutorResult {
+	return {
+		kind: "completed",
+		terminal: true,
+		localClientError: true,
+		upstream: Response.json({ error, message, request_id: requestId }, { status: 400 }),
+		bill: { cost_cents: 0, currency: "USD" },
+	};
+}
+
+/**
+ * Bedrock has no `inference_geo`; where a request runs is set by the model ID
+ * (a `us.` profile stays in the US, a `global.` profile does not) or, on Mantle,
+ * by the endpoint's Region. A US-only request that this route cannot keep in the
+ * US is refused instead of being run elsewhere.
+ */
+function bedrockInferenceGeoRejection(
+	ir: IRChatRequest,
+	args: ExecutorExecuteArgs,
+	auth: MantleAuth,
+	model: string,
+	runtime: boolean,
+): ExecutorResult | null {
+	if (resolveAnthropicInferenceGeo(args.providerId || "amazon-bedrock", ir) !== "us") return null;
+	const staysInUs = runtime
+		? /^us(?:-gov)?\./i.test(model.trim())
+		: /^us-/i.test(auth.region);
+	if (staysInUs) return null;
+	return bedrockClientError(
+		args.requestId,
+		"inference_geo_unsupported",
+		`US-only inference (inference_geo "us") is not available for ${model} on Amazon Bedrock, which would run it outside the US. Remove inference_geo, or choose a provider that offers US-only inference.`,
+	);
+}
+
+function bareBedrockModelId(model: string | null | undefined): string {
+	return String(model ?? "").trim().toLowerCase().replace(/^(?:global|us|us-gov|eu|apac|au|jp)\./, "");
+}
+
+/**
+ * Responses is offered by the OpenAI GPT models and xAI Grok on both hosts and
+ * by gpt-oss on Mantle only (its bedrock-runtime card lists Chat Completions alone).
+ */
+function supportsBedrockResponses(model: string | null | undefined): boolean {
+	const bare = bareBedrockModelId(model);
+	if (/^openai\.gpt-oss/.test(bare)) return !isBedrockInferenceProfileId(model);
+	return /^openai\.gpt-/.test(bare) || /^xai\./.test(bare);
+}
+
+/**
+ * On bedrock-mantle the OpenAI GPT and xAI models are served under /openai/v1;
+ * gpt-oss and the open-weight models under /v1 (per each model card).
+ */
+function usesMantleOpenAIPathPrefix(model: string | null | undefined): boolean {
+	const bare = bareBedrockModelId(model);
+	return (/^openai\.gpt-/.test(bare) && !/^openai\.gpt-oss/.test(bare)) || /^xai\./.test(bare);
+}
+
+/** The configured Mantle base URL without any API path suffix. */
+function mantleOrigin(baseUrl: string): string {
+	const normalizedBase = baseUrl.replace(/\/+$/, "");
+	const lower = normalizedBase.toLowerCase();
+	for (const suffix of ["/anthropic/v1/messages", "/anthropic/v1", "/anthropic", "/openai/v1", "/openai", "/v1"]) {
+		if (lower.endsWith(suffix)) return normalizedBase.slice(0, -suffix.length);
+	}
+	return normalizedBase;
 }
 
 function buildMantleMessagesUrl(baseUrl: string): string {
-	const normalizedBase = baseUrl.replace(/\/+$/, "");
-	const lower = normalizedBase.toLowerCase();
-	if (lower.endsWith("/anthropic/v1/messages")) {
-		return normalizedBase;
-	}
-	if (lower.endsWith("/anthropic/v1")) {
-		return `${normalizedBase}/messages`;
-	}
-	if (lower.endsWith("/anthropic")) {
-		return `${normalizedBase}/v1/messages`;
-	}
-
-	for (const suffix of ["/openai/v1", "/openai", "/v1"]) {
-		if (lower.endsWith(suffix)) {
-			return `${normalizedBase.slice(0, -suffix.length)}/anthropic/v1/messages`;
-		}
-	}
-
-	return `${normalizedBase}/anthropic/v1/messages`;
+	return `${mantleOrigin(baseUrl)}/anthropic/v1/messages`;
 }
 
-function buildMantleOpenAIUrl(baseUrl: string, route: "chat" | "responses"): string {
+function buildRuntimeInvokeUrl(region: string, model: string, stream: boolean): string {
+	return `${bedrockRuntimeBaseUrl(region)}/model/${encodeURIComponent(model)}/${stream ? "invoke-with-response-stream" : "invoke"}`;
+}
+
+function buildBedrockOpenAIUrl(auth: MantleAuth, model: string, route: "chat" | "responses"): string {
 	const suffix = route === "responses" ? "/responses" : "/chat/completions";
-	const normalizedBase = baseUrl.replace(/\/+$/, "");
-	const lower = normalizedBase.toLowerCase();
-	if (lower.endsWith("/openai/v1") || lower.endsWith("/v1")) {
-		return `${normalizedBase}${suffix}`;
-	}
-	if (lower.endsWith("/openai")) {
-		return `${normalizedBase}/v1${suffix}`;
-	}
-	if (lower.includes("bedrock-mantle.")) {
-		return `${normalizedBase}/v1${suffix}`;
-	}
-	return `${normalizedBase}/openai/v1${suffix}`;
+	// bedrock-runtime serves every OpenAI-compatible model under /openai/v1.
+	if (isBedrockInferenceProfileId(model)) return `${bedrockRuntimeBaseUrl(auth.region)}/openai/v1${suffix}`;
+	return `${mantleOrigin(auth.baseUrl)}${usesMantleOpenAIPathPrefix(model) ? "/openai/v1" : "/v1"}${suffix}`;
 }
 
-async function sendMantleRequest(
+async function sendBedrockRequest(
 	executorArgs: ExecutorExecuteArgs,
 	auth: MantleAuth,
 	args: {
@@ -406,7 +559,7 @@ async function sendMantleRequest(
 			url: args.url,
 			body: args.body,
 			region: auth.region,
-			service: "bedrock",
+			service: bedrockSigningService(args.url),
 			accessKeyId: auth.credentials.accessKeyId,
 			secretAccessKey: auth.credentials.secretAccessKey,
 			sessionToken: auth.credentials.sessionToken,

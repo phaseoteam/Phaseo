@@ -1,6 +1,7 @@
 ---
 title: Management API Keys
 description: Create scoped management keys for Phaseo control-plane APIs.
+"og:image": "https://phaseo.app/og/dynamic?title=Management%20API%20Keys&description=Create%20scoped%20management%20keys%20for%20Phaseo%20control-plane%20APIs.&pathname=/docs/v1/developers/management-api-keys"
 icon: "key-round"
 ---
 
@@ -65,6 +66,9 @@ integration needs a smaller, purpose-built grant.
 | Private models | `private_models:read` | `private_models:write` | `private_models:delete` |
 | Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | Budgets | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Rate limits | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
+| Classifiers | `classifiers:read` | `classifiers:write` | `classifiers:delete` |
+| Spend rules | `spend_rules:read` | `spend_rules:write` | `spend_rules:delete` |
 | OAuth clients | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 `Write` templates include the matching read capabilities so an integration can

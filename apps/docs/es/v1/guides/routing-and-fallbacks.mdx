@@ -188,7 +188,7 @@ La misma página también ofrece controles de canales beta y alfa para introduci
 
 ### La alternativa de BYOK es explícita
 
-En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud BYOK fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
+En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud <Tooltip tip="Usa tu propia clave: Phaseo enruta la solicitud con tu clave de API del proveedor, y el proveedor te factura el uso del modelo directamente.">BYOK</Tooltip> fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
 
 ### Las rutas dinámicas asignan políticas a las claves de API
 
@@ -221,6 +221,19 @@ Los metadatos personalizados están disponibles en las superficies de inferencia
 
 Si un proveedor devuelve errores o límites de tasa, Gateway puede volver a intentarlo o dirigir la solicitud a otro proveedor compatible con el mismo modelo. Aun así, deberías gestionar los errores `429` y `5xx` con retroceso exponencial.
 
+```mermaid
+flowchart TD
+  req["Solicitud"] --> pol["Aplicar ajustes preestablecidos, reglas de protección y política de proveedores"]
+  pol --> rnk["Ordenar los proveedores aptos según el modo de enrutamiento"]
+  rnk --> prov["Llamar al proveedor mejor clasificado"]
+  prov -->|"Éxito"| resp["Devolver la respuesta"]
+  prov -->|"Error o límite de tasa del proveedor"| nextProv{{"¿Hay otro proveedor apto?"}}
+  nextProv -->|"Sí"| prov
+  nextProv -->|"No"| fallbackCheck{{"¿Estado reintentable y queda un modelo de respaldo?"}}
+  fallbackCheck -->|"Sí: repetir con el siguiente modelo"| pol
+  fallbackCheck -->|"No"| err["Devolver el error"]
+```
+
 Los nodos de modelo de una ruta dinámica también pueden definir una lista ordenada de modelos alternativos. Phaseo primero agota los intentos con proveedores aptos para el modelo seleccionado. Si la respuesta resultante permite reintentar (`429`, `500`, `502`, `503` o `504`), Gateway vuelve a ejecutar todo el proceso de selección de políticas y proveedores para cada modelo alternativo, en orden. Los errores del cliente se devuelven inmediatamente y no cambian de modelo.
 
 Cada alternativa se vuelve a comprobar de forma independiente según las restricciones de modelo del espacio de trabajo, los guardrails, la política de proveedores, los precios y la compatibilidad de capacidades. Una ruta puede guardar hasta ocho modelos alternativos.
@@ -240,7 +253,7 @@ Cada alternativa se vuelve a comprobar de forma independiente según las restric
 
 Una solicitud que envía `models` sin `model` se rechaza con `400`. Las alternativas a nivel de solicitud usan el mismo mecanismo que las alternativas de las rutas dinámicas:
 
-- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
+- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. Cuando ningún proveedor sirve el modelo principal, por ejemplo porque está [retirado](#retired-models), Phaseo también pasa al siguiente modelo. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
 - **Límites.** `models` admite de 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. Las rutas dinámicas mantienen su propio límite de ocho alternativas.
 - **Validación.** Cada entrada puede ser un ID de modelo, un ID de modelo con proveedor o un preajuste como `@support`. Cada intento se valida como una solicitud independiente: compatibilidad con el endpoint y la modalidad, parámetros solicitados, restricciones de modelo del espacio de trabajo, guardrails, preajustes, precios y credenciales BYOK. Una alternativa que no puede atender la solicitud se omite y queda anotada en los registros de solicitudes; nunca sustituye al error que recibirías de otro modo. También se omite una alternativa que equivale a un intento ya realizado, con el mismo modelo y los mismos proveedores aptos.
 - **Registro y facturación.** Cada intento es una solicitud independiente en tus registros, con su propio uso y su propio registro de facturación, por lo que cada intento se factura exactamente igual que si no hubiera alternativas.
@@ -273,11 +286,19 @@ Más información:
 - [Límites de tasa](../api-reference/limits.mdx)
 - [Gestión de errores](../api-reference/errors.mdx)
 
+<span id="retired-models"></span>
+
+## Modelos retirados
+
+Un modelo retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando ya no lo sirve ninguno, las solicitudes fallan con `410 model_retired`, salvo que el espacio de trabajo haya activado el enrutamiento de modelos retirados para enviarlas a un sustituto. Tu propia lista `models` siempre se prueba antes que un sustituto. Consulta [Obsolescencia y retirada de modelos](./model-retirement.mdx).
+
 ## Afinidad de caché y de sesión
 
-El enrutamiento consciente de la caché está activado de forma predeterminada en los endpoints de generación de texto. Cuando un proveedor informa de una lectura real de la caché de prompts, Phaseo fija el contexto coincidente a ese proveedor durante 15 minutos, siempre que siga activo y permitido por la ruta, el preajuste, los guardrails y la política de solicitud vigentes.
+El enrutamiento consciente de la caché está activado de forma predeterminada en los endpoints de generación de texto. Las solicitudes que envían `prompt_cache_key` o `session_id`, o que activan la caché con `cache_control` (en el nivel superior, en `provider_options.anthropic.cache_control` o como marca `cache_control` o `prompt_cache_breakpoint` en un bloque de mensaje o una herramienta), se fijan al proveedor y la ruta que atendieron su primera solicitud correcta. Las demás solicitudes se fijan durante 15 minutos cuando un proveedor informa de una lectura o escritura de la caché de prompts para el mismo contexto inicial, siempre que la entrada en caché de ese proveedor sea más barata que su entrada normal.
 
-Si se incluye `session_id`, la afinidad de caché se vincula a la sesión en lugar de limitarse al contexto inicial. Phaseo la actualiza cuando observa otra lectura de caché y la conserva durante un máximo de 24 horas de actividad de la sesión. Los disyuntores y los filtros de políticas siempre tienen prioridad sobre la afinidad.
+Las fijaciones se guardan por espacio de trabajo y duran entre 15 minutos y 24 horas, según la retención de caché del proveedor. Una fijación solo cambia cuando se abre el disyuntor de su proveedor, su tasa de errores reciente es alta, se agota la cuota gestionada de Phaseo en él o la ruta, el preajuste, los guardrails o la política de solicitud vigentes dejan de permitirlo.
+
+Si se incluye `session_id`, la afinidad de caché se vincula a la sesión en lugar de limitarse al contexto inicial, y se conserva durante un máximo de 24 horas de actividad de la sesión. Consulta [Afinidad con el proveedor](./prompt-caching.mdx#provider-affinity) para ver la duración de las fijaciones y las indicaciones de afinidad que Phaseo envía a cada proveedor.
 
 Desactívala para una solicitud sin cambiar los valores predeterminados del espacio de trabajo o de la ruta dinámica:
 
@@ -321,5 +342,6 @@ En cargas de trabajo de producción, registra los IDs de solicitud, los códigos
 ## Guías relacionadas
 
 - [Preajustes](./presets.mdx)
+- [Obsolescencia y retirada de modelos](./model-retirement.mdx)
 - [Matriz de paridad de funciones](../migration-guides/feature-parity-matrix.mdx)
 

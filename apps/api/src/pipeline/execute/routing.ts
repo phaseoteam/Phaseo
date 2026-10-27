@@ -5,6 +5,7 @@
 
 import type { Endpoint } from "@core/types";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type {
     CapabilityRoutingStatus,
     ProviderCandidate,
@@ -24,17 +25,19 @@ import { providerLimitModel, providerQuotaHeadroom, providerQuotaPressure } from
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
+import { jsonOutputEvidenceRank, requestedJsonOutputType } from "../before/paramCapabilities";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import {
 	extractRoutingPreferenceScalar,
 	getEffectiveRoutingHints,
 } from "../requestRouting";
 import {
-    readStickyRoutingOptimistic,
+    readStickyRoutingForRouting,
     resolveStickyRoutingContext,
-    stickyRoutingCacheBoostMultiplier,
+    STICKY_ROUTING_PIN_MULTIPLIER,
     type StickyRoutingContext,
     type StickyRoutingEntry,
+    type StickyRoutingReadMode,
 } from "./sticky-routing";
 
 type Priority = "default" | "fast" | "nitro" | "cheap";
@@ -511,10 +514,27 @@ function preferenceMultiplierForThroughput(tps: number, minThroughput: number | 
 	return Math.max(0.35, 1 - Math.min(0.65, deficit * 0.5));
 }
 
+function stickyRouteMatchesCandidate(
+    stickyHint: StickyRoutingEntry,
+    candidate: ProviderCandidate,
+    exactRouteAvailable: boolean,
+): boolean {
+    if (stickyHint.providerId !== candidate.providerId) return false;
+    // A pin names the route (deployment, region-specific slug) that served the turn.
+    // Prefer that exact route when it is still in the pool; otherwise any route of the
+    // pinned provider keeps the turn on the provider's cache.
+    if (!exactRouteAvailable || !stickyHint.providerModelSlug) return true;
+    return String(candidate.providerModelSlug ?? "").trim() === stickyHint.providerModelSlug;
+}
+
 function shouldApplyStickyRoutingBoost(
     candidate: ProviderCandidate,
-    stickyHint: StickyRoutingEntry
+    stickyHint: StickyRoutingEntry,
+    explicitAffinity: boolean,
 ): boolean {
+    // The client asked for affinity (prompt_cache_key, session_id or cache_control):
+    // keep the turn on its cache whatever the price card says.
+    if (explicitAffinity) return true;
     if (!Number.isFinite(stickyHint.cachedReadTokens) || stickyHint.cachedReadTokens <= 0) {
         return false;
     }
@@ -635,7 +655,7 @@ export type RoutingScoreTrace = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker" | "provider_quota";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker" | "provider_quota" | "json_output_evidence";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -645,6 +665,15 @@ export type RoutingFilterStageDiagnostics = {
         reason: string;
     }>;
 };
+
+export type StickyRoutingDemotionReason =
+    | "pinned_provider_unavailable"
+    | "pinned_provider_breaker_open"
+    | "pinned_provider_failing"
+    | "pinned_provider_quota_exhausted"
+    | "no_cache_discount"
+    | "explicit_provider_order"
+    | "outranked";
 
 export type RoutingDiagnostics = {
     algorithm: {
@@ -690,9 +719,20 @@ export type RoutingDiagnostics = {
         enabled: boolean;
         contextResolved: boolean;
         contextSource: "prompt_cache_key" | "context_hash" | "session_id" | null;
+        /** The client asked for affinity, so the pin is read synchronously and always applied. */
+        explicit: boolean;
+        readMode: StickyRoutingReadMode | null;
         hintedProvider: string | null;
+        hintedProviderModelSlug: string | null;
+        /** The credential that served the pinned turn and owns its provider cache. */
+        hintedKeySource: "gateway" | "byok" | null;
+        hintedByokKeyId: string | null;
         cachedReadTokens: number | null;
         applied: boolean;
+        /** Why an existing pin did not decide the first provider; null when it did or there was none. */
+        demotionReason: StickyRoutingDemotionReason | null;
+        /** A recovery probe would have run but was skipped to keep the pin. */
+        recoveryProbeSkipped: boolean;
     };
     filterStages: RoutingFilterStageDiagnostics[];
     consideredProviders: Array<{
@@ -845,19 +885,20 @@ function calculateTokenAffinityScore(
     requestedMaxTokens: number | null,
     providerMaxOutputTokens: number | null | undefined
 ): number {
-    // If no tokens requested or provider has no limit, return neutral score
-    if (requestedMaxTokens === null || providerMaxOutputTokens === null || providerMaxOutputTokens === undefined) {
+    // If no tokens requested or provider has no known limit (null or a stored 0), return neutral score
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (requestedMaxTokens === null || providerLimit === null) {
         return 0.5;
     }
 
     // Provider must support at least the requested amount (this should already be filtered)
-    if (providerMaxOutputTokens < requestedMaxTokens) {
+    if (providerLimit < requestedMaxTokens) {
         return 0;
     }
 
     // Calculate how much "headroom" the provider has
     // Less headroom = better match = higher score
-    const headroom = providerMaxOutputTokens - requestedMaxTokens;
+    const headroom = providerLimit - requestedMaxTokens;
     const maxReasonableHeadroom = requestedMaxTokens * 2; // 2x the request is "reasonable"
 
     if (headroom === 0) {
@@ -964,7 +1005,10 @@ export async function routeProviders(
 
     let stickyContext: StickyRoutingContext | null = null;
     let stickyHint: StickyRoutingEntry | null = null;
+    let stickyReadMode: StickyRoutingReadMode | null = null;
     let stickyRoutingApplied = false;
+    let stickyDemotionReason: StickyRoutingDemotionReason | null = null;
+    let stickyRecoveryProbeSkipped = false;
 
     if (cacheAwareRoutingEnabled) {
         try {
@@ -973,12 +1017,14 @@ export async function routeProviders(
                 body: ctx.body,
             });
             if (stickyContext) {
-                stickyHint = readStickyRoutingOptimistic(
+                const read = await readStickyRoutingForRouting(
                     ctx.workspaceId,
                     ctx.endpoint,
                     base,
-                    stickyContext.key,
+                    stickyContext,
                 );
+                stickyHint = read?.entry ?? null;
+                stickyReadMode = read?.mode ?? null;
             }
         } catch (error) {
             console.warn("[gateway] sticky routing read failed", {
@@ -993,12 +1039,19 @@ export async function routeProviders(
         enabled: cacheAwareRoutingEnabled,
         contextResolved: Boolean(stickyContext),
         contextSource: stickyContext?.source ?? null,
+        explicit: stickyContext?.explicit === true,
+        readMode: stickyReadMode,
         hintedProvider: stickyHint?.providerId ?? null,
+        hintedProviderModelSlug: stickyHint?.providerModelSlug ?? null,
+        hintedKeySource: stickyHint?.keySource ?? null,
+        hintedByokKeyId: stickyHint?.byokKeyId ?? null,
         cachedReadTokens:
             typeof stickyHint?.cachedReadTokens === "number"
                 ? stickyHint.cachedReadTokens
                 : null,
         applied: stickyRoutingApplied,
+        demotionReason: stickyHint ? stickyDemotionReason : null,
+        recoveryProbeSkipped: stickyRecoveryProbeSkipped,
     });
 
     const routingSeed = hashSeed(`${ctx.requestId ?? ""}:${ctx.workspaceId}:${ctx.model}`);
@@ -1389,6 +1442,42 @@ export async function routeProviders(
             })),
         });
     }
+    // A JSON-mode request goes first to routes whose own params list the format. Routes
+    // with no param list, then routes whose list leaves it out, stay behind as failover:
+    // provider-wide support says nothing about each model (some reject JSON mode).
+    const jsonOutputType = TEXT_ENDPOINTS.has(ctx.endpoint) ? requestedJsonOutputType(ctx.body) : null;
+    const evidenceRanks = new Map<ProviderCandidate, number>();
+    if (jsonOutputType) {
+        for (const entry of healths) evidenceRanks.set(entry.candidate, jsonOutputEvidenceRank(entry.candidate, jsonOutputType));
+        const best = Math.min(...evidenceRanks.values());
+        for (const [candidate, rank] of evidenceRanks) {
+            if (rank === best) evidenceRanks.delete(candidate);
+            else evidenceRanks.set(candidate, rank - best);
+        }
+    }
+    if (evidenceRanks.size > 0) {
+        filterStages.push({
+            stage: "json_output_evidence",
+            beforeCount: healths.length,
+            afterCount: healths.length,
+            droppedProviders: healths
+                .filter((entry) => evidenceRanks.has(entry.candidate))
+                .map((entry) => ({
+                    providerId: entry.candidate.providerId,
+                    apiModelId: entry.candidate.apiModelId ?? null,
+                    providerModelSlug: entry.candidate.providerModelSlug ?? null,
+                    reason: "json_output_unlisted_deranked",
+                })),
+        });
+    }
+    // Stable, so each evidence tier keeps the order routing chose within it.
+    const jsonOutputEvidenceLast = <T extends { candidate: ProviderCandidate }>(entries: T[]): T[] =>
+        evidenceRanks.size === 0
+            ? entries
+            : entries
+                .map((entry, index) => ({ entry, index, rank: evidenceRanks.get(entry.candidate) ?? 0 }))
+                .sort((a, b) => a.rank - b.rank || a.index - b.index)
+                .map(({ entry }) => entry);
     if (debugEnabled) {
         console.log("[gateway] provider pool", {
             model: ctx.model,
@@ -1432,6 +1521,12 @@ export async function routeProviders(
     const defaultPriceWeights = mode === "balanced"
         ? computeInverseSquarePriceWeights(candidatePriceCosts, pool.map((p) => p.candidate))
         : new Map<string, number>();
+    const stickyExactRouteAvailable = Boolean(
+        stickyHint?.providerModelSlug &&
+        pool.some((entry) =>
+            entry.candidate.providerId === stickyHint!.providerId &&
+            String(entry.candidate.providerModelSlug ?? "").trim() === stickyHint!.providerModelSlug),
+    );
     const scored = pool.map(v => {
         const h = v.h;
         const weight = v.candidate.baseWeight > 0 ? v.candidate.baseWeight : 1;
@@ -1459,12 +1554,15 @@ export async function routeProviders(
             capabilityRoutingMultiplier;
         const errorRate = Math.max(h.err_ewma_10s, h.err_ewma_60s);
         const enoughFailureEvidence = (h.rec_tot_ew_10s ?? 0) >= 8 && errorRate >= 0.25;
+        const stickyMatch = Boolean(
+            stickyHint && stickyRouteMatchesCandidate(stickyHint, v.candidate, stickyExactRouteAvailable),
+        );
         const cacheRoutingMultiplier =
             stickyHint &&
+            stickyMatch &&
             !enoughFailureEvidence &&
-            stickyHint.providerId === v.candidate.providerId &&
-            shouldApplyStickyRoutingBoost(v.candidate, stickyHint)
-                ? stickyRoutingCacheBoostMultiplier(stickyHint.cachedReadTokens)
+            shouldApplyStickyRoutingBoost(v.candidate, stickyHint, stickyContext?.explicit === true)
+                ? STICKY_ROUTING_PIN_MULTIPLIER
                 : 1;
         if (cacheRoutingMultiplier > 1) {
             stickyRoutingApplied = true;
@@ -1560,6 +1658,8 @@ export async function routeProviders(
             score,
             providerQuotaOverage,
             recentOutage: isRecentOutage(v),
+            stickyMatch,
+            stickyFailing: stickyMatch && enoughFailureEvidence,
 			scoreFactorValues,
 			get scoreTrace(): RoutingScoreTrace { return cachedTrace ??= {
                 inputs: {
@@ -1647,6 +1747,12 @@ export async function routeProviders(
     const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
     const selectRecovery = (entries: typeof routableScored) => {
         if (!explorationRequest) return null;
+        // A pinned turn stays on the provider holding its cache. Probes still run on
+        // the 95% of requests that carry no pin, and a failing pin is not applied.
+        if (stickyRoutingApplied) {
+            stickyRecoveryProbeSkipped = true;
+            return null;
+        }
         const recoveryPool = entries.some((entry) => !isExternalProvider(entry))
             ? entries.filter((entry) => !isExternalProvider(entry))
             : entries;
@@ -1663,6 +1769,31 @@ export async function routeProviders(
     const promote = (entries: typeof routableScored, selected: typeof routableScored[number]) => [selected, ...entries.filter(e => e !== selected)];
     const compareScores = (a: typeof routableScored[number], b: typeof routableScored[number]) =>
         b.score-a.score || seededRandom(hashSeed(b.candidate.providerId)^routingSeed)()-seededRandom(hashSeed(a.candidate.providerId)^routingSeed)();
+    // Record why a pin did not decide the first provider, so demotions are visible in
+    // routing_diagnostics. Only failures and quota exhaustion should appear for explicit pins.
+    const recordStickyOutcome = (entries: typeof routableScored, explicitOrder: boolean) => {
+        if (!stickyHint) return;
+        if (entries[0]?.stickyMatch && entries[0].scoreFactorValues[11] > 1) {
+            stickyDemotionReason = null;
+            return;
+        }
+        const pinned = scored.filter((entry) => entry.stickyMatch);
+        if (!pinned.length || !pinned.some((entry) => entry.score > 0)) {
+            stickyDemotionReason = "pinned_provider_unavailable";
+        } else if (pinned.every((entry) => entry.recentOutage)) {
+            stickyDemotionReason = "pinned_provider_breaker_open";
+        } else if (pinned.every((entry) => entry.stickyFailing || entry.recentOutage)) {
+            stickyDemotionReason = "pinned_provider_failing";
+        } else if (pinned.every((entry) => entry.providerQuotaOverage > 0 || entry.stickyFailing || entry.recentOutage)) {
+            stickyDemotionReason = "pinned_provider_quota_exhausted";
+        } else if (!stickyRoutingApplied) {
+            stickyDemotionReason = "no_cache_discount";
+        } else if (explicitOrder) {
+            stickyDemotionReason = "explicit_provider_order";
+        } else {
+            stickyDemotionReason = "outranked";
+        }
+    };
 	const rankedProviderDiagnostics = (entries: typeof routableScored) =>
 		collectDetailedDiagnostics
 			? entries.map((entry) => entry.diagnostics!)
@@ -1680,14 +1811,16 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score))];
+            const ranked = [...ordered, ...jsonOutputEvidenceLast(quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score)))];
+            recordStickyOutcome(ranked, true);
             return {
                 ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = weightedOrderWithExternalFallback(remaining);
+        const remainingRanked = jsonOutputEvidenceLast(weightedOrderWithExternalFallback(remaining));
         const ranked = [...ordered, ...remainingRanked];
+        recordStickyOutcome(ranked, true);
         return {
             ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
@@ -1701,9 +1834,11 @@ export async function routeProviders(
             ...quotaSaturatedLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
+        const finalRanked = jsonOutputEvidenceLast(recovery ? promote(ranked, recovery) : ranked);
+        recordStickyOutcome(finalRanked, false);
         return {
-            ranked: recovery ? promote(ranked, recovery) : ranked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recovery ? promote(ranked, recovery) : ranked), false, recovery ? "recovery_probe" : "score_sort"),
+            ranked: finalRanked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(finalRanked), false, recovery ? "recovery_probe" : "score_sort"),
         };
     }
 
@@ -1711,11 +1846,14 @@ export async function routeProviders(
     const ranked = weightedOrderWithExternalFallback(routableScored);
     const recovery = selectRecovery(ranked);
     if (recovery) {
-        const recoveredRank = promote(ranked, recovery);
+        const recoveredRank = jsonOutputEvidenceLast(promote(ranked, recovery));
+        recordStickyOutcome(recoveredRank, false);
         return { ranked: recoveredRank, diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recoveredRank), false, "recovery_probe") };
     }
+    const weightedRanked = jsonOutputEvidenceLast(ranked);
+    recordStickyOutcome(weightedRanked, false);
     return {
-        ranked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "weighted_order"),
+        ranked: weightedRanked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(weightedRanked), false, "weighted_order"),
     };
 }

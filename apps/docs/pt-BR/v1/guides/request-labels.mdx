@@ -6,6 +6,8 @@ icon: "tags"
 
 Use rótulos de solicitação quando o código da aplicação precisar de uma dimensão de custo estável e mais específica que uma chave de API ou aplicação. Os rótulos são registrados na auditoria da solicitação e podem ser filtrados nas análises sem alterar a solicitação ao modelo.
 
+Para rotular solicitações automaticamente pelo conteúdo, use [classificadores de solicitações](./request-classifiers.mdx). As respostas deles são armazenadas como rótulos de solicitação e são filtradas da mesma forma.
+
 ## Enviar rótulos
 
 Defina `X-Phaseo-Metadata` como um objeto JSON com até 32 pares exclusivos de chave e valor:

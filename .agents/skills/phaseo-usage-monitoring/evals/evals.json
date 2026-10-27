@@ -1,0 +1,81 @@
+[
+	{
+		"id": "explain-request-cost",
+		"query": "One of our Phaseo calls cost way more than I expected. The x-request-id header was G-01JZ0000000000000000000000. Why did it cost that much?",
+		"files": [],
+		"should_trigger": true,
+		"expected_behavior": [
+			"Looks up the request by ID with phaseo:log_get, phaseo logs get --json or GET /v1/logs/{requestId}",
+			"Explains cost from cost_nanos (USD x 10^9), usage and pricing_lines",
+			"Compares requested_model_id with routed_model_id and provider, and checks byok",
+			"Offers to reprice with phaseo:cost_estimate or POST /v1/pricing/calculate",
+			"Does not print replay_request, prompts or outputs"
+		]
+	},
+	{
+		"id": "monthly-spend-by-key",
+		"query": "Write a script that reports last week's Phaseo spend per API key and per model for our finance team.",
+		"files": [],
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses the grouped rows from GET /v1/analytics (or /v1/analytics/export for CSV), filtered by key_id where needed, instead of paging logs or activity and summing individual requests client-side",
+			"Authenticates with a management API key that has analytics:read, read from an environment variable, not PHASEO_API_KEY",
+			"Notes that analytics usage values are USD and cover the last 30 completed UTC days",
+			"Contains no hard-coded secrets"
+		]
+	},
+	{
+		"id": "handle-429-key-limit",
+		"query": "Our app started getting 429 key_limit_exceeded from Phaseo with no Retry-After header. Should I just add retries?",
+		"files": [],
+		"should_trigger": true,
+		"expected_behavior": [
+			"Explains that key_limit_exceeded without Retry-After will not reset by itself, so retrying does not help",
+			"Checks the key's limit, limit_remaining and usage windows with GET /v1/key or the workspace budgets with GET /v1/budgets",
+			"Points changes to key limits or budgets to the phaseo-guardrails skill",
+			"Distinguishes this from customer_requests_per_minute and rate_limit_exceeded, which do carry Retry-After"
+		]
+	},
+	{
+		"id": "mcp-credit-balance",
+		"query": "Using the Phaseo MCP, how many credits do I have left and what did I spend on yesterday?",
+		"files": [],
+		"should_trigger": true,
+		"expected_behavior": [
+			"Calls phaseo:credits_get and reports available versus reserved balance",
+			"Calls phaseo:analytics_get with yesterday's UTC date and summarises cost by model and provider",
+			"Does not invent tool parameters beyond the tool's input schema",
+			"Summarises instead of dumping raw records"
+		]
+	},
+	{
+		"id": "attribute-spend-by-feature",
+		"query": "We want to see Phaseo cost per product feature and per customer going forward. What should we send on each request?",
+		"files": [],
+		"should_trigger": true,
+		"expected_behavior": [
+			"Recommends X-Phaseo-Metadata labels and slicing with label_key and label_value in GET /v1/analytics",
+			"Recommends an end-user ID in the user field or X-Phaseo-User-Id and filtering analytics with end_user_id",
+			"Mentions X-App-Id for per-application grouping",
+			"Warns against putting emails, names, secrets or prompt text in labels or IDs"
+		]
+	},
+	{
+		"id": "choose-cheapest-model",
+		"query": "Which Phaseo model is the cheapest for summarising long documents with a 200k context window?",
+		"files": [],
+		"should_trigger": false,
+		"expected_behavior": [
+			"Defers to phaseo-model-selection for choosing models by price, context and capability"
+		]
+	},
+	{
+		"id": "restrict-key-providers",
+		"query": "Set up a guardrail so our staging API key can only use two providers and blocks prompt injection.",
+		"files": [],
+		"should_trigger": false,
+		"expected_behavior": [
+			"Defers to phaseo-guardrails for key restrictions and guardrail configuration"
+		]
+	}
+]

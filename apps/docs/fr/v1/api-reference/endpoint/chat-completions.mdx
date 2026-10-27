@@ -56,3 +56,20 @@ Lorsqu’un outil serveur est utilisé, les données d’utilisation comprennent
 ## À propos du streaming
 
 `stream: true` est également pris en charge. Avec les outils serveur gérés par le Gateway, Phaseo peut matérialiser le tour d’appel d’outil amont, poursuivre la boucle, puis réémettre un flux synthétique.
+
+## Raisonnement dans les boucles d’outils
+
+Les modèles de raisonnement renvoient leur raisonnement dans deux champs du message de l’assistant :
+
+- `reasoning_content` : le texte du raisonnement, lorsque le fournisseur en renvoie un.
+- `reasoning_details` : un tableau de blocs de raisonnement au format utilisé par OpenRouter. Chaque entrée possède un `type` (`reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`), un `index` et un `format` qui indique la famille du fournisseur, par exemple `anthropic-claude-v1` ou `google-gemini-v1`.
+
+Les entrées peuvent contenir un état du fournisseur dont le modèle a besoin à l’étape suivante d’une boucle d’outils :
+
+- Les signatures de thinking de Claude, dans `signature` sur les entrées `reasoning.text`.
+- Le thinking masqué de Claude et le raisonnement chiffré d’OpenAI, dans `data` sur les entrées `reasoning.encrypted`.
+- Les signatures de pensée de Gemini, dans `data` sur les entrées `reasoning.encrypted` dont l’`id` est l’appel d’outil auquel elles appartiennent.
+
+En streaming, un delta `reasoning_details` arrive dès qu’un bloc de raisonnement est terminé.
+
+Pour que le modèle conserve son raisonnement entre les étapes, renvoyez le message de l’assistant avec son `reasoning_details` inchangé. Les valeurs de `signature` et de `data` sont opaques et enregistrent le fournisseur et le modèle qui les ont produites. Phaseo ne les envoie qu’à cette famille de fournisseurs et à ce modèle : un fallback vers un autre fournisseur les abandonne au lieu d’échouer. Les modèles Claude en mode de thinking manuel doivent récupérer leur thinking pour continuer à réfléchir pendant une boucle d’outils ; s’il manque, cette étape s’exécute sans thinking.

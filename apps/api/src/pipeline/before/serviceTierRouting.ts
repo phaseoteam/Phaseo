@@ -5,6 +5,7 @@ import { normalizeTextServiceTier, readRequestedServiceTier, readProviderCatalog
 import type { PriceCard } from "../pricing/types";
 import { getProviderPricingKey, ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
 
@@ -54,6 +55,10 @@ type PrioritySiblingRoute = {
 };
 
 const PRIORITY_SIBLING_ROUTES = new Map<string, PrioritySiblingRoute>([
+    ["moonshotai/kimi-k3.1-pro", {
+        lookupId: "kimi-k3.1-pro-highspeed",
+        requestTiers: ["fast", "priority"],
+    }],
     ["moonshotai/kimi-k2.7-code", {
         lookupId: "moonshotai/kimi-k2.7-code-highspeed",
         requestTiers: ["fast", "priority"],
@@ -245,7 +250,7 @@ async function remapToTierSibling(
     if (!providerApiModelIds.length) return null;
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capability)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -307,10 +312,8 @@ async function remapToTierSibling(
             siblingCapability?.max_input_tokens === null || siblingCapability?.max_input_tokens === undefined
                 ? candidate.maxInputTokens
                 : Number(siblingCapability.max_input_tokens),
-        maxOutputTokens:
-            siblingCapability?.max_output_tokens === null || siblingCapability?.max_output_tokens === undefined
-                ? candidate.maxOutputTokens
-                : Number(siblingCapability.max_output_tokens),
+        // A sibling row with no known limit (null or a stored 0) keeps the candidate limit.
+        maxOutputTokens: routeOutputTokenLimit(siblingCapability?.max_output_tokens) ?? candidate.maxOutputTokens,
     };
 	return {
 		...remapped,
@@ -360,7 +363,7 @@ async function remapToHiddenTierSibling(
     if (!providerApiModelIds.length) return null;
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capability)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -411,10 +414,8 @@ async function remapToHiddenTierSibling(
             siblingCapability?.max_input_tokens === null || siblingCapability?.max_input_tokens === undefined
                 ? candidate.maxInputTokens
                 : Number(siblingCapability.max_input_tokens),
-        maxOutputTokens:
-            siblingCapability?.max_output_tokens === null || siblingCapability?.max_output_tokens === undefined
-                ? candidate.maxOutputTokens
-                : Number(siblingCapability.max_output_tokens),
+        // A sibling row with no known limit (null or a stored 0) keeps the candidate limit.
+        maxOutputTokens: routeOutputTokenLimit(siblingCapability?.max_output_tokens) ?? candidate.maxOutputTokens,
     };
 	return {
 		...remapped,
@@ -477,6 +478,18 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
+		// Sail runs flex only as background Responses or Batch; synchronous Responses,
+		// Chat and Messages reject it with a 400, and the gateway streams Sail
+		// requests in the foreground (https://docs.sailresearch.com/completion-windows).
+		if (requestedPlan === "flex" && candidate.providerId === "sail-research") {
+			droppedProviders.push({
+				providerId: candidate.providerId,
+				apiModelId: candidate.apiModelId ?? null,
+				providerModelSlug: candidate.providerModelSlug ?? null,
+				reason: "service_tier_flex_unsupported",
+			});
+			continue;
+		}
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
 		if (catalogTier) {
 			const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;
@@ -559,6 +572,18 @@ export async function applyServiceTierRouting(args: {
                 });
                 continue;
             }
+        }
+
+        // Moonshot's K3.1 Pro Highspeed sibling must load before its tier can execute.
+        // Keeping the base candidate here would charge Priority for Standard speed.
+        if (requestedPlan === "priority" && candidate.providerId === "moonshotai" && candidate.apiModelId === "moonshotai/kimi-k3.1-pro") {
+            droppedProviders.push({
+                providerId: candidate.providerId,
+                apiModelId: candidate.apiModelId ?? null,
+                providerModelSlug: candidate.providerModelSlug ?? null,
+                reason: "service_tier_priority_unsupported",
+            });
+            continue;
         }
 
         if (supportsPublicRequestedTier) {

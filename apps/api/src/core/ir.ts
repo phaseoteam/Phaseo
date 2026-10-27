@@ -28,11 +28,24 @@ export type IRContentPart =
 		text: string;
 		thoughtSignature?: string; // Encrypted state for multi-turn conversations
 		summary?: string; // Abbreviated thought (Gemini 2.5+)
+		// Provider reasoning state for round trips (see core/reasoning-state.ts).
+		// `reasoningFormat` names the family that issued `thoughtSignature`,
+		// `redactedData` or `encryptedContent`; state without it is never replayed.
+		reasoningFormat?: string;
+		reasoningModel?: string;
+		reasoningProvider?: string;
+		redactedData?: string; // Anthropic redacted_thinking `data`
+		encryptedContent?: string; // OpenAI, Azure or xAI `encrypted_content`
+		reasoningId?: string; // Upstream reasoning item id (OpenAI `rs_...`)
+		beforeToolCallId?: string; // Generated after an earlier tool call, immediately before this one
 	}
 	| {
 		type: "image";
-		source: "url" | "data";
-		data: string; // URL or base64
+		// "id" is an uploaded file: an OpenAI Responses `input_image` `file_id`
+		// or an Anthropic Files API `file_id`. Only the provider that issued it
+		// can resolve it.
+		source: "url" | "data" | "id";
+		data: string; // URL, base64 or file id
 		mimeType?: string;
 		detail?: "auto" | "low" | "high" | "original"; // OpenAI detail level
 		cacheControl?: IRCacheControl;
@@ -45,6 +58,11 @@ export type IRContentPart =
 		data: string; // URL or base64
 		format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
 		cacheControl?: IRCacheControl;
+		// OpenAI Chat audio output (`message.audio`): the id a later turn can reference,
+		// when it expires, and the spoken words.
+		audioId?: string;
+		expiresAt?: number;
+		transcript?: string;
 	}
 	| {
 		type: "video";
@@ -52,8 +70,33 @@ export type IRContentPart =
 		url: string;
 	}
 	| {
+		// A document or other file input: an OpenAI Chat `file` part or a
+		// Responses `input_file` part, or an Anthropic `document` block.
+		// Executors map it to the provider's own file block.
+		type: "file";
+		source: "data" | "url" | "id";
+		data: string; // base64 (no data: prefix), URL, or provider file id
+		mimeType?: string;
+		filename?: string;
+		cacheControl?: IRCacheControl;
+		// The Anthropic `document` block the file was decoded from. Claude
+		// routes send it unchanged so its citations, context and title
+		// survive; other providers get the file in their own shape.
+		nativeBlock?: Record<string, any>;
+	}
+	| {
 		type: "provider_block";
 		block: Record<string, any>;
+	}
+	| {
+		// An OpenAI Responses input item the IR has no shape for (shell_call,
+		// computer_call_output, mcp_*, compaction, item_reference, hosted
+		// *_call items, ...), kept verbatim. The decoder gives each one its own
+		// message so its position in the conversation survives. Only OpenAI's
+		// Responses executor sends it; the execute stage removes it for every
+		// other provider and reports the removal (pipeline/execute/responsesItems.ts).
+		type: "responses_item";
+		item: Record<string, any>;
 	};
 
 // ============================================================================
@@ -87,6 +130,8 @@ export type IRToolCall = {
 	name: string; // Function name
 	arguments: string; // JSON string of arguments
 	type?: "function" | "custom";
+	thoughtSignature?: string; // Gemini signature returned on a functionCall part
+	thoughtSignatureModel?: string; // Gemini model that issued thoughtSignature, when known
 };
 
 /**
@@ -98,7 +143,10 @@ export type IRToolCall = {
  */
 export type IRToolResult = {
 	toolCallId: string; // References IRToolCall.id
-	content: string; // Result (can be structured JSON string)
+	content: string; // Result text (text parts joined when the client sent content parts)
+	// The client's content parts, when it sent an array. Encoders send these
+	// where the upstream accepts structured tool results, and `content` elsewhere.
+	parts?: IRContentPart[];
 	isError?: boolean; // Optional error flag
 	cacheControl?: IRCacheControl;
 	type?: "function" | "custom";
@@ -115,20 +163,26 @@ export type IRMessage =
 	| {
 		role: "system";
 		content: IRContentPart[];
+		name?: string; // OpenAI Chat participant name
 	}
 	| {
 		role: "developer";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "user";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "assistant";
 		content: IRContentPart[]; // Regular assistant content
 		toolCalls?: IRToolCall[]; // Optional tool calls
+		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
+		// OpenAI Chat: an earlier audio response, sent back by id (`audio: { id }`).
+		audio?: { id: string };
 	}
 	| {
 		role: "tool";
@@ -240,6 +294,9 @@ export type IRChatRequest = {
 	// Tool calling
 	tools?: IRTool[];
 	toolChoice?: IRToolChoice;
+	// Set from an `allowed_tools` tool choice: the names of the tools the model may
+	// call. Providers other than OpenAI are sent only these tools.
+	allowedToolNames?: string[];
 	webSearchOptions?: Record<string, any>;
 	parallelToolCalls?: boolean;
 	maxToolCalls?: number;
@@ -291,8 +348,10 @@ export type IRChatRequest = {
 		type: "compaction";
 		compact_threshold?: number;
 	}>;
+	/** Anthropic Messages `context_management` ({ edits: [...] }), sent unchanged to Anthropic. */
+	anthropicContextManagement?: Record<string, any>;
 	anthropicCacheControl?: IRCacheControl & {
-		scope?: "all_text" | "last_user_message" | "none" | string;
+		scope?: "all_text" | "last_user_message" | "agent" | "conversation" | "none" | string;
 	};
 	googleCachedContent?: string;
 	xaiConversationId?: string;
@@ -474,14 +533,30 @@ export type IRRerankResponse = {
 // DECISIONS
 // ============================================================================
 
+export type IRExtractionRequest = {
+  model: string;
+  sourceText: string;
+  fields: Record<string, import("./extraction").ExtractionField>;
+  images?: Array<{ contentType: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
+  referenceDate?: string;
+  rawRequest?: unknown;
+};
+export type IRExtractionResponse = {
+  model: string;
+  answers: Record<string, import("./extraction").ExtractionAnswer>;
+  truncated: boolean;
+  usage: IRUsage;
+};
+
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score";
+	type: "noul" | "choice" | "score" | "box";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;
 };
 
 export type IRDecisionsRequest = {
+	providerOptions?: import("./decisions").DecisionProviderOptions;
 	model: string;
 	state: string | Record<string, any> | any[];
 	questions: Record<string, IRDecisionQuestion>;
@@ -872,6 +947,13 @@ export type IRChoice = {
 	};
 	finishReason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
 
+	// A finer provider reason that only some surfaces can express: Anthropic's
+	// stop_sequence and pause_turn (finishReason "stop"), and a refusal (finishReason
+	// "content_filter", or "stop" for OpenAI-style refusal text). Messages clients get
+	// it as stop_reason; Chat and Responses clients get the closest documented value.
+	// See core/finish-reason.ts.
+	finishDetail?: "stop_sequence" | "pause_turn" | "refusal";
+
 	// Which stop sequence triggered (if finishReason is "stop")
 	// Useful for debugging and understanding model behavior
 	stopSequence?: string;
@@ -889,10 +971,16 @@ export type IRUsage = {
 	inputTokens: number;
 	outputTokens: number;
 	totalTokens: number;
+	// Tier actually reported by the provider, which can differ from the request.
+	serviceTier?: string;
 
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching
 	cachedReadTokensAreSubsetOfInput?: boolean; // Cached reads are already included in inputTokens
+	// Cache writes (_ext.cachedWriteTokens) are already included in inputTokens. True for
+	// OpenAI-style details (GPT-5.6+, Kimi, Alibaba); false for Anthropic, which reports
+	// cache_creation_input_tokens on top of input_tokens.
+	cachedWriteTokensAreSubsetOfInput?: boolean;
 	reasoningTokens?: number; // Reasoning/thinking tokens (o1, MiniMax)
 
 	// Modality-specific counts (extended meters)
@@ -911,7 +999,12 @@ export type IRUsage = {
 		cachedWriteTokens?: number;
 		cachedWriteTokens5m?: number;
 		cachedWriteTokens1h?: number;
+		// OpenAI GPT-5.6+ cache writes by lifetime (Responses `cache_write_tokens_details`).
+		cachedWriteTokens30m?: number;
+		cachedWriteTokens12h?: number;
 		spentCredits?: number;
+		// Claude `usage.inference_geo`: where inference ran ("global" or "us"). Pricing only.
+		inferenceGeo?: string;
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;
@@ -957,6 +1050,11 @@ export type IRChatResponse = {
 	images?: Array<Record<string, any>>;
 	relatedQuestions?: string[];
 	reasoningSteps?: Array<Record<string, any>>;
+	/**
+	 * Anthropic's response `context_management` ({ applied_edits: [...] }), returned
+	 * only to Messages clients.
+	 */
+	anthropicContextManagement?: Record<string, any>;
 
 	// Debug-only fields (never logged)
 	rawResponse?: any;

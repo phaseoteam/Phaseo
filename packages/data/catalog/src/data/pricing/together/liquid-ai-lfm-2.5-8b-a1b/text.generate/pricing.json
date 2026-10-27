@@ -1,9 +1,84 @@
 {
   "key": "together:liquid-ai/lfm-2.5-8b-a1b:text.generate",
-  "api_provider_id": "together", "provider_slug": "together", "api_model_id": "liquid-ai/lfm-2.5-8b-a1b", "capability_id": "text.generate",
+  "api_provider_id": "together",
+  "provider_slug": "together",
+  "api_model_id": "liquid-ai/lfm-2.5-8b-a1b",
+  "capability_id": "text.generate",
   "rules": [
-    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.03,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":null,"region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://docs.together.ai/docs/serverless/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Current Together input rate."}},
-    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.12,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":null,"region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://docs.together.ai/docs/serverless/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Current Together output rate."}}
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "pricing",
+        "url": "https://docs.together.ai/docs/serverless/models",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "Current Together input rate."
+      }
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Together: \"Models without a cached input price bill every input token at the standard rate\" (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "pricing",
+        "url": "https://docs.together.ai/docs/inference/chat/prompt-caching",
+        "accessed_at": "2026-10-17T00:00:00Z",
+        "notes": "Together: \"Models without a cached input price bill every input token at the standard rate\" (accessed 2026-10-17)."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.12,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "pricing",
+        "url": "https://docs.together.ai/docs/serverless/models",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "Current Together output rate."
+      }
+    }
   ],
-  "regions": [], "service_tiers": ["standard"], "sources": [], "verification": {"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Verified from Together's current serverless model catalogue."}
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    "https://docs.together.ai/docs/inference/chat/prompt-caching"
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Verified from Together's current serverless model catalogue."
+  }
 }

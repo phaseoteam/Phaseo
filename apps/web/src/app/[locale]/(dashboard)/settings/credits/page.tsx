@@ -11,6 +11,7 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchSettingsCreditsInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsInitialData";
+import { projectCreditRunway } from "@/lib/gateway/usage/creditRunway";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 
@@ -72,6 +73,17 @@ async function CreditsSettingsContent(props: {
 
 			<CurrentCredits
 				balance={initialData.initialBalance}
+				runway={
+					initialData.recentCreditSpend
+						? projectCreditRunway({
+								balanceNanos: initialData.initialBalance * 1_000_000_000,
+								dailyNanos: initialData.recentCreditSpend.dailyNanos,
+								observedAt: initialData.recentCreditSpend.observedAt,
+								autoTopUpEnabled: Boolean(initialData.wallet?.auto_top_up_enabled),
+								autoTopUpThresholdNanos: Number(initialData.wallet?.low_balance_threshold ?? 0) || 0,
+							})
+						: null
+				}
 				title={t("billingCopy.modelUsageBalance")}
 				refreshAriaLabel={messages.pages.refreshBalance}
 			/>

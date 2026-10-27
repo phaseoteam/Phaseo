@@ -1,9 +1,10 @@
 ---
 title: "Make a decision"
-sidebarTitle: "Decisions"
 badge: "Beta"
+tag: "Beta"
 openapi: "/openapi/v1/openapi.yaml POST /decisions"
 description: "Evaluate typed questions against application state with supported decision models."
+"og:image": "https://phaseo.app/og/dynamic?title=Make%20a%20decision&description=Evaluate%20typed%20questions%20against%20application%20state%20with%20supported%20decision%20models.&pathname=/docs/v1/api-reference/endpoint/decisions"
 ---
 
 Use the OpenAI-compatible format for new calls: `input` contains text or user messages with inline `input_image` parts, and `questions` is an ordered array of `predicate`, `choice`, or `score` questions. Answers use the same order, with optional names. Boolean choice values remain booleans. Hosted image URLs are unsupported; Luna accepts up to 128 inline images, while other providers impose their own limits. Explicit image detail and `safety_identifier` require an OpenAI route. Existing `state`, named question maps, `noul`, and `criteria` remain supported and return the original answer map. Together Tev requires that legacy format because it returns labels without probabilities. The legacy examples below remain valid.
@@ -112,6 +113,29 @@ Jev supports mixing all three question types in one request; Span-01 supports `n
 
 For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
 
+
+### Images, Box, and long context with Jev
+
+On supporting TypeSafe routes, Jev 1.13 and 1.14 accept inline PNG or JPEG images through `input_image` or legacy `images`. Phaseo builds TypeSafe's image assets and enables image support automatically. Images must meet TypeSafe's [image limits](https://docs.typesafe.ai/images): at most 16 MiB each, dimensions from 256 to 1568 pixels, and at least 78,400 total pixels. TypeSafe validates dimensions and encoding; it does not resize rejected images. The mapped upstream JSON body is limited to 32 MiB. Image tokens use the normal input price.
+
+`box` is a separate question type for supporting routes such as Jev 1.14. It requires an image, takes no criteria, and returns one bounding box plus confidence. Its `top`, `bottom`, `left`, and `right` edges range from 0 to 1, measured from the top-left corner. Box always returns a rectangle; pair it with a `predicate` presence question when the target may be absent. With legacy images, refer to `images[0]`; with ordered input, refer to the first image or `[Image 0]`. See the [Box contract](https://docs.typesafe.ai/primitives/box).
+
+Set `provider_options.typesafe.long_context` to `true` to raise both the per-request and per-question context limits to 262k tokens. The defaults are 64k per request and 32k per question. Long context is opt-in and has the same token price. Images, Box, and long context are experimental upstream capabilities; check model availability before use.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
 
 ### Image decisions with Clef
 

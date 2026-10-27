@@ -42,7 +42,7 @@ begin
   foreach v_endpoint in array p_endpoints loop
     with provider_rows as (
       select distinct on (r.provider_model_id)
-        r.*, c.status as capability_status,c.params,c.max_input_tokens as cap_input,c.max_output_tokens as cap_output,
+        r.*, c.status as capability_status,coalesce(c.params,'{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('data_policy',public.resolve_catalog_data_policy(r.provider_model_id,c.capability_id))) as params,c.max_input_tokens as cap_input,c.max_output_tokens as cap_output,
         coalesce(case when jsonb_typeof(r.metadata->'availability') = 'object' and (r.metadata->'availability'->>'mode') in ('allowlist','blocklist') and jsonb_typeof(r.metadata->'availability'->'countries') = 'array' then r.metadata->'availability' end,p.metadata->'availability') as availability,
         p.prompt_training_policy,p.data_policy_tier,p.data_policy_confidence,p.data_policy_contract_mode,p.data_policy_variant
       from public.v2_model_provider_routes r
@@ -50,8 +50,9 @@ begin
       join public.v2_providers p on p.provider_slug=r.provider_slug
       join public.v2_route_capabilities c on c.provider_model_id=r.provider_model_id
       where r.model_slug=v_model and not coalesce(m.hidden,false)
-        and (m.status is null or lower(m.status) in ('active','available','deprecated'))
-        and (m.retired_at is null or m.retired_at>v_at)
+        -- Retirement is informational: a retired model is served while any
+        -- provider route stays enabled. Disable routes to stop traffic.
+        and (m.status is null or lower(m.status) in ('active','available','deprecated','retired'))
         and c.capability_id=v_endpoint and c.status in ('active','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
         and r.routing_enabled
         and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
@@ -121,7 +122,6 @@ begin
     union all select c.effective_to from public.v2_route_capabilities c join public.v2_model_provider_routes r using(provider_model_id) where r.model_slug=v_model
     union all select s.effective_from from public.v2_pricing_skus s join public.v2_model_provider_routes r using(provider_model_id) where r.model_slug=v_model and s.status='active'
     union all select s.effective_to from public.v2_pricing_skus s join public.v2_model_provider_routes r using(provider_model_id) where r.model_slug=v_model and s.status='active'
-    union all select retired_at from public.v2_models where model_slug=v_model
   ) boundaries where boundary>v_at;
   v_until := least(v_until,coalesce(v_boundary,v_until));
   return jsonb_build_object('version',1,'model',p_model,'resolvedModel',v_model,'endpoints',p_endpoints,

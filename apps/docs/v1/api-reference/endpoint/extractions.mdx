@@ -1,0 +1,78 @@
+---
+title: "Extract values"
+badge: "Beta"
+tag: "Beta"
+description: "Extract typed values from text and images."
+"og:image": "https://phaseo.app/og/dynamic?title=Extract%20values&description=Extract%20typed%20values%20from%20text%20and%20images.&pathname=/docs/v1/api-reference/endpoint/extractions"
+icon: "list-filter"
+openapi: "/openapi/v1/openapi.yaml POST /extractions"
+---
+
+<Warning>Extraction is in preview. Model availability depends on configured provider routes.</Warning>
+
+Extraction belongs to the Decisions family. Use decisions to choose among known
+options; use extraction to return values such as an invoice number, date or total.
+
+```typescript
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+
+The examples require an active extraction model route. Check model availability
+before sending requests. Python `AsyncPhaseo` also exposes
+`await client.extractions.create(...)`.
+
+## Field types
+
+Supported types are `text`, `number`, `date`, `time`, `datetime`, `duration` and
+`list`. Lists require `items: "text"`, `"number"` or `"date"`. Supply 1–64 fields
+and at most 16,384 source characters. Field names start with a letter or underscore
+and contain up to 64 letters, digits, underscores, dots or hyphens.
+
+Numbers and durations support `integer` and `decimals` (0–6). Durations accept
+`seconds`, `minutes`, `hours`, `days`, `weeks`, `months` or `years`. Set
+`reference_date` when interpreting incomplete dates depends on a specific year.
+
+Image inputs use `{ content_type, base64 }` objects: at most four PNG/JPEG/WebP
+images, 4 MiB each and 8 MiB combined after decoding. The request limit is 16 MiB.
+Remote URLs, PDFs, audio, video, estimates, forecasts and streaming are unsupported.
+
+## Read answers
+
+Read `answers[field_name].value`. A scalar value can be `null` when the source does
+not determine it. `p_null` is the model's probability of an undetermined value;
+`confidence` is a separate model-reported score. Lists provide confidence without
+`p_null`. These scores do not guarantee correctness: choose review thresholds for
+your workload. A valid empty list is different from a failed request.
+
+`truncated: true` means the provider did not process all source input. Review or
+resubmit shorter input before relying on completeness. Text offsets and raw guesses
+are not exposed. Complex arithmetic should be performed in application code.
+
+Usage reports aggregate `input_tokens` across provider passes. Output tokens are
+zero. Use the gateway's returned pricing rather than estimating cost from source
+length or multiplying usage by the number of fields.

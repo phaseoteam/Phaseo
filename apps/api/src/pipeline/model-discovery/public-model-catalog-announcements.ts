@@ -495,8 +495,10 @@ export async function runPublicModelAnnouncementCheck(args: {
 				}));
 				const privateModels = batch.filter((_, position) => !visibility[position]);
 				if (privateModels.length > 0) {
+					// Back to baseline as not public (the status CHECK has no "skipped"), so the model is
+					// announced once it really becomes public.
 					const { error } = await getSupabaseAdmin().from("model_discovery_public_announcements")
-						.update({ status: "skipped", public_visibility_snapshot: false, claim_run_id: null, claim_expires_at: null, updated_at: new Date().toISOString() })
+						.update({ status: "baseline", public_visibility_snapshot: false, claim_run_id: null, claim_expires_at: null, updated_at: new Date().toISOString() })
 						.in("model_slug", privateModels.map(model => model.modelSlug)).eq("claim_run_id", args.runId);
 					if (error) throw new Error("Failed to release private model announcement claims");
 					summary.skipped += privateModels.length;

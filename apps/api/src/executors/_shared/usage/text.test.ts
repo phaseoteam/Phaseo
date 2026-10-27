@@ -24,6 +24,17 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.serviceTier).toBe("standard");
 	});
 
+	it("keeps Claude's reported inference_geo so US-only price rows can match it", () => {
+		expect(normalizeTextUsageForPricing({ input_tokens: 10, output_tokens: 5, inference_geo: "us" })?.inference_geo).toBe("us");
+		expect(normalizeTextUsageForPricing({
+			inputTokens: 10,
+			outputTokens: 5,
+			totalTokens: 15,
+			_ext: { inferenceGeo: "global" },
+		})?.inference_geo).toBe("global");
+		expect(normalizeTextUsageForPricing({ input_tokens: 10, output_tokens: 5 })).not.toHaveProperty("inference_geo");
+	});
+
 	it("maps Google thoughtsTokenCount to reasoning_tokens", () => {
 		const usage = normalizeTextUsageForPricing({
 			promptTokenCount: 100,
@@ -175,7 +186,9 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.cached_write_text_tokens).toBe(500);
 		expect(usage?.cached_write_text_tokens_5m).toBe(300);
 		expect(usage?.cached_write_text_tokens_1h).toBe(200);
-		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBeUndefined();
+		// Anthropic reports reads and writes on top of input; say so explicitly.
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(false);
+		expect((usage as any)?.cached_write_tokens_are_subset_of_input).toBe(false);
 	});
 
 	it("can treat cached read tokens as subset of input tokens", () => {
@@ -249,6 +262,38 @@ describe("normalizeTextUsageForPricing", () => {
 
 		expect(usage?.input_text_tokens).toBe(123);
 		expect(usage?.cached_read_text_tokens).toBe(64);
-		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBeUndefined();
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(false);
+	});
+
+	it.each([
+		["OpenAI GPT-5.6 Responses", { input_tokens: 10000, output_tokens: 200, input_tokens_details: { cached_tokens: 6000, cache_write_tokens: 3000 } }],
+		["Kimi K3 chat", { prompt_tokens: 10000, completion_tokens: 200, prompt_tokens_details: { cached_tokens: 6000, cache_write_tokens: 3000 } }],
+		["Alibaba explicit cache", { prompt_tokens: 10000, completion_tokens: 200, prompt_tokens_details: { cached_tokens: 6000, cache_creation_input_tokens: 3000, cache_type: "ephemeral" } }],
+	])("subtracts writes counted inside input for %s", (_name, raw) => {
+		const usage = normalizeTextUsageForPricing(raw);
+		expect(usage?.input_text_tokens).toBe(1000);
+		expect(usage?.cached_read_text_tokens).toBe(6000);
+		expect(usage?.cached_write_text_tokens).toBe(3000);
+		expect((usage as any)?.cached_write_tokens_are_subset_of_input).toBe(true);
+	});
+
+	it.each([
+		["DeepSeek", { prompt_tokens: 10000, completion_tokens: 50, prompt_cache_hit_tokens: 8000, prompt_cache_miss_tokens: 2000 }],
+		["StepFun", { prompt_tokens: 10000, completion_tokens: 50, cached_tokens: 8000 }],
+		["cached_input_tokens", { prompt_tokens: 10000, completion_tokens: 50, cached_input_tokens: 8000 }],
+	])("reads top-level %s cache hits inside prompt tokens", (_name, raw) => {
+		const usage = normalizeTextUsageForPricing(raw);
+		expect(usage?.input_text_tokens).toBe(2000);
+		expect(usage?.cached_read_text_tokens).toBe(8000);
+	});
+
+	it("keeps writes additive when a subset reading would exceed input", () => {
+		const usage = normalizeTextUsageForPricing({
+			prompt_tokens: 50,
+			completion_tokens: 10,
+			prompt_tokens_details: { cached_tokens: 0, cache_write_tokens: 2000 },
+		});
+		expect(usage?.input_text_tokens).toBe(50);
+		expect((usage as any)?.cached_write_tokens_are_subset_of_input).toBe(false);
 	});
 });

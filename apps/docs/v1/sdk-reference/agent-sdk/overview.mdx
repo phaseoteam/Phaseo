@@ -2,6 +2,7 @@
 icon: "rocket"
 title: "Agent SDK Overview"
 description: "Build local, resumable agent loops on top of Phaseo Gateway across the supported Agent SDK languages."
+"og:image": "https://phaseo.app/og/dynamic?title=Agent%20SDK%20Overview&description=Build%20local%2C%20resumable%20agent%20loops%20on%20top%20of%20Phaseo%20Gateway%20across%20the%20supported%20Agent%20SDK%20languages.&pathname=/docs/v1/sdk-reference/agent-sdk/overview"
 ---
 
 Use the Phaseo Agent SDKs when your application needs more than one-shot generation:
@@ -29,6 +30,18 @@ The current Agent SDK language set matches the primary client SDK set exposed in
 - [PHP](../php/agent-sdk)
 - [Ruby](../ruby/agent-sdk)
 - [Rust](../rust/agent-sdk)
+
+<Prompt description="Ask a coding agent to build a first agent with the Phaseo Agent SDK in your language." icon="bot" actions={["copy", "cursor"]}>
+{`Build a small agent in this project with the Phaseo Agent SDK.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+   For TypeScript, follow the phaseo-agent-sdk-typescript skill.
+2. Read the Agent SDK page for this project's language at https://phaseo.app/docs/v1/sdk-reference/agent-sdk/overview and use only the APIs it documents.
+3. Define one agent with at most two local tools that fit [AGENT TASK]. Keep the loop bounded with a step limit, and require approval for any tool that changes data.
+4. Use a server-side PHASEO_API_KEY and check the model ID with GET /v1/models before using it.
+5. Stream the agent's steps to the console so a run can be inspected.
+6. Run the agent once, then report what you verified and what you could not verify.`}
+</Prompt>
 
 ## Common model
 

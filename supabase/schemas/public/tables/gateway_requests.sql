@@ -348,6 +348,9 @@ ALTER TABLE "public"."gateway_requests"
 ALTER TABLE "public"."gateway_requests"
   ADD CONSTRAINT "gateway_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT;
 
+CREATE INDEX gateway_requests_async_spend_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS TRUE) AND (endpoint = ANY (ARRAY['video.generation'::text, 'batch'::text, 'music.generate'::text, 'audio.realtime'::text])));
+
 CREATE INDEX gateway_requests_auth_method_idx ON ONLY public.gateway_requests USING btree (auth_method)
   WHERE (auth_method = 'oauth'::text);
 

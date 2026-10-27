@@ -130,6 +130,12 @@ public sealed class AnthropicMessage
 
 public sealed class AnthropicMessagesRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("context_management")]
+	public Dictionary<string, object>? ContextManagement { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -140,7 +146,7 @@ public sealed class AnthropicMessagesRequest
 	public long MaxTokens { get; set; }
 
 	[JsonPropertyName("messages")]
-	public List<Dictionary<string, object>> Messages { get; set; }
+	public List<object> Messages { get; set; }
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
@@ -153,6 +159,15 @@ public sealed class AnthropicMessagesRequest
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
+
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
+
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
+	[JsonPropertyName("prompt_cache_key")]
+	public string? PromptCacheKey { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -196,12 +211,18 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("usage")]
 	public bool? Usage { get; set; }
 
+	[JsonPropertyName("user")]
+	public string? User { get; set; }
+
 }
 
 public sealed class AnthropicMessagesResponse
 {
 	[JsonPropertyName("content")]
 	public List<Dictionary<string, object>>? Content { get; set; }
+
+	[JsonPropertyName("context_management")]
+	public Dictionary<string, object>? ContextManagement { get; set; }
 
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
@@ -226,6 +247,29 @@ public sealed class AnthropicMessagesResponse
 
 }
 
+public sealed class AnthropicSystemMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+}
+
+public sealed class AnthropicSystemTextBlock
+{
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class AnthropicTool
 {
 	[JsonPropertyName("async")]
@@ -244,6 +288,21 @@ public sealed class AnthropicTool
 
 public sealed class AnthropicUsage
 {
+	[JsonPropertyName("cache_creation")]
+	public Dictionary<string, object>? CacheCreation { get; set; }
+
+	[JsonPropertyName("cache_creation_input_tokens")]
+	public long? CacheCreationInputTokens { get; set; }
+
+	[JsonPropertyName("cache_read_input_tokens")]
+	public long? CacheReadInputTokens { get; set; }
+
+	[JsonPropertyName("cost")]
+	public double? Cost { get; set; }
+
+	[JsonPropertyName("cost_details")]
+	public Dictionary<string, object>? CostDetails { get; set; }
+
 	[JsonPropertyName("input_tokens")]
 	public long? InputTokens { get; set; }
 
@@ -262,6 +321,9 @@ public sealed class ApiKey
 
 	[JsonPropertyName("creator_user_id")]
 	public string? CreatorUserId { get; set; }
+
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
 
 	[JsonPropertyName("disabled")]
 	public bool Disabled { get; set; }
@@ -311,6 +373,9 @@ public sealed class ApiKey
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
 
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
+
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
 
@@ -336,6 +401,9 @@ public sealed class ApiKey
 
 public sealed class ApiKeyCreateRequest
 {
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
+
 	[JsonPropertyName("disabled")]
 	public bool? Disabled { get; set; }
 
@@ -362,6 +430,9 @@ public sealed class ApiKeyCreateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 	[JsonPropertyName("workspace_id")]
 	public string? WorkspaceId { get; set; }
@@ -453,8 +524,13 @@ public sealed class ApiKeyRotateResponse
 
 public sealed class ApiKeyScopeValue { }
 
+public sealed class ApiKeyStorageLocations { }
+
 public sealed class ApiKeyUpdateRequest
 {
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
+
 	[JsonPropertyName("disabled")]
 	public bool? Disabled { get; set; }
 
@@ -481,6 +557,9 @@ public sealed class ApiKeyUpdateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public object? StorageLocations { get; set; }
 
 }
 
@@ -520,6 +599,9 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("creator_user_id")]
 	public string? CreatorUserId { get; set; }
+
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
 
 	[JsonPropertyName("disabled")]
 	public bool Disabled { get; set; }
@@ -572,6 +654,9 @@ public sealed class ApiKeyWithValue
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
 
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
+
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
 
@@ -599,6 +684,9 @@ public sealed class ApiKeyWithValueResponse
 {
 	[JsonPropertyName("data")]
 	public Dictionary<string, object> Data { get; set; }
+
+	[JsonPropertyName("key")]
+	public string Key { get; set; }
 
 }
 
@@ -1297,6 +1385,16 @@ public sealed class CacheControl
 
 }
 
+public sealed class CacheWriteTokensDetails
+{
+	[JsonPropertyName("ttl_12h_tokens")]
+	public long? Ttl12hTokens { get; set; }
+
+	[JsonPropertyName("ttl_30m_tokens")]
+	public long? Ttl30mTokens { get; set; }
+
+}
+
 public sealed class ChatAudioOutputPart
 {
 	[JsonPropertyName("audio_url")]
@@ -1328,6 +1426,9 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -1339,6 +1440,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("image_config")]
 	public Dictionary<string, object>? ImageConfig { get; set; }
+
+	[JsonPropertyName("include_reasoning")]
+	public bool? IncludeReasoning { get; set; }
 
 	[JsonPropertyName("logit_bias")]
 	public Dictionary<string, object>? LogitBias { get; set; }
@@ -1376,11 +1480,26 @@ public sealed class ChatCompletionsRequest
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
 
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
+
+	[JsonPropertyName("prediction")]
+	public Dictionary<string, object>? Prediction { get; set; }
+
 	[JsonPropertyName("presence_penalty")]
 	public double? PresencePenalty { get; set; }
 
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_options")]
+	public Dictionary<string, object>? PromptCacheOptions { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public object? Provider { get; set; }
@@ -1490,6 +1609,9 @@ public sealed class ChatImageOutputPart
 
 public sealed class ChatMessage
 {
+	[JsonPropertyName("audio")]
+	public Dictionary<string, object>? Audio { get; set; }
+
 	[JsonPropertyName("audios")]
 	public List<Dictionary<string, object>>? Audios { get; set; }
 
@@ -1502,6 +1624,15 @@ public sealed class ChatMessage
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
+	[JsonPropertyName("reasoning")]
+	public string? Reasoning { get; set; }
+
+	[JsonPropertyName("reasoning_content")]
+	public string? ReasoningContent { get; set; }
+
+	[JsonPropertyName("reasoning_details")]
+	public List<Dictionary<string, object>>? ReasoningDetails { get; set; }
+
 	[JsonPropertyName("role")]
 	public string Role { get; set; }
 
@@ -1510,6 +1641,267 @@ public sealed class ChatMessage
 
 	[JsonPropertyName("tool_calls")]
 	public List<Dictionary<string, object>>? ToolCalls { get; set; }
+
+}
+
+public sealed class ChatReasoningDetail
+{
+	[JsonPropertyName("data")]
+	public string? Data { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("index")]
+	public long? Index { get; set; }
+
+	[JsonPropertyName("signature")]
+	public string? Signature { get; set; }
+
+	[JsonPropertyName("summary")]
+	public string? Summary { get; set; }
+
+	[JsonPropertyName("text")]
+	public string? Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ChatResponseMessage
+{
+	[JsonPropertyName("audio")]
+	public Dictionary<string, object>? Audio { get; set; }
+
+	[JsonPropertyName("audios")]
+	public List<Dictionary<string, object>>? Audios { get; set; }
+
+	[JsonPropertyName("content")]
+	public object? Content { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("reasoning")]
+	public string? Reasoning { get; set; }
+
+	[JsonPropertyName("reasoning_content")]
+	public string? ReasoningContent { get; set; }
+
+	[JsonPropertyName("reasoning_details")]
+	public List<Dictionary<string, object>>? ReasoningDetails { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+	[JsonPropertyName("tool_call_id")]
+	public string? ToolCallId { get; set; }
+
+	[JsonPropertyName("tool_calls")]
+	public List<Dictionary<string, object>>? ToolCalls { get; set; }
+
+}
+
+public sealed class Classifier
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>> Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool Enabled { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object> Scope { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class ClassifierCreateInput
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>> Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string? InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string? SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double? SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object>? Scope { get; set; }
+
+}
+
+public sealed class ClassifierDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ClassifierDimension
+{
+	[JsonPropertyName("allow_other")]
+	public bool? AllowOther { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("key")]
+	public string Key { get; set; }
+
+	[JsonPropertyName("multiple")]
+	public bool? Multiple { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("values")]
+	public List<Dictionary<string, object>> Values { get; set; }
+
+}
+
+public sealed class ClassifierInputScope { }
+
+public sealed class ClassifierListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class ClassifierResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ClassifierSampleBy { }
+
+public sealed class ClassifierScope
+{
+	[JsonPropertyName("app_ids")]
+	public List<string>? AppIds { get; set; }
+
+	[JsonPropertyName("key_ids")]
+	public List<string>? KeyIds { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
+}
+
+public sealed class ClassifierUpdateInput
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>>? Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string? InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string? SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double? SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object>? Scope { get; set; }
+
+}
+
+public sealed class ClassifierValue
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("value")]
+	public string Value { get; set; }
 
 }
 
@@ -1766,6 +2158,51 @@ public sealed class DecisionAudioSource
 
 }
 
+public sealed class DecisionBox
+{
+	[JsonPropertyName("bottom")]
+	public double Bottom { get; set; }
+
+	[JsonPropertyName("left")]
+	public double Left { get; set; }
+
+	[JsonPropertyName("right")]
+	public double Right { get; set; }
+
+	[JsonPropertyName("top")]
+	public double Top { get; set; }
+
+}
+
+public sealed class DecisionBoxAnswer
+{
+	[JsonPropertyName("box")]
+	public Dictionary<string, object> Box { get; set; }
+
+	[JsonPropertyName("confidence")]
+	public double? Confidence { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionBoxQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionChoiceAnswer
 {
 	[JsonPropertyName("choice")]
@@ -1909,6 +2346,13 @@ public sealed class DecisionPredicateQuestion
 
 }
 
+public sealed class DecisionProviderOptions
+{
+	[JsonPropertyName("typesafe")]
+	public Dictionary<string, object>? Typesafe { get; set; }
+
+}
+
 public sealed class DecisionRefusalAnswer
 {
 	[JsonPropertyName("name")]
@@ -1977,6 +2421,9 @@ public sealed class DecisionsRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
+
 	[JsonPropertyName("questions")]
 	public Dictionary<string, object> Questions { get; set; }
 
@@ -2030,6 +2477,100 @@ public sealed class DeletedResponse
 {
 	[JsonPropertyName("deleted")]
 	public bool Deleted { get; set; }
+
+}
+
+public sealed class DepartmentBudget
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("department_id")]
+	public string DepartmentId { get; set; }
+
+	[JsonPropertyName("department_name")]
+	public string? DepartmentName { get; set; }
+
+	[JsonPropertyName("exceeded")]
+	public bool Exceeded { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("interval")]
+	public string Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double Limit { get; set; }
+
+	[JsonPropertyName("limit_nanos")]
+	public long LimitNanos { get; set; }
+
+	[JsonPropertyName("remaining")]
+	public double Remaining { get; set; }
+
+	[JsonPropertyName("remaining_nanos")]
+	public long RemainingNanos { get; set; }
+
+	[JsonPropertyName("reset_at")]
+	public string? ResetAt { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("usage")]
+	public double Usage { get; set; }
+
+	[JsonPropertyName("usage_nanos")]
+	public long UsageNanos { get; set; }
+
+	[JsonPropertyName("window_start")]
+	public string? WindowStart { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class DepartmentBudgetInput
+{
+	[JsonPropertyName("department_id")]
+	public string DepartmentId { get; set; }
+
+	[JsonPropertyName("interval")]
+	public string Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double Limit { get; set; }
+
+}
+
+public sealed class DepartmentBudgetInterval { }
+
+public sealed class DepartmentBudgetListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class DepartmentBudgetResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class DepartmentBudgetUpdateInput
+{
+	[JsonPropertyName("interval")]
+	public string? Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double? Limit { get; set; }
 
 }
 
@@ -2428,6 +2969,25 @@ public sealed class ErrorFailureSampleItem
 
 }
 
+public sealed class ErrorObject
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("param")]
+	public string? Param { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ErrorProviderCandidateDiagnostics
 {
 	[JsonPropertyName("candidateCount")]
@@ -2480,6 +3040,9 @@ public sealed class ErrorResponse
 {
 	[JsonPropertyName("attempt_count")]
 	public long? AttemptCount { get; set; }
+
+	[JsonPropertyName("code")]
+	public string? Code { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
@@ -2569,6 +3132,220 @@ public sealed class ErrorUpstreamError
 
 }
 
+public sealed class ExtractionAnswer { }
+
+public sealed class ExtractionDateField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDatetimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDurationField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionField { }
+
+public sealed class ExtractionImage
+{
+	[JsonPropertyName("base64")]
+	public string Base64 { get; set; }
+
+	[JsonPropertyName("content_type")]
+	public string ContentType { get; set; }
+
+}
+
+public sealed class ExtractionListAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public List<object> Value { get; set; }
+
+}
+
+public sealed class ExtractionListField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("items")]
+	public string Items { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionNumberAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public double? Value { get; set; }
+
+}
+
+public sealed class ExtractionNumberField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionRequest
+{
+	[JsonPropertyName("fields")]
+	public Dictionary<string, object> Fields { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
+
+	[JsonPropertyName("input")]
+	public string Input { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("reference_date")]
+	public string? ReferenceDate { get; set; }
+
+}
+
+public sealed class ExtractionResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object> Answers { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("truncated")]
+	public bool Truncated { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object> Usage { get; set; }
+
+}
+
+public sealed class ExtractionStringAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public string? Value { get; set; }
+
+}
+
+public sealed class ExtractionTextField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionTimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public string OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long TotalTokens { get; set; }
+
+}
+
+public sealed class FileContentPart
+{
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("file")]
+	public Dictionary<string, object> File { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class FileResponse
 {
 	[JsonPropertyName("bytes")]
@@ -2611,6 +3388,9 @@ public sealed class FunctionToolDefinition
 {
 	[JsonPropertyName("async")]
 	public bool? Async { get; set; }
+
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
 
 	[JsonPropertyName("function")]
 	public Dictionary<string, object> Function { get; set; }
@@ -2888,6 +3668,9 @@ public sealed class GatewayModelOffer
 	[JsonPropertyName("routing")]
 	public Dictionary<string, object> Routing { get; set; }
 
+	[JsonPropertyName("service_tiers")]
+	public List<string>? ServiceTiers { get; set; }
+
 	[JsonPropertyName("status")]
 	public string Status { get; set; }
 
@@ -3031,6 +3814,8 @@ public sealed class GatewayObservabilityEventResponse
 	public Dictionary<string, object> Data { get; set; }
 
 }
+
+public sealed class GatewayPlugin { }
 
 public sealed class GatewayPricing
 {
@@ -3910,6 +4695,19 @@ public sealed class ImagesGenerationResponse
 
 }
 
+public sealed class InputTokensDetails
+{
+	[JsonPropertyName("cache_write_tokens")]
+	public long? CacheWriteTokens { get; set; }
+
+	[JsonPropertyName("cache_write_tokens_details")]
+	public Dictionary<string, object>? CacheWriteTokensDetails { get; set; }
+
+	[JsonPropertyName("cached_tokens")]
+	public long? CachedTokens { get; set; }
+
+}
+
 public sealed class InvalidRequestResponse
 {
 	[JsonPropertyName("error")]
@@ -3941,6 +4739,16 @@ public sealed class KeyInvalidateResponse
 
 public sealed class KnownModelId { }
 
+public sealed class LegacyDecisionBoxQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class LegacyDecisionsRequest
 {
 	[JsonPropertyName("debug")]
@@ -3966,6 +4774,9 @@ public sealed class LegacyDecisionsRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("questions")]
 	public Dictionary<string, object> Questions { get; set; }
@@ -5348,6 +6159,9 @@ public sealed class OpenAIDecisionsRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
+
 	[JsonPropertyName("questions")]
 	public List<object> Questions { get; set; }
 
@@ -5420,6 +6234,22 @@ public sealed class OpenAIReasoningConfig
 
 	[JsonPropertyName("summary")]
 	public string? Summary { get; set; }
+
+}
+
+public sealed class OpenAIWebSearchToolDefinition
+{
+	[JsonPropertyName("filters")]
+	public Dictionary<string, object>? Filters { get; set; }
+
+	[JsonPropertyName("search_context_size")]
+	public string? SearchContextSize { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("user_location")]
+	public Dictionary<string, object>? UserLocation { get; set; }
 
 }
 
@@ -5570,6 +6400,9 @@ public sealed class Preset
 
 public sealed class PresetConfig
 {
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
 }
 
 public sealed class PresetCreateRequest
@@ -5618,6 +6451,60 @@ public sealed class PresetListResponse
 
 	[JsonPropertyName("total_count")]
 	public long TotalCount { get; set; }
+
+}
+
+public sealed class PresetPromptTemplate
+{
+	[JsonPropertyName("messages")]
+	public List<Dictionary<string, object>> Messages { get; set; }
+
+	[JsonPropertyName("response_format")]
+	public Dictionary<string, object>? ResponseFormat { get; set; }
+
+	[JsonPropertyName("syntax")]
+	public string? Syntax { get; set; }
+
+	[JsonPropertyName("tool_choice")]
+	public object? ToolChoice { get; set; }
+
+	[JsonPropertyName("tools")]
+	public List<Dictionary<string, object>>? Tools { get; set; }
+
+	[JsonPropertyName("variables")]
+	public Dictionary<string, object>? Variables { get; set; }
+
+}
+
+public sealed class PresetPromptTemplateMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+}
+
+public sealed class PresetPromptVariable
+{
+	[JsonPropertyName("default")]
+	public object? Default { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("enum")]
+	public List<string>? Enum { get; set; }
+
+	[JsonPropertyName("max_length")]
+	public long? MaxLength { get; set; }
+
+	[JsonPropertyName("required")]
+	public bool? Required { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -6080,6 +6967,36 @@ public sealed class PrivateModelUpdateRequest
 
 }
 
+public sealed class PromptCacheBreakpoint
+{
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+	[JsonPropertyName("ttl")]
+	public string? Ttl { get; set; }
+
+}
+
+public sealed class PromptCacheOptions
+{
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+	[JsonPropertyName("ttl")]
+	public string? Ttl { get; set; }
+
+}
+
+public sealed class PromptTemplateReference
+{
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("variables")]
+	public Dictionary<string, object>? Variables { get; set; }
+
+}
+
 public sealed class Provider
 {
 	[JsonPropertyName("api_provider_id")]
@@ -6267,6 +7184,9 @@ public sealed class ProviderOptions
 	[JsonPropertyName("openai")]
 	public Dictionary<string, object>? Openai { get; set; }
 
+	[JsonPropertyName("xai")]
+	public Dictionary<string, object>? Xai { get; set; }
+
 }
 
 public sealed class ProviderRoutingOptions
@@ -6408,6 +7328,178 @@ public sealed class ProvisioningKeyWithValue
 
 }
 
+public sealed class RateLimitAssignment
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+	[JsonPropertyName("target_id")]
+	public string? TargetId { get; set; }
+
+	[JsonPropertyName("target_type")]
+	public string TargetType { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentInput
+{
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+	[JsonPropertyName("target_id")]
+	public string? TargetId { get; set; }
+
+	[JsonPropertyName("target_type")]
+	public string TargetType { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentUpdateInput
+{
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+}
+
+public sealed class RateLimitDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitPolicy
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool FailClosed { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class RateLimitPolicyInput
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool? FailClosed { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+}
+
+public sealed class RateLimitPolicyListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+}
+
+public sealed class RateLimitPolicyResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitPolicyUpdateInput
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool? FailClosed { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+}
+
+public sealed class RateLimitTargetType { }
+
 public sealed class ReasoningConfig
 {
 	[JsonPropertyName("effort")]
@@ -6510,13 +7602,41 @@ public sealed class RerankResult
 
 }
 
+public sealed class ResponseHealingPlugin
+{
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+}
+
 public sealed class ResponsesInputItem
 {
 	[JsonPropertyName("content")]
 	public object? Content { get; set; }
 
+	[JsonPropertyName("encrypted_content")]
+	public string? EncryptedContent { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }
+
+	[JsonPropertyName("signature")]
+	public string? Signature { get; set; }
+
+	[JsonPropertyName("summary")]
+	public List<Dictionary<string, object>>? Summary { get; set; }
 
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
@@ -6571,11 +7691,20 @@ public sealed class ResponsesOutputItem
 	[JsonPropertyName("content")]
 	public List<object>? Content { get; set; }
 
+	[JsonPropertyName("encrypted_content")]
+	public string? EncryptedContent { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }
+
+	[JsonPropertyName("summary")]
+	public List<Dictionary<string, object>>? Summary { get; set; }
 
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
@@ -6595,10 +7724,33 @@ public sealed class ResponsesOutputTextPart
 
 }
 
+public sealed class ResponsesReasoningSummaryPart
+{
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ResponsesReasoningTextPart
+{
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ResponsesRequest
 {
 	[JsonPropertyName("background")]
 	public bool? Background { get; set; }
+
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
 
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
@@ -6639,11 +7791,23 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
 
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
+
 	[JsonPropertyName("previous_response_id")]
 	public string? PreviousResponseId { get; set; }
 
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_options")]
+	public Dictionary<string, object>? PromptCacheOptions { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -6803,6 +7967,437 @@ public sealed class ServerToolUsage
 
 }
 
+public sealed class SpendRule
+{
+	[JsonPropertyName("action")]
+	public string Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long CooldownMinutes { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string> DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool Enabled { get; set; }
+
+	[JsonPropertyName("evaluated")]
+	public bool Evaluated { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class SpendRuleAction { }
+
+public sealed class SpendRuleDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleHistory
+{
+	[JsonPropertyName("events")]
+	public List<Dictionary<string, object>> Events { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+	[JsonPropertyName("periods")]
+	public List<Dictionary<string, object>> Periods { get; set; }
+
+}
+
+public sealed class SpendRuleHistoryResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleInput
+{
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long? BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool? BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long? CooldownMinutes { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string>? DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string? ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+}
+
+public sealed class SpendRuleListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("max_rules")]
+	public long MaxRules { get; set; }
+
+}
+
+public sealed class SpendRuleMetric { }
+
+public sealed class SpendRulePeriod { }
+
+public sealed class SpendRulePreview
+{
+	[JsonPropertyName("alert")]
+	public Dictionary<string, object>? Alert { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_nanos")]
+	public long? BaseNanos { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("base_usd")]
+	public double? BaseUsd { get; set; }
+
+	[JsonPropertyName("block_at_nanos")]
+	public long? BlockAtNanos { get; set; }
+
+	[JsonPropertyName("block_at_usd")]
+	public double? BlockAtUsd { get; set; }
+
+	[JsonPropertyName("computed_at")]
+	public string ComputedAt { get; set; }
+
+	[JsonPropertyName("evaluated")]
+	public bool Evaluated { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("next_threshold")]
+	public Dictionary<string, object>? NextThreshold { get; set; }
+
+	[JsonPropertyName("percent")]
+	public double? Percent { get; set; }
+
+	[JsonPropertyName("period")]
+	public Dictionary<string, object>? Period { get; set; }
+
+	[JsonPropertyName("reached_threshold_percent")]
+	public long? ReachedThresholdPercent { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string RuleId { get; set; }
+
+	[JsonPropertyName("state")]
+	public Dictionary<string, object>? State { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string TimeZone { get; set; }
+
+	[JsonPropertyName("value_nanos")]
+	public long? ValueNanos { get; set; }
+
+	[JsonPropertyName("value_usd")]
+	public double? ValueUsd { get; set; }
+
+}
+
+public sealed class SpendRulePreviewResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleScope { }
+
+public sealed class SpendRuleTestResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleTestResult
+{
+	[JsonPropertyName("delivered")]
+	public long Delivered { get; set; }
+
+	[JsonPropertyName("deliveries")]
+	public List<Dictionary<string, object>> Deliveries { get; set; }
+
+	[JsonPropertyName("failed")]
+	public long Failed { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string RuleId { get; set; }
+
+	[JsonPropertyName("rule_name")]
+	public string RuleName { get; set; }
+
+	[JsonPropertyName("source")]
+	public string Source { get; set; }
+
+	[JsonPropertyName("test")]
+	public bool Test { get; set; }
+
+	[JsonPropertyName("title")]
+	public string Title { get; set; }
+
+}
+
+public sealed class SpendRuleUpdateInput
+{
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long? BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool? BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long? CooldownMinutes { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string>? DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string? Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string? Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string? ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+}
+
 public sealed class SubagentToolDefinition
 {
 	[JsonPropertyName("parameters")]
@@ -6923,6 +8518,12 @@ public sealed class SystemOneUsage
 
 public sealed class TextContentPart
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("prompt_cache_breakpoint")]
+	public Dictionary<string, object>? PromptCacheBreakpoint { get; set; }
+
 	[JsonPropertyName("text")]
 	public string Text { get; set; }
 
@@ -6983,14 +8584,39 @@ public sealed class Usage
 	[JsonPropertyName("completion_tokens")]
 	public long? CompletionTokens { get; set; }
 
+	[JsonPropertyName("cost")]
+	public double? Cost { get; set; }
+
+	[JsonPropertyName("cost_details")]
+	public Dictionary<string, object>? CostDetails { get; set; }
+
+	[JsonPropertyName("input_tokens")]
+	public long? InputTokens { get; set; }
+
+	[JsonPropertyName("input_tokens_details")]
+	public Dictionary<string, object>? InputTokensDetails { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public long? OutputTokens { get; set; }
+
 	[JsonPropertyName("prompt_tokens")]
 	public long? PromptTokens { get; set; }
+
+	[JsonPropertyName("prompt_tokens_details")]
+	public Dictionary<string, object>? PromptTokensDetails { get; set; }
 
 	[JsonPropertyName("server_tool_use")]
 	public Dictionary<string, object>? ServerToolUse { get; set; }
 
 	[JsonPropertyName("total_tokens")]
 	public long? TotalTokens { get; set; }
+
+}
+
+public sealed class UsageCostDetails
+{
+	[JsonPropertyName("upstream_inference_cost")]
+	public double? UpstreamInferenceCost { get; set; }
 
 }
 
@@ -7370,6 +8996,31 @@ public sealed class VideoOutputConfig
 
 }
 
+public sealed class WebFetchPlugin
+{
+	[JsonPropertyName("allowed_domains")]
+	public List<string>? AllowedDomains { get; set; }
+
+	[JsonPropertyName("blocked_domains")]
+	public List<string>? BlockedDomains { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("max_content_tokens")]
+	public long? MaxContentTokens { get; set; }
+
+	[JsonPropertyName("max_uses")]
+	public long? MaxUses { get; set; }
+
+}
+
 public sealed class WebhookEndpoint
 {
 	[JsonPropertyName("createdAt")]
@@ -7530,6 +9181,34 @@ public sealed class WebhookEndpointUpdateRequest
 
 	[JsonPropertyName("url")]
 	public string? Url { get; set; }
+
+}
+
+public sealed class WebSearchPlugin
+{
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
+	[JsonPropertyName("exclude_domains")]
+	public List<string>? ExcludeDomains { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("include_domains")]
+	public List<string>? IncludeDomains { get; set; }
+
+	[JsonPropertyName("max_results")]
+	public long? MaxResults { get; set; }
+
+	[JsonPropertyName("max_uses")]
+	public long? MaxUses { get; set; }
+
+	[JsonPropertyName("search_context_size")]
+	public string? SearchContextSize { get; set; }
 
 }
 
@@ -7865,6 +9544,8 @@ public sealed class WorkspaceAutoTopUpUpdate
 	public string? PaymentMethodId { get; set; }
 
 }
+
+public sealed class WorkspaceBillingTimeZone { }
 
 public sealed class WorkspaceBudget
 {
@@ -8452,16 +10133,27 @@ public sealed class WorkspaceMemberRoleUpdateRequest
 
 }
 
+public sealed class WorkspaceModelSuccessorPricePolicy { }
+
 public sealed class WorkspaceNotificationDestination
 {
 	[JsonPropertyName("created_at")]
 	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("has_signing_secret")]
+	public bool? HasSigningSecret { get; set; }
 
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
+
+	[JsonPropertyName("signing_secret")]
+	public string? SigningSecret { get; set; }
+
+	[JsonPropertyName("signing_secret_rotated_at")]
+	public string? SigningSecretRotatedAt { get; set; }
 
 	[JsonPropertyName("status")]
 	public string Status { get; set; }
@@ -8559,14 +10251,32 @@ public sealed class WorkspaceNotificationRouteMap
 	[JsonPropertyName("auto_top_up_failed")]
 	public List<string> AutoTopUpFailed { get; set; }
 
+	[JsonPropertyName("broadcast_destination_failing")]
+	public List<string> BroadcastDestinationFailing { get; set; }
+
 	[JsonPropertyName("low_balance")]
 	public List<string> LowBalance { get; set; }
 
 	[JsonPropertyName("model_deprecation")]
 	public List<string> ModelDeprecation { get; set; }
 
+	[JsonPropertyName("model_substitution")]
+	public List<string> ModelSubstitution { get; set; }
+
 	[JsonPropertyName("payment_method_expiring")]
 	public List<string> PaymentMethodExpiring { get; set; }
+
+	[JsonPropertyName("rate_limit_throttled")]
+	public List<string> RateLimitThrottled { get; set; }
+
+	[JsonPropertyName("spend_alert")]
+	public List<string> SpendAlert { get; set; }
+
+	[JsonPropertyName("spend_blocked")]
+	public List<string> SpendBlocked { get; set; }
+
+	[JsonPropertyName("spend_report")]
+	public List<string> SpendReport { get; set; }
 
 }
 
@@ -8602,6 +10312,9 @@ public sealed class WorkspaceNotificationSettings
 	[JsonPropertyName("low_balance_email")]
 	public Dictionary<string, object> LowBalanceEmail { get; set; }
 
+	[JsonPropertyName("spend")]
+	public Dictionary<string, object> Spend { get; set; }
+
 }
 
 public sealed class WorkspaceNotificationSettingsResponse
@@ -8621,6 +10334,9 @@ public sealed class WorkspaceNotificationSettingsUpdateRequest
 
 	[JsonPropertyName("low_balance_email")]
 	public Dictionary<string, object>? LowBalanceEmail { get; set; }
+
+	[JsonPropertyName("spend")]
+	public Dictionary<string, object>? Spend { get; set; }
 
 }
 
@@ -8784,6 +10500,15 @@ public sealed class WorkspaceSettings
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
 
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public object? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
+
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }
 
@@ -8852,6 +10577,15 @@ public sealed class WorkspaceSettingsUpdateRequest
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
 
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public string? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
+
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }
 
@@ -8887,6 +10621,28 @@ public sealed class WorkspaceSettingsUpdateRequest
 
 	[JsonPropertyName("routing_mode")]
 	public string? RoutingMode { get; set; }
+
+}
+
+public sealed class WorkspaceSpendAttribution { }
+
+public sealed class WorkspaceSpendSettings
+{
+	[JsonPropertyName("billing_time_zone")]
+	public string BillingTimeZone { get; set; }
+
+	[JsonPropertyName("department_attribution")]
+	public string DepartmentAttribution { get; set; }
+
+}
+
+public sealed class WorkspaceSpendSettingsUpdate
+{
+	[JsonPropertyName("billing_time_zone")]
+	public string? BillingTimeZone { get; set; }
+
+	[JsonPropertyName("department_attribution")]
+	public string? DepartmentAttribution { get; set; }
 
 }
 

@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
 	rows: [] as Array<Record<string, unknown>>,
 	updateCalls: [] as Array<{ payload: Record<string, unknown>; id: string }>,
+	feedbackLimits: [] as number[],
 	suppressionReason: null as string | null,
 	sendEmail: vi.fn(async (_args: Record<string, unknown>) => undefined),
+	isResendContactUnsubscribed: vi.fn(async (_email: string): Promise<boolean> => false),
 }));
 
 function buildSupabaseMock() {
@@ -31,19 +33,25 @@ function buildSupabaseMock() {
 					is: () => ({
 						lt: () => ({
 							not: (column: string, operator: string, value: string) => {
-								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation")']);
+								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing","spend_alert","spend_blocked","spend_report")']);
 								return {
-									neq: (templateColumn: string, templateValue: string) => {
-										expect([templateColumn, templateValue]).toEqual(["template", "model_deprecation"]);
-										return {
-											order: () => ({
-												limit: async (limit: number) => ({
-													data: state.rows.filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.template !== "model_deprecation").slice(0, limit),
-													error: null,
-												}),
-											}),
-										};
-									},
+									order: () => ({
+										limit: async (limit: number) => ({
+											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"].includes(String(row.kind))).slice(0, limit),
+											error: null,
+										}),
+									}),
+								};
+							},
+							eq: (column: string, value: string) => {
+								expect([column, value]).toEqual(["kind", "feedback_request"]);
+								return {
+									order: () => ({
+										limit: async (limit: number) => {
+											state.feedbackLimits.push(limit);
+											return { data: state.rows.filter((row) => row.kind === "feedback_request").slice(0, limit), error: null };
+										},
+									}),
 								};
 							},
 						}),
@@ -66,19 +74,23 @@ vi.mock("@/runtime/env", () => ({
 		RESEND_API_KEY: "resend_key",
 		RESEND_FROM_EMAIL: "Phaseo <noreply@example.com>",
 		RESEND_TEMPLATE_LOW_BALANCE_ID: "low_balance_template",
+		FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@example.com>",
 	}),
 }));
 
 vi.mock("@/lib/email/resend", () => ({
 	sendEmail: state.sendEmail,
+	isResendContactUnsubscribed: state.isResendContactUnsubscribed,
 }));
 
 describe("email outbox", () => {
 	beforeEach(() => {
 		state.rows.length = 0;
 		state.updateCalls.length = 0;
+		state.feedbackLimits.length = 0;
 		state.suppressionReason = null;
 		state.sendEmail.mockClear();
+		state.isResendContactUnsubscribed.mockReset().mockResolvedValue(false);
 		vi.resetModules();
 	});
 
@@ -186,6 +198,37 @@ describe("email outbox", () => {
 		expect(state.sendEmail).not.toHaveBeenCalled();
 	});
 
+	it("leaves spend rule events for routed notification delivery", async () => {
+		for (const kind of ["spend_alert", "spend_blocked", "spend_report"]) {
+			state.rows.push({ id: `email_${kind}`, created_at: "2026-10-21T09:00:00Z", kind, template: kind, to_email: "owner@example.com", subject: "Spend", workspace_id: "ws_1", user_id: null, payload: {}, attempts: 0, last_error: null, sent_at: null });
+		}
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 0, sent: 0, failed: 0 });
+		expect(state.sendEmail).not.toHaveBeenCalled();
+	});
+
+	it("emails the owner copy of a model deprecation notice", async () => {
+		state.rows.push({
+			id: "email_model_deprecation_owner",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "model_deprecation_email",
+			template: "model_deprecation",
+			to_email: "owner@example.com",
+			subject: "Model deprecation: Example Model",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			dedupe_key: "model_deprecation:ws_1:example/model:email:user_1",
+			payload: { model_name: "Example Model", deprecation_date: "2026-08-01T00:00:00.000Z" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toMatchObject({ processed: 1, sent: 1, failed: 0 });
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "owner@example.com" }));
+	});
+
 	it("renders billing alerts and passes their deduplication key to Resend", async () => {
 		state.rows.push({
 			id: "email_auto_top_up_failed",
@@ -212,6 +255,201 @@ describe("email outbox", () => {
 			html: expect.stringContaining("Card declined"),
 			idempotencyKey: "auto_top_up_failed:pi_123",
 	}));
+	});
+
+	it("renders Slack agent refusals from the payload with their deduplication key", async () => {
+		state.rows.push({
+			id: "email_slack_agent_refused",
+			created_at: "2026-10-22T09:30:00Z",
+			kind: "slack_agent_refused",
+			template: "slack_agent_refused",
+			to_email: "admin@example.com",
+			subject: null,
+			workspace_id: "ws_1",
+			user_id: "user_2",
+			dedupe_key: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+			payload: { workspace_name: "Research", team_name: "Research Slack", reason: "max_people", people: 40, plan_people: 50, max_people: 40, monthly_cap_usd: 25 },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		expect(await drainEmailOutbox(10)).toEqual({ processed: 1, sent: 1, failed: 0 });
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "admin@example.com",
+			subject: "Slack agent: people limit reached",
+			html: expect.stringContaining("limit of 40 people a month"),
+			text: expect.stringContaining("Open Slack settings: https://phaseo.app/settings/slack"),
+			idempotencyKey: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+		}));
+	});
+
+	it("sends feedback requests from Daniel with a reply-to and one-click unsubscribe", async () => {
+		const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
+		state.rows.push({
+			id: "email_feedback",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token, segment: "used_not_paid", recency: "active", first_name: "Ada" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 1, failed: 0 });
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "ada@example.com",
+			from: "Daniel <daniel@example.com>",
+			replyTo: "Daniel <daniel@example.com>",
+			subject: "Quick question about Phaseo",
+			headers: expect.objectContaining({ "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }),
+			idempotencyKey: "feedback_request:v1:user_1",
+		}));
+		expect(state.isResendContactUnsubscribed).toHaveBeenCalledWith("ada@example.com");
+	});
+
+	it("sends transactional email first and at most five feedback requests per run", async () => {
+		for (let index = 0; index < 8; index += 1) {
+			state.rows.push({
+				id: `feedback_${index}`, created_at: "2026-10-13T10:05:00Z", kind: "feedback_request", template: "feedback_request",
+				to_email: `user${index}@example.com`, subject: null, workspace_id: null, user_id: `user_${index}`,
+				dedupe_key: `feedback_request:v1:user_${index}`,
+				payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+				attempts: 0, last_error: null, sent_at: null,
+			});
+		}
+		state.rows.push({
+			id: "later_transactional", created_at: "2026-10-13T10:06:00Z", kind: "auto_top_up_failed", template: "auto_top_up_failed",
+			to_email: "owner@example.com", subject: "Auto Top-Up failed", workspace_id: "ws_1", user_id: "user_1",
+			payload: { workspace_name: "Research", failure_reason: "Card declined" }, attempts: 0, last_error: null, sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(25)).resolves.toEqual({ processed: 6, sent: 6, failed: 0 });
+		expect(state.sendEmail.mock.calls[0]?.[0]).toMatchObject({ to: "owner@example.com" });
+		expect(state.feedbackLimits).toEqual([5]);
+
+		state.sendEmail.mockClear();
+		state.feedbackLimits.length = 0;
+		await drainEmailOutbox(1);
+		expect(state.feedbackLimits).toEqual([]);
+		expect(state.sendEmail).toHaveBeenCalledTimes(1);
+	});
+
+	it("skips feedback requests to people unsubscribed in Resend", async () => {
+		state.isResendContactUnsubscribed.mockResolvedValue(true);
+		state.rows.push({
+			id: "email_feedback_unsubscribed",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_unsubscribed",
+			payload: { attempts: 5, last_error: "unsubscribed:resend" },
+		});
+	});
+
+	it("drops feedback requests queued for an account that has since been deleted", async () => {
+		state.rows.push({
+			id: "email_feedback_deleted_user",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: null,
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.isResendContactUnsubscribed).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_deleted_user",
+			payload: { attempts: 5, last_error: "user_deleted" },
+		});
+	});
+
+	it("retries a feedback request later when the Resend contact lookup fails", async () => {
+		state.isResendContactUnsubscribed.mockRejectedValue(new Error("resend_contact_lookup_error:429"));
+		state.rows.push({
+			id: "email_feedback_lookup_failed",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_lookup_failed",
+			payload: { attempts: 1, last_error: "resend_contact_lookup_error:429" },
+		});
+	});
+
+	it("does not check Resend contact state for transactional mail", async () => {
+		state.isResendContactUnsubscribed.mockResolvedValue(true);
+		state.rows.push({
+			id: "email_transactional",
+			created_at: "2026-08-07T12:01:00Z",
+			kind: "auto_top_up_failed",
+			template: "auto_top_up_failed",
+			to_email: "owner@example.com",
+			subject: "Auto Top-Up failed",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			payload: { workspace_name: "Research", failure_reason: "Card declined" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 1, failed: 0 });
+		expect(state.isResendContactUnsubscribed).not.toHaveBeenCalled();
 	});
 
 	it("renders expiring payment method details", async () => {

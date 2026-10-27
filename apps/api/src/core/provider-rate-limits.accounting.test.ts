@@ -23,9 +23,9 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: () => ({
 			select: () => ({
-				eq: async () => ({
+				eq: async (_column: string, providerId: string) => ({
 					data: [{
-						provider_id: "openai",
+						provider_id: providerId,
 						provider_model_slug: "*",
 						tokens_per_minute: 10_000,
 						headroom_bps: 500,
@@ -85,6 +85,17 @@ describe("provider token reservation accounting", () => {
 		expect(mocks.reconcileTokens).toHaveBeenNthCalledWith(1, first, 300);
 		expect(mocks.reconcileTokens).toHaveBeenNthCalledWith(2, second, 200);
 		expect(mocks.recordTokens).not.toHaveBeenCalled();
+	});
+
+	it("leaves Anthropic cache reads out of its token windows but keeps OpenAI's", async () => {
+		// Gateway usage counts cache reads inside input_tokens (OpenAI semantics).
+		const usage = { input_tokens: 32_050, output_tokens: 400, total_tokens: 32_450, input_tokens_details: { cached_tokens: 30_000, cache_write_tokens: 2_000 } };
+		const anthropic = { ...reservation("reservation-anthropic"), providerId: "anthropic" };
+		const openai = reservation("reservation-openai");
+		await recordManagedProviderTokensOnce({ ctx: context(), providerId: "anthropic", keySource: "gateway", usage, reservation: anthropic });
+		await recordManagedProviderTokensOnce({ ctx: context(), providerId: "openai", keySource: "gateway", usage, reservation: openai });
+		expect(mocks.reconcileTokens).toHaveBeenCalledWith(anthropic, 2_450);
+		expect(mocks.reconcileTokens).toHaveBeenCalledWith(openai, 32_450);
 	});
 
 	it("releases a reservation only when the caller proves no dispatch occurred", async () => {

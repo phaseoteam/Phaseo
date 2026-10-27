@@ -449,7 +449,7 @@ begin
       p.data_policy_contract_mode,
 	  p.data_policy_variant,
       c.status as capability_status,
-      c.params as capability_params,
+      coalesce(c.params,'{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('data_policy',public.resolve_catalog_data_policy(m.provider_api_model_id,c.capability_id))) as capability_params,
       c.max_input_tokens,
       c.max_output_tokens
     from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at, metadata from public.v2_model_provider_routes) m
@@ -461,8 +461,7 @@ begin
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
       and coalesce(dm.hidden, false) = false
-      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated'))
-      and (dm.retirement_date is null or dm.retirement_date > now() at time zone 'utc')
+      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated', 'retired'))
       and c.capability_id = gateway_fetch_request_context_without_workspace_budget.endpoint
       and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway

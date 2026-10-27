@@ -8,21 +8,37 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
-import { createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { inlineClaudeMediaForBase64OnlyPlatform } from "@executors/anthropic/text-generate/inline-media";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
-import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
+import {
+	createGeminiStreamUsageRecorder,
+	transformStream as transformGoogleGeminiStream,
+} from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
+import { normalizeGoogleServiceTier } from "@executors/google/shared/service-tier";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "@executors/google/shared/usage-fallback";
 import { getBindings } from "@/runtime/env";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
 import {
+	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
+	geminiFunctionCallId,
+	geminiReplayableAssistantParts,
+	geminiThoughtPartToIR,
+	irToolCallsToGeminiParts,
+	withoutEmptyGeminiTextParts,
+} from "@executors/google/shared/function-history";
+import {
+	getLowestGoogleThinkingLevel,
+	modelRejectsGoogleThinkingBudget,
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "@executors/google/shared/thinking";
@@ -48,7 +64,7 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const irRequest = args.ir as IRChatRequest;
+	let irRequest = args.ir as IRChatRequest;
 	const model = args.providerModelSlug ?? irRequest.model;
 	assertClaudeRequestSupported(irRequest, model, args.providerId);
 	const bindings = getBindings() as any;
@@ -56,13 +72,47 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
 	const route = resolveVertexModelRoute(model);
-	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload);
+	const refuse = (error: string): ExecutorResult => ({
+		kind: "completed",
+		ir: undefined,
+		upstream: new Response(JSON.stringify({ error }), {
+			status: 400,
+			headers: { "Content-Type": "application/json" },
+		}),
+		bill: { cost_cents: 0, currency: "USD" },
+		keySource: keyInfo.source,
+		byokKeyId: keyInfo.byokId,
+	});
+	// A cachedContent name is resolved in the project of the credential that serves the
+	// request. With Phaseo's credential that is Phaseo's project, so a customer could reach
+	// a cache that is not theirs: refuse, as on Google AI Studio.
+	if (route.family === "gemini" && irRequest.googleCachedContent !== undefined && keyInfo.source !== "byok") {
+		return refuse("cachedContent requires a customer-managed Vertex AI credential");
+	}
+	// The customer's own credential runs in the customer's project, not Phaseo's, and a
+	// cache is used from the project and location it was created in.
+	let scope: VertexResourceScope | undefined;
+	if (keyInfo.source === "byok") {
+		scope = vertexCredentialScope(keyInfo.key);
+		if (route.family === "gemini" && irRequest.googleCachedContent !== undefined) {
+			const cache = resolveVertexCachedContentScope(irRequest.googleCachedContent, scope, args.providerId, route);
+			if ("error" in cache) return refuse(cache.error);
+			scope = cache.scope;
+			irRequest = { ...irRequest, googleCachedContent: cache.cachedContent };
+		}
+	}
+	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload, scope);
 
 	let payload: any;
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
-		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath);
+		const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
+		if (unsupportedMedia) return unsupportedMedia;
+		// Claude on Vertex AI reads base64 sources only.
+		const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
+		if (inlined.ok === false) return inlined.result;
+		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
@@ -82,6 +132,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const requestBody = JSON.stringify(payload);
+	const geminiTier = route.family === "gemini" ? normalizeGoogleServiceTier(irRequest.serviceTier) : undefined;
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 	const accessToken = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
 
@@ -90,6 +141,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",
+			...((geminiTier === "flex" || geminiTier === "priority") ? {
+				"X-Vertex-AI-LLM-Request-Type": "shared",
+				"X-Vertex-AI-LLM-Shared-Request-Type": geminiTier,
+			} : {}),
 			...upstreamTestHeaders(args.meta),
 		},
 		body: requestBody,
@@ -124,10 +179,15 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {
-			const accounting = route.family === "anthropic" && isClaudeOpus55(model) ? createAnthropicStreamAccounting() : undefined;
+			// Every Claude stream records usage from the upstream frames, so cache writes are
+			// billed whichever model it is.
+			const accounting = route.family === "anthropic" ? createAnthropicStreamAccounting() : undefined;
+			// Gemini streams are billed from the upstream usageMetadata, which keeps image,
+			// audio and video input apart from text.
+			const geminiUsage = route.family === "gemini" ? createGeminiStreamUsageRecorder(bill) : undefined;
 			const stream = (() => {
-				if (route.family === "gemini") {
-					return transformGoogleGeminiStream(res.body!, args);
+				if (geminiUsage) {
+					return transformGoogleGeminiStream(res.body!, args, undefined, { onUsage: geminiUsage.onUsage });
 				}
 				if (route.family === "openapi_chat") {
 					return resolveStreamForProtocol(
@@ -139,11 +199,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						"chat",
 					);
 				}
-				if (accounting && args.protocol === "anthropic.messages") {
+				if (accounting && isClaudeOpus55(model) && args.protocol === "anthropic.messages") {
 					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
 				}
 				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -160,10 +220,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				allowEmptySuccess: true,
 				stream,
 				usageFinalizer: async () => {
+					if (geminiUsage) return geminiUsage.finalize();
 					if (!accounting) return null;
 					const final = accounting.snapshot();
-					return { ...bill, usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					return { ...bill, usage: anthropicUsageForPricing(final.usage),
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
+				},
+				usageFinalizerAuthoritative: accounting !== undefined || geminiUsage !== undefined,
+				usageSnapshot: () => {
+					if (geminiUsage) return geminiUsage.snapshot();
+					return accounting ? anthropicUsageForPricing(accounting.snapshot().usage) ?? null : null;
 				},
 				bill,
 				upstream: res,
@@ -179,7 +245,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (route.family === "anthropic" && isClaudeOpus55(model)) {
 			const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, selectedDispatchAtMs);
 			const ir = anthropicMessagesToIR(message, args.requestId, model, args.providerId);
-			bill.usage = normalizeTextUsageForPricing(message.usage) ?? undefined;
+			bill.usage = normalizeTextUsageForPricing(message.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
 			bill.finish_reason = ir.choices[0]?.finishReason ?? null;
 			return { kind: "completed", ir, bill, upstream: res, keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
 				mappedRequest, rawResponse: message, timing: { latencyMs: firstFrameMs ?? undefined, generationMs: totalMs } };
@@ -198,7 +264,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return res.body!;
 			}
 			return res.body!.pipeThrough(
-				createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				createAnthropicToResponsesStreamTransformer(args.requestId, model, { providerId: args.providerId }),
 			);
 		})();
 		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
@@ -365,15 +431,129 @@ export function resolveVertexModelRoute(model: string): VertexModelRoute {
 	return { family: "openapi_chat", modelForPath: value, modelForPayload: value };
 }
 
-export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string): string {
-	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
-	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
-	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+/** The only Vertex location some models are served in, whatever location is configured. */
+export function vertexRequiredLocation(providerId?: string, family?: VertexModelRoute["family"], model?: string): string | undefined {
+	return providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+		// Served only on global and the us/eu multi-regions, no single region
+		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite).
+		: providerId === "google-vertex-eu" && family === "gemini" && /^(?:google\/)?gemini-3\.1-flash-lite$/.test(model ?? "") ? "eu"
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
+		// Gemini Transcribe is served on global only
+		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-transcribe).
+		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
+}
+
+/**
+ * The location Phaseo's own google-vertex credential uses for a model family, in place of
+ * GOOGLE_VERTEX_LOCATION. Gemini 3 and later, Gemini Embedding 2 and Gemini Transcribe are
+ * served on global and the us/eu multi-regions, not in single US regions such as us-central1
+ * (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash), and
+ * the google-vertex prices are Google's global prices. A customer credential that names a
+ * region keeps it; google-vertex-eu never uses this.
+ */
+export function vertexDefaultLocation(providerId?: string, family?: VertexModelRoute["family"]): string | undefined {
+	return providerId === "google-vertex" && family === "gemini" ? "global" : undefined;
+}
+
+/** A Google Cloud project and location taken from the customer's request or credential. */
+export type VertexResourceScope = { project?: string; location?: string };
+
+const VERTEX_LOCATION_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const VERTEX_CACHED_CONTENT_NAME = /^projects\/([^/]+)\/locations\/([^/]+)\/cachedContents\/([^/]+)$/;
+const VERTEX_SHORT_CACHED_CONTENT_NAME = /^(?:cachedContents\/)?([^/]+)$/;
+
+/**
+ * The project and location a customer's Vertex credential names: `project_id` from a
+ * service-account JSON (Google always includes it) and the optional `region` (or
+ * `location`) field the BYOK form documents. A plain access token names neither.
+ */
+export function vertexCredentialScope(rawKey: string): VertexResourceScope {
+	const value = rawKey.trim();
+	if (!value.startsWith("{")) return {};
+	try {
+		const parsed = JSON.parse(value) as Record<string, unknown>;
+		if (!parsed || typeof parsed !== "object") return {};
+		const project = typeof parsed.project_id === "string" ? parsed.project_id.trim() : "";
+		const rawLocation = typeof parsed.region === "string" ? parsed.region
+			: typeof parsed.location === "string" ? parsed.location : "";
+		const location = rawLocation.trim().toLowerCase();
+		return {
+			...(project && !project.includes("/") ? { project } : {}),
+			...(VERTEX_LOCATION_PATTERN.test(location) ? { location } : {}),
+		};
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * Where a customer's cachedContent lives. Vertex names a cache
+ * `projects/{project}/locations/{location}/cachedContents/{id}`, and a cache is used from
+ * the project and location it was created in, so a full name decides the endpoint. A
+ * short name (`cachedContents/{id}`) needs the project and region from the credential.
+ */
+export function resolveVertexCachedContentScope(
+	cachedContent: string,
+	credential: VertexResourceScope,
+	providerId: string | undefined,
+	route: VertexModelRoute,
+): { scope: VertexResourceScope; cachedContent: string } | { error: string } {
+	const name = cachedContent.trim();
+	const full = VERTEX_CACHED_CONTENT_NAME.exec(name);
+	const shortId = full ? undefined : VERTEX_SHORT_CACHED_CONTENT_NAME.exec(name)?.[1];
+	if (!full && !shortId) {
+		return { error: "cachedContent must be a Vertex AI cache name: projects/{project}/locations/{location}/cachedContents/{id}" };
+	}
+	const project = full ? full[1] : credential.project;
+	const location = full ? full[2].toLowerCase() : credential.location;
+	if (!project || !location) {
+		return {
+			error: "cachedContent on Vertex AI needs the cache's project and location. Send the full name, projects/{project}/locations/{location}/cachedContents/{id}, or use a service-account credential with project_id and region",
+		};
+	}
+	if (!VERTEX_LOCATION_PATTERN.test(location)) {
+		return { error: `cachedContent names an invalid Vertex AI location: ${location}` };
+	}
+	const required = vertexRequiredLocation(providerId, route.family, route.modelForPayload);
+	if (required && required !== location) {
+		return { error: `This model is served on Vertex AI only in ${required}, but the cache is in ${location}` };
+	}
+	if (providerId === "google-vertex-eu" && !required && !/^europe-/.test(location)) {
+		return { error: `Google Vertex EU serves only European locations, but the cache is in ${location}` };
+	}
+	return {
+		scope: { project, location },
+		cachedContent: full ? name : `projects/${project}/locations/${location}/cachedContents/${shortId}`,
+	};
+}
+
+export function isGoogleVertexHost(rawBase: string): boolean {
+	try {
+		const host = new URL(rawBase).hostname;
+		// Exact Vertex host shapes only: global, "{location}-aiplatform" and the regional "rep" hosts.
+		return /^(?:[a-z0-9-]+-)?aiplatform\.googleapis\.com$/.test(host) || /^aiplatform\.[a-z0-9-]+\.rep\.googleapis\.com$/.test(host);
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * The Vertex base URL for a request. `scope` replaces the configured project and location
+ * when the customer's own credential is used, so the request runs in their project; a
+ * model that Google serves in one location only keeps that location.
+ */
+export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string, scope?: VertexResourceScope): string {
+	const configuredBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
+	const defaultLocation = vertexDefaultLocation(providerId, family);
+	// A Google host is regional, so a customer location needs its own host.
+	const rawBase = (scope?.location || defaultLocation) && isGoogleVertexHost(configuredBase) ? "" : configuredBase;
+	const project = scope?.project || String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
+	const configuredLocation = scope?.location || defaultLocation || String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
+	const requiredLocation = vertexRequiredLocation(providerId, family, model);
 	const location = requiredLocation || configuredLocation || "global";
+	const scoped = Boolean(scope?.project || scope?.location);
 	if (providerId === "google-vertex-eu" && !requiredLocation && !/^europe-/.test(location)) {
 		throw vertexError("google-vertex_eu_location_required");
 	}
@@ -382,20 +562,19 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 		const expectedHost = location === "global" ? "aiplatform.googleapis.com"
 			: location === "eu" ? "aiplatform.eu.rep.googleapis.com" : `${location}-aiplatform.googleapis.com`;
 		const pathLocation = url.pathname.match(/\/locations\/([^/]+)/)?.[1];
-		if (url.protocol !== "https:" || url.hostname !== expectedHost || (pathLocation && pathLocation !== location)) {
+		if (url.protocol !== "https:" || url.hostname !== expectedHost || (!scoped && pathLocation && pathLocation !== location)) {
 			throw vertexError("google-vertex_endpoint_region_mismatch");
 		}
 	}
 
 	if (rawBase) {
-		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
+		const fullBase = /^(.*\/v\d+(?:beta\d+)?)\/projects\/[^/]+\/locations\/[^/]+$/i.exec(rawBase);
+		if (fullBase && !scoped) {
 			return rawBase;
 		}
 		if (!project) throw vertexError("google-vertex_project_missing");
-		if (/\/v\d+(?:beta\d+)?$/i.test(rawBase)) {
-			return `${rawBase}/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
-		}
-		return `${rawBase}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
+		const versionedBase = fullBase ? fullBase[1] : /\/v\d+(?:beta\d+)?$/i.test(rawBase) ? rawBase : `${rawBase}/v1`;
+		return `${versionedBase}/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 	}
 
 	if (!project) throw vertexError("google-vertex_project_missing");
@@ -432,10 +611,14 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			continue;
 		}
 		if (msg.role === "assistant") {
-			contents.push({
-				role: "model",
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming }),
-			});
+			const parts = [
+				...withoutEmptyGeminiTextParts(await irPartsToGeminiParts(
+					geminiReplayableAssistantParts(msg.content, { providerId: "google-vertex", model: modelOverride ?? ir.model }),
+					{ preserveReasoningAsThought: true, upstreamTiming },
+				)),
+				...irToolCallsToGeminiParts(msg.toolCalls, modelOverride ?? ir.model, "google-vertex"),
+			];
+			if (parts.length > 0) contents.push({ role: "model", parts });
 			continue;
 		}
 		if (msg.role === "tool") {
@@ -448,21 +631,16 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 						responsePayload = { content: toolResult.content };
 					}
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response: responsePayload,
-						},
-					}],
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					responsePayload,
+				));
 			}
 		}
 	}
 
 	const request: any = { contents };
-	if (ir.serviceTier) request.serviceTier = ir.serviceTier;
 
 	if (ir.googleCachedContent !== undefined) {
 		request.cachedContent = ir.googleCachedContent;
@@ -474,19 +652,33 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
 	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
 	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+	// GenerationConfig.seed (https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig).
+	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 
-	if (
+	const thinkingModelName = modelOverride ?? ir.model ?? "";
+	if (ir.reasoning?.enabled === false && modelSupportsGoogleThinkingLevels(thinkingModelName)) {
+		// Gemini 3 and later cannot switch thinking off; the least they accept is their
+		// lowest level (MINIMAL, or LOW where MINIMAL is a validation error).
+		generationConfig.thinkingConfig = {
+			includeThoughts: false,
+			thinkingLevel: getLowestGoogleThinkingLevel(thinkingModelName),
+		};
+	} else if (
 		ir.reasoning?.enabled ||
 		ir.reasoning?.effort ||
 		(ir.reasoning?.maxTokens !== undefined) ||
 		(ir.reasoning?.includeThoughts !== undefined)
 	) {
 		const thinkingConfig: any = { includeThoughts: ir.reasoning?.includeThoughts ?? true };
-		const modelName = modelOverride ?? ir.model;
+		const modelName = thinkingModelName;
 		const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(modelName ?? "");
 		if (ir.reasoning?.effort && supportsThinkingLevel) {
 			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
 			if (level) thinkingConfig.thinkingLevel = level;
+		} else if (ir.reasoning?.maxTokens !== undefined && modelRejectsGoogleThinkingBudget(modelName ?? "")) {
+			// Gemini 4 Argon returns 400 for any thinkingBudget; a budget becomes a level,
+			// as on Google AI Studio.
+			thinkingConfig.thinkingLevel = ir.reasoning.maxTokens > 0 ? "HIGH" : getLowestGoogleThinkingLevel(modelName ?? "");
 		} else if (ir.reasoning?.maxTokens !== undefined) {
 			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
 		} else if (ir.reasoning?.enabled) {
@@ -588,21 +780,15 @@ export function geminiToIR(
 	for (const candidate of json.candidates || []) {
 		const contentParts: IRContentPart[] = [];
 		const toolCalls: any[] = [];
+		const callIds = new Map<string, number>();
 
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
-				if (part.text) {
-					if (part.thought) {
-						contentParts.push({
-							type: "reasoning_text",
-							text: part.text,
-							thoughtSignature: part.thought_signature,
-							summary: part.thought_summary,
-						} as any);
-					} else {
-						contentParts.push({ type: "text", text: part.text });
-					}
+				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
+					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if (part.text) {
+					contentParts.push({ type: "text", text: part.text });
 				} else if (inlineData?.data) {
 					contentParts.push({
 						type: "image",
@@ -612,10 +798,14 @@ export function geminiToIR(
 						thoughtSignature: inlineData.thought_signature,
 					});
 				} else if (part.functionCall) {
+					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name,
+						id: geminiFunctionCallId(part, callIds),
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
+						...(typeof signature === "string" && signature
+							? { thoughtSignature: signature, thoughtSignatureModel: model }
+							: {}),
 					});
 				}
 			}
@@ -652,11 +842,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";

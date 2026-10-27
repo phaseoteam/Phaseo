@@ -70,7 +70,7 @@ describe("publicPricingRouteIdentity", () => {
 					meter_order: 1,
 				}]));
 			}
-			if (url.includes("v2_route_capabilities")) {
+			if (url.includes("v2_effective_route_capabilities")) {
 				return new Response(JSON.stringify([{
 					provider_model_id: "stealth:preview",
 					capability_id: "text.generate",
@@ -120,6 +120,7 @@ describe("publicPricingRouteIdentity", () => {
 describe("composeModelPricing", () => {
 	it("carries capability and service-tier policy metadata into composed pricing", () => {
 		const capabilityPolicy = {
+			zeroDataRetention: true,
 			tier: "private",
 			confidence: "confirmed",
 			zdrEligibility: "eligible",

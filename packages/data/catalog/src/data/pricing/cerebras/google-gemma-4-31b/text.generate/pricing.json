@@ -22,6 +22,22 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.99,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Cerebras: cached input tokens are billed at the standard input rate; caching adds no fee (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://inference-docs.cerebras.ai/capabilities/prompt-caching"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -48,6 +64,12 @@
       "url": "https://api.cerebras.ai/public/v1/models/gemma-4-31b",
       "accessed_at": "2026-08-21T00:00:00Z",
       "notes": "The live Cerebras model record lists $0.99 per million prompt tokens and $1.49 per million completion tokens."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://inference-docs.cerebras.ai/capabilities/prompt-caching",
+      "accessed_at": "2026-10-17T00:00:00Z",
+      "notes": "Cerebras: cached input tokens are billed at the standard input rate; caching adds no fee (accessed 2026-10-17)."
     }
   ],
   "verification": {

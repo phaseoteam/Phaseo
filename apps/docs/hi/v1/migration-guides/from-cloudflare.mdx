@@ -12,14 +12,14 @@ icon: "/icons/brands/cloudflare.svg"
 | सेटिंग | पहले | बाद में |
 | --- | --- | --- |
 | Gateway URL | खाते और Gateway के लिए विशिष्ट Cloudflare URL | `https://api.phaseo.app/v1` |
-| प्रमाणीकरण | Cloudflare और प्रोवाइडर क्रेडेंशियल | `PHASEO_API_KEY` |
+| प्रमाणीकरण | Cloudflare और प्रदाता क्रेडेंशियल | `PHASEO_API_KEY` |
 | रूटिंग नीति | Cloudflare Gateway कॉन्फ़िगरेशन | Phaseo रूटिंग सेटिंग और presets |
 | अनुरोध दृश्यता | Cloudflare analytics | Phaseo गतिविधि और अनुरोध विवरण |
 
 <Steps>
 <Step title="मौजूदा Gateway कॉन्फ़िगरेशन की सूची बनाएं">
 
-Cloudflare Gateway URL, प्रोवाइडर routes, कस्टम हेडर, कैश नियम, retry व्यवहार और ऐप द्वारा उपयोग किए जाने वाले analytics दर्ज करें। इससे ज़रूरी व्यवहार उन सेटिंग से अलग हो जाता है जिन्हें अब माइग्रेट करने की ज़रूरत नहीं है।
+Cloudflare Gateway URL, प्रदाता routes, कस्टम हेडर, कैश नियम, retry व्यवहार और ऐप द्वारा उपयोग किए जाने वाले analytics दर्ज करें। इससे ज़रूरी व्यवहार उन सेटिंग से अलग हो जाता है जिन्हें अब माइग्रेट करने की ज़रूरत नहीं है।
 
 </Step>
 
@@ -67,7 +67,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 <Step title="रूटिंग और साझा डिफ़ॉल्ट फिर से बनाएं">
 
-स्थिर प्रोवाइडर प्रतिबंध, प्रॉम्प्ट डिफ़ॉल्ट और generation पैरामीटर को [Presets](../guides/presets.mdx) में ले जाएं। प्रोवाइडर क्रम और fallback व्यवहार को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
+स्थिर प्रदाता प्रतिबंध, प्रॉम्प्ट डिफ़ॉल्ट और generation पैरामीटर को [Presets](../guides/presets.mdx) में ले जाएं। प्रदाता क्रम और fallback व्यवहार को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
 
 Cloudflare की कैश और analytics सेटिंग अपने आप स्थानांतरित नहीं होतीं। हर व्यवहार के लिए स्पष्ट निर्णय लें कि वह Phaseo, आपके ऐप या edge layer में होना चाहिए।
 

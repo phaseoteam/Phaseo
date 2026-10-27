@@ -1,6 +1,14 @@
 import { AUDIO_FAMILY_GROUPS } from "./audioFamily";
 
 const CAPABILITY_GROUPS: Record<string, string> = {
+	"extraction.extract": "extraction",
+	extractions: "extraction",
+	"decisions.make": "decisions",
+	decisions: "decisions",
+	"decision.make": "decisions",
+	systemone: "decisions",
+	"system.one": "decisions",
+	"typed.decisions": "decisions",
 	"text.generate": "text",
 	responses: "text",
 	"chat.completions": "text",
@@ -63,7 +71,9 @@ export function modelGroupModalities(
 			.replace(/[./_-]+/g, ".");
 		const group = CAPABILITY_GROUPS[capability];
 		if (group) groups.add(group);
+		if (group === "decisions") groups.add("decision");
 	}
 	if (AUDIO_FAMILY_GROUPS.some((group) => groups.has(group))) groups.add("audio");
+	if (groups.has("extraction")) groups.add("decisions");
 	return groups;
 }

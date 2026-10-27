@@ -1,0 +1,38 @@
+[
+	{
+		"id": "fastapi-client",
+		"query": "Add Phaseo to our FastAPI service using the official Python SDK.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Creates one shared Phaseo client with api_key from os.environ[\"PHASEO_API_KEY\"]",
+			"Uses generate_response for new text work",
+			"Keeps the model ID configurable"
+		]
+	},
+	{
+		"id": "notebook-key",
+		"query": "My Jupyter notebook has the Phaseo key pasted in a cell. Clean this up.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Moves the key to an environment variable",
+			"Warns that a committed key must be rotated"
+		]
+	},
+	{
+		"id": "batch-python",
+		"query": "Submit a batch of 500 prompts through Phaseo from Python and collect the results.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses client.batches.create and persists the batch ID",
+			"Polls until a terminal state with bounded backoff"
+		]
+	},
+	{
+		"id": "not-for-typescript",
+		"query": "Add @phaseo/sdk to our Express server.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the TypeScript SDK skill, not the Python one"
+		]
+	}
+]

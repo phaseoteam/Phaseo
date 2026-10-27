@@ -2,16 +2,17 @@
 title: "Set up coding agents with SKILL.md"
 icon: "file-code"
 description: "Pair the SDK with a SKILL.md file so local coding agents can use your Phaseo integration consistently."
+"og:image": "https://phaseo.app/og/dynamic?title=Set%20up%20coding%20agents%20with%20skill%20files&description=Pair%20the%20SDK%20with%20a%20skill%20file%20so%20local%20coding%20agents%20can%20use%20your%20Phaseo%20integration%20consistently.&pathname=/docs/v1/cookbook/coding-agents-skill-md"
 ---
 
 This recipe is for teams building internal tools, CLIs, or coding-agent workflows on top of the gateway SDKs.
 
 <Visibility for="humans">
 <Note>
-If you want a reusable starting point instead of writing every skill from scratch, install the public Phaseo skills from [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+If you want a reusable starting point instead of writing every skill from scratch, install the public Phaseo skills from [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Then keep project-specific instructions in your local `SKILL.md`.
@@ -20,10 +21,10 @@ Then keep project-specific instructions in your local `SKILL.md`.
 
 <Visibility for="agents">
 <Note>
-Reusable Phaseo skills live in [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Install them first with:
+Reusable Phaseo skills live in [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). Install them first with:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Then layer project-local instructions into the repository `SKILL.md`.

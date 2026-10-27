@@ -9,7 +9,7 @@ icon: "database-zap"
 プロンプトキャッシュは[レスポンスキャッシュ](../cookbook/response-caching-with-presets.mdx)とは異なります。プロンプトキャッシュでは推論を実行しますが、入力を繰り返し処理するコストとレイテンシを削減できます。レスポンスキャッシュは、同一リクエストに対して以前に生成した回答を返します。
 
 <Note>
-プロンプトキャッシュの対応状況はプロバイダーとモデルによって異なります。未対応のプロバイダーはキャッシュヒントを無視するか、キャッシュ料金を適用せずにルーティングします。キャッシュの読み取りと書き込みの料金はモデルページの料金表で確認してください。
+プロンプトキャッシュの対応状況はプロバイダーとモデルによって異なります。Phaseoは各プロバイダーに、そのプロバイダーがドキュメントで定めているキャッシュ制御だけを送り、それ以外は削除します。キャッシュ制御によってプロバイダーがルーティングから除外されることはありません。キャッシュ料金がまだ設定されていないルートでプロバイダーがキャッシュ済みトークンを返した場合、Phaseoはキャッシュ読み取りをそのルートの通常の入力料金で、キャッシュ書き込みを入力料金にプロバイダーが公表している書き込み倍率を掛けた料金で請求します。キャッシュの読み取りと書き込みの料金はモデルページの料金表で確認してください。
 </Note>
 
 ## キャッシュする内容
@@ -24,9 +24,38 @@ icon: "database-zap"
 
 リクエストごとに変わる内容、短い一度限りのユーザー入力、または選択したプロバイダーへの保存をポリシーで禁止されている機密データはキャッシュしないでください。
 
+## 自動キャッシュとオプトイン
+
+ほとんどのプロバイダーは、繰り返し現れるプロンプトのプレフィックスを自動でキャッシュします。Claudeでは明示的なオプトインが必要です。
+
+| プロバイダー | キャッシュ | Phaseoが送るもの |
+| --- | --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching)、[Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | 1,024トークン以上のプロンプトで自動 | `prompt_cache_key`。GPT-5.6以降ではブレークポイントと`prompt_cache_options`、それより前のモデルでは`prompt_cache_retention` |
+| Anthropic、Claude on AWS、Amazon Bedrock、Google Vertex AI上の[Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | オプトイン | `cache_control`ブレークポイント（1リクエストあたり最大4つ） |
+| Google AI Studioと[Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview)上の[Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5以降で自動 | 自分で作成した明示的キャッシュを指す`cached_content` |
+| [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | 自動 | `prompt_cache_key`と`x-grok-conv-id`ヘッダー |
+| [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | 自動 | 追加なし |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自動（5分のTTL）。Kimi K3では1時間のTTLをオプトインで指定可能 | `prompt_cache_key`と`prompt_cache_options` |
+| [Groq](https://console.groq.com/docs/prompt-caching) | Groqが挙げるモデルで自動 | 追加なし |
+| [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | 自動 | `prompt_cache_key`に加え、`x-session-affinity`ヘッダーと`user` |
+| [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | 自動 | `prompt_cache_key` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | 一部のモデルで自動 | `x-session-affinity`ヘッダー |
+| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching)、[Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | 自動。`prompt_cache_key`でヒット率が上がる | `prompt_cache_key` |
+| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | 自動（暗黙的）。明示的キャッシュはオプトイン | ブロックの`cache_control` |
+| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | 自動。VeniceがClaudeのブレークポイントを自ら追加 | ブロックの`cache_control` |
+| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | 自動。保持期間の指定はオプトイン | `prompt_cache_key`、`prompt_cache_breakpoint`、`prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | 自動。ClaudeとGemini 2.5のモデルでは明示的キャッシュも可 | ClaudeとGemini 2.5のモデルでブロックの`cache_control`（`ttl`なし） |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | 自動 | `prompt_cache_key`と`x-session-affinity`ヘッダー |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | 自動 | `prompt_cache_key`と`x-session-id`ヘッダー |
+
+その他のOpenAI互換プロバイダーには、APIが受け付ける場合に`prompt_cache_key`だけを送り、それ以外のキャッシュ制御は送りません。Phaseoは常に、キーそのものではなく、ワークスペースとキーのハッシュを送ります。[プロバイダーとの親和性](#provider-affinity)を参照してください。
+
+<span id="cache-controls"></span>
 ## キャッシュ制御
 
-PhaseoはChat Completions、Responses、Anthropic Messagesの各リクエストで、トップレベルの互換ヒント`cache_control`を受け付けます。
+### Claudeのデフォルトポリシー
+
+PhaseoはChat Completions、Responses、Anthropic Messagesの各リクエストで、トップレベルの`cache_control`を受け付けます。
 
 ```json
 {
@@ -37,22 +66,9 @@ PhaseoはChat Completions、Responses、Anthropic Messagesの各リクエスト�
 }
 ```
 
-短期間共有するコンテキストには`ttl: "5m"`を使い、プロバイダーとモデルが長期間のプロンプトキャッシュに対応している場合は`ttl: "1h"`を使います。対応プロバイダーでは、トップレベルのキャッシュ制御が自動またはデフォルトのキャッシュポリシーとして扱われます。
+これはClaudeのルートに対するデフォルトのキャッシュポリシーを設定し、Phaseoがキャッシュブレークポイントを配置します。短期間共有するコンテキストには`ttl: "5m"`（デフォルト）を使い、モデルが長期間のプロンプトキャッシュに対応している場合は`ttl: "1h"`を使います。ほかのプロバイダーはこれを無視します。トップレベルの`cache_control`は、会話を1つのプロバイダーにとどめる効果もあります。[プロバイダーとの親和性](#provider-affinity)を参照してください。
 
-対応するテキスト、画像、ツール結果、ツール定義の各ブロックに`cache_control`を直接指定して、明示的なキャッシュ境界を設けることもできます。
-
-```json
-{
-  "type": "text",
-  "text": "Large stable reference text...",
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "1h"
-  }
-}
-```
-
-プロバイダー固有のエイリアスも引き続き使えます。たとえば、`provider_options`を使ってAnthropicのデフォルトキャッシュポリシーを指定できます。
+`provider_options.anthropic.cache_control`は同じ設定です。両方を送った場合は`provider_options`の値が優先されます。
 
 ```json
 {
@@ -72,11 +88,135 @@ PhaseoはChat Completions、Responses、Anthropic Messagesの各リクエスト�
 
 | 範囲 | 動作 |
 | --- | --- |
-| `all_text` | キャッシュ制御がまだ設定されていないシステムテキストとユーザーのテキスト・画像ブロックに追加します。 |
+| `all_text` | デフォルト。システムテキストと、テキストまたは画像を含む直近3件のユーザーメッセージにキャッシュ制御を追加します。 |
 | `last_user_message` | 最新のユーザーメッセージにのみキャッシュ制御を追加します。 |
+| `agent` | ツールループ向け。最後のツール定義、システムテキスト、最後のメッセージ（ツール結果を含む）、前のステップのメッセージにキャッシュ制御を追加します。`conversation`は別名です。 |
 | `none` | デフォルトのキャッシュポリシーを適用しません。 |
 
 ブロックごとの`cache_control`はデフォルトポリシーより優先されます。
+
+Anthropicが受け付けるキャッシュブレークポイントは1リクエストあたり最大4つです。デフォルトポリシーは自分で設定した`cache_control`も数に含め、4つで止まります。認識されない`scope`の値は`agent`として扱われます。複数ステップのツールループには`agent`を使ってください。`all_text`と`last_user_message`はツール結果だけを含むメッセージをマークしないため、キャッシュされるプレフィックスが伸びなくなります。
+
+自分で付けたマークが4つを超える場合、Phaseoは最初の1つと最新の3つを残して残りを削除するため、リクエストは拒否されません。
+
+### ブロック単位のキャッシュブレークポイント
+
+コンテンツブロックにキャッシュマークを付けると、そのブロックまでのすべてをキャッシュします。Phaseoは2つの書き方を受け付けます。
+
+- `cache_control`: `{"type": "ephemeral"}`。任意で`ttl`に`5m`または`1h`を指定できます。
+- `prompt_cache_breakpoint`: OpenAIの`{"mode": "explicit"}`。任意で`30m`または`12h`の`ttl`を指定できます（[OpenAIの12時間キャッシュ](#12-hour-cache-on-openai)を参照）。両方を持つブロックでは`prompt_cache_breakpoint`が優先されます。
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+Chat CompletionsとResponsesでは、テキストと画像のパート、関数ツールの定義、テキストパートの配列を内容とするツール結果にマークを付けられます。Anthropic Messagesでは、Anthropicが受け付ける箇所すべてで`cache_control`を使えます。
+
+各プロバイダーには、それぞれの形式でマークが届きます。
+
+| プロバイダー | ブロックの`cache_control` | `prompt_cache_breakpoint` |
+| --- | --- | --- |
+| Anthropic、Claude on AWS、Amazon Bedrock、Google Vertex AI上のClaude | 指定した`ttl`付きの`{"type": "ephemeral"}`として送信 | `cache_control: {"type": "ephemeral"}`として送信 |
+| OpenAIのGPT-5.6以降 | `prompt_cache_breakpoint: {"mode": "explicit"}`として送信。`ttl`は除外 | `ttl`付きで送信 |
+| Azure OpenAIのGPT-5.6以降 | `prompt_cache_breakpoint: {"mode": "explicit"}`として送信。`ttl`は除外 | `ttl`なしで送信 |
+| OpenAIとAzure OpenAIのそれより前のモデル | 削除 | 削除 |
+| DeepInfra | 削除 | 送信 |
+| Alibaba Model StudioとVenice | 送信 | 削除 |
+| Inference.net（ClaudeとGemini 2.5のモデル） | `ttl`なしで送信 | 削除 |
+| その他のプロバイダー | 削除 | 削除 |
+
+ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Venice、Inference.netのClaudeとGemini 2.5のモデルだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
+
+Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュせず、Bedrockはこれらのモデルで`ttl`を拒否することがあります。これらのルートでは、Phaseoはブレークポイントを`ttl`なしで送信するため、5分間キャッシュされます。削除した`1h`は、`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`に`cache_control.ttl`として報告します。Inference.netは`ttl`なしのブレークポイントを案内しているため、Phaseoはそこでも同じように`ttl`を削除して報告し、書き込みは5分の書き込みとして課金されます。
+
+<span id="openai-retention-and-options"></span>
+### OpenAIの保持期間とオプション
+
+OpenAIのキャッシュ制御はモデルの世代によって異なります。Phaseoは、OpenAIが受け付ける場合にだけそれぞれを送ります。
+
+| フィールド | 値 | 送信先 |
+| --- | --- | --- |
+| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m`または`12h` | OpenAIのGPT-5.6以降 |
+| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m` | Azure OpenAIのGPT-5.6以降 |
+| `prompt_cache_options` | `mode`: `explicit`、`ttl`: `5m`または`1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`、`ttl`: `5m`（Kimi K3では`1h`も可） | Moonshot AI |
+| `prompt_cache_retention` | `in_memory`または`24h` | GPT-5.6より前のOpenAIとAzure OpenAIのモデル |
+
+GPT-5.6以降でOpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12h`で、Azure OpenAIは`30m`だけです。`explicit`モードでは自分で配置したブレークポイントだけがキャッシュされます。DeepInfraは同じオブジェクトを`5m`または`1h`の`ttl`で使い、セッション内のすべてのリクエストで`prompt_cache_key`が必要です。Moonshot AIは`mode: "implicit"`と、`5m`（デフォルト）または`1h`の`ttl`を受け付けます。Phaseoが`1h`を送るのは1時間の書き込み価格があるKimi K3のルートだけなので、その書き込みはその価格で課金されます。それ以外のルートでは`ttl`を削除し、`X-Phaseo-Dropped-Params`ヘッダーで`prompt_cache_options.ttl`として報告します。ほかのプロバイダーにはどちらのフィールドも送りません。
+
+どちらのフィールドも、トップレベルまたは`provider_options.openai`の下で送れます。両方ある場合はトップレベルの値が優先されます。
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+<span id="12-hour-cache-on-openai"></span>
+
+### OpenAIの12時間キャッシュ
+
+GPT-5.6以降では、`ttl: "12h"`を指定すると、OpenAIはキャッシュエントリを12時間以上保持します。リクエスト全体には`prompt_cache_options`で、個別のブレークポイントには`prompt_cache_breakpoint`で指定します。独自の`ttl`がないブレークポイントには、リクエストの`ttl`が適用されます。OpenAIは12時間のキャッシュ書き込みに入力料金の2.5倍、30分の書き込みに1.25倍を請求します。キャッシュ読み取りの料金はどちらも同じです。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAIは12時間の保持期間をResponses APIでのみ公表しています。これを指定したChat CompletionsリクエストはOpenAIのResponses APIで実行され、レスポンスはChat Completionsの形式のままです。
+- 12時間キャッシュを受け付けるルート（OpenAIのグローバルAPI）が優先して試されます。Azure OpenAI、ほかのプロバイダー、GPT-5.6より前のモデルなど、それ以外のルートには12時間の指定を外したリクエストが送られ、30分のデフォルトが適用されます。リクエストはそのまま実行され、外したフィールドは`prompt_cache_options.ttl`または`prompt_cache_breakpoint.ttl`として`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`で報告されます。
+
+### Google Gemini
+
+GeminiはGemini 2.5以降で暗黙的にキャッシュするため、何も送る必要はありません。GoogleのキャッシュAPIで作成した明示的キャッシュを使うには、その名前を`provider_options.google.cached_content`で渡します。
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+- Google AI Studioでは、`cached_content`は自分のGoogle APIキー（BYOK）を使う場合にだけ機能します。キャッシュは作成したアカウントに属するため、Phaseoのキーでは400が返ります。
+- Vertex AIでは、`cached_content`は自分のVertex AI認証情報でのみ機能します。Phaseoの認証情報では、リクエストは400を返します。キャッシュの完全な名前`projects/{project}/locations/{location}/cachedContents/{id}`を送ると、Phaseoはそのプロジェクトとロケーションにリクエストを送ります。`cachedContents/abc123`のような短い名前では、サービスアカウントJSONの`project_id`と`region`を使い、どちらかがない場合は400を返します。
+- GoogleはGemini 4 Argon以降で明示的キャッシュをサポートしていません。
+
+`provider_options.google.cache_control`と`provider_options.google.cache_ttl`は受け付けますが、Googleには送りません。
 
 ## Chat Completions
 
@@ -105,26 +245,6 @@ curl https://api.phaseo.app/v1/chat/completions \
       }
     ]
   }'
-```
-
-OpenAI経由のリクエストでは、OpenAI互換のトップレベルフィールドでOpenAIのキャッシュ保持オプションを渡します。
-
-```json
-{
-  "prompt_cache_retention": "24h"
-}
-```
-
-プロバイダー固有のエイリアスも指定できます。
-
-```json
-{
-  "provider_options": {
-    "openai": {
-      "prompt_cache_retention": "24h"
-    }
-  }
-}
 ```
 
 ## Responses
@@ -156,17 +276,7 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-すでにGoogle Geminiのキャッシュ済みコンテンツリソースがある場合は、`provider_options.google.cached_content`で渡します。
-
-```json
-{
-  "provider_options": {
-    "google": {
-      "cached_content": "cachedContents/abc123"
-    }
-  }
-}
-```
+Phaseoはレスポンスを保存しません。`previous_response_id`または`conversation`を指定したリクエストは400 `unsupported_param`を返すため、各ステップで会話全体を`input`に入れて送ってください。その変わらない冒頭部分がキャッシュされるプレフィックスになります。ツールループでは`reasoning`出力アイテムも送り返してください。[ツールループでの推論](../api-reference/endpoint/responses.mdx)を参照してください。
 
 ## Anthropic Messages
 
@@ -226,20 +336,69 @@ Anthropic Messagesでは次の箇所でキャッシュ制御を利用できま�
 - ツール結果ブロック
 - ツール定義
 
+1つのリクエストに複数のTTLがある場合、Anthropicでは`1h`のブレークポイントを`5m`のブレークポイントより前に置く必要があります。
+
+<span id="usage-and-pricing-fields"></span>
 ## 使用量と料金フィールド
 
-プロバイダーがキャッシュ使用量を返すと、Phaseoは共通の使用量フィールドに正規化します。
+使用量では、すべてのテキストエンドポイントでキャッシュの読み取りと書き込みを報告します。Chat CompletionsとResponsesはOpenAIのセマンティクスに従い、入力数にキャッシュの読み取りと書き込みを含めます。Anthropic MessagesはAnthropicのセマンティクスに従い、`input_tokens`にはそれらを含めません。
+
+| エンドポイント | 入力の合計 | キャッシュ読み取り | キャッシュ書き込み |
+| --- | --- | --- | --- |
+| Chat Completions | `prompt_tokens`（読み取りと書き込みを含む） | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`（読み取りと書き込みを含む） | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`。OpenAIのGPT-5.6以降では保持期間別に`input_tokens_details.cache_write_tokens_details.ttl_30m_tokens`と`ttl_12h_tokens`に分かれます |
+| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`（TTL別の内訳は`cache_creation.ephemeral_5m_input_tokens`と`cache_creation.ephemeral_1h_input_tokens`） |
+
+Chat CompletionsとResponsesでは、入力の合計からキャッシュの読み取りと書き込みを引いたものが、キャッシュされていない入力です。ストリーミングのAnthropic Messagesレスポンスでは、キャッシュのフィールドが`message_delta`に含まれます。Chat Completionsの使用量には保持期間別の内訳がありません。OpenAIがそこに内訳のフィールドを公表していないためです。内訳はリクエストの詳細に記録されます。
+
+<Note>
+以前のレスポンスでは、キャッシュ書き込みを`output_tokens_details.cached_tokens`（Chat Completionsでは`completion_tokens_details.cached_tokens`）として報告し、Chat CompletionsとResponsesのClaudeルートではキャッシュの読み取りと書き込みを`input_tokens`に含めていませんでした。現在はどちらも当てはまりません。書き込みは`cache_write_tokens`から読み取ってください。ストリーミングしないAnthropic Messagesレスポンスは以前`cache_creation_input_tokens: null`を返していましたが、現在は実際の値を返します。
+</Note>
+
+リクエストの詳細と料金の内訳では、次のメーターを使います。
 
 | 項目 | 意味 |
 | --- | --- |
-| `input_tokens_details.cached_tokens` | プロバイダーのプロンプトキャッシュから読み取られたキャッシュ済み入力トークン。 |
-| `output_tokens_details.cached_tokens` | プロバイダーのプロンプトキャッシュに書き込まれたキャッシュ済み入力トークン。 |
 | `cached_read_text_tokens` | キャッシュ読み取りの料金メーターです。プロバイダーのキャッシュから再利用された入力テキストを表します。 |
 | `cached_write_text_tokens` | プロバイダーのキャッシュ書き込み料金が一律の場合に使われる料金メーターです。 |
 | `cached_write_text_tokens_5m` | プロバイダーがTTL別の書き込み量を返す場合の、5分TTLキャッシュ書き込みトークン。 |
 | `cached_write_text_tokens_1h` | プロバイダーがTTL別の書き込み量を返す場合の、1時間TTLキャッシュ書き込みトークン。 |
+| `cached_write_text_tokens_30m` | 保持期間30分のOpenAIキャッシュ書き込みトークン。 |
+| `cached_write_text_tokens_12h` | 保持期間12時間のOpenAIキャッシュ書き込みトークン。 |
 
-キャッシュへの書き込みは通常の入力トークンより高く、読み取りは通常より安価です。正確な料金はプロバイダー、モデル、TTLによって異なります。
+### キャッシュ済みトークンの料金
+
+Phaseoは各入力トークンを1回だけ、1つの料金で請求します。
+
+- キャッシュされていない入力は入力料金
+- キャッシュ読み取りはキャッシュ読み取り料金
+- キャッシュ書き込みはキャッシュ書き込み料金。プロバイダーが5分と1時間（Claude）、または30分と12時間（OpenAI）の料金を分けている場合はそれぞれの料金
+
+キャッシュ書き込みを入力の合計に含めるプロバイダーもあれば、別に報告するプロバイダーもあります。Phaseoはどちらも同じように請求するため、書き込まれたトークンが通常の入力として二重に請求されることはありません。
+
+たとえば、入力53,100トークン（うちキャッシュ読み取り48,000、キャッシュ書き込み3,000）と出力850トークンのGPT-5.6 Solリクエストの料金は次のとおりです。
+
+| トークン | 100万あたりの料金 | 料金 |
+| --- | ---: | ---: |
+| キャッシュされていない入力 2,100 | $5.00 | $0.01050 |
+| キャッシュ読み取り 48,000 | $0.50 | $0.02400 |
+| キャッシュ書き込み 3,000 | $6.25 | $0.01875 |
+| 出力 850 | $30.00 | $0.02550 |
+| 合計 | | $0.07875 |
+
+このうち2,000の書き込みが12時間の保持期間だった場合、その料金は100万あたり$6.25ではなく$12.50になり、リクエストの料金は$0.09125になります。
+
+カタログにまだキャッシュ料金がないルートでプロバイダーがキャッシュ済みトークンを返しても、Phaseoはリクエストを失敗させません。
+
+- キャッシュ読み取りは、そのルートの入力料金で請求します。
+- キャッシュ書き込みは、入力料金にプロバイダーが公表している書き込み倍率を掛けて請求します。倍率は、Claudeの5分の書き込みが1.25倍、1時間が2倍、OpenAI、Azure OpenAI、Alibabaが1.25倍、Kimi K3の5分の書き込みが1倍、1時間が2倍、OpenAIの12時間の書き込みがどのルートでも2.5倍、その他のプロバイダーが1倍です。
+- 料金行には`pricing_fallback: "input_rate"`が付きます。
+
+キャッシュ書き込み料金がカタログに1つしかないClaudeのルートでは、その料金は5分の書き込み料金です。プロバイダーが1時間の書き込みとして報告した書き込みは、入力料金の2倍で、`pricing_fallback: "input_rate"`が付いた`cached_write_text_tokens_1h`の行として請求します。
+
+ストリーミングされたClaudeの応答の最後の`message_delta`は、TTL別の内訳なしでキャッシュ書き込みの累計を報告します。内訳を超える書き込みは5分の書き込みとして請求します。リクエストが1時間を指定していても、サーバーツールの書き込みには5分が使われることがあるためです。
+
+一部のモデルでキャッシュ済みトークンを割引しないプロバイダーもあります。そのモデルのページでは、入力とキャッシュ読み取りに同じ料金が表示されます。
 
 ## 実践的な確認
 
@@ -247,23 +406,37 @@ Anthropic Messagesでは次の箇所でキャッシュ制御を利用できま�
 
 1. キャッシュを作成またはウォームアップするために、1件リクエストを送ります。
 2. 同じキャッシュ対象コンテンツを含む2件目のリクエストを送ります。
-3. レスポンスの使用量とリクエスト詳細を確認し、キャッシュの読み取り・書き込みフィールドを探します。
+3. レスポンスの使用量で`cached_tokens`と`cache_write_tokens`を、リクエスト詳細でキャッシュのメーターを確認します。
 4. 初回だけでなく、複数回の呼び出し全体でレイテンシとコストを比較します。
 
+<span id="provider-affinity"></span>
 ## プロバイダーとの親和性
 
-デフォルトでPhaseoは、プロバイダーのプロンプトキャッシュ使用量をルーティングシグナルとして利用します。
-プロバイダーがキャッシュ済み入力トークンを返すと、同じキャッシュキーまたは安定した
-冒頭のコンテキストを持つリクエストは15分間そのプロバイダーを優先します。これにより、別の
-プロバイダーに同じプロンプトキャッシュを再構築させる費用を避けられます。
+プロンプトキャッシュは1つのプロバイダーに、多くの場合はそのプロバイダーの1つのリージョンまたはデプロイメントに存在します。Phaseoは関連するリクエストを、それを処理したプロバイダーとルートにとどめるため、エージェントループが別のプロバイダーでキャッシュを作り直す費用を払わずに済みます。
 
-`session_id`を含めると、キャッシュ読み取りが確認された時点でセッション親和性も作成されます。
-Phaseoはアクティブなセッション期間中その親和性を保持しながら、
-プロバイダーが不健全になった場合やポリシー対象外になった場合はフェイルオーバーします。
+会話を固定するには、`prompt_cache_key`か`session_id`を送るか、`cache_control`（トップレベル、`provider_options.anthropic.cache_control`、またはメッセージブロックやツールに付けた`cache_control`か`prompt_cache_breakpoint`のマーク）でキャッシュをオプトインします。Phaseoは最初に成功したリクエストを処理したプロバイダーとルートに会話を固定し、同じキーを持つ後続のリクエストもそこに送ります。固定はワークスペースごとに保持されます。
+
+固定の有効期間は、プロバイダーのキャッシュ保持期間によって決まります。
+
+| リクエスト | 固定の有効期間 |
+| --- | --- |
+| `session_id` | 24時間。セッションがアクティブな間は延長 |
+| `ttl: "1h"`を指定したAnthropicの`cache_control` | 90分 |
+| `prompt_cache_retention: "24h"`を指定したOpenAIまたはAzure OpenAI | 24時間 |
+| インメモリ保持（デフォルト）のOpenAIまたはAzure OpenAI | 90分 |
+| `prompt_cache_options`またはブレークポイントで`ttl: "12h"`を指定したOpenAI、または12時間の書き込みが報告された場合 | 18時間 |
+| `prompt_cache_options.ttl: "30m"`を指定したOpenAIまたはAzure OpenAI | 45分 |
+| その他すべて | 15分 |
+
+固定先が変わるのは、そのプロバイダーで障害が起きたとき（サーキットブレーカーが開いている、または直近のエラー率が高い）、そのプロバイダーでのPhaseo管理クォータを使い切ったとき、または有効なルート、プリセット、ガードレール、リクエストポリシーで許可されなくなったときだけです。その場合リクエストはフェイルオーバーし、固定はそのリクエストを処理したプロバイダーに移ります。リクエスト詳細では、ルーティング診断に`sticky_routing.demotionReason`として記録されます。固定されたリクエストは、回復中のプロバイダーを試すためには使われません。
+
+キー、`session_id`、キャッシュマークのいずれもない場合でも、Phaseoは冒頭コンテキストについてキャッシュの読み取りまたは書き込みを報告したプロバイダーに、そのプロバイダーのキャッシュ入力が通常の入力より安い限り、15分間固定します。
+
+Phaseoは生のキーではなく、ワークスペースと`prompt_cache_key`のハッシュをプロバイダーに送ります。そのため、2つのワークスペースで同じキーを使ってもプロバイダーのキャッシュを共有することはありません。`session_id`だけがある場合、PhaseoはOpenAI、xAI、Fireworks、Cerebras向けにセッションからこのハッシュを導出します。Fireworks、Cloudflare Workers AI、Basetenは`x-session-affinity`ヘッダーでも、Morphは`x-session-id`ヘッダーでもこれを受け取り、xAIは`provider_options.xai.conversation_id`を指定しない限り`x-grok-conv-id`として受け取ります。レスポンスには、送信した`prompt_cache_key`がそのまま返ります。
 
 1つのリクエストで無効にするには`provider.cache_aware_routing`を`false`に設定します。続けて、
 リクエストに`session_id`が含まれていても、通常のコンテキストベースのルーティングだけを使う場合は、
-`routing.session_affinity`を`false`に設定します。
+`routing.session_affinity`を`false`に設定します。この場合、Phaseoはセッションからプロバイダー用のキャッシュキーも導出しません。
 
 ## 関連ページ
 
@@ -271,5 +444,6 @@ Phaseoはアクティブなセッション期間中その親和性を保持し�
 - [Responses](../api-reference/endpoint/responses.mdx)
 - [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
 - [パラメーター](../api-reference/parameters.mdx)
+- [ルーティングとフォールバック](./routing-and-fallbacks.mdx)
 - [コンテキストとトークン予算の管理](./context-and-token-budgeting.mdx)
 - [プリセットを使ったレスポンスキャッシュ](../cookbook/response-caching-with-presets.mdx)

@@ -58,6 +58,13 @@ CREATE TABLE "public"."workspace_settings" (
   "auto_routing_fallbacks_enabled"               boolean                  NOT NULL DEFAULT true,
   "auto_routing_revision"                        uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "auto_routing_updated_at"                      timestamp with time zone NOT NULL DEFAULT now(),
+  "model_deprecation_alerts_include_admins"      boolean                  NOT NULL DEFAULT false,
+  "model_successor_redirect_enabled"             boolean                  NOT NULL DEFAULT false,
+  "model_successor_price_policy"                 text                     NOT NULL DEFAULT 'never'::text,
+  "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
+  "io_logging_contents_access"                   text                     NOT NULL DEFAULT 'members'::text,
+  "department_spend_attribution"                 text                     NOT NULL DEFAULT 'all'::text,
+  "billing_time_zone"                            text                     NOT NULL DEFAULT 'UTC'::text,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -66,6 +73,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_auto_routing_pattern_count_valid" CHECK ((cardinality(auto_routing_allowed_patterns) <= 16)),
   CONSTRAINT "workspace_settings_auto_routing_spend_profile_valid"
     CHECK ((auto_routing_spend_profile = ANY (ARRAY['economy'::text, 'standard'::text, 'premium'::text, 'unrestricted'::text, 'custom'::text]))),
+  CONSTRAINT "workspace_settings_billing_time_zone_check" CHECK (((char_length(billing_time_zone) >= 1) AND (char_length(billing_time_zone) <= 64))),
   CONSTRAINT "workspace_settings_data_contribution_classifier_sample_rate_che"
     CHECK (((data_contribution_classifier_sample_rate_bps >= 0) AND (data_contribution_classifier_sample_rate_bps <= 10000))),
   CONSTRAINT "workspace_settings_data_contribution_consent_check" CHECK (((NOT data_contribution_enabled) OR ((data_contribution_policy_version IS
@@ -73,11 +81,17 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_data_contribution_consented_by_fkey" FOREIGN KEY (data_contribution_consented_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "workspace_settings_data_contribution_discount_check" CHECK (((data_contribution_discount_bps >= 0) AND (data_contribution_discount_bps <= 10000))),
   CONSTRAINT "workspace_settings_data_contribution_sample_rate_check" CHECK (((data_contribution_sample_rate_bps >= 0) AND (data_contribution_sample_rate_bps <= 10000))),
+  CONSTRAINT "workspace_settings_department_spend_attribution_check" CHECK ((department_spend_attribution = ANY (ARRAY['all'::text, 'primary'::text]))),
+  CONSTRAINT "workspace_settings_io_logging_contents_access_check" CHECK ((io_logging_contents_access = ANY (ARRAY['members'::text, 'admins'::text]))),
   CONSTRAINT "workspace_settings_io_logging_billing_status_check" CHECK ((io_logging_billing_status = ANY (ARRAY['active'::text, 'grace'::text, 'suspended'::text]))),
   CONSTRAINT "workspace_settings_io_logging_price_per_million_units_check" CHECK ((io_logging_price_per_million_units_nanos >= 0)),
   CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
   CONSTRAINT "workspace_settings_low_balance_threshold_nonnegative" CHECK ((low_balance_email_threshold_nanos >= 0)),
   CONSTRAINT "workspace_settings_model_restriction_mode_valid" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
+  CONSTRAINT "workspace_settings_model_successor_max_price_increase_check"
+    CHECK (((model_successor_max_price_increase_percent >= 0) AND (model_successor_max_price_increase_percent <= 1000))),
+  CONSTRAINT "workspace_settings_model_successor_price_policy_check"
+    CHECK ((model_successor_price_policy = ANY (ARRAY['never'::text, 'limit'::text, 'any'::text]))),
   CONSTRAINT "workspace_settings_pkey" PRIMARY KEY (workspace_id),
   CONSTRAINT "workspace_settings_provider_restriction_mode_check" CHECK ((provider_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_settings_response_healing_mode_check" CHECK ((response_healing_mode = ANY (ARRAY['safe'::text, 'strict'::text]))),
@@ -100,6 +114,11 @@ CREATE TRIGGER protect_data_contribution_settings
   BEFORE INSERT OR UPDATE ON public.workspace_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_data_contribution_settings();
+
+CREATE TRIGGER validate_billing_time_zone
+  BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
 
 CREATE POLICY "team_settings_insert_own_team" ON "public"."workspace_settings"
   FOR INSERT
@@ -127,6 +146,10 @@ COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_spend_profile" IS 
 
 COMMENT ON COLUMN "public"."workspace_settings"."auto_top_up_failure_email_enabled" IS 'Email the workspace owner when an automatic credit top-up cannot be completed.';
 
+COMMENT ON COLUMN "public"."workspace_settings"."billing_time_zone" IS 'IANA time zone for spend rule calendar periods (rules with a null time_zone) and spend reports. Validated against pg_timezone_names by public.validate_workspace_billing_time_zone. Enforced key limits and workspace budgets stay on UTC.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."department_spend_attribution" IS 'How spend rules count a person''s spend toward departments when their key has no department: all (every department they belong to) or primary (only their primary one). A key''s own department always wins. See private.spend_scope_departments.';
+
 COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_classifier_sample_rate_bps" IS 'Independent upstream classifier submission rate in basis points. Platform controlled; initially 1000 (10%).';
 
 COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_discount_bps" IS 'Discount applied to eligible non-BYOK request charges in basis points. Platform controlled; initially 100 (1%).';
@@ -137,8 +160,18 @@ COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_sample_rate_b
 
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_billing_status" IS 'Extended-retention state consumed by the gateway I/O logging path.';
 
+COMMENT ON COLUMN "public"."workspace_settings"."io_logging_contents_access" IS 'Who may read stored request and response payloads: members (any workspace member) or admins (owners and admins only).';
+
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_price_per_million_units_nanos" IS 'Reserved extended-retention price override; zero uses the default.';
 
+COMMENT ON COLUMN "public"."workspace_settings"."model_deprecation_alerts_include_admins" IS 'Also email workspace admins, not only the owner, when a model the workspace recently called is deprecated.';
+
 COMMENT ON COLUMN "public"."workspace_settings"."model_restriction_model_ids" IS 'Canonical API model slugs used by the workspace-wide model restriction mode.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_max_price_increase_percent" IS 'With the limit price policy, the largest price increase allowed when redirecting to a successor, as a percentage.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_price_policy" IS 'Whether a successor that costs more may serve redirected requests: never, limit (up to the percentage) or any.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_redirect_enabled" IS 'Route requests for a model no provider serves any more to its admin-approved successor.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."payment_method_expiring_email_enabled" IS 'Email the workspace owner before a saved card used for billing expires.';

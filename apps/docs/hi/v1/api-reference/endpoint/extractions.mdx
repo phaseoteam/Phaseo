@@ -1,0 +1,59 @@
+---
+title: "मान निकालें"
+badge: "Beta"
+tag: "Beta"
+description: "टेक्स्ट और इमेज से टाइप किए गए मान निकालें।"
+icon: "list-filter"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>निष्कर्षण अभी प्रीव्यू में है। मॉडल की उपलब्धता कॉन्फ़िगर किए गए प्रदाता रूट पर निर्भर करती है।</Warning>
+
+निष्कर्षण Decisions परिवार का हिस्सा है। ज्ञात विकल्पों में से चुनने के लिए निर्णयों का उपयोग करें; चालान संख्या, तारीख या कुल राशि जैसे मान पाने के लिए निष्कर्षण का उपयोग करें।
+
+```typescript
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+
+इन उदाहरणों के लिए सक्रिय निष्कर्षण मॉडल रूट आवश्यक है। अनुरोध भेजने से पहले मॉडल की उपलब्धता जाँचें। Python में `AsyncPhaseo` पर भी `await client.extractions.create(...)` उपलब्ध है।
+
+## फ़ील्ड के प्रकार
+
+समर्थित प्रकार `text`, `number`, `date`, `time`, `datetime`, `duration` और `list` हैं। सूचियों के लिए `items: "text"`, `"number"` या `"date"` आवश्यक है। 1–64 फ़ील्ड और अधिकतम 16,384 स्रोत अक्षर दें। फ़ील्ड नाम अक्षर या अंडरस्कोर से शुरू होते हैं और उनमें अधिकतम 64 अक्षर, अंक, अंडरस्कोर, बिंदु या हाइफ़न हो सकते हैं।
+
+संख्याओं और अवधियों में `integer` और `decimals` (0–6) समर्थित हैं। अवधियाँ `seconds`, `minutes`, `hours`, `days`, `weeks`, `months` या `years` स्वीकार करती हैं। अधूरी तारीखों की व्याख्या किसी विशेष वर्ष पर निर्भर हो तो `reference_date` सेट करें।
+
+इमेज इनपुट `{ content_type, base64 }` ऑब्जेक्ट का उपयोग करते हैं: अधिकतम चार PNG/JPEG/WebP इमेज, डिकोड करने के बाद प्रत्येक 4 MiB और कुल 8 MiB। अनुरोध की सीमा 16 MiB है। रिमोट URL, PDF, ऑडियो, वीडियो, अनुमान, पूर्वानुमान और स्ट्रीमिंग समर्थित नहीं हैं।
+
+## उत्तर पढ़ें
+
+`answers[field_name].value` पढ़ें। स्रोत से मान निर्धारित न होने पर स्केलर मान `null` हो सकता है। `p_null` मॉडल के अनुसार मान अनिर्धारित होने की संभावना है; `confidence` मॉडल द्वारा दिया गया अलग स्कोर है। सूचियों में `p_null` के बिना विश्वास स्कोर मिलता है। ये स्कोर शुद्धता की गारंटी नहीं हैं: अपने कार्यभार के लिए समीक्षा सीमाएँ चुनें। वैध खाली सूची और विफल अनुरोध अलग हैं।
+
+`truncated: true` का अर्थ है कि प्रदाता ने पूरा स्रोत इनपुट संसाधित नहीं किया। पूर्णता पर भरोसा करने से पहले परिणाम की समीक्षा करें या छोटा इनपुट फिर भेजें। टेक्स्ट ऑफ़सेट और कच्चे अनुमान नहीं दिखाए जाते। जटिल गणनाएँ एप्लिकेशन कोड में करें।
+
+उपयोग में प्रदाता के सभी पास के कुल `input_tokens` बताए जाते हैं। आउटपुट टोकन शून्य होते हैं। स्रोत की लंबाई से लागत का अनुमान लगाने या उपयोग को फ़ील्ड की संख्या से गुणा करने के बजाय gateway द्वारा लौटाए गए मूल्य का उपयोग करें।

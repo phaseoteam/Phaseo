@@ -15,6 +15,8 @@ Use destinos de notificação para enviar alertas habilitados do espaço de trab
 5. Selecione **Enviar teste** para cada canal configurado.
 6. Crie os destinos depois que todos os testes forem concluídos com sucesso.
 
+Webhooks personalizados recebem um segredo de assinatura ao serem criados. Copie-o na caixa de diálogo que se abre; ele é exibido apenas uma vez.
+
 O Phaseo oferece suporte a:
 
 - endereços de e-mail e listas de distribuição
@@ -26,9 +28,13 @@ O Phaseo oferece suporte a:
 
 As credenciais e URLs de webhook são criptografadas antes do armazenamento. Restrinja as credenciais do canal ao envio de notificações e faça a rotação se forem expostas.
 
+<span id="enable-product-alerts"></span>
+
 ## Ativar alertas do produto
 
 A página de notificações lista os tipos de alerta disponíveis para o espaço de trabalho. Ative **Alertas de descontinuação de modelos** para receber um aviso antes que um modelo usado pelo espaço de trabalho seja desativado.
+
+**Avisos de modelo substituto** são enviados quando o [roteamento de modelos aposentados](./model-retirement.mdx#route-requests-to-a-replacement-automatically) está ativado e um modelo substituto responde às solicitações do espaço de trabalho para um modelo que nenhum provedor atende mais. É enviado um aviso por modelo e substituto, na primeira vez que um substituto responde com sucesso. O proprietário do espaço de trabalho sempre recebe um e-mail; escolha destinos para enviar o aviso também à sua equipe.
 
 Além dos destinatários integrados exibidos no painel, os alertas também são enviados aos destinos configurados.
 
@@ -47,3 +53,72 @@ Use menções com moderação. Em geral, alertas frequentes do espaço de trabal
 Use **Enviar teste** ao lado de um destino existente depois de trocar as credenciais ou alterar a configuração do canal. Remova destinos que não são mais monitorados para evitar que os alertas pareçam ser enviados a um canal abandonado.
 
 Webhooks personalizados devem usar HTTPS e validar a solicitação antes de processá-la. Retorne uma resposta de sucesso rapidamente e mova tarefas mais demoradas para um processo em segundo plano.
+
+## Verificar assinaturas de webhooks
+
+A Phaseo assina cada entrega de webhook personalizado, inclusive testes enviados a partir de um destino salvo, com o mesmo esquema dos [webhooks de vídeo e lote](./async-video-and-batch.mdx). Cada requisição traz estes cabeçalhos:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` é o HMAC-SHA256 em hexadecimal do valor de `x-phaseo-timestamp`, um ponto literal (`.`) e o **corpo da requisição sem modificações**, usando o segredo de assinatura do destino (`whsec_…`) como chave. `x-phaseo-timestamp` está em segundos Unix.
+
+Para verificar uma entrega:
+
+1. Leia o corpo bruto antes de interpretá-lo como JSON.
+2. Recalcule a assinatura e compare-a em tempo constante.
+3. Rejeite carimbos de data/hora com mais de cinco minutos de diferença do seu relógio.
+4. Elimine duplicatas por `x-phaseo-event-id`. Entregas com falha são repetidas, e cada tentativa é assinada novamente com um novo carimbo de data/hora.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody é o corpo da requisição exatamente como recebido, como string.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body é o corpo da requisição exatamente como recebido, em bytes.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### Gerar ou rotacionar um segredo
+
+O segredo é exibido uma única vez, quando o destino é criado. Para substituí-lo, selecione **Rotacionar segredo** ao lado do destino em **Configurações → Notificações**, ou chame [`POST /v1/notifications/destinations/{id}/rotate-secret`](/pt-BR/v1/api-reference/endpoint/notifications-destination-rotate-secret). A próxima entrega é assinada com o novo segredo e o antigo deixa de funcionar, então atualize seu receptor imediatamente.
+
+Webhooks personalizados criados antes da assinatura não têm segredo e continuam sendo entregues sem assinatura. Eles aparecem como **Sem assinatura** nas Configurações. Selecione **Gerar segredo**, adicione o segredo ao seu receptor e envie um teste para conferir a verificação. Testes enviados pelo painel **Adicionar destino**, antes de salvar, não são assinados porque ainda não existe segredo.
+
+Destinos de e-mail, Slack, Discord e Microsoft Teams não são assinados: esses serviços autenticam a URL do webhook ou o token do bot por conta própria.

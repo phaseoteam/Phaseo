@@ -589,6 +589,8 @@ function cacheWriteTtlLabelFromMeter(meter?: string | null): string | null {
     const normalized = String(meter ?? "").trim().toLowerCase();
     if (normalized === "cached_write_text_tokens_5m") return "5 min TTL";
     if (normalized === "cached_write_text_tokens_1h") return "1 hour TTL";
+    if (normalized === "cached_write_text_tokens_30m") return "30 min TTL";
+    if (normalized === "cached_write_text_tokens_12h") return "12 hour TTL";
     return null;
 }
 
@@ -597,6 +599,26 @@ function cacheWriteScopeLabel(meter: string | null | undefined, conditions: Cond
     if (!ttl) return null;
     const range = tokenRangeFromConditions(conditions);
     return range ? `${ttl} · ${range} input tokens` : ttl;
+}
+
+export function compareTokenTiers(a: TokenTier, b: TokenTier): number {
+    const lifetimeMinutes = (tier: TokenTier): number | null => {
+        const match = tier.meter?.match(/^cached_write_text_tokens_(\d+)(m|h)$/);
+        return match ? Number(match[1]) * (match[2] === "h" ? 60 : 1) : null;
+    };
+    const aLifetime = lifetimeMinutes(a);
+    const bLifetime = lifetimeMinutes(b);
+    if (aLifetime != null && bLifetime != null) {
+        const contextStart = (tier: TokenTier): number => Math.max(0, ...(tier.conditions ?? [])
+            .filter((condition) => condition.path.toLowerCase().includes("token") && ["gt", "gte"].includes(condition.op))
+            .map((condition) => Number(condition.value) + (condition.op === "gt" ? 1 : 0))
+            .filter(Number.isFinite));
+        const contextOrder = contextStart(a) - contextStart(b);
+        if (contextOrder) return contextOrder;
+        if (aLifetime !== bLifetime) return aLifetime - bLifetime;
+    }
+    if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+    return a.per1M - b.per1M;
 }
 
 function modalityLabel(mod: Modality): string | null {
@@ -1218,6 +1240,7 @@ export function buildProviderSections(
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
             const tier: TokenTier = {
                 conditions: conds,
+                meter: r.meter,
                 timeWindows: r.time_windows ?? [],
                 scheduledBasePer1M: perMillionIfTokens(unit, Number(r.price_per_unit), unitSize),
                 per1M: per1M ?? 0,
@@ -1452,7 +1475,7 @@ export function buildProviderSections(
     // Sorts
     const sortTiers = (tt?: TokenTriple) => {
         if (!tt) return;
-        const s = (arr: TokenTier[]) => arr.sort((a, b) => a.per1M - b.per1M);
+        const s = (arr: TokenTier[]) => arr.sort(compareTokenTiers);
         s(tt.in); s(tt.cached); s(tt.write); s(tt.out);
     };
     sortTiers(out.textTokens);

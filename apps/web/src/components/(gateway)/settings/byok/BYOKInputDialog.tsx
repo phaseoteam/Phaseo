@@ -233,6 +233,7 @@ export default function BYOKInputDialog({
 		() => localizedProviderKeyOnboarding(activeProviderId, providerName, t),
 		[activeProviderId, providerName, t],
 	);
+	const docsUrl = onboarding.docsUrl;
 	const providerModelsHref = activeProviderId
 		? `/api-providers/${encodeURIComponent(activeProviderId)}`
 		: null;
@@ -364,18 +365,21 @@ export default function BYOKInputDialog({
 								<HoverCardContent align="end" className="max-w-sm">
 									<div className="grid gap-2 text-xs">
 										<div>{onboarding.intro}</div>
-										{onboarding.docsUrl ? (
+										{docsUrl ? (
 											<div>
-												{t("settingsCopy.byok.docsPrefix")} {" "}
-												<Link
-													href={onboarding.docsUrl}
-													target={onboarding.docsUrl.startsWith("http") ? "_blank" : undefined}
-													rel={onboarding.docsUrl.startsWith("http") ? "noreferrer" : undefined}
-													className="underline underline-offset-2 hover:text-foreground"
-												>
-													{onboarding.docsLabel}
-												</Link>{" "}
-												{t("settingsCopy.byok.docsSuffix")}
+												{t.rich("settingsCopy.byok.docsLink", {
+													label: onboarding.docsLabel,
+													link: (chunks) => (
+														<Link
+															href={docsUrl}
+															target={docsUrl.startsWith("http") ? "_blank" : undefined}
+															rel={docsUrl.startsWith("http") ? "noreferrer" : undefined}
+															className="underline underline-offset-2 hover:text-foreground"
+														>
+															{chunks}
+														</Link>
+													),
+												})}
 											</div>
 										) : null}
 									</div>

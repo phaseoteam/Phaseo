@@ -2,7 +2,7 @@ import type { Instrumentation } from "next";
 import { PostHog } from "posthog-node";
 
 import { POSTHOG_API_HOST, POSTHOG_KEY } from "@/lib/analytics";
-import { readAnalyticsConsentFromCookieHeader } from "@/lib/cookieConsent";
+import { isAnalyticsBlockedPath, readAnalyticsConsentFromCookieHeader } from "@/lib/cookieConsent";
 
 export function register() {}
 
@@ -31,7 +31,8 @@ export const onRequestError: Instrumentation.onRequestError = async (error, requ
 			digest: (error as Error & { digest?: string }).digest,
 			environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
 			method: request.method,
-			path: request.path,
+			// Feedback links carry a credential in the path; report the route instead.
+			path: isAnalyticsBlockedPath(request.path.split("?")[0]) ? context.routePath : request.path,
 			release:
 				process.env.NEXT_PUBLIC_RELEASE ??
 				process.env.VERCEL_GIT_COMMIT_SHA ??

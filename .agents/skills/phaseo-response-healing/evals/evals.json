@@ -1,0 +1,36 @@
+[
+	{
+		"id": "broken-json",
+		"query": "About 2% of our structured extraction responses through Phaseo fail JSON.parse.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Enables response-healing at the preset or request level",
+			"Chooses safe or strict mode deliberately",
+			"Verifies in request-detail metadata whether healing ran and changed the payload"
+		]
+	},
+	{
+		"id": "streaming-no-heal",
+		"query": "Healing never seems to run on our streaming JSON requests.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Explains that streaming requests skip response healing"
+		]
+	},
+	{
+		"id": "prose-not-json",
+		"query": "The model sometimes answers in prose instead of JSON. Will healing fix that?",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Says to fix the prompt or response_format first; healing is structural, not semantic"
+		]
+	},
+	{
+		"id": "not-for-model-choice",
+		"query": "Which Phaseo models support JSON schema output?",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the model selection skill"
+		]
+	}
+]

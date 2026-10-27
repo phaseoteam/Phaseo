@@ -238,8 +238,38 @@ func CreateChatCompletion(client *Client, path map[string]string, query map[stri
 	return out, nil
 }
 
+func CreateClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/classifiers"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateDataContributionClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/data-contribution/classifiers"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateDepartmentBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/department-budgets"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -270,6 +300,21 @@ func CreateDynamicRoute(client *Client, path map[string]string, query map[string
 
 func CreateEmbedding(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/embeddings"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateExtraction(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/extractions"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -508,6 +553,36 @@ func CreateProviderCredential(client *Client, path map[string]string, query map[
 	return out, nil
 }
 
+func CreateRateLimitAssignment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/rate-limits/assignments"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateRateLimitPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/rate-limits/policies"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateRealtimeSession(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/audio/realtime/sessions"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -563,6 +638,21 @@ func CreateSpeech(client *Client, path map[string]string, query map[string]strin
 	var out interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/spend-rules"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -797,9 +887,41 @@ func DeleteApiKey(client *Client, path map[string]string, query map[string]strin
 	return out, nil
 }
 
+func DeleteClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/classifiers/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func DeleteDataContributionClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/data-contribution/classifiers/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteDepartmentBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/department-budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -928,6 +1050,54 @@ func DeletePrivateModel(client *Client, path map[string]string, query map[string
 func DeleteProviderCredential(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/byok/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteRateLimitAssignment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/assignments/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteRateLimitPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/policies/" + url.PathEscape(path["id"])
+	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func DeleteSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -1238,6 +1408,22 @@ func GetApiKey(client *Client, path map[string]string, query map[string]string, 
 	return out, nil
 }
 
+func GetClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/classifiers/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func GetCredits(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/credits"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -1270,6 +1456,22 @@ func GetCurrentApiKey(client *Client, path map[string]string, query map[string]s
 
 func GetDataContributionSettings(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/data-contribution"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetDepartmentBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/department-budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -1538,6 +1740,54 @@ func GetProviderCredential(client *Client, path map[string]string, query map[str
 func GetProviderDerankStatus(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["provider_id"] == "." || path["provider_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/health/providers/" + url.PathEscape(path["provider_id"]) + "/derank"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetRateLimitAssignment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/assignments/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetRateLimitPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/policies/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -1921,8 +2171,38 @@ func ListBatchRequestsAlias(client *Client, path map[string]string, query map[st
 	return out, nil
 }
 
+func ListClassifiers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/classifiers"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListDataModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/data/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListDepartmentBudgets(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/department-budgets"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -2271,6 +2551,67 @@ func ListProviders(client *Client, path map[string]string, query map[string]stri
 	return out, nil
 }
 
+func ListRateLimitAssignments(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/rate-limits/assignments"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListRateLimitPolicies(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/rate-limits/policies"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListSpendRuleHistory(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"]) + "/history"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListSpendRules(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/spend-rules"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListTeamModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/models/me"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -2563,6 +2904,22 @@ func MergeWorkspaceApp(client *Client, path map[string]string, query map[string]
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/apps/" + url.PathEscape(path["id"]) + "/merge"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func PreviewSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"]) + "/preview"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err
@@ -2917,6 +3274,22 @@ func RotateWebhookEndpointSecret(client *Client, path map[string]string, query m
 	return out, nil
 }
 
+func RotateWorkspaceNotificationDestinationSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/notifications/destinations/" + url.PathEscape(path["id"]) + "/rotate-secret"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func SetWorkspaceDepartmentMember(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["departmentId"] == "." || path["departmentId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	if path["userId"] == "." || path["userId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
@@ -2937,6 +3310,22 @@ func SetWorkspaceDepartmentMember(client *Client, path map[string]string, query 
 func SummarizeGatewayFeedback(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/feedback/summary"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func TestSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"]) + "/test"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err
@@ -3012,6 +3401,22 @@ func UpdateApiKey(client *Client, path map[string]string, query map[string]strin
 	return out, nil
 }
 
+func UpdateClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/classifiers/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func UpdateDataContributionClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/data-contribution/classifiers/" + url.PathEscape(path["id"])
@@ -3030,6 +3435,22 @@ func UpdateDataContributionClassifier(client *Client, path map[string]string, qu
 
 func UpdateDataContributionConsent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/data-contribution/consent"
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateDepartmentBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/department-budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -3204,6 +3625,54 @@ func UpdatePrivateModel(client *Client, path map[string]string, query map[string
 func UpdateProviderCredential(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/byok/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateRateLimitAssignment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/assignments/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateRateLimitPolicy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/rate-limits/policies/" + url.PathEscape(path["id"])
+	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UpdateSpendRule(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/spend-rules/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

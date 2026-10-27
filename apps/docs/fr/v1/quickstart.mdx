@@ -6,19 +6,35 @@ icon: "rocket"
 
 Utilisez ce tutoriel pour réussir une requête Phaseo, avec du texte généré ou une décision structurée, et vérifier où apparaît la réponse.
 
-<Note>
-**Vous utilisez un agent de programmation ?** Copiez et collez ce prompt avant de commencer :
+<Prompt description="**Vous utilisez un agent de programmation ?** Copiez et collez ce prompt avant de commencer" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 Vous allez :
 - créer une clé API
 - envoyer une requête texte ou une décision structurée
 - lire le texte généré ou les réponses typées
 - savoir quoi vérifier en premier si la requête échoue
+
+<Visibility for="agents">
+Liste de contrôle du démarrage rapide pour les agents :
+
+- Les clés se créent dans le tableau de bord, sur https://phaseo.app/settings/keys. N’en générez ni n’en devinez jamais. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code serveur.
+- Faites la première requête avec `POST https://api.phaseo.app/v1/responses`, en envoyant `model` et `input`. `phaseo/free` fonctionne sans solde dans le portefeuille.
+- Lisez la réponse dans `output[].content[]`, là où `type` vaut `output_text`.
+- Si la requête échoue, décidez selon le code `error` du JSON, comme décrit dans https://phaseo.app/docs/v1/api-reference/errors.md.
+</Visibility>
 
 ---
 
@@ -199,6 +215,29 @@ response = client.generate_response(
 )
 
 puts response
+```
+
+```java Java SDK
+// Build from source: https://phaseo.app/docs/fr/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
 ```
 
 ```rust Rust SDK

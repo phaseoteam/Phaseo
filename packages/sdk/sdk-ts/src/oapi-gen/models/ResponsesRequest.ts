@@ -1,5 +1,14 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface ResponsesRequest {
   background?: boolean;
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -27,7 +36,20 @@ export interface ResponsesRequest {
     | string
     | {
         content?: string | {}[] | {};
+        encrypted_content?: string;
+        format?:
+          | "anthropic-claude-v1"
+          | "openai-responses-v1"
+          | "azure-openai-responses-v1"
+          | "xai-responses-v1"
+          | "google-gemini-v1";
+        id?: string;
         role?: "user" | "assistant" | "system" | "developer";
+        signature?: string;
+        summary?: {
+          text: string;
+          type: "summary_text";
+        }[];
         type?: string;
       }[]
     | {};
@@ -41,8 +63,54 @@ export interface ResponsesRequest {
   model: string;
   models?: string[];
   parallel_tool_calls?: boolean;
+  plugins?: (
+    | {
+        enabled?: boolean;
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
+        exclude_domains?: string[];
+        id: "web";
+        include_domains?: string[];
+        max_results?: number;
+        max_uses?: number;
+        search_context_size?: "low" | "medium" | "high";
+      }
+    | {
+        allowed_domains?: string[];
+        blocked_domains?: string[];
+        enabled?: boolean;
+        engine?:
+          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+        id: "web-fetch";
+        max_content_tokens?: number;
+        max_uses?: number;
+      }
+    | {
+        enabled?: boolean;
+        id: "response-healing";
+        mode?: "safe" | "strict";
+      }
+  )[];
   previous_response_id?: string;
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+  };
   prompt_cache_key?: string | null;
+  prompt_cache_options?: {
+    mode?: "implicit" | "explicit";
+    ttl?: string;
+    [key: string]: unknown;
+  };
+  prompt_cache_retention?: "in_memory" | "24h";
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -104,7 +172,15 @@ export interface ResponsesRequest {
         compact_threshold?: number;
         type: "compaction";
       };
+      prompt_cache_options?: {
+        mode?: "implicit" | "explicit";
+        ttl?: string;
+        [key: string]: unknown;
+      };
       prompt_cache_retention?: string;
+    };
+    xai?: {
+      conversation_id?: string;
     };
   };
   reasoning?: {
@@ -116,7 +192,8 @@ export interface ResponsesRequest {
       | "medium"
       | "high"
       | "xhigh"
-      | "max";
+      | "max"
+      | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -130,7 +207,10 @@ export interface ResponsesRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "scale"
+    | null;
   session_id?: string;
   store?: boolean;
   stream?: boolean;
@@ -153,6 +233,12 @@ export interface ResponsesRequest {
   tools?: (
     | {
         async?: boolean;
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
         function: {
           description?: string;
           name: string;
@@ -225,6 +311,21 @@ export interface ResponsesRequest {
           max_results?: number;
         };
         type: "phaseo:search_models";
+      }
+    | {
+        filters?: {
+          allowed_domains?: string[];
+        };
+        search_context_size?: "low" | "medium" | "high";
+        type:
+          | "web_search"
+          | "web_search_2025_08_26"
+          | "web_search_preview"
+          | "web_search_preview_2025_03_11";
+        user_location?: {
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
       }
   )[];
   top_p?: number;

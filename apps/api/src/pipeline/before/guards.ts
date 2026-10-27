@@ -14,6 +14,7 @@ import {
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
+import { describeRetiredModel, findRetiredModelNotice } from "./retiredModels";
 import { generatePublicId } from "./genId";
 import { requestIdFor } from "@/runtime/request-id";
 import { isDebugAllowed } from "../debug";
@@ -23,8 +24,11 @@ import { readAttributionHeaders } from "../after/attribution";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { detectClientAttribution } from "./clientAttribution";
+import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
+import { hasConfiguredKeyLimits } from "./context.shared";
+import { shadowSpendLimitOnce } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -288,7 +292,8 @@ export function normalizeReturnFlag(value: unknown): boolean {
 }
 
 export type GuardOk<T> = { ok: true; value: T };
-export type GuardErr = { ok: false; response: Response };
+/** `unservedModel` is set when no provider serves the requested model at all. */
+export type GuardErr = { ok: false; response: Response; unservedModel?: string };
 export type GuardResult<T> = GuardOk<T> | GuardErr;
 
 type GuardAuthOptions = {
@@ -387,6 +392,7 @@ export async function guardJson(
     const maxBytes = options.maxBytes ?? (
         contentType.includes("multipart/form-data")
             ? MULTIPART_REQUEST_BODY_LIMIT_BYTES
+            : options.endpoint === "extractions" ? 16 * 1024 * 1024
             : options.endpoint === "decisions"
                 ? DECISIONS_REQUEST_BODY_LIMIT_BYTES
                 : DEFAULT_REQUEST_BODY_LIMIT_BYTES
@@ -448,6 +454,12 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
+    /**
+     * Compare the key-limit decision with the spend-limit coordinator (shadow mode). Only callers
+     * whose successes reach handleSuccessAudit, which records their spend, opt in; batch and
+     * realtime do not. OAuth requests carry a client ID in apiKeyId and must not opt in.
+     */
+    shadowSpendLimit?: boolean;
     testingMode?: boolean;
     internalOnly?: boolean;
     disableCache?: boolean;
@@ -476,7 +488,14 @@ export async function guardContext(args: {
             };
         }
 
+        if (args.shadowSpendLimit && !args.internal && (!context.keyLimit.ok || hasConfiguredKeyLimits(context.keyLimit))) {
+            // Shadow mode only: compares the spend-limit coordinator with this check, in the background.
+            shadowSpendLimitOnce({ workspaceId: args.workspaceId, keyId: args.apiKeyId, requestId: args.requestId }, context.keyLimit);
+        }
+
         if (!args.internal && !context.keyLimit.ok) {
+            // A used-up budget or key limit alerts the workspace in the background; this never waits or throws.
+            noteSpendLimitReached({ workspaceId: args.workspaceId, keyId: args.apiKeyId, reason: context.keyLimit.reason });
             const response = err("key_limit_exceeded", {
                 reason: context.keyLimit.reason ?? "key_limit_exceeded",
                 reset_at: context.keyLimit.resetAt,
@@ -505,8 +524,30 @@ export async function guardContext(args: {
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             const classification = classifyProviderCandidateFailure(candidateDiagnostics);
+            const unservedModel = candidateDiagnostics.totalProviders <= 0
+                ? context.resolvedModel ?? args.model
+                : undefined;
+            const retired = unservedModel ? await findRetiredModelNotice(unservedModel) : null;
+            if (retired) {
+                return {
+                    ok: false,
+                    unservedModel,
+                    response: err("model_retired", {
+                        reason: "model_retired_without_providers",
+                        error_operational_kind: "retired_model",
+                        description: describeRetiredModel(retired),
+                        model: args.model,
+                        retired_at: retired.retiredAt,
+                        replacement_model: retired.replacementModel,
+                        endpoint: args.endpoint,
+                        request_id: args.requestId,
+                        workspace_id: args.workspaceId,
+                    }),
+                };
+            }
             return {
                 ok: false,
+                unservedModel,
                 response: err("unsupported_model_or_endpoint", {
                     reason: classification.reason,
                     error_type: classification.errorType,
@@ -558,6 +599,23 @@ export async function guardContext(args: {
             },
         };
     } catch (e) {
+        // A missing or unusable preset is the caller's mistake (often a typo in
+        // the @reference), not a gateway failure.
+        const message = e instanceof Error ? e.message : String(e);
+        if (args.model.startsWith("@") && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
+            const missing = message.includes("preset_not_found");
+            return {
+                ok: false,
+                response: err(missing ? "not_found" : "validation_error", {
+                    reason: missing ? "preset_not_found" : "preset_no_model",
+                    description: missing
+                        ? `Preset "${args.model}" was not found, or this key cannot use it`
+                        : `Preset "${args.model}" has no model configured`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
         console.error("[guardContext] gateway_context_failed", e);
         return {
             ok: false,
@@ -618,10 +676,11 @@ export function makeMeta(input: {
             128,
         );
     const trace = normalizeTraceObject(rawBody?.trace);
+    const requestMetadata = readRequestMetadata(rawBody?.metadata);
     const otelTraceContext = parseW3cTraceContext(
         input.req.headers.get("traceparent"),
         input.req.headers.get("tracestate"),
-    );
+    ) ?? metadataTraceContext(requestMetadata);
     const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
@@ -687,6 +746,7 @@ export function makeMeta(input: {
         requestUserId,
         sessionId,
         trace,
+        requestMetadata,
         otelTraceContext,
         testId,
         requestMethod: input.req.method ?? null,

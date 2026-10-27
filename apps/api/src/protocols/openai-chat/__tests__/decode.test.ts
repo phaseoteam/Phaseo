@@ -628,7 +628,7 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.serviceTier).toBe("priority");
 	});
 
-	it("should decode user metadata", () => {
+	it("keeps user as the user id without adding it to metadata", () => {
 		const request = {
 			model: "gpt-4",
 			messages: [{ role: "user", content: "Hello" }],
@@ -637,10 +637,11 @@ describe("decodeOpenAIChatRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 
-		expect(ir.metadata?.user).toBe("user-123");
+		expect(ir.userId).toBe("user-123");
+		expect(ir.metadata).toBeUndefined();
 	});
 
-	it("should merge metadata and user fields", () => {
+	it("keeps metadata and user fields separate", () => {
 		const request = {
 			model: "gpt-4",
 			messages: [{ role: "user", content: "Hello" }],
@@ -649,7 +650,8 @@ describe("decodeOpenAIChatRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
-		expect(ir.metadata).toEqual({ trace: "abc", user: "user-123" });
+		expect(ir.metadata).toEqual({ trace: "abc" });
+		expect(ir.userId).toBe("user-123");
 	});
 
 	it("does not set service tier when omitted", () => {

@@ -180,16 +180,18 @@ export default async function TierOverview({ workspaceId }: Props) {
 									<>
 										<TrendingUp className="h-3 w-3 text-emerald-600" />
 										<span className="text-emerald-600 dark:text-emerald-400">
-											+{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											{t("vsLastMonth")}
+											{t("changeVsLastMonth", {
+												change: `+${(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%`,
+											})}
 										</span>
 									</>
 								) : mtd < lastMonth ? (
 									<>
 										<TrendingDown className="h-3 w-3 text-orange-600" />
 										<span className="text-orange-600 dark:text-orange-400">
-											{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											{t("vsLastMonth")}
+											{t("changeVsLastMonth", {
+												change: `${(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%`,
+											})}
 										</span>
 									</>
 								) : (

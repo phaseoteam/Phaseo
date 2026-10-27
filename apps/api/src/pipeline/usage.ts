@@ -7,6 +7,7 @@ import {
     resolveCanonicalTokenUsage,
     resolveRequestCountUsage,
 } from "@core/usage-normalization";
+import { openAICacheWriteTtlDetails, resolveCacheTokenUsage, totalInputTokens } from "@core/cache-usage";
 
 const pickNumber = (obj: any, path: string): number | undefined => {
     if (!obj || typeof obj !== "object") return undefined;
@@ -19,12 +20,15 @@ const pickNumber = (obj: any, path: string): number | undefined => {
     return typeof cur === "number" ? cur : undefined;
 };
 
-const CACHED_READ_SUBSET_PROVIDERS = new Set([
-    "x-ai",
-    "openai",
-    "google",
-    "google-ai-studio",
-]);
+/**
+ * OpenAI Chat usage reports audio tokens as `prompt_tokens_details.audio_tokens` and
+ * `completion_tokens_details.audio_tokens` (https://platform.openai.com/docs/api-reference/chat/object).
+ * Every Chat response carries them, usually as 0, so only a positive count is taken.
+ */
+const openAIChatAudioTokens = (obj: any, detailsKey: "prompt_tokens_details" | "completion_tokens_details"): number | undefined => {
+    const value = pickNumber(obj, `${detailsKey}.audio_tokens`);
+    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+};
 
 /**
  * Remove billing outputs from a usage payload so downstream pricing
@@ -40,6 +44,72 @@ export function stripUsagePricing(usage: any) {
     delete base.cost_cents;
     delete base.currency;
     return base;
+}
+
+const isUsageObject = (value: unknown): value is Record<string, any> =>
+    Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const isFiniteCount = (value: unknown): value is number =>
+    typeof value === "number" && Number.isFinite(value);
+
+/**
+ * Merge an executor's bill usage under the response payload's usage before pricing.
+ *
+ * The payload wins for overlapping fields, as before, and the bill keeps its extra meters.
+ * The cache hints (`cached_*_tokens_are_subset_of_input`) say how cache counts relate to
+ * `input_tokens`, so they must describe the object that supplied `input_tokens`. A Messages
+ * payload reports input without cache reads and writes (Anthropic), while the bill can hold
+ * the provider's OpenAI-style usage, whose hints say the cache sits inside input. Keeping
+ * the bill's hints next to the payload's input would take the cache out of input twice.
+ */
+export function mergeBillAndPayloadUsage(billUsage: unknown, payloadUsage: unknown): Record<string, any> {
+    const bill = isUsageObject(billUsage) ? billUsage : null;
+    const payload = isUsageObject(payloadUsage) ? payloadUsage : null;
+    const merged: Record<string, any> = { ...(bill ?? {}), ...(payload ?? {}) };
+    if (!bill || !payload) return merged;
+
+    const payloadInput = isFiniteCount(payload.input_tokens)
+        ? payload.input_tokens
+        : !isFiniteCount(bill.input_tokens) && isFiniteCount(payload.prompt_tokens)
+            ? payload.prompt_tokens
+            : undefined;
+    if (payloadInput === undefined) return merged;
+
+    // The bill's total was computed with the bill's input; next to the payload's input it would
+    // count the cache twice once the hints below make reads and writes additive. Derive it again.
+    if (!isFiniteCount(payload.total_tokens) && !isFiniteCount(payload.totalTokens)) {
+        delete merged.total_tokens;
+        delete merged.totalTokens;
+    }
+
+    const cache = resolveCacheTokenUsage(payload, payloadInput, { readSubsetDefault: true });
+    if (cache.readTokens !== undefined) {
+        delete merged.cachedReadTokensAreSubsetOfInput;
+        merged.cached_read_tokens_are_subset_of_input = cache.readSubset;
+    }
+    if (cache.writeTokens !== undefined) {
+        delete merged.cachedWriteTokensAreSubsetOfInput;
+        merged.cached_write_tokens_are_subset_of_input = cache.writeSubset;
+    }
+    return merged;
+}
+
+const SERVER_TOOL_USAGE_KEYS = ["native_web_search_requests", "native_web_fetch_requests", "server_tool_use"] as const;
+
+/**
+ * Server-tool counters an executor read from the upstream stream itself (authoritative usage)
+ * outrank the payload's copy after the merge: the payload is rebuilt from the client stream and
+ * can carry a lower or zero count, which would under-bill web searches.
+ */
+export function keepStreamServerToolMeters(
+    merged: Record<string, any>,
+    billUsage: unknown,
+    authoritative: boolean,
+): Record<string, any> {
+    if (!authoritative || !isUsageObject(billUsage)) return merged;
+    for (const key of SERVER_TOOL_USAGE_KEYS) {
+        if (billUsage[key] != null) merged[key] = billUsage[key];
+    }
+    return merged;
 }
 
 /** Media inputs counted from the request body, used when upstream usage omits them. */
@@ -153,49 +223,22 @@ export function shapeUsageForClient(
     }
 
     const canonicalTokens = resolveCanonicalTokenUsage(base);
-    const tokensIn = canonicalTokens.inputTokens;
+    // Client usage follows OpenAI semantics on every surface: input_tokens counts uncached
+    // input, cache reads and cache writes. Providers that report the cache on top of input
+    // (Anthropic) are converted here, so shaping is idempotent and pricing reads one form.
+    const cache = resolveCacheTokenUsage(base, canonicalTokens.inputTokens, { readSubsetDefault: true });
+    const tokensIn = totalInputTokens(canonicalTokens.inputTokens, cache);
     const tokensOut = canonicalTokens.outputTokens;
-    const totalTokens = canonicalTokens.totalTokens;
+    const totalTokens = canonicalTokens.totalTokens + (tokensIn - canonicalTokens.inputTokens);
 
-    const cachedRead =
-        pickNumber(base, "cached_read_text_tokens") ??
-        pickNumber(base, "input_tokens_details.cached_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cached_tokens") ??
-        pickNumber(base, "cached_tokens") ??
-        pickNumber(base, "prompt_cache_hit_tokens") ??
-        pickNumber(base, "cache_read_input_tokens");
-    const cachedWrite =
-        pickNumber(base, "cached_write_text_tokens") ??
-        pickNumber(base, "output_tokens_details.cached_tokens") ??
-        pickNumber(base, "input_tokens_details.cache_creation_input_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cache_creation_input_tokens") ??
-        pickNumber(base, "input_tokens_details.cache_creation_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cache_creation_tokens") ??
-        pickNumber(base, "cache_creation_input_tokens");
-    const cachedWrite5m =
-        pickNumber(base, "cached_write_text_tokens_5m") ??
-        pickNumber(base, "_ext.cachedWriteTokens5m") ??
-        pickNumber(base, "cache_creation.ephemeral_5m_input_tokens") ??
-        pickNumber(base, "cache_creation_5m_input_tokens") ??
-        pickNumber(base, "cache_creation_ephemeral_5m_input_tokens");
-    const cachedWrite1h =
-        pickNumber(base, "cached_write_text_tokens_1h") ??
-        pickNumber(base, "_ext.cachedWriteTokens1h") ??
-        pickNumber(base, "cache_creation.ephemeral_1h_input_tokens") ??
-        pickNumber(base, "cache_creation_1h_input_tokens") ??
-        pickNumber(base, "cache_creation_ephemeral_1h_input_tokens");
-    const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
-    const cachedReadIsSubsetHint = ((): boolean => {
-        const explicit = (base as any).cached_read_tokens_are_subset_of_input;
-        if (explicit === false) return false;
-        if (explicit === true) return true;
-        const providerHintRaw =
-            (base as any)._provider_id ??
-            (base as any).provider_id ??
-            (base as any).provider;
-        const providerHint = typeof providerHintRaw === "string" ? providerHintRaw.toLowerCase() : "";
-        return CACHED_READ_SUBSET_PROVIDERS.has(providerHint);
-    })();
+    const cachedRead = cache.readTokens;
+    const cachedWrite = cache.writeTokens;
+    const cachedWrite5m = cache.write5mTokens;
+    const cachedWrite1h = cache.write1hTokens;
+    const reasoningTokens =
+        pickNumber(base, "reasoning_tokens") ??
+        pickNumber(base, "output_tokens_details.reasoning_tokens") ??
+        pickNumber(base, "completion_tokens_details.reasoning_tokens");
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =
@@ -205,7 +248,8 @@ export function shapeUsageForClient(
     const inputAudioTokens =
         pickNumber(base, "input_audio_tokens") ??
         pickNumber(base, "input_tokens_details.input_audio") ??
-        pickNumber(base, "input_details.input_audio");
+        pickNumber(base, "input_details.input_audio") ??
+        openAIChatAudioTokens(base, "prompt_tokens_details");
     const inputVideoTokens =
         pickNumber(base, "input_video_tokens") ??
         pickNumber(base, "input_tokens_details.input_videos") ??
@@ -217,7 +261,8 @@ export function shapeUsageForClient(
     const outputAudioTokens =
         pickNumber(base, "output_audio_tokens") ??
         pickNumber(base, "output_tokens_details.output_audio") ??
-        pickNumber(base, "completion_tokens_details.output_audio");
+        pickNumber(base, "completion_tokens_details.output_audio") ??
+        openAIChatAudioTokens(base, "completion_tokens_details");
     const outputVideoTokens =
         pickNumber(base, "output_video_tokens") ??
         pickNumber(base, "output_tokens_details.output_videos") ??
@@ -230,13 +275,18 @@ export function shapeUsageForClient(
     const outputAudio = outputAudioTokens ?? pickNumber(base, "output_audio_count");
     const outputVideo = outputVideoTokens ?? pickNumber(base, "output_video_count");
 
-    const inputDetails: Record<string, number> = {};
+    const inputDetails: Record<string, any> = {};
     const nativeDecisions = ctx?.endpoint === "decisions" && Array.isArray(ctx.body?.questions);
     if (nativeDecisions) {
         inputDetails.cached_tokens = cachedRead ?? 0;
         inputDetails.cache_write_tokens = pickNumber(base, "input_tokens_details.cache_write_tokens") ?? cachedWrite ?? 0;
     }
     if (cachedRead !== undefined) inputDetails.cached_tokens = cachedRead;
+    if (cachedWrite !== undefined) inputDetails.cache_write_tokens = cachedWrite;
+    // OpenAI documents the per-lifetime write split on Responses usage only; Chat Completions
+    // usage has no such field, so it keeps just the total.
+    const writeTtlDetails = openAICacheWriteTtlDetails(cache);
+    if (writeTtlDetails && ctx?.endpoint !== "chat.completions") inputDetails.cache_write_tokens_details = writeTtlDetails;
     if (inputImages !== undefined) inputDetails.input_images = inputImages;
     if (inputAudio !== undefined) inputDetails.input_audio = inputAudio;
     if (inputVideo !== undefined) inputDetails.input_videos = inputVideo;
@@ -244,7 +294,6 @@ export function shapeUsageForClient(
     const outputDetails: Record<string, number> = {};
     if (nativeDecisions) outputDetails.reasoning_tokens = reasoningTokens ?? 0;
     if (reasoningTokens !== undefined) outputDetails.reasoning_tokens = reasoningTokens;
-    if (cachedWrite !== undefined) outputDetails.cached_tokens = cachedWrite;
     if (outputImages !== undefined) outputDetails.output_images = outputImages;
     if (outputAudio !== undefined) outputDetails.output_audio = outputAudio;
     if (outputVideo !== undefined) outputDetails.output_videos = outputVideo;
@@ -309,11 +358,15 @@ export function shapeUsageForClient(
     }
     if (cachedWrite5m !== undefined) shaped.cached_write_text_tokens_5m = cachedWrite5m;
     if (cachedWrite1h !== undefined) shaped.cached_write_text_tokens_1h = cachedWrite1h;
+    if (cache.write30mTokens !== undefined) shaped.cached_write_text_tokens_30m = cache.write30mTokens;
+    if (cache.write12hTokens !== undefined) shaped.cached_write_text_tokens_12h = cache.write12hTokens;
     if (
         shaped.cached_write_text_tokens == null &&
         (cachedWrite5m !== undefined || cachedWrite1h !== undefined)
     ) {
-        shaped.cached_write_text_tokens = (cachedWrite5m ?? 0) + (cachedWrite1h ?? 0);
+        // The reported write total, which can exceed the TTL split (a Claude stream's
+        // cumulative message_delta), wins over the split's sum.
+        shaped.cached_write_text_tokens = cachedWrite ?? (cachedWrite5m ?? 0) + (cachedWrite1h ?? 0);
     }
 
     shaped.input_tokens = tokensIn;
@@ -337,8 +390,13 @@ export function shapeUsageForClient(
         shaped.output_tokens_details = outputDetails;
     }
 
-    if (ctx?.includeInternalHints && cachedReadIsSubsetHint && cachedRead !== undefined) {
+    // The shaped totals above already include reads and writes, so the hints are always true
+    // here. They override any raw-usage hints this object is merged over before pricing.
+    if (ctx?.includeInternalHints && cachedRead !== undefined) {
         shaped.cached_read_tokens_are_subset_of_input = true;
+    }
+    if (ctx?.includeInternalHints && cachedWrite !== undefined) {
+        shaped.cached_write_tokens_are_subset_of_input = true;
     }
 
     return shaped;

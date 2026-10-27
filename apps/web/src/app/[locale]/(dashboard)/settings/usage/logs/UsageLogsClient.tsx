@@ -18,6 +18,7 @@ import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import UsageViewFilters from "@/components/(gateway)/usage/UsageViewFilters";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
 import InvestigateGeneration from "@/components/(gateway)/usage/UsageHeader/InvestigateGeneration";
 import UpstreamRequestsTable from "@/components/(gateway)/usage/UpstreamRequestsTable";
 import {
@@ -68,12 +69,6 @@ function firstSearchParam(
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) return value[0];
 	return undefined;
-}
-
-function formatLabelSpend(nanos: number, locale: string): string {
-	return new Intl.NumberFormat(locale, {
-		style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5,
-	}).format(Number.isFinite(nanos) ? nanos / 1e9 : 0);
 }
 
 const SAMPLE_CLIENT_SOURCES = [
@@ -368,36 +363,18 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					logErrorCodes={data.logErrorCodes}
 					logStatusCodes={data.logStatusCodes}
 				/>
-				<RequestLabelFilter facets={data.labelFacets} />
+				<RequestLabelFilter facets={data.labelFacets} classifiers={data.requestClassifiers ?? []} mode="logs" />
 			</>
 		);
 
 		content = (
 			<>
 				{data.labelSummary ? (
-					<Card className="ring-1 ring-primary/15">
-						<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-							<div className="min-w-0">
-								<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("strings.Filtered spend" as never)}</p>
-								<p className="mt-1 truncate text-sm font-medium">
-									<span className="font-mono">{data.labelSummary.key}</span>
-									<span className="px-1.5 text-muted-foreground">=</span>
-									<span>{data.labelSummary.value}</span>
-								</p>
-							</div>
-							<div className="flex items-center gap-6 text-sm">
-								<div>
-									<p className="text-xs text-muted-foreground">{t("strings.Requests" as never)}</p>
-									<p className="mt-1 font-mono font-medium">{new Intl.NumberFormat(locale).format(data.labelSummary.requestCount)}</p>
-								</div>
-								<div>
-									<p className="text-xs text-muted-foreground">{t("strings.Spend" as never)}</p>
-									<p className="mt-1 font-mono font-medium">{formatLabelSpend(data.labelSummary.totalCostNanos, locale)}</p>
-								</div>
-							</div>
-							{data.labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("strings.phraseSpendIsCalculatedFromA5000RequestSample" as never)}</p> : null}
-						</CardContent>
-					</Card>
+					<LabelFilterSummary
+						requestCount={data.labelSummary.requestCount}
+						totalCostNanos={data.labelSummary.totalCostNanos}
+						isSampled={data.labelSummary.isSampled}
+					/>
 				) : null}
 				<RequestsSection
 					columnSettingsTargetId="request-column-settings"
@@ -415,6 +392,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					initialNextCursor={data.initialRequestsPage.nextCursor}
 					initialPageSize={data.initialRequestsPage.pageSize ?? 50}
 					detailBasePath="/settings/usage/logs/requests"
+					requestClassifiers={data.requestClassifiers ?? []}
 				/>
 			</>
 		);
@@ -430,6 +408,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				detailDialog = (
 					<RouteRequestDetailDialog
 						detail={investigated.data}
+						requestClassifiers={investigated.data.requestClassifiers ?? data.requestClassifiers ?? []}
 						closeHref={buildLogsRequestHref(sp)}
 						previousHref={
 							currentIndex > 0

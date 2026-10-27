@@ -18,7 +18,7 @@ type Registry = { title: string; keys: string[]; fields: Field[] };
 async function request<T>(path: string, body?: unknown): Promise<T> {
   return fetchAccountWebApi<T>(`/api/account/models/catalog/registries${path}`, await getBrowserAccessToken(), body === undefined ? undefined : { method: "POST", body: JSON.stringify(body) });
 }
-function rowLabel(row: Row, fallback: string): string { return String(row.name ?? row.display_name ?? row.provider_model_slug ?? row.feature_name ?? row.meter_key ?? row.variant_key ?? row.region_code ?? row.plan_id ?? fallback); }
+function rowLabel(row: Row, fallback: string): string { return String(row.name ?? row.label ?? row.display_name ?? row.provider_model_slug ?? row.feature_name ?? row.allowance_key ?? row.component_key ?? row.model_slug ?? row.meter_key ?? row.variant_key ?? row.region_code ?? row.plan_id ?? fallback); }
 function ReferenceSelect({ field, value, disabled, onChange }: { field: Field; value: string; disabled: boolean; onChange: (value: string) => void }) {
   const tx = useTranslations();
   const [options, setOptions] = useState<Array<{ value: string; label: string }>>([]);
@@ -32,7 +32,7 @@ function ReferenceSelect({ field, value, disabled, onChange }: { field: Field; v
         rows.push(...result.rows);
         if (rows.length >= result.count || !result.rows.length) break;
       }
-      const keys: Record<string, string> = { organisations: "lab_slug", providers: "provider_slug", routes: "provider_model_id", regions: "provider_region_id", "service-tiers": "service_tier_slug", plans: "plan_uuid" };
+      const keys: Record<string, string> = { organisations: "lab_slug", providers: "provider_slug", routes: "provider_model_id", regions: "provider_region_id", "service-tiers": "service_tier_slug", plans: "plan_uuid", "plan-offers": "offer_uuid", "feature-definitions": "feature_key", models: "model_slug" };
       if (!cancelled) setOptions(rows.map((row) => ({ value: String(row[keys[field.reference!]]), label: `${rowLabel(row, tx("Common.ui.pricingEditorCopy.record"))}${row.provider_slug ? ` · ${row.provider_slug}` : ""}` })));
     })().catch(() => { if (!cancelled) setError(tx("Common.ui.pricingEditorCopy.couldNotLoadChoicesReloadToRetry")); });
     return () => { cancelled = true; };
@@ -73,7 +73,7 @@ export function RegistryEditor() {
   const canLeave = () => !saving && (!dirty || window.confirm(tx("Common.ui.pricingEditorCopy.discardUnsavedChanges")));
   const edit = (row: Row | null) => {
     if (!registry || !canLeave()) return;
-    const values = Object.fromEntries(registry.fields.map((field) => { const value = row ? row[field.key] : field.type === "uuid" ? crypto.randomUUID() : field.default ?? null; return [field.key, field.type === "json" ? JSON.stringify(value ?? {}, null, 2) : value]; }));
+    const values = Object.fromEntries(registry.fields.map((field) => { const value = row ? row[field.key] : field.type === "uuid" ? crypto.randomUUID() : field.default ?? null; return [field.key, field.type === "json" ? JSON.stringify(value ?? {}, null, 2) : field.type === "datetime" && (value === "-infinity" || value === "infinity") ? null : value]; }));
     setDraftResource(resource); setBefore(row); setDraft(values); setBaseline(JSON.stringify(values)); setError("");
   };
   const save = async () => {
@@ -82,7 +82,7 @@ export function RegistryEditor() {
     try {
       const values = Object.fromEntries(registry.fields.map((field) => [field.key, field.type === "json" ? JSON.parse(String(draft[field.key] || "{}")) : draft[field.key]]));
       const result = await request<{ row: Row }>(`/${resource}`, { values, before });
-      const saved = Object.fromEntries(registry.fields.map((field) => [field.key, field.type === "json" ? JSON.stringify(result.row[field.key] ?? {}, null, 2) : result.row[field.key] ?? null]));
+      const saved = Object.fromEntries(registry.fields.map((field) => [field.key, field.type === "json" ? JSON.stringify(result.row[field.key] ?? {}, null, 2) : field.type === "datetime" && (result.row[field.key] === "-infinity" || result.row[field.key] === "infinity") ? null : result.row[field.key] ?? null]));
       setDraft(saved); setBefore(result.row); setBaseline(JSON.stringify(saved)); setRevision((v) => v + 1);
     } catch (e) { setError(localizedInternalCatalogError(e, tx, "Common.ui.pricingEditorCopy.saveFailed")); }
     finally { setSaving(false); }

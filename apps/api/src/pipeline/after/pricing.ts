@@ -13,6 +13,7 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import { getProviderPricingKey } from "../before/context.shared";
+import { normalizePriceCardPlans, resolveBasePricingPlan } from "../pricing/service-tiers";
 
 function normalizeObservedServiceTier(value: unknown): string {
     if (typeof value === "string" && value.trim().toLowerCase() === "default") {
@@ -177,7 +178,7 @@ export async function loadProviderPricing(
 
 export function calculatePricing(
     usage: any,
-    card: PriceCard | null,
+    cardInput: PriceCard | null,
     body: any,
     _tier?: string | null,
     meta?: PipelineContext["meta"] | null
@@ -191,14 +192,18 @@ export function calculatePricing(
     let pricedUsage = usageMeters;
     let totalCents = 0;
     let totalNanos = 0;
-    let currency = card?.currency ?? "USD";
+    let currency = cardInput?.currency ?? "USD";
 
-    if (card) {
+    if (cardInput) {
+        // Cards from the request-context RPC keep the stored plan name (`fast`); price them
+        // under the engine's plan names so tier selection sees the same plans as the engine.
+        const card = normalizePriceCardPlans(cardInput);
         try {
 			const pricingPlan = derivePricingPlan(body, usage, card);
+			const basePlan = resolveBasePricingPlan(card) ?? "standard";
 			const activePlanRules = card.rules.filter(
 				(rule) => rule.pricing_plan === pricingPlan ||
-					(pricingPlan !== "standard" && rule.pricing_plan === "standard"),
+					rule.pricing_plan === basePlan,
 			);
 			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
 			const hasPaidOutputAudioRule = activePlanRules.some(
@@ -256,8 +261,9 @@ export function calculatePricing(
                 meta,
             );
 
-            // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+            // Step 1: Calculate base pricing (provider costs). The provider has already charged,
+            // so a rule whose condition the request did not meet falls back to its base rate.
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan, { baseRateFallback: true });
 			if (
 				billableUsage !== usageMeters &&
 				Number.isFinite(cachedReadTokens) &&

@@ -1,4 +1,5 @@
 export interface ApiKeyUpdateRequest {
+  department_id?: string | null;
   disabled?: boolean;
   expires_at?: string | null;
   include_byok_in_limit?: boolean;
@@ -21,4 +22,5 @@ export interface ApiKeyUpdateRequest {
   name?: string;
   scopes?: string | string[];
   soft_blocked?: boolean;
+  storage_locations?: string[] | null;
 }

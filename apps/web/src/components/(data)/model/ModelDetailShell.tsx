@@ -1,11 +1,13 @@
 import { ReactNode, Suspense } from "react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPageNotice,
+	fetchFrontendModelSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,7 @@ import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
 import UnreleasedBadge from "./UnreleasedBadge";
 import { UseModelSheet } from "./UseModelSheet";
+import { toQuickstartGatewayMetadata } from "./quickstart/quickstartGatewayMetadata";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
@@ -139,6 +142,11 @@ export default async function ModelDetailShell({
 	const gatewayMetadataPromise = isFreeRouter
 		? Promise.resolve(null)
 		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	// One trimmed copy for both client components, so the page embeds it once.
+	const quickstartMetadataPromise = gatewayMetadataPromise.then(toQuickstartGatewayMetadata);
+	const subscriptionPlansPromise = isFreeRouter
+		? Promise.resolve([])
+		: fetchFrontendModelSubscriptionPlans(modelId).catch(() => null);
 	const [header, modelOverview] = isFreeRouter
 		? [
 				{
@@ -177,8 +185,16 @@ export default async function ModelDetailShell({
 	const scopedVisibleTabKeys = isFreeRouter
 		? ["overview"]
 		: visibleTabKeys;
-	const canChat = canChatOverride ?? header.status !== "Retired";
-	const gatewayMetadata = await gatewayMetadataPromise;
+	const [gatewayMetadata, subscriptionPlans] = await Promise.all([
+		gatewayMetadataPromise,
+		subscriptionPlansPromise,
+	]);
+	const { canUseApi } = getModelAccessLayout({
+		hasSubscriptions: subscriptionPlans === null ? null : subscriptionPlans.length > 0,
+		hasApiProviders: (gatewayMetadata?.providers.length ?? 0) > 0,
+		isPrivateModel: header.is_private === true,
+	});
+	const canChat = canUseApi && (canChatOverride ?? header.status !== "Retired");
 	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
 	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
 		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));
@@ -190,7 +206,7 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<Suspense fallback={null}>
-				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={gatewayMetadataPromise} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
+				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={quickstartMetadataPromise} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
 			</Suspense>
 
 			<div className="container mx-auto px-4 py-8">
@@ -271,7 +287,7 @@ export default async function ModelDetailShell({
 						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 							<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}><Scale className="h-4 w-4" />{t("detail.actions.openDecisions")}</Link>
 						</Button> : null}
-						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
+						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={quickstartMetadataPromise} /></Suspense> : null}
 					</div>
 				</div>
 

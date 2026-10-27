@@ -90,8 +90,18 @@ inline Response CreateChatCompletion(Client& client, const std::map<std::string,
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -102,6 +112,11 @@ inline Response CreateDynamicRoute(Client& client, const std::map<std::string, s
 
 inline Response CreateEmbedding(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/embeddings";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateExtraction(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/extractions";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -180,6 +195,16 @@ inline Response CreateProviderCredential(Client& client, const std::map<std::str
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateRealtimeSession(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/audio/realtime/sessions";
 	return client.request("POST", resolved_path, body);
@@ -197,6 +222,11 @@ inline Response CreateResponse(Client& client, const std::map<std::string, std::
 
 inline Response CreateSpeech(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/audio/speech";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -275,8 +305,18 @@ inline Response DeleteApiKey(Client& client, const std::map<std::string, std::st
 	return client.request("DELETE", resolved_path, body);
 }
 
+inline Response DeleteClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
 inline Response DeleteDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -317,6 +357,21 @@ inline Response DeletePrivateModel(Client& client, const std::map<std::string, s
 
 inline Response DeleteProviderCredential(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/byok/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -415,6 +470,11 @@ inline Response GetApiKey(Client& client, const std::map<std::string, std::strin
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response GetClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetCredits(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/credits";
 	return client.request("GET", resolved_path, body);
@@ -427,6 +487,11 @@ inline Response GetCurrentApiKey(Client& client, const std::map<std::string, std
 
 inline Response GetDataContributionSettings(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -512,6 +577,21 @@ inline Response GetProviderCredential(Client& client, const std::map<std::string
 
 inline Response GetProviderDerankStatus(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/health/providers/" + path_segment(path.count("provider_id") ? path.at("provider_id") : std::string{}) + "/derank";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -635,8 +715,18 @@ inline Response ListBatchRequestsAlias(Client& client, const std::map<std::strin
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListClassifiers(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListDataModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListDepartmentBudgets(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -750,6 +840,26 @@ inline Response ListProviders(Client& client, const std::map<std::string, std::s
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListRateLimitAssignments(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListRateLimitPolicies(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListSpendRuleHistory(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/history";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListSpendRules(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListTeamModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/models/me";
 	return client.request("GET", resolved_path, body);
@@ -848,6 +958,11 @@ inline Response MakeDecision(Client& client, const std::map<std::string, std::st
 inline Response MergeWorkspaceApp(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/apps/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/merge";
 	return client.request("POST", resolved_path, body);
+}
+
+inline Response PreviewSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/preview";
+	return client.request("GET", resolved_path, body);
 }
 
 inline Response PublishPresetVersion(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
@@ -960,6 +1075,11 @@ inline Response RotateWebhookEndpointSecret(Client& client, const std::map<std::
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response RotateWorkspaceNotificationDestinationSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/notifications/destinations/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/rotate-secret";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response SetWorkspaceDepartmentMember(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/identity/departments/" + path_segment(path.count("departmentId") ? path.at("departmentId") : std::string{}) + "/members/" + path_segment(path.count("userId") ? path.at("userId") : std::string{});
 	return client.request("PUT", resolved_path, body);
@@ -968,6 +1088,11 @@ inline Response SetWorkspaceDepartmentMember(Client& client, const std::map<std:
 inline Response SummarizeGatewayFeedback(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/feedback/summary";
 	return client.request("GET", resolved_path, body);
+}
+
+inline Response TestSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/test";
+	return client.request("POST", resolved_path, body);
 }
 
 inline Response TestWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
@@ -990,6 +1115,11 @@ inline Response UpdateApiKey(Client& client, const std::map<std::string, std::st
 	return client.request("PATCH", resolved_path, body);
 }
 
+inline Response UpdateClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
 inline Response UpdateDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
@@ -997,6 +1127,11 @@ inline Response UpdateDataContributionClassifier(Client& client, const std::map<
 
 inline Response UpdateDataContributionConsent(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/consent";
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 
@@ -1052,6 +1187,21 @@ inline Response UpdatePrivateModel(Client& client, const std::map<std::string, s
 
 inline Response UpdateProviderCredential(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/byok/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

@@ -1,6 +1,6 @@
 import Phaseo, { type PhaseoOptions, type ResponsesRequest, type ResponsesResponse } from "@phaseo/sdk";
 import { AgentGatewayError, AgentStreamError } from "../errors.js";
-import { normalizeAgentItems } from "../items.js";
+import { isExecutedToolCallItem, normalizeAgentItems } from "../items.js";
 import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
@@ -76,10 +76,12 @@ function toResponsesInput(messages: AgentMessage[]) {
 }
 
 function toInstructions(messages: AgentMessage[], override?: string) {
+	// The runtime keeps string instructions as the run's first system message and also passes them as
+	// request.instructions, so a system message with the same text is already covered by the override.
 	const systemText = messages
 		.filter((message) => message.role === "system")
 		.map((message) => coerceTextContent(message.content))
-		.filter((value) => value.trim().length > 0)
+		.filter((value) => value.trim().length > 0 && value.trim() !== override?.trim())
 		.join("\n\n");
 
 	if (override && systemText) return `${override}\n\n${systemText}`;
@@ -129,8 +131,9 @@ function extractToolCalls(response: ResponsesResponse): AgentToolCall[] | undefi
 			? response.output
 			: [];
 
+	// Server tools the gateway already ran come back with their result and are not left for the agent to run.
 	const toolCalls = items
-		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call")
+		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call" && !isExecutedToolCallItem(item))
 		.map((item, index) => ({
 			id: item.call_id ?? `tool_call_${index}`,
 			name: item.name ?? "tool",
@@ -249,6 +252,9 @@ export function createGatewayAgentClient(
 	options: GatewayAgentClientOptions = {},
 ): AgentModelClient {
 	const client = options.client ?? new Phaseo({
+		// The gateway refuses retired models itself, with an error that keeps its status and reason, so
+		// agent turns skip @phaseo/sdk's GET /models lookup unless clientOptions turns it back on.
+		modelLifecycleChecks: false,
 		...(options.clientOptions ?? {}),
 		headers: {
 			...(options.clientOptions?.headers ?? {}),
@@ -305,11 +311,12 @@ export function createGatewayAgentClient(
 						if (eventType.endsWith(".delta")) unfinished = true;
 						if (eventType === "response.output_item.done") unfinished = false;
 						const delta = typeof chunk.delta === "string" ? chunk.delta : typeof chunk.text === "string" ? chunk.text : "";
-						if (eventType === "error" || eventType === "response.error") throw streamFailure(chunk.error ?? chunk, "stream_error", true);
+						if (eventType === "error" || eventType === "response.error" || (!eventType && chunk.error !== undefined)) throw streamFailure(chunk.error ?? chunk, "stream_error", true);
 						if (eventType === "response.failed" || eventType === "response.incomplete" || eventType === "response.cancelled") throw responseFailure((chunk.response ?? chunk) as Record<string, unknown>, eventType.slice(9));
 						if (eventType.includes("reasoning") && eventType.endsWith(".delta") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
 						else if (eventType === "response.output_text.delta" && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
-						if (chunk.item) {
+						// An added item is still empty (a call has no arguments yet); its done event carries it whole.
+						if (chunk.item && eventType !== "response.output_item.added") {
 							if (eventType === "response.output_item.done") completedItems.push(chunk.item);
 							for (const item of normalizeAgentItems(chunk.item)) {
 								yield { type: "response.item" as const, item, raw: chunk };

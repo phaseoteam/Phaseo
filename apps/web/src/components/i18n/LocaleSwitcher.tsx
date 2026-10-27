@@ -22,7 +22,6 @@ export type LocaleSwitcherProps = {
 
 const localeFlagCodes = {
 	"en-GB": "gb",
-	"en-US": "us",
 	"zh-Hans": "cn",
 	hi: "in",
 	"es-ES": "es",

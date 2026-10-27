@@ -118,10 +118,24 @@ function createChatCompletion(Client $client, ?array $path = null, ?array $query
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/classifiers";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createDataContributionClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data-contribution/classifiers";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/department-budgets";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -136,6 +150,13 @@ function createEmbedding(Client $client, ?array $path = null, ?array $query = nu
 {
 	$path = $path ?? [];
 	$resolvedPath = "/embeddings";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createExtraction(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/extractions";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -244,6 +265,20 @@ function createProviderCredential(Client $client, ?array $path = null, ?array $q
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createRateLimitAssignment(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/assignments";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createRateLimitPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/policies";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createRealtimeSession(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -269,6 +304,13 @@ function createSpeech(Client $client, ?array $path = null, ?array $query = null,
 {
 	$path = $path ?? [];
 	$resolvedPath = "/audio/speech";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-rules";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -381,11 +423,27 @@ function deleteApiKey(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
+function deleteClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function deleteDataContributionClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/data-contribution/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -450,6 +508,30 @@ function deleteProviderCredential(Client $client, ?array $path = null, ?array $q
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/byok/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteRateLimitAssignment(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/assignments/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteRateLimitPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -603,6 +685,14 @@ function getApiKey(Client $client, ?array $path = null, ?array $query = null, ?a
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getCredits(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -621,6 +711,14 @@ function getDataContributionSettings(Client $client, ?array $path = null, ?array
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data-contribution";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -753,6 +851,30 @@ function getProviderDerankStatus(Client $client, ?array $path = null, ?array $qu
 	$path = $path ?? [];
 	if (in_array((string)($path["provider_id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/health/providers/" . rawurlencode((string)($path["provider_id"] ?? "")) . "/derank";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getRateLimitAssignment(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/assignments/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getRateLimitPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -934,10 +1056,24 @@ function listBatchRequestsAlias(Client $client, ?array $path = null, ?array $que
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listClassifiers(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/classifiers";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listDepartmentBudgets(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/department-budgets";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1100,6 +1236,35 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listRateLimitAssignments(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/assignments";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listRateLimitPolicies(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/policies";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listSpendRuleHistory(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/history";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listSpendRules(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-rules";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1242,6 +1407,14 @@ function mergeWorkspaceApp(Client $client, ?array $path = null, ?array $query = 
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/apps/" . rawurlencode((string)($path["id"] ?? "")) . "/merge";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function previewSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/preview";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
 function publishPresetVersion(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1420,6 +1593,14 @@ function rotateWebhookEndpointSecret(Client $client, ?array $path = null, ?array
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function rotateWorkspaceNotificationDestinationSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/notifications/destinations/" . rawurlencode((string)($path["id"] ?? "")) . "/rotate-secret";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function setWorkspaceDepartmentMember(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1434,6 +1615,14 @@ function summarizeGatewayFeedback(Client $client, ?array $path = null, ?array $q
 	$path = $path ?? [];
 	$resolvedPath = "/feedback/summary";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function testSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? "")) . "/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
 function testWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1467,6 +1656,14 @@ function updateApiKey(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 
+function updateClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
 function updateDataContributionClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1479,6 +1676,14 @@ function updateDataContributionConsent(Client $client, ?array $path = null, ?arr
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data-contribution/consent";
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1565,6 +1770,30 @@ function updateProviderCredential(Client $client, ?array $path = null, ?array $q
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/byok/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateRateLimitAssignment(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/assignments/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateRateLimitPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-rules/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

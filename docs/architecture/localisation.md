@@ -103,8 +103,10 @@ authenticated product surfaces:
 - the composed Next.js Proxy negotiates the public page tree while APIs, assets,
   OAuth callbacks, session refresh, Markdown, and existing technical routes
   retain their required unprefixed behavior;
-- `cacheComponents` and partial prefetching remain enabled, with locale route
-  parameters preserving static generation across the public locale matrix.
+- `cacheComponents` remains enabled, with locale route parameters preserving
+  static generation across the public locale matrix; `partialPrefetching` is
+  set to `false`, because its runtime prefetch copy duplicated each page's
+  translations in the response.
 
 Translations are machine-assisted drafts and still require native-speaker QA.
 Legal and editorial exceptions must remain clearly identified until separately

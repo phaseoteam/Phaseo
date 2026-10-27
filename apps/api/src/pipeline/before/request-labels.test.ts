@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { parseRequestLabels } from "./request-labels";
 
 describe("parseRequestLabels", () => {
+    it("reserves the classifier label for the gateway's own classifier calls", () => {
+        const request = () => new Request("https://gateway.local", {
+            headers: { "x-phaseo-metadata": JSON.stringify({ labels: [{ key: "phaseo.classifier", value: "clf_1" }] }) },
+        });
+        expect(parseRequestLabels(request())).toEqual({ ok: false, message: "x-phaseo-metadata label key phaseo.classifier is reserved" });
+        expect(parseRequestLabels(request(), { allowClassifierLabel: true })).toEqual({ ok: true, labels: [{ key: "phaseo.classifier", value: "clf_1" }] });
+    });
+
     it("parses unique string labels from the Phaseo header", () => {
         const result = parseRequestLabels(new Request("https://gateway.local", {
             headers: {

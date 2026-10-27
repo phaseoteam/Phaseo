@@ -3,6 +3,7 @@ export interface ApiKeyWithValueResponse {
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -33,6 +34,7 @@ export interface ApiKeyWithValueResponse {
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -58,4 +60,5 @@ export interface ApiKeyWithValueResponse {
     usage_weekly: number;
     workspace_id: string;
   };
+  key: string;
 }

@@ -20,7 +20,31 @@ String body = """
 }
 """;
 
-Object response = client.createChatCompletion(body);
+Object response = client.createChatCompletion(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
 System.out.println(String.valueOf(response));
+```
+
+## Streaming
+
+`streamResponse` et `rawClient().requestLines` renvoient les lignes SSE dès leur arrivée. Fermez le flux avec try-with-resources et gérez les noms d'événements, les données et les marqueurs de fin dans votre application.
+
+```java
+import app.phaseo.sdk.Phaseo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello")),
+    "stream", true
+);
+try (var lines = client.rawClient().requestLines(
+    "POST", "/chat/completions", null, null,
+    new ObjectMapper().writeValueAsString(payload)
+)) {
+    lines.forEach(System.out::println);
+}
 ```
 

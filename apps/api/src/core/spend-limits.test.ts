@@ -23,9 +23,11 @@ import {
 	checkSpendLimit,
 	flushSpendRecordsForTests,
 	getSpendLimitMode,
+	recordShadowSpend,
 	recordSpend,
 	releaseSpend,
 	shadowSpendLimit,
+	shadowSpendLimitOnce,
 } from "./spend-limits";
 import { SPEND_LEASE, type SpendDenial, type SpendLeaseMeta } from "./spend-limits.shared";
 
@@ -503,6 +505,48 @@ describe("spend-limit coordinator", () => {
 			const sameReason = await shadowSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "s4" },
 				{ ok: false, reason: "daily_request_limit_reached" });
 			expect(sameReason.diverged).toBe(false);
+		} finally { warn.mockRestore(); }
+	});
+
+	it("wires shadow mode: each API-key request is compared once and its spend counted, only when the flag says shadow", async () => {
+		const API_KEY = "00000000-0000-4000-8000-000000000001";
+		database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [1, 0] });
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		const bindings = runtime.bindings!;
+		try {
+			bindings.GATEWAY_SPEND_LIMIT_DO_MODE = "off";
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "off" }, { ok: true, reason: null });
+			recordShadowSpend({ workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId: "off", requestId: "off", costNanos: 5 });
+			await flush();
+			expect(database.calls).toHaveLength(0);
+
+			bindings.GATEWAY_SPEND_LIMIT_DO_MODE = "shadow";
+			// Internal requests and non-UUID key IDs (OAuth client IDs) are never shadowed.
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "internal", internal: true }, { ok: true, reason: null });
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: "client_app", requestId: "oauth" }, { ok: true, reason: null });
+			recordShadowSpend({ workspaceId: WORKSPACE, keyId: "client_app", billingRequestId: "oauth", requestId: "oauth", costNanos: 5 });
+			await flush();
+			expect(database.calls).toHaveLength(0);
+
+			// guardContext can run several times for one request; only the first compares.
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1" }, { ok: true, reason: null });
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1" }, { ok: true, reason: null });
+			await flush();
+			expect(database.calls).toHaveLength(1);
+			expect(warn).not.toHaveBeenCalledWith("spend_limit_shadow_divergence", expect.anything());
+
+			// The success row is counted, so the coordinator now agrees the daily request is used...
+			recordShadowSpend({ workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId: "b1", requestId: "r1", costNanos: 0 });
+			await flush();
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r2" }, { ok: false, reason: "daily_request_limit_reached" });
+			await flush();
+			expect(warn).not.toHaveBeenCalledWith("spend_limit_shadow_divergence", expect.anything());
+			// ...and reports it when the legacy check disagrees.
+			shadowSpendLimitOnce({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r3" }, { ok: true, reason: null });
+			await flush();
+			expect(warn).toHaveBeenCalledWith("spend_limit_shadow_divergence", expect.objectContaining({
+				keyId: API_KEY, coordinator: expect.objectContaining({ outcome: "denied", reason: "daily_request_limit_reached" }),
+			}));
 		} finally { warn.mockRestore(); }
 	});
 });

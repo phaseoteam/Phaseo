@@ -1,7 +1,7 @@
 ---
 title: "作出决策"
-sidebarTitle: "Decisions"
 badge: "Beta"
+tag: "测试版"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
@@ -111,6 +111,30 @@ Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部
 Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速入门](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
 
 有关上游问题语义，请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。
+
+### Jev 的图像、Box 和长上下文
+
+在支持的 TypeSafe 路由上，Jev 1.13 和 1.14 可通过 `input_image` 或旧版 `images` 字段接受内联 PNG 或 JPEG 图像。Phaseo 会构建 TypeSafe 图像资源并自动启用图像支持。图像必须满足 TypeSafe 的[图像限制](https://docs.typesafe.ai/images)：每张最多 16 MiB，宽高均为 256 至 1568 像素，总像素至少为 78,400。TypeSafe 会验证尺寸和编码，不会调整被拒绝图像的大小。发送给提供商的 JSON 请求体最多为 32 MiB。图像 token 按正常输入价格计费。
+
+`box` 是适用于 Jev 1.14 等支持路由的独立问题类型。它需要图像，不接受 criteria，并返回一个边界框及 confidence。`top`、`bottom`、`left` 和 `right` 的值为 0 至 1，从左上角测量。Box 始终返回矩形；如果目标可能不存在，应同时使用 `predicate` 存在性问题。使用旧版图像时引用 `images[0]`；使用有序输入时引用第一张图像或 `[Image 0]`。参见 [Box 协议](https://docs.typesafe.ai/primitives/box)。
+
+将 `provider_options.typesafe.long_context` 设为 `true`，可将每个请求和每个问题的上下文上限均提高至 262k token。默认上限为每个请求 64k、每个问题 32k。长上下文需要主动启用，token 单价不变。图像、Box 和长上下文均为提供商的实验性能力；使用前请检查模型可用性。
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
 
 ### 使用 Clef 进行图像决策
 

@@ -1,0 +1,130 @@
+{
+	"provider": "cohere",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "cohere:cohere/command-a:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-command-a/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","10/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",6500000],["output_text_tokens",448,"#1","output_text_tokens",4480000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#1","output_text_tokens",34570000]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/command-r-plus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-command-r-plus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","10/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",6500000],["output_text_tokens",448,"#1","output_text_tokens",4480000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#1","output_text_tokens",34570000]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/command-r:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-command-r/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":658800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/command-r7b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-command-r7b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.0375/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":164700,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",97500],["output_text_tokens",448,"#1","output_text_tokens",67200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":981563,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",463013],["output_text_tokens",3457,"#1","output_text_tokens",518550]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/embed-english-v3:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-embed-english-v3/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/embed-multilingual-v3:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-embed-multilingual-v3/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/embed-v4:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-embed-v4/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/parse-v5.0:parse",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-parse-v5.0/parse/pricing.json",
+			"rules": [
+				["#0","standard","input_pages","0/1 page",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_pages":1},"expected":{"nanos":0,"lines":[["input_pages",1,"#0","input_pages",0]]}},
+				{"id":"rule.standard.input_pages","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_pages":3},"expected":{"nanos":0,"lines":[["input_pages",3,"#0","input_pages",0]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/rerank-v3.5:rerank",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-rerank-v3.5/rerank/pricing.json",
+			"rules": [
+				["#0","standard","requests","0.002/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"rule.standard.requests","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1},"expected":{"nanos":2000000,"lines":[["requests",1,"#0","requests",2000000]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/rerank-v4.0-fast:rerank",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-rerank-v4.0-fast/rerank/pricing.json",
+			"rules": [
+				["#0","standard","requests","0.002/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"rule.standard.requests","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1},"expected":{"nanos":2000000,"lines":[["requests",1,"#0","requests",2000000]]}}
+			]
+		},
+		{
+			"key": "cohere:cohere/rerank-v4.0-pro:rerank",
+			"file": "packages/data/catalog/src/data/pricing/cohere/cohere-rerank-v4.0-pro/rerank/pricing.json",
+			"rules": [
+				["#0","standard","requests","0.002/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"rule.standard.requests","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1},"expected":{"nanos":2000000,"lines":[["requests",1,"#0","requests",2000000]]}}
+			]
+		}
+	]
+}

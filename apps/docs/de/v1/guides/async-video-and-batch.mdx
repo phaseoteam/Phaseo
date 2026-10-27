@@ -36,6 +36,17 @@ Verwende nach dem Speichern eines Endpunkts **Testereignis senden** in den Einst
 
 Behandle die Lebenszykluszustände `completed`, `failed`, `cancelled` und `expired` als endgültig. Behalte auch bei Webhooks einen Wiederherstellungspfad über Polling bei.
 
+```mermaid
+flowchart TD
+  newJob["Video- oder Stapelauftrag erstellen"] --> store["id und polling_url speichern"]
+  store --> waiting["Auf ein Update warten"]
+  waiting -->|"Webhook-Ereignis"| terminal{{"Endzustand?"}}
+  waiting -->|"polling_url abfragen"| terminal
+  terminal -->|"Nein"| waiting
+  terminal -->|"completed"| fetchOut["Ausgaben oder Ergebnisse abrufen"]
+  terminal -->|"failed / cancelled / expired"| outcome["Ergebnis behandeln"]
+```
+
 Phaseo unternimmt für jedes Ereignis einen ersten Zustellversuch. Eine erfolgreiche 2xx-Antwort beendet die Zustellung ohne Wiederholung. Fehlgeschlagene Zustellungen erhalten höchstens drei Wiederholungen, geplant nach 1, 5 und 15 Minuten. Hintergrunddurchläufe verarbeiten fällige Wiederholungen; die tatsächliche Zustellung kann daher später erfolgen. Jeder Versuch protokolliert Nummer, Zeitpunkt, HTTP-Status, Fehler und nächsten Wiederholungszeitpunkt. Nach dem vierten erfolglosen Versuch gilt die Zustellung als endgültig fehlgeschlagen. Empfänger müssen Ereignisse weiterhin deduplizieren: Eine verlorene Bestätigung oder Worker-Unterbrechung kann die Zustellung ungewiss machen.
 
 ## Auftrags- und Anfrageprotokolle anzeigen
@@ -112,6 +123,10 @@ MiniMax H3 verwendet V2: 4–15 ganze Sekunden bei `768P` oder `2K`. H3 Max unte
 Stapelanfragen akzeptieren ebenfalls `provider_options`: OpenAI unterstützt `output_expires_after`, Mistral unterstützt `metadata`. Verwende kanonische Anbieter-IDs und dupliziere diese Felder nicht auf oberster Ebene. Beispielsweise setzt `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` die Aufbewahrung von OpenAI-Ausgaben. Zeileneingaben, Modelle, Endpunkte und Webhook-Ziele lassen sich nicht über Optionen überschreiben.
 
 Mistral besitzt bereits einen nativen Stapeladapter. Anthropic-Nachrichtenstapel werden abgefragt; andere Anbieter können Polling mit nativen Abschlussbenachrichtigungen kombinieren. Die Verfügbarkeit hängt von unterstützten Anbieterendpunkten und der Stapel-Freigabeliste der Bereitstellung ab. Prüfe die Antwort zu Stapelfähigkeiten, bevor du eine Datei oder Inline-Anfragen einreichst.
+
+Gemini-Stapel auf Vertex akzeptieren Inline-`requests` mit `/v1/generateContent` oder `model` und `prompts`. Wähle `provider: "google-vertex"`, um Vertex zu verwenden. Erfolgreiche Zeilen werden zu Batch-Tarifen berechnet. Dieser Adapter erfordert verwaltete Zugangsdaten; BYOK, hochgeladene Dateien, Embeddings und `google-vertex-eu`-Stapel sind nicht verfügbar. Die Eingabe ist auf 20 MB und 10.000 Anfragen begrenzt. Gespeicherte Ein- und Ausgaben verfallen nach 30 Tagen.
+
+Vertex-Ergebnisse identifizieren jede eingereichte Zeile mit `custom_id`; erfolgreiche Generierungen stehen in `response.body`, Fehler einzelner Anfragen in `error`. Die Ausgabereihenfolge kann von der Eingabereihenfolge abweichen. Ein Auftrag mit ungewissem Anbieterergebnis bleibt bei aufrechterhaltener Kreditreservierung in manueller Prüfung. Erstelle keinen Ersatzauftrag, bis das Ergebnis bestätigt wurde.
 
 Ein abgeschlossener Stapel kann fehlgeschlagene Zeilen enthalten. Prüfe jedes Ergebnis anhand seiner benutzerdefinierten ID, statt anzunehmen, dass alle Zeilen erfolgreich waren. Behalte die ursprüngliche Eingabe und Auftrags-ID, bis Ergebnisse und Abrechnung abgeglichen sind. Eine ungewisse Einreichung muss vor erneutem Einreichen untersucht werden, da der Anbieter die ursprüngliche Anfrage möglicherweise angenommen hat.
 

@@ -33,6 +33,13 @@ export type Env = {
 	GATEWAY_API_ORIGIN?: string;
 	GATEWAY_INTERNAL_TEST_TOKEN?: string;
 	RESEND_API_KEY?: string;
+	EXPO_ACCESS_TOKEN?: string;
+	FEEDBACK_REWARD_USD?: string;
+	FEEDBACK_REWARD_CAP?: string;
+	/** PostHog project API key (the public phc_ key the browser also uses). Feedback answers are sent with it. */
+	POSTHOG_PROJECT_API_KEY?: string;
+	/** PostHog ingestion host. Defaults to https://eu.i.posthog.com. */
+	POSTHOG_HOST?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;
 	DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
 	DISCORD_ROLE_ID?: string;
@@ -66,6 +73,16 @@ export type Env = {
 	NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED?: string;
 	STATSIG_SERVER_KEY?: string;
 	DISCORD_SIGNUP_WEBHOOK_URL?: string;
+	/** The hosted Phaseo Slack app's OAuth credentials. Without them, installing the hosted app returns 503 slack_not_configured. */
+	SLACK_CLIENT_ID?: string;
+	SLACK_CLIENT_SECRET?: string;
+	/** Signs the Slack OAuth state and account-link tokens (shared with the Slack Worker). */
+	SLACK_STATE_SECRET?: string;
+	/** Encrypts Slack bot tokens, gateway keys and custom app secrets (shared with the Slack Worker). */
+	SLACK_SECRETS_ENCRYPTION_KEY?: string;
+	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
+	/** Public web origin for the Slack OAuth redirect and the settings page. Defaults to https://phaseo.app. */
+	PHASEO_WEB_ORIGIN?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_USER_ID?: string;
 	STATUS_PAGE_URL?: string;

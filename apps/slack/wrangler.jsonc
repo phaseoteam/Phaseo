@@ -1,0 +1,73 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // The top level is the preview Worker; env.production is slack.phaseo.app.
+  "name": "phaseo-slack-agent-preview",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [
+      { "name": "THREADS", "class_name": "ThreadCoordinator" },
+      { "name": "METERS", "class_name": "WorkspaceMeter" }
+    ]
+  },
+  "migrations": [{ "tag": "slack-agent-v1", "new_sqlite_classes": ["ThreadCoordinator", "WorkspaceMeter"] }],
+  // One instance per Slack event. Instances are kept 1 day (set when each is created).
+  "workflows": [
+    { "name": "phaseo-slack-agent-turns-preview", "binding": "AGENT_TURNS", "class_name": "AgentTurnWorkflow" }
+  ],
+  "secrets": {
+    "required": [
+      "SLACK_SIGNING_SECRET",
+      "SLACK_SECRETS_ENCRYPTION_KEY",
+      "SLACK_STATE_SECRET",
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  },
+  "vars": {
+    "ENV": "preview",
+    "PHASEO_API_BASE_URL": "https://api.phaseo.app/v1",
+    "PHASEO_WEB_ORIGIN": "https://phaseo.app"
+  },
+  "env": {
+    "production": {
+      "name": "phaseo-slack-agent",
+      "workers_dev": false,
+      "durable_objects": {
+        "bindings": [
+          { "name": "THREADS", "class_name": "ThreadCoordinator" },
+          { "name": "METERS", "class_name": "WorkspaceMeter" }
+        ]
+      },
+      "workflows": [
+        { "name": "phaseo-slack-agent-turns", "binding": "AGENT_TURNS", "class_name": "AgentTurnWorkflow" }
+      ],
+      "secrets": {
+        "required": [
+          "SLACK_SIGNING_SECRET",
+          "SLACK_SECRETS_ENCRYPTION_KEY",
+          "SLACK_STATE_SECRET",
+          "SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY"
+        ]
+      },
+      "routes": [
+        { "pattern": "slack.phaseo.app", "custom_domain": true }
+      ],
+      // Agent turns call the gateway's public URL, not a service binding: a binding's
+      // request has no country, and providers that refuse an unknown country never answer.
+      "vars": {
+        "ENV": "production",
+        "PHASEO_API_BASE_URL": "https://api.phaseo.app/v1",
+        "PHASEO_WEB_ORIGIN": "https://phaseo.app"
+      }
+    }
+  }
+}

@@ -99,6 +99,33 @@ describe("response-cache fingerprinting", () => {
 			reason: "tools_present",
 		});
 	});
+
+	it("never caches responses for a key that never stores content", () => {
+		expect(
+			isResponseCacheEligible({
+				endpoint: "responses",
+				stream: false,
+				hasTools: false,
+				serverToolsEnabled: false,
+				neverStoreContent: true,
+			}),
+		).toEqual({
+			eligible: false,
+			reason: "content_storage_disabled",
+		});
+	});
+
+	it("never stores or serves a response under zero data retention", () => {
+		const request = { endpoint: "responses" as const, stream: false, hasTools: false, serverToolsEnabled: false };
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true })).toEqual({
+			eligible: false,
+			reason: "zero_data_retention",
+		});
+		// Never-store keeps its own reason when both apply.
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true, neverStoreContent: true }).reason)
+			.toBe("content_storage_disabled");
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: false })).toEqual({ eligible: true, reason: "eligible" });
+	});
 });
 
 describe("response-cache policy", () => {
@@ -158,5 +185,25 @@ describe("response-cache policy", () => {
 		expect(record.createdAt).toBe("2026-05-09T12:00:00.000Z");
 		expect(record.expiresAt).toBe("2026-05-09T12:02:00.000Z");
 		expect(record.providerId).toBe("openai");
+	});
+
+	it("keeps the parameters dropped for the provider with the cache record", () => {
+		const base = {
+			key: "gateway:response-cache:v1:ws_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses" as const,
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: { id: "resp_123" },
+			providerId: "openai",
+			ttlSeconds: 120,
+		};
+		const droppedParams = {
+			provider: "openai",
+			params: [{ param: "top_k", reason: "unsupported_by_provider" as const, source: "catalogue" as const, client_sent: true }],
+		};
+
+		expect(buildCachedResponseRecord({ ...base, droppedParams }).droppedParams).toEqual(droppedParams);
+		expect(buildCachedResponseRecord(base).droppedParams).toBeNull();
 	});
 });

@@ -48,3 +48,17 @@ Lorsqu’un outil serveur est utilisé, les compteurs `usage.server_tool_use.*` 
 ## À propos du streaming
 
 `stream: true` est également pris en charge. Avec les outils serveur gérés par le Gateway, Phaseo peut matérialiser le tour d’appel d’outil amont, poursuivre la boucle, puis réémettre un flux synthétique.
+
+## Raisonnement dans les boucles d’outils
+
+Avec OpenAI, Azure OpenAI et xAI, Phaseo envoie les requêtes Responses au fournisseur avec `store: false` : le raisonnement d’un modèle ne se poursuit donc d’une étape à l’autre d’une boucle d’outils qu’au moyen des éléments de sortie `reasoning`.
+
+Chaque élément `reasoning` possède un `id`, un `summary` et un `content`. Lorsque le fournisseur renvoie un état de raisonnement, l’élément contient aussi `encrypted_content` :
+
+- Le raisonnement chiffré d’OpenAI, d’Azure OpenAI et de xAI. Phaseo le demande avec `include: ["reasoning.encrypted_content"]` pour les modèles de raisonnement.
+- Les signatures de thinking de Claude et le thinking masqué.
+- Les signatures de pensée de Gemini, y compris un élément `reasoning` distinct placé juste avant l’appel de fonction auquel une signature appartient.
+
+Les réponses en streaming contiennent les mêmes éléments dans `response.output_item.done` et `response.completed`.
+
+Pour poursuivre une boucle d’outils, renvoyez tous les éléments de sortie dans `input` sans les modifier, y compris les éléments `reasoning`. `encrypted_content` est opaque et enregistre le fournisseur et le modèle qui l’ont produit. Phaseo ne l’envoie qu’à cette famille de fournisseurs et à ce modèle : un fallback vers un autre fournisseur l’abandonne au lieu d’échouer.

@@ -8,6 +8,7 @@ import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
+import { withGatewayErrorObject } from "@core/error-object";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getBatchFileMeta, saveBatchFileMeta } from "@core/batch-jobs";
@@ -87,7 +88,10 @@ function proxyResponse(upstream: Response): Response {
 }
 
 function jsonPayload(payload: unknown, status = 200): Response {
-	return new Response(JSON.stringify(payload), {
+	const body = status >= 400 && payload && typeof payload === "object" && !Array.isArray(payload)
+		? withGatewayErrorObject(payload as Record<string, unknown>, status)
+		: payload;
+	return new Response(JSON.stringify(body), {
 		status,
 		headers: {
 			"Content-Type": "application/json",
@@ -236,19 +240,19 @@ async function handleUpload(req: Request) {
 				: MAX_BATCH_FILE_UPLOAD_BYTES;
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);
 	if (Number.isFinite(declaredLength) && declaredLength > maxUploadBytes) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large", message: `The batch file exceeds the ${maxUploadBytes}-byte upload limit for this provider.` } }, 413);
 	}
 	let uploadBody: ArrayBuffer;
 	try {
 		uploadBody = await readRequestBodyWithLimit(req.body, maxUploadBytes);
 	} catch (error) {
 		if (error instanceof BatchFileTooLargeError) {
-			return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+			return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large", message: `The batch file exceeds the ${maxUploadBytes}-byte upload limit for this provider.` } }, 413);
 		}
 		throw error;
 	}
 	if (uploadBody.byteLength <= 0) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty" } }, 400);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty", message: "The batch file is empty." } }, 400);
 	}
 	if (providerId === "moonshotai") {
 		try {
@@ -260,7 +264,7 @@ async function handleUpload(req: Request) {
 			if (file.size === 0) throw new Error("empty_file");
 			if (form.get("purpose") !== "batch") throw new Error("batch_purpose_required");
 		} catch {
-			return jsonPayload({ error: { type: "validation_error", reason: "moonshot_batch_file_invalid" } }, 400);
+			return jsonPayload({ error: { type: "validation_error", reason: "moonshot_batch_file_invalid", message: "Kimi batch files must be a multipart upload of one non-empty .jsonl file with purpose \"batch\"." } }, 400);
 		}
 	}
 	const claim = await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
@@ -295,13 +299,13 @@ async function handleUpload(req: Request) {
 	}
 	if (!payload) {
 		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
-		return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_invalid_response" } }, 502);
+		return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_invalid_response", message: "The provider returned an unreadable response to the batch file upload." } }, 502);
 	}
 	if (upstream.ok && payload) {
 		const fileId = toText(payload?.id);
 		if (!fileId) {
 			await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
-			return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_missing_id" } }, 502);
+			return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_missing_id", message: "The provider did not return an ID for the uploaded batch file." } }, 502);
 		}
 		try {
 			await saveBatchFileMeta(auth.workspaceId, fileId, {

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../control/models.catalogue", async (importOriginal) => ({
+	...await importOriginal<typeof import("../control/models.catalogue")>(),
+	fetchCatalogue: vi.fn(async () => state.batchCatalogue),
+}));
+
 vi.mock("@core/batch-download-limits", () => ({
 	admitBatchDownload: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
 }));
@@ -32,6 +37,7 @@ const state = vi.hoisted(() => ({
 	guardContextFailure: null as Response | null,
 	resolvedModel: null as string | null,
 	catalogOffers: null as any[] | null,
+	batchCatalogue: [] as any[],
 	credentialModels: [] as string[],
 	policyAllowedProviders: null as string[] | null,
 	batchApiEnabled: true,
@@ -63,6 +69,7 @@ function resetState() {
 	state.guardContextFailure = null;
 	state.resolvedModel = null;
 	state.catalogOffers = null;
+	state.batchCatalogue = [];
 	state.credentialModels = [];
 	state.policyAllowedProviders = null;
 	state.batchApiEnabled = true;
@@ -144,6 +151,10 @@ vi.mock("@/runtime/env", () => ({
 		OTEL_EXPORT_ENABLED: "false",
 		MOONSHOT_API_KEY: "test-moonshot-key",
 		MOONSHOT_AI_BASE_URL: "https://api.moonshot.example",
+		GOOGLE_VERTEX_PROJECT: "test-project",
+		GOOGLE_VERTEX_PROJECT_NUMBER: "123456789",
+		GOOGLE_VERTEX_BATCH_LOCATION: "global",
+		GOOGLE_VERTEX_BATCH_BUCKET: "test-batch-bucket",
 		...(state.googleApiKey ? { GOOGLE_AI_STUDIO_API_KEY: state.googleApiKey } : {}),
 		BATCH_API_PREVIEW_PROVIDERS: state.previewProviders,
 	}),
@@ -496,7 +507,7 @@ describe("batchRoutes", () => {
 	});
 
 	it.each(["missing", "other-workspace", "gate", "processing", "provider", "auth"])("blocks results before provider access for %s", async (scenario) => {
-		state.batchMeta.set(batchKey(scenario === "other-workspace" ? "ws_other" : "ws_batch_test", "batch_download"), { provider: scenario === "provider" ? "google-vertex" : "anthropic", status: scenario === "processing" ? "in_progress" : "completed", nativeBatchId: "msgbatch_native" });
+		state.batchMeta.set(batchKey(scenario === "other-workspace" ? "ws_other" : "ws_batch_test", "batch_download"), { provider: scenario === "provider" ? "google-vertex-eu" : "anthropic", status: scenario === "processing" ? "in_progress" : "completed", nativeBatchId: "msgbatch_native" });
 		if (scenario === "missing") state.batchMeta.clear();
 		if (scenario === "gate") state.batchApiEnabled = false;
 		if (scenario === "auth") {
@@ -540,6 +551,35 @@ describe("batchRoutes", () => {
 		vi.unstubAllGlobals();
 	});
 
+	it("discovers Batch-priced Gemini models while excluding unsupported offers", async () => {
+		state.previewProviders = "google-vertex,google-ai-studio,openai,google-vertex-eu";
+		state.batchCatalogue = [
+			{ model_id: "google/gemini-4-argon", providers: [
+				{ api_provider_id: "google-vertex", endpoints: ["text.generate"], service_tiers: ["standard"], params: ["service_tier", "temperature"], params_detail: { service_tier: { supported: true }, temperature: { supported: true } } },
+				{ api_provider_id: "google-ai-studio", endpoints: ["responses"], service_tiers: ["standard"], params: ["service_tier"], params_detail: { service_tier: { supported: true } } },
+				{ api_provider_id: "google-vertex-eu", endpoints: ["text.generate"], service_tiers: ["standard"] },
+			] },
+			{ model_id: "google/embeddings", providers: [{ api_provider_id: "google-vertex", endpoints: ["text.embed"], service_tiers: ["standard"] }] },
+			{ model_id: "legacy/batch", providers: [{ api_provider_id: "openai", endpoints: ["batch"], params: ["completion_window"], params_detail: { completion_window: { supported: true, values: ["24h"] } } }] },
+		];
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/models");
+		expect(response.status).toBe(200);
+		const payload = await response.json();
+		expect(payload.data.map((row: any) => row.model)).toEqual(["google/gemini-4-argon", "legacy/batch"]);
+		expect(payload.data[0].providers.map((row: any) => row.id)).toEqual(["google-vertex", "google-ai-studio"]);
+		expect(payload.data[0].supported_params).toEqual(["endpoint", "model", "prompts", "provider", "requests", "webhook"]);
+		expect(payload.data[0].providers[0].supported_params_detail.endpoint.values).toEqual(["/v1/generateContent"]);
+		expect(payload.data[0].supported_params_detail.endpoint.providers).toEqual(["google-ai-studio", "google-vertex"]);
+		expect((await import("../control/models.catalogue")).fetchCatalogue).toHaveBeenCalledWith({ batchOnly: true, statuses: ["active"] });
+		const endpointFiltered = await (await batchRoutes.request("https://example.com/models?params=endpoint")).json();
+		expect(endpointFiltered.data.map((row: any) => row.model)).toEqual(["google/gemini-4-argon"]);
+		const windowFiltered = await (await batchRoutes.request("https://example.com/models?params=completion_window")).json();
+		expect(windowFiltered.data.map((row: any) => row.model)).toEqual(["legacy/batch"]);
+		const generationFiltered = await (await batchRoutes.request("https://example.com/models?params=service_tier")).json();
+		expect(generationFiltered.data).toEqual([]);
+	});
+
 	it("paginates batch jobs and reports another page", async () => {
 		state.batchMeta.set(batchKey("ws_batch_test", "batch_1"), { provider: "openai", status: "completed" });
 		state.batchMeta.set(batchKey("ws_batch_test", "batch_2"), { provider: "openai", status: "completed" });
@@ -569,7 +609,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "offset_too_large",
 			max_offset: 10_000,
 		});
@@ -632,7 +672,7 @@ describe("batchRoutes", () => {
 			}),
 		});
 		expect(response.status).toBe(400);
-		expect(await response.json()).toMatchObject({ error: "validation_error", reason: "batch_provider_not_allowed" });
+		expect(await response.json()).toMatchObject({ code: "validation_error", reason: "batch_provider_not_allowed" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -659,7 +699,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_mixed_endpoints_not_supported",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -687,7 +727,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_streaming_not_supported",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -707,7 +747,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "models_not_supported_for_endpoint",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -1098,7 +1138,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(404);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "batch_input_file_not_found_or_not_owned",
 			file_id: "file_unowned_123",
 		});
@@ -1136,7 +1176,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_webhook_endpoint_required",
 		});
 		expect(state.fetchCalls).toEqual([]);
@@ -1170,7 +1210,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_webhook_endpoint_not_found_or_inactive",
 			webhook_endpoint_id: "missing_endpoint",
 		});
@@ -1314,6 +1354,44 @@ describe("batchRoutes", () => {
 			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress", apiKeyId: "key_batch_test" }),
 			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini", apiKeyId: "key_batch_test" }),
 		]));
+	});
+
+	it.each(["accepted", "rejected", "unknown"])("persists Vertex submission intent before dispatch and handles %s outcomes", async (outcome) => {
+		state.previewProviders = "google-vertex";
+		state.catalogOffers = [{ providerId: "google-vertex" }];
+		const nativeId = "projects/123456789/locations/global/batchPredictionJobs/123";
+		const calls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			calls.push(`${init?.method} ${url}`);
+			if (url.startsWith("https://storage.googleapis.com/upload/")) return jsonResponse({});
+			if (init?.method === "DELETE") return new Response(null, { status: 204 });
+			expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([
+				expect.objectContaining({ status: "submitting", nativeBatchId: null, vertexStorage: expect.objectContaining({ bucket: "test-batch-bucket" }) }),
+			]));
+			if (outcome === "unknown") throw new TypeError("connection lost after dispatch");
+			if (outcome === "rejected") return jsonResponse({ error: { message: "invalid input" } }, 400);
+			return jsonResponse({ name: nativeId, state: "JOB_STATE_PENDING", model: "publishers/google/models/gemini-3.1-flash-lite" });
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+			provider: "google-vertex", model: "google/gemini-3.1-flash-lite", prompts: ["Reply OK."], max_output_tokens: 64,
+		}) });
+		if (outcome === "accepted") {
+			expect(response.status).toBe(200);
+			expect(await response.json()).toMatchObject({ native_batch_id: nativeId, provider: "google-vertex", status: "pending" });
+			expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([expect.objectContaining({ model: "google/gemini-3.1-flash-lite", nativeBatchId: nativeId, vertexStorage: expect.any(Object) })]));
+		} else if (outcome === "rejected") {
+			expect(response.status).toBe(400);
+			expect(calls.some((call) => call.startsWith("DELETE "))).toBe(true);
+			expect(state.finalizeCalls).toEqual(expect.arrayContaining([expect.objectContaining({ status: "failed" })]));
+		} else {
+			expect(response.status).toBe(502);
+			expect(calls.some((call) => call.startsWith("DELETE "))).toBe(false);
+			expect(state.releaseCalls).toHaveLength(0);
+			expect(state.statusUpdates).toEqual(expect.arrayContaining([expect.objectContaining({ status: "submission_unknown" })]));
+		}
+		expect(calls.filter((call) => call === "POST https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/batchPredictionJobs")).toHaveLength(1);
 	});
 
 	it("uploads a normalized Kimi K2.6 JSONL batch and preserves its supported completion window", async () => {
@@ -1504,7 +1582,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_multiple_models_not_supported",
 			provider: "openai",
 			models: ["openai/gpt-5.4-nano", "openai/gpt-5.4-mini"],
@@ -1758,8 +1836,10 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
+			code: "not_implemented",
 			error: {
-				type: "not_implemented",
+				code: "not_implemented",
+				type: "server_error",
 				reason: "batch_multi_provider_requests_not_supported",
 				input_mode: "requests",
 				requested_providers: ["openai", "anthropic"],
@@ -2444,7 +2524,15 @@ describe("batchRoutes", () => {
 			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
 		});
 		expect(response.status).toBe(503);
-		expect(await response.json()).toMatchObject({ error: { reason: "batch_submission_persistence_failed" } });
+		expect(await response.json()).toMatchObject({
+			code: "gateway_error",
+			error: {
+				code: "gateway_error",
+				message: "The batch could not be recorded before submission. Try again.",
+				type: "service_unavailable",
+				reason: "batch_submission_persistence_failed",
+			},
+		});
 		expect(state.fetchCalls.some((call) => call.url.endsWith("/batches"))).toBe(false);
 		expect(state.batchMeta.size).toBe(0);
 	});
@@ -2473,8 +2561,10 @@ describe("batchRoutes", () => {
 		const payload = await response.json();
 		expect(response.status).toBe(502);
 		expect(payload).toMatchObject({
+			code: "async_job_persistence_failed",
 			error: {
-				type: "async_job_persistence_failed",
+				code: "async_job_persistence_failed",
+				type: "server_error",
 				batch_id: expect.stringMatching(/^batch_/),
 				native_batch_id: "batch_native_post_submit_failure",
 				reservation_status: "held",
@@ -2541,8 +2631,10 @@ describe("batchRoutes", () => {
 		const payload = await response.json();
 		expect(response.status).toBe(502);
 		expect(payload).toMatchObject({
+			code: "upstream_outcome_unknown",
 			error: {
-				type: "upstream_outcome_unknown",
+				code: "upstream_outcome_unknown",
+				type: "server_error",
 				reason: "batch_provider_create_outcome_unknown",
 				reservation_status: "held",
 				batch_id: expect.stringMatching(/^batch_/),

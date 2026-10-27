@@ -53,6 +53,18 @@ Nutze diese Leitfäden, wenn du SDK, Anbieter oder Gateway wechselst und deine b
 	Wähle deine aktuelle Integration und öffne den interaktiven Assistenten.
 </Card>
 
+<Prompt description="Lass einen Coding-Agenten die Migration mit dir planen und durchführen." icon="arrow-right-left" actions={["copy", "cursor"]}>
+{`Migrate this project's AI requests to Phaseo Gateway.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+   Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
+2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
+3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.
+5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
+6. Never print or commit API keys, and do not switch production traffic without my approval.`}
+</Prompt>
+
 Verfügbare Plattformmigrationsleitfäden:
 
 - [Migration vom OpenAI SDK](./from-openai.mdx)

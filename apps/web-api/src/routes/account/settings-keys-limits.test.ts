@@ -62,6 +62,8 @@ describe("account key limits", () => {
 		expect(response.status).toBe(200);
 		expect(headUrls).toHaveLength(1);
 		expect(headUrls[0]).toContain("/rest/v1/keys?");
+		// Workload identity keys have no secret and are capped by their own policy limit.
+		expect(new URL(headUrls[0]).searchParams.get("key_kind")).toBe("neq.workload_identity");
 	});
 
 	it("does not let API keys consume the management key limit", async () => {

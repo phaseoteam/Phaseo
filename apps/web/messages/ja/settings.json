@@ -14,7 +14,7 @@
       "external": "{label}（新しいタブで開く）"
     },
     "headings": {
-      "general": "常规",
+      "general": "一般",
       "workspace": "ワークスペース",
       "observe": "観察",
       "gateway": "Gateway",
@@ -52,7 +52,7 @@
       "explore": "探索",
       "geography": "地域",
       "guardrailActivity": "ガードレールアクティビティ",
-      "alerts": "提醒",
+      "alerts": "アラート",
       "logs": "ログ",
       "requests": "リクエスト",
       "upstreamRequests": "上游リクエスト",

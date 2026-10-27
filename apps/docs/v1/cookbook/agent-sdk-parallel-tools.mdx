@@ -2,6 +2,7 @@
 title: "Fan out local agent tools concurrently"
 icon: "network"
 description: "Use bounded local tool concurrency in the TypeScript Agent SDK so one model turn can gather independent context without serializing every tool call."
+"og:image": "https://phaseo.app/og/dynamic?title=Fan%20out%20local%20agent%20tools%20concurrently&description=Use%20bounded%20local%20tool%20concurrency%20in%20the%20TypeScript%20Agent%20SDK%20so%20one%20model%20turn%20can%20gather%20independent%20context%20without%20serializing%20every%20tool%20call.&pathname=/docs/v1/cookbook/agent-sdk-parallel-tools"
 ---
 
 Use this recipe when one agent turn can safely call several independent local tools and you want the runtime to execute them concurrently while still preserving deterministic tool-result ordering.

@@ -8,6 +8,10 @@ routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 
 [vars]
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
 GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 ENV = "staging"
 NODE_ENV = "production"
@@ -40,6 +44,8 @@ BATCH_RECONCILIATION_CONCURRENCY = "2"
 BATCH_RECONCILIATION_LEASE_SECONDS = "300"
 BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral,together"
 EMAIL_OUTBOX_DRAIN_ENABLED = "false"
+FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+MOBILE_PUSH_ENABLED = "false"
 PRICING_MONITOR_ENABLED = "false"
 ENTERPRISE_INVOICING_ENABLED = "false"
 

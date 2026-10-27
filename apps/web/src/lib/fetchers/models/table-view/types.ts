@@ -7,6 +7,7 @@ export interface MonitorModelData {
     apiModelId?: string;
     organisationId?: string; // Add organisation ID for logo lookup
     organisationName?: string;
+    license?: string;
     provider: {
         name: string;
         id: string; // Add provider ID for logo lookup
@@ -51,6 +52,7 @@ export type MonitorModelTableRow = Pick<
     | "model"
     | "modelId"
     | "organisationId"
+    | "license"
     | "organisationName"
     | "endpoint"
     | "gatewayStatus"
@@ -64,7 +66,14 @@ export type MonitorModelTableRow = Pick<
     | "added"
     | "retired"
 > & {
-    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features" | "executionRegions">;
+    provider: Pick<MonitorModelData["provider"], "name" | "id" | "features" | "executionRegions"> & {
+        // Standard per-1M token rates; null when the route lists none.
+        inputPrice: number | null;
+        outputPrice: number | null;
+        // Cheapest non-token charge, such as per image or per second.
+        usagePrice?: number;
+        usageUnit?: string;
+    };
     popularityTokensWeek?: number;
 };
 

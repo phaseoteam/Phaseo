@@ -128,6 +128,20 @@ const client = new Phaseo({
 
 App attribution is optional and is never inferred from the SDK itself.
 
+### Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let Vercel deployments and GitHub Actions jobs call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → Trusted workloads, then pass a function as `apiKey`. It is called before every request, so each request uses a current token:
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+  apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+```
+
+Tokens must be issued for the audience `https://api.phaseo.app`. On Vercel, `getVercelOidcToken({ audience })` from the server entry of `@vercel/oidc` 4.x exchanges the deployment's token for one with that audience.
+
 ## Regional text routing
 
 Select `eu` or `us` to restrict Chat Completions, Responses, and Messages to
@@ -231,6 +245,7 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
 - `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
+- `client.extractions.create(...)` for typed extraction with nullable values and model-reported confidence
 - `client.dataModels.list(...)` for `/data/models`
 
 Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
@@ -339,6 +354,8 @@ const client = new Phaseo({
   },
 });
 ```
+
+Before a model's first request, the client looks it up once with `GET /models` and refuses models that are not active. Pass `modelLifecycleChecks: false` to skip that lookup and let the gateway answer for the model; `client.models.validate()` still checks a model on demand.
 
 ## Environment variables
 

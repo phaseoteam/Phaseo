@@ -1,6 +1,7 @@
 ---
 title: "Prompt Caching"
 description: "Reuse stable prompt context across Chat Completions, Responses, and Anthropic Messages requests."
+"og:image": "https://phaseo.app/og/dynamic?title=Prompt%20Caching&description=Reuse%20stable%20prompt%20context%20across%20Chat%20Completions%2C%20Responses%2C%20and%20Anthropic%20Messages%20requests.&pathname=/docs/v1/guides/prompt-caching"
 icon: "database-zap"
 ---
 
@@ -9,7 +10,7 @@ Use prompt caching when the same large context appears across many requests. Mar
 Prompt caching is different from [response caching](../cookbook/response-caching-with-presets.mdx). Prompt caching still runs inference, but can reduce repeated input processing cost and latency. Response caching returns a previously generated answer for an identical request.
 
 <Note>
-Prompt caching is provider- and model-specific. Unsupported providers ignore cache hints or route without cached pricing. Check the model page pricing table for cache read/write rates.
+Prompt caching is provider- and model-specific. Phaseo sends each provider only the cache controls it documents and removes the rest, and cache controls never exclude a provider from routing. If a provider reports cached tokens on a route that has no cache price yet, Phaseo bills cache reads at the route's normal input rate and cache writes at the input rate times the provider's documented write multiplier. Check the model page pricing table for cache read/write rates.
 </Note>
 
 ## What to cache
@@ -24,9 +25,37 @@ Cache content that stays stable across requests:
 
 Avoid caching content that changes every request, contains short one-off user input, or includes sensitive data that your policy does not allow to be stored by the selected provider.
 
+## Automatic and opt-in caching
+
+Most providers cache repeated prompt prefixes automatically. Claude needs an explicit opt-in.
+
+| Provider | Caching | What Phaseo sends |
+| --- | --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | Automatic for prompts of 1,024 tokens or more | `prompt_cache_key`; breakpoints and `prompt_cache_options` on GPT-5.6 and later; `prompt_cache_retention` on earlier models |
+| [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) on Anthropic, Claude on AWS, Amazon Bedrock, and Google Vertex AI | Opt-in | `cache_control` breakpoints, at most four per request |
+| [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) on Google AI Studio and [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | Automatic on Gemini 2.5 and later | `cached_content` for an explicit cache you created |
+| [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | Automatic | `prompt_cache_key` and the `x-grok-conv-id` header |
+| [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | Automatic | Nothing extra |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | Automatic, with a 5-minute TTL; a 1-hour TTL is opt-in on Kimi K3 | `prompt_cache_key` and `prompt_cache_options` |
+| [Groq](https://console.groq.com/docs/prompt-caching) | Automatic on the models Groq lists | Nothing extra |
+| [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | Automatic | `prompt_cache_key`, plus the `x-session-affinity` header and `user` |
+| [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | Automatic | `prompt_cache_key` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | Automatic on selected models | The `x-session-affinity` header |
+| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching), [Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | Automatic; `prompt_cache_key` improves the hit rate | `prompt_cache_key` |
+| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automatic (implicit); explicit caches are opt-in | Block `cache_control` |
+| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automatic; Venice adds Claude breakpoints itself | Block `cache_control` |
+| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automatic; a retention window is opt-in | `prompt_cache_key`, `prompt_cache_breakpoint`, and `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatic; explicit caching on Claude and Gemini 2.5 models | Block `cache_control` on Claude and Gemini 2.5 models, without a `ttl` |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automatic | `prompt_cache_key` and the `x-session-affinity` header |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | Automatic | `prompt_cache_key` and the `x-session-id` header |
+
+Other OpenAI-compatible providers receive `prompt_cache_key` when their API accepts it, and no other cache controls. Phaseo always sends a hash of your workspace and key rather than the key itself. See [Provider affinity](#provider-affinity).
+
 ## Cache controls
 
-Phaseo accepts a top-level `cache_control` compatibility hint on Chat Completions, Responses, and Anthropic Messages requests:
+### Default policy for Claude
+
+Phaseo accepts a top-level `cache_control` on Chat Completions, Responses, and Anthropic Messages requests:
 
 ```json
 {
@@ -37,22 +66,9 @@ Phaseo accepts a top-level `cache_control` compatibility hint on Chat Completion
 }
 ```
 
-Use `ttl: "5m"` for short-lived shared context and `ttl: "1h"` when the provider and model support longer-lived prompt cache entries. A top-level cache control is treated as an automatic/default cache policy by providers that support it.
+It sets a default cache policy for Claude routes: Phaseo places the cache breakpoints for you. Use `ttl: "5m"` (the default) for short-lived shared context and `ttl: "1h"` when the model supports longer-lived prompt cache entries. Other providers ignore it. A top-level `cache_control` also keeps the conversation on one provider; see [Provider affinity](#provider-affinity).
 
-You can also place `cache_control` directly on supported text, image, tool result, and tool definition blocks for explicit cache breakpoints:
-
-```json
-{
-  "type": "text",
-  "text": "Large stable reference text...",
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "1h"
-  }
-}
-```
-
-Provider-specific aliases remain supported. For example, you can apply a default Anthropic cache policy through `provider_options`:
+`provider_options.anthropic.cache_control` is the same setting. When a request sends both, the `provider_options` value wins:
 
 ```json
 {
@@ -72,11 +88,132 @@ Supported `scope` values:
 
 | Scope | Behavior |
 | --- | --- |
-| `all_text` | Add cache control to system text and user text/image blocks that do not already have cache control. |
+| `all_text` | Default. Add cache control to the system text and the three most recent user messages that contain text or images. |
 | `last_user_message` | Add cache control only to the latest user message. |
+| `agent` | For tool loops. Add cache control to the last tool definition, the system text, the final message (including tool results), and the message from the previous step. `conversation` is an alias. |
 | `none` | Do not apply a default cache policy. |
 
 Per-block `cache_control` wins over the default policy.
+
+Anthropic accepts at most four cache breakpoints per request. Default policies count the `cache_control` blocks you set yourself and stop at four. Unrecognised `scope` values are treated as `agent`. Use `agent` for multi-step tool loops: `all_text` and `last_user_message` don't mark messages that contain only tool results, so the cached prefix stops growing.
+
+If your own blocks carry more than four marks, Phaseo keeps the first and the latest three and removes the others, so the request is not rejected.
+
+### Cache breakpoints on blocks
+
+Place a cache mark on a content block to cache everything up to and including that block. Phaseo accepts two spellings:
+
+- `cache_control`: `{"type": "ephemeral"}`, with an optional `ttl` of `5m` or `1h`.
+- `prompt_cache_breakpoint`: OpenAI's `{"mode": "explicit"}`, with an optional `ttl` of `30m` or `12h` (see [12-hour cache on OpenAI](#12-hour-cache-on-openai)). When a block carries both, `prompt_cache_breakpoint` wins.
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+On Chat Completions and Responses, marks are accepted on text and image parts, on function tool definitions, and on tool results whose content is an array of text parts. Anthropic Messages accepts `cache_control` wherever Anthropic does.
+
+Each provider receives the mark in its own form:
+
+| Provider | Block `cache_control` | `prompt_cache_breakpoint` |
+| --- | --- | --- |
+| Claude on Anthropic, Claude on AWS, Amazon Bedrock, and Google Vertex AI | Sent as `{"type": "ephemeral"}` with your `ttl` | Sent as `cache_control: {"type": "ephemeral"}` |
+| OpenAI, GPT-5.6 and later | Sent as `prompt_cache_breakpoint: {"mode": "explicit"}`; the `ttl` is dropped | Sent, with its `ttl` |
+| Azure OpenAI, GPT-5.6 and later | Sent as `prompt_cache_breakpoint: {"mode": "explicit"}`; the `ttl` is dropped | Sent without a `ttl` |
+| OpenAI and Azure OpenAI, earlier models | Removed | Removed |
+| DeepInfra | Removed | Sent |
+| Alibaba Model Studio and Venice | Sent | Removed |
+| Inference.net, Claude and Gemini 2.5 models | Sent without a `ttl` | Removed |
+| Other providers | Removed | Removed |
+
+Marks on tool definitions reach only Claude routes, Alibaba Model Studio, Venice, and Inference.net's Claude and Gemini 2.5 models; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
+
+Amazon Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet, and 3 Opus for 5 minutes only, and Bedrock can reject a `ttl` on those models. On those routes Phaseo sends your breakpoints without `ttl`, so they cache for 5 minutes, and reports a removed `1h` as `cache_control.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`. Inference.net documents breakpoints without a `ttl`, so Phaseo removes and reports a `ttl` there in the same way, and the writes are billed as 5-minute writes.
+
+### OpenAI retention and options
+
+OpenAI's cache controls depend on the model generation. Phaseo sends each one only where OpenAI accepts it:
+
+| Field | Values | Sent to |
+| --- | --- | --- |
+| `prompt_cache_options` | `mode`: `implicit` or `explicit`; `ttl`: `30m` or `12h` | OpenAI GPT-5.6 and later |
+| `prompt_cache_options` | `mode`: `implicit` or `explicit`; `ttl`: `30m` | Azure OpenAI GPT-5.6 and later |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` or `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, or `1h` on Kimi K3 | Moonshot AI |
+| `prompt_cache_retention` | `in_memory` or `24h` | OpenAI and Azure OpenAI models before GPT-5.6 |
+
+On GPT-5.6 and later, OpenAI accepts a `ttl` of `30m` (the default) or `12h`, and Azure OpenAI only `30m`. `explicit` mode caches only the breakpoints you place. DeepInfra uses the same object with a `ttl` of `5m` or `1h`, and needs `prompt_cache_key` on every request in the session. Moonshot AI takes `mode: "implicit"` and a `ttl` of `5m` (the default) or `1h`. Phaseo sends `1h` only to Kimi K3 routes that have a 1-hour write price, so those writes are billed at that price; elsewhere it removes the `ttl` and reports it as `prompt_cache_options.ttl` in the `X-Phaseo-Dropped-Params` header. Other providers receive neither field.
+
+Send either field at the top level or under `provider_options.openai`. When both are present, the top-level value wins:
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+### 12-hour cache on OpenAI
+
+On GPT-5.6 and later, OpenAI keeps a cache entry for at least 12 hours when you set `ttl: "12h"`, either for the whole request in `prompt_cache_options` or for one breakpoint in `prompt_cache_breakpoint`. A breakpoint without its own `ttl` uses the request's. OpenAI bills a 12-hour write at 2.5× the input rate and a 30-minute write at 1.25×; cache reads cost the same for both.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAI documents the 12-hour lifetime on its Responses API only. A Chat Completions request that asks for it runs on OpenAI's Responses API, and the response keeps the Chat Completions format.
+- Routes that take a 12-hour cache (OpenAI's global API) are tried first. Any other route, such as Azure OpenAI, another provider or a model before GPT-5.6, gets the request without it, so the 30-minute default applies. The request still runs, and the removed field is reported as `prompt_cache_options.ttl` or `prompt_cache_breakpoint.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`.
+
+### Google Gemini
+
+Gemini caches implicitly on Gemini 2.5 and later, with nothing to send. To use an explicit cache you created with Google's caching API, pass its name in `provider_options.google.cached_content`:
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+- On Google AI Studio, `cached_content` works only with your own Google API key (BYOK). With Phaseo's key the request returns 400, because the cache belongs to the account that created it.
+- On Vertex AI, `cached_content` works only with your own Vertex AI credential; with Phaseo's credential the request returns 400. Send the cache's full name, `projects/{project}/locations/{location}/cachedContents/{id}`, and Phaseo sends the request to that project and location. A short name such as `cachedContents/abc123` uses the `project_id` and `region` in your service-account JSON, and returns 400 if either is missing.
+- Google does not support explicit caches on Gemini 4 Argon and later.
+
+`provider_options.google.cache_control` and `provider_options.google.cache_ttl` are accepted but not sent to Google.
 
 ## Chat Completions
 
@@ -105,26 +242,6 @@ curl https://api.phaseo.app/v1/chat/completions \
       }
     ]
   }'
-```
-
-For OpenAI-routed requests, pass OpenAI cache retention options with the OpenAI-compatible top-level field:
-
-```json
-{
-  "prompt_cache_retention": "24h"
-}
-```
-
-The provider-specific alias is also accepted:
-
-```json
-{
-  "provider_options": {
-    "openai": {
-      "prompt_cache_retention": "24h"
-    }
-  }
-}
 ```
 
 ## Responses
@@ -156,17 +273,7 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-When you already have a Google Gemini cached content resource, pass it through `provider_options.google.cached_content`:
-
-```json
-{
-  "provider_options": {
-    "google": {
-      "cached_content": "cachedContents/abc123"
-    }
-  }
-}
-```
+Phaseo does not store responses. Requests that set `previous_response_id` or `conversation` return 400 `unsupported_param`, so send the whole conversation in `input` on every step. Its stable opening is the prefix that gets cached. In tool loops, send `reasoning` output items back too; see [Reasoning in tool loops](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
 ## Anthropic Messages
 
@@ -226,20 +333,68 @@ Anthropic Messages supports cache control on:
 - tool result blocks
 - tool definitions
 
+When several TTLs appear in one request, Anthropic requires the `1h` breakpoints to come before the `5m` ones.
+
 ## Usage and pricing fields
 
-When a provider returns cache usage, Phaseo normalizes it into common usage fields.
+Usage reports cache reads and writes on every text endpoint. Chat Completions and Responses follow OpenAI's semantics: the input count includes cache reads and cache writes. Anthropic Messages follows Anthropic's: `input_tokens` excludes them.
+
+| Endpoint | Total input | Cache reads | Cache writes |
+| --- | --- | --- | --- |
+| Chat Completions | `prompt_tokens`, including reads and writes | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`, including reads and writes | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`, split by lifetime on OpenAI GPT-5.6 and later in `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` and `ttl_12h_tokens` |
+| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, split by TTL in `cache_creation.ephemeral_5m_input_tokens` and `cache_creation.ephemeral_1h_input_tokens` |
+
+On Chat Completions and Responses, uncached input is the total input minus cache reads minus cache writes. Streamed Anthropic Messages responses carry the cache fields on `message_delta`. Chat Completions usage has no split by lifetime, because OpenAI documents none there; the request details still record it.
+
+<Note>
+Earlier responses reported cache writes as `output_tokens_details.cached_tokens` (`completion_tokens_details.cached_tokens` on Chat Completions), and Claude routes left cache reads and writes out of `input_tokens` on Chat Completions and Responses. Neither applies any more: read writes from `cache_write_tokens`. Non-streamed Anthropic Messages responses used to return `cache_creation_input_tokens: null`; they now return the real counts.
+</Note>
+
+Request details and pricing breakdowns use these meters:
 
 | Field | Meaning |
 | --- | --- |
-| `input_tokens_details.cached_tokens` | Cached input tokens read from a provider prompt cache. |
-| `output_tokens_details.cached_tokens` | Cached input tokens written to a provider prompt cache. |
 | `cached_read_text_tokens` | Pricing meter for cache reads. This is cached input text reused from a provider cache. |
 | `cached_write_text_tokens` | Pricing meter for cache writes when the provider has one cache-write price. |
 | `cached_write_text_tokens_5m` | Cache write tokens for a 5 minute TTL when the provider reports TTL-specific writes. |
 | `cached_write_text_tokens_1h` | Cache write tokens for a 1 hour TTL when the provider reports TTL-specific writes. |
+| `cached_write_text_tokens_30m` | OpenAI cache write tokens with a 30 minute lifetime. |
+| `cached_write_text_tokens_12h` | OpenAI cache write tokens with a 12 hour lifetime. |
 
-Cache writes are usually more expensive than normal input tokens. Cache reads are usually cheaper. Exact pricing depends on the provider, model, and TTL.
+### How cached tokens are priced
+
+Phaseo bills each input token once, at exactly one rate:
+
+- uncached input at the input rate
+- cache reads at the cache-read rate
+- cache writes at the cache-write rate, or at the 5-minute and 1-hour rates (Claude) or the 30-minute and 12-hour rates (OpenAI) when the provider prices them separately
+
+Some providers count cache writes inside the input total and others report them on top of it. Phaseo bills both the same way, so a written token is never also billed as ordinary input.
+
+For example, a GPT-5.6 Sol request with 53,100 input tokens, of which 48,000 are cache reads and 3,000 are cache writes, plus 850 output tokens, costs:
+
+| Tokens | Rate per 1M | Cost |
+| --- | ---: | ---: |
+| 2,100 uncached input | $5.00 | $0.01050 |
+| 48,000 cache reads | $0.50 | $0.02400 |
+| 3,000 cache writes | $6.25 | $0.01875 |
+| 850 output | $30.00 | $0.02550 |
+| Total | | $0.07875 |
+
+If 2,000 of those writes had a 12-hour lifetime, they would cost $12.50 per 1M instead of $6.25, and the request would cost $0.09125.
+
+If a provider reports cached tokens on a route that has no cache price in the catalogue yet, Phaseo does not fail the request:
+
+- Cache reads are billed at the route's input rate.
+- Cache writes are billed at the input rate times the provider's documented write multiplier: 1.25× for Claude 5-minute writes and 2× for 1-hour writes; 1.25× for OpenAI, Azure OpenAI, and Alibaba; 1× for Kimi K3 5-minute writes and 2× for 1-hour writes; 2.5× for OpenAI 12-hour writes on any route; 1× for other providers.
+- The pricing line is marked `pricing_fallback: "input_rate"`.
+
+On a Claude route whose catalogue has one cache-write price, that price is the 5-minute rate. Writes the provider reports as 1-hour writes are billed at 2× the input rate, on a `cached_write_text_tokens_1h` line marked `pricing_fallback: "input_rate"`.
+
+The final `message_delta` of a streamed Claude response reports the cumulative cache-write total without the TTL split. Writes beyond the split are billed as 5-minute writes, because server-tool writes can use 5 minutes even when the request asks for 1 hour.
+
+Some providers do not discount cached tokens on some models. Their model pages show the same price for input and cache reads.
 
 ## Practical checks
 
@@ -247,23 +402,56 @@ After you add prompt caching:
 
 1. Send one request to create or warm the cache.
 2. Send a second request with the same cacheable content.
-3. Check the response usage and request details for cached read/write fields.
+3. Check `cached_tokens` and `cache_write_tokens` in the response usage, and the cache meters in the request details.
 4. Compare latency and cost over repeated calls, not just the first call.
 
 ## Provider affinity
 
-Phaseo uses provider prompt-cache usage as a routing signal by default. Once a
-provider returns cached input tokens, requests with the same cache key or stable
-opening context prefer that provider for 15 minutes. This avoids paying another
-provider to rebuild the same prompt cache.
+A prompt cache lives with one provider, and often with one region or deployment of
+that provider. Phaseo keeps related requests on the provider and route that served
+them, so an agent loop does not pay to rebuild its cache on a different provider.
 
-If you include `session_id`, an observed cache read creates session affinity as
-well. Phaseo retains that affinity for the active session window while still
-allowing failover when the provider is unhealthy or no longer policy-eligible.
+Send `prompt_cache_key` or `session_id`, or opt into caching with `cache_control`
+(top-level, `provider_options.anthropic.cache_control`, or a `cache_control` or
+`prompt_cache_breakpoint` mark on a message block or tool), to pin a conversation.
+Phaseo pins it to the provider and route that served the first successful request,
+and later requests with the same key go there too. Pins are kept per workspace.
+
+How long a pin lasts depends on the provider's cache retention:
+
+| Request | Pin lasts |
+| --- | --- |
+| `session_id` | 24 hours, refreshed while the session is active |
+| Anthropic `cache_control` with `ttl: "1h"` | 90 minutes |
+| OpenAI or Azure OpenAI with `prompt_cache_retention: "24h"` | 24 hours |
+| OpenAI or Azure OpenAI with in-memory retention (the default) | 90 minutes |
+| OpenAI with `ttl: "12h"` in `prompt_cache_options` or on a breakpoint, or a reported 12-hour write | 18 hours |
+| OpenAI or Azure OpenAI with `prompt_cache_options.ttl: "30m"` | 45 minutes |
+| Anything else | 15 minutes |
+
+A pin moves only when its provider fails (an open circuit breaker or a high recent
+error rate), when Phaseo's managed quota on that provider is used up, or when the
+active route, preset, guardrail, or request policy no longer allows it. The request
+then fails over, and the pin moves to the provider that served it. Request details
+record this as `sticky_routing.demotionReason` in the routing diagnostics. Pinned
+requests are not used to probe recovering providers.
+
+Without a key, `session_id` or cache mark, Phaseo still pins the opening context for
+15 minutes to a provider that reported a cache read or a cache write for it, as long
+as that provider's cached input is cheaper than its standard input.
+
+Phaseo sends a hash of your workspace and `prompt_cache_key` to providers, never
+the raw key, so the same key in two workspaces never shares a provider cache. With
+only a `session_id`, Phaseo derives that hash from the session for OpenAI, xAI,
+Fireworks and Cerebras. Fireworks, Cloudflare Workers AI and Baseten also receive it in the
+`x-session-affinity` header, Morph in the `x-session-id` header, and xAI receives it as `x-grok-conv-id` unless you set
+`provider_options.xai.conversation_id`. Responses still echo your own
+`prompt_cache_key`.
 
 Set `provider.cache_aware_routing` to `false` to opt out for one request. Set
 `routing.session_affinity` to `false` when the request carries a `session_id`
-but should use only normal context-based routing.
+but should use only normal context-based routing. Phaseo then also stops deriving a
+provider cache key from the session.
 
 ## Related pages
 
@@ -271,5 +459,6 @@ but should use only normal context-based routing.
 - [Responses](../api-reference/endpoint/responses.mdx)
 - [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
 - [Parameters](../api-reference/parameters.mdx)
+- [Routing and fallbacks](./routing-and-fallbacks.mdx)
 - [Context and Token Budgeting](./context-and-token-budgeting.mdx)
 - [Use response caching with presets](../cookbook/response-caching-with-presets.mdx)

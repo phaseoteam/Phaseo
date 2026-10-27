@@ -12,13 +12,14 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BASE_URL } from "./config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
-import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
+import { buildJavaSdkQuickstart } from "./javaSdkQuickstart";
+import { buildEndpointRoutes, getSupportedEndpointOptions } from "./endpointRoutes";
 import {
 	AI_SDK_ENDPOINTS,
 	GENERIC_PHASEO_SDK_ENDPOINTS,
@@ -75,14 +76,13 @@ interface QuickstartProps {
 const normalizeEndpointValue = (value: string | null | undefined) =>
 	value ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".") : "";
 
-const endpointValueFromPath = (path: string) => normalizeEndpointValue(path);
-
 type LanguageFamilyId =
 	| "curl"
 	| "typescript"
 	| "python"
 	| "go"
 	| "csharp"
+	| "java"
 	| "php"
 	| "ruby";
 
@@ -94,6 +94,7 @@ const LANGUAGE_FAMILY_ORDER: LanguageFamilyId[] = [
 	"curl",
 	"go",
 	"csharp",
+	"java",
 	"php",
 	"ruby",
 ];
@@ -109,6 +110,7 @@ const LANGUAGE_DEFAULT_ORDER = [
 	"curl",
 	"go-sdk",
 	"csharp-sdk",
+	"java-sdk",
 	"php-sdk",
 	"ruby-sdk",
 	"agent-sdk-ts",
@@ -149,6 +151,7 @@ const LANGUAGE_FAMILY_META: Record<
 	},
 	go: { label: "Go", values: ["go-sdk", "agent-sdk-go"] },
 	csharp: { label: "C#", values: ["csharp-sdk", "agent-sdk-csharp"] },
+	java: { label: "Java", values: ["java-sdk"] },
 	php: { label: "PHP", values: ["php-sdk", "agent-sdk-php"] },
 	ruby: { label: "Ruby", values: ["ruby-sdk", "agent-sdk-ruby"] },
 };
@@ -162,6 +165,7 @@ const LANGUAGE_VARIANT_LABELS: Partial<Record<string, string>> = {
 	"python-sdk": "SDK",
 	"go-sdk": "SDK",
 	"csharp-sdk": "SDK",
+	"java-sdk": "SDK",
 	"php-sdk": "SDK",
 	"ruby-sdk": "SDK",
 	"agent-sdk-ts": "Agent SDK",
@@ -185,6 +189,7 @@ const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"python-sdk",
 	"go-sdk",
 	"csharp-sdk",
+	"java-sdk",
 	"php-sdk",
 	"ruby-sdk",
 ]);
@@ -192,6 +197,10 @@ const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
 const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
 const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
+	extractions: {
+		label: "Extractions API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/extractions`,
+	},
 	models: {
 		label: "Model discovery",
 		href: `${DOCS_BASE_URL}/sdk-reference/sdk/get-models`,
@@ -229,6 +238,10 @@ const LANGUAGE_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 	"csharp-sdk": {
 		label: "C# SDK",
 		href: `${DOCS_BASE_URL}/sdk-reference/csharp/overview`,
+	},
+	"java-sdk": {
+		label: "Java SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/java/overview`,
 	},
 	"php-sdk": {
 		label: "PHP SDK",
@@ -332,38 +345,18 @@ export default function Quickstart({
 		python: "python-sdk",
 		curl: "curl",
 	}[preferences.codeLanguage];
-	const isModelMetadataQuickstart = mode === "model-metadata";
-	const supportedEndpointValues = useMemo(() => {
-		const normalized = new Set(
-			supportedEndpoints.map((value) => normalizeEndpointValue(value)),
-		);
-		const values = new Set<string>();
-		for (const value of normalized) {
-			const mapped = capabilityToEndpoints[value];
-			if (mapped && mapped.length > 0) {
-				mapped.forEach((path) => values.add(endpointValueFromPath(path)));
-				if (ENDPOINT_OPTIONS.some((option) => option.value === value)) {
-					values.add(value);
-				}
-				continue;
-			}
-			if (value) values.add(value);
-		}
-		if (endpoint) {
-			values.add(normalizeEndpointValue(endpoint));
-		}
-		return values;
-	}, [supportedEndpoints, endpoint]);
+	const supportedEndpointOptions = useMemo(
+		() => getSupportedEndpointOptions(supportedEndpoints, endpoint),
+		[supportedEndpoints, endpoint],
+	);
+	const isModelMetadataQuickstart = mode === "model-metadata" || supportedEndpointOptions.length === 0;
 
 	const availableEndpoints = useMemo(() => {
 		if (isModelMetadataQuickstart) {
 			return [{ value: "models", label: "Models" }];
 		}
-		const filtered = ENDPOINT_OPTIONS.filter((option) =>
-			supportedEndpointValues.has(option.value),
-		);
-		return filtered.length > 0 ? filtered : ENDPOINT_OPTIONS;
-	}, [isModelMetadataQuickstart, supportedEndpointValues]);
+		return supportedEndpointOptions;
+	}, [isModelMetadataQuickstart, supportedEndpointOptions]);
 
 	const defaultEndpoint = useMemo(() => {
 		if (isModelMetadataQuickstart) return "models";
@@ -415,6 +408,7 @@ export default function Quickstart({
 				"python-requests",
 				"go-sdk",
 				"csharp-sdk",
+				"java-sdk",
 				"php-sdk",
 				"ruby-sdk",
 			]);
@@ -436,6 +430,7 @@ export default function Quickstart({
 		if (GENERIC_PHASEO_SDK_ENDPOINTS.has(normalizedEndpoint)) {
 			supported.add("go-sdk");
 			supported.add("csharp-sdk");
+			supported.add("java-sdk");
 			supported.add("php-sdk");
 			supported.add("ruby-sdk");
 		}
@@ -1032,7 +1027,7 @@ func main() {
 		: null;
 
 	const agentSdkCsharpUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
-		? `using AiStatsAgentSdk;
+		? `using PhaseoAgentSdk;
 
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {
@@ -1201,6 +1196,13 @@ client = Phaseo(api_key=os.environ.get("PHASEO_API_KEY"))
 payload = ${payloadJsonPython}
 ${pythonSdkResponseHandler}`
 					: null;
+
+	const javaSdkUsage = buildJavaSdkQuickstart({
+		path: activeEndpointPath,
+		payloadJson: activePayloadJson,
+		streaming: shouldStream,
+		modelId: isModelMetadataQuickstart ? modelIdentifierInCode : undefined,
+	});
 
 	const goSdkUsage = isModelMetadataQuickstart
 		? `package main
@@ -1776,8 +1778,8 @@ console.log(response);`
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("PHASEO_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.environ.get("PHASEO_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 payload = ${payloadJsonPython}
@@ -1791,8 +1793,9 @@ print(response)`
 			? `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -2053,6 +2056,7 @@ console.log(response);`
 						agentSdkRubyUsage={agentSdkRubyUsage}
 						pythonSdkUsage={pythonSdkUsage}
 						goSdkUsage={goSdkUsage}
+						javaSdkUsage={javaSdkUsage}
 						csharpSdkUsage={csharpSdkUsage}
 						phpSdkUsage={phpSdkUsage}
 						rubySdkUsage={rubySdkUsage}
