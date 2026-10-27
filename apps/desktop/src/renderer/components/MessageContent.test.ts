@@ -77,6 +77,7 @@ describe("rich replies", () => {
 		const html = render("> [!WARNING]\n> Back up **first**.\n\n> Just a quote");
 		expect(html).toContain('<div role="note" class="message-alert" data-alert="warning">');
 		expect(html).toContain("Warning</p>");
+		expect(html).toContain("data-find-ignore");
 		expect(html).toContain("<p>Back up <strong>first</strong>.</p>");
 		expect(html).not.toContain("[!WARNING]");
 		expect(html).toContain("<blockquote>\n<p>Just a quote</p>\n</blockquote>");

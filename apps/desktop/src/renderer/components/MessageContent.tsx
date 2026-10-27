@@ -202,7 +202,7 @@ const markdownComponents: Components = {
 		blockquote: props => {
 			const kind = (props as Record<string, unknown>)["data-alert"] as AlertKind | undefined, alert = kind ? alerts[kind] : undefined;
 			if (!alert) return <blockquote>{props.children}</blockquote>;
-			return <div role="note" className="message-alert" data-alert={kind}><p className="message-alert-title"><alert.Icon aria-hidden className="size-4" />{alert.label}</p>{props.children}</div>;
+			return <div role="note" className="message-alert" data-alert={kind}><p className="message-alert-title" data-find-ignore><alert.Icon aria-hidden className="size-4" />{alert.label}</p>{props.children}</div>;
 		},
 		details: ({ children, open }) => <details className="message-details" open={open}>{children}</details>,
 		summary: ({ children }) => <summary>{children}</summary>,

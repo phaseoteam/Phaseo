@@ -220,6 +220,10 @@
 .message-markdown .message-table .message-table-scroll { margin-block: 0; }
 .message-table-copy { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 6px; border: 0; border-radius: 6px; background: none; color: var(--text-muted); font-size: 11.5px; cursor: pointer; opacity: .7; }
 .message-table-copy:hover, .message-table-copy[data-popup-open] { background: var(--surface-muted); color: var(--text); opacity: 1; }
+/* Find in chat draws matches with the CSS Custom Highlight API (ChatFind). */
+::highlight(chat-find) { background-color: #fde68a; color: #1c1917; }
+::highlight(chat-find-current) { background-color: #f59e0b; color: #1c1917; }
+:root.dark ::highlight(chat-find) { background-color: #713f12; color: #fefce8; }
 .code-token { color: var(--code-light, inherit); }
 :root[data-theme="dark"] .code-token { color: var(--code-dark, inherit); }
 .task-activity { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 12px 0; }

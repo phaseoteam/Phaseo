@@ -689,6 +689,16 @@ ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.conversationPage(query);
 });
+ipcMain.handle("workspace:conversation-find", (event, query: unknown) => {
+	if (shutdownStarted) return;
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.findInConversation(query);
+});
+ipcMain.handle("workspace:search-messages", (event, query: unknown) => {
+	if (shutdownStarted) return [];
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.searchMessages(query);
+});
 ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unknown) => {
 	const window = senderWindow(event);
 	if (!window || typeof id !== "string" || (format !== "markdown" && format !== "json")) throw new Error("Invalid conversation export.");

@@ -17,6 +17,7 @@ import type { WorkspacePreferences } from "./preferences";
 import type { InstructionDocument, InstructionEdit } from "./instructions";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
+import type { ConversationFindQuery, ConversationFindResult, MessageSearchHit, MessageSearchQuery } from "./conversationSearch";
 import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
 import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
@@ -183,6 +184,10 @@ export type WorkspaceApi = {
 	task: (id: string) => Promise<Task>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
+	/** Find in chat across every page of one chat. */
+	conversationFind: (query: ConversationFindQuery) => Promise<ConversationFindResult>;
+	/** Each chat's latest message containing the text, for the command palette. */
+	searchMessages: (query: MessageSearchQuery) => Promise<MessageSearchHit[]>;
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;

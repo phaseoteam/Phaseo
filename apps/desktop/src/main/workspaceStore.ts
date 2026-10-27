@@ -21,6 +21,7 @@ import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 import { overviewOrder, taskOverview, type TaskOverview, type WorkspaceOverview } from "../shared/workspaceOverview";
 import { validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
+import { conversationFindLimit, validateConversationFindQuery, validateMessageSearchQuery, type ConversationFindResult, type MessageSearchHit } from "../shared/conversationSearch";
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
@@ -336,6 +337,31 @@ export class WorkspaceStore {
 	conversationPage(value: unknown): ConversationPage {
 		const query = validateConversationPageQuery(value), { task, key } = this.getHead(query.taskId), page = this.entries.page(key, query, task.revision ?? 0);
 		return query.kind === "activities" ? page : { ...page, activities: this.entries.turnActivities(key, page) };
+	}
+	/** Find in chat, across every page: the renderer loads the page of a hit when it steps to it. */
+	findInConversation(value: unknown): ConversationFindResult {
+		const query = validateConversationFindQuery(value), { key } = this.getHead(query.taskId);
+		const hits = this.entries.find(key, query.query.toLowerCase(), conversationFindLimit + 1);
+		const kept = hits.slice(0, conversationFindLimit);
+		return { hits: kept, total: kept.reduce((sum, hit) => sum + hit.count, 0), truncated: hits.length > conversationFindLimit };
+	}
+	/**
+	 * Message search for the command palette: each chat's latest message containing `query`, newest chats first, with
+	 * the text around the match. Summed and cut in SQL, so a large history never crosses to JavaScript.
+	 */
+	searchMessages(value: unknown): MessageSearchHit[] {
+		const { query, limit } = validateMessageSearchQuery(value);
+		const rows = this.statement(`SELECT task_id, title, project_id, message_id, role, created_at, matches,
+			replace(replace((CASE WHEN at > 61 THEN '…' ELSE '' END) || substr(text, max(1, at - 60), 180) || (CASE WHEN length(text) >= max(1, at - 60) + 180 THEN '…' ELSE '' END), char(10), ' '), char(13), ' ') AS snippet
+		FROM (
+			SELECT tasks.id AS task_id, json_extract(tasks.data, '$.title') AS title, json_extract(tasks.data, '$.projectId') AS project_id, json_extract(tasks.data, '$.updatedAt') AS updated_at,
+				m.id AS message_id, m.role AS role, m.text AS text, json_extract(m.data, '$.createdAt') AS created_at, instr(history_lower(m.text), $needle) AS at,
+				row_number() OVER (PARTITION BY m.task_key ORDER BY m.rowid DESC) AS place, count(*) OVER (PARTITION BY m.task_key) AS matches
+			FROM (SELECT rowid, task_key, id, role, data, json_extract(data, '$.text') AS text FROM task_entries WHERE kind = 0 AND role IN ('user', 'assistant')) AS m
+			JOIN tasks ON tasks.key = m.task_key
+			WHERE json_extract(tasks.data, '$.delegation') IS NULL AND instr(history_lower(m.text), $needle) > 0
+		) WHERE place = 1 ORDER BY updated_at DESC LIMIT $limit`).all({ needle: query.toLowerCase(), limit }) as { task_id: string; title: string; project_id: string | null; message_id: string; role: "user" | "assistant"; created_at: string | null; matches: number; snippet: string }[];
+		return rows.map(row => ({ taskId: row.task_id, title: row.title, ...(row.project_id ? { projectId: row.project_id } : {}), messageId: row.message_id, role: row.role, snippet: row.snippet, ...(row.created_at ? { createdAt: row.created_at } : {}), matches: row.matches }));
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
