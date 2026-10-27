@@ -2902,6 +2902,7 @@ struct PromptCacheOptions {
 struct PromptTemplateReference {
 	std::string id;
 	std::map<std::string, std::any> variables;
+	std::string version;
 };
 
 struct Provider {

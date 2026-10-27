@@ -4123,7 +4123,9 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] variables
     #   @return [Hash{String => Object}, nil]
-    PromptTemplateReference = Struct.new(:id, :variables, keyword_init: true)
+    # @!attribute [rw] version
+    #   @return [String, nil]
+    PromptTemplateReference = Struct.new(:id, :variables, :version, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name

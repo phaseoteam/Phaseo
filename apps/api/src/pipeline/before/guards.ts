@@ -28,6 +28,7 @@ import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequ
 import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
+import { parsePresetReference } from "./presetReference";
 import { shadowSpendLimitOnce } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
@@ -602,7 +603,19 @@ export async function guardContext(args: {
         // A missing or unusable preset is the caller's mistake (often a typo in
         // the @reference), not a gateway failure.
         const message = e instanceof Error ? e.message : String(e);
-        if (args.model.startsWith("@") && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
+        const presetReference = parsePresetReference(args.model);
+        if (presetReference?.ref != null && message.includes("preset_version_not_found")) {
+            return {
+                ok: false,
+                response: err("not_found", {
+                    reason: "preset_version_not_found",
+                    description: `Preset "${presetReference.base}" has no published version or label "${presetReference.ref}", or this key cannot use it`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
+        if (presetReference && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
             const missing = message.includes("preset_not_found");
             return {
                 ok: false,

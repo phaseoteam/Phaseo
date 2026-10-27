@@ -18282,6 +18282,14 @@ components:
           description: >-
             Values for the template variables. Image variables take an https
             URL, a data URL or an image part.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            Runs this published version of the preset instead of the current
+            one: its models, parameters and template. Use a version label such
+            as v3, 1.2.0 or 2026.10.27, or a label such as production. The same
+            as setting model to @support-triage@production.
     Preset:
       type: object
       required:

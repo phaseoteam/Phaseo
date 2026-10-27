@@ -103,6 +103,7 @@ export interface ResponsesRequest {
     variables?: {
       [key: string]: unknown;
     };
+    version?: string;
   };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {

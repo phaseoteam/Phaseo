@@ -2903,6 +2903,7 @@ pub struct PromptCacheOptions {
 pub struct PromptTemplateReference {
 	pub id: String,
 	pub variables: Option<HashMap<String, String>>,
+	pub version: Option<String>,
 }
 
 pub struct Provider {

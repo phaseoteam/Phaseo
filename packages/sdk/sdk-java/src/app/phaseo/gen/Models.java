@@ -2928,6 +2928,7 @@ public final class Models {
 	public static class PromptTemplateReference {
 		public String id;
 		public Object variables;
+		public String version;
 	}
 
 	public static class Provider {

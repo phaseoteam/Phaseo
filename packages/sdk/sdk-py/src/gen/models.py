@@ -2589,6 +2589,7 @@ class PromptCacheOptions(TypedDict):
 class PromptTemplateReference(TypedDict):
 	id: str
 	variables: NotRequired[OcrResponse]
+	version: NotRequired[str]
 
 class Provider(TypedDict):
 	api_provider_id: NotRequired[str]

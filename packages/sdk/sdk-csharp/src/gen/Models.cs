@@ -6995,6 +6995,9 @@ public sealed class PromptTemplateReference
 	[JsonPropertyName("variables")]
 	public Dictionary<string, object>? Variables { get; set; }
 
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
+
 }
 
 public sealed class Provider

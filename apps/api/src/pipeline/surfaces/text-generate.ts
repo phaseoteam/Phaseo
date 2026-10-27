@@ -880,6 +880,7 @@ async function runTextGeneratePipelineInner(
 					protocol,
 					presetId: pre.ctx.preset?.id ?? null,
 					presetSlug: pre.ctx.preset?.slug ?? null,
+					presetVersionId: pre.ctx.preset?.ref ? pre.ctx.preset.versionId ?? null : null,
 					routingMode: pre.ctx.routingMode ?? null,
 				});
 				const cacheKey = buildResponseCacheKey(

@@ -56,12 +56,27 @@ function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unkn
 	};
 }
 
+/** Which preset version served the request, and the ref it pinned, if any. */
+function presetMetadata(ctx: PipelineContext) {
+    const preset = ctx.preset;
+    if (!preset) return null;
+    return {
+        id: preset.id,
+        slug: preset.slug ?? null,
+        version_id: preset.versionId ?? null,
+        version_label: preset.versionLabel ?? null,
+        ref: preset.ref ?? null,
+    };
+}
+
 function promptTemplateMetadata(ctx: PipelineContext) {
     const template = ctx.promptTemplate;
     if (!template) return null;
     return {
         preset_id: template.presetId,
         preset_slug: template.presetSlug,
+        version_label: template.versionLabel ?? null,
+        ref: template.ref ?? null,
         variable_names: template.variableNames,
         message_count: template.messageCount,
     };
@@ -339,6 +354,7 @@ export async function handleFailureAudit(
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
+                preset: presetMetadata(ctx),
                 prompt_template: promptTemplateMetadata(ctx),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
@@ -591,6 +607,7 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
+                preset: presetMetadata(ctx),
                 prompt_template: promptTemplateMetadata(ctx),
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),

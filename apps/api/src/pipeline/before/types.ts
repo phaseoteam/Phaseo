@@ -148,6 +148,11 @@ export type PresetData = {
     description: string | null;
     config: PresetConfig;
     visibility: "private" | "team" | "public";
+    /** The published version that served the request (null for presets saved before versions). */
+    versionId?: string | null;
+    versionLabel?: string | null;
+    /** The ref the request pinned ("v3", "production"), or null for the published version. */
+    ref?: string | null;
 };
 
 export type ProviderRolloutStatus =
@@ -736,9 +741,12 @@ export type PipelineContext = {
         name: string;
         slug?: string | null;
         config: PresetConfig;
+        versionId?: string | null;
+        versionLabel?: string | null;
+        ref?: string | null;
     } | null;
     /** Set when the preset rendered a prompt template; variable values are not kept. */
-    promptTemplate?: ({ presetId: string; presetSlug: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
+    promptTemplate?: ({ presetId: string; presetSlug: string | null; versionLabel: string | null; ref: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
     /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
     neverStoreContent?: boolean;

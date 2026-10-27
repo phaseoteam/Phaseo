@@ -4490,6 +4490,7 @@ type PromptCacheOptions struct {
 type PromptTemplateReference struct {
 	Id string `json:"id"`
 	Variables *map[string]interface{} `json:"variables,omitempty"`
+	Version *string `json:"version,omitempty"`
 }
 
 type Provider struct {

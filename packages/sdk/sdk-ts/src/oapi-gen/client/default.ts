@@ -960,6 +960,7 @@ export type CreateAnthropicMessageParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     provider?: {
@@ -2301,6 +2302,7 @@ export type CreateChatCompletionParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -6143,6 +6145,7 @@ export type CreateResponseParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {

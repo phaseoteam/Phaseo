@@ -5105,6 +5105,8 @@ class PromptTemplateReference
 	public $id;
 	/** @var array<string, mixed>|null */
 	public $variables;
+	/** @var string|null */
+	public $version;
 }
 
 class Provider
