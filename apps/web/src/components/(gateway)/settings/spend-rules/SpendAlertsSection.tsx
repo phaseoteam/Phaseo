@@ -24,11 +24,12 @@ import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fet
 import { deleteSpendRule, testSpendRule, updateSpendRule } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
 import { SettingsResourceQuery, useSettingsWrite } from "../PrivateSettingsQuery";
 import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget } from "./SpendRuleEditorSheet";
+import { SpendBlocksList } from "./SpendBlocksList";
 import { SpendRuleHistorySheet } from "./SpendRuleHistorySheet";
 import { SpendWorkspaceSettings, type DepartmentSpendAttribution } from "./SpendWorkspaceSettings";
 import { useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SPEND_ALERT_ANCHOR, prefillFromSearchParams, previewSummary } from "./spendRuleDraft";
-import type { SpendRule } from "./spendRules";
+import type { SpendBlock, SpendRule } from "./spendRules";
 
 // The shortcut links' query parameters; while spendAlert=new is in the URL, the editor is open, prefilled.
 const PREFILL_PARAMS = {
@@ -95,6 +96,7 @@ function SpendAlertsPanel({ data, destinations, departmentSpendAttribution }: {
 
 	return (
 		<div className="space-y-6">
+			<SpendBlocksList blocks={data.blocks ?? []} canManage={canManage} options={data.options} maxRules={data.maxRules} />
 			<div className="space-y-3">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<p className="text-xs text-muted-foreground">{t("count", { count: data.rules.length, max: data.maxRules })}</p>
@@ -118,6 +120,7 @@ function SpendAlertsPanel({ data, destinations, departmentSpendAttribution }: {
 								key={`${rule.id}:${rule.updated_at}`}
 								rule={rule}
 								data={data}
+								activeBlock={(data.blocks ?? []).find((block) => block.active && block.rule_id === rule.id) ?? null}
 								onEdit={() => setEditor({ mode: "edit", rule })}
 								onHistory={() => setHistoryRule(rule)}
 								onDelete={() => setDeleting(rule)}
@@ -166,9 +169,11 @@ function useRuleSummary() {
 	};
 }
 
-function SpendRuleRow({ rule, data, onEdit, onHistory, onDelete }: {
+function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: {
 	rule: SpendRule;
 	data: SettingsSpendAlertsData;
+	/** The rule's active block, if it is blocking requests now. */
+	activeBlock: SpendBlock | null;
 	onEdit: () => void;
 	onHistory: () => void;
 	onDelete: () => void;
@@ -220,7 +225,8 @@ function SpendRuleRow({ rule, data, onEdit, onHistory, onDelete }: {
 				<div className="flex flex-wrap items-center gap-2">
 					<button type="button" className="truncate text-left text-sm font-medium hover:underline" onClick={onEdit}>{rule.name}</button>
 					{!rule.evaluated ? <Badge variant="outline" className="rounded-md" title={t("badges.notEvaluatedHelp")}>{t("badges.notEvaluated")}</Badge> : null}
-					{rule.action === "block" ? <Badge variant="secondary" className="rounded-md">{t("badges.blocks", { percent: rule.block_at_percent })}</Badge> : null}
+					{activeBlock ? <Badge variant="destructive" className="rounded-md" title={t("badges.blockingNowHelp")}>{t("badges.blockingNow")}</Badge>
+						: rule.action === "block" ? <Badge variant="secondary" className="rounded-md">{t("badges.blocks", { percent: rule.block_at_percent })}</Badge> : null}
 					{!enabled ? <Badge variant="outline" className="rounded-md text-muted-foreground">{t("badges.disabled")}</Badge> : null}
 				</div>
 				<p className="mt-0.5 truncate text-sm text-muted-foreground">

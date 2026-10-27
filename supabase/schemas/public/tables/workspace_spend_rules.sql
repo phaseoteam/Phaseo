@@ -94,6 +94,16 @@ CREATE TRIGGER workspace_spend_rules_enforce_limit
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_workspace_spend_rule_limit();
 
+CREATE TRIGGER workspace_spend_rules_lift_blocks
+  AFTER UPDATE ON public.workspace_spend_rules
+  FOR EACH ROW
+  EXECUTE FUNCTION public.lift_spend_blocks_on_rule_change();
+
+CREATE TRIGGER workspace_spend_rules_lift_blocks_on_delete
+  BEFORE DELETE ON public.workspace_spend_rules
+  FOR EACH ROW
+  EXECUTE FUNCTION public.lift_spend_blocks_on_rule_change();
+
 CREATE TRIGGER workspace_spend_rules_set_updated_at
   BEFORE UPDATE ON public.workspace_spend_rules
   FOR EACH ROW

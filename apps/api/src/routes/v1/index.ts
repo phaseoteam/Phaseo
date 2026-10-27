@@ -11,6 +11,7 @@ import { lazyRouter } from "@/routes/lazy";
 import { EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS } from "@/pipeline/upstream-rate-limit-headers";
 import { RATE_LIMIT_POLICY_HEADERS } from "@core/rate-limit-policies";
 import { DROPPED_PARAMS_HEADER } from "@/pipeline/execute/unsupportedParams";
+import { SPEND_WARNING_HEADER } from "@core/spend-blocks";
 
 export const v1Router = new Hono<Env>();
 
@@ -24,6 +25,7 @@ const CORS_HEADERS: Record<string, string> = {
 		...EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS,
 		...RATE_LIMIT_POLICY_HEADERS,
 		DROPPED_PARAMS_HEADER,
+		SPEND_WARNING_HEADER,
 		"X-Request-Id",
 	].join(", "),
     "Access-Control-Max-Age": "86400",

@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
 	rpc: null as unknown as ReturnType<typeof import("vitest").vi.fn>,
 	audit: null as unknown as ReturnType<typeof import("vitest").vi.fn>,
 	test: null as unknown as ReturnType<typeof import("vitest").vi.fn>,
+	bindings: {} as Record<string, string>,
 }));
 
 function tableQuery(table: string, operation: "select" | "update", payload?: Record<string, unknown>) {
@@ -38,6 +39,7 @@ function tableQuery(table: string, operation: "select" | "update", payload?: Rec
 }
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => state.bindings,
 	getSupabaseAdmin: () => ({
 		from: (table: string) => ({
 			select: () => tableQuery(table, "select"),
@@ -87,6 +89,7 @@ function saveResponse(args: any) {
 
 describe("spend rules management API", () => {
 	beforeEach(() => {
+		state.bindings = {};
 		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES], userId: null } };
 		state.tables = {
 			workspace_spend_rules: [row(RULE, WORKSPACE), row(ELSEWHERE, OTHER_WORKSPACE), row("00000000-0000-4000-8000-000000000007", WORKSPACE, { deleted_at: "2026-10-20T00:00:00Z" })],
@@ -214,6 +217,15 @@ describe("spend rules management API", () => {
 			}));
 		});
 
+		it("accepts a block rule only while the gateway enforces blocks", async () => {
+			const body = { name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, action: "block", block_at_amount_usd: 6 };
+			expect((await call("/", "POST", body)).status).toBe(400);
+			expect(state.rpc).not.toHaveBeenCalled();
+			state.bindings = { SPEND_RULE_BLOCKS_ENABLED: "true" };
+			expect((await call("/", "POST", body)).status).toBe(201);
+			expect(state.rpc.mock.calls[0][1].p_rule).toMatchObject({ action: "block", block_at_amount_nanos: 6_000_000_000 });
+		});
+
 		it("takes amounts in USD or exact nanos, and creates with no destinations by default", async () => {
 			await call("/", "POST", { name: "x", metric: "spend", period: "month", threshold_amount_nanos: "12345678901" });
 			await call("/", "POST", { name: "y", metric: "spend", period: "month", threshold_amount_usd: 20.5 });
@@ -273,6 +285,14 @@ describe("spend rules management API", () => {
 				p_destination_ids: null,
 			}));
 			expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: "spend_rule.updated", metadata: expect.objectContaining({ changed: ["enabled", "threshold_percents"] }) }));
+		});
+
+		it("lets a rule that already blocks be edited while blocks are off, but not a switch to block", async () => {
+			state.tables.workspace_spend_rules[0] = row(RULE, WORKSPACE, { action: "block", block_at_percent: 120 });
+			expect((await call(`/${RULE}`, "PATCH", { name: "Renamed" })).status).toBe(200);
+			state.tables.workspace_spend_rules[0] = row(RULE, WORKSPACE);
+			const refused = await call(`/${RULE}`, "PATCH", { action: "block", block_at_percent: 120 });
+			expect({ status: refused.status, body: await refused.json() }).toEqual({ status: 400, body: { error: "bad_request", message: "action block is not available yet; use notify" } });
 		});
 
 		it("checks the merged rule, clears fields the rule stops using, and needs a change", async () => {

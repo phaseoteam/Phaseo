@@ -1663,6 +1663,19 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> LiftSpendBlockAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/spend-blocks/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/lift";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> ListApiKeysAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -2123,6 +2136,18 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/rate-limits/policies";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListSpendBlocksAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/spend-blocks";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 

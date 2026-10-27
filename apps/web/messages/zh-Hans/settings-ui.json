@@ -7230,7 +7230,9 @@
 			"notEvaluated": "尚未评估",
 			"notEvaluatedHelp": "此警报类型已保存，但尚未检查。它将在后续版本中开始发送。",
 			"blocks": "先通知，再拦截",
-			"disabled": "已关闭"
+			"disabled": "已关闭",
+			"blockingNow": "正在拦截",
+			"blockingNowHelp": "此规则正在拒绝其范围内的请求。你可以在“生效中的拦截”中解除。"
 		},
 		"metric": {
 			"spend": "支出金额",
@@ -7389,7 +7391,6 @@
 			"blockFreeModels": "同时拦截免费模型",
 			"blockFreeModelsHelp": "默认关闭，拦截期间免费模型仍可使用。",
 			"bestEffort": "拦截为尽力而为：在支出超过宽限幅度几分钟后才开始，因此部分请求可能会超出。如需精确上限，请使用<keys>密钥限额</keys>或<budgets>工作区预算</budgets>。",
-			"blockingLater": "拦截将在后续版本中启用。在此之前，此警报只发送通知。",
 			"sectionDestinations": "发送到",
 			"destinations": "目标",
 			"destinationsRoutes": "支出警报路由",
@@ -7406,7 +7407,8 @@
 			"close": "关闭",
 			"save": "保存",
 			"create": "添加警报",
-			"saving": "正在保存…"
+			"saving": "正在保存…",
+			"blockingOff": "拦截尚未启用。在此之前，此警报只发送通知。"
 		},
 		"issues": {
 			"nameRequired": "请输入不超过 100 个字符的名称。",
@@ -7443,7 +7445,8 @@
 			"enabled": "已开启警报",
 			"disabled": "已关闭警报",
 			"testSent": "{count, plural, =0 {已发送测试} other {已向 # 个目标发送测试}}",
-			"testPartial": "已发送 {delivered} 个，{failed} 个失败"
+			"testPartial": "已发送 {delivered} 个，{failed} 个失败",
+			"lifted": "已解除拦截"
 		},
 		"delete": {
 			"title": "删除 {name}？",
@@ -7497,6 +7500,30 @@
 			"keyLimitName": "{key}：{interval, select, daily {每日} weekly {每周} other {每月}}限额的 {percent}%",
 			"budget": "在 50/80/100% 时警报",
 			"budgetName": "{interval, select, daily {每日} weekly {每周} other {每月}}预算警报"
+		},
+		"blocks": {
+			"title": "生效中的拦截",
+			"description": "这些支出规则正在拒绝请求。范围内的请求会收到 429，直到拦截重置或被解除。",
+			"badge": "拦截中",
+			"deletedRule": "已删除的规则",
+			"freeModelsAllowed": "允许免费模型",
+			"spent": "已支出 {spend}，上限 {limit}",
+			"resets": "{date} 重置",
+			"noReset": "支出低于上限时解除",
+			"since": "自 {date} 起",
+			"lift": "解除",
+			"bestEffort": "支出超过上限几分钟后才会开始拦截。解除后约一分钟内对所有请求生效。",
+			"alreadyLifted": "此拦截已被解除。",
+			"liftTitle": "解除 {name} 的拦截？",
+			"liftBody": "范围内的请求约一分钟内恢复。在周期重置前，此规则不会再次拦截，但会继续发送警报。",
+			"lifting": "正在解除…",
+			"liftConfirm": "解除拦截"
+		},
+		"confirmBlock": {
+			"title": "拦截整个工作区？",
+			"body": "支出达到拦截上限后，{name} 会拒绝此工作区所有密钥和成员的请求，直到周期重置，或所有者或管理员解除拦截。",
+			"label": "输入 {name} 以确认",
+			"confirm": "保存并允许拦截"
 		}
 	}
 }

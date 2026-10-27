@@ -40,6 +40,7 @@ import { departmentBudgetsRoutes } from "./department-budgets";
 import { rateLimitsRoutes } from "./rate-limits";
 import { workloadIdentityRoutes } from "./workload-identity";
 import { spendRulesRoutes } from "./spend-rules";
+import { spendBlocksRoutes } from "./spend-blocks";
 import { classifiersRoutes } from "./classifiers";
 import { privateModelsRoutes } from "./private-models";
 import {
@@ -88,6 +89,7 @@ platformRouter.route("/department-budgets", departmentBudgetsRoutes);
 platformRouter.route("/rate-limits", rateLimitsRoutes);
 platformRouter.route("/workload-identity", workloadIdentityRoutes);
 platformRouter.route("/spend-rules", spendRulesRoutes);
+platformRouter.route("/spend-blocks", spendBlocksRoutes);
 platformRouter.route("/classifiers", classifiersRoutes);
 platformRouter.route("/private-models", privateModelsRoutes);
 platformRouter.route("/me", meRoutes);
