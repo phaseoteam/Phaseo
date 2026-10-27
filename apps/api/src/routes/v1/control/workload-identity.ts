@@ -21,6 +21,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 const SCOPES = [CAPABILITIES.KEYS_READ, CAPABILITIES.KEYS_WRITE];
 const COLUMNS = "id,workspace_id,key_id,name,provider,issuer,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,created_by,created_at,updated_at,keys(kid,status,last_used_at)";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Enforced by create_workload_identity_policy(); keep the two in step.
 const MAX_POLICIES_PER_WORKSPACE = 50;
 const GITHUB_ACTIONS_ISSUER = "https://token.actions.githubusercontent.com";
 
@@ -200,16 +201,8 @@ async function handleCreate(req: Request) {
 
 	const workspaceId = session.auth.workspaceId;
 	try {
-		const supabase = getSupabaseAdmin();
-		const { count, error: countError } = await supabase
-			.from("workload_identity_policies")
-			.select("id", { count: "exact", head: true })
-			.eq("workspace_id", workspaceId);
-		if (countError) throw countError;
-		if ((count ?? 0) >= MAX_POLICIES_PER_WORKSPACE) {
-			return json({ error: "limit_reached", message: `A workspace can have up to ${MAX_POLICIES_PER_WORKSPACE} trust policies` }, 409, NO_STORE);
-		}
-		const { data, error } = await supabase.rpc("create_workload_identity_policy", {
+		// The function enforces the cap under a per-workspace lock.
+		const { data, error } = await getSupabaseAdmin().rpc("create_workload_identity_policy", {
 			p_workspace_id: workspaceId,
 			p_created_by: session.auth.userId ?? null,
 			p_name: name,
@@ -219,6 +212,9 @@ async function handleCreate(req: Request) {
 			p_claim_conditions: validated.conditions,
 			p_max_token_lifetime_seconds: validated.maxTokenLifetimeSeconds,
 		});
+		if (error && String(error.message ?? "").includes("workload_identity_policy_limit")) {
+			return json({ error: "limit_reached", message: `A workspace can have up to ${MAX_POLICIES_PER_WORKSPACE} trust policies` }, 409, NO_STORE);
+		}
 		if (error) throw error;
 		const created = (data as Array<{ policy_id: string }> | null)?.[0];
 		if (!created) throw new Error("create_workload_identity_policy returned no row");

@@ -72,6 +72,10 @@ vi.mock("@/runtime/env", () => {
 			rpc: async (name: string, args: Row) => {
 				if (name !== "create_workload_identity_policy") throw new Error(name);
 				mocks.rpcCalls.push(args);
+				// The SQL function enforces the cap.
+				if (mocks.policies.filter((row) => row.workspace_id === args.p_workspace_id).length >= 50) {
+					return { data: null, error: { message: "workload_identity_policy_limit" } };
+				}
 				const keyId = `key-${mocks.keys.length + 1}`;
 				const policyId = `00000000-0000-4000-8000-00000000010${mocks.policies.length + 1}`;
 				mocks.keys.push({ id: keyId, workspace_id: args.p_workspace_id, kid: `kid${keyId}`, status: "active", key_kind: "workload_identity" });
@@ -170,7 +174,8 @@ describe("workload identity policy routes", () => {
 		for (let i = 0; i < 50; i += 1) mocks.policies.push({ id: `p${i}`, workspace_id: WS });
 		const response = await call("POST", "/policies", vercelPolicy);
 		expect(response.status).toBe(409);
-		expect(mocks.rpcCalls).toHaveLength(0);
+		expect(await response.json()).toMatchObject({ error: "limit_reached" });
+		expect(mocks.keys).toHaveLength(0);
 	});
 
 	it("lists, reads and updates only the workspace's policies", async () => {

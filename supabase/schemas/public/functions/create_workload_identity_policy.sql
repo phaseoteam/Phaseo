@@ -15,6 +15,13 @@ CREATE OR REPLACE FUNCTION public.create_workload_identity_policy (
 declare
   new_key_id uuid;
 begin
+  -- Serialise creates per workspace so concurrent requests cannot both pass
+  -- the policy cap.
+  perform pg_advisory_xact_lock(hashtextextended('workload_identity_policy:' || p_workspace_id::text, 0));
+  if (select count(*) from public.workload_identity_policies p where p.workspace_id = p_workspace_id) >= 50 then
+    raise exception 'workload_identity_policy_limit' using errcode = 'P0001';
+  end if;
+
   -- The key row has no usable secret: its hash is random and never shown, and
   -- the gateway refuses workload_identity keys presented as API keys.
   insert into public.keys (
@@ -39,7 +46,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
+COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. Raises workload_identity_policy_limit when the workspace already has 50 policies; creates for one workspace are serialised so the cap holds under concurrency. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
 
 REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) FROM "postgres";
 
