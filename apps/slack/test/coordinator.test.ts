@@ -241,6 +241,21 @@ describe("ThreadCoordinator", () => {
 		]);
 	});
 
+	it("keeps a message's action token for its running turn only, never in the Workflow's payload, and drops it with the turn", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		await coordinator.enqueue(request("Ev0TEST0002", { messageTs: "1792600000.000300", actionToken: "1234567.890.secondTOKEN" }), NOW);
+		expect(coordinator.actionToken(1)).toBe("1234567.890.abcdefTOKEN");
+		// Queued, not running: not handed out yet.
+		expect(coordinator.actionToken(2)).toBeNull();
+		expect(JSON.stringify(runner.starts)).not.toContain("TOKEN");
+		await coordinator.finishTurn(1, { status: "done", reply: "Done", tools: ["search_slack \"launch plan\": 2 results"] }, NOW);
+		expect(coordinator.actionToken(1)).toBeNull();
+		expect(coordinator.actionToken(2)).toBe("1234567.890.secondTOKEN");
+		expect(JSON.stringify(runner.starts)).not.toContain("TOKEN");
+		await coordinator.finishTurn(2, { status: "done" }, NOW);
+		expect(storageOf(coordinator).db.prepare("SELECT count(*) AS count FROM turns WHERE action_token IS NOT NULL").all()).toEqual([{ count: 0 }]);
+	});
+
 	it("keeps, per turn, whether the person is from another organisation", async () => {
 		runner.next = { finished: { status: "done" } };
 		admitInMeter("Ev0TEST0001");
@@ -359,6 +374,16 @@ describe("ThreadCoordinator", () => {
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: ` EU${"!".repeat(3_000)}`, now: NOW })).resolves.toMatchObject({ question: { answer: { by: "message", choice: null, text: `EU${"!".repeat(1_998)}` } } });
 			// Answered: the next message is a new one.
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "and another thing", now: NOW })).resolves.toBeNull();
+		});
+
+		it("searches after an answer by message with that message's action token", async () => {
+			await asking();
+			expect(coordinator.actionToken(1)).toBeNull();
+			// Someone else's token never replaces the turn's.
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON02", text: "EU", actionToken: "1234567.890.otherTOKEN", now: NOW });
+			expect(coordinator.actionToken(1)).toBeNull();
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "EU", actionToken: "1234567.890.answerTOKEN", now: NOW });
+			expect(coordinator.actionToken(1)).toBe("1234567.890.answerTOKEN");
 		});
 
 		it("keeps the files shared with an answer in the thread, and takes files alone as an answer", async () => {

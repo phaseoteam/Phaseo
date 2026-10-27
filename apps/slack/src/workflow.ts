@@ -33,6 +33,7 @@ import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questio
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import { attachmentParts, fileLines, readableKinds, readSharedFiles, unreadByModel, uploadToThread, type FileOutcome, type SharedFile, type SharedFileRef } from "./slack-files";
+import { FILE_SEARCH_SCOPE, searchAvailability, searchInstructions, searchSlackTool, withoutSearchResults, type SearchAvailability } from "./slack-search";
 import { answerEventType, turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
@@ -82,6 +83,12 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 // with the turn: a retried run is told what is already in the thread, and the
 // answer's image limit counts every run's. Installations whose Slack permissions
 // predate a scope are told what an admin can do instead.
+//
+// Slack search: with search:read.public, where its admins allow it, the agent
+// can search Slack as the person asking (search_slack, slack-search.ts), with
+// the action token the coordinator holds for the turn's message. The results
+// go to the model and nowhere else; a run paused for a question is kept
+// without them.
 //
 // An unanswered question ends the answer there, and the answer is still counted
 // (the person saw it). Stopping the thread while it waits ends it uncounted. The
@@ -209,7 +216,10 @@ export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, 
 /** What the agent can post in the thread: charts (make_chart) and generated images (generate_image), with files:write. */
 export type PostAbilities = { charts: boolean; images: boolean };
 
-export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }): string {
+/** Whether the turn can search Slack (search_slack), for the person asking (asker), and whether others read the answer (inChannel). */
+export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean };
+
+export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }, search?: SearchOffer): string {
 	const lines = [
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
@@ -232,6 +242,7 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 	} else {
 		lines.push("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack), and answer in text meanwhile.");
 	}
+	if (search) lines.push(searchInstructions(search.availability, search.asker, search.inChannel));
 	if (installation.instructions?.trim()) lines.push("", "Instructions from this workspace's admins:", installation.instructions.trim());
 	return lines.join("\n");
 }
@@ -520,6 +531,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		}
 	}
 
+	// Slack search as the person asking, with the action token of their message (or of their answer to the last question).
+	let searchOn: SearchAvailability = searchAvailability(installation, turn);
+	const actionToken = searchOn === "on" ? await coordinator.actionToken(turn.turnId) : null;
+	if (searchOn === "on" && !actionToken) searchOn = "no_token";
+	const search: SearchOffer = { availability: searchOn, asker: turn.slackUserId, inChannel: !(turn.kind === "dm" || turn.channel.startsWith("D")) };
+	const searchTools = actionToken
+		? [searchSlackTool({ slack, actionToken, files: hasBotScope(installation, FILE_SEARCH_SCOPE), notes, turnId: turn.turnId })]
+		: [];
+
 	// After a question, the run goes on from the paused one with the answer, the files shared with it, and what was posted.
 	const posted = postedLines(input.postedFiles);
 	const answerLines = (from: FileOutcome[]) => fileLines(from.filter((outcome) => latestAnswerFiles.some((file) => file.id === outcome.file.id)));
@@ -534,9 +554,9 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		...gateway,
 		model,
-		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts),
+		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, search),
 		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
-		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), ...fileTools, askQuestion, ...askTools],
+		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access), ...fileTools, ...searchTools, askQuestion, ...askTools],
 		maxCostUsd: budgetUsd,
 		// The models it asks and the images it makes.
 		otherCostUsd: () => consultedUsd() + toolUsd,
@@ -580,10 +600,10 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
 		}
 	}
-	// Paused for an answer: the paused run and the question wait in the coordinator for the ask step.
+	// Paused for an answer: the paused run (without Slack search results) and the question wait in the coordinator for the ask step.
 	let waiting = false;
 	if (output?.paused && !cancelled && !error) {
-		waiting = asked.question !== null && await coordinator.holdForAnswer(turn.turnId, leg + 1, { run: JSON.stringify(output.paused), question: asked.question });
+		waiting = asked.question !== null && await coordinator.holdForAnswer(turn.turnId, leg + 1, { run: JSON.stringify(withoutSearchResults(output.paused)), question: asked.question });
 		if (!waiting) {
 			error = "failed";
 			console.error("[slack-agent] paused run not kept", { turnId: turn.turnId, question: leg + 1 });

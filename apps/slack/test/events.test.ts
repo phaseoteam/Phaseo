@@ -228,6 +228,41 @@ describe("events: who gets an answer", () => {
 	});
 });
 
+describe("events: Slack's action token for search", () => {
+	const SEARCH_SCOPES = ["app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read", "search:read.public"];
+	const TOKEN = "7310092.18.0c9f5a6d2e8bTOKEN";
+
+	/** The action token the thread's running turn holds after the event. */
+	async function heldToken(channel: string, ts: string, event: Record<string, unknown>): Promise<string | null> {
+		const thread = world.threads.get(world.threads.idFromName(`${INSTALLATION_ID}:${channel}:${ts}`));
+		thread.runner = { start: async () => ({ started: true }) };
+		await expect(run(event)).resolves.toBe("started");
+		return thread.actionToken(1);
+	}
+
+	it("keeps it with the turn where the agent may search for the person, from the event or its assistant_thread", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		await expect(heldToken("D0DIRECT01", "1792600000.000200", directMessage({ action_token: TOKEN }))).resolves.toBe(TOKEN);
+		await expect(heldToken("D0DIRECT01", "1792600000.000201", directMessage({ ts: "1792600000.000201", assistant_thread: { action_token: TOKEN } }))).resolves.toBe(TOKEN);
+		await expect(heldToken("D0DIRECT01", "1792600000.000202", directMessage({ ts: "1792600000.000202", action_token: "has spaces in it" }))).resolves.toBeNull();
+		// Channels only once admins allow search there.
+		await expect(heldToken("C0CHANNEL1", "1792600000.000100", mention({ action_token: TOKEN }))).resolves.toBeNull();
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "dm_and_channels" });
+		await expect(heldToken("C0CHANNEL1", "1792600000.000101", mention({ ts: "1792600000.000101", action_token: TOKEN }))).resolves.toBe(TOKEN);
+	});
+
+	it("keeps none without the search scope, with search off, or for guests and people from other organisations", async () => {
+		await expect(heldToken("D0DIRECT01", "1792600000.000200", directMessage({ action_token: TOKEN }))).resolves.toBeNull();
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "off" });
+		await expect(heldToken("D0DIRECT01", "1792600000.000201", directMessage({ ts: "1792600000.000201", action_token: TOKEN }))).resolves.toBeNull();
+		await install({ bot_scopes: SEARCH_SCOPES, allow_external_users: true });
+		world.slack.users.set("U0GUEST001", { id: "U0GUEST001", team_id: TEAM_ID, is_restricted: true });
+		await expect(heldToken("D0DIRECT01", "1792600000.000202", directMessage({ ts: "1792600000.000202", user: "U0GUEST001", action_token: TOKEN }))).resolves.toBeNull();
+		world.slack.users.set("U0OTHER001", { id: "U0OTHER001", team_id: "T0OTHER001", is_stranger: true });
+		await expect(heldToken("D0DIRECT01", "1792600000.000203", directMessage({ ts: "1792600000.000203", user: "U0OTHER001", action_token: TOKEN }))).resolves.toBeNull();
+	});
+});
+
 describe("events: choosing a model per message", () => {
 	const meter = () => world.meters.get(world.meters.idFromName(INSTALLATION_ID));
 	const thread = (ts = "1792600000.000100") => world.threads.get(world.threads.idFromName(`${INSTALLATION_ID}:C0CHANNEL1:${ts}`));

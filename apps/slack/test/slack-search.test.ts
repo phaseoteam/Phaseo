@@ -1,0 +1,179 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { PausedRun } from "../src/agent";
+import { ORIGINAL_BOT_SCOPES } from "../src/installations";
+import {
+	actionTokenOf,
+	MAX_SEARCHES_PER_RUN,
+	searchArgs,
+	searchAvailability,
+	searchErrorText,
+	searchResults,
+	searchSlackTool,
+	searchTokenFor,
+	withoutSearchResults,
+} from "../src/slack-search";
+import { FakeSlack } from "./fakes";
+
+const TOKEN = "7310092.18.0c9f5a6d2e8bTOKEN";
+const SCOPES = [...ORIGINAL_BOT_SCOPES, "search:read.public"];
+const DM = { channel: "D0DIRECT01", kind: "dm" as const };
+const CHANNEL = { channel: "C0CHANNEL1", kind: "mention" as const };
+const MEMBER = { isExternal: false, isGuest: false };
+
+/** Two messages and a file, as Slack's search answers. */
+const RESPONSE = {
+	results: {
+		messages: [
+			{
+				author_name: "Ada Lovelace", author_user_id: "U0ADA00001", team_id: "T0TEST0001", channel_id: "C0LAUNCH01", channel_name: "launch",
+				message_ts: "1792500000.000100", content: "We ship  the launch\n plan on Friday.", is_author_bot: false,
+				permalink: "https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100",
+			},
+			{ author_user_id: "U0BOB00001", channel_id: "C0LAUNCH01", message_ts: "1792500300.000200", content: "x".repeat(400), permalink: "https://evil.example.com/archives/C0LAUNCH01" },
+			"not a message",
+		],
+		files: [{ title: "Launch checklist", file_type: "pdf", author_name: "Ada Lovelace", author_user_id: "U0ADA00001", date_created: 1_792_400_000, permalink: "https://acme.slack.com/files/U0ADA00001/F0FILE0001/checklist.pdf" }],
+	},
+	response_metadata: { next_cursor: "dXNlcjpVMEc5V0ZYTlo=" },
+};
+
+function execute(tool: ReturnType<typeof searchSlackTool>, input: unknown) {
+	return tool.execute!(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: tool.id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+}
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
+describe("Slack search: when it's offered", () => {
+	it("needs the search scope, admins' permission for the conversation, and someone from this organisation", () => {
+		expect(searchAvailability({ search_mode: "dm", bot_scopes: SCOPES }, DM)).toBe("on");
+		expect(searchAvailability({ search_mode: "dm", bot_scopes: null }, DM)).toBe("needs_permissions");
+		expect(searchAvailability({ search_mode: "off", bot_scopes: SCOPES }, DM)).toBe("off");
+		expect(searchAvailability({ search_mode: "dm", bot_scopes: SCOPES }, CHANNEL)).toBe("dm_only");
+		expect(searchAvailability({ search_mode: "dm_and_channels", bot_scopes: SCOPES }, CHANNEL)).toBe("on");
+		expect(searchAvailability({ search_mode: "dm_and_channels", bot_scopes: SCOPES }, { ...CHANNEL, external: true })).toBe("external");
+		// A mention in a direct message with the agent is still a direct message.
+		expect(searchAvailability({ search_mode: "dm", bot_scopes: SCOPES }, { channel: "D0DIRECT01", kind: "mention" })).toBe("on");
+	});
+
+	it("reads Slack's action token from the event, or from assistant_thread, and keeps it only where it may be used", () => {
+		expect(actionTokenOf({ action_token: TOKEN })).toBe(TOKEN);
+		expect(actionTokenOf({ assistant_thread: { action_token: TOKEN } })).toBe(TOKEN);
+		for (const bad of ["", "short", "has a space in it", 42, null, `x${"y".repeat(1_000)}`]) expect(actionTokenOf({ action_token: bad })).toBeNull();
+		const installation = { search_mode: "dm" as const, bot_scopes: SCOPES };
+		expect(searchTokenFor(installation, DM, MEMBER, { action_token: TOKEN })).toBe(TOKEN);
+		expect(searchTokenFor(installation, DM, { ...MEMBER, isGuest: true }, { action_token: TOKEN })).toBeNull();
+		expect(searchTokenFor(installation, DM, { ...MEMBER, isExternal: true }, { action_token: TOKEN })).toBeNull();
+		expect(searchTokenFor(installation, CHANNEL, MEMBER, { action_token: TOKEN })).toBeNull();
+		expect(searchTokenFor({ ...installation, bot_scopes: null }, DM, MEMBER, { action_token: TOKEN })).toBeNull();
+	});
+});
+
+describe("Slack search: the request", () => {
+	it("sends the query with Slack's filters, the action token, public channels only, and inclusive UTC days", () => {
+		expect(searchArgs({ query: "  launch\nplan ", channel: "<#C0LAUNCH01|launch>", person: "U0ADA00001", from: "2026-10-01", to: "2026-10-07", sort: "newest" }, { actionToken: TOKEN, files: true })).toEqual({
+			query: "launch plan in:<#C0LAUNCH01> from:<@U0ADA00001>",
+			action_token: TOKEN,
+			channel_types: "public_channel",
+			content_types: "messages,files",
+			include_bots: false,
+			limit: 10,
+			sort: "timestamp",
+			sort_dir: "desc",
+			after: Date.UTC(2026, 9, 1) / 1000 - 1,
+			before: Date.UTC(2026, 9, 8) / 1000,
+		});
+		expect(searchArgs({ query: "what did we decide about pricing?" }, { actionToken: TOKEN, files: false })).toMatchObject({ query: "what did we decide about pricing?", content_types: "messages", sort: "score" });
+	});
+
+	it("tells the model what to fix in its input", () => {
+		const args = (input: Record<string, unknown>) => () => searchArgs(input, { actionToken: TOKEN, files: false });
+		expect(args({})).toThrow("query is required");
+		expect(args({ query: "x".repeat(301) })).toThrow("at most 300 characters");
+		expect(args({ query: "a", channel: "general" })).toThrow("channel must be a Slack channel ID");
+		expect(args({ query: "a", channel: "D0DIRECT01" })).toThrow("channel must be a Slack channel ID");
+		expect(args({ query: "a", person: "@ada" })).toThrow("person must be a Slack user ID");
+		expect(args({ query: "a", from: "2026-10-08", to: "2026-10-01" })).toThrow("from must be on or before to");
+		expect(args({ query: "a", from: "2026-02-30" })).toThrow("from must be a date");
+		expect(args({ query: "a", sort: "oldest" })).toThrow("sort must be relevance or newest");
+	});
+});
+
+describe("Slack search: the results", () => {
+	it("are short, with Slack links only, and say when there are more", () => {
+		expect(searchResults(RESPONSE)).toEqual({
+			messages: [
+				{ channel: "<#C0LAUNCH01|launch>", author: "Ada Lovelace (<@U0ADA00001>)", date: "2026-10-20 12:40 UTC", link: "https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100", text: "We ship the launch plan on Friday." },
+				{ channel: "<#C0LAUNCH01>", author: "<@U0BOB00001>", date: "2026-10-20 12:45 UTC", link: null, text: `${"x".repeat(299)}…` },
+			],
+			files: [{ title: "Launch checklist", type: "pdf", author: "Ada Lovelace (<@U0ADA00001>)", date: "2026-10-19 08:53 UTC", link: "https://acme.slack.com/files/U0ADA00001/F0FILE0001/checklist.pdf", text: null }],
+			more: true,
+		});
+		expect(searchResults({})).toEqual({ messages: [], files: [], more: false });
+	});
+
+	it("passes on Slack's refusals in words the model can use, never the error", () => {
+		expect(searchErrorText("ratelimited")).toContain("limiting how often");
+		expect(searchErrorText("invalid_action_token")).toContain("ask again in a new message");
+		expect(searchErrorText("missing_scope")).toContain("update the Phaseo agent's Slack permissions");
+		expect(searchErrorText("feature_not_enabled")).toContain("only for apps from its app directory and a company's own apps");
+		expect(searchErrorText("something_new")).toBe("Slack search didn't work just now. Answer with what you have, and say so.");
+	});
+});
+
+describe("search_slack", () => {
+	it("searches as the person, and keeps only the query and the count as a note, never a result or the token in logs", async () => {
+		const slack = new FakeSlack();
+		slack.searchResponse = RESPONSE;
+		const notes: string[] = [];
+		const logs = [vi.spyOn(console, "log").mockImplementation(() => undefined), vi.spyOn(console, "warn").mockImplementation(() => undefined)];
+		const tool = searchSlackTool({ slack: slack.client("xoxb-test"), actionToken: TOKEN, files: true, notes, turnId: 7 });
+		const result = await execute(tool, { query: "launch plan" });
+		expect(result).toMatchObject({ found: true, messages: [expect.objectContaining({ text: "We ship the launch plan on Friday." }), expect.anything()], files: [expect.objectContaining({ title: "Launch checklist" })], note: expect.stringContaining("more matches") });
+		expect(slack.of("assistant.search.context")).toEqual([{ token: "xoxb-test", method: "assistant.search.context", args: expect.objectContaining({ query: "launch plan", action_token: TOKEN, channel_types: "public_channel" }) }]);
+		expect(notes).toEqual(["search_slack \"launch plan\": 3 results"]);
+		const logged = JSON.stringify(logs.flatMap((spy) => spy.mock.calls));
+		for (const secret of [TOKEN, "launch plan", "We ship", "Launch checklist"]) expect(logged).not.toContain(secret);
+	});
+
+	it("says when nothing was found, passes on refusals, and stops after its searches for the answer", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		const slack = new FakeSlack();
+		const notes: string[] = [];
+		const tool = searchSlackTool({ slack: slack.client("xoxb-test"), actionToken: TOKEN, files: false, notes, turnId: 7 });
+		await expect(execute(tool, { query: "nothing here" })).resolves.toMatchObject({ found: false, messages: [], note: expect.stringContaining("Nothing found") });
+		slack.failures.set("assistant.search.context", ["invalid_action_token"]);
+		await expect(execute(tool, { query: "again" })).resolves.toEqual({ found: false, error: searchErrorText("invalid_action_token") });
+		// Input mistakes don't use up a search.
+		await expect(execute(tool, { query: "" })).rejects.toThrow("query is required");
+		for (let index = 2; index < MAX_SEARCHES_PER_RUN; index += 1) await execute(tool, { query: `try ${index}` });
+		await expect(execute(tool, { query: "one more" })).resolves.toMatchObject({ found: false, error: expect.stringContaining(`${MAX_SEARCHES_PER_RUN} times`) });
+		expect(slack.of("assistant.search.context")).toHaveLength(MAX_SEARCHES_PER_RUN);
+		expect(notes).toEqual(["search_slack \"nothing here\": 0 results", "search_slack \"again\": Slack refused the search", "search_slack \"try 2\": 0 results", "search_slack \"try 3\": 0 results"]);
+	});
+});
+
+describe("a paused run without search results", () => {
+	it("replaces every search_slack result with a note, and keeps everything else", () => {
+		const run = {
+			run: {
+				id: "run_q", status: "waiting_for_human",
+				messages: [
+					{ role: "user", content: "what's the launch plan?" },
+					{ role: "assistant", content: "", toolCalls: [{ id: "call_s1", name: "search_slack", input: { query: "launch plan" } }] },
+					{ role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify({ found: true, messages: [{ text: "We ship the launch plan on Friday." }] }) },
+					{ role: "tool", toolCallId: "call_m1", name: "recall", content: "{\"notes\":[]}" },
+				],
+			},
+			steps: [], stepResults: [], messages: [], items: [],
+		} as unknown as PausedRun;
+		const kept = withoutSearchResults(run);
+		expect(JSON.stringify(kept)).not.toContain("We ship");
+		expect(kept.run.messages[2]).toEqual({ role: "tool", toolCallId: "call_s1", name: "search_slack", content: "(Slack search results aren't kept while waiting for an answer. Search again if you still need them.)" });
+		expect(kept.run.messages.filter((_, index) => index !== 2)).toEqual(run.run.messages.filter((_, index) => index !== 2));
+		// The original is left as it was.
+		expect(JSON.stringify(run)).toContain("We ship");
+	});
+});

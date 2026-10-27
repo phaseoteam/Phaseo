@@ -31,6 +31,7 @@ CREATE TABLE "public"."slack_installations" (
   "allowed_models"          text[]                   NOT NULL DEFAULT '{}'::text[],
   "memory_enabled"          boolean                  NOT NULL DEFAULT true,
   "bot_scopes"              text[],
+  "search_mode"             text                     NOT NULL DEFAULT 'dm'::text,
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
@@ -47,6 +48,7 @@ CREATE TABLE "public"."slack_installations" (
   CONSTRAINT "slack_installations_over_plan_check" CHECK ((over_plan = ANY (ARRAY['refuse'::text, 'move_up'::text]))),
   CONSTRAINT "slack_installations_pkey" PRIMARY KEY (id),
   CONSTRAINT "slack_installations_plan_people_check" CHECK (((plan_people >= 1) AND (plan_people <= 10000000))),
+  CONSTRAINT "slack_installations_search_mode_check" CHECK ((search_mode = ANY (ARRAY['off'::text, 'dm'::text, 'dm_and_channels'::text]))),
   CONSTRAINT "slack_installations_secrets_check" CHECK ((length(secrets_ciphertext) > 0)),
   CONSTRAINT "slack_installations_slack_app_id_fkey" FOREIGN KEY (slack_app_id) REFERENCES public.slack_apps(id) ON DELETE RESTRICT,
   CONSTRAINT "slack_installations_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'payment_due'::text, 'uninstalled'::text]))),
@@ -102,6 +104,8 @@ COMMENT ON COLUMN "public"."slack_installations"."allowed_models" IS 'The models
 COMMENT ON COLUMN "public"."slack_installations"."memory_enabled" IS 'Whether the agent may save and read its notes, pins and to-dos (on by default). While off, turns get no note tools and no pins, and saved notes are kept for admins to see or delete. Saved skills work either way.';
 
 COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
+
+COMMENT ON COLUMN "public"."slack_installations"."search_mode" IS 'Where the agent may search Slack as the person asking (Slack''s real-time search, with the search:read.public scope): off, dm (direct messages with the agent, the default, so only the person asking reads what it finds) or dm_and_channels. Search results are never stored.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

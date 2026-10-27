@@ -1753,3 +1753,125 @@ describe("Files in the thread", () => {
 		expect(agent.requests[0].prompt).toContain("- dashboard.png from <@U0PERSON02>, earlier in the thread: attached after this text.");
 	});
 });
+
+describe("Slack search", () => {
+	const SEARCH_SCOPES = [...ORIGINAL_BOT_SCOPES, "search:read.public", "search:read.files"];
+	const TOKEN = "7310092.18.0c9f5a6d2e8bTOKEN";
+	const SNIPPET = "We ship the launch plan on Friday.";
+	const RESPONSE = {
+		results: {
+			messages: [{ author_name: "Ada Lovelace", author_user_id: "U0ADA00001", channel_id: "C0LAUNCH01", channel_name: "launch", message_ts: "1792500000.000100", content: SNIPPET, permalink: "https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100" }],
+			files: [],
+		},
+		response_metadata: { next_cursor: "" },
+	};
+	const DIRECT = { channel: "D0DIRECT01", kind: "dm" as const };
+
+	function callTool(request: AgentTurnRequest, id: string, input: unknown) {
+		const tool = request.tools.find((entry) => entry.id === id);
+		if (!tool || typeof tool.execute !== "function") throw new Error(`no ${id} tool`);
+		return tool.execute(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	}
+
+	/** Every value the thread's coordinator holds, as text. */
+	function stored(turn: TurnRef): string {
+		const storage = storageOf(coordinatorOf(turn));
+		return JSON.stringify(storage.tables().map((table) => storage.db.prepare(`SELECT * FROM ${table}`).all()));
+	}
+
+	it("is offered with the search scope, the admins' permission and the message's action token, and otherwise the model is told why not", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		const turnWith = async (overrides: Partial<TurnRequest>) => {
+			await runTurn(deps(agent), await startTurn(overrides), step);
+			const request = agent.requests.at(-1)!;
+			return { tools: request.tools.map((tool) => tool.id), instructions: request.instructions };
+		};
+
+		// Installed before search: no scope yet.
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages in this Slack workspace yet. If asked to, say an admin needs to update the Phaseo agent's Slack permissions") });
+
+		await install({ bot_scopes: SEARCH_SCOPES });
+		const direct = await turnWith({ ...DIRECT, actionToken: TOKEN });
+		expect(direct.tools).toContain("search_slack");
+		expect(direct.instructions).toContain("You can search this Slack workspace's public channels with search_slack. It searches as <@U0PERSON01>, so it finds only what they can see in Slack.");
+		expect(direct.instructions).not.toContain("Everyone in this conversation reads your answer");
+		// No token: a guest, or a message that didn't carry one.
+		expect(await turnWith(DIRECT)).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("Slack lets you search only for members of the workspace (not guests)") });
+		// Direct messages only, by default.
+		expect(await turnWith({ actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can only search Slack messages in a direct message with you") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "dm_and_channels" });
+		const channel = await turnWith({ actionToken: TOKEN });
+		expect(channel.tools).toContain("search_slack");
+		expect(channel.instructions).toContain("Everyone in this conversation reads your answer, so share only what the question needs and link to the rest.");
+		expect(await turnWith({ actionToken: TOKEN, external: true })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages for people from other organisations.") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "off" });
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("an admin has turned Slack search off") });
+	});
+
+	it("searches as the person and keeps nothing it found: not in step outputs, working memory, the coordinator or the Workflow's payload", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			const found = await callTool(request, "search_slack", { query: "launch plan" }) as { messages: Array<{ text: string; link: string; channel: string }> };
+			expect(found.messages).toEqual([expect.objectContaining({ text: SNIPPET, channel: "<#C0LAUNCH01|launch>" })]);
+			await hooks.onText(`The launch plan ships on Friday (<${found.messages[0].link}|#launch>).`);
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		expect(JSON.stringify(turn)).not.toContain(TOKEN);
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+		expect(world.slack.of("assistant.search.context")).toEqual([{ token: BOT_TOKEN, method: "assistant.search.context", args: expect.objectContaining({ query: "launch plan", action_token: TOKEN, channel_types: "public_channel", content_types: "messages,files" }) }]);
+		const outputs = JSON.stringify(step.outputs);
+		for (const value of [TOKEN, SNIPPET, "Ada Lovelace"]) {
+			expect(outputs).not.toContain(value);
+			expect(stored(turn)).not.toContain(value);
+		}
+		// Its own answer is a message in the thread like any other; the note names the query and the count.
+		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack \"launch plan\": 1 result", "The launch plan ships on Friday (<https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100|#launch>)."]);
+	});
+
+	it("keeps a run paused for a question without its search results, and searches after the answer with the answer's token", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const ANSWER_TOKEN = "7310092.19.answerTOKEN";
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (!request.resume) {
+				const found = await callTool(request, "search_slack", { query: "launch plan" });
+				const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+				await tool.onToolCalled!({ question: "Which launch?", options: ["Web", "Mobile"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+				await hooks.onStep({ costUsd: 0.01 });
+				const paused = {
+					run: {
+						id: "run_q", agentId: "phaseo-slack-agent", status: "waiting_for_human", input: null, stepCount: 1, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-21T12:00:00.000Z",
+						messages: [
+							{ role: "user", content: "what's the launch plan?" },
+							{ role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify(found) },
+						],
+					},
+					steps: [], stepResults: [], messages: [], items: [],
+				} as unknown as PausedRun;
+				return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null, paused };
+			}
+			expect(JSON.stringify(request.resume.run)).not.toContain(SNIPPET);
+			expect(JSON.stringify(request.resume.run)).toContain("Slack search results aren't kept while waiting for an answer");
+			await callTool(request, "search_slack", { query: "web launch plan" });
+			await hooks.onText("The web launch ships on Friday.");
+			return answer();
+		});
+		step.onWait = async () => {
+			// While it waits, the coordinator holds the paused run without what the search found.
+			expect(stored(turn)).not.toContain(SNIPPET);
+			await expect(coordinatorOf(turn).answerWithMessage({ slackUserId: "U0PERSON01", text: "Web", actionToken: ANSWER_TOKEN, now: NOW })).resolves.toMatchObject({ status: "answered" });
+			return "event";
+		};
+		turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(world.slack.of("assistant.search.context").map((call) => call.args.action_token)).toEqual([TOKEN, ANSWER_TOKEN]);
+		expect(stored(turn)).not.toContain(SNIPPET);
+		expect(stored(turn)).not.toContain("TOKEN");
+	});
+});

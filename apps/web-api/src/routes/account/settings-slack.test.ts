@@ -38,7 +38,7 @@ const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b
 function installationRow(overrides: Record<string, unknown> = {}) {
 	return {
 		id: INSTALLATION_ID, workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
-		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, instructions: null,
+		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, search_mode: "dm", instructions: null,
 		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], plan_people: 10, over_plan: "refuse",
 		max_people: null, monthly_cap_nanos: 25_000_000_000, answers_per_person_hour: 60, allow_guests: true,
 		allow_external_users: false, status: "active", installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
@@ -261,7 +261,7 @@ describe("Slack agent settings reads", () => {
 		// Installed before the scopes were recorded: the original seven, without the file scopes.
 		expect(body.installation.permissions).toEqual({
 			granted: ["app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read"],
-			missing: ["files:read", "files:write"],
+			missing: ["files:read", "files:write", "search:read.public", "search:read.files"],
 		});
 		// 4 people: the 10-person plan ($2.99) and 1,200 included answers, so 300 extra at $0.25 per 1,000.
 		// Model spend through the agent's key is billed as normal requests, beside the charge, not in it.
@@ -444,7 +444,7 @@ describe("Slack agent install", () => {
 		const url = new URL(((await response.json()) as any).url);
 		expect(`${url.origin}${url.pathname}`).toBe("https://slack.com/oauth/v2/authorize");
 		expect(url.searchParams.get("client_id")).toBe("1111.2222");
-		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read,files:read,files:write");
+		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read,files:read,files:write,search:read.public,search:read.files");
 		expect(url.searchParams.get("redirect_uri")).toBe("https://phaseo.app/api/account/settings/slack/oauth/callback");
 		const state = url.searchParams.get("state")!;
 		expect(state.length).toBeLessThan(1_000);
@@ -751,7 +751,7 @@ describe("Updating the Slack permissions", () => {
 
 		const audit = find(requests, "POST", "/workspace_audit_events")[0].body;
 		expect(audit).toMatchObject({ action: "slack_agent.permissions_updated", target_id: INSTALLATION_ID });
-		expect(audit.metadata).toEqual({ added_permissions: ["files:read", "files:write"], missing_permissions: [] });
+		expect(audit.metadata).toEqual({ added_permissions: ["files:read", "files:write", "search:read.public", "search:read.files"], missing_permissions: [] });
 	});
 
 	it("says when Slack granted only some of the scopes", async () => {
@@ -1029,6 +1029,21 @@ describe("Slack agent settings changes", () => {
 		}
 		database({ role: "member", installation: {} });
 		expect((await patch({ memory_enabled: false })).status).toBe(403);
+	});
+
+	it("sets where the agent may search Slack, and returns it", async () => {
+		const requests = database({ role: "admin", installation: {} });
+		const response = await patch({ search_mode: "dm_and_channels" });
+		expect(response.status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ search_mode: "dm_and_channels" });
+		expect(((await response.json()) as any).installation.settings).toMatchObject({ search_mode: "dm_and_channels" });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata.changed_fields).toEqual(["search_mode"]);
+		for (const value of ["everywhere", true, null]) {
+			database({ role: "admin", installation: {} });
+			expect(await (await patch({ search_mode: value })).json()).toMatchObject({ error: "bad_request", message: "search_mode must be one of: off, dm, dm_and_channels" });
+		}
+		database({ role: "member", installation: {} });
+		expect((await patch({ search_mode: "off" })).status).toBe(403);
 	});
 
 	it("is for admins, and 404s without an installation", async () => {

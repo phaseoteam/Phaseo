@@ -33,6 +33,8 @@ const CHANNEL_PATTERN = /^[CG][A-Z0-9]{2,31}$/;
 export type OverPlan = "refuse" | "move_up";
 export type AccessMode = "everyone" | "linked";
 export type UsageDataMode = "off" | "dm" | "dm_and_channels";
+/** Where the agent may search Slack for the person asking. */
+export type SearchMode = "off" | "dm" | "dm_and_channels";
 export type SlackAgentStatusChange = "active" | "paused";
 
 /** code: the 400's error code, when it isn't bad_request. */
@@ -66,6 +68,7 @@ export type SlackAgentRowUpdate = Partial<{
 	model_choice_enabled: boolean;
 	allowed_models: string[];
 	memory_enabled: boolean;
+	search_mode: SearchMode;
 	instructions: string | null;
 	access_mode: AccessMode;
 	usage_data_mode: UsageDataMode;
@@ -248,7 +251,7 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 
 const PATCH_FIELDS = new Set([
 	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "answers_per_person_hour",
-	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "search_mode", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
 ]);
 
@@ -277,6 +280,8 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 		take("allowed_models", allowedModelIds, (value) => { update.allowed_models = value; }),
 		// Off: the agent gets no note tools and no pins; saved notes are kept.
 		take("memory_enabled", (value) => bool(value, "memory_enabled"), (value) => { update.memory_enabled = value; }),
+		// Where search_slack is offered; it also needs the search scopes (Update Slack permissions).
+		take("search_mode", (value) => oneOf<SearchMode>(value, "search_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.search_mode = value; }),
 		take("instructions", instructions, (value) => { update.instructions = value; }),
 		take("access_mode", (value) => oneOf<AccessMode>(value, "access_mode", ["everyone", "linked"]), (value) => { update.access_mode = value; }),
 		take("usage_data_mode", (value) => oneOf<UsageDataMode>(value, "usage_data_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.usage_data_mode = value; }),

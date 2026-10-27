@@ -16,6 +16,7 @@ import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { sharedFileRefs } from "./slack-files";
+import { searchTokenFor } from "./slack-search";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
@@ -27,6 +28,10 @@ import { createDb, type Db } from "./supabase";
 //
 // A message from the person whose question the running turn waits on
 // (questions.ts) is their answer, not a new turn: it isn't metered again.
+//
+// The action token Slack sends with a message (its permission to search as the
+// person) is kept with the turn only where the turn may search Slack
+// (slack-search.ts), and is never logged.
 //
 // Opening the app's Home tab (app_home_opened) publishes it for that person
 // (home.ts). Slack only sends it once the app's manifest subscribes.
@@ -74,6 +79,9 @@ export type SlackEvent = {
 	tokens?: { oauth?: unknown; bot?: unknown };
 	/** Files shared with the message. Only their ids and names are kept (slack-files.ts). */
 	files?: unknown[];
+	/** Slack's permission to search as the person who wrote the message (slack-search.ts); older payloads nest it under assistant_thread. */
+	action_token?: unknown;
+	assistant_thread?: unknown;
 };
 
 export type SlackEnvelope = {
@@ -280,10 +288,13 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
+	// Slack's permission to search as them, kept with the turn only where it may search for them.
+	const actionToken = searchTokenFor(installation, { channel, kind }, facts, event);
+
 	// Their reply to the question the running turn asked them: the turn goes on with it, and with its files.
 	let text = typeof event.text === "string" ? event.text : "";
 	const files = sharedFileRefs(event.files);
-	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), ...(files.length ? { files } : {}), now });
+	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), ...(files.length ? { files } : {}), ...(actionToken ? { actionToken } : {}), now });
 	if (answered) {
 		console.log("[slack-agent] question answered", { installationId: installation.id, turnId: answered.turnId, question: answered.question.n, by: "message" });
 		await updateQuestionMessage(slack, { channel, threadTs, turnId: answered.turnId, askerId: answered.askerId }, answered.question);
@@ -353,6 +364,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		...(compare ? { compare } : {}),
 		text,
 		...(files.length ? { files } : {}),
+		...(actionToken ? { actionToken } : {}),
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });

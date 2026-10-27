@@ -74,14 +74,41 @@ describe("SlackAgentSettingsClient Slack permissions", () => {
 		expect(html).not.toMatch(/rounded-(full|lg|xl)/);
 	});
 
-	it("tells a workspace with its own Slack app to add the scopes to its manifest first", () => {
-		const html = render(MONTH, [], {}, false, { uses_custom_app: true, permissions: { granted: ORIGINAL, missing: ["files:read", "files:write"] } });
-		expect(html).toContain("Add the files:read and files:write bot scopes to your Slack app&#x27;s manifest first.");
+	it("tells a workspace with its own Slack app to add the missing scopes to its manifest first", () => {
+		const html = render(MONTH, [], {}, false, { uses_custom_app: true, permissions: { granted: ORIGINAL, missing: ["files:read", "files:write", "search:read.public", "search:read.files"] } });
+		expect(html).toContain("Add these bot scopes to your Slack app&#x27;s manifest first: files:read, files:write, search:read.public, search:read.files.");
 	});
 
 	it("shows nothing once every scope is granted, or when the API doesn't say", () => {
-		expect(render(MONTH, [], {}, false, { permissions: { granted: [...ORIGINAL, "files:read", "files:write"], missing: [] } })).not.toContain("Update Slack permissions");
+		expect(render(MONTH, [], {}, false, { permissions: { granted: [...ORIGINAL, "files:read", "files:write", "search:read.public", "search:read.files"], missing: [] } })).not.toContain("Update Slack permissions");
 		expect(render(MONTH)).not.toContain("Update Slack permissions");
+	});
+});
+
+describe("SlackAgentSettingsClient Slack search", () => {
+	const GRANTED = { granted: ["chat:write", "search:read.public"], missing: [] };
+	/** The options chosen in the Slack search section. */
+	const selected = (html: string) => {
+		const start = html.indexOf(">Slack search</h2>");
+		return [...html.slice(start, html.indexOf("</section>", start)).matchAll(/aria-pressed="true"[^>]*>([^<]+)</g)].map((match) => match[1]);
+	};
+
+	it("searches in direct messages by default, and says why channels are a choice", () => {
+		const html = render(MONTH, [], {}, false, { permissions: GRANTED });
+		expect(html).toMatch(/<h2[^>]*>Slack search<\/h2>/);
+		expect(html).toContain("Nothing it finds is stored.");
+		expect(selected(html)).toEqual(["Direct messages"]);
+		expect(html).toContain("Only in direct messages with the agent, so only the person asking reads what it finds.");
+		expect(html).not.toContain("Searching needs updated Slack permissions first");
+		const channels = render(MONTH, [], { search_mode: "dm_and_channels" }, false, { permissions: GRANTED });
+		expect(selected(channels)).toEqual(["Direct messages and channels"]);
+		expect(channels).toContain("including guests who can&#x27;t open the channels it found");
+		expect(html).not.toMatch(/rounded-(full|lg|xl)\b/);
+	});
+
+	it("says the Slack permissions need updating first, unless search is off", () => {
+		expect(render(MONTH, [], {}, false, { permissions: { granted: ["chat:write"], missing: ["search:read.public"] } })).toContain("Searching needs updated Slack permissions first: select Update Slack permissions above.");
+		expect(render(MONTH, [], { search_mode: "off" }, false, { permissions: { granted: ["chat:write"], missing: ["search:read.public"] } })).not.toContain("Searching needs updated Slack permissions first");
 	});
 });
 

@@ -25,7 +25,7 @@ export const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "enterprise_id", "bot_user_id", "secrets_ciphertext", "key_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
-	"bot_scopes",
+	"bot_scopes", "search_mode",
 ].join(",");
 
 /**
@@ -67,6 +67,8 @@ export type Installation = {
 	status: "active" | "paused" | "payment_due" | "uninstalled";
 	/** The bot scopes Slack granted; null for installations from before they were recorded (ORIGINAL_BOT_SCOPES). */
 	bot_scopes: string[] | null;
+	/** Where the agent may search Slack for the person asking (slack-search.ts): off, dm (direct messages with it, the default) or dm_and_channels. */
+	search_mode: "off" | "dm" | "dm_and_channels";
 };
 
 /** Whether Slack granted the installation's bot a scope. */
