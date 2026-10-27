@@ -18,6 +18,7 @@ import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
 import { MessageFold } from "./MessageFold";
+import { ConversationAnnouncer } from "./ConversationAnnouncer";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -43,6 +44,7 @@ function CopyButton({ text }: { text: string }) {
 
 function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; canBranch: boolean }) {
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
+		<h3 className="sr-only">You said</h3>
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
 		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageFold text={message.text}><MessageText text={message.text} projectId={projectId} /></MessageFold>
 			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
@@ -130,7 +132,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 
 function AssistantHeader({ task }: { task: Task }) {
 	const model = knownModel(task.model);
-	return <div className="flex items-center gap-2 text-[13px] font-semibold">
+	return <div role="heading" aria-level={3} className="flex items-center gap-2 text-[13px] font-semibold">
 		<span className="flex size-5 items-center justify-center [&_img]:size-4.5 [&_.harness-logo]:size-4.5"><ModelLogo model={model ?? { id: task.model, name: task.model }} harness={task.harness} /></span>
 		<ModelInfoCard harness={task.harness} model={task.model}>{task.model === "default" ? harnessNames[task.harness] : model?.name ?? modelLabel(task.model)}</ModelInfoCard>
 		<span className="font-medium text-muted-foreground">{task.harness === "phaseo" ? "via Phaseo" : `in ${harnessNames[task.harness]}`}</span>
@@ -160,7 +162,8 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
 		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
-			{!compact && <AssistantHeader task={task} />}
+			{/* Messages are headings, so a screen reader's heading keys move between them. */}
+			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
@@ -260,7 +263,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	}, []);
 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
-		<ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, "aria-live": "polite" }}>
+		<ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" } }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
@@ -272,6 +275,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 				{children}
 			</div>
 		</ScrollArea>
+		<ConversationAnnouncer task={task} />
 		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}

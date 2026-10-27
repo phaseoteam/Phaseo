@@ -106,7 +106,7 @@ async function publishReply(text, title) {
   } finally { liveHistory.close(); }
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
 }
-const atLatest = `(()=>{const host=document.querySelector('main [aria-live=polite]');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
+const atLatest = `(()=>{const host=document.querySelector('main [data-conversation-viewport]');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
 try {
   const conversationPages = await run(`(async()=>{const read=window.phaseoDesktop.workspace.conversationPage;const latest=await read({taskId:'042',kind:'messages',limit:50});const older=await read({taskId:'042',kind:'messages',limit:50,beforeId:latest.entries[0].id});const newer=await read({taskId:'042',kind:'messages',limit:50,afterId:older.entries.at(-1).id});const activities=await read({taskId:'042',kind:'activities',limit:50});let invalid=false;try{await read({taskId:'042',kind:'messages',limit:10000})}catch{invalid=true}return {latest:latest.entries.length===50&&latest.earlier===75&&latest.later===0&&latest.entries[0].id==='long-75',older:older.entries.length===50&&older.earlier===25&&older.later===50,newer:JSON.stringify(newer.entries)===JSON.stringify(latest.entries),activities:activities.entries.length===50&&activities.earlier===70&&activities.entries[0].id==='activity-70',isolated:!JSON.stringify(older).includes('Tool result')&&(latest.activities?.length??0)<=50,invalid}})()`);
   if(Object.values(conversationPages).some(value=>!value))throw new Error("Bounded conversation IPC pages failed: "+JSON.stringify(conversationPages));
@@ -131,7 +131,7 @@ try {
   if (!await run(clickRow('History 002'))) throw new Error('History 002 row missing');
   await wait(`window.__auditChatTitle()==='History 002'`, "later selection");
   await new Promise(resolve => setTimeout(resolve, 350));
-  if (!await run(`window.__auditChatTitle()==='History 002' && document.querySelector('main [aria-live=polite]').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
+  if (!await run(`window.__auditChatTitle()==='History 002' && document.querySelector('main [data-conversation-viewport]').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
   delayedTaskId = "002";
   for (const title of ["Revision A", "Revision B", "Final revision"]) {
     await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:${JSON.stringify(title)}})`);
@@ -143,11 +143,11 @@ try {
   delayedTaskId = undefined; failNextDetail = true;
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:'Missed detail'})`);
   await new Promise(resolve => setTimeout(resolve, 200));
-  if (!await run(`window.__auditChatTitle()==='Final revision'&&document.querySelector('main [aria-live=polite]').textContent.includes('Sample message 002')`)) throw new Error("A failed detail read discarded the loaded chat.");
+  if (!await run(`window.__auditChatTitle()==='Final revision'&&document.querySelector('main [data-conversation-viewport]').textContent.includes('Sample message 002')`)) throw new Error("A failed detail read discarded the loaded chat.");
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:'Recovered detail'})`);
   await wait(`window.__auditChatTitle()==='Recovered detail'`, "detail recovery");
   // Conversations open at their latest page and keep the reader's place while older pages load.
-  const host = "document.querySelector('main [aria-live=polite]')";
+  const host = "document.querySelector('main [data-conversation-viewport]')";
   const messages = `Array.from(document.querySelectorAll('main [data-conversation-id^="message:"]'))`;
   const control = pattern => `Array.from(document.querySelectorAll('main button')).find(button=>${pattern}.test(button.textContent.trim()))`;
   const earlierMessages = control("/^Load \\d+ earlier messages$/"), newerMessages = control("/^Load newer messages$/"), jump = control("/^Jump to latest$/");

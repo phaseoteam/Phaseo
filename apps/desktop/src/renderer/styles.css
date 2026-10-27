@@ -185,8 +185,8 @@
 .message-code-actions button { min-height: 28px; padding: 2px 8px; font-size: 12px; font-weight: 400; }
 .message-code-block pre { margin: 0; padding: 16px; overflow: auto; border: 0; border-radius: 0; background: var(--surface-muted); font: 13px/1.6 ui-monospace, monospace; }
 .message-code-buttons { display: flex; align-items: center; gap: 2px; }
-.message-code-actions .message-code-icon { display: grid; place-items: center; width: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; }
-.message-code-actions .message-code-icon:hover, .message-code-actions .message-code-icon[aria-pressed="true"] { background: var(--surface-muted); color: var(--text); }
+.message-code-actions .message-code-icon { justify-content: center; width: 26px; padding: 0; }
+.message-code-actions .message-code-icon[aria-pressed="true"] { background: var(--muted); color: var(--foreground); }
 .message-code-block pre[data-wrap] { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* Rich replies: images, maths, diagrams, alerts, details and tables. */
 .message-image { display: inline-block; max-width: 100%; margin: 4px 0; padding: 0; border: 0; border-radius: 6px; background: none; cursor: zoom-in; vertical-align: top; }
@@ -603,7 +603,7 @@ button { color: inherit; }
 .task-activity:has(.plan-steps) { position: relative; }
 .task-activity:has(.plan-steps) > summary { padding-right: 124px; }
 .task-activity:has(.plan-steps) .message-code-actions { position: absolute; top: 8px; right: 12px; padding: 0; border: 0; }
-.task-activity:has(.plan-steps) .message-code-actions > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.task-activity:has(.plan-steps) .message-code-actions > span:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .task-activity .plan-explanation { flex-shrink: 0; max-height: 120px; overflow: auto; }
 .task-activity .plan-steps { flex: 1; min-height: 0; }
 .task-activity .plan-source { flex-shrink: 0; }
