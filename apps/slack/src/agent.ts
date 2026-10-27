@@ -265,12 +265,17 @@ function imageType(bytes: Uint8Array): string | null {
 	return null;
 }
 
+/** A number, or a numeric string; null, blanks and anything else are no amount. */
+function amount(value: unknown): number | null {
+	const number = typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;
+	return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
 /** An image response's cost: the gateway's cost_nanos, or its usage pricing. */
 function imageCost(body: Record<string, any>): number {
-	const nanos = [body.cost_nanos, body.usage?.pricing?.total_nanos].map(Number).find((value) => Number.isFinite(value) && value >= 0);
-	if (nanos !== undefined) return nanos / 1_000_000_000;
-	const usd = Number(body.usage?.cost);
-	return Number.isFinite(usd) && usd >= 0 ? usd : 0;
+	const nanos = [body.cost_nanos, body.usage?.pricing?.total_nanos].map(amount).find((value) => value !== null);
+	if (nanos != null) return nanos / 1_000_000_000;
+	return amount(body.usage?.cost) ?? 0;
 }
 
 /**

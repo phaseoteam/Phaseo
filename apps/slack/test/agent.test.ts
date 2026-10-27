@@ -329,6 +329,12 @@ describe("files and images", () => {
 			baseUrl: "https://gateway.test/v1",
 		});
 		await expect(lostDownload.generateImage!(imageRequest)).rejects.toMatchObject({ name: "ImageNotReadError", costUsd: 0.04 });
+		// A null or blank cost_nanos is no amount: the usage pricing is read instead of counting $0.
+		const nullNanos = createSdkAgentRunner({
+			fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: null, usage: { pricing: { total_nanos: "35000000" } } })) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(nullNanos.generateImage!(imageRequest)).resolves.toMatchObject({ costUsd: 0.035 });
 	});
 
 	it("says when the model can't read the files shared", () => {
