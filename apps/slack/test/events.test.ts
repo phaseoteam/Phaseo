@@ -246,15 +246,32 @@ describe("events: choosing a model per message", () => {
 	});
 
 	it("answers ordinary text that starts with \"With …:\" as written, when it names no catalogue model", async () => {
-		const select = world.db.select.bind(world.db);
-		// The fake ignores PostgREST or= filters, so the catalogue search is answered here: no model is called that.
-		world.db.select = async <T,>(table: string, query: Record<string, string>) => (table === "v2_models" && query.or ? (world.db.queries.push({ table, query }), []) : select<T>(table, query));
 		await expect(run(mention({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" }))).resolves.toBe("started");
 		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual([undefined]);
 		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" });
 		expect(world.slack.ephemerals()).toEqual([]);
-		const search = world.db.queries.find((query) => query.table === "v2_models" && query.query.or);
-		expect(search?.query).toMatchObject({ hidden: "is.false", or: "(model_slug.ilike.regards to the invoice*,model_slug.ilike.*/regards to the invoice*,name.ilike.regards to the invoice*)" });
+		// The catalogue was searched by id, id without its lab, and name.
+		expect(world.db.queries.filter((query) => query.table === "v2_models" && query.query.limit === "5").map((query) => query.query)).toEqual([
+			{ select: "model_slug", hidden: "is.false", model_slug: "ilike.regards to the invoice*", limit: "5" },
+			{ select: "model_slug", hidden: "is.false", model_slug: "ilike.*/regards to the invoice*", limit: "5" },
+			{ select: "model_slug", hidden: "is.false", name: "ilike.regards to the invoice*", limit: "5" },
+		]);
+	});
+
+	it("refuses a catalogue name with punctuation, and a longer name the allowed one only starts", async () => {
+		world.db.tables.v2_models.push(
+			{ model_slug: "z-ai/glm-4.7-flash:free", name: "GLM 4.7 Flash (Free)", hidden: false },
+			{ model_slug: "amazon/nova-pro-v1", name: "Amazon: Nova Pro 1.0", hidden: false },
+			{ model_slug: "amazon/nova-lite-v1", name: "Amazon: Nova Lite 1.0", hidden: false },
+		);
+		await expect(run(mention({ text: "<@U0BOT00001> with GLM 4.7 Flash (Free): hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: true, allowed_models: ["amazon/nova-pro-v1"] });
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite 1.0: summarise this", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		expect(String(world.slack.ephemerals()[1].args.text)).toMatch(/^“Amazon: Nova Lite 1.0” isn't one of the models you can choose here/);
+		// The allowed model by its full name still works.
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Pro 1.0: summarise this" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual(["amazon/nova-pro-v1"]);
+		expect(meter().usage(NOW)).toMatchObject({ people: 1, pending: 1 });
 	});
 
 	it("leaves the message as it is when model choice is off, or the message names no model", async () => {

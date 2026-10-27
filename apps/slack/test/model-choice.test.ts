@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, modelRefusalText, namesCatalogueModel, namesModel, withoutMention, type AllowedModel } from "../src/model-choice";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, modelRefusalText, namesCatalogueModel, namesModel, namesOtherModel, withoutMention, type AllowedModel } from "../src/model-choice";
 import { FakeDb } from "./fakes";
 
 const LUNA: AllowedModel = { id: "openai/gpt-6-luna", name: "GPT-6 Luna" };
@@ -11,40 +11,40 @@ const ALLOWED = [LUNA, TERRA, OPUS, NOVA, AUTO];
 
 describe("choosing a model per message", () => {
 	it("chooses by id or catalogue name, ignoring case and spaces, and strips the prefix", () => {
-		expect(chooseModel("with openai/gpt-6-luna: summarise this", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "summarise this" });
-		expect(chooseModel("With  gpt-6  LUNA :  summarise this", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "summarise this" });
-		expect(chooseModel("WITH auto: which model?", ALLOWED)).toEqual({ kind: "chosen", model: AUTO, prompt: "which model?" });
+		expect(chooseModel("with openai/gpt-6-luna: summarise this", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "summarise this" });
+		expect(chooseModel("With  gpt-6  LUNA :  summarise this", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "summarise this" });
+		expect(chooseModel("WITH auto: which model?", ALLOWED)).toMatchObject({ kind: "chosen", model: AUTO, prompt: "which model?" });
 		// The prompt keeps its own colons and lines.
-		expect(chooseModel("with Claude Opus 5.5: plan:\n1. a\n2. b", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "plan:\n1. a\n2. b" });
+		expect(chooseModel("with Claude Opus 5.5: plan:\n1. a\n2. b", ALLOWED)).toMatchObject({ kind: "chosen", model: OPUS, prompt: "plan:\n1. a\n2. b" });
 	});
 
 	it("chooses by the start of an id or name when only one allowed model has it", () => {
-		expect(chooseModel("with claude: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
-		expect(chooseModel("with anthropic/: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
-		expect(chooseModel("with gpt-6.1: hi", ALLOWED)).toEqual({ kind: "chosen", model: TERRA, prompt: "hi" });
+		expect(chooseModel("with claude: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: OPUS, prompt: "hi" });
+		expect(chooseModel("with anthropic/: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: OPUS, prompt: "hi" });
+		expect(chooseModel("with gpt-6.1: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: TERRA, prompt: "hi" });
 	});
 
 	it("matches an id without its lab", () => {
-		expect(chooseModel("with gpt-6-luna: hi", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "hi" });
-		expect(chooseModel("with claude-opus: hi", ALLOWED)).toEqual({ kind: "chosen", model: OPUS, prompt: "hi" });
+		expect(chooseModel("with gpt-6-luna: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "hi" });
+		expect(chooseModel("with claude-opus: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: OPUS, prompt: "hi" });
 	});
 
 	it("prefers an exact name over a longer one it starts", () => {
 		const six = { id: "openai/gpt-6", name: "GPT-6" };
-		expect(chooseModel("with gpt-6: hi", [LUNA, six])).toEqual({ kind: "chosen", model: six, prompt: "hi" });
+		expect(chooseModel("with gpt-6: hi", [LUNA, six])).toMatchObject({ kind: "chosen", model: six, prompt: "hi" });
 	});
 
 	it("reads catalogue names that hold a colon", () => {
-		expect(chooseModel("with Amazon: Nova Pro 1.0: what's new?", ALLOWED)).toEqual({ kind: "chosen", model: NOVA, prompt: "what's new?" });
-		expect(chooseModel("with amazon: nova: hi", ALLOWED)).toEqual({ kind: "chosen", model: NOVA, prompt: "hi" });
+		expect(chooseModel("with Amazon: Nova Pro 1.0: what's new?", ALLOWED)).toMatchObject({ kind: "chosen", model: NOVA, prompt: "what's new?" });
+		expect(chooseModel("with amazon: nova: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: NOVA, prompt: "hi" });
 		// The start of a name, then a prompt with a colon of its own.
-		expect(chooseModel("with amazon: is this right: 2 + 2 = 4?", ALLOWED)).toEqual({ kind: "chosen", model: NOVA, prompt: "is this right: 2 + 2 = 4?" });
+		expect(chooseModel("with amazon: is this right: 2 + 2 = 4?", ALLOWED)).toMatchObject({ kind: "chosen", model: NOVA, prompt: "is this right: 2 + 2 = 4?" });
 	});
 
 	it("reads names through Slack's formatting and links", () => {
-		expect(chooseModel("with *GPT-6 Luna*: hi", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "hi" });
-		expect(chooseModel("with `openai/gpt-6-luna`: hi", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "hi" });
-		expect(chooseModel("with <http://openai/gpt-6-luna|openai/gpt-6-luna>: hi", ALLOWED)).toEqual({ kind: "chosen", model: LUNA, prompt: "hi" });
+		expect(chooseModel("with *GPT-6 Luna*: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "hi" });
+		expect(chooseModel("with `openai/gpt-6-luna`: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "hi" });
+		expect(chooseModel("with <http://openai/gpt-6-luna|openai/gpt-6-luna>: hi", ALLOWED)).toMatchObject({ kind: "chosen", model: LUNA, prompt: "hi" });
 	});
 
 	it("refuses a name that fits more than one allowed model, listing those", () => {
@@ -80,24 +80,59 @@ describe("choosing a model per message", () => {
 });
 
 describe("whether text names a catalogue model", () => {
-	const db = (rows: unknown[] | Error) => {
-		const queries: Array<Record<string, string>> = [];
-		return { queries, db: { select: async (_table: string, query: Record<string, string>) => { queries.push(query); if (rows instanceof Error) throw rows; return rows; } } as unknown as FakeDb };
+	const catalogue = () => {
+		const db = new FakeDb();
+		db.tables.v2_models.push(
+			{ model_slug: "openai/gpt-6-luna", name: "GPT-6 Luna", hidden: false },
+			{ model_slug: "amazon/nova-pro-v1", name: "Amazon: Nova Pro 1.0", hidden: false },
+			{ model_slug: "amazon/nova-lite-v1", name: "Amazon: Nova Lite 1.0", hidden: false },
+			{ model_slug: "z-ai/glm-4.7-flash:free", name: "GLM 4.7 Flash (Free)", hidden: false },
+			{ model_slug: "z-ai/glm-4.7-flash", name: "GLM 4.7 Flash", hidden: false },
+			{ model_slug: "acme/secret-model", name: "Secret Model", hidden: true },
+		);
+		return db;
 	};
 
-	it("searches visible ids, ids without their lab, and names by their start", async () => {
-		const found = db([{ model_slug: "openai/gpt-6-luna" }]);
-		await expect(namesCatalogueModel(found.db, " *GPT-6  Luna* ")).resolves.toBe(true);
-		expect(found.queries).toEqual([{ select: "model_slug", hidden: "is.false", or: "(model_slug.ilike.gpt-6 luna*,model_slug.ilike.*/gpt-6 luna*,name.ilike.gpt-6 luna*)", limit: "1" }]);
-		await expect(namesCatalogueModel(db([]).db, "regards to the invoice")).resolves.toBe(false);
+	it("finds visible ids, ids without their lab, and names, or the start of one", async () => {
+		const db = catalogue();
+		await expect(namesCatalogueModel(db, " *GPT-6  Luna* ")).resolves.toBe(true);
+		await expect(namesCatalogueModel(db, "gpt-6-lu")).resolves.toBe(true);
+		await expect(namesCatalogueModel(db, "GLM 4.7 Flash (Free)")).resolves.toBe(true);
+		await expect(namesCatalogueModel(db, "regards to the invoice")).resolves.toBe(false);
+		await expect(namesCatalogueModel(db, "regards, to (the) invoice")).resolves.toBe(false);
+		// Hidden models aren't names, and LIKE's own wildcards are taken literally.
+		await expect(namesCatalogueModel(db, "secret model")).resolves.toBe(false);
+		await expect(namesCatalogueModel(db, "%")).resolves.toBe(false);
+		await expect(namesCatalogueModel(db, "gpt_6")).resolves.toBe(false);
 	});
 
-	it("never searches text a model name can't hold, and assumes a match when the catalogue can't be read", async () => {
-		const odd = db([{ model_slug: "x" }]);
-		await expect(namesCatalogueModel(odd.db, "regards, to (the) invoice")).resolves.toBe(false);
-		await expect(namesCatalogueModel(odd.db, "'quoted'")).resolves.toBe(false);
-		expect(odd.queries).toEqual([]);
-		await expect(namesCatalogueModel(db(new Error("db_error_503")).db, "gpt-6 luna")).resolves.toBe(true);
+	it("assumes a match when the catalogue can't be read", async () => {
+		const db = catalogue();
+		db.select = async () => { throw new Error("db_error_503"); };
+		await expect(namesCatalogueModel(db, "gpt-6 luna")).resolves.toBe(true);
+	});
+
+	it("finds a longer reading that names another model exactly, so the shorter match is refused", async () => {
+		const db = catalogue();
+		const allowed = [NOVA];
+		const lite = chooseModel("with Amazon: Nova Lite 1.0: summarise this", allowed);
+		expect(lite).toMatchObject({ kind: "chosen", model: NOVA, longer: ["Amazon: Nova Lite 1.0"] });
+		await expect(namesOtherModel(db, lite.kind === "chosen" ? lite.longer : [], NOVA.id)).resolves.toBe("Amazon: Nova Lite 1.0");
+
+		const flash = { id: "z-ai/glm-4.7-flash", name: "GLM 4.7 Flash" };
+		const free = chooseModel("with z-ai/glm-4.7-flash:free: hello", [flash]);
+		expect(free).toMatchObject({ kind: "chosen", model: flash, longer: ["z-ai/glm-4.7-flash:free"] });
+		await expect(namesOtherModel(db, free.kind === "chosen" ? free.longer : [], flash.id)).resolves.toBe("z-ai/glm-4.7-flash:free");
+
+		// A colon in the prompt names no model: the choice stands.
+		const plan = chooseModel("with Claude Opus 5.5: plan: 1. a", ALLOWED);
+		expect(plan).toMatchObject({ kind: "chosen", model: OPUS, longer: ["Claude Opus 5.5: plan"] });
+		await expect(namesOtherModel(db, plan.kind === "chosen" ? plan.longer : [], OPUS.id)).resolves.toBeNull();
+		// The full name of the chosen model itself is no other model.
+		await expect(namesOtherModel(db, ["Amazon: Nova Pro 1.0"], NOVA.id)).resolves.toBeNull();
+		// Unreadable catalogue: the choice stands.
+		db.select = async () => { throw new Error("db_error_503"); };
+		await expect(namesOtherModel(db, ["Amazon: Nova Lite 1.0"], NOVA.id)).resolves.toBeNull();
 	});
 });
 

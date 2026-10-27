@@ -27,7 +27,12 @@ export type AllowedModel = { id: string; name: string };
 export type ModelChoice =
 	/** No `with <model>:`: the installation's model answers the whole message. */
 	| { kind: "none" }
-	| { kind: "chosen"; model: AllowedModel; prompt: string }
+	/**
+	 * `longer`: the readings longer than the one that matched, longest first. One of
+	 * them may name another catalogue model ("Amazon: Nova Lite 1.0" read as
+	 * "Amazon"), which events.ts checks before using the choice.
+	 */
+	| { kind: "chosen"; model: AllowedModel; prompt: string; longer: string[] }
 	| { kind: "not_allowed"; named: string }
 	| { kind: "ambiguous"; named: string; matches: AllowedModel[] };
 
@@ -102,7 +107,10 @@ export function chooseModel(text: string, allowed: AllowedModel[]): ModelChoice 
 	const keyed = allowed.map((model) => ({ model, id: comparable(model.id), short: comparable(model.id.slice(model.id.indexOf("/") + 1)), name: comparable(model.name) }));
 	const pick = (option: Reading, fits: (entry: (typeof keyed)[number]) => boolean): ModelChoice | null => {
 		const matches = [...new Map(keyed.filter(fits).map((entry) => [entry.model.id, entry.model])).values()];
-		if (matches.length === 1) return { kind: "chosen", model: matches[0], prompt: option.prompt };
+		if (matches.length === 1) {
+			const longer = options.slice(0, options.indexOf(option)).map((reading) => reading.named);
+			return { kind: "chosen", model: matches[0], prompt: option.prompt, longer };
+		}
 		if (matches.length > 1) return { kind: "ambiguous", named: option.named, matches };
 		return null;
 	};
@@ -136,8 +144,34 @@ export async function modelNames(db: Db, ids: string[]): Promise<Map<string, str
 	return new Map(ids.map((id) => [id, id === AUTO_MODEL ? AUTO_NAME : names.get(id) ?? id]));
 }
 
-/** What a model's name or id can hold; anything else is ordinary text. */
-const MODEL_TEXT = /^[a-z0-9][a-z0-9 .:/-]*$/;
+/** A value for one PostgREST ilike filter: LIKE's own wildcards are taken literally, and `*` (PostgREST's wildcard) is dropped. */
+function likeValue(text: string): string {
+	return text.replace(/\*/g, "").replace(/[\\%_]/g, "\\$&");
+}
+
+/**
+ * The visible catalogue models a text names: by id, id without its lab, or name,
+ * ignoring case, or with `startsWith` also those it is the start of. Each search is
+ * its own single-filter query, so names with commas, brackets or quotes need no
+ * quoting. Null when the catalogue can't be read.
+ */
+async function catalogueModels(db: Db, named: string, startsWith: boolean): Promise<string[] | null> {
+	const key = likeValue(comparable(named));
+	if (!key) return [];
+	const end = startsWith ? "*" : "";
+	const searches: Array<Record<string, string>> = [
+		{ model_slug: `ilike.${key}${end}` },
+		{ model_slug: `ilike.*/${key}${end}` },
+		{ name: `ilike.${key}${end}` },
+	];
+	try {
+		const found = await Promise.all(searches.map((filter) =>
+			db.select<{ model_slug: string }>("v2_models", { select: "model_slug", hidden: "is.false", ...filter, limit: "5" })));
+		return [...new Set(found.flat().map((row) => row.model_slug))];
+	} catch {
+		return null;
+	}
+}
 
 /**
  * Whether text that named no allowed model names a catalogue model at all (an id,
@@ -148,19 +182,24 @@ const MODEL_TEXT = /^[a-z0-9][a-z0-9 .:/-]*$/;
  * model without saying so.
  */
 export async function namesCatalogueModel(db: Db, named: string): Promise<boolean> {
-	const key = comparable(named);
-	if (!MODEL_TEXT.test(key)) return false;
-	try {
-		const rows = await db.select("v2_models", {
-			select: "model_slug",
-			hidden: "is.false",
-			or: `(model_slug.ilike.${key}*,model_slug.ilike.*/${key}*,name.ilike.${key}*)`,
-			limit: "1",
-		});
-		return rows.length > 0;
-	} catch {
-		return true;
+	const found = await catalogueModels(db, named, true);
+	return found === null || found.length > 0;
+}
+
+/**
+ * The longer reading of a chosen message that names a different catalogue model,
+ * if any: "with Amazon: Nova Lite 1.0: …" must not choose an allowed "Amazon: Nova
+ * Pro 1.0" through its shorter reading "Amazon", nor "with lab/model:free: …" the
+ * allowed "lab/model". Readings are checked longest first, by exact id or name.
+ * When the catalogue can't be read the choice stands.
+ */
+export async function namesOtherModel(db: Db, longer: string[], chosen: string): Promise<string | null> {
+	for (const named of longer) {
+		const found = await catalogueModels(db, named, false);
+		if (found === null) return null;
+		if (found.some((id) => id !== chosen)) return named;
 	}
+	return null;
 }
 
 /** The installation's allowed models with their names, in the admins' order. */

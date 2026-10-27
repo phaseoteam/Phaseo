@@ -11,7 +11,7 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, modelRefusalText, withoutMention } from "./model-choice";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
 
@@ -274,11 +274,14 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	if (modelChoiceOn(installation) && namesModel(message)) {
 		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
 		const allowed = allowedModels(installation, names);
-		const choice = chooseModel(message, allowed);
+		let choice = chooseModel(message, allowed);
+		// A longer reading may name another model the shorter match only starts.
+		const other = choice.kind === "chosen" ? await namesOtherModel(deps.db, choice.longer, choice.model.id) : null;
+		if (other) choice = { kind: "not_allowed", named: other };
 		if (choice.kind === "chosen") {
 			model = choice.model.id;
 			text = choice.prompt;
-		} else if (choice.kind === "ambiguous" || (choice.kind === "not_allowed" && await namesCatalogueModel(deps.db, choice.named))) {
+		} else if (choice.kind === "ambiguous" || (choice.kind === "not_allowed" && (other !== null || await namesCatalogueModel(deps.db, choice.named)))) {
 			console.log("[slack-agent] model choice refused", { installationId: installation.id, eventId, reason: choice.kind });
 			await replyPrivately(slack, target, modelRefusalText(choice, allowed, names.get(installation.model) ?? installation.model));
 			return "model_refused";

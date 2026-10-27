@@ -202,12 +202,26 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 
 type Row = Record<string, unknown>;
 
+/** PostgREST's ilike: `*` and `%` match anything, `_` one character, a backslash escapes the next one; case is ignored. */
+function likePattern(pattern: string): RegExp {
+	let source = "";
+	for (let index = 0; index < pattern.length; index += 1) {
+		const char = pattern[index];
+		if (char === "\\" && index + 1 < pattern.length) source += pattern[++index].replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+		else if (char === "*" || char === "%") source += ".*";
+		else if (char === "_") source += ".";
+		else source += char.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+	}
+	return new RegExp(`^${source}$`, "is");
+}
+
 function matches(value: unknown, filter: string): boolean {
 	if (filter === "is.null") return value === null || value === undefined;
 	if (filter === "is.false") return value === false;
 	if (filter === "is.true") return value === true;
 	if (filter.startsWith("eq.")) return value !== null && value !== undefined && String(value) === filter.slice(3);
 	if (filter.startsWith("neq.")) return String(value) !== filter.slice(4);
+	if (filter.startsWith("ilike.")) return value !== null && value !== undefined && likePattern(filter.slice(6)).test(String(value));
 	// in.("a","b"), with every value quoted, as the Worker writes it.
 	if (filter.startsWith("in.(") && filter.endsWith(")")) {
 		const values = [...filter.slice(4, -1).matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((match) => match[1].replace(/\\(.)/g, "$1"));
