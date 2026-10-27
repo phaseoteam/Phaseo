@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { Callout, type CalloutTone } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -42,15 +43,15 @@ export function Section({ title, description, children }: { title: string; descr
 	);
 }
 
-const NOTICE_TONES = {
-	info: "border-l-2 border-primary/60 bg-muted/30",
-	success: "border-l-2 border-emerald-500/70 bg-emerald-500/5",
-	warning: "border-l-2 border-amber-500/70 bg-amber-500/5",
-	error: "border-l-2 border-destructive/70 bg-destructive/5 text-destructive",
-} as const;
+const NOTICE_TONES: Record<"info" | "success" | "warning" | "error", CalloutTone> = {
+	info: "info",
+	success: "success",
+	warning: "warning",
+	error: "critical",
+};
 
 export function Notice({ tone = "info", children, role }: { tone?: keyof typeof NOTICE_TONES; children: ReactNode; role?: "alert" | "status" }) {
-	return <div role={role} className={cn("rounded-md px-4 py-3 text-sm", NOTICE_TONES[tone])}>{children}</div>;
+	return <Callout tone={NOTICE_TONES[tone]} role={role}>{children}</Callout>;
 }
 
 /** An error from a Slack settings action, with the next step linked where there is one. */
