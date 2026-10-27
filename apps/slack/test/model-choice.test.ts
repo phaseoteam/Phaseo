@@ -132,6 +132,15 @@ describe("whether text names a catalogue model", () => {
 		const plan = chooseModel("with Claude Opus 5.5: plan: 1. a", ALLOWED);
 		expect(plan).toMatchObject({ kind: "chosen", model: OPUS, longer: ["Claude Opus 5.5: plan"], exact: true });
 		await expect(namesOtherModel(db, ["Claude Opus 5.5: plan"], OPUS.id, true)).resolves.toBeNull();
+		// A message with many colons checks only the shortest few longer readings, together.
+		const queries: string[] = [];
+		const select = db.select.bind(db);
+		db.select = async <T,>(table: string, query: Record<string, string>) => { queries.push(JSON.stringify(query)); return select<T>(table, query); };
+		const colons = chooseModel(`with claude opus:${" a:".repeat(40)} hi`, ALLOWED);
+		expect(colons).toMatchObject({ kind: "chosen", model: OPUS });
+		await expect(namesOtherModel(db, colons.kind === "chosen" ? colons.longer : [], OPUS.id, false)).resolves.toBeNull();
+		expect(queries).toHaveLength(15);
+		db.select = select;
 		// The full name of the chosen model itself is no other model.
 		await expect(namesOtherModel(db, ["Amazon: Nova Pro 1.0"], NOVA.id, false)).resolves.toBeNull();
 		// Unreadable catalogue: a choice by the start of a name is refused, a whole name stands.

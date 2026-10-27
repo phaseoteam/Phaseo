@@ -187,20 +187,24 @@ export async function namesCatalogueModel(db: Db, named: string): Promise<boolea
 	return found === null || found.length > 0;
 }
 
+/** Longer readings checked against the catalogue; a message with many colons doesn't need more. */
+const MAX_LONGER_CHECKS = 5;
+
 /**
  * The longer reading of a chosen message that names a different catalogue model,
  * if any: "with Amazon: Nova Lite: …" must not choose an allowed "Amazon: Nova Pro
  * 1.0" through its shorter reading "Amazon", nor "with lab/model:free: …" the
- * allowed "lab/model". Readings are checked longest first, as an id or name or the
- * start of one. When the catalogue can't be read, a choice made by the start of a
- * name is refused (the longer reading may be the model they meant); a whole id or
- * name stands.
+ * allowed "lab/model". Another model's name ends a colon or two after the match,
+ * so only the shortest few longer readings are checked, together, each as an id or
+ * name or the start of one. When the catalogue can't be read, a choice made by the
+ * start of a name is refused (the longer reading may be the model they meant); a
+ * whole id or name stands.
  */
 export async function namesOtherModel(db: Db, longer: string[], chosen: string, exact: boolean): Promise<string | null> {
-	for (const named of longer) {
-		const found = await catalogueModels(db, named, true);
-		if (found === null) return exact ? null : named;
-		if (found.some((id) => id !== chosen)) return named;
+	const checked = longer.slice(-MAX_LONGER_CHECKS);
+	const found = await Promise.all(checked.map((named) => catalogueModels(db, named, true)));
+	for (const [index, ids] of found.entries()) {
+		if (ids === null ? !exact : ids.some((id) => id !== chosen)) return checked[index];
 	}
 	return null;
 }

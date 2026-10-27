@@ -71,8 +71,8 @@ Slack में अपने ऐप्स से एजेंट खोलें
 मॉडल चुनने के लिए, संदेश की शुरुआत `with <model>:` से करें और अनुमति वाले किसी मॉडल का नाम या ID लिखें:
 
 ```text
-@Phaseo with Claude Opus 5.5: देखो इस घटना के सारांश में कुछ छूटा तो नहीं
-with openai/gpt-6-luna: इस ग्राहक के लिए जवाब का ड्राफ़्ट लिखो
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
 ```
 
 - मिलान सिर्फ़ अनुमति वाले मॉडलों से होता है, और छोटे-बड़े अक्षरों का फ़र्क नहीं पड़ता। अगर किसी नाम या ID की शुरुआत सिर्फ़ एक अनुमति वाले मॉडल में है, तो इतना लिखना काफ़ी है। इसलिए सूची में सिर्फ़ एक Claude मॉडल हो, तो `with claude:` काम करता है। ID अपनी लैब के बिना भी काम करती है, जैसे `with gpt-6-luna:`।

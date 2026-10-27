@@ -71,8 +71,8 @@ Phaseo 智能体在 Slack 中回答问题。在频道中提及它，或者给它
 要选择模型，请以 `with <model>:` 开头发送消息，并用名称或 ID 指定一个允许的模型：
 
 ```text
-@Phaseo with Claude Opus 5.5: 检查这份事故摘要有没有遗漏
-with openai/gpt-6-luna: 给这位客户起草一封回复
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
 ```
 
 - 只会与允许的模型匹配，不区分大小写。如果只有一个允许的模型以某段文字开头，输入名称或 ID 的开头就够了，所以列表中只有一个 Claude 模型时，`with claude:` 也能用。ID 也可以省略实验室部分，例如 `with gpt-6-luna:`。

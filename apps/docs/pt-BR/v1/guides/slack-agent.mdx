@@ -71,8 +71,8 @@ Proprietários e administradores podem deixar as pessoas escolherem o modelo de 
 Para escolher um modelo, comece a mensagem com `with <model>:` e indique um modelo permitido pelo nome ou ID:
 
 ```text
-@Phaseo with Claude Opus 5.5: veja se falta algo neste resumo do incidente
-with openai/gpt-6-luna: escreva uma resposta para este cliente
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
 ```
 
 - A comparação é feita só com os modelos permitidos, sem diferenciar maiúsculas de minúsculas. O começo de um nome ou ID basta quando só um modelo permitido o tem, então `with claude:` funciona quando há um único modelo Claude na lista. Um ID também funciona sem o laboratório, como `with gpt-6-luna:`.
