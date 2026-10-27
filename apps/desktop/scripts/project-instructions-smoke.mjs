@@ -21,7 +21,7 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ data: [{ id: "owned-fixture" }] })); return; }
   const body = JSON.parse(raw); calls++;
   if (url.pathname === "/v1/chat/completions") {
-   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(body.tools?.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", "load_tools", ...orchestrationTools].includes(tool.function.name)), "Chat mutation tools");
+   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(body.tools?.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", "load_tools", ...orchestrationTools].includes(tool.function.name)), "Chat mutation tools"); assert(!body.tools?.some(tool => tool.function.name === "request_secret"), "Chat secret requests");
    response.setHeader("content-type", "text/event-stream"); response.end('data: {"choices":[{"delta":{"content":"Owned chat finished"}}]}\n\ndata: [DONE]\n\n'); return;
   }
   assert(url.pathname === "/v1/responses", "Unexpected endpoint");

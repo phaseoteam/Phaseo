@@ -544,7 +544,11 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
-	threadTools(parentId: string): ThreadTools { const tools = { ...this.threads.forThread(parentId), requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) }; return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+	threadTools(parentId: string): ThreadTools {
+		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
+		const code = this.store.getTask(parentId)?.mode !== "chat";
+		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {} };
+		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
 	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
