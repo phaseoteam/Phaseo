@@ -33,8 +33,11 @@ describe("withServedModel", () => {
 		expect(withServedModel({ type: "message_start", message: { model: echo } }, ctx).message.model).toBe(model);
 	});
 
-	it("keeps the payload's model when the request model is not a Phaseo id and no fallback served it", () => {
-		expect(withServedModel({ model: "provider-echo" }, { model: "bare-model", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
+	it("names the request's model even when it has no organisation prefix", () => {
+		expect(withServedModel({ model: "provider-echo" }, { model: "phaseo-internal-model", routingDiagnostics: {} })).toEqual({ model: "phaseo-internal-model" });
+	});
+
+	it("keeps the payload's model only when the context has none", () => {
 		expect(withServedModel({ model: "provider-echo" }, { model: "", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
 	});
 

@@ -11,17 +11,15 @@
 
 import type { PipelineContext } from "../before/types";
 
+// After a model fallback `ctx.model` is the fallback model, so that is the one named.
 type ServedModelContext = Pick<PipelineContext, "model"> & { routingDiagnostics?: Record<string, any> | null };
 
 /**
- * The model id clients should see, or null to keep the payload's own value.
- * A Phaseo id has an organisation prefix (`openai/gpt-6-luna`); a bare context
- * model is not one, so the payload keeps its value unless a fallback served it.
+ * The model id clients should see: always the Phaseo id the request resolved to
+ * (`ctx.model`), never a provider's id. Null only when the context has no model.
  */
 export function clientModelId(ctx: ServedModelContext): string | null {
-	if (typeof ctx.model !== "string" || ctx.model.length === 0) return null;
-	if (ctx.routingDiagnostics?.modelFallback || ctx.model.includes("/")) return ctx.model;
-	return null;
+	return typeof ctx.model === "string" && ctx.model.length > 0 ? ctx.model : null;
 }
 
 /**
