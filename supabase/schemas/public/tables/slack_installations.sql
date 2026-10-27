@@ -27,7 +27,11 @@ CREATE TABLE "public"."slack_installations" (
   "uninstalled_at"          timestamp with time zone,
   "created_at"              timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"              timestamp with time zone NOT NULL DEFAULT now(),
+  "model_choice_enabled"    boolean                  NOT NULL DEFAULT false,
+  "allowed_models"          text[]                   NOT NULL DEFAULT '{}'::text[],
+  "memory_enabled"          boolean                  NOT NULL DEFAULT true,
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
+  CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
   CONSTRAINT "slack_installations_bot_user_id_check" CHECK ((bot_user_id ~ '^[UWB][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_installations_enterprise_id_check" CHECK (((enterprise_id IS NULL) OR (enterprise_id ~ '^E[A-Z0-9]{2,31}$'::text))),
@@ -68,6 +72,12 @@ CREATE TRIGGER slack_installations_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at_if_changed();
 
+CREATE TRIGGER slack_installations_delete_agent_memory
+  AFTER UPDATE OF status ON public.slack_installations
+  FOR EACH ROW
+  WHEN (((new.status = 'uninstalled'::text) AND (old.status IS DISTINCT FROM 'uninstalled'::text)))
+  EXECUTE FUNCTION public.delete_slack_agent_memory();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."slack_installations"
   AS RESTRICTIVE
   FOR ALL
@@ -82,6 +92,12 @@ COMMENT ON COLUMN "public"."slack_installations"."secrets_ciphertext" IS 'AES-GC
 COMMENT ON COLUMN "public"."slack_installations"."key_id" IS 'The managed gateway key the agent uses. Model tokens are billed through it as normal requests.';
 
 COMMENT ON COLUMN "public"."slack_installations"."guardrail_id" IS 'The guardrail attached to key_id that turns off training, prompt publishing and input/output logging, as Slack''s API terms require.';
+
+COMMENT ON COLUMN "public"."slack_installations"."model_choice_enabled" IS 'Whether people may choose the model for one message by starting it with "with <model>:", from allowed_models. Off by default.';
+
+COMMENT ON COLUMN "public"."slack_installations"."allowed_models" IS 'The models people may choose per message (up to 10 v2_models.model_slug values, or phaseo/auto where the workspace has Auto Routing). web-api checks each one; model stays the default.';
+
+COMMENT ON COLUMN "public"."slack_installations"."memory_enabled" IS 'Whether the agent may save and read its notes, pins and to-dos (on by default). While off, turns get no note tools and no pins, and saved notes are kept for admins to see or delete. Saved skills work either way.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

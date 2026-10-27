@@ -129,12 +129,29 @@ describe("events: who gets an answer", () => {
 		clearUserFactsCache();
 		await expect(run(mention({ user: "U0OUTSIDE1" }))).resolves.toBe("started");
 		expect(refusalEmails(), "an admin's own setting is not emailed").toEqual([]);
+		// Their turn says so, so it sees and saves only this conversation's notes (memory.ts).
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([true]);
+	});
+
+	it("treats someone outside an org-wide install's enterprise as from another organisation, even when Slack doesn't call them a stranger", async () => {
+		await install({ team_id: null, enterprise_id: "E0ORG00001", allow_external_users: true });
+		const authorizations = [{ enterprise_id: "E0ORG00001", team_id: null, user_id: BOT_USER_ID, is_bot: true, is_enterprise_install: true }];
+		// A shared-channel user from another company whose is_stranger is false.
+		world.slack.users.set("U0PARTNER1", { id: "U0PARTNER1", team_id: "T0PARTNER1", is_stranger: false });
+		await expect(run(mention({ user: "U0PARTNER1" }), { team_id: "T0SISTER01", authorizations })).resolves.toBe("started");
+		// Their turn sees only this conversation's notes and can't save skills.
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([true]);
+		// Refused when the admin hasn't allowed other companies.
+		await install({ team_id: null, enterprise_id: "E0ORG00001", allow_external_users: false });
+		clearUserFactsCache();
+		await expect(run(mention({ user: "U0PARTNER1", ts: "1792600000.000600" }), { team_id: "T0SISTER01", authorizations })).resolves.toBe("refused_external_user");
 	});
 
 	it("treats another workspace of the same Enterprise Grid org as inside the organisation", async () => {
 		await install({ enterprise_id: "E0ORG00001" });
 		world.slack.users.set("U0SISTER01", { id: "U0SISTER01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } });
 		await expect(run(mention({ user: "U0SISTER01" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([undefined]);
 	});
 
 	it("refuses guests only when an admin turned them off", async () => {
@@ -199,6 +216,102 @@ describe("events: who gets an answer", () => {
 	});
 });
 
+describe("events: choosing a model per message", () => {
+	const meter = () => world.meters.get(world.meters.idFromName(INSTALLATION_ID));
+	const thread = (ts = "1792600000.000100") => world.threads.get(world.threads.idFromName(`${INSTALLATION_ID}:C0CHANNEL1:${ts}`));
+
+	beforeEach(async () => {
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: true, allowed_models: ["anthropic/claude-opus-5-5", "anthropic/claude-sonnet-5-5", "phaseo/auto"] });
+		world.db.tables.v2_models.push(
+			{ model_slug: "openai/gpt-6-luna", name: "GPT-6 Luna", hidden: false },
+			{ model_slug: "anthropic/claude-opus-5-5", name: "Claude Opus 5.5", hidden: false },
+			{ model_slug: "anthropic/claude-sonnet-5-5", name: "Claude Sonnet 5.5", hidden: false },
+		);
+	});
+
+	it("queues the turn with the chosen model, and the message without its prefix", async () => {
+		await expect(run(mention({ text: "<@U0BOT00001> with claude opus: summarise this thread" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => entry.params)).toEqual([expect.objectContaining({ model: "anthropic/claude-opus-5-5" })]);
+		expect(thread().turnInput(1)).toMatchObject({ text: "summarise this thread" });
+		expect(meter().usage(NOW)).toMatchObject({ people: 1, pending: 1 });
+		expect(world.slack.ephemerals()).toEqual([]);
+	});
+
+	it("refuses a model that isn't allowed, or fits more than one, privately and before the meter counts anyone", async () => {
+		await expect(run(mention({ text: "<@U0BOT00001> with gpt-6 luna: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		await expect(run(mention({ text: "<@U0BOT00001> with claude: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		const replies = world.slack.ephemerals();
+		expect(replies.map((call) => call.args)).toEqual([
+			expect.objectContaining({ channel: "C0CHANNEL1", user: "U0PERSON01", thread_ts: "1792600000.000050" }),
+			expect.objectContaining({ channel: "C0CHANNEL1", user: "U0PERSON01", thread_ts: "1792600000.000050" }),
+		]);
+		expect(String(replies[0].args.text)).toBe([
+			"“gpt-6 luna” isn't one of the models you can choose here, so I didn't answer.",
+			"",
+			"Start your message with `with &lt;model&gt;:` and one of these, for example `with Claude Opus 5.5: …`:",
+			"• Claude Opus 5.5 (`anthropic/claude-opus-5-5`)",
+			"• Claude Sonnet 5.5 (`anthropic/claude-sonnet-5-5`)",
+			"• Auto (`phaseo/auto`)",
+			"",
+			"Without `with …:`, I answer with GPT-6 Luna.",
+		].join("\n"));
+		expect(String(replies[1].args.text)).toMatch(/^“claude” could be more than one of the models you can choose \(Claude Opus 5\.5, Claude Sonnet 5\.5\)/);
+		// No turn, no person and no answer held: the meter never saw them.
+		expect(world.turns.created).toEqual([]);
+		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
+		expect(thread("1792600000.000050").status()).toMatchObject({ running: null, queued: 0 });
+	});
+
+	it("answers ordinary text that starts with \"With …:\" as written, when it names no catalogue model", async () => {
+		await expect(run(mention({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual([undefined]);
+		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> With regards to the invoice: can you check the total?" });
+		expect(world.slack.ephemerals()).toEqual([]);
+		// The catalogue was searched by id, id without its lab, and name.
+		expect(world.db.queries.filter((query) => query.table === "v2_models" && query.query.limit === "5").map((query) => query.query)).toEqual([
+			{ select: "model_slug", hidden: "is.false", model_slug: "ilike.regards to the invoice*", limit: "5" },
+			{ select: "model_slug", hidden: "is.false", model_slug: "ilike.*/regards to the invoice*", limit: "5" },
+			{ select: "model_slug", hidden: "is.false", name: "ilike.regards to the invoice*", limit: "5" },
+		]);
+	});
+
+	it("refuses a catalogue name with punctuation, and a longer name the allowed one only starts", async () => {
+		world.db.tables.v2_models.push(
+			{ model_slug: "z-ai/glm-4.7-flash:free", name: "GLM 4.7 Flash (Free)", hidden: false },
+			{ model_slug: "amazon/nova-pro-v1", name: "Amazon: Nova Pro 1.0", hidden: false },
+			{ model_slug: "amazon/nova-lite-v1", name: "Amazon: Nova Lite 1.0", hidden: false },
+		);
+		await expect(run(mention({ text: "<@U0BOT00001> with GLM 4.7 Flash (Free): hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: true, allowed_models: ["amazon/nova-pro-v1"] });
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite 1.0: summarise this", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		expect(String(world.slack.ephemerals()[1].args.text)).toMatch(/^“Amazon: Nova Lite 1.0” isn't one of the models you can choose here/);
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		// The catalogue is down: a choice by the start of a name, with a longer reading, is refused before the meter.
+		const select = world.db.select.bind(world.db);
+		world.db.select = async <T,>(table: string, query: Record<string, string>) => {
+			if (table === "v2_models" && query.limit === "5") throw new Error("db_error_503");
+			return select<T>(table, query);
+		};
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite 1.0: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		world.db.select = select;
+		// The allowed model by its full name still works.
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Pro 1.0: summarise this" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual(["amazon/nova-pro-v1"]);
+		expect(meter().usage(NOW)).toMatchObject({ people: 1, pending: 1 });
+	});
+
+	it("leaves the message as it is when model choice is off, or the message names no model", async () => {
+		await expect(run(directMessage({ text: "what did we spend?" }))).resolves.toBe("started");
+		// A message that doesn't start with `with …:` doesn't read the catalogue.
+		expect(world.db.queries.filter((query) => query.table === "v2_models")).toEqual([]);
+		await install({ model_choice_enabled: false, allowed_models: ["anthropic/claude-opus-5-5"] });
+		await expect(run(mention({ text: "<@U0BOT00001> with claude: hi" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual([undefined, undefined]);
+		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> with claude: hi" });
+		expect(world.slack.ephemerals()).toEqual([]);
+	});
+});
+
 describe("events: linked accounts", () => {
 	it("offers unlinked people a Connect button whose token web-api accepts", async () => {
 		await install({ access_mode: "linked" });
@@ -226,6 +339,8 @@ describe("events: linked accounts", () => {
 describe("events: installations", () => {
 	it("finds an org-wide Enterprise Grid install by its enterprise", async () => {
 		await install({ team_id: null, enterprise_id: "E0ORG00001" });
+		// A member of the org: Slack names its enterprise.
+		world.slack.users.set("U0PERSON01", { id: "U0PERSON01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } });
 		const authorizations = [{ enterprise_id: "E0ORG00001", team_id: null, user_id: BOT_USER_ID, is_bot: true, is_enterprise_install: true }];
 		await expect(run(mention(), { team_id: "T0SISTER01", authorizations })).resolves.toBe("started");
 		expect(world.db.queries.at(0)?.query).toMatchObject({ enterprise_id: "eq.E0ORG00001", team_id: "is.null", slack_app_id: "is.null" });

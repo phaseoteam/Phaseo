@@ -63,7 +63,42 @@ While it answers:
   - When Slack doesn't let it read the thread just then, it works from its own earlier replies in the thread.
 - It answers one message at a time in each thread. Up to 5 more messages wait their turn; after that it asks you to wait for the earlier answers.
 - Slack's stop button stops the answer it's working on.
-- Each answer ends with the model and what the answer cost in model tokens, such as `phaseo/auto · $0.0031`. With **Auto**, the model it picked follows an arrow.
+- Each answer ends with the model and what the answer cost in model tokens, such as `Auto → GPT-6 Luna · $0.0031`. With **Auto**, the model it picked follows an arrow. A model's name links to its page on Phaseo, and the cost links to that answer's requests in **Logs**, which members of the Phaseo workspace can open.
+
+## Choosing a model per message
+
+Owners and admins can let people choose the model for a single message. In **Settings → Slack**, under **Model choice**, turn on **Let people choose a model per message** and add up to 10 models from the Phaseo catalogue. If your workspace has Auto Routing, **Include Auto** adds **Auto** to the list. The model under **Agent** still answers every other message.
+
+To choose a model, start the message with `with <model>:` and name an allowed model by its name or ID:
+
+```text
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
+```
+
+- Only the allowed models are matched, ignoring case. The start of a name or ID is enough when only one allowed model has it, so `with claude:` works when one Claude model is on the list. An ID also works without its lab, such as `with gpt-6-luna:`.
+- The agent answers that message with that model, without the `with …:` part, and the footer names the model that answered.
+- If you name a catalogue model that isn't on the list, or the name fits more than one, the agent replies privately with the models you can choose and doesn't answer. That message isn't counted as an answer. A message that starts with "With …:" but names no model, such as "With regards to the invoice: …", is answered as usual.
+- Each answer keeps the same [limits](#limits-on-each-answer), $0.50 and 12 steps, whichever model answers. The model's tokens are billed at its own price.
+- The **Slack agent** guardrail still applies. If no provider of the chosen model meets it, the agent says so instead of answering.
+
+### Questions with buttons
+
+When the agent needs you to choose between a few options or approve something before it goes on, it asks in the thread with a button for each option, up to 5. It can also offer **Other…**, which opens a small form for an answer in your own words.
+
+- Only the person it's answering can answer. Anyone else who selects a button gets a private note.
+- You can also reply in the thread instead (in a channel, mention the agent). Your reply is taken as your answer.
+- Once you answer, the buttons are replaced with your answer and the agent carries on from where it stopped.
+- A question waits for up to an hour. After that, the question says it expired and the answer ends there. Ask again when you're ready.
+- Slack's stop button also works while it waits.
+- While it waits, other people's messages in the thread wait their turn, and they're told privately who it's waiting for.
+- One answer can ask up to 3 questions. The whole thing counts as one answer, and the [limits on each answer](#limits-on-each-answer) cover all of it, before and after each question.
+
+### Home tab
+
+Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages.
+
+With your own Slack app, the Home tab needs the latest [manifest](#use-your-own-slack-app): `home_tab_enabled` set to `true` and the `app_home_opened` bot event.
 
 ## Who can use it
 
@@ -109,6 +144,42 @@ Dates are in UTC and weeks start on Monday. Choose where the agent may answer th
 | **Direct messages and chosen channels** | In direct messages, and in the channels listed under **Channel IDs** (up to 100). |
 
 Everyone in a channel can read the agent's answers, so list only channels whose members may see your workspace's spend. A channel's ID is at the bottom of its details in Slack, such as `C0123ABCD`.
+
+## Memory and skills
+
+The agent can remember what your team asks it to, and follow skills: instructions saved for tasks you repeat. Ask it in Slack, for example:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`, and later `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` or `@Phaseo forget the note about deploys`
+
+It saves three kinds of note, each up to 500 characters and in its own words:
+
+| Kind | What it's for |
+| --- | --- |
+| **Note** | Something to remember. The agent looks notes up when they're relevant. |
+| **Pin** | Something to keep in mind all the time. The agent sees up to 10 of the conversation's pins and 10 workspace-wide pins with every message. |
+| **To-do** | Something to track, which can be marked done. |
+
+A note belongs to the channel or direct message it was saved in, unless someone asks for it to be workspace-wide. In a conversation, the agent sees that conversation's notes and the workspace-wide ones, never another channel's or direct message's. Workspace-wide notes are available to everyone in your organisation the agent answers. People from other companies in shared Slack Connect channels only see and save the notes for the conversation they're in, never workspace-wide ones; they can use saved skills but not save new ones, because skills apply to the whole workspace. A note can be kept until a date, such as `remember until Friday that the office is closed`, and is deleted after it.
+
+The agent only saves a note when someone asks it to remember, pin or track something, or for a lasting fact such as a decision or a deadline. It never copies whole messages or threads.
+
+### Skills
+
+A skill is a name, a one-line description and instructions of up to 4,000 characters for a task your team repeats, such as a weekly report. Ask the agent to save one:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+With every message, the agent sees the names and descriptions of the 20 most recently changed skills. It loads a skill's instructions when a request matches it, or when someone asks, such as `@Phaseo use the Weekly report skill`. It only saves a skill when someone explicitly asks, and only replaces a skill with the same name when asked to.
+
+### What admins control
+
+- **Let the agent keep notes** (on by default, under **Memory and skills** in **Settings → Slack**) turns notes, pins and to-dos off. While it's off, the agent saves none and sees none, and tells people who ask it to remember something that an admin has turned memory off. Skills keep working. The notes already saved are kept, and owners and admins can still see and delete them; turn it back on and the agent uses them again.
+- Each Slack workspace keeps up to 500 notes and 100 skills. When memory is full, the agent says so; delete some to make room.
+- Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
+- Uninstalling the agent deletes all its notes and skills. Adding it again starts with an empty memory.
 
 ## Limits
 
@@ -178,11 +249,12 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
-- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, and who it has sent the Connect button. They're deleted 7 days after the thread's last activity.
+- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
+- **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
-Uninstalling deletes the agent's API key and removes its guardrail.
+Uninstalling deletes the agent's API key, notes and saved skills, and removes its guardrail.
 
 ## Use your own Slack app
 
@@ -228,7 +300,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
   },
   "features": {
     "app_home": {
-      "home_tab_enabled": false,
+      "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
@@ -264,7 +336,8 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
         "message.im",
         "agent_session_stopped",
         "app_uninstalled",
-        "tokens_revoked"
+        "tokens_revoked",
+        "app_home_opened"
       ]
     },
     "interactivity": {
@@ -283,7 +356,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
 | Redirect URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
 | Event Subscriptions request URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
 | Interactivity request URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
-| Bot events | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked` |
+| Bot events | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 Phaseo asks Slack for exactly these bot token scopes when you install, so the app needs all of them:
 
@@ -306,7 +379,7 @@ A few rules for your own app:
 ## Pause or uninstall
 
 - **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused.
-- **Uninstall** stops the agent straight away, deletes its API key, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
+- **Uninstall** stops the agent straight away, deletes its API key, notes and saved skills, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
 
 Past charges stay in your billing history. The people who used the agent in the month you uninstall are still charged when that month ends. You can add the agent again at any time.
@@ -329,6 +402,8 @@ When the agent can't answer someone, it replies privately in Slack:
 | "I'm still working through earlier messages in this thread." | 5 messages are already waiting in this thread. | Wait for those answers. |
 | "Sorry, I couldn't check your Slack account just now." | Slack didn't answer a lookup. | Try again in a minute. |
 | "The model chosen for this agent isn't available to the Slack agent." | The gateway can't use the agent's model with its key: **Auto** without Auto Routing, or no provider of the model meets the **Slack agent** guardrail. | Choose another model in **Settings → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
 
 If the agent doesn't reply at all:
 

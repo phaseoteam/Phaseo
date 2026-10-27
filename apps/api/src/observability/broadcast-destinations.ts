@@ -124,9 +124,25 @@ export type OtlpPreset = {
 	resourceAttributes?: Record<string, string>;
 	// Span attributes copied to the names a vendor reads, as target: source.
 	attributeAliases?: Record<string, string>;
+	// Span attributes renamed to the names a vendor reads, as target: source,
+	// for large values such as messages that should not be sent twice.
+	attributeRenames?: Record<string, string>;
+	// Resource attributes taken from a span attribute, as target: source, for
+	// vendors that read a per-request value such as the user from the resource.
+	// Each event has its own resource, so the value is that request's.
+	resourceAliases?: Record<string, string>;
+	// Sends messages as indexed gen_ai.prompt.N and gen_ai.completion.N
+	// attributes with llm.request.type, the older GenAI form some vendors read,
+	// in place of gen_ai.input.messages and gen_ai.output.messages.
+	indexedMessages?: boolean;
 	// String attribute values longer than this are cut, for vendors that reject
 	// or drop oversized attributes.
 	maxAttributeLength?: number;
+	// The same in UTF-8 bytes, for vendors whose limit is in bytes.
+	maxAttributeBytes?: number;
+	// The largest request body, as uncompressed JSON, for vendors whose limit
+	// is below the exporter's default.
+	maxRequestBytes?: number;
 };
 
 // Destination types sent over OTLP with a vendor's settings. Types without an
@@ -139,7 +155,10 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 	arize: {
 		endpoint: "{base_url}/v1/traces",
 		defaults: { base_url: "https://otlp.arize.com" },
-		headers: { space_id: "{space_id}", api_key: "{api_key}" },
+		// The exporter page shows space_id and api_key; the manual instrumentation
+		// page says HTTP takes arize-space-id and arize-api-key and that the wrong
+		// form drops spans silently. Both are sent.
+		headers: { space_id: "{space_id}", api_key: "{api_key}", "arize-space-id": "{space_id}", "arize-api-key": "{api_key}" },
 		protocol: "http/protobuf",
 		resourceAttributes: { "openinference.project.name": "{project_name}" },
 	},
@@ -210,6 +229,9 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		headers: { Authorization: "{basic:instance_id:api_key}" },
 		protocol: "http/protobuf",
 		compression: "gzip",
+		// Agent Observability only records traces that opt in:
+		// https://grafana.com/docs/grafana-cloud/observe-and-act/agent-observability/get-started/opentelemetry/
+		resourceAttributes: { "agento11y.record": "true" },
 	},
 	// https://docs.honeycomb.io/send-data/opentelemetry/
 	// The dataset is only read by Honeycomb Classic; other environments name
@@ -220,25 +242,33 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		choices: { region: { US: "api.honeycomb.io", EU: "api.eu1.honeycomb.io" } },
 		headers: { "x-honeycomb-team": "{api_key}", "x-honeycomb-dataset": "{dataset?}" },
 		protocol: "http/protobuf",
+		// "each string field has a maximum length of 64KB"
+		maxAttributeBytes: 64_000,
 	},
 	// https://langfuse.com/integrations/native/opentelemetry
 	// Without the ingestion version header, traces can take up to 10 minutes to
-	// appear. Langfuse reads sessions from langfuse.session.id or session.id.
+	// appear. Langfuse reads sessions from langfuse.session.id or session.id,
+	// and input and output from langfuse.observation.input and output; its
+	// mapping table does not list gen_ai.input.messages.
 	langfuse: {
 		endpoint: "{base_url}/api/public/otel/v1/traces",
 		defaults: { base_url: "https://cloud.langfuse.com" },
 		headers: { Authorization: "{basic:public_key:secret_key}", "x-langfuse-ingestion-version": "4" },
 		protocol: "http/protobuf",
 		attributeAliases: { "langfuse.session.id": "gen_ai.conversation.id" },
+		attributeRenames: { "langfuse.observation.input": "gen_ai.input.messages", "langfuse.observation.output": "gen_ai.output.messages" },
 	},
 	// https://docs.langchain.com/langsmith/trace-with-opentelemetry
 	// Self-hosted instances take their API URL with /api/v1 as the base URL.
-	// Without a project, traces go to the "default" project.
+	// Without a project, traces go to the "default" project. Threads come from
+	// langsmith.trace.session_id, and there is no user attribute beyond
+	// langsmith.metadata.*.
 	langsmith: {
 		endpoint: "{base_url}/otel/v1/traces",
 		defaults: { base_url: "https://api.smith.langchain.com" },
 		headers: { "x-api-key": "{api_key}", "Langsmith-Project": "{project?}" },
 		protocol: "http/protobuf",
+		attributeAliases: { "langsmith.trace.session_id": "gen_ai.conversation.id", "langsmith.metadata.user_id": "user.id" },
 	},
 	// https://docs.newrelic.com/docs/opentelemetry/best-practices/opentelemetry-otlp/
 	// Authenticated with an ingest license key. String attributes over 4,095
@@ -251,22 +281,36 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		protocol: "http/protobuf",
 		compression: "gzip",
 		maxAttributeLength: 4095,
+		// "payloads must be smaller than the 1MB (10^6 bytes) maximum payload
+		// size", whether before or after compression is not stated.
+		maxRequestBytes: 1_000_000,
 	},
 	// https://posthog.com/docs/llm-analytics/installation/opentelemetry
 	// Authenticated with the project token. The intake keeps gen_ai spans and
 	// reads gen_ai.conversation.id as the session; requests are capped at 4 MB.
+	// The person comes from the posthog.distinct_id resource attribute.
 	posthog: {
 		endpoint: "{base_url}/i/v0/ai/otel",
 		defaults: { base_url: "https://us.i.posthog.com" },
 		headers: { Authorization: "Bearer {api_key}" },
 		protocol: "http/protobuf",
+		resourceAliases: { "posthog.distinct_id": "user.id" },
 	},
 	// https://www.respan.ai/docs/apis/traces/ingest-traces-otlp
+	// Reads the older indexed message and token names, and promotes them only
+	// on spans with llm.request.type.
 	respan: {
 		endpoint: "{base_url}/api/v2/traces",
 		defaults: { base_url: "https://api.respan.ai" },
 		headers: { Authorization: "Bearer {api_key}" },
 		protocol: "http/protobuf",
+		indexedMessages: true,
+		attributeAliases: {
+			"gen_ai.usage.prompt_tokens": "gen_ai.usage.input_tokens",
+			"gen_ai.usage.completion_tokens": "gen_ai.usage.output_tokens",
+			"respan.threads.thread_identifier": "gen_ai.conversation.id",
+			"respan.customer_params.customer_identifier": "user.id",
+		},
 	},
 	// https://docs.sentry.io/concepts/otlp/direct/traces/
 	// Project settings > Client Keys (DSN) shows the OTLP traces endpoint and the
@@ -298,7 +342,12 @@ export type OtlpTarget = {
 	compression: OtlpCompression;
 	resourceAttributes: Record<string, string>;
 	attributeAliases: Record<string, string>;
+	attributeRenames: Record<string, string>;
+	resourceAliases: Record<string, string>;
+	indexedMessages: boolean;
 	maxAttributeLength: number | null;
+	maxAttributeBytes: number | null;
+	maxRequestBytes: number | null;
 };
 
 const PLACEHOLDER = /\{([a-z0-9_:]+\??)\}/g;
@@ -401,51 +450,154 @@ export function resolveOtlpTarget(id: unknown, config: Record<string, unknown>):
 			.map(([key, template]) => [key, renderTemplate(template, config, preset!)])
 			.filter(([, value]) => value)),
 		attributeAliases: { ...preset?.attributeAliases },
+		attributeRenames: { ...preset?.attributeRenames },
+		resourceAliases: { ...preset?.resourceAliases },
+		indexedMessages: preset?.indexedMessages ?? false,
 		maxAttributeLength: preset?.maxAttributeLength ?? null,
+		maxAttributeBytes: preset?.maxAttributeBytes ?? null,
+		maxRequestBytes: preset?.maxRequestBytes ?? null,
 	};
 }
 
 type OtlpAttribute = { key?: unknown; value?: { stringValue?: unknown } & Record<string, unknown> };
 
-function truncated(attributes: OtlpAttribute[], max: number | null): OtlpAttribute[] {
-	if (max === null) return attributes;
+const utf8 = new TextEncoder();
+
+// The longest start of value that is at most maxBytes of UTF-8, without
+// splitting a character.
+function cutToBytes(value: string, maxBytes: number): string {
+	if (value.length <= maxBytes / 3 || utf8.encode(value).byteLength <= maxBytes) return value;
+	let bytes = 0;
+	let end = 0;
+	for (const char of value) {
+		const size = utf8.encode(char).byteLength;
+		if (bytes + size > maxBytes) break;
+		bytes += size;
+		end += char.length;
+	}
+	return value.slice(0, end);
+}
+
+function truncated(attributes: OtlpAttribute[], target: Pick<OtlpTarget, "maxAttributeLength" | "maxAttributeBytes">): OtlpAttribute[] {
+	const { maxAttributeLength: maxLength, maxAttributeBytes: maxBytes } = target;
+	if (maxLength === null && maxBytes === null) return attributes;
 	return attributes.map((attribute) => {
 		const value = attribute.value?.stringValue;
-		return typeof value === "string" && value.length > max
-			? { ...attribute, value: { ...attribute.value, stringValue: value.slice(0, max) } }
-			: attribute;
+		if (typeof value !== "string") return attribute;
+		let cut = maxLength !== null && value.length > maxLength ? value.slice(0, maxLength) : value;
+		if (maxBytes !== null) cut = cutToBytes(cut, maxBytes);
+		return cut === value ? attribute : { ...attribute, value: { ...attribute.value, stringValue: cut } };
 	});
 }
 
-// Applies a target's resource attributes, attribute aliases and truncation to
-// an OTLP trace export request, without changing the original.
+const LLM_REQUEST_TYPES: Record<string, string> = { chat: "chat", text_completion: "completion", embeddings: "embedding" };
+
+// A message's text: its text parts joined, or its parts as JSON when it has none.
+function messageText(message: Record<string, any>): string {
+	const parts: Array<Record<string, any>> = Array.isArray(message.parts) ? message.parts : [];
+	const text = parts.filter((part) => part?.type === "text" && typeof part.content === "string").map((part) => part.content as string);
+	if (text.length) return text.join("\n");
+	if (typeof message.content === "string") return message.content;
+	return parts.length ? JSON.stringify(parts) : "";
+}
+
+// gen_ai.prompt.N and gen_ai.completion.N attributes for a JSON message list. A
+// list cut short by the attribute size cap no longer parses and is sent whole
+// as one message.
+function indexedMessageAttributes(prefix: string, json: unknown, defaultRole: string, system?: unknown): OtlpAttribute[] {
+	let messages: Array<Record<string, any>>;
+	try {
+		const parsed = JSON.parse(String(json));
+		messages = Array.isArray(parsed) ? parsed : [{ role: defaultRole, content: String(json) }];
+	} catch {
+		messages = [{ role: defaultRole, content: String(json) }];
+	}
+	if (typeof system === "string") {
+		try {
+			const instructions = JSON.parse(system);
+			const content = Array.isArray(instructions) ? instructions.map((part) => messageText({ parts: [part] })).join("\n") : system;
+			messages = [{ role: "system", content }, ...messages];
+		} catch {
+			messages = [{ role: "system", content: system }, ...messages];
+		}
+	}
+	return messages.flatMap((message, index) => [
+		{ key: `${prefix}.${index}.role`, value: { stringValue: String(message?.role ?? defaultRole) } },
+		{ key: `${prefix}.${index}.content`, value: { stringValue: messageText(message ?? {}) } },
+		...toolCallAttributes(`${prefix}.${index}`, message?.tool_calls),
+	]);
+}
+
+const toolValue = (value: unknown) => typeof value === "string" ? value : value === null || value === undefined ? "" : JSON.stringify(value);
+
+// A message's tool calls as indexed tool_calls.M.id, name and arguments, the
+// OpenLLMetry names, so a tool-only reply keeps its calls. Calls are either
+// { id, name, arguments } or a provider's { id, function: { name, arguments } }.
+function toolCallAttributes(prefix: string, calls: unknown): OtlpAttribute[] {
+	if (!Array.isArray(calls)) return [];
+	return calls.flatMap((call: Record<string, any>, index) => {
+		const fn = call?.function && typeof call.function === "object" ? call.function : call ?? {};
+		return [["id", call?.id], ["name", fn.name], ["arguments", fn.arguments]]
+			.filter(([, value]) => value !== null && value !== undefined && value !== "")
+			.map(([field, value]) => ({ key: `${prefix}.tool_calls.${index}.${field}`, value: { stringValue: toolValue(value) } }));
+	});
+}
+
+function indexedMessages(attributes: OtlpAttribute[]): OtlpAttribute[] {
+	const value = (key: string) => attributes.find((attribute) => attribute.key === key)?.value?.stringValue;
+	const input = value("gen_ai.input.messages");
+	const output = value("gen_ai.output.messages");
+	const operation = value("gen_ai.operation.name");
+	const requestType = typeof operation === "string" ? LLM_REQUEST_TYPES[operation] : undefined;
+	if (input === undefined && output === undefined && !requestType) return attributes;
+	return [
+		...attributes.filter((attribute) => attribute.key !== "gen_ai.input.messages" && attribute.key !== "gen_ai.output.messages"),
+		...(input === undefined ? [] : indexedMessageAttributes("gen_ai.prompt", input, "user", value("gen_ai.system_instructions"))),
+		...(output === undefined ? [] : indexedMessageAttributes("gen_ai.completion", output, "assistant")),
+		...(requestType ? [{ key: "llm.request.type", value: { stringValue: requestType } }] : []),
+	];
+}
+
+// Applies a target's resource attributes, attribute renames, aliases and
+// message form, and truncation to an OTLP trace export request, without
+// changing the original.
 export function applyOtlpTarget(payload: unknown, target: OtlpTarget): unknown {
 	const resources = Object.entries(target.resourceAttributes);
 	const aliases = Object.entries(target.attributeAliases);
-	if (!resources.length && !aliases.length && target.maxAttributeLength === null) return payload;
+	const renames = Object.entries(target.attributeRenames);
+	const resourceAliases = Object.entries(target.resourceAliases);
+	if (!resources.length && !aliases.length && !renames.length && !resourceAliases.length && !target.indexedMessages
+		&& target.maxAttributeLength === null && target.maxAttributeBytes === null) return payload;
+	const renamed = new Map(renames.map(([alias, source]) => [source, alias]));
 	const request = (payload ?? {}) as { resourceSpans?: Array<Record<string, any>> };
 	return {
 		...request,
 		resourceSpans: (request.resourceSpans ?? []).map((resourceSpan) => {
+			const scopeSpans = (resourceSpan.scopeSpans ?? []).map((scopeSpan: Record<string, any>) => ({
+				...scopeSpan,
+				spans: (scopeSpan.spans ?? []).map((span: Record<string, any>) => {
+					let attributes: OtlpAttribute[] = (span.attributes ?? []).map((attribute: OtlpAttribute) => {
+						const alias = renamed.get(String(attribute.key));
+						return alias ? { ...attribute, key: alias } : attribute;
+					});
+					if (target.indexedMessages) attributes = indexedMessages(attributes);
+					const present = new Set(attributes.map((attribute) => String(attribute.key)));
+					for (const [alias, source] of aliases) {
+						const original = attributes.find((attribute) => attribute.key === source);
+						if (original && !present.has(alias)) attributes.push({ ...original, key: alias });
+					}
+					return { ...span, attributes: truncated(attributes, target) };
+				}),
+			}));
+			const spanAttributes: OtlpAttribute[] = scopeSpans.flatMap((scopeSpan: Record<string, any>) => scopeSpan.spans.flatMap((span: Record<string, any>) => span.attributes));
 			const resourceAttributes = (resourceSpan.resource?.attributes ?? [] as OtlpAttribute[])
-				.filter((attribute: OtlpAttribute) => !(String(attribute.key) in target.resourceAttributes));
+				.filter((attribute: OtlpAttribute) => !(String(attribute.key) in target.resourceAttributes) && !(String(attribute.key) in target.resourceAliases));
 			for (const [key, value] of resources) resourceAttributes.push({ key, value: { stringValue: value } });
-			return {
-				...resourceSpan,
-				resource: { ...resourceSpan.resource, attributes: truncated(resourceAttributes, target.maxAttributeLength) },
-				scopeSpans: (resourceSpan.scopeSpans ?? []).map((scopeSpan: Record<string, any>) => ({
-					...scopeSpan,
-					spans: (scopeSpan.spans ?? []).map((span: Record<string, any>) => {
-						const attributes: OtlpAttribute[] = [...(span.attributes ?? [])];
-						const present = new Set(attributes.map((attribute) => String(attribute.key)));
-						for (const [alias, source] of aliases) {
-							const original = attributes.find((attribute) => attribute.key === source);
-							if (original && !present.has(alias)) attributes.push({ ...original, key: alias });
-						}
-						return { ...span, attributes: truncated(attributes, target.maxAttributeLength) };
-					}),
-				})),
-			};
+			for (const [key, source] of resourceAliases) {
+				const original = spanAttributes.find((attribute) => attribute.key === source);
+				if (original) resourceAttributes.push({ ...original, key });
+			}
+			return { ...resourceSpan, resource: { ...resourceSpan.resource, attributes: truncated(resourceAttributes, target) }, scopeSpans };
 		}),
 	};
 }

@@ -2,6 +2,7 @@ import { connectAccountMessage, forgetInstallationFacts, isLinked, linkUrl, look
 import { alertUninstalledInSlack } from "./alerts";
 import type { EnqueueResult } from "./coordinator";
 import type { Env } from "./env";
+import { publishHome } from "./home";
 import {
 	botTokenNeedsRefresh,
 	findInstallation,
@@ -11,14 +12,23 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
+import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
+import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
 // ignore bots and edits, find the installation, dedupe the event in its thread's
 // coordinator, check the person (status, guests, Slack Connect users, linked
-// accounts, the meter's limits), then queue the turn. Every refusal is a polite
-// ephemeral reply. Logs carry ids and outcomes only, never message text.
+// accounts, a model chosen for the message, the meter's limits), then queue the
+// turn. Every refusal is a polite ephemeral reply. Logs carry ids and outcomes
+// only, never message text.
+//
+// A message from the person whose question the running turn waits on
+// (questions.ts) is their answer, not a new turn: it isn't metered again.
+//
+// Opening the app's Home tab (app_home_opened) publishes it for that person
+// (home.ts). Slack only sends it once the app's manifest subscribes.
 //
 // Removing the app inside Slack (app_uninstalled, or tokens_revoked for the bot
 // token) uninstalls the installation, like Uninstall in Phaseo settings.
@@ -57,6 +67,8 @@ export type SlackEvent = {
 	channel?: string;
 	channel_type?: string;
 	event_ts?: string;
+	/** app_home_opened: the tab opened, "home" or "messages". */
+	tab?: string;
 	/** tokens_revoked: the user ids whose user (oauth) and bot tokens were revoked. */
 	tokens?: { oauth?: unknown; bot?: unknown };
 };
@@ -78,8 +90,8 @@ export type SlackEnvelope = {
 };
 
 export type EventOutcome =
-	| "ignored" | "ignored_bot" | "ignored_self" | "no_installation" | "duplicate" | "link_required"
-	| `refused_${ReplyReason}` | "started" | "queued" | "cancelled" | "uninstalled" | "error";
+	| "ignored" | "ignored_bot" | "ignored_self" | "no_installation" | "duplicate" | "link_required" | "model_refused"
+	| `refused_${ReplyReason}` | "started" | "queued" | "answered_question" | "cancelled" | "home_published" | "uninstalled" | "error";
 
 /** Events that mean the app was removed in Slack, or its tokens were revoked. */
 const REMOVAL_EVENTS = new Set(["app_uninstalled", "tokens_revoked"]);
@@ -212,6 +224,7 @@ export async function processEvent(deps: Deps, app: SlackAppContext, envelope: S
 		if (event.type === "app_mention") return await handleMessage(deps, app, envelope, event, "mention");
 		if (event.type === "message" && event.channel_type === "im") return await handleMessage(deps, app, envelope, event, "dm");
 		if (event.type === "agent_session_stopped") return await handleStop(deps, app, envelope, event);
+		if (event.type === "app_home_opened" && event.tab === "home") return await handleHomeOpened(deps, app, envelope, event);
 		if (isRemovalEvent(envelope)) return await handleRemoval(deps, app, envelope, event);
 		return "ignored";
 	} catch (error) {
@@ -264,6 +277,36 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
+	// Their reply to the question the running turn asked them: the turn goes on with it.
+	let text = typeof event.text === "string" ? event.text : "";
+	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), now });
+	if (answered) {
+		console.log("[slack-agent] question answered", { installationId: installation.id, turnId: answered.turnId, question: answered.question.n, by: "message" });
+		await updateQuestionMessage(slack, { channel, threadTs, turnId: answered.turnId, askerId: answered.askerId }, answered.question);
+		return "answered_question";
+	}
+
+	// A model chosen for this message. One that can't be used is refused here, before
+	// the meter counts the person or holds an answer for them.
+	let model: string | null = null;
+	const message = withoutMention(text, installation.bot_user_id);
+	if (modelChoiceOn(installation) && namesModel(message)) {
+		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
+		const allowed = allowedModels(installation, names);
+		let choice = chooseModel(message, allowed);
+		// A longer reading may name another model the shorter match only starts.
+		const other = choice.kind === "chosen" ? await namesOtherModel(deps.db, choice.longer, choice.model.id, choice.exact) : null;
+		if (other) choice = { kind: "not_allowed", named: other };
+		if (choice.kind === "chosen") {
+			model = choice.model.id;
+			text = choice.prompt;
+		} else if (choice.kind === "ambiguous" || (choice.kind === "not_allowed" && (other !== null || await namesCatalogueModel(deps.db, choice.named)))) {
+			console.log("[slack-agent] model choice refused", { installationId: installation.id, eventId, reason: choice.kind });
+			await replyPrivately(slack, target, modelRefusalText(choice, allowed, names.get(installation.model) ?? installation.model));
+			return "model_refused";
+		}
+	}
+
 	const meter = meterFor(deps.env, installation.id);
 	const admitted = await meter.admit({ settings: meterSettings(installation), slackUserId: user, facts, eventId, now });
 	if (admitted.allowed === false) {
@@ -288,15 +331,51 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		messageTs: ts,
 		slackUserId: user,
 		kind,
-		text: typeof event.text === "string" ? event.text : "",
+		...(model ? { model } : {}),
+		...(facts.isExternal ? { external: true } : {}),
+		text,
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });
 		return refuse(slack, target, "busy");
 	}
 	if (queued.status === "duplicate") return "duplicate";
+	// Queued behind a question that may wait up to an hour: the meter keeps their place for that long.
+	if (queued.status === "queued" && queued.waitingUntil) {
+		try {
+			await meter.keepPending({ eventId, until: queued.waitingUntil });
+		} catch {
+			console.error("[slack-agent] meter place not kept behind a question", { installationId: installation.id, eventId });
+		}
+	}
+	// The answer before theirs waits for someone else's reply to its question, which can take up to an hour.
+	if (queued.status === "queued" && queued.waitingFor) {
+		await replyPrivately(slack, target, `I'm waiting for <@${queued.waitingFor}> to answer my question in this thread. I'll answer you after that.`);
+	}
 	console.log("[slack-agent] turn queued", { installationId: installation.id, eventId, status: queued.status, position: queued.position, newPerson: admitted.newPerson });
 	return queued.status;
+}
+
+/** The person opened the app's Home tab: publish it for them. Repeats are harmless, so it isn't deduped. */
+async function handleHomeOpened(deps: Deps, app: SlackAppContext, envelope: SlackEnvelope, event: SlackEvent): Promise<EventOutcome> {
+	const user = event.user ?? "";
+	if (!USER_PATTERN.test(user)) return "ignored";
+	const installation = await findInstallation(deps.db, app, installationRef(envelope));
+	if (!installation) return "no_installation";
+	if (user === installation.bot_user_id) return "ignored_self";
+	const token = await botToken(deps, installation);
+	if (!token) return "error";
+	const now = deps.now();
+	const published = await publishHome({
+		env: deps.env,
+		db: deps.db,
+		slack: deps.slack(token),
+		installation,
+		slackUserId: user,
+		answersThisMonth: async () => (await meterFor(deps.env, installation.id).usage(now)).answers,
+		now,
+	});
+	return published ? "home_published" : "error";
 }
 
 /** Slack's stop button on a processing session (agent_session_stopped). */

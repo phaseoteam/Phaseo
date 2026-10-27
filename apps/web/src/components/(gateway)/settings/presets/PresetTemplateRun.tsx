@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +38,12 @@ export function readTemplateRunReply(json: any): TemplateRunReply {
 		inputTokens: typeof usage.prompt_tokens === "number" ? usage.prompt_tokens : null,
 		outputTokens: typeof usage.completion_tokens === "number" ? usage.completion_tokens : null,
 	};
+}
+
+/** The gateway's machine-readable error code, wherever the response put it. */
+export function readTemplateRunErrorCode(json: any): string | null {
+	const code = json?.error?.code ?? json?.code ?? json?.error;
+	return typeof code === "string" && code ? code : null;
 }
 
 /** Every problem the gateway listed, or its single error message. */
@@ -82,7 +89,8 @@ type RunState =
 	| { status: "idle" }
 	| { status: "running" }
 	| { status: "done"; reply: TemplateRunReply }
-	| { status: "failed"; message: string };
+	| { status: "failed"; message: string }
+	| { status: "no_credits" };
 
 /**
  * Runs the saved preset through the gateway with the test values, billed to the
@@ -113,6 +121,10 @@ export function PresetTemplateRun({
 			});
 			const json = await response.json().catch(() => null);
 			if (!response.ok) {
+				if (readTemplateRunErrorCode(json) === "insufficient_funds") {
+					setState({ status: "no_credits" });
+					return;
+				}
 				setState({ status: "failed", message: readTemplateRunError(json) ?? t("presetTemplate.runFailed", { status: response.status }) });
 				return;
 			}
@@ -142,6 +154,12 @@ export function PresetTemplateRun({
 					</div>
 					<p className="whitespace-pre-wrap text-sm">{state.reply.text || t("presetTemplate.replyEmpty")}</p>
 				</div>
+			) : null}
+			{state.status === "no_credits" ? (
+				<p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">
+					{t("presetTemplate.runNoCredits")}{" "}
+					<Link href="/settings/credits" className="font-medium underline underline-offset-4">{t("presetTemplate.runAddCredits")}</Link>
+				</p>
 			) : null}
 			{state.status === "failed" ? (
 				<p className="whitespace-pre-wrap rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">{state.message}</p>

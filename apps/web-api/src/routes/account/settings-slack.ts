@@ -23,6 +23,7 @@ import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context
 import { invalidateGatewayKey } from "./gateway-invalidation";
 import { generateKey, hmac } from "./settings-keys";
 import {
+	AUTO_MODEL_ID,
 	nanosToUsd,
 	parseInstallSettings,
 	parseSettingsPatch,
@@ -69,8 +70,8 @@ const OAUTH_CODE_PATTERN = /^[A-Za-z0-9._-]{1,512}$/;
 
 const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "team_name", "enterprise_id", "bot_user_id", "key_id", "guardrail_id",
-	"model", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids", "plan_people", "over_plan",
-	"max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
 	"installed_by", "installed_at", "uninstalled_at", "updated_at",
 ].join(",");
 const CUSTOM_APP_COLUMNS = "id,slack_app_id,client_id,created_at,updated_at";
@@ -89,6 +90,9 @@ type InstallationRow = {
 	key_id: string | null;
 	guardrail_id: string | null;
 	model: string;
+	model_choice_enabled: boolean;
+	allowed_models: string[] | null;
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: string;
 	usage_data_mode: string;
@@ -112,15 +116,15 @@ type CustomAppRow = { id: string; slack_app_id: string; client_id: string; creat
 
 type InstallState = { workspace_id: string; user_id: string; settings: Body };
 
-function json(c: any, body: unknown, status = 200) {
+export function json(c: any, body: unknown, status = 200) {
 	return c.json(body, status, PRIVATE_NO_STORE_HEADERS);
 }
 
-function badRequest(c: any, message: string) {
-	return json(c, { error: "bad_request", message }, 400);
+export function badRequest(c: any, message: string, code = "bad_request") {
+	return json(c, { error: code, message }, 400);
 }
 
-async function readBody(c: any): Promise<Body> {
+export async function readBody(c: any): Promise<Body> {
 	const body = await c.req.json().catch(() => null);
 	return body && typeof body === "object" && !Array.isArray(body) ? body as Body : {};
 }
@@ -129,7 +133,7 @@ function isManager(context: AccountWorkspaceContext): boolean {
 	return context.isOwner || ["owner", "admin"].includes(context.role.toLowerCase());
 }
 
-async function managerContext(c: any, workspaceId: unknown) {
+export async function managerContext(c: any, workspaceId: unknown) {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(workspaceId ?? "") });
 	if (!context) return { response: json(c, { error: "forbidden" }, 403) } as const;
 	if (!isManager(context)) return { response: json(c, { error: "forbidden", message: "Only workspace owners and admins can manage the Slack agent" }, 403) } as const;
@@ -191,7 +195,7 @@ async function customAppCredentials(env: Env, client: DataClient, workspaceId: s
 	return { clientId: String(result.data.client_id), clientSecret: secrets.client_secret, slackAppId: String(result.data.slack_app_id) };
 }
 
-async function liveInstallation(client: DataClient, workspaceId: string, columns = INSTALLATION_COLUMNS) {
+export async function liveInstallation(client: DataClient, workspaceId: string, columns = INSTALLATION_COLUMNS) {
 	const result = await client.from("slack_installations").select(columns)
 		.eq("workspace_id", workspaceId).neq("status", "uninstalled").limit(1).maybeSingle();
 	return { error: result.error, row: (result.data ?? null) as unknown as InstallationRow | null };
@@ -255,6 +259,20 @@ function autoRoutingUnavailable(c: any) {
 	return json(c, { error: "auto_routing_unavailable", message: "Auto isn't available to this workspace. Choose a specific model" }, 400);
 }
 
+/**
+ * The allowed models that aren't public catalogue models (not in v2_models, hidden
+ * or disabled). Auto isn't a catalogue model; it is checked on its own. Null if the
+ * catalogue can't be read.
+ */
+async function unknownModels(client: DataClient, ids: string[]): Promise<string[] | null> {
+	const wanted = ids.filter((id) => id !== AUTO_MODEL_ID);
+	if (!wanted.length) return [];
+	const result = await client.from("v2_models").select("model_slug").in("model_slug", wanted).eq("hidden", false).neq("status", "disabled");
+	if (result.error) return null;
+	const known = new Set((result.data ?? []).map((row: any) => String(row.model_slug)));
+	return wanted.filter((id) => !known.has(id));
+}
+
 function settingsView(row: InstallationRow, keyLimitNanos: number) {
 	return {
 		plan_people: row.plan_people,
@@ -263,6 +281,9 @@ function settingsView(row: InstallationRow, keyLimitNanos: number) {
 		monthly_cap_usd: nanosToUsd(row.monthly_cap_nanos),
 		answers_per_person_hour: row.answers_per_person_hour,
 		model: row.model,
+		model_choice_enabled: row.model_choice_enabled,
+		allowed_models: row.allowed_models ?? [],
+		memory_enabled: row.memory_enabled,
 		instructions: row.instructions,
 		access_mode: row.access_mode,
 		usage_data_mode: row.usage_data_mode,
@@ -292,7 +313,7 @@ function customAppView(row: CustomAppRow | null) {
 	return row ? { id: row.id, slack_app_id: row.slack_app_id, client_id: row.client_id, created_at: row.created_at, updated_at: row.updated_at } : null;
 }
 
-async function auditSlack(c: any, context: AccountWorkspaceContext, action: string, target: { id: string; name?: string | null; type?: string }, metadata: Record<string, unknown>) {
+export async function auditSlack(c: any, context: AccountWorkspaceContext, action: string, target: { id: string; name?: string | null; type?: string }, metadata: Record<string, unknown>) {
 	await recordWorkspaceAuditEvent(context.client as never, {
 		workspaceId: context.workspaceId,
 		actorUserId: context.user.id,
@@ -653,7 +674,7 @@ accountSettingsSlackRouter.patch("/slack", bodyLimit({ maxSize: 128 * 1024 }), a
 	const access = await managerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
 	const parsed = parseSettingsPatch(body);
-	if (parsed.ok === false) return badRequest(c, parsed.message);
+	if (parsed.ok === false) return badRequest(c, parsed.message, parsed.code);
 	const { update, keyMonthlyLimitNanos, status, changedFields } = parsed.value;
 	const { context } = access;
 	const live = await liveInstallation(context.client, context.workspaceId);
@@ -682,6 +703,23 @@ accountSettingsSlackRouter.patch("/slack", bodyLimit({ maxSize: 128 * 1024 }), a
 	if (update.model !== undefined && isAutoRoutingModel(update.model) && !isAutoRoutingModel(current.model)
 		&& !(await agentAutoRouting(c.env, context, current))) {
 		return autoRoutingUnavailable(c);
+	}
+	// Model choice: switched on needs a model to choose, and each one must be a catalogue model.
+	const allowedModels = update.allowed_models ?? current.allowed_models ?? [];
+	if ((update.model_choice_enabled ?? current.model_choice_enabled) && !allowedModels.length) {
+		return badRequest(c, "Choose at least one model people can choose, or turn model choice off", "model_choice_needs_models");
+	}
+	if (update.allowed_models !== undefined) {
+		const unknown = await unknownModels(context.client, update.allowed_models);
+		if (unknown === null) return json(c, { error: "settings_unavailable" }, 503);
+		if (unknown.length) {
+			return json(c, { error: "unknown_models", message: `These aren't models in the Phaseo catalogue: ${unknown.join(", ")}`, models: unknown }, 400);
+		}
+		// Like the model: adding Auto needs access to it; an allowlist that already has it keeps it.
+		if (update.allowed_models.includes(AUTO_MODEL_ID) && !(current.allowed_models ?? []).includes(AUTO_MODEL_ID)
+			&& !(await agentAutoRouting(c.env, context, current))) {
+			return autoRoutingUnavailable(c);
+		}
 	}
 
 	let keyLimit: number;
@@ -752,7 +790,8 @@ accountSettingsSlackRouter.delete("/slack", async (c) => {
 		if (disabled.error) return json(c, { error: "key_write_failed" }, 503);
 		c.executionCtx.waitUntil(invalidateKeyQuietly(c.env, current.key_id));
 	}
-	// The row stays for billing history (its months and charges reference it).
+	// The row stays for billing history (its months and charges reference it). The
+	// same update deletes the agent's notes and saved skills (delete_slack_agent_memory).
 	const result = await context.client.from("slack_installations").update({ status: "uninstalled", uninstalled_at: now })
 		.eq("id", current.id).eq("workspace_id", context.workspaceId).neq("status", "uninstalled").select("id").maybeSingle();
 	if (result.error) return json(c, { error: "settings_write_failed" }, 503);

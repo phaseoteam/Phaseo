@@ -23,8 +23,8 @@ export type SlackAppContext = {
 
 export const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "enterprise_id", "bot_user_id", "secrets_ciphertext", "key_id",
-	"model", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids", "plan_people", "over_plan",
-	"max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
 ].join(",");
 
 export type Installation = {
@@ -37,6 +37,11 @@ export type Installation = {
 	secrets_ciphertext: string;
 	key_id: string | null;
 	model: string;
+	/** People may start a message with `with <model>:` to have one of allowed_models answer it (model-choice.ts). */
+	model_choice_enabled: boolean;
+	allowed_models: string[];
+	/** The agent's notes, pins and to-dos (memory.ts). Off: none are offered or shown; saved skills still are. */
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: "everyone" | "linked";
 	usage_data_mode: "off" | "dm" | "dm_and_channels";

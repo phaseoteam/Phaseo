@@ -4701,6 +4701,272 @@ module Phaseo
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
     ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :fusion_requests, :image_generation_requests, :search_models_requests, :subagent_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    # @!attribute [rw] action
+    #   @return [String]
+    # @!attribute [rw] base_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] base_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] base_kind
+    #   @return [String, nil]
+    # @!attribute [rw] base_ref
+    #   @return [String, nil]
+    # @!attribute [rw] block_at_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_at_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] block_at_percent
+    #   @return [Integer]
+    # @!attribute [rw] block_free_models
+    #   @return [Boolean]
+    # @!attribute [rw] cooldown_minutes
+    #   @return [Integer]
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] destination_ids
+    #   @return [Array<String>]
+    # @!attribute [rw] enabled
+    #   @return [Boolean]
+    # @!attribute [rw] evaluated
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] metric
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] period
+    #   @return [String]
+    # @!attribute [rw] runway_days
+    #   @return [Integer, nil]
+    # @!attribute [rw] scope_id
+    #   @return [String, nil]
+    # @!attribute [rw] scope_type
+    #   @return [String]
+    # @!attribute [rw] spike_floor_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] spike_floor_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] spike_multiplier
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] threshold_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_percents
+    #   @return [Array<Integer>, nil]
+    # @!attribute [rw] time_zone
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] window_hours
+    #   @return [Integer, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    SpendRule = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :created_at, :created_by, :destination_ids, :enabled, :evaluated, :id, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :updated_at, :window_hours, :workspace_id, keyword_init: true)
+    SpendRuleAction = Object
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendRuleDeleteResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] events
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] has_more
+    #   @return [Boolean]
+    # @!attribute [rw] periods
+    #   @return [Array<Hash{String => Object}>]
+    SpendRuleHistory = Struct.new(:events, :has_more, :periods, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendRuleHistoryResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] action
+    #   @return [String, nil]
+    # @!attribute [rw] base_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] base_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] base_kind
+    #   @return [String, nil]
+    # @!attribute [rw] base_ref
+    #   @return [String, nil]
+    # @!attribute [rw] block_at_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_at_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] block_at_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_free_models
+    #   @return [Boolean, nil]
+    # @!attribute [rw] cooldown_minutes
+    #   @return [Integer, nil]
+    # @!attribute [rw] destination_ids
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metric
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] period
+    #   @return [String]
+    # @!attribute [rw] runway_days
+    #   @return [Integer, nil]
+    # @!attribute [rw] scope_id
+    #   @return [String, nil]
+    # @!attribute [rw] scope_type
+    #   @return [String, nil]
+    # @!attribute [rw] spike_floor_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] spike_floor_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] spike_multiplier
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] threshold_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_percents
+    #   @return [Array<Integer>, nil]
+    # @!attribute [rw] time_zone
+    #   @return [String, nil]
+    # @!attribute [rw] window_hours
+    #   @return [Integer, nil]
+    SpendRuleInput = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :destination_ids, :enabled, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :window_hours, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] max_rules
+    #   @return [Integer]
+    SpendRuleListResponse = Struct.new(:data, :max_rules, keyword_init: true)
+    SpendRuleMetric = Object
+    SpendRulePeriod = Object
+    # @!attribute [rw] alert
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] base_kind
+    #   @return [String, nil]
+    # @!attribute [rw] base_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] base_ref
+    #   @return [String, nil]
+    # @!attribute [rw] base_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] block_at_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_at_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] computed_at
+    #   @return [String]
+    # @!attribute [rw] evaluated
+    #   @return [Boolean]
+    # @!attribute [rw] metric
+    #   @return [String]
+    # @!attribute [rw] next_threshold
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] percent
+    #   @return [Float, nil]
+    # @!attribute [rw] period
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] reached_threshold_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] rule_id
+    #   @return [String]
+    # @!attribute [rw] state
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] threshold_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] threshold_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_percents
+    #   @return [Array<Integer>, nil]
+    # @!attribute [rw] time_zone
+    #   @return [String]
+    # @!attribute [rw] value_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] value_usd
+    #   @return [Float, nil]
+    SpendRulePreview = Struct.new(:alert, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :metric, :next_threshold, :percent, :period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendRulePreviewResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendRuleResponse = Struct.new(:data, keyword_init: true)
+    SpendRuleScope = Object
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendRuleTestResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] delivered
+    #   @return [Integer]
+    # @!attribute [rw] deliveries
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] failed
+    #   @return [Integer]
+    # @!attribute [rw] message
+    #   @return [String]
+    # @!attribute [rw] rule_id
+    #   @return [String]
+    # @!attribute [rw] rule_name
+    #   @return [String]
+    # @!attribute [rw] source
+    #   @return [String]
+    # @!attribute [rw] test
+    #   @return [Boolean]
+    # @!attribute [rw] title
+    #   @return [String]
+    SpendRuleTestResult = Struct.new(:delivered, :deliveries, :failed, :message, :rule_id, :rule_name, :source, :test, :title, keyword_init: true)
+    # @!attribute [rw] action
+    #   @return [String, nil]
+    # @!attribute [rw] base_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] base_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] base_kind
+    #   @return [String, nil]
+    # @!attribute [rw] base_ref
+    #   @return [String, nil]
+    # @!attribute [rw] block_at_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_at_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] block_at_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] block_free_models
+    #   @return [Boolean, nil]
+    # @!attribute [rw] cooldown_minutes
+    #   @return [Integer, nil]
+    # @!attribute [rw] destination_ids
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metric
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] period
+    #   @return [String, nil]
+    # @!attribute [rw] runway_days
+    #   @return [Integer, nil]
+    # @!attribute [rw] scope_id
+    #   @return [String, nil]
+    # @!attribute [rw] scope_type
+    #   @return [String, nil]
+    # @!attribute [rw] spike_floor_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] spike_floor_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] spike_multiplier
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_amount_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] threshold_amount_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] threshold_percents
+    #   @return [Array<Integer>, nil]
+    # @!attribute [rw] time_zone
+    #   @return [String, nil]
+    # @!attribute [rw] window_hours
+    #   @return [Integer, nil]
+    SpendRuleUpdateInput = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :destination_ids, :enabled, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :window_hours, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type

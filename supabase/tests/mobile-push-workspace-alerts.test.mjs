@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -22,6 +22,14 @@ const newFiles = schemaFiles.slice(0, 6);
 // as it was, so the behaviour below is unchanged.
 const lowBalanceFile = '../migrations/20261019194033_mobile_push_low_balance_sweep.sql';
 const redefinedLater = /(workspace_push_message|capture_workspace_notification_events)\.sql$/;
+// capture_workspace_notification_events is redefined by later migrations (spend alerts); its
+// schema file must match the newest migration that defines it.
+const newestDefinition = async signature => {
+    const names = (await readdir(new URL('../migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort();
+    let found = '';
+    for (const name of names) { const sql = await read(`../migrations/${name}`); if (sql.includes(signature)) found = sql; }
+    return found;
+};
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -59,7 +67,10 @@ try {
     const v3 = await read(v3File);
     const lowBalance = await read(lowBalanceFile);
     for (const file of schemaFiles) {
-        assert.ok((redefinedLater.test(file) ? lowBalance : v3).includes((await read(file)).trim()), `${file} is in the migration`);
+        const carrier = file.endsWith('capture_workspace_notification_events.sql')
+            ? await newestDefinition('CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events')
+            : redefinedLater.test(file) ? lowBalance : v3;
+        assert.ok(carrier.includes((await read(file)).trim()), `${file} is in the migration`);
     }
     const deliveries = await read('../schemas/public/tables/mobile_push_deliveries.sql');
     for (const text of [

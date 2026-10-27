@@ -23,6 +23,7 @@
 		"VIDEO_API_ENABLED": "false",
 		"EMAIL_OUTBOX_DRAIN_ENABLED": "false",
 		"PRICING_MONITOR_ENABLED": "false",
+		"SPEND_RULES_ENABLED": "false",
 		"ENTERPRISE_INVOICING_ENABLED": "false",
 
 		// Point each provider at a synthetic scenario while retaining its real adapter.

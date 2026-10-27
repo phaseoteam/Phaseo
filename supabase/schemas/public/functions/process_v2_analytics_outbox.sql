@@ -269,6 +269,17 @@ begin
     v_workspace_hours := v_workspace_hours + 1;
   end loop;
 
+  -- Spend rules: mark each rebuilt workspace that has an enabled rule, in one statement, for
+  -- public.sweep_spend_rules. A row already there stays as it is.
+  insert into public.workspace_spend_rule_dirty (workspace_id)
+  select batch.workspace_id
+  from (select distinct rollup_batch.workspace_id from pg_temp.v2_rollup_batch rollup_batch) batch
+  where exists (
+    select 1 from public.workspace_spend_rules rule
+    where rule.workspace_id = batch.workspace_id and rule.enabled and rule.deleted_at is null
+  )
+  on conflict (workspace_id) do nothing;
+
   for grain in
     select distinct
       batch.occurred_at::date as usage_date,
@@ -486,7 +497,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour, and rebuilt workspaces with enabled spend rules are marked in workspace_spend_rule_dirty. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 

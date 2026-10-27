@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Save the preset to run it.",
 		"runUnsaved": "Save your template changes to run them.",
 		"runFailed": "The request failed ({status}).",
+		"runNoCredits": "Your workspace has no credits left, so the preset can't run.",
+		"runAddCredits": "Add credits",
 		"replyMeta": "{model} · {input} input and {output} output tokens",
 		"replyEmpty": "The model returned no text.",
 		"issuesTitle": "Fix these to see the result"
@@ -6847,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "Agent",
+			"modelChoice": "Model choice",
 			"access": "Who can use it",
 			"usageData": "Usage data",
 			"limits": "Limits",
@@ -6867,6 +6870,20 @@
 			"label": "Instructions",
 			"help": "Extra guidance the agent follows in every answer, such as tone or what to focus on.",
 			"placeholder": "Keep answers short. Link to our handbook when it helps."
+		},
+		"modelChoice": {
+			"description": "Let people pick the model for one message from the models you allow. Other messages use the agent's model.",
+			"enable": "Let people choose a model per message",
+			"enableHelp": "People put {prefix} at the start of a message, naming an allowed model by its name or ID. If the model isn't allowed, they get a private reply listing the choices, and no answer.",
+			"models": "Models people can choose ({count} of {max})",
+			"add": "Add a model",
+			"remove": "Remove {model}",
+			"auto": "Auto",
+			"full": "You can allow up to {max} models. Remove one to add another.",
+			"includeAuto": "Include Auto",
+			"includeAutoHelp": "People can choose Auto, and Phaseo picks a suitable model for that message.",
+			"autoUnavailable": "Auto isn't available to this workspace, so messages that choose it can't be answered. Turn off Include Auto.",
+			"help": "Each answer keeps its {cost} cost limit and {steps}-step limit, whichever model answers. Its footer names the model that answered."
 		},
 		"access": {
 			"everyone": "Everyone in Slack",
@@ -6982,6 +6999,70 @@
 			"removeDescription": "Phaseo deletes its saved details. Later installs use Phaseo's Slack app.",
 			"notAvailable": "Using your own Slack app isn't available yet."
 		},
+		"memory": {
+			"title": "Memory and skills",
+			"description": "Notes, pins and to-dos the agent saves when people ask it to remember something, and skills people ask it to save. They are short notes in the agent's own words, not copies of Slack messages. Uninstalling deletes them all.",
+			"enable": "Let the agent keep notes",
+			"enableHelp": "Notes, pins and to-dos it saves when asked and sees in later answers. Turned off, it saves and sees none. Notes already saved are kept, and you can still see and delete them here. Skills work either way.",
+			"externalHelp": "People from other companies (Slack Connect) only see and save notes for their own conversation, never the whole workspace's.",
+			"turnedOn": "The agent keeps notes again.",
+			"turnedOff": "The agent no longer keeps notes. Saved notes are kept.",
+			"loading": "Loading…",
+			"notesTitle": "Notes, pins and to-dos",
+			"skillsTitle": "Skills",
+			"used": "{used} of {limit} saved",
+			"filter": "Show",
+			"filters": {
+				"all": "All",
+				"note": "Notes",
+				"pin": "Pins",
+				"todo": "To-dos"
+			},
+			"kinds": {
+				"note": "Note",
+				"pin": "Pin",
+				"todo": "To-do"
+			},
+			"columns": {
+				"note": "Note",
+				"kind": "Type",
+				"where": "Where",
+				"saved": "Saved",
+				"actions": "Actions"
+			},
+			"workspaceWide": "Whole workspace",
+			"channel": "Channel {id}",
+			"directMessage": "Direct message {id}",
+			"by": "by {user}",
+			"doneOn": "Done {date}",
+			"expires": "Kept until {date}",
+			"noNotes": "Nothing saved yet. People can ask the agent in Slack to remember, pin or track something.",
+			"noNotesOfKind": "Nothing of this type saved.",
+			"noSkills": "No skills saved yet. People can ask the agent in Slack to save one for a task they repeat.",
+			"skillMeta": "Saved by {user} · updated {date}",
+			"skillName": "Name",
+			"skillDescription": "Description",
+			"skillInstructions": "Instructions",
+			"edit": "Edit",
+			"delete": "Delete",
+			"saveSkill": "Save skill",
+			"skillSaved": "Skill saved.",
+			"skillDeleted": "Skill deleted.",
+			"noteDeleted": "Note deleted.",
+			"deleteNote": "Delete note",
+			"deleteNoteTitle": "Delete this note?",
+			"deleteNoteDescription": "The agent forgets it straight away. This can't be undone.",
+			"deleteSkillTitle": "Delete {name}?",
+			"deleteSkillDescription": "The agent can no longer use it. This can't be undone.",
+			"problems": {
+				"required": "This can't be empty.",
+				"tooLong": "Use at most {max} characters."
+			},
+			"errors": {
+				"memoryNotFound": "It was already deleted. Reload to see what's left.",
+				"skillNameTaken": "Another saved skill already has this name."
+			}
+		},
 		"uninstall": {
 			"description": "Removes the agent from Slack and deletes its API key. Past charges stay in your billing history.",
 			"button": "Uninstall",
@@ -7000,6 +7081,8 @@
 			"answersPerHour": "Enter a whole number from 1 to {max}.",
 			"tokenLimit": "Enter an amount up to {max}, or leave it blank for no limit.",
 			"model": "Choose a model.",
+			"allowedModelsEmpty": "Add at least one model, or turn off model choice.",
+			"tooManyModels": "Allow at most {max} models.",
 			"instructions": "Keep instructions to {max} characters or fewer.",
 			"channelIds": "Enter Slack channel IDs such as C0123ABCD, separated by commas.",
 			"tooManyChannels": "List at most {max} channels.",
@@ -7035,6 +7118,9 @@
 			"sessionMismatch": "Finish the install signed in as the admin who started it.",
 			"installFailed": "The install didn't finish, and nothing was set up. Try again.",
 			"autoUnavailable": "Auto isn't available to this workspace. Choose a specific model.",
+			"unknownModels": "Some of these models aren't in the Phaseo catalogue any more. Remove them and save again.",
+			"modelChoiceNeedsModels": "Add at least one model people can choose, or turn off model choice.",
+			"tooManyModels": "You can allow at most {max} models.",
 			"invalid": "Check the settings and try again.",
 			"invalidWithMessage": "Check the settings and try again: {message}",
 			"unavailable": "Phaseo couldn't do that right now. Try again in a moment.",

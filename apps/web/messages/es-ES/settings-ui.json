@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Guarda el preajuste para ejecutarlo.",
 		"runUnsaved": "Guarda los cambios de la plantilla para ejecutarlos.",
 		"runFailed": "La solicitud ha fallado ({status}).",
+		"runNoCredits": "Tu espacio de trabajo no tiene créditos, así que el preajuste no puede ejecutarse.",
+		"runAddCredits": "Añadir créditos",
 		"replyMeta": "{model} · {input} tokens de entrada y {output} de salida",
 		"replyEmpty": "El modelo no devolvió texto.",
 		"issuesTitle": "Corrige esto para ver el resultado"
@@ -6847,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "Agente",
+			"modelChoice": "Elección de modelo",
 			"access": "Quién puede usarlo",
 			"usageData": "Datos de uso",
 			"limits": "Límites",
@@ -6867,6 +6870,20 @@
 			"label": "Instrucciones",
 			"help": "Indicaciones adicionales que el agente sigue en cada respuesta, como el tono o en qué centrarse.",
 			"placeholder": "Responde de forma breve. Enlaza nuestro manual cuando ayude."
+		},
+		"modelChoice": {
+			"description": "Deja que cada persona elija el modelo de un mensaje entre los modelos que permitas. Los demás mensajes usan el modelo del agente.",
+			"enable": "Permitir elegir un modelo por mensaje",
+			"enableHelp": "Las personas empiezan un mensaje con {prefix} e indican un modelo permitido por su nombre o ID. Si el modelo no está permitido, reciben una respuesta privada con las opciones y el mensaje no se responde.",
+			"models": "Modelos que se pueden elegir ({count} de {max})",
+			"add": "Añadir un modelo",
+			"remove": "Quitar {model}",
+			"auto": "Automático",
+			"full": "Puedes permitir hasta {max} modelos. Quita uno para añadir otro.",
+			"includeAuto": "Incluir «Automático»",
+			"includeAutoHelp": "Las personas pueden elegir «Automático» y Phaseo elige un modelo adecuado para ese mensaje.",
+			"autoUnavailable": "«Automático» no está disponible en este espacio de trabajo, así que los mensajes que lo elijan no se pueden responder. Desactiva Incluir «Automático».",
+			"help": "Cada respuesta mantiene su límite de coste de {cost} y su límite de {steps} pasos, sea cual sea el modelo que responda. Su pie indica el modelo que respondió."
 		},
 		"access": {
 			"everyone": "Todos en Slack",
@@ -6982,6 +6999,70 @@
 			"removeDescription": "Phaseo elimina sus datos guardados. Las próximas instalaciones usarán la aplicación de Slack de Phaseo.",
 			"notAvailable": "Usar tu propia aplicación de Slack aún no está disponible."
 		},
+		"memory": {
+			"title": "Memoria y habilidades",
+			"description": "Notas, notas fijadas y tareas que el agente guarda cuando alguien le pide que recuerde algo, y habilidades que guarda cuando se lo piden. Son notas breves con sus propias palabras, no copias de mensajes de Slack. Al desinstalarlo se eliminan todas.",
+			"enable": "Permitir que el agente guarde notas",
+			"enableHelp": "Notas, notas fijadas y tareas que guarda cuando se lo piden y que ve en respuestas posteriores. Si lo desactivas, no guarda ni ve ninguna. Las notas ya guardadas se conservan y puedes seguir viéndolas y eliminándolas aquí. Las habilidades funcionan en ambos casos.",
+			"externalHelp": "Las personas de otras empresas (Slack Connect) solo ven y guardan notas de su propia conversación, nunca las de todo el espacio de trabajo.",
+			"turnedOn": "El agente vuelve a guardar notas.",
+			"turnedOff": "El agente ya no guarda notas. Las notas guardadas se conservan.",
+			"loading": "Cargando…",
+			"notesTitle": "Notas, fijadas y tareas",
+			"skillsTitle": "Habilidades",
+			"used": "{used} de {limit} guardadas",
+			"filter": "Mostrar",
+			"filters": {
+				"all": "Todo",
+				"note": "Notas",
+				"pin": "Fijadas",
+				"todo": "Tareas"
+			},
+			"kinds": {
+				"note": "Nota",
+				"pin": "Fijada",
+				"todo": "Tarea"
+			},
+			"columns": {
+				"note": "Nota",
+				"kind": "Tipo",
+				"where": "Dónde",
+				"saved": "Guardada",
+				"actions": "Acciones"
+			},
+			"workspaceWide": "Todo el espacio de trabajo",
+			"channel": "Canal {id}",
+			"directMessage": "Mensaje directo {id}",
+			"by": "por {user}",
+			"doneOn": "Hecha el {date}",
+			"expires": "Se guarda hasta el {date}",
+			"noNotes": "Todavía no hay nada guardado. En Slack se le puede pedir al agente que recuerde algo, lo fije o lo apunte como tarea.",
+			"noNotesOfKind": "No hay nada guardado de este tipo.",
+			"noSkills": "Todavía no hay habilidades guardadas. En Slack se le puede pedir al agente que guarde una para una tarea que se repite.",
+			"skillMeta": "Guardada por {user} · actualizada el {date}",
+			"skillName": "Nombre",
+			"skillDescription": "Descripción",
+			"skillInstructions": "Instrucciones",
+			"edit": "Editar",
+			"delete": "Eliminar",
+			"saveSkill": "Guardar habilidad",
+			"skillSaved": "Habilidad guardada.",
+			"skillDeleted": "Habilidad eliminada.",
+			"noteDeleted": "Nota eliminada.",
+			"deleteNote": "Eliminar nota",
+			"deleteNoteTitle": "¿Eliminar esta nota?",
+			"deleteNoteDescription": "El agente la olvida al instante. No se puede deshacer.",
+			"deleteSkillTitle": "¿Eliminar {name}?",
+			"deleteSkillDescription": "El agente ya no podrá usarla. No se puede deshacer.",
+			"problems": {
+				"required": "No puede estar vacío.",
+				"tooLong": "Usa {max} caracteres como máximo."
+			},
+			"errors": {
+				"memoryNotFound": "Ya se había eliminado. Recarga para ver lo que queda.",
+				"skillNameTaken": "Otra habilidad guardada ya tiene este nombre."
+			}
+		},
 		"uninstall": {
 			"description": "Quita el agente de Slack y elimina su clave de API. Los cargos anteriores se mantienen en tu historial de facturación.",
 			"button": "Desinstalar",
@@ -7000,6 +7081,8 @@
 			"answersPerHour": "Introduce un número entero entre 1 y {max}.",
 			"tokenLimit": "Introduce un importe de hasta {max} o déjalo vacío para no poner límite.",
 			"model": "Elige un modelo.",
+			"allowedModelsEmpty": "Añade al menos un modelo o desactiva la elección de modelo.",
+			"tooManyModels": "Permite como máximo {max} modelos.",
 			"instructions": "Limita las instrucciones a {max} caracteres.",
 			"channelIds": "Introduce ID de canales de Slack como C0123ABCD, separados por comas.",
 			"tooManyChannels": "Indica como máximo {max} canales.",
@@ -7035,6 +7118,9 @@
 			"sessionMismatch": "Termina la instalación con la sesión del administrador que la empezó.",
 			"installFailed": "La instalación no terminó y no se configuró nada. Vuelve a intentarlo.",
 			"autoUnavailable": "«Automático» no está disponible en este espacio de trabajo. Elige un modelo concreto.",
+			"unknownModels": "Algunos de estos modelos ya no están en el catálogo de Phaseo. Quítalos y vuelve a guardar.",
+			"modelChoiceNeedsModels": "Añade al menos un modelo que se pueda elegir o desactiva la elección de modelo.",
+			"tooManyModels": "Puedes permitir como máximo {max} modelos.",
 			"invalid": "Revisa la configuración y vuelve a intentarlo.",
 			"invalidWithMessage": "Revisa la configuración y vuelve a intentarlo: {message}",
 			"unavailable": "Phaseo no ha podido hacerlo ahora. Vuelve a intentarlo en un momento.",

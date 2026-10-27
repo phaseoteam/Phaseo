@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -18,6 +18,14 @@ const schemaFiles = [
     '../schemas/public/functions/sweep_low_balance_pushes.sql',
 ];
 const newFiles = [schemaFiles[0], schemaFiles[3]];
+// capture_workspace_notification_events is redefined by later migrations (spend alerts); its
+// schema file must match the newest migration that defines it.
+const newestDefinition = async signature => {
+    const names = (await readdir(new URL('../migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort();
+    let found = '';
+    for (const name of names) { const sql = await read(`../migrations/${name}`); if (sql.includes(signature)) found = sql; }
+    return found;
+};
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -68,7 +76,8 @@ const median = values => [...values].sort((a, b) => a - b)[Math.floor(values.len
 try {
     // The migration carries every schema file it added or changed, and the manifest lists the new ones.
     const v5 = await read(v5File);
-    for (const file of schemaFiles) assert.ok(v5.includes((await read(file)).trim()), `${file} is in the migration`);
+    const captureMigration = await newestDefinition('CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events');
+    for (const file of schemaFiles) assert.ok((file === schemaFiles[2] ? captureMigration : v5).includes((await read(file)).trim()), `${file} is in the migration`);
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of newFiles) {
         const path = file.replace('../schemas/', '');

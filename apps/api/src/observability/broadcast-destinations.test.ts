@@ -65,7 +65,12 @@ describe("Broadcast destination registry", () => {
 				compression: "gzip",
 				resourceAttributes: { "vendor.project": "a b/c" },
 				attributeAliases: { "vendor.input": "gen_ai.input.messages" },
+				attributeRenames: {},
+				resourceAliases: {},
+				indexedMessages: false,
 				maxAttributeLength: 5,
+				maxAttributeBytes: null,
+				maxRequestBytes: null,
 			});
 		});
 
