@@ -1,7 +1,7 @@
 import { copyFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { isTreeId, type CheckpointChange } from "../shared/gitDiff";
+import { isTreeId, type CheckpointChange, type TurnFileChange } from "../shared/gitDiff";
 import { isRepository, runGit } from "./gitDiffScopes";
 import { span } from "./diagnostics/tracer";
 
@@ -61,4 +61,14 @@ export async function restoreCheckpoint(root: string, tree: string): Promise<Che
 	if (restored.length) await runGit(root, ["restore", `--source=${tree}`, "--worktree", "--pathspec-from-file=-", "--pathspec-file-nul"], { input: restored.map(file => `:(literal)${file}`).join("\0") });
 	for (const change of changes) if (change.status === "added") await rm(path.join(root, change.path), { force: true });
 	return changes;
+}
+
+/** Files a turn changed between its snapshots, with lines added and removed (-1 for binary files): the chat's changed-files row. */
+export async function turnChanges(root: string, from: string, to: string): Promise<TurnFileChange[]> {
+	if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot.");
+	const output = await runGit(root, ["diff", "--numstat", "--no-renames", "--relative", "-z", from, to]);
+	return output.split("\0").flatMap(entry => {
+		const [added, removed, ...name] = entry.split("\t"), file = name.join("\t");
+		return file ? [{ path: file, additions: added === "-" ? -1 : Number(added), deletions: removed === "-" ? -1 : Number(removed) }] : [];
+	});
 }

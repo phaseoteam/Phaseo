@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DiffCodeView, type DiffViewFile, type DiffViewHandle } from "./DiffCodeView";
 import { DiffFileTree } from "./DiffFileTree";
-import { onProjectChange, openProjectFile } from "./events";
+import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, type OpenTurnDiffDetail } from "./events";
 import { DiffLoadingState, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
 
 type Loaded = { key: string; result: GitDiffResult };
@@ -88,9 +88,15 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const { overview } = useWorkspace();
 	const theme = useThemeType();
 	const scopeKey = taskId ?? `project:${projectId}`;
-	const [selections, setSelections] = usePersistedState<Record<string, DiffSelection>>("phaseo.desktop.diffSelection", {});
+	const [selections, setSelections] = usePersistedState<Record<string, DiffSelection>>(DIFF_SELECTION_KEY, {});
 	const selection: DiffSelection = selections[scopeKey] ?? { kind: "branch" };
 	const select = (next: DiffSelection) => setSelections(current => Object.fromEntries(Object.entries({ ...current, [scopeKey]: next }).slice(-200)));
+	// Open diff under a turn in the chat picks that turn.
+	useEffect(() => {
+		const open = (event: Event) => { const detail = (event as CustomEvent<OpenTurnDiffDetail>).detail; if (detail?.taskId === taskId) select({ kind: "turn", messageId: detail.messageId }); };
+		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
+		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
+	});
 	const [layout, setLayout] = usePersistedState<"unified" | "split">("phaseo.desktop.diffLayout", "unified");
 	const [wrap, setWrap] = usePersistedState("phaseo.desktop.diffWrap", false);
 	const [ignoreWhitespace, setIgnoreWhitespace] = usePersistedState("phaseo.desktop.diffIgnoreWhitespace", false);

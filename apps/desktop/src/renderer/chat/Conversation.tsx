@@ -18,6 +18,7 @@ import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
 import { QuoteToolbar } from "./QuoteToolbar";
+import { TurnChanges } from "./TurnChanges";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -178,10 +179,12 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 				{context !== undefined && <span title="How much of the model's context window the conversation used at the end of this turn. Phaseo compacts it automatically when it nears the limit." className={cn("font-mono text-[11px]", context >= 0.8 ? "text-warning" : "text-muted-foreground")}>· {Math.round(context * 100)}% of context</span>}
 			</div>}
 		</div>}
+		{/* Code turns that changed files say so under the answer, with the way into the Diff pane. */}
+		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 	</div>;
 }, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
-	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness);
+	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
 export function Conversation({ task, onAttachment, onBranch, onRewind, onRegenerate, children, compact, className }: { task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; onRegenerate?: (message: Message) => void; children?: ReactNode; compact?: boolean; className?: string }) {
 	const host = useRef<HTMLDivElement>(null);

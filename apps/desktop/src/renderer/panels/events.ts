@@ -12,3 +12,14 @@ export function onProjectChange(projectId: string, listener: () => void) {
 	window.addEventListener(PROJECT_CHANGED_EVENT, handle);
 	return () => window.removeEventListener(PROJECT_CHANGED_EVENT, handle);
 }
+
+/** Where the Diff pane keeps each chat's chosen scope. */
+export const DIFF_SELECTION_KEY = "phaseo.desktop.diffSelection";
+/** Asks the pane to show the Diff at one turn of a chat (the changed-files row under a turn sends it). */
+export const OPEN_TURN_DIFF_EVENT = "phaseo:open-turn-diff";
+export type OpenTurnDiffDetail = { taskId: string; messageId: string };
+export function openTurnDiff(detail: OpenTurnDiffDetail) {
+	// Saved first, so a Diff pane that opens now starts at this turn; an open one follows the event.
+	try { const saved = JSON.parse(localStorage.getItem(DIFF_SELECTION_KEY) ?? "{}") as Record<string, unknown>; localStorage.setItem(DIFF_SELECTION_KEY, JSON.stringify({ ...saved, [detail.taskId]: { kind: "turn", messageId: detail.messageId } })); } catch { /* The open pane still follows the event. */ }
+	window.dispatchEvent(new CustomEvent<OpenTurnDiffDetail>(OPEN_TURN_DIFF_EVENT, { detail }));
+}

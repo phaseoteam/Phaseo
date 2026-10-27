@@ -14,7 +14,7 @@ import { BrowserSurface } from "../views/BrowserSurface";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
 import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
-import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
+import { OPEN_PROJECT_FILE_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenTurnDiffDetail } from "../panels/events";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
 import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
 import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest";
@@ -230,6 +230,12 @@ export function RightPanel() {
 		window.addEventListener(OPEN_PROJECT_FILE_EVENT, openFile);
 		window.addEventListener(OPEN_PULL_REQUEST_EVENT, openPull);
 		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); window.removeEventListener(OPEN_PULL_REQUEST_EVENT, openPull); };
+	});
+	// Open diff under a turn in the chat shows the Diff pane, which picks that turn.
+	useEffect(() => {
+		const open = (event: Event) => { if (projectId && (event as CustomEvent<OpenTurnDiffDetail>).detail?.taskId === selectedId) show("diff"); };
+		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
+		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
 	});
 	// T3 opens panes by itself: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
 	// Layers a stack read finds are not new work, so they do not open the pane.

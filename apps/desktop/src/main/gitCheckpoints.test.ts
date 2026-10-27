@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { captureCheckpoint, checkpointChanges, restoreCheckpoint } from "./gitCheckpoints";
+import { captureCheckpoint, checkpointChanges, restoreCheckpoint, turnChanges } from "./gitCheckpoints";
 
 function repository() {
 	const root = mkdtempSync(path.join(tmpdir(), "phaseo-checkpoint-restore-"));
@@ -50,6 +50,18 @@ describe("turn checkpoints", () => {
 			await restoreCheckpoint(folder, before!);
 			expect(readFileSync(path.join(folder, "main.ts"), "utf8")).toBe("a\n");
 			expect(existsSync(path.join(folder, "added.ts"))).toBe(false);
+		} finally { owned.cleanup(); }
+	}, 30000);
+
+	it("summarises the files a turn changed, with lines added and removed", async () => {
+		const owned = repository();
+		try {
+			const before = await captureCheckpoint(owned.root);
+			writeFileSync(path.join(owned.root, "kept.txt"), "One\nTwo\nThree\n"); rmSync(path.join(owned.root, "gone.txt"));
+			writeFileSync(path.join(owned.root, "image.bin"), Buffer.from([0, 1, 2, 0]));
+			const after = await captureCheckpoint(owned.root);
+			expect((await turnChanges(owned.root, before!, after!)).sort((a, b) => a.path.localeCompare(b.path))).toEqual([{ path: "gone.txt", additions: 0, deletions: 1 }, { path: "image.bin", additions: -1, deletions: -1 }, { path: "kept.txt", additions: 2, deletions: 0 }]);
+			expect(await turnChanges(owned.root, after!, after!)).toEqual([]);
 		} finally { owned.cleanup(); }
 	}, 30000);
 

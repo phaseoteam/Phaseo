@@ -48,6 +48,8 @@ import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { turnChanges } from "./gitCheckpoints";
+import { isTreeId } from "../shared/gitDiff";
 import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { UsageHubs, usageHubFile } from "./usageHubs";
@@ -617,6 +619,7 @@ ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, st
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:turn-changes", (event, id: unknown, from: unknown, to: unknown) => { const root = projectRoot(event, id); if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot."); return turnChanges(root, from, to); });
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });

@@ -22,7 +22,7 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
-import type { CheckpointChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { CheckpointChange, TurnFileChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
@@ -185,6 +185,8 @@ export type WorkspaceApi = {
 	task: (id: string) => Promise<Task>;
 	/** What restoring the project to the snapshot before this message's turn would change (Edit from here). */
 	checkpointChanges: (taskId: string, messageId: string) => Promise<CheckpointChange[]>;
+	/** Files a turn changed between its two snapshots, for the changed-files row under the turn. */
+	turnChanges: (projectId: string, from: string, to: string) => Promise<TurnFileChange[]>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
 	missions: () => Promise<Mission[]>;
