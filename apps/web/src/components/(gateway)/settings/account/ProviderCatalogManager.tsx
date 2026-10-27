@@ -5,9 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { localizedProviderCatalogMessage } from "@/i18n/provider-catalog-messages";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";
-import { AlertCircle, ChevronDown, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -319,7 +320,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 				<Button type="button" variant="outline" size="sm" disabled={loading || saving} onClick={() => { if (!unsavedChanges || window.confirm(t("providerCatalogCopy.reloadConfirm"))) void loadCatalog(providerSlug); }}><RefreshCw className="mr-1.5 size-3.5" />{t("providerCatalogCopy.reload")}</Button>
 			</div>
 		</div>
-		{stale ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-amber-500 bg-amber-500/5 px-4 py-3 text-sm"><span className="flex items-center gap-2"><AlertCircle className="size-4 text-amber-600" />{t("providerCatalogCopy.stale")}</span><Button type="button" size="sm" variant="outline" onClick={() => { if (!unsavedChanges || window.confirm(t("providerCatalogCopy.latestConfirm"))) void loadCatalog(providerSlug); }}>{t("providerCatalogCopy.reloadLatest")}</Button></div> : null}
+		{stale ? <Callout tone="warning" role="alert"><p>{t("providerCatalogCopy.stale")}</p><Button className="mt-2" type="button" size="sm" variant="outline" onClick={() => { if (!unsavedChanges || window.confirm(t("providerCatalogCopy.latestConfirm"))) void loadCatalog(providerSlug); }}>{t("providerCatalogCopy.reloadLatest")}</Button></Callout> : null}
 		{loadError ? <p role="alert" className="py-10 text-sm text-destructive">{loadError}</p> : null}
 		{validationIssues.length ? <ul role="alert" className="space-y-1 text-sm text-destructive">{validationIssues.map((issue,index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul> : null}
 		{!source && !loadError ? <p className="py-10 text-sm text-muted-foreground">{t("providerCatalogCopy.loading")}</p> : null}
