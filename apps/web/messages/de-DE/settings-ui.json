@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Speichere das Preset, um es auszuführen.",
 		"runUnsaved": "Speichere deine Änderungen an der Vorlage, um sie auszuführen.",
 		"runFailed": "Die Anfrage ist fehlgeschlagen ({status}).",
+		"runNoCredits": "Dein Workspace hat kein Guthaben mehr, daher kann das Preset nicht ausgeführt werden.",
+		"runAddCredits": "Guthaben aufladen",
 		"replyMeta": "{model} · {input} Eingabe- und {output} Ausgabe-Tokens",
 		"replyEmpty": "Das Modell hat keinen Text zurückgegeben.",
 		"issuesTitle": "Behebe diese Punkte, um das Ergebnis zu sehen"

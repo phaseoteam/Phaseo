@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Enregistrez le préréglage pour l’exécuter.",
 		"runUnsaved": "Enregistrez vos modifications du modèle pour les exécuter.",
 		"runFailed": "La requête a échoué ({status}).",
+		"runNoCredits": "Votre espace de travail n'a plus de crédits, le préréglage ne peut donc pas s'exécuter.",
+		"runAddCredits": "Ajouter des crédits",
 		"replyMeta": "{model} · {input} tokens en entrée et {output} en sortie",
 		"replyEmpty": "Le modèle n’a renvoyé aucun texte.",
 		"issuesTitle": "Corrigez ces points pour voir le résultat"

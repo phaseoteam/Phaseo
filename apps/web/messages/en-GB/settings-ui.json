@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Save the preset to run it.",
 		"runUnsaved": "Save your template changes to run them.",
 		"runFailed": "The request failed ({status}).",
+		"runNoCredits": "Your workspace has no credits left, so the preset can't run.",
+		"runAddCredits": "Add credits",
 		"replyMeta": "{model} · {input} input and {output} output tokens",
 		"replyEmpty": "The model returned no text.",
 		"issuesTitle": "Fix these to see the result"

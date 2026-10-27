@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Guarda el preajuste para ejecutarlo.",
 		"runUnsaved": "Guarda los cambios de la plantilla para ejecutarlos.",
 		"runFailed": "La solicitud ha fallado ({status}).",
+		"runNoCredits": "Tu espacio de trabajo no tiene créditos, así que el preajuste no puede ejecutarse.",
+		"runAddCredits": "Añadir créditos",
 		"replyMeta": "{model} · {input} tokens de entrada y {output} de salida",
 		"replyEmpty": "El modelo no devolvió texto.",
 		"issuesTitle": "Corrige esto para ver el resultado"

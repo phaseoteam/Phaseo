@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "请先保存预设再运行。",
 		"runUnsaved": "请先保存模板更改再运行。",
 		"runFailed": "请求失败（{status}）。",
+		"runNoCredits": "你的工作区已没有剩余额度，因此无法运行此预设。",
+		"runAddCredits": "添加额度",
 		"replyMeta": "{model} · 输入 {input} 个 token，输出 {output} 个 token",
 		"replyEmpty": "模型没有返回文本。",
 		"issuesTitle": "修正以下问题后即可查看结果"

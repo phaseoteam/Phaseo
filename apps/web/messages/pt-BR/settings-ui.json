@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Salve a predefinição para executá-la.",
 		"runUnsaved": "Salve as alterações do modelo para executá-las.",
 		"runFailed": "A solicitação falhou ({status}).",
+		"runNoCredits": "Seu workspace está sem créditos, então a predefinição não pode ser executada.",
+		"runAddCredits": "Adicionar créditos",
 		"replyMeta": "{model} · {input} tokens de entrada e {output} de saída",
 		"replyEmpty": "O modelo não retornou texto.",
 		"issuesTitle": "Corrija estes pontos para ver o resultado"
