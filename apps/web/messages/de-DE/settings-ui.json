@@ -7175,7 +7175,9 @@
 			"notEvaluated": "Noch nicht ausgewertet",
 			"notEvaluatedHelp": "Dieser Warnungstyp ist gespeichert, wird aber noch nicht geprüft. Er sendet ab einer späteren Version.",
 			"blocks": "Benachrichtigt, dann blockiert",
-			"disabled": "Aus"
+			"disabled": "Aus",
+			"blockingNow": "Blockiert gerade",
+			"blockingNowHelp": "Diese Regel lehnt Anfragen in ihrem Geltungsbereich ab. Du kannst die Blockierung unter „Aktive Blockierungen“ aufheben."
 		},
 		"metric": {
 			"spend": "Ausgabenbetrag",
@@ -7334,7 +7336,6 @@
 			"blockFreeModels": "Auch kostenlose Modelle blockieren",
 			"blockFreeModelsHelp": "Standardmäßig aus, sodass kostenlose Modelle während einer Blockierung weiter funktionieren.",
 			"bestEffort": "Blockieren erfolgt nach bestem Bemühen: Es beginnt einige Minuten nachdem die Ausgaben die Grenze überschreiten, daher können einige Anfragen darüber hinausgehen. Für eine exakte Obergrenze nutze <keys>Schlüssellimits</keys> oder <budgets>Arbeitsbereichsbudgets</budgets>.",
-			"blockingLater": "Blockieren wird in einer späteren Version aktiviert. Bis dahin benachrichtigt diese Warnung nur.",
 			"sectionDestinations": "Wohin senden",
 			"destinations": "Ziele",
 			"destinationsRoutes": "Routen für Ausgabenwarnungen",
@@ -7351,7 +7352,8 @@
 			"close": "Schließen",
 			"save": "Speichern",
 			"create": "Warnung hinzufügen",
-			"saving": "Wird gespeichert…"
+			"saving": "Wird gespeichert…",
+			"blockingOff": "Blockieren ist noch nicht eingeschaltet. Bis dahin benachrichtigt diese Warnung nur."
 		},
 		"issues": {
 			"nameRequired": "Gib einen Namen mit bis zu 100 Zeichen ein.",
@@ -7388,7 +7390,8 @@
 			"enabled": "Warnung eingeschaltet",
 			"disabled": "Warnung ausgeschaltet",
 			"testSent": "{count, plural, =0 {Test gesendet} one {Test an # Ziel gesendet} other {Test an # Ziele gesendet}}",
-			"testPartial": "Test an {delivered} gesendet, bei {failed} fehlgeschlagen"
+			"testPartial": "Test an {delivered} gesendet, bei {failed} fehlgeschlagen",
+			"lifted": "Blockierung aufgehoben"
 		},
 		"delete": {
 			"title": "{name} löschen?",
@@ -7442,6 +7445,30 @@
 			"keyLimitName": "{key}: {percent} % des {interval, select, daily {Tageslimits} weekly {Wochenlimits} other {Monatslimits}}",
 			"budget": "Bei 50/80/100 % warnen",
 			"budgetName": "Warnung zum {interval, select, daily {Tagesbudget} weekly {Wochenbudget} other {Monatsbudget}}"
+		},
+		"blocks": {
+			"title": "Aktive Blockierungen",
+			"description": "Diese Ausgabenregeln lehnen gerade Anfragen ab. Anfragen im Geltungsbereich erhalten einen 429, bis die Blockierung zurückgesetzt oder aufgehoben wird.",
+			"badge": "Blockiert",
+			"deletedRule": "Gelöschte Regel",
+			"freeModelsAllowed": "Kostenlose Modelle erlaubt",
+			"spent": "{spend} ausgegeben, Grenze {limit}",
+			"resets": "Wird am {date} zurückgesetzt",
+			"noReset": "Wird aufgehoben, sobald die Ausgaben unter der Grenze liegen",
+			"since": "Seit {date}",
+			"lift": "Aufheben",
+			"bestEffort": "Blockierungen beginnen einige Minuten, nachdem die Ausgaben die Grenze überschritten haben. Eine Aufhebung gilt innerhalb von etwa einer Minute für alle Anfragen.",
+			"alreadyLifted": "Diese Blockierung wurde bereits aufgehoben.",
+			"liftTitle": "Blockierung von {name} aufheben?",
+			"liftBody": "Anfragen im Geltungsbereich funktionieren innerhalb von etwa einer Minute wieder. Die Regel blockiert erst nach dem Zurücksetzen ihres Zeitraums erneut, sendet aber weiter Warnungen.",
+			"lifting": "Wird aufgehoben…",
+			"liftConfirm": "Blockierung aufheben"
+		},
+		"confirmBlock": {
+			"title": "Den ganzen Arbeitsbereich blockieren?",
+			"body": "Sobald die Ausgaben die Blockiergrenze erreichen, lehnt {name} Anfragen aller Schlüssel und Mitglieder dieses Arbeitsbereichs ab, bis der Zeitraum zurückgesetzt wird oder ein Inhaber oder Admin die Blockierung aufhebt.",
+			"label": "Gib {name} zur Bestätigung ein",
+			"confirm": "Speichern und Blockieren erlauben"
 		}
 	}
 }

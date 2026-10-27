@@ -9374,15 +9374,15 @@
 			"zh-Hans": "规则时区内的 day、week（从周一开始）或 month，或最近 window_hours 的 rolling。",
 			"ar": "day أو week (بدءًا من الاثنين) أو month في المنطقة الزمنية للقاعدة، أو rolling على آخر window_hours."
 		},
-		"notify, or notify and then block once spend reaches block_at_percent of the base or block_at_amount. Blocking is best effort and acts minutes after the threshold. Blocking is not available yet: a rule with action block is refused with a 400 until it is.": {
-			"es": "notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. El bloqueo aún no está disponible: una regla con action block se rechaza con un 400 hasta que lo esté.",
-			"fr": "notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Le blocage n’est pas encore disponible : une règle avec action block est refusée avec une erreur 400 tant qu’il ne l’est pas.",
-			"de": "notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Das Sperren ist noch nicht verfügbar: Eine Regel mit action block wird mit einem 400 abgelehnt, bis es verfügbar ist.",
-			"pt-BR": "notify, ou avisar e depois bloquear quando o gasto atingir block_at_percent da base ou block_at_amount. O bloqueio é feito com o melhor esforço e age minutos após o limite. O bloqueio ainda não está disponível: uma regra com action block é recusada com um 400 até que esteja.",
-			"hi": "notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।",
-			"ja": "notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ブロックはまだ利用できません。action が block のルールは、利用可能になるまで 400 で拒否されます。",
-			"zh-Hans": "notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。",
-			"ar": "notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. الحظر غير متاح بعد: تُرفض القاعدة التي تحمل action block برمز 400 إلى أن يصبح متاحًا."
+		"notify, or notify and then block once spend reaches block_at_percent of the base or block_at_amount. Blocking is best effort and acts minutes after the threshold. While blocking is switched off for the gateway, a rule that would start blocking is refused with a 400, and a rule that already blocks only notifies.": {
+			"es": "notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. Mientras el bloqueo esté desactivado en el gateway, una regla que empezaría a bloquear se rechaza con un 400, y una regla que ya bloquea solo avisa.",
+			"fr": "notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Tant que le blocage est désactivé sur la passerelle, une règle qui commencerait à bloquer est refusée avec une erreur 400, et une règle qui bloque déjà se contente d’avertir.",
+			"de": "notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Solange das Sperren im Gateway ausgeschaltet ist, wird eine Regel, die mit dem Sperren beginnen würde, mit einem 400 abgelehnt, und eine Regel, die bereits sperrt, benachrichtigt nur.",
+			"pt-BR": "notify, ou avisar e depois bloquear quando o gasto atingir block_at_percent da base ou block_at_amount. O bloqueio é feito com o melhor esforço e age minutos após o limite. Enquanto o bloqueio estiver desativado no gateway, uma regra que começaria a bloquear é recusada com um 400, e uma regra que já bloqueia apenas avisa.",
+			"hi": "notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। जब तक गेटवे पर ब्लॉक करना बंद है, ब्लॉक करना शुरू करने वाला नियम 400 के साथ अस्वीकार किया जाता है, और पहले से ब्लॉक करने वाला नियम केवल सूचना देता है।",
+			"ja": "notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ゲートウェイでブロックがオフの間は、ブロックを始めることになるルールは 400 で拒否され、すでにブロックするルールは通知のみを行います。",
+			"zh-Hans": "notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 在网关关闭拦截期间，会开始拦截的规则会被以 400 拒绝，已经设置为拦截的规则只发送通知。",
+			"ar": "notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. ما دام الحظر متوقفًا في البوابة، تُرفض القاعدة التي ستبدأ الحظر برمز 400، والقاعدة التي تحظر بالفعل تكتفي بالتنبيه."
 		},
 		"A spend rule: thresholds in dollars or percent over a scope and a period that notify, or notify and then block. Amounts are returned in nanodollars and in USD.": {
 			"es": "Una regla de gasto: umbrales en dólares o en porcentaje para un ámbito y un periodo que avisan, o avisan y después bloquean. Los importes se devuelven en nanodólares y en USD.",
@@ -9573,6 +9573,196 @@
 			"ja": "ステータス別の配信試行。",
 			"zh-Hans": "按状态统计的投递尝试。",
 			"ar": "محاولات التسليم حسب الحالة."
+		},
+		"Also return lifted blocks, newest first.": {
+			"es": "Devuelve también los bloqueos retirados, del más reciente al más antiguo.",
+			"fr": "Renvoie aussi les blocages levés, du plus récent au plus ancien.",
+			"de": "Gibt auch aufgehobene Blockierungen zurück, neueste zuerst.",
+			"pt-BR": "Também retorna bloqueios removidos, do mais recente ao mais antigo.",
+			"hi": "हटाए गए ब्लॉक भी लौटाएँ, नए पहले।",
+			"ja": "解除済みのブロックも新しい順に返します。",
+			"zh-Hans": "同时返回已解除的拦截，最新的在前。",
+			"ar": "إرجاع الحظر المرفوع أيضًا، الأحدث أولًا."
+		},
+		"Maximum number of blocks to return.": {
+			"es": "Número máximo de bloqueos que se devuelven.",
+			"fr": "Nombre maximal de blocages à renvoyer.",
+			"de": "Maximale Anzahl zurückgegebener Blockierungen.",
+			"pt-BR": "Número máximo de bloqueios a retornar.",
+			"hi": "लौटाए जाने वाले ब्लॉक की अधिकतम संख्या।",
+			"ja": "返すブロックの最大数。",
+			"zh-Hans": "返回的拦截数量上限。",
+			"ar": "الحد الأقصى لعدد حالات الحظر المُرجعة."
+		},
+		"List spend blocks": {
+			"es": "Listar bloqueos de gasto",
+			"fr": "Lister les blocages de dépenses",
+			"de": "Ausgabenblockierungen auflisten",
+			"pt-BR": "Listar bloqueios de gastos",
+			"hi": "खर्च ब्लॉक की सूची",
+			"ja": "支出ブロックを一覧表示",
+			"zh-Hans": "列出支出拦截",
+			"ar": "عرض حالات حظر الإنفاق"
+		},
+		"Lists the workspace's spend blocks, newest first: the blocks that spend rules with action block have started once spend reached their block point. Active blocks only, unless include_lifted is true. Owners and admins only.": {
+			"es": "Lista los bloqueos de gasto del espacio de trabajo, del más reciente al más antiguo: los bloqueos que han iniciado las reglas de gasto con acción block al llegar el gasto a su punto de bloqueo. Solo los activos, salvo que include_lifted sea true. Solo propietarios y administradores.",
+			"fr": "Liste les blocages de dépenses de l'espace de travail, du plus récent au plus ancien : ceux que les règles de dépenses avec l'action block ont déclenchés quand les dépenses ont atteint leur seuil de blocage. Blocages actifs uniquement, sauf si include_lifted vaut true. Réservé aux propriétaires et administrateurs.",
+			"de": "Listet die Ausgabenblockierungen des Arbeitsbereichs auf, neueste zuerst: die Blockierungen, die Ausgabenregeln mit der Aktion block gestartet haben, als die Ausgaben ihren Blockierpunkt erreichten. Nur aktive Blockierungen, außer include_lifted ist true. Nur für Inhaber und Admins.",
+			"pt-BR": "Lista os bloqueios de gastos do workspace, do mais recente ao mais antigo: os bloqueios que regras de gastos com a ação block iniciaram quando os gastos chegaram ao ponto de bloqueio. Somente os ativos, a menos que include_lifted seja true. Somente proprietários e administradores.",
+			"hi": "वर्कस्पेस के खर्च ब्लॉक की सूची देता है, नए पहले: वे ब्लॉक जो block ऐक्शन वाले खर्च नियमों ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किए। केवल सक्रिय ब्लॉक, जब तक include_lifted true न हो। केवल ओनर और एडमिन।",
+			"ja": "ワークスペースの支出ブロックを新しい順に一覧表示します。アクションが block の支出ルールが、支出がブロック点に達したときに開始したブロックです。include_lifted が true でない限り、有効なブロックのみを返します。オーナーと管理者のみ。",
+			"zh-Hans": "列出工作区的支出拦截，最新的在前：即操作为 block 的支出规则在支出达到拦截点时启动的拦截。除非 include_lifted 为 true，否则只返回生效中的拦截。仅限所有者和管理员。",
+			"ar": "يعرض حالات حظر الإنفاق في مساحة العمل، الأحدث أولًا: وهي حالات الحظر التي بدأتها قواعد الإنفاق ذات الإجراء block عندما بلغ الإنفاق نقطة الحظر. الحظر النشط فقط ما لم تكن قيمة include_lifted هي true. للمالكين والمسؤولين فقط."
+		},
+		"Spend blocks": {
+			"es": "Bloqueos de gasto",
+			"fr": "Blocages de dépenses",
+			"de": "Ausgabenblockierungen",
+			"pt-BR": "Bloqueios de gastos",
+			"hi": "खर्च ब्लॉक",
+			"ja": "支出ブロック",
+			"zh-Hans": "支出拦截",
+			"ar": "حالات حظر الإنفاق"
+		},
+		"Spend block id.": {
+			"es": "ID del bloqueo de gasto.",
+			"fr": "Identifiant du blocage de dépenses.",
+			"de": "ID der Ausgabenblockierung.",
+			"pt-BR": "ID do bloqueio de gastos.",
+			"hi": "खर्च ब्लॉक की ID।",
+			"ja": "支出ブロックの ID。",
+			"zh-Hans": "支出拦截 ID。",
+			"ar": "معرّف حظر الإنفاق."
+		},
+		"Lift a spend block": {
+			"es": "Retirar un bloqueo de gasto",
+			"fr": "Lever un blocage de dépenses",
+			"de": "Ausgabenblockierung aufheben",
+			"pt-BR": "Remover um bloqueio de gastos",
+			"hi": "खर्च ब्लॉक हटाएँ",
+			"ja": "支出ブロックを解除",
+			"zh-Hans": "解除支出拦截",
+			"ar": "رفع حظر الإنفاق"
+		},
+		"Lifts an active spend block so requests in its scope are accepted again within about a minute. The rule does not block again until its period resets, but it keeps sending alerts. Owners and admins only; the lift is recorded in the audit log and queues a spend_blocked event with state lifted. Returns 404 for an unknown block and 409 spend_block_not_active when it was already lifted.": {
+			"es": "Retira un bloqueo de gasto activo para que las solicitudes de su ámbito se acepten de nuevo en un minuto aproximadamente. La regla no vuelve a bloquear hasta que se restablece su periodo, pero sigue enviando alertas. Solo propietarios y administradores; la retirada queda en el registro de auditoría y encola un evento spend_blocked con estado lifted. Devuelve 404 si el bloqueo no existe y 409 spend_block_not_active si ya se había retirado.",
+			"fr": "Lève un blocage de dépenses actif pour que les requêtes concernées soient de nouveau acceptées en une minute environ. La règle ne bloque plus avant la réinitialisation de sa période, mais continue d'envoyer des alertes. Réservé aux propriétaires et administrateurs ; la levée est inscrite au journal d'audit et met en file un événement spend_blocked avec l'état lifted. Renvoie 404 pour un blocage inconnu et 409 spend_block_not_active s'il a déjà été levé.",
+			"de": "Hebt eine aktive Ausgabenblockierung auf, sodass Anfragen in ihrem Geltungsbereich innerhalb von etwa einer Minute wieder angenommen werden. Die Regel blockiert erst nach dem Zurücksetzen ihres Zeitraums erneut, sendet aber weiter Warnungen. Nur für Inhaber und Admins; die Aufhebung wird im Audit-Log erfasst und stellt ein spend_blocked-Ereignis mit dem Status lifted in die Warteschlange. Gibt 404 für eine unbekannte Blockierung und 409 spend_block_not_active zurück, wenn sie bereits aufgehoben wurde.",
+			"pt-BR": "Remove um bloqueio de gastos ativo para que as solicitações no escopo voltem a ser aceitas em cerca de um minuto. A regra só volta a bloquear quando o período for redefinido, mas continua enviando alertas. Somente proprietários e administradores; a remoção é registrada no log de auditoria e enfileira um evento spend_blocked com estado lifted. Retorna 404 para um bloqueio desconhecido e 409 spend_block_not_active quando ele já foi removido.",
+			"hi": "सक्रिय खर्च ब्लॉक हटाता है, ताकि उसके दायरे के अनुरोध लगभग एक मिनट में फिर से स्वीकार हों। अवधि रीसेट होने तक नियम फिर से ब्लॉक नहीं करता, लेकिन अलर्ट भेजता रहता है। केवल ओनर और एडमिन; हटाना ऑडिट लॉग में दर्ज होता है और lifted स्थिति वाला spend_blocked इवेंट कतार में डालता है। अज्ञात ब्लॉक के लिए 404 और पहले से हटाए गए ब्लॉक के लिए 409 spend_block_not_active लौटाता है।",
+			"ja": "有効な支出ブロックを解除し、対象のリクエストが約 1 分以内に再び受け付けられるようにします。ルールは期間がリセットされるまで再びブロックしませんが、アラートは引き続き送信します。オーナーと管理者のみ。解除は監査ログに記録され、状態 lifted の spend_blocked イベントがキューに追加されます。存在しないブロックには 404、すでに解除済みの場合は 409 spend_block_not_active を返します。",
+			"zh-Hans": "解除生效中的支出拦截，使其范围内的请求在约一分钟内重新被接受。在周期重置前，规则不会再次拦截，但会继续发送警报。仅限所有者和管理员；解除操作会记录在审计日志中，并排队一个状态为 lifted 的 spend_blocked 事件。拦截不存在时返回 404，已被解除时返回 409 spend_block_not_active。",
+			"ar": "يرفع حظر إنفاق نشطًا حتى تُقبل الطلبات ضمن نطاقه مجددًا خلال دقيقة تقريبًا. لا تحظر القاعدة مرة أخرى حتى يُعاد ضبط فترتها، لكنها تواصل إرسال التنبيهات. للمالكين والمسؤولين فقط؛ يُسجَّل الرفع في سجل التدقيق ويضيف حدث spend_blocked بالحالة lifted إلى قائمة الانتظار. يُرجع 404 لحظر غير معروف و409 spend_block_not_active إذا كان قد رُفع بالفعل."
+		},
+		"The lifted spend block": {
+			"es": "El bloqueo de gasto retirado",
+			"fr": "Le blocage de dépenses levé",
+			"de": "Die aufgehobene Ausgabenblockierung",
+			"pt-BR": "O bloqueio de gastos removido",
+			"hi": "हटाया गया खर्च ब्लॉक",
+			"ja": "解除された支出ブロック",
+			"zh-Hans": "已解除的支出拦截",
+			"ar": "حظر الإنفاق المرفوع"
+		},
+		"Why a spend block was lifted: manual (an owner or admin), period_reset, below_limit (spend is under the block point again, for example after a budget was raised), rule_changed, rule_disabled or rule_deleted.": {
+			"es": "Por qué se retiró un bloqueo de gasto: manual (un propietario o administrador), period_reset, below_limit (el gasto vuelve a estar por debajo del punto de bloqueo, por ejemplo tras subir un presupuesto), rule_changed, rule_disabled o rule_deleted.",
+			"fr": "Pourquoi un blocage de dépenses a été levé : manual (un propriétaire ou un administrateur), period_reset, below_limit (les dépenses repassent sous le seuil de blocage, par exemple après la hausse d'un budget), rule_changed, rule_disabled ou rule_deleted.",
+			"de": "Warum eine Ausgabenblockierung aufgehoben wurde: manual (ein Inhaber oder Admin), period_reset, below_limit (die Ausgaben liegen wieder unter dem Blockierpunkt, etwa nach einer Budgeterhöhung), rule_changed, rule_disabled oder rule_deleted.",
+			"pt-BR": "Por que um bloqueio de gastos foi removido: manual (um proprietário ou administrador), period_reset, below_limit (os gastos voltaram a ficar abaixo do ponto de bloqueio, por exemplo depois de um orçamento ser aumentado), rule_changed, rule_disabled ou rule_deleted.",
+			"hi": "खर्च ब्लॉक क्यों हटाया गया: manual (कोई ओनर या एडमिन), period_reset, below_limit (खर्च फिर से ब्लॉक बिंदु से नीचे है, जैसे बजट बढ़ाने के बाद), rule_changed, rule_disabled या rule_deleted।",
+			"ja": "支出ブロックが解除された理由: manual（オーナーまたは管理者）、period_reset、below_limit（予算の引き上げなどにより支出が再びブロック点を下回った）、rule_changed、rule_disabled、rule_deleted。",
+			"zh-Hans": "支出拦截被解除的原因：manual（所有者或管理员）、period_reset、below_limit（支出重新低于拦截点，例如提高预算之后）、rule_changed、rule_disabled 或 rule_deleted。",
+			"ar": "سبب رفع حظر الإنفاق: manual (مالك أو مسؤول)، أو period_reset، أو below_limit (عاد الإنفاق دون نقطة الحظر، مثلًا بعد رفع ميزانية)، أو rule_changed، أو rule_disabled، أو rule_deleted."
+		},
+		"A block a spend rule started once spend reached its block point. While it is active, requests in its scope get a 429 with code spend_rule_blocked and Retry-After set to resets_at. Free models are exempt unless block_free_models is true.": {
+			"es": "Un bloqueo que inició una regla de gasto cuando el gasto llegó a su punto de bloqueo. Mientras está activo, las solicitudes de su ámbito reciben un 429 con el código spend_rule_blocked y Retry-After igual a resets_at. Los modelos gratuitos quedan exentos salvo que block_free_models sea true.",
+			"fr": "Un blocage déclenché par une règle de dépenses quand les dépenses ont atteint son seuil de blocage. Tant qu'il est actif, les requêtes concernées reçoivent une erreur 429 avec le code spend_rule_blocked et Retry-After réglé sur resets_at. Les modèles gratuits sont exemptés sauf si block_free_models vaut true.",
+			"de": "Eine Blockierung, die eine Ausgabenregel gestartet hat, als die Ausgaben ihren Blockierpunkt erreichten. Solange sie aktiv ist, erhalten Anfragen in ihrem Geltungsbereich einen 429 mit dem Code spend_rule_blocked und Retry-After bis resets_at. Kostenlose Modelle sind ausgenommen, außer block_free_models ist true.",
+			"pt-BR": "Um bloqueio que uma regra de gastos iniciou quando os gastos chegaram ao ponto de bloqueio. Enquanto ele está ativo, solicitações no escopo recebem um 429 com o código spend_rule_blocked e Retry-After definido como resets_at. Modelos gratuitos ficam isentos, a menos que block_free_models seja true.",
+			"hi": "वह ब्लॉक जो किसी खर्च नियम ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किया। सक्रिय रहने तक उसके दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है और Retry-After resets_at पर सेट होता है। मुफ़्त मॉडल छूट में रहते हैं, जब तक block_free_models true न हो।",
+			"ja": "支出がブロック点に達したときに支出ルールが開始したブロック。有効な間、対象のリクエストにはコード spend_rule_blocked の 429 が返され、Retry-After は resets_at に設定されます。block_free_models が true でない限り、無料モデルは対象外です。",
+			"zh-Hans": "支出达到拦截点时由支出规则启动的拦截。生效期间，范围内的请求会收到代码为 spend_rule_blocked 的 429，Retry-After 设为 resets_at。除非 block_free_models 为 true，否则免费模型不受影响。",
+			"ar": "حظر بدأته قاعدة إنفاق عندما بلغ الإنفاق نقطة الحظر. ما دام نشطًا، تتلقى الطلبات ضمن نطاقه الخطأ 429 بالرمز spend_rule_blocked مع ضبط Retry-After على resets_at. تُستثنى النماذج المجانية ما لم تكن قيمة block_free_models هي true."
+		},
+		"The rule that started the block; null once the rule was deleted outright.": {
+			"es": "La regla que inició el bloqueo; null cuando la regla se ha eliminado definitivamente.",
+			"fr": "La règle qui a déclenché le blocage ; null une fois la règle supprimée définitivement.",
+			"de": "Die Regel, die die Blockierung gestartet hat; null, sobald die Regel endgültig gelöscht wurde.",
+			"pt-BR": "A regra que iniciou o bloqueio; null depois que a regra é excluída definitivamente.",
+			"hi": "वह नियम जिसने ब्लॉक शुरू किया; नियम पूरी तरह हटाए जाने पर null।",
+			"ja": "ブロックを開始したルール。ルールが完全に削除されると null になります。",
+			"zh-Hans": "启动此拦截的规则；规则被彻底删除后为 null。",
+			"ar": "القاعدة التي بدأت الحظر؛ وتكون null بعد حذف القاعدة نهائيًا."
+		},
+		"Display name of the scope (key, department or model name, member email, or the id).": {
+			"es": "Nombre visible del ámbito (nombre de la clave, del departamento o del modelo, correo del miembro o el ID).",
+			"fr": "Nom affiché du périmètre (nom de la clé, du service ou du modèle, e-mail du membre, ou l'identifiant).",
+			"de": "Anzeigename des Geltungsbereichs (Name des Schlüssels, der Abteilung oder des Modells, E-Mail des Mitglieds oder die ID).",
+			"pt-BR": "Nome de exibição do escopo (nome da chave, do departamento ou do modelo, e-mail do membro ou o ID).",
+			"hi": "दायरे का दिखने वाला नाम (कुंजी, विभाग या मॉडल का नाम, सदस्य का ईमेल, या ID)।",
+			"ja": "対象範囲の表示名（キー、部署、モデルの名前、メンバーのメールアドレス、または ID）。",
+			"zh-Hans": "范围的显示名称（密钥、部门或模型名称、成员邮箱，或 ID）。",
+			"ar": "الاسم المعروض للنطاق (اسم المفتاح أو القسم أو النموذج، أو بريد العضو، أو المعرّف)."
+		},
+		"When the block lifts by itself (the end of the rule's period).": {
+			"es": "Cuándo se retira el bloqueo por sí solo (el final del periodo de la regla).",
+			"fr": "Moment où le blocage se lève de lui-même (la fin de la période de la règle).",
+			"de": "Wann die Blockierung von selbst aufgehoben wird (das Ende des Zeitraums der Regel).",
+			"pt-BR": "Quando o bloqueio é removido sozinho (o fim do período da regra).",
+			"hi": "ब्लॉक अपने आप कब हटता है (नियम की अवधि का अंत)।",
+			"ja": "ブロックが自動的に解除される日時（ルールの期間の終わり）。",
+			"zh-Hans": "拦截自动解除的时间（规则周期结束时）。",
+			"ar": "موعد رفع الحظر تلقائيًا (نهاية فترة القاعدة)."
+		},
+		"Spend in the rule's scope when the block started, in nanodollars.": {
+			"es": "Gasto en el ámbito de la regla cuando empezó el bloqueo, en nanodólares.",
+			"fr": "Dépenses dans le périmètre de la règle au début du blocage, en nanodollars.",
+			"de": "Ausgaben im Geltungsbereich der Regel beim Start der Blockierung, in Nanodollar.",
+			"pt-BR": "Gastos no escopo da regra quando o bloqueio começou, em nanodólares.",
+			"hi": "ब्लॉक शुरू होते समय नियम के दायरे में खर्च, नैनोडॉलर में।",
+			"ja": "ブロック開始時点のルール対象範囲の支出（ナノドル）。",
+			"zh-Hans": "拦截开始时规则范围内的支出，单位为纳美元。",
+			"ar": "الإنفاق ضمن نطاق القاعدة عند بدء الحظر، بالنانو دولار."
+		},
+		"The block point, in nanodollars.": {
+			"es": "El punto de bloqueo, en nanodólares.",
+			"fr": "Le seuil de blocage, en nanodollars.",
+			"de": "Der Blockierpunkt, in Nanodollar.",
+			"pt-BR": "O ponto de bloqueio, em nanodólares.",
+			"hi": "ब्लॉक बिंदु, नैनोडॉलर में।",
+			"ja": "ブロック点（ナノドル）。",
+			"zh-Hans": "拦截点，单位为纳美元。",
+			"ar": "نقطة الحظر، بالنانو دولار."
+		},
+		"The owner or admin who lifted the block, for manual lifts.": {
+			"es": "El propietario o administrador que retiró el bloqueo, en las retiradas manuales.",
+			"fr": "Le propriétaire ou l'administrateur qui a levé le blocage, pour les levées manuelles.",
+			"de": "Der Inhaber oder Admin, der die Blockierung aufgehoben hat, bei manuellen Aufhebungen.",
+			"pt-BR": "O proprietário ou administrador que removeu o bloqueio, nas remoções manuais.",
+			"hi": "मैन्युअल रूप से हटाने पर, ब्लॉक हटाने वाला ओनर या एडमिन।",
+			"ja": "手動解除の場合に、ブロックを解除したオーナーまたは管理者。",
+			"zh-Hans": "手动解除时，解除拦截的所有者或管理员。",
+			"ar": "المالك أو المسؤول الذي رفع الحظر، في حالات الرفع اليدوي."
+		},
+		"Not lifted, and its reset has not passed.": {
+			"es": "No retirado y sin haber llegado a su restablecimiento.",
+			"fr": "Non levé, et sa réinitialisation n'est pas encore passée.",
+			"de": "Nicht aufgehoben, und das Zurücksetzen ist noch nicht erreicht.",
+			"pt-BR": "Não removido, e a redefinição ainda não passou.",
+			"hi": "हटाया नहीं गया, और इसका रीसेट समय अभी नहीं बीता।",
+			"ja": "解除されておらず、リセット時刻も過ぎていない。",
+			"zh-Hans": "未解除，且尚未到重置时间。",
+			"ar": "لم يُرفع، ولم يحن موعد إعادة ضبطه بعد."
+		},
+		"Sent while a spend rule that blocks covers the request and spend has passed its last alert threshold but not yet its block point. Lists up to three rules as rule_id, scope and resets_at, for example `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Once spend reaches the block point, requests in scope get a 429 with code spend_rule_blocked.": {
+			"es": "Se envía mientras una regla de gasto que bloquea cubre la solicitud y el gasto ha superado su último umbral de alerta, pero aún no su punto de bloqueo. Indica hasta tres reglas con rule_id, scope y resets_at, por ejemplo `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Cuando el gasto llega al punto de bloqueo, las solicitudes del ámbito reciben un 429 con el código spend_rule_blocked.",
+			"fr": "Envoyé lorsqu'une règle de dépenses bloquante couvre la requête et que les dépenses ont dépassé son dernier seuil d'alerte sans atteindre encore son seuil de blocage. Indique jusqu'à trois règles sous la forme rule_id, scope et resets_at, par exemple `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Dès que les dépenses atteignent le seuil de blocage, les requêtes concernées reçoivent une erreur 429 avec le code spend_rule_blocked.",
+			"de": "Wird gesendet, solange eine blockierende Ausgabenregel die Anfrage abdeckt und die Ausgaben ihren letzten Warnschwellenwert, aber noch nicht ihren Blockierpunkt überschritten haben. Nennt bis zu drei Regeln mit rule_id, scope und resets_at, zum Beispiel `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Sobald die Ausgaben den Blockierpunkt erreichen, erhalten Anfragen im Geltungsbereich einen 429 mit dem Code spend_rule_blocked.",
+			"pt-BR": "Enviado enquanto uma regra de gastos que bloqueia cobre a solicitação e os gastos passaram do último limite de alerta, mas ainda não do ponto de bloqueio. Lista até três regras como rule_id, scope e resets_at, por exemplo `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Quando os gastos chegam ao ponto de bloqueio, as solicitações no escopo recebem um 429 com o código spend_rule_blocked.",
+			"hi": "तब भेजा जाता है जब कोई ब्लॉक करने वाला खर्च नियम अनुरोध को कवर करता है और खर्च उसकी आख़िरी अलर्ट सीमा पार कर चुका है, लेकिन अभी ब्लॉक बिंदु तक नहीं पहुँचा। अधिकतम तीन नियम rule_id, scope और resets_at के रूप में बताता है, जैसे `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`। खर्च के ब्लॉक बिंदु तक पहुँचने पर दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है।",
+			"ja": "ブロックする支出ルールがリクエストを対象としており、支出が最後のアラートしきい値を超えたもののまだブロック点に達していない間に送信されます。最大 3 件のルールを rule_id、scope、resets_at の形式で示します（例: `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`）。支出がブロック点に達すると、対象のリクエストにはコード spend_rule_blocked の 429 が返されます。",
+			"zh-Hans": "当一条会拦截的支出规则覆盖该请求，且支出已超过其最后一个警报阈值但尚未达到拦截点时发送。以 rule_id、scope 和 resets_at 的形式列出最多三条规则，例如 `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`。支出达到拦截点后，范围内的请求会收到代码为 spend_rule_blocked 的 429。",
+			"ar": "يُرسَل عندما تشمل قاعدةُ إنفاقٍ تحظر الطلبَ ويكون الإنفاق قد تجاوز آخر حد تنبيه لها دون أن يبلغ نقطة الحظر بعد. يذكر حتى ثلاث قواعد بصيغة rule_id وscope وresets_at، مثل `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. عندما يبلغ الإنفاق نقطة الحظر، تتلقى الطلبات ضمن النطاق الخطأ 429 بالرمز spend_rule_blocked."
 		}
 	},
 	"GET /apps": {

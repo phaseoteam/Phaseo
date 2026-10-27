@@ -5811,6 +5811,62 @@ class ServerToolUsage
 	public $web_search_requests;
 }
 
+class SpendBlock
+{
+	/** @var bool */
+	public $active;
+	/** @var bool */
+	public $block_free_models;
+	/** @var string */
+	public $id;
+	/** @var mixed|null */
+	public $lift_reason;
+	/** @var string|null */
+	public $lifted_at;
+	/** @var string|null */
+	public $lifted_by;
+	/** @var int */
+	public $limit_nanos;
+	/** @var float */
+	public $limit_usd;
+	/** @var string */
+	public $period_start;
+	/** @var string|null */
+	public $resets_at;
+	/** @var string|null */
+	public $rule_id;
+	/** @var string|null */
+	public $rule_name;
+	/** @var string|null */
+	public $scope_id;
+	/** @var string */
+	public $scope_label;
+	/** @var string */
+	public $scope_type;
+	/** @var int */
+	public $spend_nanos;
+	/** @var float */
+	public $spend_usd;
+	/** @var string */
+	public $started_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class SpendBlockLiftReason { }
+
+class SpendBlockListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class SpendBlockResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
 class SpendRule
 {
 	/** @var string */

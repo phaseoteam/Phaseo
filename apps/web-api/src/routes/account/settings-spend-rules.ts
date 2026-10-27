@@ -9,12 +9,16 @@ import {
 	SPEND_RULE_COLUMNS,
 	SPEND_RULE_TEST_SENDS_PER_MINUTE,
 	embeddedDestinationIds,
+	formatSpendBlock,
+	formatSpendBlocks,
 	formatSpendRule,
 	formatSpendRuleHistory,
 	formatSpendRulePreview,
 	isSpendRuleUuid,
+	parseSpendBlockListQuery,
 	parseSpendRuleHistoryPage,
 	parseSpendRuleInput,
+	spendBlockLiftError,
 	spendRuleFieldsFromRow,
 	spendRuleWriteError,
 	type SpendRule,
@@ -30,6 +34,9 @@ import {
 // Members read rules, previews and history; owners and admins create, change, delete and test.
 // Test sends go through the gateway's internal endpoint, which applies the workspace's
 // 5-a-minute allowance shared with the control API.
+// Spend blocks (PR 8): members list them; owners and admins lift them
+// (public.lift_workspace_spend_block). After a lift or a change to a block rule, the gateway's
+// internal endpoint republishes the KV entry it enforces blocks from.
 
 const RULE_SELECT = `${SPEND_RULE_COLUMNS},workspace_spend_rule_destinations(destination_id)`;
 const TEST_TIMEOUT_MS = 30_000;
@@ -116,7 +123,83 @@ function savedRule(data: unknown): SpendRule {
 	return formatSpendRule(result.rule as SpendRuleRow, result.destination_ids ?? []);
 }
 
+const PUBLISH_TIMEOUT_MS = 10_000;
+
+/**
+ * Asks the gateway to republish the workspace's spend block entry after a lift or a change to a
+ * block rule (the database has already lifted what the change ends), so requests stop being
+ * refused within about a minute. Best effort: the sweep and the scheduled reconcile republish
+ * anyway, so a failure is only logged.
+ */
+async function publishSpendBlocks(c: any, workspaceId: string): Promise<void> {
+	try {
+		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/spend-blocks/publish`, {
+			method: "POST",
+			headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId }),
+			signal: AbortSignal.timeout(PUBLISH_TIMEOUT_MS),
+		});
+		if (!response.ok) console.warn("spend_block_publish_failed", { workspaceId, status: response.status });
+	} catch (error) {
+		console.warn("spend_block_publish_failed", { workspaceId, error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+function blockId(c: any): string | null {
+	const id = String(c.req.param("blockId") ?? "").trim();
+	return isSpendRuleUuid(id) ? id.toLowerCase() : null;
+}
+
 export const accountSettingsSpendRulesRouter = new Hono<{ Bindings: Env }>();
+
+/**
+ * The workspace's spend blocks (active only, or with includeLifted=true the latest lifted ones
+ * too). Members can read them, as they can read the table; only owners and admins lift.
+ * Registered before /spend-rules/:ruleId so "blocks" is not read as a rule id.
+ */
+accountSettingsSpendRulesRouter.get("/spend-rules/blocks", async (c) => {
+	const access = await memberContext(c, c.req.query("workspaceId")?.trim());
+	if ("response" in access) return access.response;
+	const query = parseSpendBlockListQuery(c.req.query("includeLifted"), c.req.query("limit"));
+	if (query.ok === false) return badRequest(c, query.message);
+	const result = await access.context.client.rpc("list_workspace_spend_blocks", {
+		p_workspace_id: access.context.workspaceId,
+		p_include_lifted: query.value.includeLifted,
+		p_limit: query.value.limit,
+	});
+	if (result.error) return json(c, { error: "settings_unavailable" }, 503);
+	return json(c, { workspaceId: access.context.workspaceId, canLift: isManager(access.context), blocks: formatSpendBlocks(result.data) });
+});
+
+accountSettingsSpendRulesRouter.post("/spend-rules/blocks/:blockId/lift", async (c) => {
+	const body = await readBody(c);
+	const access = await managerContext(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const id = blockId(c);
+	if (!id) return badRequest(c, "A spend block id is required");
+	const { context } = access;
+	const result = await context.client.rpc("lift_workspace_spend_block", {
+		p_workspace_id: context.workspaceId,
+		p_block_id: id,
+		p_actor_user_id: context.user.id,
+	});
+	if (result.error) {
+		const mapped = spendBlockLiftError(result.error);
+		return mapped ? json(c, { error: mapped.error, message: mapped.message }, mapped.status) : json(c, { error: "spend_block_lift_failed" }, 503);
+	}
+	const block = formatSpendBlock((result.data ?? {}) as Record<string, unknown>);
+	await recordWorkspaceAuditEvent(context.client as never, {
+		workspaceId: context.workspaceId,
+		actorUserId: context.user.id,
+		action: "spend_block.lifted",
+		targetType: "spend_block",
+		targetId: block.id,
+		targetName: block.rule_name ?? block.scope_label,
+		metadata: { rule_id: block.rule_id, scope_type: block.scope_type, scope_id: block.scope_id, resets_at: block.resets_at },
+	});
+	await publishSpendBlocks(c, context.workspaceId);
+	return json(c, { block });
+});
 
 accountSettingsSpendRulesRouter.get("/spend-rules", async (c) => {
 	const access = await memberContext(c, c.req.query("workspaceId")?.trim());
@@ -135,6 +218,8 @@ accountSettingsSpendRulesRouter.get("/spend-rules", async (c) => {
 		canManageSpendRules: isManager(context),
 		maxRules: MAX_SPEND_RULES_PER_WORKSPACE,
 		testSendsPerMinute: SPEND_RULE_TEST_SENDS_PER_MINUTE,
+		// Whether block rules block yet; until then they only notify (SPEND_RULE_BLOCKS_ENABLED).
+		blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true",
 		billingTimeZone: parseIanaTimeZone((settings.data as { billing_time_zone?: unknown } | null)?.billing_time_zone) ?? "UTC",
 		rules: (rules.data ?? []).map((row) => formatSpendRule(row as unknown as SpendRuleRow, embeddedDestinationIds(row as never))),
 	});
@@ -193,7 +278,7 @@ accountSettingsSpendRulesRouter.post("/spend-rules", async (c) => {
 	const body = await readBody(c);
 	const access = await managerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
-	const parsed = parseSpendRuleInput(ruleInput(body), { parseTimeZone: parseIanaTimeZone });
+	const parsed = parseSpendRuleInput(ruleInput(body), { parseTimeZone: parseIanaTimeZone, blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true" });
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	const { context } = access;
 	const result = await context.client.rpc("save_workspace_spend_rule", {
@@ -234,7 +319,7 @@ accountSettingsSpendRulesRouter.patch("/spend-rules/:ruleId", async (c) => {
 	if (existing.error) return json(c, { error: "settings_unavailable" }, 503);
 	if (!existing.data) return notFound(c);
 	const input = ruleInput(body);
-	const parsed = parseSpendRuleInput(input, { existing: spendRuleFieldsFromRow(existing.data as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone });
+	const parsed = parseSpendRuleInput(input, { existing: spendRuleFieldsFromRow(existing.data as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone, blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true" });
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	const result = await context.client.rpc("save_workspace_spend_rule", {
 		p_workspace_id: context.workspaceId,
@@ -246,6 +331,8 @@ accountSettingsSpendRulesRouter.patch("/spend-rules/:ruleId", async (c) => {
 	if (result.error) return writeError(c, result.error);
 	const rule = savedRule(result.data);
 	await audit(context, "updated", rule, { ...ruleMetadata(rule), changed: Object.keys(input).sort() });
+	// A disabled, rescoped or raised block rule lifts its block in the same transaction.
+	if (rule.action === "block" || "action" in input) await publishSpendBlocks(c, context.workspaceId);
 	return json(c, { rule });
 });
 
@@ -263,6 +350,7 @@ accountSettingsSpendRulesRouter.delete("/spend-rules/:ruleId", async (c) => {
 	if (!result.data) return notFound(c);
 	const rule = formatSpendRule(result.data as unknown as SpendRuleRow);
 	await audit(context, "deleted", rule, { metric: rule.metric, scope_type: rule.scope_type, scope_id: rule.scope_id });
+	if (rule.action === "block") await publishSpendBlocks(c, context.workspaceId);
 	return json(c, { id: rule.id, deleted: true });
 });
 

@@ -331,9 +331,14 @@ export function isRateLimitPolicyRejection(errorCode: string | null | undefined,
         || reason === "policy_concurrent_requests" || reason === "policy_unavailable";
 }
 
+/** A workspace spend rule block (core/spend-blocks.ts): refused before any provider is called. */
+export function isSpendRuleBlockRejection(errorCode: string | null | undefined): boolean {
+    return errorCode === "spend_rule_blocked";
+}
+
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
-    if (errorCode === "phaseo_free_model_limit_exceeded" || isRateLimitPolicyRejection(errorCode, body)) return "user";
+    if (errorCode === "phaseo_free_model_limit_exceeded" || isRateLimitPolicyRejection(errorCode, body) || isSpendRuleBlockRejection(errorCode)) return "user";
     if (stage === "before") {
         const s = Number(status ?? 0);
         const code = (errorCode || "").toLowerCase();
@@ -861,6 +866,14 @@ export async function handleError({
             if (typeof body?.[field] === "string") errorPayload[field] = body[field];
         }
     }
+    const isSpendBlock = isSpendRuleBlockRejection(errCode);
+    if (isSpendBlock) {
+        // Tells the caller which spend rule blocked the request and when the block resets.
+        for (const field of ["reason", "rule_id", "rule_name", "block_id", "limit_scope", "reset_at", "now", "limit_metric"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        if (typeof body?.limit_value === "number") errorPayload.limit_value = body.limit_value;
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")
@@ -1010,7 +1023,7 @@ export async function handleError({
     })();
     const isFreeModelLimit = errCode === "phaseo_free_model_limit_exceeded" && errorOrigin === "gateway";
     // Admission rejections happen before any provider is called.
-    const providerForAudit = isFreeModelLimit || isPolicyRejection ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    const providerForAudit = isFreeModelLimit || isPolicyRejection || isSpendBlock ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
     // Without a context, a preset's ZDR comes from the early snapshot; the I/O log and
     // telemetry also read the key's policy and the request payload.

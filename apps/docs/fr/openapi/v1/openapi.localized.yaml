@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -5233,6 +5239,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Renvoie aussi les blocages levés, du plus récent au plus ancien.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Nombre maximal de blocages à renvoyer.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: Lister les blocages de dépenses
+      description: 'Liste les blocages de dépenses de l''espace de travail, du plus récent au plus ancien : ceux que les règles de dépenses avec l''action block ont déclenchés quand les dépenses ont atteint leur seuil de blocage. Blocages actifs uniquement, sauf si include_lifted vaut true. Réservé aux propriétaires et administrateurs.'
+      responses:
+        '200':
+          description: Blocages de dépenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: La requête a échoué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifiant du blocage de dépenses.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Lever un blocage de dépenses
+      description: Lève un blocage de dépenses actif pour que les requêtes concernées soient de nouveau acceptées en une minute environ. La règle ne bloque plus avant la réinitialisation de sa période, mais continue d'envoyer des alertes. Réservé aux propriétaires et administrateurs ; la levée est inscrite au journal d'audit et met en file un événement spend_blocked avec l'état lifted. Renvoie 404 pour un blocage inconnu et 409 spend_block_not_active s'il a déjà été levé.
+      responses:
+        '200':
+          description: Le blocage de dépenses levé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: La requête a échoué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -9226,6 +9299,10 @@ components:
         type: string
     DroppedParams:
       description: Paramètres envoyés par le client que le fournisseur qui traite la requête ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement dans les réponses réussies, et seulement lorsqu'au moins un paramètre du corps de la requête a été retiré. Les paramètres qui proviennent d'un préréglage ou d'une valeur par défaut ne sont pas listés.
+      schema:
+        type: string
+    SpendWarning:
+      description: Envoyé lorsqu'une règle de dépenses bloquante couvre la requête et que les dépenses ont dépassé son dernier seuil d'alerte sans atteindre encore son seuil de blocage. Indique jusqu'à trois règles sous la forme rule_id, scope et resets_at, par exemple `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Dès que les dépenses atteignent le seuil de blocage, les requêtes concernées reçoivent une erreur 429 avec le code spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -22153,7 +22230,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Le blocage n’est pas encore disponible : une règle avec action block est refusée avec une erreur 400 tant qu’il ne l’est pas.'
+      description: notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Tant que le blocage est désactivé sur la passerelle, une règle qui commencerait à bloquer est refusée avec une erreur 400, et une règle qui bloque déjà se contente d’avertir.
       enum:
         - notify
         - block
@@ -22875,6 +22952,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'Pourquoi un blocage de dépenses a été levé : manual (un propriétaire ou un administrateur), period_reset, below_limit (les dépenses repassent sous le seuil de blocage, par exemple après la hausse d''un budget), rule_changed, rule_disabled ou rule_deleted.'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: Un blocage déclenché par une règle de dépenses quand les dépenses ont atteint son seuil de blocage. Tant qu'il est actif, les requêtes concernées reçoivent une erreur 429 avec le code spend_rule_blocked et Retry-After réglé sur resets_at. Les modèles gratuits sont exemptés sauf si block_free_models vaut true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: La règle qui a déclenché le blocage ; null une fois la règle supprimée définitivement.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: Nom affiché du périmètre (nom de la clé, du service ou du modèle, e-mail du membre, ou l'identifiant).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Moment où le blocage se lève de lui-même (la fin de la période de la règle).
+        spend_nanos:
+          type: integer
+          description: Dépenses dans le périmètre de la règle au début du blocage, en nanodollars.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: Le seuil de blocage, en nanodollars.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: Le propriétaire ou l'administrateur qui a levé le blocage, pour les levées manuelles.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: Non levé, et sa réinitialisation n'est pas encore passée.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

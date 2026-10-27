@@ -160,6 +160,25 @@ export function canBlock(draft: Pick<SpendRuleDraft, "metric" | "baseKind">): bo
 	return draft.metric === "spend" || (draft.metric === "budget_percent" && draft.baseKind !== "previous_period");
 }
 
+/**
+ * A rule that can block every request in the workspace needs a typed confirmation when it is
+ * saved enabled: on create, or when an edit makes it a workspace-wide block rule (turns it on,
+ * switches it to blocking or widens its scope to the workspace).
+ */
+export function needsWorkspaceBlockConfirm(
+	draft: Pick<SpendRuleDraft, "metric" | "baseKind" | "scopeType" | "action" | "enabled">,
+	saved: Pick<SpendRule, "scope_type" | "action" | "enabled"> | null,
+): boolean {
+	if (!draft.enabled || draft.action !== "block" || draft.scopeType !== "workspace" || !canBlock(draft)) return false;
+	return !saved || !(saved.enabled && saved.action === "block" && saved.scope_type === "workspace");
+}
+
+/** The typed confirmation matches the rule's name, ignoring surrounding spaces and case. */
+export function workspaceBlockConfirmMatches(typed: string, name: string): boolean {
+	const expected = name.trim().toLowerCase();
+	return expected.length > 0 && typed.trim().toLowerCase() === expected;
+}
+
 /** Rolling, spike and balance rules repeat after a cooldown; calendar rules fire once a period. */
 export function usesCooldown(draft: Pick<SpendRuleDraft, "metric" | "period">): boolean {
 	return draft.period === "rolling" || draft.metric === "spike" || draft.metric === "balance";
@@ -383,7 +402,8 @@ export function checkDraft(draft: SpendRuleDraft): DraftCheck {
 	const issues = draftIssues(draft);
 	if (issues.length) return { ok: false, issues, message: null };
 	const payload = draftToPayload(draft);
-	const parsed = parseSpendRuleInput(payload, { parseTimeZone: (value) => (typeof value === "string" && isValidTimeZone(value.trim()) ? value.trim() : null) });
+	// The server refuses a new block while blocks are off; the editor only offers block then.
+	const parsed = parseSpendRuleInput(payload, { parseTimeZone: (value) => (typeof value === "string" && isValidTimeZone(value.trim()) ? value.trim() : null), blocksEnabled: true });
 	if (parsed.ok === false) return { ok: false, issues: [], message: parsed.message };
 	return { ok: true, payload };
 }
