@@ -30,9 +30,10 @@ export type ModelChoice =
 	/**
 	 * `longer`: the readings longer than the one that matched, longest first. One of
 	 * them may name another catalogue model ("Amazon: Nova Lite 1.0" read as
-	 * "Amazon"), which events.ts checks before using the choice.
+	 * "Amazon"), which events.ts checks before using the choice. `exact`: whether the
+	 * reading was a whole id or name rather than the start of one.
 	 */
-	| { kind: "chosen"; model: AllowedModel; prompt: string; longer: string[] }
+	| { kind: "chosen"; model: AllowedModel; prompt: string; longer: string[]; exact: boolean }
 	| { kind: "not_allowed"; named: string }
 	| { kind: "ambiguous"; named: string; matches: AllowedModel[] };
 
@@ -105,21 +106,21 @@ export function chooseModel(text: string, allowed: AllowedModel[]): ModelChoice 
 	if (!options.length) return { kind: "none" };
 	// An id also matches without its lab: `gpt-6-luna` for `openai/gpt-6-luna`.
 	const keyed = allowed.map((model) => ({ model, id: comparable(model.id), short: comparable(model.id.slice(model.id.indexOf("/") + 1)), name: comparable(model.name) }));
-	const pick = (option: Reading, fits: (entry: (typeof keyed)[number]) => boolean): ModelChoice | null => {
+	const pick = (option: Reading, exact: boolean, fits: (entry: (typeof keyed)[number]) => boolean): ModelChoice | null => {
 		const matches = [...new Map(keyed.filter(fits).map((entry) => [entry.model.id, entry.model])).values()];
 		if (matches.length === 1) {
 			const longer = options.slice(0, options.indexOf(option)).map((reading) => reading.named);
-			return { kind: "chosen", model: matches[0], prompt: option.prompt, longer };
+			return { kind: "chosen", model: matches[0], prompt: option.prompt, longer, exact };
 		}
 		if (matches.length > 1) return { kind: "ambiguous", named: option.named, matches };
 		return null;
 	};
 	for (const option of options) {
-		const exact = pick(option, (entry) => entry.id === option.key || entry.short === option.key || entry.name === option.key);
+		const exact = pick(option, true, (entry) => entry.id === option.key || entry.short === option.key || entry.name === option.key);
 		if (exact) return exact;
 	}
 	for (const option of options) {
-		const started = pick(option, (entry) => entry.id.startsWith(option.key) || entry.short.startsWith(option.key) || entry.name.startsWith(option.key));
+		const started = pick(option, false, (entry) => entry.id.startsWith(option.key) || entry.short.startsWith(option.key) || entry.name.startsWith(option.key));
 		if (started) return started;
 	}
 	// What they most likely meant to name: the text before the first colon.
@@ -188,15 +189,17 @@ export async function namesCatalogueModel(db: Db, named: string): Promise<boolea
 
 /**
  * The longer reading of a chosen message that names a different catalogue model,
- * if any: "with Amazon: Nova Lite 1.0: …" must not choose an allowed "Amazon: Nova
- * Pro 1.0" through its shorter reading "Amazon", nor "with lab/model:free: …" the
- * allowed "lab/model". Readings are checked longest first, by exact id or name.
- * When the catalogue can't be read the choice stands.
+ * if any: "with Amazon: Nova Lite: …" must not choose an allowed "Amazon: Nova Pro
+ * 1.0" through its shorter reading "Amazon", nor "with lab/model:free: …" the
+ * allowed "lab/model". Readings are checked longest first, as an id or name or the
+ * start of one. When the catalogue can't be read, a choice made by the start of a
+ * name is refused (the longer reading may be the model they meant); a whole id or
+ * name stands.
  */
-export async function namesOtherModel(db: Db, longer: string[], chosen: string): Promise<string | null> {
+export async function namesOtherModel(db: Db, longer: string[], chosen: string, exact: boolean): Promise<string | null> {
 	for (const named of longer) {
-		const found = await catalogueModels(db, named, false);
-		if (found === null) return null;
+		const found = await catalogueModels(db, named, true);
+		if (found === null) return exact ? null : named;
 		if (found.some((id) => id !== chosen)) return named;
 	}
 	return null;

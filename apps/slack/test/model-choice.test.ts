@@ -116,23 +116,28 @@ describe("whether text names a catalogue model", () => {
 		const db = catalogue();
 		const allowed = [NOVA];
 		const lite = chooseModel("with Amazon: Nova Lite 1.0: summarise this", allowed);
-		expect(lite).toMatchObject({ kind: "chosen", model: NOVA, longer: ["Amazon: Nova Lite 1.0"] });
-		await expect(namesOtherModel(db, lite.kind === "chosen" ? lite.longer : [], NOVA.id)).resolves.toBe("Amazon: Nova Lite 1.0");
+		expect(lite).toMatchObject({ kind: "chosen", model: NOVA, longer: ["Amazon: Nova Lite 1.0"], exact: false });
+		await expect(namesOtherModel(db, ["Amazon: Nova Lite 1.0"], NOVA.id, false)).resolves.toBe("Amazon: Nova Lite 1.0");
+		// The start of the other model's name is enough.
+		const short = chooseModel("with Amazon: Nova Lite: hi", allowed);
+		expect(short).toMatchObject({ kind: "chosen", model: NOVA, longer: ["Amazon: Nova Lite"], exact: false });
+		await expect(namesOtherModel(db, ["Amazon: Nova Lite"], NOVA.id, false)).resolves.toBe("Amazon: Nova Lite");
 
 		const flash = { id: "z-ai/glm-4.7-flash", name: "GLM 4.7 Flash" };
 		const free = chooseModel("with z-ai/glm-4.7-flash:free: hello", [flash]);
-		expect(free).toMatchObject({ kind: "chosen", model: flash, longer: ["z-ai/glm-4.7-flash:free"] });
-		await expect(namesOtherModel(db, free.kind === "chosen" ? free.longer : [], flash.id)).resolves.toBe("z-ai/glm-4.7-flash:free");
+		expect(free).toMatchObject({ kind: "chosen", model: flash, longer: ["z-ai/glm-4.7-flash:free"], exact: true });
+		await expect(namesOtherModel(db, ["z-ai/glm-4.7-flash:free"], flash.id, true)).resolves.toBe("z-ai/glm-4.7-flash:free");
 
 		// A colon in the prompt names no model: the choice stands.
 		const plan = chooseModel("with Claude Opus 5.5: plan: 1. a", ALLOWED);
-		expect(plan).toMatchObject({ kind: "chosen", model: OPUS, longer: ["Claude Opus 5.5: plan"] });
-		await expect(namesOtherModel(db, plan.kind === "chosen" ? plan.longer : [], OPUS.id)).resolves.toBeNull();
+		expect(plan).toMatchObject({ kind: "chosen", model: OPUS, longer: ["Claude Opus 5.5: plan"], exact: true });
+		await expect(namesOtherModel(db, ["Claude Opus 5.5: plan"], OPUS.id, true)).resolves.toBeNull();
 		// The full name of the chosen model itself is no other model.
-		await expect(namesOtherModel(db, ["Amazon: Nova Pro 1.0"], NOVA.id)).resolves.toBeNull();
-		// Unreadable catalogue: the choice stands.
+		await expect(namesOtherModel(db, ["Amazon: Nova Pro 1.0"], NOVA.id, false)).resolves.toBeNull();
+		// Unreadable catalogue: a choice by the start of a name is refused, a whole name stands.
 		db.select = async () => { throw new Error("db_error_503"); };
-		await expect(namesOtherModel(db, ["Amazon: Nova Lite 1.0"], NOVA.id)).resolves.toBeNull();
+		await expect(namesOtherModel(db, ["Amazon: Nova Lite 1.0"], NOVA.id, false)).resolves.toBe("Amazon: Nova Lite 1.0");
+		await expect(namesOtherModel(db, ["Claude Opus 5.5: plan"], OPUS.id, true)).resolves.toBeNull();
 	});
 });
 

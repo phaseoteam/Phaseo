@@ -268,6 +268,15 @@ describe("events: choosing a model per message", () => {
 		await install({ model: "openai/gpt-6-luna", model_choice_enabled: true, allowed_models: ["amazon/nova-pro-v1"] });
 		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite 1.0: summarise this", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
 		expect(String(world.slack.ephemerals()[1].args.text)).toMatch(/^“Amazon: Nova Lite 1.0” isn't one of the models you can choose here/);
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		// The catalogue is down: a choice by the start of a name, with a longer reading, is refused before the meter.
+		const select = world.db.select.bind(world.db);
+		world.db.select = async <T,>(table: string, query: Record<string, string>) => {
+			if (table === "v2_models" && query.limit === "5") throw new Error("db_error_503");
+			return select<T>(table, query);
+		};
+		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Lite 1.0: hi", thread_ts: "1792600000.000050" }))).resolves.toBe("model_refused");
+		world.db.select = select;
 		// The allowed model by its full name still works.
 		await expect(run(mention({ text: "<@U0BOT00001> with Amazon: Nova Pro 1.0: summarise this" }))).resolves.toBe("started");
 		expect(world.turns.created.map((entry) => (entry.params as { model?: string }).model)).toEqual(["amazon/nova-pro-v1"]);

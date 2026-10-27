@@ -276,7 +276,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		const allowed = allowedModels(installation, names);
 		let choice = chooseModel(message, allowed);
 		// A longer reading may name another model the shorter match only starts.
-		const other = choice.kind === "chosen" ? await namesOtherModel(deps.db, choice.longer, choice.model.id) : null;
+		const other = choice.kind === "chosen" ? await namesOtherModel(deps.db, choice.longer, choice.model.id, choice.exact) : null;
 		if (other) choice = { kind: "not_allowed", named: other };
 		if (choice.kind === "chosen") {
 			model = choice.model.id;
