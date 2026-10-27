@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
+
+/** Chats settle for a moment after launch (interrupted ones are marked, overviews refill); none of that is news. */
+const SETTLE_MS = 5000;
 import { useWorkspace } from "./workspace";
+import { emptyOverview } from "../../shared/workspaceOverview";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { badgeCount, chatNotices } from "../lib/chatNotices";
 import { showToast } from "../components/ui/toast";
@@ -26,10 +30,14 @@ export function ChatNotifications() {
 	const { overview, selectedId, select } = useWorkspace();
 	const preferences = useWorkspacePreferences();
 	const memory = useRef<Map<string, string> | undefined>(undefined);
+	const startedAt = useRef(Date.now());
 	const open = useRef(selectedId); open.current = selectedId;
 	useEffect(() => {
+		// The placeholder before the first load isn't a baseline: every chat would look new once the real list arrives.
+		if (overview === emptyOverview) return;
 		const { next, notices } = chatNotices(memory.current, overview.tasks, open.current);
 		memory.current = next;
+		if (Date.now() - startedAt.current < SETTLE_MS) return;
 		if (!preferences.inAppNotifications || !document.hasFocus()) return;
 		// A burst (a batch of agents finishing) is one toast, not a stack.
 		if (notices.length > 3) { showToast("info", `${notices.length} chats have updates`); return; }

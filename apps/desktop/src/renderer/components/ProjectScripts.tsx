@@ -198,7 +198,7 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 	const control = "flex h-7 items-center gap-1 border border-border/80 px-2 text-xs font-medium text-foreground hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none [&_svg]:size-3.5 [&_svg]:shrink-0";
 	return <>
 		{scripts.length === 0 && imports.length === 0
-			? <Tip label="Add action" side="bottom"><button type="button" aria-label="Add action" onClick={() => setEditor({})} className={cn(control, "rounded-md")}><Plus /><span className="hidden xl:inline">Add action</span></button></Tip>
+			? <Tip label="Add action" side="bottom"><button type="button" aria-label="Add action" onClick={() => setEditor({})} className={cn(control, "shrink-0 whitespace-nowrap rounded-md")}><Plus /><span className="hidden xl:inline">Add action</span></button></Tip>
 			: <div role="group" aria-label="Project actions" className="flex items-center">
 				{primary
 					? <Tip label={shortcutOf(primary) ? `Run ${primary.name} (${shortcutOf(primary)})` : `Run ${primary.name}`} side="bottom"><button type="button" aria-label={`Run ${primary.name}`} onClick={() => run(primary)} className={cn(control, "rounded-l-md")}><ScriptIcon icon={primary.icon} /><span className="hidden max-w-32 truncate xl:inline">{primary.name}</span></button></Tip>
