@@ -1,8 +1,9 @@
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 
-// The same compact request as the /models page, so it is usually already edge-cached.
-const MODELS_PAGE_PATH = "/api/_web/models?limit=2000&offset=0&shape=page&projection=6&catalogue_version=v2&include_metrics=false" as const;
+// The same compact request as the /models page, so the first page is usually already edge-cached.
+const MODELS_PAGE_SIZE = 2_000;
+const modelsPagePath = (offset: number) => `/api/_web/models?limit=${MODELS_PAGE_SIZE}&offset=${offset}&shape=page&projection=6&catalogue_version=v2&include_metrics=false` as const;
 const SERVED_GATEWAY_STATUSES = new Set(["active", "deprecated"]);
 
 type ModelsPageRow = {
@@ -40,6 +41,10 @@ export function toPresetModels(rows: ModelsPageRow[]): ModelCard[] {
 
 /** Models a preset can route to: those the gateway currently serves. */
 export async function fetchPresetModels(): Promise<ModelCard[]> {
-	const page = await fetchPublicWebApi<{ models: ModelsPageRow[] }>(MODELS_PAGE_PATH);
-	return toPresetModels(page.models ?? []);
+	type ModelsPage = { models?: ModelsPageRow[]; total?: number };
+	const firstPage = await fetchPublicWebApi<ModelsPage>(modelsPagePath(0));
+	const offsets: number[] = [];
+	for (let offset = MODELS_PAGE_SIZE; offset < (firstPage.total ?? 0); offset += MODELS_PAGE_SIZE) offsets.push(offset);
+	const laterPages = await Promise.all(offsets.map((offset) => fetchPublicWebApi<ModelsPage>(modelsPagePath(offset))));
+	return toPresetModels([firstPage, ...laterPages].flatMap((page) => page.models ?? []));
 }
