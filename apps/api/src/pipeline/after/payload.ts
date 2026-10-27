@@ -235,19 +235,10 @@ function resolveClientModel(
     rawModel: string | null | undefined,
     ctxModel: string,
 ): string {
-    // Canonical gateway model ID should win for client-facing payloads.
-    // This prevents leaking provider snapshot/internal slugs (e.g. gpt-5-nano-2025-08-07).
-    if (ctxModel && ctxModel.includes("/")) return ctxModel;
-    if (!rawModel) return ctxModel;
-    if (!ctxModel) return rawModel;
-    if (
-        ctxModel.includes("/") &&
-        !rawModel.includes("/") &&
-        ctxModel.endsWith(`/${rawModel}`)
-    ) {
-        return ctxModel;
-    }
-    return rawModel;
+    // The Phaseo model id always wins for client-facing payloads, so provider
+    // snapshot and internal slugs (e.g. gpt-5-nano-2025-08-07) never leak.
+    if (ctxModel) return ctxModel;
+    return rawModel ?? ctxModel;
 }
 
 function deriveResponsesStatus(ir?: IRChatResponse) {
