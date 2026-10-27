@@ -222,8 +222,12 @@ describe("ThreadCoordinator", () => {
 		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
 		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
-		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external", "compare"]));
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external", "compare", "action_token", "searches"]));
 		expect(columns("memory")).toContain("ts");
+		// Its running turn hasn't searched, and can.
+		expect(upgraded.searchCount(1)).toBe(0);
+		expect(upgraded.reserveSearch(1, 4)).toBe(true);
+		expect(upgraded.searchCount(1)).toBe(1);
 		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");
 		upgraded.stageTurnOutput(1, { attempt: 1, costNanos: 1_000, reply: "Answer", tools: [] });
@@ -254,6 +258,24 @@ describe("ThreadCoordinator", () => {
 		expect(JSON.stringify(runner.starts)).not.toContain("TOKEN");
 		await coordinator.finishTurn(2, { status: "done" }, NOW);
 		expect(storageOf(coordinator).db.prepare("SELECT count(*) AS count FROM turns WHERE action_token IS NOT NULL").all()).toEqual([{ count: 0 }]);
+	});
+
+	it("counts a running turn's Slack searches across its runs and retries, up to the most it may make", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		await coordinator.enqueue(request("Ev0TEST0002", { messageTs: "1792600000.000300" }), NOW);
+		expect(coordinator.searchCount(1)).toBe(0);
+		// However many runs ask (a run after a question, or a retried one), the turn makes 4 at most.
+		const reserved = [1, 2, 3, 4, 5, 6].map(() => coordinator.reserveSearch(1, 4));
+		expect(reserved).toEqual([true, true, true, true, false, false]);
+		expect(coordinator.searchCount(1)).toBe(4);
+		// A queued turn can't search yet, and hasn't.
+		expect(coordinator.reserveSearch(2, 4)).toBe(false);
+		expect(coordinator.searchCount(2)).toBeNull();
+		await coordinator.finishTurn(1, { status: "done" }, NOW);
+		// Ended: no more searches, and the count says so.
+		expect(coordinator.reserveSearch(1, 4)).toBe(false);
+		expect(coordinator.searchCount(1)).toBeNull();
+		expect(coordinator.searchCount(2)).toBe(0);
 	});
 
 	it("keeps, per turn, whether the person is from another organisation", async () => {

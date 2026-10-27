@@ -75,7 +75,7 @@ Worker's production host and routes.
   - Keeps the timestamps (no text) of the thread's newest known messages, where the next read starts.
   - Remembers who was sent the Connect button in the thread.
   - Holds the running turn's questions: the paused run, the question and its answer. The first answer from the person asked wins and wakes the turn's Workflow; so does stopping the thread while it waits.
-  - Holds Slack's action token for a turn's message while the turn may search Slack (see Slack search), and drops it with the turn.
+  - Holds Slack's action token for a turn's message while the turn may search Slack (see Slack search), and drops it with the turn. Counts the turn's searches (never what they found).
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
@@ -232,8 +232,10 @@ token plus the `action_token` Slack puts on the message that started the turn
 see, and a bot token searches public channels only (`search:read.public`; with
 `search:read.files`, files shared in them too). The query can name a channel
 (`in:<#C…>`), a person (`from:<@U…>`) and UTC dates; it asks for 10 results,
-relevance-sorted (semantic where the workspace's plan has AI search), and a run
-makes at most 4 searches. Results come back short: channel, author, date, a
+relevance-sorted (semantic where the workspace's plan has AI search), and an
+answer makes at most 4 searches, counted in the coordinator's `turns.searches`
+across all its runs and retries (`reserveSearch`, which takes one atomically).
+Results come back short: channel, author, date, a
 Slack permalink (anything that isn't a `slack.com` link is dropped) and a
 300-character snippet, for the model to cite.
 
@@ -253,10 +255,28 @@ doesn't otherwise:
 Slack's terms forbid storing or copying what the API returns, so nothing of the
 results outlives the run that asked for them: they go to the model with its
 requests (whose content the agent's key never logs) and nowhere else. Working
-memory notes the query and the count only (`search_slack "query": 3 results`),
-and a run paused for a question is held in the coordinator with each result
-replaced by a note (`withoutSearchResults`); the run after the answer searches
-again if it needs to. Logs carry the turn id, counts and Slack's error code. The
+memory notes the query and the count only (`search_slack "query": 3 results`).
+Logs carry the turn id, counts and Slack's error code.
+
+What the model writes after a search can carry what it found, so once an answer
+has searched (`searchedThisAnswer`: the turn's search count is above 0, or the
+turn has ended), nothing it writes is kept:
+
+- `ask_question` refuses, and tells the model to answer with what it has and say
+  what it would still need, so no run holding results is ever paused and kept in
+  the coordinator. `search_slack` doesn't search in a step that asked a question
+  (the SDK takes a step's questions before its other tools), and a paused run is
+  never kept for an answer that has searched. A question asked before any search
+  still works, and the run after the answer can search.
+- Every tool that saves text refuses with `savingRefusal`: `remember` (notes,
+  pins and to-dos) and `save_skill`. Reading, ticking off and forgetting notes
+  still work.
+- The instructions say so whenever search is offered.
+
+Any new tool that keeps what the model writes (in Postgres, the coordinator or
+anywhere else that outlives the answer) must check `searchedThisAnswer` too.
+
+The
 action token waits in the coordinator's `turns.action_token`, set only where the
 turn may search, handed only to the running turn (`actionToken`) and deleted
 with the turn; a message that answers the turn's question brings a fresh one.

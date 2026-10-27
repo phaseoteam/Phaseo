@@ -1,16 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PausedRun } from "../src/agent";
 import { ORIGINAL_BOT_SCOPES } from "../src/installations";
 import {
 	actionTokenOf,
-	MAX_SEARCHES_PER_RUN,
+	MAX_SEARCHES_PER_ANSWER,
+	savingRefusal,
 	searchArgs,
 	searchAvailability,
+	searchedThisAnswer,
 	searchErrorText,
+	searchInstructions,
 	searchResults,
 	searchSlackTool,
 	searchTokenFor,
-	withoutSearchResults,
 } from "../src/slack-search";
 import { FakeSlack } from "./fakes";
 
@@ -36,6 +37,17 @@ const RESPONSE = {
 	},
 	response_metadata: { next_cursor: "dXNlcjpVMEc5V0ZYTlo=" },
 };
+
+/** The tool, with the answer's searches counted here as the coordinator would (reserveSearch). */
+function makeTool(slack: FakeSlack, options: { files: boolean; notes: string[]; questionAsked?: () => boolean }) {
+	const counted = { searches: 0 };
+	const tool = searchSlackTool({
+		slack: slack.client("xoxb-test"), actionToken: TOKEN, files: options.files, notes: options.notes, turnId: 7,
+		reserve: async () => counted.searches < MAX_SEARCHES_PER_ANSWER && (counted.searches += 1) > 0,
+		questionAsked: options.questionAsked ?? (() => false),
+	});
+	return { tool, counted };
+}
 
 function execute(tool: ReturnType<typeof searchSlackTool>, input: unknown) {
 	if (typeof tool.execute !== "function") throw new Error("search_slack has no execute");
@@ -129,7 +141,7 @@ describe("search_slack", () => {
 		slack.searchResponse = RESPONSE;
 		const notes: string[] = [];
 		const logs = [vi.spyOn(console, "log").mockImplementation(() => undefined), vi.spyOn(console, "warn").mockImplementation(() => undefined)];
-		const tool = searchSlackTool({ slack: slack.client("xoxb-test"), actionToken: TOKEN, files: true, notes, turnId: 7 });
+		const { tool } = makeTool(slack, { files: true, notes });
 		const result = await execute(tool, { query: "launch plan" });
 		expect(result).toMatchObject({ found: true, messages: [expect.objectContaining({ text: "We ship the launch plan on Friday." }), expect.anything()], files: [expect.objectContaining({ title: "Launch checklist" })], note: expect.stringContaining("more matches") });
 		expect(slack.of("assistant.search.context")).toEqual([{ token: "xoxb-test", method: "assistant.search.context", args: expect.objectContaining({ query: "launch plan", action_token: TOKEN, channel_types: "public_channel" }) }]);
@@ -138,43 +150,50 @@ describe("search_slack", () => {
 		for (const secret of [TOKEN, "launch plan", "We ship", "Launch checklist"]) expect(logged).not.toContain(secret);
 	});
 
-	it("says when nothing was found, passes on refusals, and stops after its searches for the answer", async () => {
+	it("says when nothing was found, passes on refusals, and stops once the answer has made its searches", async () => {
 		vi.spyOn(console, "log").mockImplementation(() => undefined);
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		const slack = new FakeSlack();
 		const notes: string[] = [];
-		const tool = searchSlackTool({ slack: slack.client("xoxb-test"), actionToken: TOKEN, files: false, notes, turnId: 7 });
+		const { tool, counted } = makeTool(slack, { files: false, notes });
 		await expect(execute(tool, { query: "nothing here" })).resolves.toMatchObject({ found: false, messages: [], note: expect.stringContaining("Nothing found") });
 		slack.failures.set("assistant.search.context", ["invalid_action_token"]);
 		await expect(execute(tool, { query: "again" })).resolves.toEqual({ found: false, error: searchErrorText("invalid_action_token") });
 		// Input mistakes don't use up a search.
 		await expect(execute(tool, { query: "" })).rejects.toThrow("query is required");
-		for (let index = 2; index < MAX_SEARCHES_PER_RUN; index += 1) await execute(tool, { query: `try ${index}` });
-		await expect(execute(tool, { query: "one more" })).resolves.toMatchObject({ found: false, error: expect.stringContaining(`${MAX_SEARCHES_PER_RUN} times`) });
-		expect(slack.of("assistant.search.context")).toHaveLength(MAX_SEARCHES_PER_RUN);
+		expect(counted.searches).toBe(2);
+		for (let index = 2; index < MAX_SEARCHES_PER_ANSWER; index += 1) await execute(tool, { query: `try ${index}` });
+		await expect(execute(tool, { query: "one more" })).resolves.toMatchObject({ found: false, error: expect.stringContaining(`${MAX_SEARCHES_PER_ANSWER} times`) });
+		expect(slack.of("assistant.search.context")).toHaveLength(MAX_SEARCHES_PER_ANSWER);
 		expect(notes).toEqual(["search_slack \"nothing here\": 0 results", "search_slack \"again\": Slack refused the search", "search_slack \"try 2\": 0 results", "search_slack \"try 3\": 0 results"]);
+	});
+
+	it("doesn't search once the run has asked a question, so the paused run holds no results", async () => {
+		const slack = new FakeSlack();
+		slack.searchResponse = RESPONSE;
+		const notes: string[] = [];
+		const { tool, counted } = makeTool(slack, { files: true, notes, questionAsked: () => true });
+		await expect(execute(tool, { query: "launch plan" })).resolves.toEqual({ found: false, error: expect.stringContaining("can't search Slack until they answer") });
+		expect(slack.of("assistant.search.context")).toEqual([]);
+		expect(counted.searches).toBe(0);
+		expect(notes).toEqual([]);
 	});
 });
 
-describe("a paused run without search results", () => {
-	it("replaces every search_slack result with a note, and keeps everything else", () => {
-		const run = {
-			run: {
-				id: "run_q", status: "waiting_for_human",
-				messages: [
-					{ role: "user", content: "what's the launch plan?" },
-					{ role: "assistant", content: "", toolCalls: [{ id: "call_s1", name: "search_slack", input: { query: "launch plan" } }] },
-					{ role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify({ found: true, messages: [{ text: "We ship the launch plan on Friday." }] }) },
-					{ role: "tool", toolCallId: "call_m1", name: "recall", content: "{\"notes\":[]}" },
-				],
-			},
-			steps: [], stepResults: [], messages: [], items: [],
-		} as unknown as PausedRun;
-		const kept = withoutSearchResults(run);
-		expect(JSON.stringify(kept)).not.toContain("We ship");
-		expect(kept.run.messages[2]).toEqual({ role: "tool", toolCallId: "call_s1", name: "search_slack", content: "(Slack search results aren't kept while waiting for an answer. Search again if you still need them.)" });
-		expect(kept.run.messages.filter((_, index) => index !== 2)).toEqual(run.run.messages.filter((_, index) => index !== 2));
-		// The original is left as it was.
-		expect(JSON.stringify(run)).toContain("We ship");
+describe("an answer that searched Slack", () => {
+	it("counts as searched once its turn made a search, or once the turn has ended", async () => {
+		const counts: Array<number | null> = [0, 1, 4, null];
+		const searched = searchedThisAnswer({ searchCount: async (turnId) => (turnId === 7 ? counts.shift()! : 0) }, 7);
+		expect([await searched(), await searched(), await searched(), await searched()]).toEqual([false, true, true, true]);
+	});
+
+	it("saves nothing: tools that keep text get a refusal to pass on", async () => {
+		await expect(savingRefusal(async () => false)).resolves.toBeNull();
+		await expect(savingRefusal(async () => true)).resolves.toBe("Nothing was saved: you searched Slack in this answer, and Slack's terms don't allow keeping anything its search finds, so nothing can be saved in it. Say so.");
+	});
+
+	it("is explained to the model whenever it can search", () => {
+		expect(searchInstructions("on", "U0PERSON01", false)).toContain("once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos or skills");
+		expect(searchInstructions("off", "U0PERSON01", false)).not.toContain("ask_question");
 	});
 });

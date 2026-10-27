@@ -96,11 +96,11 @@ export function parseQuestion(input: unknown): { text: string; options: string[]
 
 /**
  * ask_question. `refusal` says why a question can't be asked at this step (no
- * steps left to go on with, or the answer has asked its questions), or null.
- * The first question in a run pauses it; `onAsk` gets it. Any other question in
- * the same run is told to wait for the first.
+ * steps left to go on with, the answer has asked its questions, or it has
+ * searched Slack), or null. The first question in a run pauses it; `onAsk` gets
+ * it. Any other question in the same run is told to wait for the first.
  */
-export function askQuestionTool(options: { refusal: (stepIndex: number) => string | null; onAsk: (question: QuestionDraft) => void }): AgentTool<any, any> {
+export function askQuestionTool(options: { refusal: (stepIndex: number) => string | null | Promise<string | null>; onAsk: (question: QuestionDraft) => void }): AgentTool<any, any> {
 	let asked = false;
 	return {
 		id: ASK_QUESTION_TOOL_ID,
@@ -116,10 +116,10 @@ export function askQuestionTool(options: { refusal: (stepIndex: number) => strin
 			additionalProperties: false,
 		},
 		onError: "return-to-model",
-		onToolCalled: (input, context) => {
+		onToolCalled: async (input, context) => {
 			const parsed = parseQuestion(input);
 			if ("error" in parsed) return { asked: false, error: parsed.error };
-			const refused = options.refusal(context.stepIndex);
+			const refused = await options.refusal(context.stepIndex);
 			if (refused) return { asked: false, error: refused };
 			if (asked) return { asked: false, error: "You can ask one question at a time. Wait for the answer to your other question, then ask this one if you still need to." };
 			asked = true;

@@ -30,7 +30,8 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 // - Holds the action token Slack sent with a turn's message (search_slack's
 //   permission to search as the person, slack-search.ts) until the turn ends,
 //   and hands it only to the running turn. It never goes in the Workflow's
-//   payload. Search results are never kept here.
+//   payload. Search results are never kept here, only how many searches the
+//   turn made, across every run and retry of its answer (reserveSearch).
 
 const RETENTION_MS = 7 * 24 * 60 * 60_000;
 /** A running turn that hasn't reported back after this long is failed, so the queue moves on. While its question waits, this counts from when the question closes (turnDeadline). */
@@ -177,6 +178,7 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "posted_files", "TEXT"],
 	["turns", "compare", "TEXT"],
 	["turns", "action_token", "TEXT"],
+	["turns", "searches", "INTEGER"],
 ];
 
 /** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
@@ -618,6 +620,23 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	actionToken(turnId: number): string | null {
 		const row = this.sql.exec<{ action_token: string | null }>("SELECT action_token FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
 		return row?.action_token ?? null;
+	}
+
+	/**
+	 * Takes one of a running turn's Slack searches, while it has made fewer than
+	 * `max`: true when it may search. The count covers every run and retry of the
+	 * answer, so a run started again can't search afresh.
+	 */
+	reserveSearch(turnId: number, max: number): boolean {
+		return this.sql.exec(
+			"UPDATE turns SET searches = coalesce(searches, 0) + 1 WHERE id = ? AND status = 'running' AND coalesce(searches, 0) < ? RETURNING id", turnId, max,
+		).toArray().length > 0;
+	}
+
+	/** The searches a running turn has made (reserveSearch); null once the turn has ended. */
+	searchCount(turnId: number): number | null {
+		const row = this.sql.exec<{ searches: number | null }>("SELECT searches FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
+		return row ? row.searches ?? 0 : null;
 	}
 
 	/** The thread's recent messages for one turn; deleted with the turn. */
