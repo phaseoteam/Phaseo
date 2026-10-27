@@ -59,12 +59,14 @@ type AnthropicMessagesRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
-	Messages []map[string]interface{} `json:"messages"`
+	Messages []interface{} `json:"messages"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Plugins *[]interface{} `json:"plugins,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
+	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -92,6 +94,17 @@ type AnthropicMessagesResponse struct {
 	StopSequence *string `json:"stop_sequence,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type AnthropicSystemMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type AnthropicSystemTextBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
 type AnthropicTool struct {
@@ -132,6 +145,7 @@ type ApiKey struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`
@@ -152,6 +166,7 @@ type ApiKeyCreateRequest struct {
 	Name string `json:"name"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	WorkspaceId *string `json:"workspace_id,omitempty"`
 }
 
@@ -198,6 +213,8 @@ type ApiKeyRotateResponse struct {
 
 type ApiKeyScopeValue = interface{}
 
+type ApiKeyStorageLocations = []string
+
 type ApiKeyUpdateRequest struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled *bool `json:"disabled,omitempty"`
@@ -209,6 +226,7 @@ type ApiKeyUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *interface{} `json:"storage_locations,omitempty"`
 }
 
 type ApiKeyUsageBucket struct {
@@ -245,6 +263,7 @@ type ApiKeyWithValue struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`
@@ -1250,6 +1269,7 @@ type ChatCompletionsRequest struct {
 	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Prediction *map[string]interface{} `json:"prediction,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
@@ -1294,6 +1314,7 @@ type ChatImageOutputPart struct {
 }
 
 type ChatMessage struct {
+	Audio *map[string]interface{} `json:"audio,omitempty"`
 	Audios *[]map[string]interface{} `json:"audios,omitempty"`
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
@@ -1315,6 +1336,20 @@ type ChatReasoningDetail struct {
 	Summary *string `json:"summary,omitempty"`
 	Text *string `json:"text,omitempty"`
 	Type string `json:"type"`
+}
+
+type ChatResponseMessage struct {
+	Audio *map[string]interface{} `json:"audio,omitempty"`
+	Audios *[]map[string]interface{} `json:"audios,omitempty"`
+	Content interface{} `json:"content,omitempty"`
+	Images *[]map[string]interface{} `json:"images,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Reasoning *string `json:"reasoning,omitempty"`
+	ReasoningContent *string `json:"reasoning_content,omitempty"`
+	ReasoningDetails *[]map[string]interface{} `json:"reasoning_details,omitempty"`
+	Role string `json:"role"`
+	ToolCallId *string `json:"tool_call_id,omitempty"`
+	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
 }
 
 type Classifier struct {
@@ -1530,7 +1565,7 @@ type DecisionBox struct {
 
 type DecisionBoxAnswer struct {
 	Box map[string]interface{} `json:"box"`
-	Confidence float64 `json:"confidence"`
+	Confidence *float64 `json:"confidence"`
 	Name *string `json:"name"`
 	Type string `json:"type"`
 }
@@ -1667,6 +1702,54 @@ type DecisionsUsage struct {
 
 type DeletedResponse struct {
 	Deleted bool `json:"deleted"`
+}
+
+type DepartmentBudget struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	DepartmentId string `json:"department_id"`
+	DepartmentName *string `json:"department_name"`
+	Exceeded bool `json:"exceeded"`
+	Id string `json:"id"`
+	Interval string `json:"interval"`
+	Limit float64 `json:"limit"`
+	LimitNanos int `json:"limit_nanos"`
+	Remaining float64 `json:"remaining"`
+	RemainingNanos int `json:"remaining_nanos"`
+	ResetAt *string `json:"reset_at,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+	Usage float64 `json:"usage"`
+	UsageNanos int `json:"usage_nanos"`
+	WindowStart *string `json:"window_start,omitempty"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type DepartmentBudgetInput struct {
+	DepartmentId string `json:"department_id"`
+	Interval string `json:"interval"`
+	Limit float64 `json:"limit"`
+}
+
+type DepartmentBudgetInterval string
+
+const (
+	DepartmentBudgetIntervalDaily DepartmentBudgetInterval = "daily"
+	DepartmentBudgetIntervalWeekly DepartmentBudgetInterval = "weekly"
+	DepartmentBudgetIntervalMonthly DepartmentBudgetInterval = "monthly"
+)
+
+
+type DepartmentBudgetListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type DepartmentBudgetResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type DepartmentBudgetUpdateInput struct {
+	Interval *string `json:"interval,omitempty"`
+	Limit *float64 `json:"limit,omitempty"`
 }
 
 type DynamicRoute struct {
@@ -2746,6 +2829,7 @@ const (
 	KnownModelIdDeepseekDeepseekV4FlashVisionExp KnownModelId = "deepseek/deepseek-v4-flash-vision-exp"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
 	KnownModelIdDeepseekDeepseekV4Pro0813 KnownModelId = "deepseek/deepseek-v4-pro-0813"
+	KnownModelIdDeepseekDeepseekV41Flash1017 KnownModelId = "deepseek/deepseek-v4.1-flash-1017"
 	KnownModelIdDeepseekDeepseekV41FlashBeta KnownModelId = "deepseek/deepseek-v4.1-flash-beta"
 	KnownModelIdDeepseekDeepseekV41FlashPreview KnownModelId = "deepseek/deepseek-v4.1-flash-preview"
 	KnownModelIdEarlyAccessEa29bA4b KnownModelId = "early-access/ea-29b-a4b"
@@ -3792,7 +3876,29 @@ type ObservabilityDestinationResponse struct {
 type ObservabilityDestinationType string
 
 const (
+	ObservabilityDestinationTypeArize ObservabilityDestinationType = "arize"
+	ObservabilityDestinationTypeAxiom ObservabilityDestinationType = "axiom"
+	ObservabilityDestinationTypeBigquery ObservabilityDestinationType = "bigquery"
+	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
+	ObservabilityDestinationTypeClickhouse ObservabilityDestinationType = "clickhouse"
+	ObservabilityDestinationTypeCometOpik ObservabilityDestinationType = "comet_opik"
+	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
+	ObservabilityDestinationTypeDynatrace ObservabilityDestinationType = "dynatrace"
+	ObservabilityDestinationTypeElastic ObservabilityDestinationType = "elastic"
+	ObservabilityDestinationTypeGcs ObservabilityDestinationType = "gcs"
+	ObservabilityDestinationTypeGrafanaCloud ObservabilityDestinationType = "grafana_cloud"
+	ObservabilityDestinationTypeHoneycomb ObservabilityDestinationType = "honeycomb"
+	ObservabilityDestinationTypeLangfuse ObservabilityDestinationType = "langfuse"
+	ObservabilityDestinationTypeLangsmith ObservabilityDestinationType = "langsmith"
+	ObservabilityDestinationTypeNewRelic ObservabilityDestinationType = "new_relic"
 	ObservabilityDestinationTypeOtelCollector ObservabilityDestinationType = "otel_collector"
+	ObservabilityDestinationTypePosthog ObservabilityDestinationType = "posthog"
+	ObservabilityDestinationTypeR2 ObservabilityDestinationType = "r2"
+	ObservabilityDestinationTypeRespan ObservabilityDestinationType = "respan"
+	ObservabilityDestinationTypeS3 ObservabilityDestinationType = "s3"
+	ObservabilityDestinationTypeSentry ObservabilityDestinationType = "sentry"
+	ObservabilityDestinationTypeSnowflake ObservabilityDestinationType = "snowflake"
+	ObservabilityDestinationTypeWandbWeave ObservabilityDestinationType = "wandb_weave"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )
 
@@ -3954,6 +4060,7 @@ const (
 	OrganisationIdCursor OrganisationId = "cursor"
 	OrganisationIdCyfragovpl OrganisationId = "cyfragovpl"
 	OrganisationIdDatabricks OrganisationId = "databricks"
+	OrganisationIdDealignai OrganisationId = "dealignai"
 	OrganisationIdDecart OrganisationId = "decart"
 	OrganisationIdDeepseek OrganisationId = "deepseek"
 	OrganisationIdDotsStudio OrganisationId = "dots-studio"
@@ -4113,6 +4220,7 @@ type Preset struct {
 }
 
 type PresetConfig struct {
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 }
 
 type PresetCreateRequest struct {
@@ -4136,6 +4244,29 @@ type PresetForkRequest struct {
 type PresetListResponse struct {
 	Data []map[string]interface{} `json:"data"`
 	TotalCount int `json:"total_count"`
+}
+
+type PresetPromptTemplate struct {
+	Messages []map[string]interface{} `json:"messages"`
+	ResponseFormat *map[string]interface{} `json:"response_format,omitempty"`
+	Syntax *string `json:"syntax,omitempty"`
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+	Tools *[]map[string]interface{} `json:"tools,omitempty"`
+	Variables *map[string]interface{} `json:"variables,omitempty"`
+}
+
+type PresetPromptTemplateMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type PresetPromptVariable struct {
+	Default interface{} `json:"default,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Enum *[]string `json:"enum,omitempty"`
+	MaxLength *int `json:"max_length,omitempty"`
+	Required *bool `json:"required,omitempty"`
+	Type string `json:"type"`
 }
 
 type PresetPublisher struct {
@@ -4354,6 +4485,11 @@ type PromptCacheBreakpoint struct {
 type PromptCacheOptions struct {
 	Mode *string `json:"mode,omitempty"`
 	Ttl *string `json:"ttl,omitempty"`
+}
+
+type PromptTemplateReference struct {
+	Id string `json:"id"`
+	Variables *map[string]interface{} `json:"variables,omitempty"`
 }
 
 type Provider struct {
@@ -4705,6 +4841,7 @@ type ResponsesRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	Plugins *[]interface{} `json:"plugins,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
@@ -4765,208 +4902,6 @@ type ServerToolUsage struct {
 	SubagentRequests *int `json:"subagent_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
-}
-
-type SpendRule struct {
-	Action string `json:"action"`
-	BaseAmountNanos *int `json:"base_amount_nanos"`
-	BaseAmountUsd *float64 `json:"base_amount_usd"`
-	BaseKind *string `json:"base_kind"`
-	BaseRef *string `json:"base_ref"`
-	BlockAtAmountNanos *int `json:"block_at_amount_nanos"`
-	BlockAtAmountUsd *float64 `json:"block_at_amount_usd"`
-	BlockAtPercent int `json:"block_at_percent"`
-	BlockFreeModels bool `json:"block_free_models"`
-	CooldownMinutes int `json:"cooldown_minutes"`
-	CreatedAt string `json:"created_at"`
-	CreatedBy *string `json:"created_by"`
-	DestinationIds []string `json:"destination_ids"`
-	Enabled bool `json:"enabled"`
-	Evaluated bool `json:"evaluated"`
-	Id string `json:"id"`
-	Metric string `json:"metric"`
-	Name string `json:"name"`
-	Period string `json:"period"`
-	RunwayDays *int `json:"runway_days"`
-	ScopeId *string `json:"scope_id"`
-	ScopeType string `json:"scope_type"`
-	SpikeFloorNanos *int `json:"spike_floor_nanos"`
-	SpikeFloorUsd *float64 `json:"spike_floor_usd"`
-	SpikeMultiplier *float64 `json:"spike_multiplier"`
-	ThresholdAmountNanos *int `json:"threshold_amount_nanos"`
-	ThresholdAmountUsd *float64 `json:"threshold_amount_usd"`
-	ThresholdPercents *[]int `json:"threshold_percents"`
-	TimeZone *string `json:"time_zone"`
-	UpdatedAt string `json:"updated_at"`
-	WindowHours *int `json:"window_hours"`
-	WorkspaceId string `json:"workspace_id"`
-}
-
-type SpendRuleAction string
-
-const (
-	SpendRuleActionNotify SpendRuleAction = "notify"
-	SpendRuleActionBlock SpendRuleAction = "block"
-)
-
-
-type SpendRuleDeleteResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-type SpendRuleHistory struct {
-	Events []map[string]interface{} `json:"events"`
-	HasMore bool `json:"has_more"`
-	Periods []map[string]interface{} `json:"periods"`
-}
-
-type SpendRuleHistoryResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-type SpendRuleInput struct {
-	Action *string `json:"action,omitempty"`
-	BaseAmountNanos *int `json:"base_amount_nanos,omitempty"`
-	BaseAmountUsd *float64 `json:"base_amount_usd,omitempty"`
-	BaseKind *string `json:"base_kind,omitempty"`
-	BaseRef *string `json:"base_ref,omitempty"`
-	BlockAtAmountNanos *int `json:"block_at_amount_nanos,omitempty"`
-	BlockAtAmountUsd *float64 `json:"block_at_amount_usd,omitempty"`
-	BlockAtPercent *int `json:"block_at_percent,omitempty"`
-	BlockFreeModels *bool `json:"block_free_models,omitempty"`
-	CooldownMinutes *int `json:"cooldown_minutes,omitempty"`
-	DestinationIds *[]string `json:"destination_ids,omitempty"`
-	Enabled *bool `json:"enabled,omitempty"`
-	Metric string `json:"metric"`
-	Name string `json:"name"`
-	Period string `json:"period"`
-	RunwayDays *int `json:"runway_days,omitempty"`
-	ScopeId *string `json:"scope_id,omitempty"`
-	ScopeType *string `json:"scope_type,omitempty"`
-	SpikeFloorNanos *int `json:"spike_floor_nanos,omitempty"`
-	SpikeFloorUsd *float64 `json:"spike_floor_usd,omitempty"`
-	SpikeMultiplier *float64 `json:"spike_multiplier,omitempty"`
-	ThresholdAmountNanos *int `json:"threshold_amount_nanos,omitempty"`
-	ThresholdAmountUsd *float64 `json:"threshold_amount_usd,omitempty"`
-	ThresholdPercents *[]int `json:"threshold_percents,omitempty"`
-	TimeZone *string `json:"time_zone,omitempty"`
-	WindowHours *int `json:"window_hours,omitempty"`
-}
-
-type SpendRuleListResponse struct {
-	Data []map[string]interface{} `json:"data"`
-	MaxRules int `json:"max_rules"`
-}
-
-type SpendRuleMetric string
-
-const (
-	SpendRuleMetricSpend SpendRuleMetric = "spend"
-	SpendRuleMetricBudgetPercent SpendRuleMetric = "budget_percent"
-	SpendRuleMetricForecast SpendRuleMetric = "forecast"
-	SpendRuleMetricSpike SpendRuleMetric = "spike"
-	SpendRuleMetricBalance SpendRuleMetric = "balance"
-)
-
-
-type SpendRulePeriod string
-
-const (
-	SpendRulePeriodDay SpendRulePeriod = "day"
-	SpendRulePeriodWeek SpendRulePeriod = "week"
-	SpendRulePeriodMonth SpendRulePeriod = "month"
-	SpendRulePeriodRolling SpendRulePeriod = "rolling"
-)
-
-
-type SpendRulePreview struct {
-	Alert *map[string]interface{} `json:"alert"`
-	BaseKind *string `json:"base_kind"`
-	BaseNanos *int `json:"base_nanos"`
-	BaseRef *string `json:"base_ref"`
-	BaseUsd *float64 `json:"base_usd"`
-	BlockAtNanos *int `json:"block_at_nanos"`
-	BlockAtUsd *float64 `json:"block_at_usd"`
-	ComputedAt string `json:"computed_at"`
-	Evaluated bool `json:"evaluated"`
-	Metric string `json:"metric"`
-	NextThreshold *map[string]interface{} `json:"next_threshold"`
-	Percent *float64 `json:"percent"`
-	Period *map[string]interface{} `json:"period"`
-	ReachedThresholdPercent *int `json:"reached_threshold_percent"`
-	RuleId string `json:"rule_id"`
-	State *map[string]interface{} `json:"state"`
-	ThresholdAmountNanos *int `json:"threshold_amount_nanos"`
-	ThresholdAmountUsd *float64 `json:"threshold_amount_usd"`
-	ThresholdPercents *[]int `json:"threshold_percents"`
-	TimeZone string `json:"time_zone"`
-	ValueNanos *int `json:"value_nanos"`
-	ValueUsd *float64 `json:"value_usd"`
-}
-
-type SpendRulePreviewResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-type SpendRuleResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-type SpendRuleScope string
-
-const (
-	SpendRuleScopeWorkspace SpendRuleScope = "workspace"
-	SpendRuleScopeKey SpendRuleScope = "key"
-	SpendRuleScopeMember SpendRuleScope = "member"
-	SpendRuleScopeDepartment SpendRuleScope = "department"
-	SpendRuleScopeModel SpendRuleScope = "model"
-	SpendRuleScopeProvider SpendRuleScope = "provider"
-)
-
-
-type SpendRuleTestResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-type SpendRuleTestResult struct {
-	Delivered int `json:"delivered"`
-	Deliveries []map[string]interface{} `json:"deliveries"`
-	Failed int `json:"failed"`
-	Message string `json:"message"`
-	RuleId string `json:"rule_id"`
-	RuleName string `json:"rule_name"`
-	Source string `json:"source"`
-	Test bool `json:"test"`
-	Title string `json:"title"`
-}
-
-type SpendRuleUpdateInput struct {
-	Action *string `json:"action,omitempty"`
-	BaseAmountNanos *int `json:"base_amount_nanos,omitempty"`
-	BaseAmountUsd *float64 `json:"base_amount_usd,omitempty"`
-	BaseKind *string `json:"base_kind,omitempty"`
-	BaseRef *string `json:"base_ref,omitempty"`
-	BlockAtAmountNanos *int `json:"block_at_amount_nanos,omitempty"`
-	BlockAtAmountUsd *float64 `json:"block_at_amount_usd,omitempty"`
-	BlockAtPercent *int `json:"block_at_percent,omitempty"`
-	BlockFreeModels *bool `json:"block_free_models,omitempty"`
-	CooldownMinutes *int `json:"cooldown_minutes,omitempty"`
-	DestinationIds *[]string `json:"destination_ids,omitempty"`
-	Enabled *bool `json:"enabled,omitempty"`
-	Metric *string `json:"metric,omitempty"`
-	Name *string `json:"name,omitempty"`
-	Period *string `json:"period,omitempty"`
-	RunwayDays *int `json:"runway_days,omitempty"`
-	ScopeId *string `json:"scope_id,omitempty"`
-	ScopeType *string `json:"scope_type,omitempty"`
-	SpikeFloorNanos *int `json:"spike_floor_nanos,omitempty"`
-	SpikeFloorUsd *float64 `json:"spike_floor_usd,omitempty"`
-	SpikeMultiplier *float64 `json:"spike_multiplier,omitempty"`
-	ThresholdAmountNanos *int `json:"threshold_amount_nanos,omitempty"`
-	ThresholdAmountUsd *float64 `json:"threshold_amount_usd,omitempty"`
-	ThresholdPercents *[]int `json:"threshold_percents,omitempty"`
-	TimeZone *string `json:"time_zone,omitempty"`
-	WindowHours *int `json:"window_hours,omitempty"`
 }
 
 type SubagentToolDefinition struct {
@@ -5773,8 +5708,11 @@ const (
 
 type WorkspaceNotificationDestination struct {
 	CreatedAt *string `json:"created_at,omitempty"`
+	HasSigningSecret *bool `json:"has_signing_secret,omitempty"`
 	Id string `json:"id"`
 	Name string `json:"name"`
+	SigningSecret *string `json:"signing_secret,omitempty"`
+	SigningSecretRotatedAt *string `json:"signing_secret_rotated_at,omitempty"`
 	Status string `json:"status"`
 	TargetPreview string `json:"target_preview"`
 	Type string `json:"type"`
@@ -5833,6 +5771,7 @@ const (
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
 	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
+	WorkspaceNotificationEventKindBroadcastDestinationFailing WorkspaceNotificationEventKind = "broadcast_destination_failing"
 	WorkspaceNotificationEventKindSpendAlert WorkspaceNotificationEventKind = "spend_alert"
 	WorkspaceNotificationEventKindSpendBlocked WorkspaceNotificationEventKind = "spend_blocked"
 	WorkspaceNotificationEventKindSpendReport WorkspaceNotificationEventKind = "spend_report"
@@ -5846,6 +5785,7 @@ type WorkspaceNotificationRoute struct {
 
 type WorkspaceNotificationRouteMap struct {
 	AutoTopUpFailed []string `json:"auto_top_up_failed"`
+	BroadcastDestinationFailing []string `json:"broadcast_destination_failing"`
 	LowBalance []string `json:"low_balance"`
 	ModelDeprecation []string `json:"model_deprecation"`
 	ModelSubstitution []string `json:"model_substitution"`

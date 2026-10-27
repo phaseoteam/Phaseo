@@ -67,6 +67,7 @@ Ouvrez la requête dans **Gateway -> Utilisation** pour confirmer les valeurs pa
 ## Contenu d’un préréglage
 
 - Un prompt système ajouté au début de chaque requête.
+- Un [modèle de prompt](./prompt-templates.mdx) : des messages contenant des `{{variables}}` que chaque requête complète.
 - Des modèles ou familles de modèles autorisés.
 - Des listes de fournisseurs autorisés ou ignorés pour les préférences de routage.
 - Des paramètres par défaut (temperature, top_p, max_tokens et paramètres similaires).
@@ -74,7 +75,7 @@ Ouvrez la requête dans **Gateway -> Utilisation** pour confirmer les valeurs pa
 
 Les noms de préréglage commencent par `@` pour être faciles à reconnaître.
 
-Appelez un préréglage uniquement via le champ `model` de la requête. Phaseo ne propose pas de champ de requête `preset` distinct.
+Appelez un préréglage via le champ `model` de la requête, ou via `prompt.id` lorsque le préréglage contient un [modèle de prompt](./prompt-templates.mdx). Phaseo ne propose pas de champ de requête `preset` distinct.
 
 - Les préréglages privés ou d’espace de travail utilisent `@{slug}` et se résolvent dans l’espace de travail de la clé d’API.
 - Les préréglages publics utilisent `@{username}/{slug}` et sont accessibles depuis n’importe quel espace de travail. Exemple : `@octavia/release-summary`.
@@ -113,6 +114,7 @@ Les préréglages constituent ainsi la principale interface publique pour réuti
 Le parcours des préréglages dans le tableau de bord est volontairement limité à un sous-ensemble stable et explicite de modifications des requêtes :
 
 - injection du prompt système
+- modèles de prompt avec variables typées
 - listes d’autorisation de modèles
 - contraintes de routage avec listes de fournisseurs autorisés ou ignorés
 - valeurs par défaut de décodage et de génération
@@ -133,6 +135,7 @@ Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Pré
 
 ## Guides associés
 
+- [Modèles de prompt](./prompt-templates.mdx)
 - [Recueillir des commentaires sur les préréglages](./preset-feedback.mdx)
 - [Routage et solutions de repli](./routing-and-fallbacks.mdx)
 - [Paramètres d’inférence](./inference-parameters.mdx)

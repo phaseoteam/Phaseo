@@ -66,7 +66,8 @@ begin
     'chain', to_jsonb(v_chain),
     'reason', v_reason,
     'price_ratio', v_ratio,
-    'price_comparable', coalesce(v_comparable, false));
+    'price_comparable', coalesce(v_comparable, false),
+    'price_skipped_meters', coalesce(v_price->'skipped_meters', '[]'::jsonb));
 end $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."gateway_resolve_model_successor"(text) TO "service_role";

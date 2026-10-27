@@ -95,6 +95,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createDynamicRoute(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/routing/dynamic-routes";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -305,6 +310,11 @@ public final class Operations {
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Object deleteDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object deleteDynamicRoute(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/routing/dynamic-routes/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
@@ -472,6 +482,11 @@ public final class Operations {
 
 	public static Object getDataContributionSettings(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -702,6 +717,11 @@ public final class Operations {
 
 	public static Object listDataModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listDepartmentBudgets(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1050,6 +1070,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object rotateWorkspaceNotificationDestinationSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/notifications/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/rotate-secret";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object setWorkspaceDepartmentMember(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/identity/departments/" + pathSegment(path != null && path.containsKey("departmentId") ? path.get("departmentId") : "") + "/members/" + pathSegment(path != null && path.containsKey("userId") ? path.get("userId") : "");
 		return client.request("PUT", resolvedPath, query, headers, body);
@@ -1097,6 +1122,11 @@ public final class Operations {
 
 	public static Object updateDataContributionConsent(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/consent";
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateDepartmentBudget(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/department-budgets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

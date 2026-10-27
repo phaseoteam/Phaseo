@@ -375,5 +375,46 @@
     "kinds": ["jsx-text"],
     "texts": ["Artificial Analysis ↗"],
     "reason": "Official benchmark publisher name followed by an external-link indicator; the brand remains in its official spelling."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/presets/PresetPromptTemplateEditor.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "[{\"type\":\"function\",\"function\":{\"name\":\"assign\",\"parameters\":{\"type\":\"object\"}}}]",
+      "{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"result\",\"schema\":{\"type\":\"object\"}}}"
+    ],
+    "reason": "JSON examples in the template tools and response format inputs; they are API values, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/slack/SlackAgentSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "C0123ABCD, C0456EFGH"
+    ],
+    "reason": "Example Slack channel IDs in the usage-data channel input; they are Slack identifiers in their exact format, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/trusted-workloads/TrustedWorkloadsSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "acme",
+      "team_…",
+      "prj_…",
+      "refs/heads/main",
+      "production"
+    ],
+    "reason": "Example Vercel team slug, Team ID and Project ID prefixes, a Git ref and a GitHub environment name in the trust policy inputs; they are identifiers in the format the platforms issue, not copy."
   }
 ]

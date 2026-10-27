@@ -93,6 +93,10 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] plugins
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt_cache_key
+    #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -123,7 +127,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :prompt, :prompt_cache_key, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] context_management
@@ -143,6 +147,18 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     AnthropicMessagesResponse = Struct.new(:content, :context_management, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] role
+    #   @return [String]
+    AnthropicSystemMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    AnthropicSystemTextBlock = Struct.new(:cache_control, :text, :type, keyword_init: true)
     # @!attribute [rw] async
     #   @return [Boolean, nil]
     # @!attribute [rw] description
@@ -207,6 +223,8 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] status
     #   @return [String, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
     # @!attribute [rw] usage
@@ -221,7 +239,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
@@ -242,9 +260,11 @@ module Phaseo
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] workspace_id
     #   @return [String, nil]
-    ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :workspace_id, keyword_init: true)
+    ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, :workspace_id, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float, nil]
     # @!attribute [rw] requests
@@ -288,6 +308,7 @@ module Phaseo
     #   @return [String, nil]
     ApiKeyRotateResponse = Struct.new(:data, :previous_key_expires_at, keyword_init: true)
     ApiKeyScopeValue = Object
+    ApiKeyStorageLocations = Object
     # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
@@ -308,7 +329,9 @@ module Phaseo
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
-    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, keyword_init: true)
+    # @!attribute [rw] storage_locations
+    #   @return [Object, nil]
+    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float]
     # @!attribute [rw] requests
@@ -365,6 +388,8 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] status
     #   @return [String, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
     # @!attribute [rw] usage
@@ -379,7 +404,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     # @!attribute [rw] key
@@ -871,6 +896,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] presence_penalty
     #   @return [Float, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_options
@@ -919,7 +946,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :include_reasoning, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :prediction, :presence_penalty, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :include_reasoning, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :prediction, :presence_penalty, :prompt, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -944,6 +971,8 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ChatImageOutputPart = Struct.new(:image_url, :mime_type, :type, keyword_init: true)
+    # @!attribute [rw] audio
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] audios
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] content
@@ -964,7 +993,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] tool_calls
     #   @return [Array<Hash{String => Object}>, nil]
-    ChatMessage = Struct.new(:audios, :content, :images, :name, :reasoning, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    ChatMessage = Struct.new(:audio, :audios, :content, :images, :name, :reasoning, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
     # @!attribute [rw] data
     #   @return [String, nil]
     # @!attribute [rw] format
@@ -982,6 +1011,29 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ChatReasoningDetail = Struct.new(:data, :format, :id, :index, :signature, :summary, :text, :type, keyword_init: true)
+    # @!attribute [rw] audio
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] audios
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] content
+    #   @return [String, nil, Array<Hash{String => Object}>]
+    # @!attribute [rw] images
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning_content
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning_details
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] role
+    #   @return [String]
+    # @!attribute [rw] tool_call_id
+    #   @return [String, nil]
+    # @!attribute [rw] tool_calls
+    #   @return [Array<Hash{String => Object}>, nil]
+    ChatResponseMessage = Struct.new(:audio, :audios, :content, :images, :name, :reasoning, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String]
     # @!attribute [rw] created_by
@@ -1254,7 +1306,7 @@ module Phaseo
     # @!attribute [rw] box
     #   @return [Hash{String => Object}]
     # @!attribute [rw] confidence
-    #   @return [Float]
+    #   @return [Float, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type
@@ -1419,6 +1471,60 @@ module Phaseo
     # @!attribute [rw] deleted
     #   @return [String]
     DeletedResponse = Struct.new(:deleted, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] department_id
+    #   @return [String]
+    # @!attribute [rw] department_name
+    #   @return [String, nil]
+    # @!attribute [rw] exceeded
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] interval
+    #   @return [String]
+    # @!attribute [rw] limit
+    #   @return [Float]
+    # @!attribute [rw] limit_nanos
+    #   @return [Integer]
+    # @!attribute [rw] remaining
+    #   @return [Float]
+    # @!attribute [rw] remaining_nanos
+    #   @return [Integer]
+    # @!attribute [rw] reset_at
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] usage
+    #   @return [Float]
+    # @!attribute [rw] usage_nanos
+    #   @return [Integer]
+    # @!attribute [rw] window_start
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    DepartmentBudget = Struct.new(:created_at, :created_by, :department_id, :department_name, :exceeded, :id, :interval, :limit, :limit_nanos, :remaining, :remaining_nanos, :reset_at, :updated_at, :usage, :usage_nanos, :window_start, :workspace_id, keyword_init: true)
+    # @!attribute [rw] department_id
+    #   @return [String]
+    # @!attribute [rw] interval
+    #   @return [String]
+    # @!attribute [rw] limit
+    #   @return [Float]
+    DepartmentBudgetInput = Struct.new(:department_id, :interval, :limit, keyword_init: true)
+    DepartmentBudgetInterval = Object
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    DepartmentBudgetListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    DepartmentBudgetResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] interval
+    #   @return [String, nil]
+    # @!attribute [rw] limit
+    #   @return [Float, nil]
+    DepartmentBudgetUpdateInput = Struct.new(:interval, :limit, keyword_init: true)
     # @!attribute [rw] config
     #   @return [Hash{String => Object}]
     # @!attribute [rw] created_at
@@ -3676,7 +3782,9 @@ module Phaseo
     # @!attribute [rw] workspace_id
     #   @return [String]
     Preset = Struct.new(:active_version_id, :config, :created_at, :created_by, :description, :id, :name, :slug, :source_preset_id, :source_preset_version_id, :updated_at, :upstream_version_id, :versioning_method, :visibility, :workspace_id, keyword_init: true)
-    PresetConfig = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
+    PresetConfig = Struct.new(:prompt, keyword_init: true)
     # @!attribute [rw] config
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] description
@@ -3703,6 +3811,37 @@ module Phaseo
     # @!attribute [rw] total_count
     #   @return [Integer]
     PresetListResponse = Struct.new(:data, :total_count, keyword_init: true)
+    # @!attribute [rw] messages
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] response_format
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] syntax
+    #   @return [String, nil]
+    # @!attribute [rw] tool_choice
+    #   @return [Object, nil]
+    # @!attribute [rw] tools
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] variables
+    #   @return [Hash{String => Object}, nil]
+    PresetPromptTemplate = Struct.new(:messages, :response_format, :syntax, :tool_choice, :tools, :variables, keyword_init: true)
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] role
+    #   @return [String]
+    PresetPromptTemplateMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] default
+    #   @return [Object, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] enum
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max_length
+    #   @return [Integer, nil]
+    # @!attribute [rw] required
+    #   @return [Boolean, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    PresetPromptVariable = Struct.new(:default, :description, :enum, :max_length, :required, :type, keyword_init: true)
     # @!attribute [rw] handle
     #   @return [String, nil]
     # @!attribute [rw] workspace_id
@@ -3980,6 +4119,11 @@ module Phaseo
     # @!attribute [rw] ttl
     #   @return [String, nil]
     PromptCacheOptions = Struct.new(:mode, :ttl, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] variables
+    #   @return [Hash{String => Object}, nil]
+    PromptTemplateReference = Struct.new(:id, :variables, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name
@@ -4449,6 +4593,8 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] previous_response_id
     #   @return [String, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_options
@@ -4487,7 +4633,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :previous_response_id, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :previous_response_id, :prompt, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] cost_cents
@@ -4555,272 +4701,6 @@ module Phaseo
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
     ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :fusion_requests, :image_generation_requests, :search_models_requests, :subagent_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
-    # @!attribute [rw] action
-    #   @return [String]
-    # @!attribute [rw] base_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] base_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] base_kind
-    #   @return [String, nil]
-    # @!attribute [rw] base_ref
-    #   @return [String, nil]
-    # @!attribute [rw] block_at_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_at_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] block_at_percent
-    #   @return [Integer]
-    # @!attribute [rw] block_free_models
-    #   @return [Boolean]
-    # @!attribute [rw] cooldown_minutes
-    #   @return [Integer]
-    # @!attribute [rw] created_at
-    #   @return [String]
-    # @!attribute [rw] created_by
-    #   @return [String, nil]
-    # @!attribute [rw] destination_ids
-    #   @return [Array<String>]
-    # @!attribute [rw] enabled
-    #   @return [Boolean]
-    # @!attribute [rw] evaluated
-    #   @return [Boolean]
-    # @!attribute [rw] id
-    #   @return [String]
-    # @!attribute [rw] metric
-    #   @return [String]
-    # @!attribute [rw] name
-    #   @return [String]
-    # @!attribute [rw] period
-    #   @return [String]
-    # @!attribute [rw] runway_days
-    #   @return [Integer, nil]
-    # @!attribute [rw] scope_id
-    #   @return [String, nil]
-    # @!attribute [rw] scope_type
-    #   @return [String]
-    # @!attribute [rw] spike_floor_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] spike_floor_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] spike_multiplier
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] threshold_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_percents
-    #   @return [Array<Integer>, nil]
-    # @!attribute [rw] time_zone
-    #   @return [String, nil]
-    # @!attribute [rw] updated_at
-    #   @return [String]
-    # @!attribute [rw] window_hours
-    #   @return [Integer, nil]
-    # @!attribute [rw] workspace_id
-    #   @return [String]
-    SpendRule = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :created_at, :created_by, :destination_ids, :enabled, :evaluated, :id, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :updated_at, :window_hours, :workspace_id, keyword_init: true)
-    SpendRuleAction = Object
-    # @!attribute [rw] data
-    #   @return [Hash{String => Object}]
-    SpendRuleDeleteResponse = Struct.new(:data, keyword_init: true)
-    # @!attribute [rw] events
-    #   @return [Array<Hash{String => Object}>]
-    # @!attribute [rw] has_more
-    #   @return [Boolean]
-    # @!attribute [rw] periods
-    #   @return [Array<Hash{String => Object}>]
-    SpendRuleHistory = Struct.new(:events, :has_more, :periods, keyword_init: true)
-    # @!attribute [rw] data
-    #   @return [Hash{String => Object}]
-    SpendRuleHistoryResponse = Struct.new(:data, keyword_init: true)
-    # @!attribute [rw] action
-    #   @return [String, nil]
-    # @!attribute [rw] base_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] base_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] base_kind
-    #   @return [String, nil]
-    # @!attribute [rw] base_ref
-    #   @return [String, nil]
-    # @!attribute [rw] block_at_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_at_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] block_at_percent
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_free_models
-    #   @return [Boolean, nil]
-    # @!attribute [rw] cooldown_minutes
-    #   @return [Integer, nil]
-    # @!attribute [rw] destination_ids
-    #   @return [Array<String>, nil]
-    # @!attribute [rw] enabled
-    #   @return [Boolean, nil]
-    # @!attribute [rw] metric
-    #   @return [String]
-    # @!attribute [rw] name
-    #   @return [String]
-    # @!attribute [rw] period
-    #   @return [String]
-    # @!attribute [rw] runway_days
-    #   @return [Integer, nil]
-    # @!attribute [rw] scope_id
-    #   @return [String, nil]
-    # @!attribute [rw] scope_type
-    #   @return [String, nil]
-    # @!attribute [rw] spike_floor_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] spike_floor_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] spike_multiplier
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] threshold_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_percents
-    #   @return [Array<Integer>, nil]
-    # @!attribute [rw] time_zone
-    #   @return [String, nil]
-    # @!attribute [rw] window_hours
-    #   @return [Integer, nil]
-    SpendRuleInput = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :destination_ids, :enabled, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :window_hours, keyword_init: true)
-    # @!attribute [rw] data
-    #   @return [Array<Hash{String => Object}>]
-    # @!attribute [rw] max_rules
-    #   @return [Integer]
-    SpendRuleListResponse = Struct.new(:data, :max_rules, keyword_init: true)
-    SpendRuleMetric = Object
-    SpendRulePeriod = Object
-    # @!attribute [rw] alert
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] base_kind
-    #   @return [String, nil]
-    # @!attribute [rw] base_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] base_ref
-    #   @return [String, nil]
-    # @!attribute [rw] base_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] block_at_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_at_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] computed_at
-    #   @return [String]
-    # @!attribute [rw] evaluated
-    #   @return [Boolean]
-    # @!attribute [rw] metric
-    #   @return [String]
-    # @!attribute [rw] next_threshold
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] percent
-    #   @return [Float, nil]
-    # @!attribute [rw] period
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] reached_threshold_percent
-    #   @return [Integer, nil]
-    # @!attribute [rw] rule_id
-    #   @return [String]
-    # @!attribute [rw] state
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] threshold_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] threshold_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_percents
-    #   @return [Array<Integer>, nil]
-    # @!attribute [rw] time_zone
-    #   @return [String]
-    # @!attribute [rw] value_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] value_usd
-    #   @return [Float, nil]
-    SpendRulePreview = Struct.new(:alert, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :metric, :next_threshold, :percent, :period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
-    # @!attribute [rw] data
-    #   @return [Hash{String => Object}]
-    SpendRulePreviewResponse = Struct.new(:data, keyword_init: true)
-    # @!attribute [rw] data
-    #   @return [Hash{String => Object}]
-    SpendRuleResponse = Struct.new(:data, keyword_init: true)
-    SpendRuleScope = Object
-    # @!attribute [rw] data
-    #   @return [Hash{String => Object}]
-    SpendRuleTestResponse = Struct.new(:data, keyword_init: true)
-    # @!attribute [rw] delivered
-    #   @return [Integer]
-    # @!attribute [rw] deliveries
-    #   @return [Array<Hash{String => Object}>]
-    # @!attribute [rw] failed
-    #   @return [Integer]
-    # @!attribute [rw] message
-    #   @return [String]
-    # @!attribute [rw] rule_id
-    #   @return [String]
-    # @!attribute [rw] rule_name
-    #   @return [String]
-    # @!attribute [rw] source
-    #   @return [String]
-    # @!attribute [rw] test
-    #   @return [Boolean]
-    # @!attribute [rw] title
-    #   @return [String]
-    SpendRuleTestResult = Struct.new(:delivered, :deliveries, :failed, :message, :rule_id, :rule_name, :source, :test, :title, keyword_init: true)
-    # @!attribute [rw] action
-    #   @return [String, nil]
-    # @!attribute [rw] base_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] base_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] base_kind
-    #   @return [String, nil]
-    # @!attribute [rw] base_ref
-    #   @return [String, nil]
-    # @!attribute [rw] block_at_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_at_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] block_at_percent
-    #   @return [Integer, nil]
-    # @!attribute [rw] block_free_models
-    #   @return [Boolean, nil]
-    # @!attribute [rw] cooldown_minutes
-    #   @return [Integer, nil]
-    # @!attribute [rw] destination_ids
-    #   @return [Array<String>, nil]
-    # @!attribute [rw] enabled
-    #   @return [Boolean, nil]
-    # @!attribute [rw] metric
-    #   @return [String, nil]
-    # @!attribute [rw] name
-    #   @return [String, nil]
-    # @!attribute [rw] period
-    #   @return [String, nil]
-    # @!attribute [rw] runway_days
-    #   @return [Integer, nil]
-    # @!attribute [rw] scope_id
-    #   @return [String, nil]
-    # @!attribute [rw] scope_type
-    #   @return [String, nil]
-    # @!attribute [rw] spike_floor_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] spike_floor_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] spike_multiplier
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_amount_nanos
-    #   @return [Integer, nil]
-    # @!attribute [rw] threshold_amount_usd
-    #   @return [Float, nil]
-    # @!attribute [rw] threshold_percents
-    #   @return [Array<Integer>, nil]
-    # @!attribute [rw] time_zone
-    #   @return [String, nil]
-    # @!attribute [rw] window_hours
-    #   @return [Integer, nil]
-    SpendRuleUpdateInput = Struct.new(:action, :base_amount_nanos, :base_amount_usd, :base_kind, :base_ref, :block_at_amount_nanos, :block_at_amount_usd, :block_at_percent, :block_free_models, :cooldown_minutes, :destination_ids, :enabled, :metric, :name, :period, :runway_days, :scope_id, :scope_type, :spike_floor_nanos, :spike_floor_usd, :spike_multiplier, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :window_hours, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
@@ -5821,10 +5701,16 @@ module Phaseo
     WorkspaceModelSuccessorPricePolicy = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
+    # @!attribute [rw] has_signing_secret
+    #   @return [Boolean, nil]
     # @!attribute [rw] id
     #   @return [String]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] signing_secret
+    #   @return [String, nil]
+    # @!attribute [rw] signing_secret_rotated_at
+    #   @return [String, nil]
     # @!attribute [rw] status
     #   @return [String]
     # @!attribute [rw] target_preview
@@ -5833,7 +5719,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
-    WorkspaceNotificationDestination = Struct.new(:created_at, :id, :name, :status, :target_preview, :type, :updated_at, keyword_init: true)
+    WorkspaceNotificationDestination = Struct.new(:created_at, :has_signing_secret, :id, :name, :signing_secret, :signing_secret_rotated_at, :status, :target_preview, :type, :updated_at, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String]
     # @!attribute [rw] target
@@ -5875,6 +5761,8 @@ module Phaseo
     WorkspaceNotificationRoute = Struct.new(:destination_ids, :event_kind, keyword_init: true)
     # @!attribute [rw] auto_top_up_failed
     #   @return [Array<String>]
+    # @!attribute [rw] broadcast_destination_failing
+    #   @return [Array<String>]
     # @!attribute [rw] low_balance
     #   @return [Array<String>]
     # @!attribute [rw] model_deprecation
@@ -5891,7 +5779,7 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] spend_report
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, :spend_alert, :spend_blocked, :spend_report, keyword_init: true)
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :broadcast_destination_failing, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, :spend_alert, :spend_blocked, :spend_report, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)

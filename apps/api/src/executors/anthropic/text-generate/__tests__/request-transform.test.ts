@@ -67,6 +67,48 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.thinking).toEqual({ type: "enabled", budget_tokens: 1024 });
 	});
 
+	it.each(["anthropic/claude-opus-4.6", "claude-sonnet-4-6", "anthropic.claude-opus-4-6-v1:0"])("turns on adaptive thinking for effort-only requests on %s", (model) => {
+		const request = createBaseRequest();
+		request.model = model;
+		request.reasoning = { effort: "medium" };
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive" });
+		expect(payload.output_config?.effort).toBe("medium");
+	});
+
+	it("sends Messages adaptive thinking on Sonnet 4.6 as adaptive, not a 1,024-token budget", () => {
+		const ir = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-sonnet-4-6",
+			max_tokens: 2048,
+			thinking: { type: "adaptive" },
+			messages: [{ role: "user", content: "Hello" }],
+		} as any);
+		const payload = irToAnthropicMessages(ir, null, "claude-sonnet-4-6");
+		expect(payload.thinking).toEqual({ type: "adaptive" });
+	});
+
+	it("keeps a client budget and sampling rules on Opus 4.6", () => {
+		const budget = createBaseRequest();
+		budget.model = "anthropic/claude-opus-4.6";
+		budget.reasoning = { enabled: true, maxTokens: 4000 };
+		expect(irToAnthropicMessages(budget).thinking).toEqual({ type: "enabled", budget_tokens: 4000 });
+
+		const sampled = createBaseRequest();
+		sampled.model = "anthropic/claude-opus-4.6";
+		sampled.temperature = 0.4;
+		sampled.topP = 0.9;
+		const noThinking = irToAnthropicMessages(sampled);
+		expect(noThinking.thinking).toBeUndefined();
+		expect(noThinking.temperature).toBe(0.4);
+		expect(noThinking.top_p).toBe(0.9);
+
+		sampled.reasoning = { effort: "high" };
+		const withThinking = irToAnthropicMessages(sampled);
+		expect(withThinking.thinking).toEqual({ type: "adaptive" });
+		expect(withThinking.temperature).toBeUndefined();
+		expect(withThinking.top_p).toBeUndefined();
+	});
+
 	it("passes Anthropic native web fetch tools through unchanged", () => {
 		const request = createBaseRequest();
 		request.tools = [
@@ -687,9 +729,16 @@ describe("irToAnthropicMessages service controls", () => {
 
 		expect(request.reasoning).toMatchObject({ enabled: true, effort: "high" });
 		expect(request.responseFormat).toMatchObject({ type: "json_schema", strict: true });
+		// Documents decode to IR files that keep the block itself for Claude.
 		expect(request.messages[0]?.content.slice(0, 2)).toEqual([
-			{ type: "provider_block", block: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } } },
-			{ type: "provider_block", block: { type: "document", source: { type: "file", file_id: "file_123" } } },
+			{
+				type: "file", source: "url", data: "https://example.com/report.pdf", mimeType: "application/pdf",
+				nativeBlock: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } },
+			},
+			{
+				type: "file", source: "id", data: "file_123",
+				nativeBlock: { type: "document", source: { type: "file", file_id: "file_123" } },
+			},
 		]);
 		const payload = irToAnthropicMessages(request);
 		expect(payload.messages[0].content.slice(0, 2)).toEqual([

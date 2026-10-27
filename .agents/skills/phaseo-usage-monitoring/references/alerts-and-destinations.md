@@ -34,7 +34,7 @@ Destinations are shared by the workspace: email addresses or lists, Discord (bot
 | `model_deprecation` | A model the workspace uses is scheduled for retirement |
 | `model_substitution` | Retired-model routing answered with a replacement model |
 
-Custom webhooks must use HTTPS; validate each delivery before processing it and return quickly.
+Custom webhooks must use HTTPS; validate each delivery before processing it and return quickly. Creating one returns a `signing_secret` (`whsec_…`) once. Deliveries carry `x-phaseo-timestamp` and `x-phaseo-signature`, the hex HMAC-SHA256 of `<timestamp>.<raw body>`, the same scheme as video and batch webhooks. `has_signing_secret: false` means an older destination that is still sent unsigned; `POST /v1/notifications/destinations/{id}/rotate-secret` generates or replaces the secret.
 
 ## Observability destinations
 

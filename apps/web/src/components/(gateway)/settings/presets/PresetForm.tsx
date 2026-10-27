@@ -28,6 +28,7 @@ import {
 	Sliders,
 	ChevronRight,
 	ChevronLeft,
+	FileText,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SortablePresetList } from "./SortablePresetList";
+import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
@@ -66,7 +68,8 @@ type PresetEditorView =
 	| "plugins"
 	| "providers"
 	| "parameters"
-	| "reasoning";
+	| "reasoning"
+	| "template";
 
 const EXCLUDED_STATUSES = ["retired", "rumoured", "deprecated"];
 const REASONING_LABELS: Record<ReasoningEffort, string> = { none: "None", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Maximum" };
@@ -239,7 +242,21 @@ export default function PresetForm({
 	});
 	const [description, setDescription] = useState(String(initialPreset?.description ?? ""));
 	const [systemPrompt, setSystemPrompt] = useState(String(initialConfig.system_prompt ?? ""));
+	const [promptDraft, setPromptDraft] = useState(() => draftFromTemplate(initialConfig.prompt));
+	const promptBuild = useMemo(() => buildPromptTemplate(promptDraft), [promptDraft]);
 	const [visibility, setVisibility] = useState<PresetVisibility>(initialPreset?.visibility ?? "team");
+	// Running sends the saved preset, so it waits until template edits are saved.
+	const [savedTemplateJson] = useState(() => JSON.stringify(buildPromptTemplate(draftFromTemplate(initialConfig.prompt)).template));
+	const templateHasUnsavedChanges = JSON.stringify(promptBuild.template) !== savedTemplateJson;
+	const savedSlug = typeof initialPreset?.slug === "string" ? initialPreset.slug : "";
+	const savedReference = !savedSlug
+		? null
+		: initialPreset?.visibility === "public"
+			? workspacePublisher?.handle ? `@${workspacePublisher.handle}/${savedSlug}` : null
+			: `@${savedSlug}`;
+	const presetReference = visibility === "public"
+		? `@${workspacePublisher?.handle ?? "workspace"}/${buildPresetSlugPreview(slug || name) || "preset"}`
+		: `@${buildPresetSlugPreview(slug || name) || "preset"}`;
 	const [routingMode, setRoutingMode] = useState<PresetRoutingMode>(initialConfig.routing_mode ?? "balanced");
 	const router = useRouter();
 
@@ -418,6 +435,9 @@ export default function PresetForm({
 		? `${t("strings.Response healing" as never)} (${t(settingsStringKey(responseHealingMode === "safe" ? "Safe" : "Strict") as never)})`
 		: t("strings.No preset plugins enabled" as never);
 
+	const templateSummary = promptBuild.template
+		? t("presetTemplate.summary", { messages: promptBuild.template.messages.length, variables: promptBuild.variables.length })
+		: t("presetTemplate.summaryNone");
 	const requestDefaultsSummary = [
 		`${routingMode} routing`,
 		responseCachingEnabled
@@ -487,6 +507,16 @@ export default function PresetForm({
 
 		if (systemPrompt) {
 			config.system_prompt = systemPrompt;
+		}
+
+		if (promptBuild.issues.length > 0) {
+			toast.error(promptBuild.issues[0].message);
+			setActiveView("template");
+			setLoading(false);
+			return;
+		}
+		if (promptBuild.template) {
+			config.prompt = promptBuild.template;
 		}
 
 		if (selectedModels.length > 0) {
@@ -746,6 +776,12 @@ export default function PresetForm({
 							onClick={() => setActiveView("defaults")}
 						/>
 						<SectionLinkRow
+							title={t("presetTemplate.title")}
+							description={t("presetTemplate.navDescription")}
+							summary={templateSummary}
+							onClick={() => setActiveView("template")}
+						/>
+						<SectionLinkRow
 							title={t("strings.Plugins" as never)}
 							description={t("strings.phraseEnableDeterministicGatewayPluginsForThisPreset" as never)}
 							summary={pluginsSummary}
@@ -851,6 +887,33 @@ export default function PresetForm({
 								{t("presetForm.systemPromptHelp")}
 							</p>
 						</div>
+					</FormSection>
+				</div>
+			) : null}
+
+			{activeView === "template" ? (
+				<div className="space-y-6">
+					<button
+						type="button"
+						onClick={() => setActiveView("overview")}
+						className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ChevronLeft className="h-4 w-4" />
+						<span>{t("presetTemplate.breadcrumb")}</span>
+					</button>
+					<FormSection
+						icon={<FileText className="h-4 w-4" />}
+						title={t("presetTemplate.title")}
+						description={t("presetTemplate.description", { reference: presetReference })}
+						stacked
+					>
+						<PresetPromptTemplateEditor
+							draft={promptDraft}
+							onChange={setPromptDraft}
+							presetReference={presetReference}
+							savedReference={savedReference}
+							hasUnsavedChanges={templateHasUnsavedChanges}
+						/>
 					</FormSection>
 				</div>
 			) : null}

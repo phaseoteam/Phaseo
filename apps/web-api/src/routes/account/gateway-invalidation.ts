@@ -1,7 +1,8 @@
 import type { Env } from '@/env';
 import type { AccountWorkspaceContext } from './context';
 
-async function invalidateGatewayKey(env: Env, keyId: string): Promise<void> {
+/** Tells the gateway to drop its cached copy of a key (its status, limits and guardrails). Throws when it cannot. */
+export async function invalidateGatewayKey(env: Env, keyId: string): Promise<void> {
 	const key = env.PHASEO_CONTROL_KEY;
 	if (!key || !env.PHASEO_CONTROL_SECRET) throw new Error("gateway_invalidation_unavailable");
 	const response = await fetch(

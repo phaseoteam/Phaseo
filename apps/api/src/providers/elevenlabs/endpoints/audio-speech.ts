@@ -7,7 +7,7 @@ import { AudioSpeechSchema, type AudioSpeechRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { resolveElevenLabsVoiceId, validateElevenLabsVoiceForModel } from "../voices";
 
 function resolveElevenLabsModelSlug(requestedModel: string, providerModelSlug?: string | null): string {
@@ -269,7 +269,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
 	if (res.ok && args.pricingCard) {
 		const usageMeters = { input_characters: typedPayload.input.length };
-		const pricedUsage = computeBill(usageMeters, args.pricingCard, { model: modelId });
+		const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, { model: modelId });
 		bill.cost_cents = pricedUsage.pricing.total_cents;
 		bill.currency = pricedUsage.pricing.currency;
 		bill.usage = pricedUsage;

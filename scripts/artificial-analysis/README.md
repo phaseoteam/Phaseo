@@ -50,7 +50,19 @@ source configurations, raw source records, provenance, and the source-to-catalog
 mapping. The service-only `artificial_analysis_public_snapshots` table is append-only;
 the publisher validates identities and ownership, rejects stale methodology/data,
 and treats identical content as a no-op. The existing four-metric API import and
-its history remain separate. No additional schedule is enabled here.
+its history remain separate. The existing hourly benchmark workflow runs this
+publisher in an independent job, alongside the core API import. Both jobs also
+run on manual workflow dispatch. Failure of either job is visible without
+preventing the other from running. The public importer needs the database secrets
+but no AA API key; its two public requests do not use the free API quota.
+
+The full snapshot is written to the runner's temporary directory, not uploaded as
+a public artifact, because its matching report can contain non-public catalogue
+identities. Extraction, validation or publication failures retain the previously
+published snapshot and fail the job. Check the `public_snapshot` job when the
+dashboard's snapshot date stops advancing; a green core `sync` job alone does not
+confirm rich-data freshness. Identical data is a no-op, so its original fetch date
+remains until the source data or catalogue matching changes.
 
 `GET /api/_web/benchmarks/artificial-analysis/data` returns a bounded page of
 matched, currently visible catalogue configurations. It accepts `model` (canonical

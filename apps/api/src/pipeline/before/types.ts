@@ -134,6 +134,8 @@ export type PresetConfig = {
         enabled?: boolean | null;
         ttlSeconds?: number | null;
     } | null;
+    /** Prompt template (messages with {{variables}}); see core/prompt-templates. */
+    prompt?: unknown;
 };
 
 /**
@@ -538,6 +540,8 @@ export type WorkspacePolicy = {
 	privacyEnableFreeMayTrain?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	/** The key's `never_store_content`: no request or response content is kept or forwarded. */
+	neverStoreContent?: boolean;
 	accountPolicyApplied?: boolean;
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
@@ -687,6 +691,8 @@ export type PipelineContext = {
 	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
 	 */
 	rateLimitAdmissionId?: string;
+	/** Concurrency slots this HTTP request holds; shared by its fallback attempts and released by the entrypoint. */
+	rateLimitConcurrency?: import("@core/customer-rate-limits").ConcurrencyLeases;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */
@@ -731,7 +737,17 @@ export type PipelineContext = {
         slug?: string | null;
         config: PresetConfig;
     } | null;
+    /** Set when the preset rendered a prompt template; variable values are not kept. */
+    promptTemplate?: ({ presetId: string; presetSlug: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
+    /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
+    neverStoreContent?: boolean;
+    /**
+     * Zero data retention applies (the workspace setting, one of the key's guardrails, or the
+     * request's own `require_zero_data_retention`): no I/O log, cached response, data
+     * contribution sample or detailed telemetry content.
+     */
+    zeroDataRetention?: boolean;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

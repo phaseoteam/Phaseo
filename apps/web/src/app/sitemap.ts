@@ -8,6 +8,7 @@ import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { getMigrationPosts } from "@/lib/content/migrations";
 import {
 	fetchFrontendAPIProviders,
+	fetchFrontendComparePairs,
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
@@ -16,6 +17,7 @@ import {
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
+import { pairPath } from "@/components/(data)/compare/comparePairs";
 import { analyseModelCardIndexability } from "@/lib/seo/modelIndexability";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
@@ -303,6 +305,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		helpCategoryResult,
 		helpArticleResult,
 		blogPostsResult,
+		comparePairsResult,
 	] = await Promise.allSettled([
 		fetchFrontendAPIProviders(),
 		fetchFrontendOrganisations(),
@@ -315,6 +318,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 		getAnnouncementPosts(),
+		fetchFrontendComparePairs(),
 	]);
 
 	const providersForSitemap = fromSettled(
@@ -433,6 +437,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		),
 	];
 
+	// Only the curated head-to-head pages, and only when both models have indexable pages.
+	const comparePairItems = fromSettled(comparePairsResult, "compare pairs for sitemap", [])
+		.filter((pair) => pair.models.every((model) => indexableModelIds.has(model.id)))
+		.map((pair) => createItem(pairPath([pair.models[0].id, pair.models[1].id]), "weekly", 0.6));
+
 	const migrationItems = getMigrationPosts().map((post) =>
 		createItem(
 			`/migrate/${post.slug}`,
@@ -496,6 +505,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...helpArticleItems,
 		...blogItems,
 		...dynamicItems,
+		...comparePairItems,
 		...migrationItems,
 	];
 }

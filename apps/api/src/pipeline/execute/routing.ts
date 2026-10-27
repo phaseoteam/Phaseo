@@ -25,6 +25,7 @@ import { providerLimitModel, providerQuotaHeadroom, providerQuotaPressure } from
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
+import { jsonOutputEvidenceRank, requestedJsonOutputType } from "../before/paramCapabilities";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import {
 	extractRoutingPreferenceScalar,
@@ -654,7 +655,7 @@ export type RoutingScoreTrace = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker" | "provider_quota";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker" | "provider_quota" | "json_output_evidence";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -1441,6 +1442,42 @@ export async function routeProviders(
             })),
         });
     }
+    // A JSON-mode request goes first to routes whose own params list the format. Routes
+    // with no param list, then routes whose list leaves it out, stay behind as failover:
+    // provider-wide support says nothing about each model (some reject JSON mode).
+    const jsonOutputType = TEXT_ENDPOINTS.has(ctx.endpoint) ? requestedJsonOutputType(ctx.body) : null;
+    const evidenceRanks = new Map<ProviderCandidate, number>();
+    if (jsonOutputType) {
+        for (const entry of healths) evidenceRanks.set(entry.candidate, jsonOutputEvidenceRank(entry.candidate, jsonOutputType));
+        const best = Math.min(...evidenceRanks.values());
+        for (const [candidate, rank] of evidenceRanks) {
+            if (rank === best) evidenceRanks.delete(candidate);
+            else evidenceRanks.set(candidate, rank - best);
+        }
+    }
+    if (evidenceRanks.size > 0) {
+        filterStages.push({
+            stage: "json_output_evidence",
+            beforeCount: healths.length,
+            afterCount: healths.length,
+            droppedProviders: healths
+                .filter((entry) => evidenceRanks.has(entry.candidate))
+                .map((entry) => ({
+                    providerId: entry.candidate.providerId,
+                    apiModelId: entry.candidate.apiModelId ?? null,
+                    providerModelSlug: entry.candidate.providerModelSlug ?? null,
+                    reason: "json_output_unlisted_deranked",
+                })),
+        });
+    }
+    // Stable, so each evidence tier keeps the order routing chose within it.
+    const jsonOutputEvidenceLast = <T extends { candidate: ProviderCandidate }>(entries: T[]): T[] =>
+        evidenceRanks.size === 0
+            ? entries
+            : entries
+                .map((entry, index) => ({ entry, index, rank: evidenceRanks.get(entry.candidate) ?? 0 }))
+                .sort((a, b) => a.rank - b.rank || a.index - b.index)
+                .map(({ entry }) => entry);
     if (debugEnabled) {
         console.log("[gateway] provider pool", {
             model: ctx.model,
@@ -1774,14 +1811,14 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score))];
+            const ranked = [...ordered, ...jsonOutputEvidenceLast(quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score)))];
             recordStickyOutcome(ranked, true);
             return {
                 ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = weightedOrderWithExternalFallback(remaining);
+        const remainingRanked = jsonOutputEvidenceLast(weightedOrderWithExternalFallback(remaining));
         const ranked = [...ordered, ...remainingRanked];
         recordStickyOutcome(ranked, true);
         return {
@@ -1797,10 +1834,11 @@ export async function routeProviders(
             ...quotaSaturatedLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
-        recordStickyOutcome(recovery ? promote(ranked, recovery) : ranked, false);
+        const finalRanked = jsonOutputEvidenceLast(recovery ? promote(ranked, recovery) : ranked);
+        recordStickyOutcome(finalRanked, false);
         return {
-            ranked: recovery ? promote(ranked, recovery) : ranked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recovery ? promote(ranked, recovery) : ranked), false, recovery ? "recovery_probe" : "score_sort"),
+            ranked: finalRanked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(finalRanked), false, recovery ? "recovery_probe" : "score_sort"),
         };
     }
 
@@ -1808,13 +1846,14 @@ export async function routeProviders(
     const ranked = weightedOrderWithExternalFallback(routableScored);
     const recovery = selectRecovery(ranked);
     if (recovery) {
-        const recoveredRank = promote(ranked, recovery);
+        const recoveredRank = jsonOutputEvidenceLast(promote(ranked, recovery));
         recordStickyOutcome(recoveredRank, false);
         return { ranked: recoveredRank, diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recoveredRank), false, "recovery_probe") };
     }
-    recordStickyOutcome(ranked, false);
+    const weightedRanked = jsonOutputEvidenceLast(ranked);
+    recordStickyOutcome(weightedRanked, false);
     return {
-        ranked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "weighted_order"),
+        ranked: weightedRanked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(weightedRanked), false, "weighted_order"),
     };
 }

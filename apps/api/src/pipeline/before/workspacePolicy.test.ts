@@ -107,6 +107,14 @@ describe("applyWorkspacePolicy", () => {
 		expect(policy.privacyZdrOnly).toBe(true);
 	});
 
+	it("carries the key's never_store_content without changing routing", () => {
+		const neverStore = buildWorkspacePolicy({ neverStoreContent: true });
+		const standard = buildWorkspacePolicy({});
+		expect(neverStore.neverStoreContent).toBe(true);
+		expect(standard.neverStoreContent).toBe(false);
+		expect({ ...neverStore, neverStoreContent: false }).toEqual(standard);
+	});
+
 	it("loads every data-handling rule from the workspace baseline", () => {
 		const policy = buildWorkspacePolicy({
 			globalSettings: {

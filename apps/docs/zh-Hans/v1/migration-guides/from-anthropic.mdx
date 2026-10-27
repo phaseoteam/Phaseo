@@ -11,7 +11,7 @@ icon: "/icons/brands/anthropic.svg"
 
 | 设置 | 之前 | 之后 |
 | --- | --- | --- |
-| 基础 URL | Anthropic 默认值 | `https://api.phaseo.app/v1` |
+| 基础 URL | Anthropic 默认值 | `https://api.phaseo.app` |
 | API 密钥 | Anthropic 密钥 | `PHASEO_API_KEY` |
 | 模型 | Anthropic 模型名称 | `GET /v1/models` 返回的 Phaseo 模型 ID |
 | Messages 调用 | 现有 SDK 调用 | 通常不变 |
@@ -25,15 +25,16 @@ icon: "/icons/brands/anthropic.svg"
 
 <Step title="更新 Anthropic 客户端">
 
-将 SDK 指向 Phaseo 基础 URL，并使用你的 Phaseo 密钥。
+将 SDK 指向 Phaseo 根主机 `https://api.phaseo.app`，并通过 `authToken`（Python 中为 `auth_token`）传入你的 Phaseo 密钥。SDK 会自动追加 `/v1/messages`，并以 `Authorization: Bearer` 发送密钥。在现在调用 Phaseo 的环境中删除 `ANTHROPIC_API_KEY`，以免旧版 SDK 同时发送你的 Anthropic 密钥。
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
@@ -48,8 +49,8 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
@@ -89,7 +90,7 @@ curl https://api.phaseo.app/v1/messages \
 ## 迁移检查清单
 
 - 已在每个部署环境中配置 Phaseo 密钥。
-- Anthropic 客户端已指向 `https://api.phaseo.app/v1`。
+- Anthropic 客户端已指向 `https://api.phaseo.app`。
 - 已通过 `GET /v1/models` 验证每个生产模型 ID。
 - 在预发布环境中，流式传输和工具调用流程均已通过。
 - 已检查 Anthropic 专属的 Beta 请求头和参数。

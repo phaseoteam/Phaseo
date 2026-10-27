@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/empty";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import type { SubscriptionPlanSummary as SubscriptionPlan } from "./subscriptionPlanSummary";
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

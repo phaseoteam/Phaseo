@@ -261,8 +261,9 @@ export function calculatePricing(
                 meta,
             );
 
-            // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+            // Step 1: Calculate base pricing (provider costs). The provider has already charged,
+            // so a rule whose condition the request did not meet falls back to its base rate.
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan, { baseRateFallback: true });
 			if (
 				billableUsage !== usageMeters &&
 				Number.isFinite(cachedReadTokens) &&

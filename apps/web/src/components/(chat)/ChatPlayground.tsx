@@ -120,6 +120,8 @@ import {
 } from "@/components/(chat)/ChatSidebar";
 import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
 import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
+import { replayInputPrefix } from "@/components/(chat)/chatLogImport";
+import { ChatLogImportDialog } from "@/components/(chat)/ChatLogImportDialog";
 import {
 	combineReasoningEffortSupports,
 	filterReasoningEffortOptions,
@@ -137,6 +139,8 @@ type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
 	modelParam?: string | null;
 	promptParam?: string | null;
+	/** The workspace Chat bills, for opening logged requests. */
+	activeWorkspaceId?: string | null;
 };
 
 const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
@@ -489,6 +493,7 @@ function ChatPlaygroundContent({
 	models,
 	modelParam,
 	promptParam,
+	activeWorkspaceId = null,
 }: ChatPlaygroundProps) {
 	const tChat = useTranslations("Product.chat");
 	const isUnified = true;
@@ -691,6 +696,15 @@ function ChatPlaygroundContent({
 			}
 		},
 		[setActiveId],
+	);
+
+	const handleImportFromLog = useCallback(
+		async (thread: ChatThread) => {
+			await upsertChat(thread, "text");
+			setThreads((prev) => [thread, ...prev.filter((item) => item.id !== thread.id)]);
+			setActiveThread(thread);
+		},
+		[setActiveThread],
 	);
 
 	const ensureInitialThread = useCallback(
@@ -1192,8 +1206,12 @@ function ChatPlaygroundContent({
 					content: mergedSystemPrompt,
 				});
 			}
+			// Unedited messages opened from a request log go as their original
+			// structured input, so tool calls, results and attachments survive.
+			const replayPrefix = replayInputPrefix(thread.replay, contextMessages);
+			const systemMessageCount = payloadMessages.length;
 			payloadMessages.push(
-				...contextMessages.map((msg) => ({
+				...contextMessages.slice(replayPrefix.count).map((msg) => ({
 					role: msg.role,
 					content: getOpenUIContext(msg),
 				})),
@@ -1252,7 +1270,7 @@ function ChatPlaygroundContent({
 				endpoint === "responses" &&
 				Boolean(effectiveModelSettings.stream) &&
 				!wantsImageModalities;
-			const input = payloadMessages
+			const textInput = payloadMessages
 				.filter((message) => message.content.trim().length > 0)
 				.map((message, index) => {
 					const isLatestUserTurn =
@@ -1316,6 +1334,15 @@ function ChatPlaygroundContent({
 						content: contentParts,
 					};
 				});
+			// Replay items are Responses input items of other shapes; code below only
+			// looks for the system message by role, which they never claim.
+			const input: typeof textInput = replayPrefix.items.length > 0
+				? [
+						...textInput.slice(0, systemMessageCount),
+						...(replayPrefix.items as typeof textInput),
+						...textInput.slice(systemMessageCount),
+					]
+				: textInput;
 			const requestBody: Record<string, unknown> = {
 				model: requestExecutionModelId,
 				session_id: getChatThreadSessionId(thread),
@@ -1388,6 +1415,15 @@ function ChatPlaygroundContent({
 					requestUsesGatewayDatetimeServerTool = tools.some(
 						(tool) => tool.type === "gateway:datetime",
 					);
+				}
+				// Chat can't run a logged request's own functions. Declaring them keeps
+				// the imported tool calls valid. Without server tools, tool_choice
+				// "none" also stops new calls; with them, a stray call only shows as a
+				// tool call because later turns are sent as text.
+				const replayFunctionTools = thread.replay?.functionTools ?? [];
+				if (replayFunctionTools.length > 0) {
+					requestBody.tools = [...tools, ...replayFunctionTools];
+					if (tools.length === 0) requestBody.tool_choice = "none";
 				}
 			}
 
@@ -3415,6 +3451,7 @@ function ChatPlaygroundContent({
 				updatedAt: createdAt,
 				messages,
 				settings: { ...activeThread.settings },
+				...(activeThread.replay ? { replay: activeThread.replay } : {}),
 			};
 		await upsertChat(newThread, "text");
 			setThreads((prev) => [newThread, ...prev]);
@@ -4819,6 +4856,12 @@ function ChatPlaygroundContent({
 			<ChatShortcutHelpDialog
 				open={shortcutHelpOpen}
 				onOpenChange={setShortcutHelpOpen}
+			/>
+			<ChatLogImportDialog
+				models={models}
+				fallbackModelId={activeThread?.modelId ?? initialModelId ?? ""}
+				activeWorkspaceId={activeWorkspaceId}
+				onImport={handleImportFromLog}
 			/>
 			<ChatNewChatDialog
 				open={newChatDialogOpen}

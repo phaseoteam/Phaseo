@@ -7,6 +7,7 @@ export interface WorkspaceNotificationRoute {
     | "model_deprecation"
     | "model_substitution"
     | "rate_limit_throttled"
+    | "broadcast_destination_failing"
     | "spend_alert"
     | "spend_blocked"
     | "spend_report";

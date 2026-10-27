@@ -41,8 +41,11 @@ export type IRContentPart =
 	}
 	| {
 		type: "image";
-		source: "url" | "data";
-		data: string; // URL or base64
+		// "id" is an uploaded file: an OpenAI Responses `input_image` `file_id`
+		// or an Anthropic Files API `file_id`. Only the provider that issued it
+		// can resolve it.
+		source: "url" | "data" | "id";
+		data: string; // URL, base64 or file id
 		mimeType?: string;
 		detail?: "auto" | "low" | "high" | "original"; // OpenAI detail level
 		cacheControl?: IRCacheControl;
@@ -55,6 +58,11 @@ export type IRContentPart =
 		data: string; // URL or base64
 		format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
 		cacheControl?: IRCacheControl;
+		// OpenAI Chat audio output (`message.audio`): the id a later turn can reference,
+		// when it expires, and the spoken words.
+		audioId?: string;
+		expiresAt?: number;
+		transcript?: string;
 	}
 	| {
 		type: "video";
@@ -63,14 +71,18 @@ export type IRContentPart =
 	}
 	| {
 		// A document or other file input: an OpenAI Chat `file` part or a
-		// Responses `input_file` part. Executors map it to the provider's own
-		// file block, or leave it out where the provider has none.
+		// Responses `input_file` part, or an Anthropic `document` block.
+		// Executors map it to the provider's own file block.
 		type: "file";
 		source: "data" | "url" | "id";
 		data: string; // base64 (no data: prefix), URL, or provider file id
 		mimeType?: string;
 		filename?: string;
 		cacheControl?: IRCacheControl;
+		// The Anthropic `document` block the file was decoded from. Claude
+		// routes send it unchanged so its citations, context and title
+		// survive; other providers get the file in their own shape.
+		nativeBlock?: Record<string, any>;
 	}
 	| {
 		type: "provider_block";
@@ -169,6 +181,8 @@ export type IRMessage =
 		toolCalls?: IRToolCall[]; // Optional tool calls
 		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
+		// OpenAI Chat: an earlier audio response, sent back by id (`audio: { id }`).
+		audio?: { id: string };
 	}
 	| {
 		role: "tool";
@@ -989,6 +1003,8 @@ export type IRUsage = {
 		cachedWriteTokens30m?: number;
 		cachedWriteTokens12h?: number;
 		spentCredits?: number;
+		// Claude `usage.inference_geo`: where inference ran ("global" or "us"). Pricing only.
+		inferenceGeo?: string;
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;

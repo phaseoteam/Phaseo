@@ -4,7 +4,7 @@
 
 import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "./types";
-import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { isClaudeOpus55, claudeModelWithoutForcedToolChoice } from "@core/claudeModelCapabilities";
 import { claudeRequestIssues } from "@core/claudeRequestValidation";
 import { decodeProtocol } from "@protocols/index";
 import { dropVerbatimResponsesItems } from "@pipeline/execute/responsesItems";
@@ -24,7 +24,7 @@ export function validateProviderDocsCompliance(args: {
 	providers: ProviderCandidate[];
 	requestedParams: string[];
 }): ValidationResult {
-	if (isClaudeOpus55(args.model) && ["messages", "responses", "chat.completions"].includes(args.endpoint)) {
+	if ((isClaudeOpus55(args.model) || claudeModelWithoutForcedToolChoice(args.model)) && ["messages", "responses", "chat.completions"].includes(args.endpoint)) {
 		const protocol = args.endpoint === "messages" ? "anthropic.messages" : args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions";
 		const ir = decodeProtocol(protocol, args.body);
 		const failures = args.providers.map(provider => ({

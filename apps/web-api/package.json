@@ -28,7 +28,7 @@
     "@cloudflare/workers-types": "^4.20260523.1",
     "@types/node": "^26.1.2",
     "@typescript/native": "catalog:",
-    "eslint": "^10.8.1",
+    "eslint": "^10.13.0",
     "typescript": "catalog:",
     "typescript-eslint": "8.58.1",
     "vitest": "^4.1.7",

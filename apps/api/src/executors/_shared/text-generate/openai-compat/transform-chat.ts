@@ -15,6 +15,18 @@ import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
+import { imageDetailForProvider, unsupportedImageFileIdError } from "./media-parts";
+import { isMistralProvider, mapFilePartToMistral, toMistralAssistantContent } from "./providers/mistral/quirks";
+
+// Chat routes whose API documents an assistant message's `audio: { id }`, the
+// reference to an earlier audio response: OpenAI
+// (https://platform.openai.com/docs/api-reference/chat/create) and Azure OpenAI
+// (ChatCompletionRequestAssistantMessageAudio in its v1 inference spec).
+const ASSISTANT_AUDIO_REFERENCE_PROVIDERS: ReadonlySet<string> = new Set(["openai", "openai-eu", "azure"]);
+
+export function sendsAssistantAudioReference(providerId: string | undefined): boolean {
+	return providerId != null && ASSISTANT_AUDIO_REFERENCE_PROVIDERS.has(providerId);
+}
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -44,7 +56,7 @@ export function irToOpenAIChat(
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
-				content: mapIRContentToOpenAI(msg.content),
+				content: mapIRContentToOpenAI(msg.content, providerId),
 				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
@@ -107,6 +119,15 @@ export function irToOpenAIChat(
 				} else {
 					message.reasoning_content = assistantReasoning;
 				}
+			}
+
+			if (providerId && isMistralProvider(providerId)) {
+				const mistralContent = toMistralAssistantContent(msg.content, { providerId, model: ir.model });
+				if (mistralContent) message.content = mistralContent;
+			}
+
+			if (msg.audio?.id && sendsAssistantAudioReference(providerId)) {
+				message.audio = { id: msg.audio.id };
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
@@ -453,7 +474,7 @@ export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "fi
 	return null;
 }
 
-function mapIRContentToOpenAI(content: IRContentPart[]): any {
+function mapIRContentToOpenAI(content: IRContentPart[], providerId?: string): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
@@ -464,6 +485,7 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 		}
 
 		if (part.type === "file") {
+			if (providerId === "mistral" || providerId === "mistral-eu") return [mapFilePartToMistral(part)];
 			const mapped = mapFilePartToOpenAIChat(part);
 			// Chat Completions has no file-by-URL field. Dropping the document would let the model
 			// answer without it, so fail this attempt instead: routing then tries a provider that can
@@ -478,19 +500,16 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 		}
 
 		if (part.type === "image") {
-			if (part.source === "url") {
-				return {
-					type: "image_url",
-					image_url: { url: part.data, detail: part.detail },
-					...cacheMarkFields(part.cacheControl),
-				};
-			} else {
-				return {
-					type: "image_url",
-					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...cacheMarkFields(part.cacheControl),
-				};
-			}
+			// Chat Completions has no image file_id; OpenAI's executor sends such
+			// requests through Responses, and routing keeps them off other hosts.
+			if (part.source === "id") throw unsupportedImageFileIdError("Chat Completions");
+			const detail = imageDetailForProvider(part.detail, providerId);
+			const url = part.source === "url" ? part.data : `data:${part.mimeType || "image/jpeg"};base64,${part.data}`;
+			return {
+				type: "image_url",
+				image_url: { url, ...(detail ? { detail } : {}) },
+				...cacheMarkFields(part.cacheControl),
+			};
 		}
 
 		if (part.type === "audio") {
@@ -508,9 +527,11 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 
 		if (part.type === "provider_block") return { ...part.block };
 
+		// The Chat part for video is `video_url` on every host that documents
+		// one (DeepInfra, Novita, Z.ai, Venice, Friendli, io.net, SambaNova, ...).
 		if (part.type === "video") {
 			return {
-				type: "input_video",
+				type: "video_url",
 				video_url: { url: part.url },
 			};
 		}
@@ -550,6 +571,28 @@ function applySealedReasoningDetails(
 			contentParts.push(part);
 		}
 	}
+}
+
+/**
+ * OpenAI Chat audio output: `choices[].message.audio` is `{ id, data, expires_at, transcript }`
+ * with base64 audio in the requested `audio.format`
+ * (https://platform.openai.com/docs/api-reference/chat/object).
+ */
+export function toChatMessageAudioPart(audio: unknown): IRContentPart | null {
+	if (!audio || typeof audio !== "object" || Array.isArray(audio)) return null;
+	const value = audio as Record<string, unknown>;
+	const data = typeof value.data === "string" ? value.data : "";
+	const transcript = typeof value.transcript === "string" ? value.transcript : undefined;
+	const audioId = typeof value.id === "string" && value.id ? value.id : undefined;
+	if (!data && !transcript && !audioId) return null;
+	return {
+		type: "audio",
+		source: "data",
+		data,
+		...(audioId ? { audioId } : {}),
+		...(typeof value.expires_at === "number" ? { expiresAt: value.expires_at } : {}),
+		...(transcript !== undefined ? { transcript } : {}),
+	};
 }
 
 export function openAIChatToIR(
@@ -726,7 +769,7 @@ export function openAIChatToIR(
 		} else {
 			// Regular content processing
 			const rawContent = extractChoiceContent(choice.message?.content);
-			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
+			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent, model });
 
 			// Add reasoning as reasoning_text parts. Without a provider quirk, the
 			// plain reasoning_content (or reasoning) field carries it.
@@ -753,6 +796,8 @@ export function openAIChatToIR(
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));
 		contentParts.push(...extractInlineAudios(choice.message?.audios));
+		const messageAudio = toChatMessageAudioPart(choice.message?.audio);
+		if (messageAudio) contentParts.push(messageAudio);
 
 		choices.push({
 			index: choice.index || 0,

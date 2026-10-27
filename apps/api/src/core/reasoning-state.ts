@@ -17,13 +17,16 @@ export type ReasoningFormat =
 	| "openai-responses-v1"
 	| "azure-openai-responses-v1"
 	| "xai-responses-v1"
-	| "google-gemini-v1";
+	| "google-gemini-v1"
+	| "mistral-v1";
 
 export const ANTHROPIC_REASONING_FORMAT: ReasoningFormat = "anthropic-claude-v1";
 export const OPENAI_REASONING_FORMAT: ReasoningFormat = "openai-responses-v1";
 export const AZURE_OPENAI_REASONING_FORMAT: ReasoningFormat = "azure-openai-responses-v1";
 export const XAI_REASONING_FORMAT: ReasoningFormat = "xai-responses-v1";
 export const GOOGLE_REASONING_FORMAT: ReasoningFormat = "google-gemini-v1";
+/** Mistral ThinkChunk `signature` (https://docs.mistral.ai/capabilities/reasoning). */
+export const MISTRAL_REASONING_FORMAT: ReasoningFormat = "mistral-v1";
 
 const KNOWN_FORMATS = new Set<string>([
 	ANTHROPIC_REASONING_FORMAT,
@@ -31,6 +34,7 @@ const KNOWN_FORMATS = new Set<string>([
 	AZURE_OPENAI_REASONING_FORMAT,
 	XAI_REASONING_FORMAT,
 	GOOGLE_REASONING_FORMAT,
+	MISTRAL_REASONING_FORMAT,
 ]);
 
 export function isReasoningFormat(value: unknown): value is ReasoningFormat {
@@ -39,7 +43,8 @@ export function isReasoningFormat(value: unknown): value is ReasoningFormat {
 
 /**
  * What a sealed value holds:
- * - `signature`: an Anthropic thinking signature or a Gemini thought signature;
+ * - `signature`: an Anthropic thinking signature, a Gemini thought signature or a
+ *   Mistral ThinkChunk signature;
  * - `redacted`: the `data` of an Anthropic `redacted_thinking` block;
  * - `encrypted`: OpenAI, Azure or xAI `encrypted_content`.
  */
@@ -183,6 +188,9 @@ export function reasoningFormatForRoute(
 		case "google-ai-studio":
 		case "google":
 			return GOOGLE_REASONING_FORMAT;
+		case "mistral":
+		case "mistral-eu":
+			return MISTRAL_REASONING_FORMAT;
 		default:
 			return null;
 	}

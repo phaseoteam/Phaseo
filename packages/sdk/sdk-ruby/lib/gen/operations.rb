@@ -115,6 +115,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/department-budgets"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createDynamicRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/routing/dynamic-routes"
@@ -373,6 +379,13 @@ module Phaseo
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.deleteDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.deleteDynamicRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -603,6 +616,13 @@ module Phaseo
       def self.getDataContributionSettings(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -905,6 +925,12 @@ module Phaseo
       def self.listDataModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listDepartmentBudgets(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/department-budgets"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1355,6 +1381,13 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.rotateWorkspaceNotificationDestinationSecret(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}/rotate-secret"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.setWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["departmentId"].to_s)
@@ -1420,6 +1453,13 @@ module Phaseo
       def self.updateDataContributionConsent(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution/consent"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateDepartmentBudget(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/department-budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

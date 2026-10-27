@@ -13,9 +13,6 @@ import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/Mod
 import {
 	fetchFrontendModelPendingApiReleaseState,
 	fetchFrontendModelPricing,
-	fetchFrontendModelPricingHistory,
-	fetchFrontendModelEffectivePricingDaily,
-	fetchFrontendModelUsageDailyBreakdown,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 const OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS = 2_500;
@@ -71,18 +68,6 @@ export default async function ModelPricingInsightsSection({
 	const providerIds = Array.from(
 		new Set(providersForDisplay.map((provider) => provider.provider.api_provider_id)),
 	).sort((a, b) => a.localeCompare(b));
-	const modelAliases = Array.from(
-		new Set(
-			providersForDisplay.flatMap((provider) =>
-				provider.provider_models.flatMap((providerModel) =>
-					[providerModel.model_id, providerModel.provider_model_slug].filter(
-						(value): value is string =>
-							typeof value === "string" && value.trim().length > 0,
-					),
-				),
-			),
-		),
-	).sort((a, b) => a.localeCompare(b));
 	if (!providersForDisplay.length) {
 		const isPreview = pendingApiRelease?.isPendingApiRelease === true || hasSubmittedProviderPrices;
 		return (
@@ -117,36 +102,6 @@ export default async function ModelPricingInsightsSection({
 		);
 	}
 
-	const [pricingHistoryRules, usageRows, effectivePricingRows] = await Promise.all([
-		withOptionalPricingTimeout(
-			fetchFrontendModelPricingHistory(modelId, {
-				includeHidden,
-				days: 3650,
-			}),
-			[],
-			"pricing history rules"
-		),
-		withOptionalPricingTimeout(
-			fetchFrontendModelUsageDailyBreakdown({
-				modelId,
-				providerIds,
-				modelAliases,
-				days: 365,
-			}),
-			[],
-			"usage breakdown"
-		),
-		withOptionalPricingTimeout(
-			fetchFrontendModelEffectivePricingDaily({
-				modelId,
-				providerIds,
-				days: 365,
-			}),
-			[],
-			"effective pricing"
-		),
-	]);
-
 	return (
 		<div className="space-y-4">
 			{pendingApiRelease?.isPendingApiRelease ? (
@@ -158,9 +113,8 @@ export default async function ModelPricingInsightsSection({
 			<ModelPricingInsightsClient
 				modelId={modelId}
 				providers={providersForDisplay}
-				historyRules={pricingHistoryRules}
-				usageRows={usageRows}
-				effectivePricingRows={effectivePricingRows}
+				providerIds={providerIds}
+				includeHidden={includeHidden}
 				showPageHeader={showPageHeader}
 			/>
 		</div>

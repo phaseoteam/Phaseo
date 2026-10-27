@@ -1,6 +1,6 @@
 ---
 title: "نشر كتالوج المزوّد"
-description: "انشر تغذيات نماذج V1 أو V1.1 مع عروض موحّدة لمستويات الخدمة وحدود المعدل."
+description: "انشر تغذيات نماذج V1 أو V1.1 أو V1.2 مع عروض موحّدة لمستويات الخدمة وسياسات البيانات وحدود المعدل."
 icon: "list"
 ---
 
@@ -12,7 +12,41 @@ icon: "list"
 
 يعلن V1.1 عن `"schema_version": "1.1"` وينشر `service_tiers` داخل كل نموذج. يختار المستورِد التنسيق من المستند. معلمات الاستعلام في عنوان URL مثل `?format=phaseo-v1.1` هي اصطلاحات اختيارية لنقطة النهاية الخاصة بك؛ ولا يستنتج Phaseo الإصدار من عنوان URL.
 
-نزّل [مخطط V1](https://phaseo.app/api/internal/provider-catalog/schema) أو [مخطط V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). تُرفض الإصدارات غير المدعومة صراحةً.
+نزّل [مخطط V1](https://phaseo.app/api/internal/provider-catalog/schema) أو [مخطط V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) أو [مخطط V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). تُرفض الإصدارات غير المدعومة صراحةً.
+
+### سياسات البيانات في V1.2
+
+تضيف V1.2 تصريحات خاصة بكل قدرة حول التدريب والاحتفاظ إلى كل مستوى خدمة. يمكنك نشر V1.2 في أي وقت. يتحقق Phaseo من التصريحات عند الاستيراد، لكنها لا تمنح أي ضمان حتى يوافق Phaseo على مصدر سياستك. تظل خلاصات V1 وV1.1 مدعومة.
+
+تقبل V1.2 أيضًا `declarations` اختيارية على مستوى النموذج أو مستوى الخدمة لهوية النموذج وحدود الإدخال والإخراج المحددة بالأنواع وأوصاف المعلمات والأسعار والسعة حسب النطاق والخصومات وتفاصيل النشر. يتم التحقق منها وحفظها للمراجعة. لا تفعّل المعلمات تلقائيًا ولا تغيّر الأسعار القابلة للفوترة أو تطبيق حدود السعة أو ضمانات إقامة البيانات. تحدد نتائج التحقق التصريحات المخزنة؛ واصل نشر الأسعار والقدرات الفعلية عبر حقولها الحالية.
+
+اضبط `schema_version` على `"1.2"` وأضف كائن `data_policy` إلى كل مستوى ينطبق عليه ذلك:
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+يمثل هذا المثال قيمة `data_policy` للمستوى، وليس خلاصة كاملة. معرّفات القدرات معيارية: استخدم `text.generate` حتى عندما يصرّح النموذج بـ `responses` أو `chat.completions`.
+
+يشمل التصريح المطالبات والمخرجات عبر سلسلة المعالجة لدى الجهات السابقة بأكملها. ولا يصف بيانات الفوترة الوصفية. قيم التدريب هي `unknown` و`may_train` و`no_train` و`opt_out_available` و`enterprise_no_train`. أوضاع الاحتفاظ هي `unknown` و`none` و`transient` و`fixed` و`until_deleted`. استخدم صفر يوم مع none، ومدة قصوى موجبة مع transient/fixed، وnull مع unknown/until-deleted.
+
+صرّح بالاتفاقيات المطلوبة باستخدام `contract_mode`: ‏`none` أو `customer_agreement` أو `enterprise_agreement`. إعدادات الحساب المطلوبة هي كائنات تحتوي على `id` و`description` و`documentation_url` عبر HTTPS ضمن مصفوفة `account_settings`. تستخدم البرامج المشروطة `zdr_eligibility: "conditional"` ولا يمكنها التصريح بضمان فعّال بقيمة true. تظل معلومات إرشادية إلى أن تتمكن Phaseo من التحقق من استيفاء الشروط.
+
+تعتمد Phaseo مصدر السياسة بشكل مستقل. لا يمكن للخلاصة وضع علامة «تم التحقق» على التصريح. يمنح هذا الإصدار ZDR فعّالًا فقط لتوليد النص غير المشروط في العروض غير المجمّعة، دون تدريب أو احتفاظ بالمحتوى. استضافة النموذج بنفسك لا تعني بحد ذاتها التصريح بـ ZDR.
+
+بعد اعتماد العرض سياسة تديرها الخلاصة، يؤدي ضبط false أو إرسال null أو حذف التصريح أو الرجوع إلى إصدار أقدم من الخلاصة إلى سحب ذلك الضمان. تُدار تجاوزات Phaseo اليدوية بشكل منفصل. تنتهي صلاحية التصريحات الإيجابية بعد 24 ساعة دون تحقق ناجح من الكتالوج؛ ولا يتطلب إلغاء الاعتماد جلبًا جديدًا من المزوّد.
 
 ## نشر المستويات الموحّدة
 
