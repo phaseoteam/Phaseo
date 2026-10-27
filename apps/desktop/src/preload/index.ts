@@ -50,6 +50,7 @@ const desktopApi: PhaseoDesktopApi = {
 		searchMessages: query => ipcRenderer.invoke("workspace:search-messages", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
+		cloneProject: url => ipcRenderer.invoke("workspace:clone-project", url),
 		updateProject: update => ipcRenderer.invoke("workspace:update-project", update),
 		projectFile: projectId => ipcRenderer.invoke("workspace:project-file", projectId),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),

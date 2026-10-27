@@ -51,6 +51,7 @@ import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes"
 import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { searchProjectContents } from "./projectContentSearch";
+import { cloneRepository, cloneSource } from "./projectClone";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -737,6 +738,17 @@ ipcMain.handle("workspace:choose-project", async event => {
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
+});
+// T3's Clone from a remote URL: asks where to put the checkout, clones it and adds it as a project.
+ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
+	const window = senderWindow(event);
+	if (!window || shutdownStarted) throw new Error("Untrusted workspace request.");
+	cloneSource(url);
+	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here" });
+	if (result.canceled || !result.filePaths[0]) return undefined;
+	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
+	const project = workspaceRuntime.store.addProject(directory);
+	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
 });
 ipcMain.handle("workspace:project-file", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");

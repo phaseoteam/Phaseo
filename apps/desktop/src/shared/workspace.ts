@@ -209,6 +209,8 @@ export type WorkspaceApi = {
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	chooseProject: () => Promise<WorkspaceOverview>;
+	/** Asks for a folder, clones the repository into it and adds the checkout as a project; undefined if cancelled. */
+	cloneProject: (url: string) => Promise<{ workspace: WorkspaceOverview; projectId: string } | undefined>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
 	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */
