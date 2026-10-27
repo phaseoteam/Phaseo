@@ -1831,7 +1831,7 @@ describe("Slack search", () => {
 		}
 		// Its own answer is a message in the thread like any other; the note names the query and the count.
 		// The answer quotes what it found: working memory keeps only a note of it (the reply is in the thread).
-		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack \"launch plan\": 1 result", SEARCHED_REPLY_MEMORY]);
+		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack", SEARCHED_REPLY_MEMORY]);
 	});
 
 	function askQuestion(request: AgentTurnRequest, id = "call_q1") {

@@ -282,9 +282,16 @@ describe("ThreadCoordinator", () => {
 	it("keeps only a note, not the text, of an answer that searched Slack in the thread's working memory", async () => {
 		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
 		expect(coordinator.reserveSearch(1, 4)).toBe(true);
-		await coordinator.finishTurn(1, { status: "done", reply: "The decision was in #infra: move to eu-west.", tools: ["search_slack: 3 results"] }, NOW);
+		await coordinator.finishTurn(1, {
+			status: "done",
+			reply: "The decision was in #infra: move to eu-west.",
+			tools: ['search_slack "eu-west move": 3 results', 'make_chart: posted a bar chart, "eu-west latency"', "recall eu-west"],
+		}, NOW);
+		// Nothing the model gave its tools either: a later query or a chart's title can quote what it found.
 		expect(coordinator.workingMemory().map((entry) => [entry.kind, entry.text])).toEqual([
-			["tool", "search_slack: 3 results"],
+			["tool", "search_slack"],
+			["tool", "make_chart"],
+			["tool", "recall"],
 			["reply", SEARCHED_REPLY_MEMORY],
 		]);
 	});

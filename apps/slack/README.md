@@ -254,9 +254,15 @@ doesn't otherwise:
 
 Slack's terms forbid storing or copying what the API returns, so nothing of the
 results outlives the run that asked for them: they go to the model with its
-requests (whose content the agent's key never logs) and nowhere else. Working
-memory notes the query and the count only (`search_slack "query": 3 results`).
-Logs carry the turn id, counts and Slack's error code.
+requests (whose content the agent's key never logs) and nowhere else. Logs
+carry the turn id, counts and Slack's error code.
+
+While the answer is being written, the thread coordinator holds what any answer
+holds so a retried step can finish it (the reply so far, tool notes, the titles
+of charts and images it posted); all of it goes when the answer ends (at most
+`TURN_TIMEOUT_MS`). What stays in the thread's working memory (7 days) for an
+answer that searched is only `SEARCHED_REPLY_MEMORY` in place of its reply and
+the ids of the tools it used (`toolNames`), never what the model gave them.
 
 What the model writes after a search can carry what it found, so once an answer
 has searched (`searchedThisAnswer`: the turn's search count is above 0, or the

@@ -113,6 +113,11 @@ export type PostedFile = { kind: "chart" | "image"; title: string; shown: boolea
 const MAX_POSTED_CHARTS = 20;
 
 const MAX_CONTEXT_ENTRIES = 20;
+/** A tool note's tool id ("search_slack \"launch plan\": 1 result" → "search_slack"), without what the model gave it. */
+export function toolNames(notes: string[]): string[] {
+	return notes.flatMap((note) => /^[a-z_]+/.exec(note.trim())?.[0] ?? []);
+}
+
 /** Working memory's note for an answer that searched Slack, in place of its text. */
 export const SEARCHED_REPLY_MEMORY = "(An answer that used Slack search. Its text isn't kept here; it's in the thread.)";
 const MAX_CONTEXT_CHARS = 4_000;
@@ -371,8 +376,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 				if (question.leg) remember(question.leg);
 				if (question.ts) remember({ reply: questionMemory(question, turn.slack_user_id), ts: question.ts, tools: [] });
 			}
-			// An answer that searched Slack can quote what it found: only that it answered is kept (the reply is in the thread).
-			remember({ reply: (turn.searches ?? 0) > 0 && reply?.trim() ? SEARCHED_REPLY_MEMORY : reply, ts: turn.reply_ts, tools });
+			// An answer that searched Slack can quote what it found, in its reply and in what its tools were given (a
+			// later query, a chart's title): only that it answered and which tools it used are kept (the reply is in the thread).
+			const searched = (turn.searches ?? 0) > 0;
+			remember({ reply: searched && reply?.trim() ? SEARCHED_REPLY_MEMORY : reply, ts: turn.reply_ts, tools: searched ? toolNames(tools) : tools });
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
 			// The replies and questions are messages in the thread too.
 			const posted = [...questions.flatMap((question) => [question.leg?.ts ?? null, question.ts]), turn.reply_ts].filter((ts): ts is string => ts !== null);
