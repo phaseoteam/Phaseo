@@ -25,9 +25,10 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_schedule (
 -- installation. Hourly is the finest frequency, so nothing runs more often.
 -- Locks the installation row like the memory functions, so the cap holds and
 -- uninstalling, which deletes every schedule, can't miss one.
--- p_creation_key keys the tool call (its Slack event, the answer's part and the
--- call's number in it): saving again with the same key, as a retried Workflow
--- step does, returns the schedule saved the first time and saves nothing.
+-- p_creation_key keys what the tool call sets up (its Slack event, the answer's
+-- part, and a digest of the conversation, title and timing): saving again with
+-- the same key, as a retried Workflow step does, returns the schedule saved the
+-- first time and saves nothing.
 -- Returns {status: saved | full | off | link_required | not_installed,
 -- schedule?, limit?}. Service role only.
 declare

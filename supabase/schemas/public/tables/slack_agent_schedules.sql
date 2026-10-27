@@ -71,7 +71,7 @@ COMMENT ON COLUMN "public"."slack_agent_schedules"."created_by" IS 'The Slack us
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."timezone" IS 'The creator''s IANA time zone from Slack (users.info tz) when it was set up. hour, minute, day_of_week (1 Monday to 7 Sunday) and day_of_month are local times there.';
 
-COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys the schedule_task call that saved it (the Slack event it answered, the answer''s part and the call''s number in it), so a retried Workflow step gets the schedule it saved instead of a second one.';
+COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys what the schedule_task call that saved it set up (the Slack event it answered, the answer''s part, and a digest of its conversation, title and timing), so a retried Workflow step gets the schedule it saved instead of a second one.';
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."last_run_at" IS 'The time the last claimed run was due. With last_result null, that run hasn''t reported back yet.';
 

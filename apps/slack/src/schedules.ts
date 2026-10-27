@@ -154,8 +154,8 @@ export type ScheduleToolContext = {
 	canCreate: boolean;
 	/**
 	 * Keys this run of the turn: its Slack event and the run after question n (eventId:n). schedule_task adds
-	 * the call's number in the run, so a retried run (new model tool call ids, maybe new wording) gets the
-	 * schedule its first attempt saved instead of a second one.
+	 * a digest of what it sets up (scheduleCreationKey), so a retried run (new model tool call ids, calls in
+	 * another order) gets the schedule its first attempt saved instead of a second one.
 	 */
 	runKey: string;
 	/** Short notes of what each tool did, kept as the thread's working memory. */
@@ -247,10 +247,21 @@ function scheduleView(row: ScheduleRow, channel: string) {
 	};
 }
 
+/**
+ * What a schedule_task save is keyed by: the run (its Slack event and the answer's part) and what it sets up
+ * (its conversation, title and timing). A retried run step re-runs the model, so its calls can come in a
+ * different order or leave one out; the same task gets the same key (and the schedule saved the first time),
+ * another task its own. A retry that renames a task saves it again, which is visible and can be cancelled.
+ */
+export async function scheduleCreationKey(runKey: string, channel: string, title: string, timing: Omit<ScheduleTiming, "timezone">): Promise<string> {
+	const what = JSON.stringify([channel, title.trim().toLowerCase(), timing.frequency, timing.hour, timing.minute, timing.day_of_week, timing.day_of_month]);
+	const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(what)));
+	return `${runKey}:${[...digest.subarray(0, 12)].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
 /** The recurring task tools: schedule_task when the turn may set one up, then list_schedules and cancel_schedule. */
 export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>[] {
 	const { db, slack, installationId, channel, slackUserId, notes } = context;
-	let saves = 0;
 	const tools: AgentTool<any, any>[] = [
 		{
 			id: "list_schedules",
@@ -316,8 +327,7 @@ export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>
 			const title = oneLine(text(input.title, "title", MAX_SCHEDULE_TITLE_CHARS));
 			const prompt = text(input.prompt, "prompt", MAX_SCHEDULE_PROMPT_CHARS);
 			const timing = timingInput(input);
-			// Numbered before anything waits, so calls in one step keep their order on a retry.
-			const creationKey = `${context.runKey}:${++saves}`;
+			const creationKey = await scheduleCreationKey(context.runKey, channel, title, timing);
 			const zone = await personTimeZone(slack, slackUserId);
 			const result = await db.rpc<{ status: string; schedule?: ScheduleRow; limit?: number }>("save_slack_agent_schedule", {
 				p_installation_id: installationId,

@@ -5,7 +5,7 @@ import { TURN_TIMEOUT_MS } from "../src/coordinator";
 import { homeView, publishHome, type HomeFacts } from "../src/home";
 import type { Installation } from "../src/installations";
 import { pausedNotice, runDueSchedules, scheduledEventId, scheduledMessage, startScheduledRun, type ClaimedRun } from "../src/scheduled-runs";
-import { describeTiming, formatRunTime, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
+import { describeTiming, formatRunTime, scheduleCreationKey, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
 import type { TurnRef } from "../src/turns";
 import { runTurn, type StepConfig, type StepRunner } from "../src/workflow";
 import { BOT_TOKEN, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, type TestWorld } from "./fakes";
@@ -158,8 +158,9 @@ describe("schedule tools", () => {
 		const result = await run("schedule_task", { title: "  Weekly   spend ", prompt: "Summarise it.", frequency: "weekly", time: "09:00", day_of_week: "monday" });
 		expect(rpcCalls("save_slack_agent_schedule")).toEqual([{
 			p_installation_id: INSTALLATION_ID, p_channel_id: CHANNEL, p_title: "Weekly spend", p_prompt: "Summarise it.", p_frequency: "weekly",
-			p_hour: 9, p_minute: 0, p_day_of_week: 1, p_day_of_month: null, p_timezone: "Europe/London", p_created_by: PERSON, p_creation_key: "Ev0SAVE0001:0:1",
+			p_hour: 9, p_minute: 0, p_day_of_week: 1, p_day_of_month: null, p_timezone: "Europe/London", p_created_by: PERSON, p_creation_key: await scheduleCreationKey("Ev0SAVE0001:0", CHANNEL, "Weekly spend", { frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null }),
 		}]);
+		expect(rpcCalls("save_slack_agent_schedule")[0].p_creation_key).toMatch(/^Ev0SAVE0001:0:[0-9a-f]{24}$/);
 		expect(world.slack.of("users.info").map((call) => call.args.user)).toEqual([PERSON]);
 		expect(result).toEqual({
 			saved: true, id: SCHEDULE_ID, title: "Weekly spend", runs: "every Monday at 09:00 (Europe/London time)", where: "this conversation",
@@ -168,7 +169,7 @@ describe("schedule tools", () => {
 		expect(notes).toEqual(["schedule_task weekly"]);
 	});
 
-	it("keys each save by the turn's event, its run and the call's number, so a retried run step saves nothing twice", async () => {
+	it("keys each save by the turn's event, its run and what it sets up, so a retried run step saves nothing twice and loses no task", async () => {
 		world.db.rpcResults.save_slack_agent_schedule = { status: "saved", schedule: savedRow() };
 		const ts = "1792600000.000001";
 		const threadKey = `${INSTALLATION_ID}:${CHANNEL}:${ts}`;
@@ -182,10 +183,10 @@ describe("schedule tools", () => {
 		const agent = new ScriptedAgent(async (hooks) => {
 			attempts += 1;
 			const save = agent.requests.at(-1)!.tools.find((tool) => tool.id === "schedule_task")!.execute as (input: unknown) => Promise<unknown>;
-			// An invalid call isn't numbered.
 			await expect(save({ ...input, time: "25:00" })).rejects.toThrow(/24-hour/);
-			await save(input);
+			// The retry saves the other task first (it saw the first one listed), then the first again.
 			if (attempts === 2) await save({ ...input, title: "Monthly spend", frequency: "monthly", day_of_month: 1 });
+			await save(input);
 			await hooks.onText("Saved.");
 			if (attempts === 1) {
 				// The step dies after the schedule was saved (here: the coordinator can't stage the answer), so the model runs again.
@@ -200,7 +201,12 @@ describe("schedule tools", () => {
 		});
 		await expect(runTurn({ ...world.deps, agent }, turn, new FakeStep())).resolves.toEqual({ status: "answered" });
 		expect(attempts).toBe(2);
-		expect(rpcCalls("save_slack_agent_schedule").map((args) => args.p_creation_key)).toEqual(["Ev0SAVE0001:0:1", "Ev0SAVE0001:0:1", "Ev0SAVE0001:0:2"]);
+		const weekly = await scheduleCreationKey("Ev0SAVE0001:0", CHANNEL, "Weekly spend", { frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null });
+		const monthly = await scheduleCreationKey("Ev0SAVE0001:0", CHANNEL, "Monthly spend", { frequency: "monthly", hour: 9, minute: 0, day_of_week: null, day_of_month: 1 });
+		expect(monthly).not.toBe(weekly);
+		expect(rpcCalls("save_slack_agent_schedule").map((args) => args.p_creation_key)).toEqual([weekly, monthly, weekly]);
+		// The same task again, renamed only in case or spacing, is the same task.
+		expect(await scheduleCreationKey("Ev0SAVE0001:0", CHANNEL, " weekly SPEND ", { frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null })).toBe(weekly);
 	});
 
 	it("falls back to UTC, and says so, when Slack gives no time zone it knows", async () => {

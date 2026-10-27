@@ -272,8 +272,9 @@ organisation can list and cancel but not set one up.
   `schedules_enabled` switch, `schedule_creators` (`linked` needs a linked
   account) and `schedules_max` (20 by default, at most 100), under a lock on
   the installation row. Each `schedule_task` call passes a `creation_key` (the
-  turn's event id, the run after question n, and the call's number in that run),
-  so a retried run step gets the schedule it saved instead of a second one.
+  turn's event id, the run after question n, and a digest of the task's
+  conversation, title and timing), so a retried run step gets the schedule it
+  saved instead of a second one, and never another task's.
 - `cancel_slack_agent_schedule` lets the creator cancel, or a Slack person
   linked to an owner or admin of the workspace.
 - `slack_agent_schedule_next_run` computes every next run in the database.

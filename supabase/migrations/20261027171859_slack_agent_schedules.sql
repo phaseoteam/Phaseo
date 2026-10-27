@@ -110,7 +110,7 @@ COMMENT ON COLUMN "public"."slack_agent_schedules"."created_by" IS 'The Slack us
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."timezone" IS 'The creator''s IANA time zone from Slack (users.info tz) when it was set up. hour, minute, day_of_week (1 Monday to 7 Sunday) and day_of_month are local times there.';
 
-COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys the schedule_task call that saved it (the Slack event it answered, the answer''s part and the call''s number in it), so a retried Workflow step gets the schedule it saved instead of a second one.';
+COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys what the schedule_task call that saved it set up (the Slack event it answered, the answer''s part, and a digest of its conversation, title and timing), so a retried Workflow step gets the schedule it saved instead of a second one.';
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."last_run_at" IS 'The time the last claimed run was due. With last_result null, that run hasn''t reported back yet.';
 
@@ -226,9 +226,10 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_schedule (
 -- installation. Hourly is the finest frequency, so nothing runs more often.
 -- Locks the installation row like the memory functions, so the cap holds and
 -- uninstalling, which deletes every schedule, can't miss one.
--- p_creation_key keys the tool call (its Slack event, the answer's part and the
--- call's number in it): saving again with the same key, as a retried Workflow
--- step does, returns the schedule saved the first time and saves nothing.
+-- p_creation_key keys what the tool call sets up (its Slack event, the answer's
+-- part, and a digest of the conversation, title and timing): saving again with
+-- the same key, as a retried Workflow step does, returns the schedule saved the
+-- first time and saves nothing.
 -- Returns {status: saved | full | off | link_required | not_installed,
 -- schedule?, limit?}. Service role only.
 declare
