@@ -14,6 +14,7 @@ import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
+import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ScheduledTasks } from "./views/ScheduledTasks";
 import { Inbox } from "./views/Inbox";
@@ -99,6 +100,7 @@ function Shell() {
 		<CommandPalette />
 		<Toaster />
 		<GuideRunNotices />
+		<QuitRecoveryOffer />
 	</div>;
 }
 

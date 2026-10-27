@@ -54,6 +54,7 @@ import { gitBranches, withGitLock } from "./gitOperations";
 import { runWorktreeSetup } from "./worktreeChat";
 import { planWorktreeCleanup } from "./worktreeCleanup";
 import type { WorktreeCleanupReport } from "../shared/worktreeCleanup";
+import { usageLimitError } from "../shared/usageLimitRecovery";
 import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { captureCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
@@ -127,6 +128,10 @@ export class WorkspaceRuntime {
 	runProjectScript?: (projectId: string, script: ProjectScript) => void;
 	/** Runs a setup action to completion in a terminal of the chat (TerminalService.runSetup). */
 	runSetupScript?: (projectId: string, script: ProjectScript, taskId: string) => { terminalId: string; exited: Promise<number | undefined> };
+	/** When a Claude or Codex account's exhausted plan limit resets (ms), from the limits Settings → Usage reads. */
+	usageLimitReset?: (harness: "claude" | "codex", accountId?: string) => Promise<number | undefined>;
+	/** Scheduled resumes of limited chats, by chat. */
+	private readonly limitTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	/** New worktree chats whose first turn waits for their setup (shared/worktreeChat.ts). */
 	private readonly worktreeSetups = new Map<string, Promise<void>>();
 	/** Settle cleanups in progress, and the settle each chat's scripts last ran for, so a repeat settle does not run them twice. */
@@ -155,6 +160,8 @@ export class WorkspaceRuntime {
 		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 		this.backfillUsageTotals();
+		// Resumes scheduled before the app last quit, once the host has wired its hooks.
+		setTimeout(() => this.armLimitResumes(), 5000).unref?.();
 		// The Usage page looks back 90 days, so the ledger is filled once from recent chats and kept that long.
 		// It reads each recent chat once, so it waits until startup has settled.
 		setTimeout(() => { if (this.closing) return; try { this.store.pruneUsageLedger(); this.store.backfillUsageLedger(); } catch { /* The Usage page starts from now instead. */ } }, 2000).unref?.();
@@ -591,6 +598,53 @@ export class WorkspaceRuntime {
 		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
+	/** Reads the reset time from the account's limits; the limits data is more exact than an error's text. */
+	private async readLimitReset(id: string) {
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		if (task.harness !== "claude" && task.harness !== "codex") return;
+		const resetsAt = await this.usageLimitReset?.(task.harness, task.accountId).catch(() => undefined);
+		if (!resetsAt || this.closing) return;
+		try { task = this.store.getTask(id); } catch { return; }
+		if (task.status !== "limited" || !task.usageLimit) return;
+		task.usageLimit.resetsAt = new Date(resetsAt).toISOString(); this.store.saveTask(task, true); this.broadcast();
+	}
+	/** T3's Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
+	private async resumeAtReset(id: string, cancel: boolean) {
+		const task = this.store.getTask(id);
+		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = undefined; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
+		if (task.status !== "limited" || !task.usageLimit) throw new Error("This chat is not paused on a usage limit.");
+		if (!task.usageLimit.resetsAt || Date.parse(task.usageLimit.resetsAt) <= Date.now()) await this.readLimitReset(id);
+		const latest = this.store.getTask(id), resetsAt = latest.usageLimit?.resetsAt;
+		if (!latest.usageLimit || !resetsAt) throw new Error("The reset time is not known yet. Check Settings → Usage, or use Continue now.");
+		latest.usageLimit.resumeAt = new Date(Math.max(Date.parse(resetsAt), Date.now()) + 60_000).toISOString();
+		this.store.saveTask(latest, true); this.broadcast(); this.armLimitResume(id, latest.usageLimit.resumeAt);
+		return this.store.getOverview();
+	}
+	private armLimitResume(id: string, resumeAt: string) {
+		clearTimeout(this.limitTimers.get(id));
+		// Timers longer than about 24 days overflow, so long waits check again in a day.
+		const wait = Math.min(Math.max(0, Date.parse(resumeAt) - Date.now()), 86_400_000);
+		const timer = setTimeout(() => {
+			this.limitTimers.delete(id);
+			if (this.closing) return;
+			let task; try { task = this.store.getTask(id); } catch { return; }
+			if (task.status !== "limited" || task.usageLimit?.resumeAt !== resumeAt) return;
+			if (Date.parse(resumeAt) > Date.now()) { this.armLimitResume(id, resumeAt); return; }
+			void this.command({ type: "resume", id }).catch(() => {});
+		}, wait);
+		timer.unref?.(); this.limitTimers.set(id, timer);
+	}
+	private armLimitResumes() {
+		if (this.closing) return;
+		for (const overview of this.store.getOverview().tasks) {
+			if (overview.status !== "limited") continue;
+			try { const resumeAt = this.store.getTask(overview.id).usageLimit?.resumeAt; if (resumeAt) this.armLimitResume(overview.id, resumeAt); } catch { /* Deleted meanwhile. */ }
+		}
+	}
+	/** Top-level chats the last quit interrupted that have not run since, for the offer to continue them. */
+	quitInterrupted() {
+		return this.store.getOverview().tasks.filter(task => task.status === "interrupted" && !task.archived && !task.delegation).flatMap(task => { try { return this.store.getTask(task.id).interruptedByQuit ? [task.id] : []; } catch { return []; } });
+	}
 	/** The last worktree cleanup, for Settings; kept until the app quits. */
 	lastWorktreeCleanup?: WorktreeCleanupReport;
 	private worktreeCleanupRun?: Promise<WorktreeCleanupReport>;
@@ -765,6 +819,7 @@ export class WorkspaceRuntime {
 		if (command.type === "delete-task") return this.deleteTask(command.id);
 		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
+		if (command.type === "resume-at-reset") return this.resumeAtReset(command.id, command.cancel === true);
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
@@ -1170,8 +1225,13 @@ export class WorkspaceRuntime {
 			flush(); ended = true;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
-			if (error instanceof AgentInputRejectedError && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
+			// T3's usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
+			const limit = (current.harness === "claude" || current.harness === "codex") && current.status === "failed" ? usageLimitError(current.error) : undefined;
+			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
+			// A message the agent never answered goes back to the queue, so Resume sends it again.
+			if ((error instanceof AgentInputRejectedError || limit) && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
+			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true;
@@ -1189,7 +1249,9 @@ export class WorkspaceRuntime {
 	}
 	async close() {
 		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
-		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
+		for (const timer of this.limitTimers.values()) clearTimeout(timer); this.limitTimers.clear();
+		// Chats cut off by quitting are offered to continue at the next start.
+		for (const id of this.running.keys()) { const task = this.store.apply({ type: "cancel", id }); task.interruptedByQuit = true; task.error = "Phaseo quit during this turn. Resume to continue."; this.store.saveTask(task); }
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
 		for (const pending of this.forms.values()) pending.resolve(null);

@@ -36,6 +36,7 @@ import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
 import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
+import { limitResetAt } from "../shared/usageLimitRecovery";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
@@ -670,6 +671,7 @@ ipcMain.handle("workspace:start-worktree-chat", (event, value: unknown) => {
 	if (command.type !== "create-task" || shutdownStarted) throw new Error("Invalid worktree chat request.");
 	return workspaceRuntime.startWorktreeChat(request, command);
 });
+ipcMain.handle("workspace:quit-interrupted", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return workspaceRuntime.quitInterrupted(); });
 ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid worktree cleanup request.");
 	const request = validateWorktreeCleanupRequest(value);
@@ -1078,6 +1080,12 @@ app.whenReady().then(() => {
 	workspaceRuntime.closeIdleTerminals = taskId => terminalService.closeIdle(taskId);
 	workspaceRuntime.runProjectScript = (projectId, script) => { terminalService.runScript(projectId, script); };
 	workspaceRuntime.runSetupScript = (projectId, script, taskId) => terminalService.runSetup(projectId, script, taskId);
+	// Usage-limit recovery reads the reset time from the same limits Settings → Usage shows, unless a check is running.
+	workspaceRuntime.usageLimitReset = async (harness, accountId) => {
+		const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.kind === "native") : undefined;
+		if (accountChecks.has(accountId ?? harness) || shutdownStarted) return undefined;
+		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
+	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };

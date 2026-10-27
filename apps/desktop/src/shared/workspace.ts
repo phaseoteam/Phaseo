@@ -31,6 +31,7 @@ import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pull
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
 import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
+import type { UsageLimitState } from "./usageLimitRecovery";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -117,6 +118,10 @@ export type Task = {
 	pullRequests?: TaskPullRequestLink[];
 	/** Started in a new worktree from the new-chat composer: its setup, shown until the agent starts (shared/worktreeChat.ts). */
 	worktreeSetup?: WorktreeSetup;
+	/** A Claude or Codex turn stopped on a plan limit (status "limited"); see shared/usageLimitRecovery.ts. */
+	usageLimit?: UsageLimitState;
+	/** The app quit during this chat's turn; startup offers to continue it. */
+	interruptedByQuit?: true;
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
@@ -169,6 +174,8 @@ export type WorkspaceCommand =
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
+	/** T3's Resume at reset for a limited chat; cancel drops the scheduled resume. */
+	| { type: "resume-at-reset"; id: string; cancel?: boolean }
 	| { type: "fork"; id: string; messageId?: string }
 	| { type: "approval"; id: string; approvalId: string; decision: ApprovalDecision; /** Plan revisions: what to change. */ feedback?: string }
 	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]>; dismissed?: boolean }
@@ -214,6 +221,8 @@ export type WorkspaceApi = {
 	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
+	/** Chats the app's last quit interrupted, for the offer to continue them (cleared once they run again). */
+	quitInterrupted: () => Promise<string[]>;
 	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
 	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
@@ -403,6 +412,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (command.attachments !== undefined && (!Array.isArray(command.attachments) || command.attachments.length > 10 || command.attachments.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) || new Set(command.attachments).size !== command.attachments.length)) throw new Error("Invalid attachments.");
 				break;
 			case "cancel": case "resume": break;
+			case "resume-at-reset": if (command.cancel !== undefined && typeof command.cancel !== "boolean") throw new Error("Invalid resume setting."); break;
 			case "fork": string("messageId", false); break;
 			case "approval":
 				string("approvalId");

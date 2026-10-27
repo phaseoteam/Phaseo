@@ -177,6 +177,7 @@ export class WorkspaceStore {
 				// Questions answered by message do not need the stopped turn.
 				task.approvals = []; task.questions = task.questions?.filter(request => request.responseMode === "message") ?? []; task.forms = [];
 				task.error = "The application stopped during this task. Resume to continue.";
+				task.interruptedByQuit = true;
 				this.saveTask(task);
 			}
 			else if (recovered) this.saveTask(task);
@@ -805,6 +806,8 @@ export class WorkspaceStore {
 					task.queue.push({ id: randomUUID(), text: command.text, ...(command.threadReferences?.length ? { threadReferences: [...new Set(command.threadReferences)] } : {}), ...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
 				}
 				if (task.title === "New task") task.title = mentionPlainText(command.text).trim().slice(0, 80);
+				// Running again ends a usage-limit pause and the offer to continue after a quit.
+				task.usageLimit = task.interruptedByQuit = undefined;
 				// Anything new brings a parked chat back and wakes it.
 				if (task.settledOverride === "settled") task.unsettledAt = new Date().toISOString();
 				task.settledOverride = task.settledAt = task.snoozedUntil = task.snoozedAt = undefined;
@@ -847,11 +850,11 @@ export class WorkspaceStore {
 				if (index >= 0 && next >= 0 && next < task.queue.length) [task.queue[index], task.queue[next]] = [task.queue[next], task.queue[index]];
 				break;
 			}
-			case "cancel": task.status = "interrupted"; break;
+			case "cancel": task.status = "interrupted"; task.usageLimit = undefined; break;
 			case "resume":
 				if (task.status === "running" || task.status === "waiting") throw new Error("This task is already running.");
 				if (!task.queue.length && task.nativeSessionId) task.queue.push({ id: randomUUID(), text: "Continue from where you stopped.", createdAt: new Date().toISOString() });
-				task.error = undefined; break;
+				task.error = task.usageLimit = task.interruptedByQuit = undefined; break;
 		}
 		this.saveTask(task); return task;
 	}
