@@ -1,7 +1,17 @@
 -- Feedback answers now go to the PostHog survey "90-day feedback email" instead of
 -- the database. The row keeps only whether the user answered and their thank-you code.
--- Sending has not been enabled yet, so no answers can have been stored.
+-- Sending has not been enabled yet, so no answers can have been stored; the guard
+-- below aborts the migration rather than drop any that were.
+-- phaseo:allow-destructive-migration reason: drops feedback_requests.answers, which the owner asked to remove now that answers go to PostHog (PR #3173); feedback emails were never enabled and the migration aborts if any answer is stored.
 SET local check_function_bodies = off;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.feedback_requests WHERE answers IS NOT NULL) THEN
+    RAISE EXCEPTION 'feedback_requests.answers holds stored feedback; move it to PostHog before dropping the column';
+  END IF;
+END
+$$;
 
 ALTER TABLE "public"."feedback_requests" DROP CONSTRAINT "feedback_requests_answers_size_check";
 
