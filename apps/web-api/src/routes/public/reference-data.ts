@@ -6,6 +6,7 @@ import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
 import { AA_METRICS, ARTIFICIAL_ANALYSIS_ID, artificialAnalysisCatalogue, fetchArtificialAnalysisCoverage } from "@/benchmarks/artificial-analysis-catalogue";
+import { AA_V4_ARCHIVE, archivedArtificialAnalysisPublicData, archivedArtificialAnalysisResults } from "@/benchmarks/artificial-analysis-archive";
 
 const REFERENCE_CACHE: PublicCachePolicy = {
 	edgeTtlSeconds: 24 * 60 * 60,
@@ -27,12 +28,19 @@ publicReferenceDataRouter.get("/benchmarks/artificial-analysis/data", async (c) 
 	const model = c.req.query("model");
 	if (limit === null || offset === null || major === null || (model !== undefined && (!model || model.length > 200))) return c.json({ error: "invalid_aa_data_selection" }, 400);
 	try {
-		const { data, error } = await getDataClient(c.env).rpc("get_artificial_analysis_public_models", { p_model_slug: model ?? null, p_major: major || null, p_limit: limit, p_offset: offset });
-		if (error) {
-			console.error("[web-api/reference] AA public data failed", error);
+		const client = getDataClient(c.env);
+		const publication = major === 4
+			? { data: await archivedArtificialAnalysisPublicData(client, { model, limit, offset }), error: null }
+			: await client.rpc("get_artificial_analysis_public_models", { p_model_slug: model ?? null, p_major: major || null, p_limit: limit, p_offset: offset });
+		if (publication.error) {
+			console.error("[web-api/reference] AA public data failed", publication.error);
 			return c.json({ error: "aa_data_unavailable" }, 503);
 		}
+		let data = publication.data;
 		if (!data) return c.json({ error: "aa_data_not_found" }, 404);
+		if (!major && typeof data.methodology_version === "string" && data.methodology_version.startsWith("4.")) {
+			data = await archivedArtificialAnalysisPublicData(client, { model, limit, offset });
+		}
 		return withPublicCache(c.json(data), { edgeTtlSeconds: 300, cacheTags: ["web-api-reference-data", "artificial-analysis-public-data"] });
 	} catch (error) {
 		console.error("[web-api/reference] AA public data failed", error);
@@ -197,6 +205,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 		const client = getDataClient(c.env);
 		let resolvedId = benchmarkId;
 		let suite;
+		let frozenResults: Awaited<ReturnType<typeof archivedArtificialAnalysisResults>> | undefined;
 		if (benchmarkId === ARTIFICIAL_ANALYSIS_ID) {
 			const version = c.req.query("version");
 			const metricKey = c.req.query("metric") ?? "intelligence";
@@ -208,15 +217,23 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 			const catalogue = artificialAnalysisCatalogue(data ?? [], await fetchArtificialAnalysisCoverage(client, data ?? []));
 			const selectedVersion = version === undefined ? catalogue.currentVersion : Number(version);
 			if (selectedVersion === null || !catalogue.versions.includes(selectedVersion)) return notFound(c, "benchmark");
-			const selectedMetric = catalogue.metrics(selectedVersion).find((item) => item.key === metric.key && item.total_models > 0);
+			if (selectedVersion === 4) frozenResults = await archivedArtificialAnalysisResults(client);
+			const selectedMetric = catalogue.metrics(selectedVersion).find((item) => item.key === metric.key && (frozenResults
+				? frozenResults.some((result) => result.benchmark_id === item.id)
+				: item.total_models > 0));
 			resolvedId = selectedMetric?.id ?? `aa-intelligence-index-v${selectedVersion}`;
-			suite = { id: ARTIFICIAL_ANALYSIS_ID, name: "Artificial Analysis", current_version: catalogue.currentVersion, selected_version: selectedVersion, versions: catalogue.versions, metrics: catalogue.metrics(selectedVersion), other_evaluations: catalogue.otherEvaluations };
+			suite = { id: ARTIFICIAL_ANALYSIS_ID, name: "Artificial Analysis", current_version: catalogue.currentVersion, selected_version: selectedVersion, versions: catalogue.versions, version_labels: { 4: AA_V4_ARCHIVE.version }, metrics: catalogue.metrics(selectedVersion), other_evaluations: catalogue.otherEvaluations };
 		}
 		const physicalMajor = resolvedId.match(/^aa-(?:intelligence|coding|agentic)-index(?:-cost)?-v([1-9][0-9]*)$/)?.[1];
 		const comparisonMetrics = suite?.metrics ?? (physicalMajor ? AA_METRICS.map((metric) => ({
 			...metric, id: `${metric.prefix}-v${physicalMajor}`, total_models: null,
 		})) : null);
 		const fetchResults = async () => {
+			if (physicalMajor === "4") {
+				const results = frozenResults ?? await archivedArtificialAnalysisResults(client);
+				const ids = new Set(comparisonMetrics?.map((metric) => metric.id) ?? [resolvedId]);
+				return { error: null, data: results.filter((result: { benchmark_id: string }) => ids.has(result.benchmark_id)) };
+			}
 			if (comparisonMetrics) {
 				// One MVCC snapshot for all four measures. Nested rows avoid a combined
 				// PostgREST row cap truncating a later metric in the comparison.
@@ -278,13 +295,15 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				},
 			}];
 		});
+		const archivedCount = (id: string) => new Set(results.filter((result) => result.benchmark_id === id).map((result) => result.model_id)).size;
+		if (physicalMajor === "4" && suite) suite.metrics = suite.metrics.map((metric) => ({ ...metric, total_models: archivedCount(metric.id) }));
 
 		return withPublicCache(c.json({
 			benchmark: {
 				...(suite ? { suite } : {}),
 				...(comparisonMetrics ? { comparison_benchmarks: comparisonMetrics.map((metric) => ({
 					id: metric.id, name: `Artificial Analysis ${metric.label}`, category: data.category ?? null,
-					ascending_order: metric.key !== "cost", total_models: metric.total_models, link: data.link ?? null,
+					ascending_order: metric.key !== "cost", total_models: physicalMajor === "4" ? archivedCount(metric.id) : metric.total_models, link: data.link ?? null,
 					results: results.filter((result) => result.benchmark_id === metric.id),
 				})) } : {}),
 				id: data.benchmark_id,
@@ -292,7 +311,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				category: data.category ?? null,
 				ascending_order:
 					typeof data.ascending_order === "boolean" ? data.ascending_order : null,
-				total_models: data.total_models ?? null,
+				total_models: physicalMajor === "4" ? archivedCount(resolvedId) : data.total_models ?? null,
 				link: data.link ?? null,
 				type: data.benchmark_type ?? null,
 				results: results.filter((result) => result.benchmark_id === resolvedId),

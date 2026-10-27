@@ -10,6 +10,20 @@ Sources: [methodology](https://artificialanalysis.ai/methodology/intelligence-be
 
 ## Existing support
 
+The AA page's v4 archive is pinned to the immutable core publication
+`f2fbb596-387c-4a2c-92f4-1b59dd723683` (27 October 2026, 07:57:42 UTC)
+and rich publication `b72700f9-a724-4089-9794-c698f9a4efd9` (07:58:04 UTC),
+both methodology **4.3.2**. These references live in the web API archive module.
+Do not delete those database rows or retarget the references during later syncs.
+Missing archived data fails closed rather than substituting a newer publication.
+Current catalogue visibility rules still apply to archived results.
+
+The single AA page defaults to the highest atomically published scored major,
+so validated v5 core publication promotes v5 without hiding v4. The visible
+version navigation links explicitly to `?version=4`; that link remains pinned
+even before v5 is available. Rich data is fetched for the selected major and
+only displayed alongside core results with matching full methodology.
+
 - The API importer accepts major versions 4 and 5. It generates the four
   `aa-*-v5` benchmark IDs and their metadata at publication; do not pre-seed
   scores or reuse v4 IDs. Existing v4 results remain separate.

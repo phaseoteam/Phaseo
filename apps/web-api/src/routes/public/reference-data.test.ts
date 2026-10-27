@@ -15,11 +15,11 @@ describe("public reference-data routes", () => {
 	it("loads bounded AA data for a selected model and major", async () => {
 		const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			expect(String(input)).toContain("/rpc/get_artificial_analysis_public_models");
-			expect(JSON.parse(String(init?.body))).toEqual({ p_model_slug: "lab/model", p_major: 4, p_limit: 20, p_offset: 10 });
-			return Response.json({ snapshot_id: "snapshot", methodology_version: "4.3.2", total: 1, models: [{ model_id: "lab/model", totalTokens: { output: 0 } }] });
+			expect(JSON.parse(String(init?.body))).toEqual({ p_model_slug: "lab/model", p_major: 5, p_limit: 20, p_offset: 10 });
+			return Response.json({ snapshot_id: "snapshot", methodology_version: "5.0", total: 1, models: [{ model_id: "lab/model", totalTokens: { output: 0 } }] });
 		});
 		vi.stubGlobal("fetch", fetch);
-		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?model=lab%2Fmodel&version=4&limit=20&offset=10", {}, env);
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?model=lab%2Fmodel&version=5&limit=20&offset=10", {}, env);
 		expect(response.status).toBe(200);
 		expect((await response.json() as { models: unknown[] }).models).toHaveLength(1);
 		expect(response.headers.get("Cache-Control")).toContain("s-maxage=300");
@@ -39,7 +39,7 @@ describe("public reference-data routes", () => {
 		expect(response.headers.get("Cloudflare-CDN-Cache-Control")).toBeNull();
 	});
 	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
-		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
+		const ids = ["aa-intelligence-index-v5", "aa-coding-index-v5", "aa-agentic-index-v5", "aa-intelligence-index-cost-v5"];
 		const scoreQueries: URL[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(String(input));
@@ -49,7 +49,7 @@ describe("public reference-data routes", () => {
 				scoreQueries.push(url);
 				return Response.json(ids.map((benchmark_id) => ({ benchmark_id, results: Array.from({ length: 300 }, (_, i) => ({
 					result_id: `${benchmark_id}-${i}`, model_slug: "lab/model", score: i, variant: "high", result_key: String(i),
-					other_info: `Artificial Analysis ID source-${i}; Intelligence Index v4.3.2`, updated_at: "2026-10-18T00:00:00Z",
+					other_info: `Artificial Analysis ID source-${i}; Intelligence Index v5.0`, updated_at: "2026-10-18T00:00:00Z",
 				})) })));
 			}
 			if (url.searchParams.has("benchmark_id")) return Response.json([{ benchmark_id: ids[0], name: "Artificial Analysis Intelligence Index" }]);
