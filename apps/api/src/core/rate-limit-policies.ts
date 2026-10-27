@@ -4,7 +4,8 @@
 // How: The control API publishes a compact per-workspace plan to KV after
 //      every change (`rate-limit-plan:v1:{workspace}`; no key means no
 //      policies). Requests read it through the tiered cache (isolate memory for
-//      about a minute, then KV), resolve the policies that apply, and admit
+//      about a minute, then KV; a copy unchecked for two minutes is reread
+//      before use), resolve the policies that apply, and admit
 //      them through the customer limiter (core/customer-rate-limits.ts): each
 //      applicable scope is counted exactly by its own CustomerRateLimit Durable
 //      Object, and a scope the isolate knows is exhausted is rejected locally.
@@ -313,6 +314,9 @@ export async function readRateLimitPlan(workspaceId: string): Promise<RateLimitP
 			loader: async () => null,
 			l1FreshMs: 60_000,
 			negativeFreshMs: 30_000,
+			// An isolate that sat idle would otherwise apply the plan it last saw,
+			// however old, to its next request before refreshing in the background.
+			maxUncheckedMs: 120_000,
 			l2: false,
 			l3: { freshS: 60 },
 			isShareable: () => false,
