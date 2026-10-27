@@ -1,5 +1,7 @@
 SET local check_function_bodies = off;
 
+-- phaseo:allow-destructive-migration reason: TRUNCATE appears only in the standard service_role grant on the new preset_version_labels table, and the only DELETE is inside remove_preset_version_label, which removes one label row when an owner or admin asks it to. The migration deletes no data.
+
 -- Requests can pin a preset version: prompt.version, or model "@slug@ref" /
 -- "@handle/slug@ref". A ref is a version label (v3, 1.2.0, 2026.10.27) or a
 -- named label (production, staging) that owners and admins move between
