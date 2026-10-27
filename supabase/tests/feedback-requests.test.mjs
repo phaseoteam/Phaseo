@@ -63,7 +63,7 @@ try {
         await replay.exec(await read('../schemas/public/tables/email_outbox.sql'));
         await replay.exec(await read('../schemas/public/tables/credit_grants.sql'));
         await replay.exec(await read('../migrations/20261016082204_feedback_requests.sql'));
-        await replay.exec(await read('../migrations/20261022153204_feedback_answers_to_posthog.sql'));
+        await replay.exec(await read('../migrations/20261027120936_feedback_answers_to_posthog.sql'));
 
         await db.exec(setup(true));
         await db.exec(await read('../schemas/public/tables/email_outbox.sql'));
