@@ -95,6 +95,11 @@ type RelayUsageAggregate = LiveUsage & {
 	estimate_basis?: string;
 	estimated_input_audio_tokens?: number;
 	estimated_output_audio_tokens?: number;
+	// A provider response completed; restored after eviction for the final status.
+	provider_response_completed?: boolean;
+	// Metered input that belongs to the OpenAI response in flight (snapshot at response.created).
+	response_input_audio_ms?: number;
+	response_vad_input_audio_ms?: number;
 	// Connected provider wall-clock time (xAI server VAD sessions bill duration).
 	provider_connected_at_ms?: number;
 	provider_last_seen_ms?: number;
@@ -834,11 +839,10 @@ export class RealtimeRelayDurableObject {
 		// storage before the client sees them; everything else is forwarded first.
 		if (!event || !this.session || !this.isBillingEvent(event)) forward();
 		if (!event || !this.session) return;
-		try {
-			await this.processUpstreamEvent(event, forward);
-		} finally {
-			forward();
-		}
+		// A billing event whose journal write failed is never forwarded: the
+		// queue's error handler settles from the in-memory usage instead.
+		await this.processUpstreamEvent(event, forward);
+		forward();
 	}
 
 	private async processUpstreamEvent(event: Record<string, unknown>, forward: () => void) {
@@ -912,6 +916,8 @@ export class RealtimeRelayDurableObject {
 			}
 			if (type === "response.created") {
 				this.openAIInputCommitted = false;
+				this.usage.response_input_audio_ms = toNumber(this.usage.pending_input_audio_ms);
+				this.usage.response_vad_input_audio_ms = toNumber(this.usage.pending_vad_input_audio_ms);
 				this.inputSinceLastResponse = true;
 				this.usage.input_audio_pending = true;
 				if (this.cancelResponsesOnDrain) this.sendUpstream({ type: "response.cancel" });
@@ -967,7 +973,7 @@ export class RealtimeRelayDurableObject {
 				} else if (provider === "openai") {
 					// A terminal event without usage still ends the turn: settle it
 					// from metered audio instead of leaving it in flight forever.
-					this.applyPendingEstimate("openai_response_usage_missing");
+					this.applyPendingEstimate("openai_response_usage_missing", { keepLaterTurn: true });
 				}
 				if (responseId) {
 					this.providerState.seenResponseIds = [
@@ -976,7 +982,7 @@ export class RealtimeRelayDurableObject {
 					];
 				}
 			}
-			this.providerCompletedResponseSeen = true;
+			this.markProviderResponseCompleted();
 			this.clearResponseState();
 			completedTurn = { usage: usage ?? {}, responseId: responseId || null };
 			if (responseId && !duplicate) await this.persistProviderState();
@@ -984,7 +990,7 @@ export class RealtimeRelayDurableObject {
 
 		if (type === "response.output_audio.done" && provider === "spacex-ai") {
 			const first = !this.providerCompletedResponseSeen;
-			this.providerCompletedResponseSeen = true;
+			this.markProviderResponseCompleted();
 			this.clearResponseState();
 			completedTurn = first ? { usage: {}, responseId: null } : { usage: {}, responseId: "" };
 		}
@@ -1074,7 +1080,7 @@ export class RealtimeRelayDurableObject {
 		this.providerState.googleTurnActive = false;
 		this.providerState.googleTurnComplete = false;
 		this.providerState.googleTurnUsage = {};
-		this.providerCompletedResponseSeen = true;
+		this.markProviderResponseCompleted();
 		this.clearResponseState();
 		return turnUsage;
 	}
@@ -1095,7 +1101,7 @@ export class RealtimeRelayDurableObject {
 	 * meters from metered audio, so the session settles instead of waiting for
 	 * manual review. Returns false when nothing was pending.
 	 */
-	private applyPendingEstimate(basis: string): boolean {
+	private applyPendingEstimate(basis: string, options: { keepLaterTurn?: boolean } = {}): boolean {
 		if (!this.session || !this.hasPendingBilling()) return false;
 		const provider = providerFromSession(this.session) as "openai" | "google-ai-studio";
 		const rates = REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND[provider] ?? REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND.openai;
@@ -1103,7 +1109,13 @@ export class RealtimeRelayDurableObject {
 			? this.providerState.googleTurnUsage
 			: {};
 		let inputMs = 0;
-		if (provider === "openai") {
+		// A turn committed after this response was created gets its own response
+		// and usage: estimate only the input this response was created from.
+		const keepLaterTurn = provider === "openai" && options.keepLaterTurn === true && this.openAIInputCommitted;
+		if (keepLaterTurn) {
+			const vadMs = toNumber(this.usage.response_vad_input_audio_ms);
+			inputMs = vadMs > 0 ? vadMs : toNumber(this.usage.response_input_audio_ms);
+		} else if (provider === "openai") {
 			const vadMs = toNumber(this.usage.pending_vad_input_audio_ms);
 			if (this.inputSinceLastResponse || this.responseInFlight) {
 				inputMs = vadMs > 0 ? vadMs : toNumber(this.usage.pending_input_audio_ms);
@@ -1131,8 +1143,17 @@ export class RealtimeRelayDurableObject {
 		this.providerState.googleTurnActive = false;
 		this.providerState.googleTurnComplete = false;
 		this.providerState.googleTurnUsage = {};
-		this.clearResponseState(true);
+		if (keepLaterTurn) {
+			this.usage.pending_input_audio_ms = Math.max(0, toNumber(this.usage.pending_input_audio_ms) - toNumber(this.usage.response_input_audio_ms));
+			this.usage.pending_vad_input_audio_ms = Math.max(0, toNumber(this.usage.pending_vad_input_audio_ms) - toNumber(this.usage.response_vad_input_audio_ms));
+		}
+		this.clearResponseState(!keepLaterTurn);
 		return true;
+	}
+
+	private markProviderResponseCompleted() {
+		this.providerCompletedResponseSeen = true;
+		this.usage.provider_response_completed = true;
 	}
 
 	private clearResponseState(force = false) {
@@ -1148,6 +1169,8 @@ export class RealtimeRelayDurableObject {
 			delete this.usage.pending_vad_input_audio_ms;
 		}
 		delete this.usage.pending_output_audio_ms;
+		delete this.usage.response_input_audio_ms;
+		delete this.usage.response_vad_input_audio_ms;
 	}
 
 	private async emitTurnTelemetry(usage: Record<string, unknown>, responseId: string | null) {
@@ -1577,6 +1600,7 @@ export class RealtimeRelayDurableObject {
 		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? this.session.usage ?? {};
 		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;
 		this.responseInFlight = this.usage.assistant_response_in_flight === true;
+		this.providerCompletedResponseSeen = this.usage.provider_response_completed === true;
 		this.inputSinceLastResponse = this.usage.input_audio_pending === true;
 		this.waitingForOpenAIInputClear = this.usage.input_audio_clear_pending === true;
 		this.pendingSettlement = (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT)) ?? null;
