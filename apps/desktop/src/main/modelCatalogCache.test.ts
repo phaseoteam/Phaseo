@@ -73,6 +73,25 @@ describe("model catalog disk cache", () => {
 		expect(await cache.read(key)).toMatchObject({ version: 4, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
 		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);
 	});
+	it("lends a new account another account's catalog from the same gateway while its own downloads", async () => {
+		const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange);
+		await cache.refresh(key, async () => ({ models: first, validators: [] }));
+		await cache.refresh({ endpoint: "https://example.test/v1", accountId: "elsewhere" }, async () => second);
+		const signedInAgain = { ...key, accountId: "signed-in-again" };
+		let resolve!: (models: typeof second) => void; const fetchModels = vi.fn(() => new Promise<typeof second>(done => { resolve = done; }));
+		expect(await cache.get(signedInAgain, fetchModels)).toEqual(first);
+		await vi.waitFor(() => expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined), { timeout: 5000 });
+		resolve(second); await vi.waitFor(() => expect(onChange).toHaveBeenCalledExactlyOnceWith(signedInAgain), { timeout: 5000 });
+		expect((await cache.read(signedInAgain))?.models).toEqual(second);
+	});
+	it("keeps serving a catalog whose key changed, re-checking it on the next read", async () => {
+		const cache = new ModelCatalogCache(root);
+		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
+		await cache.expire(key);
+		const fetchModels = vi.fn().mockResolvedValue({ notModified: true });
+		expect(await cache.get(key, fetchModels)).toEqual(first);
+		await vi.waitFor(() => expect(fetchModels).toHaveBeenCalledExactlyOnceWith([{ offset: 0, etag: "\"v1\"" }]), { timeout: 5000 });
+	});
 	it("serves an older cache at once but downloads it again in full, since its ETags predate model facts and their cache prices", async () => {
 		const cache = new ModelCatalogCache(root);
 		writeFileSync(cache.filename(key), JSON.stringify({ version: 2, ...key, fetchedAt: new Date().toISOString(), models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));

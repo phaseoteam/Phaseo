@@ -56,6 +56,7 @@ import { editorInstallations, findEditor, launchEditor, openProjectTarget } from
 import { codexModels } from "./modelCatalog";
 import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
 import { CATALOG_VERSION, ModelCatalogCache } from "./modelCatalogCache";
+import { HarnessModelCache } from "./harnessModelCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
@@ -125,6 +126,7 @@ let settleTimer: ReturnType<typeof setInterval> | undefined;
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
+let harnessModelCache: HarnessModelCache;
 // Before any handler is registered, so each one is traced (slow or failed calls only).
 traceIpcHandlers(ipcMain);
 const diagnostics = registerDiagnosticsIpc(ipcMain, { senderWindow, owners: terminalOwners });
@@ -240,6 +242,8 @@ async function savePhaseoLogin(owner: BrowserWindow, accountId: string | undefin
 		if (existing) void retirePhaseoSignIn(existing);
 		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
 		void refreshPhaseoSignIns(accountIdToSave);
+		// The catalog starts downloading now rather than when the model picker first opens.
+		void discoverDesktopModels("phaseo", accountIdToSave).catch(() => {});
 		return { workspace: state, accountId: accountIdToSave };
 	} finally { releaseAccount(); }
 }
@@ -360,7 +364,11 @@ function usagePullRequests(since: string) {
 	return counts;
 }
 function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
-	return span("models.discover", { harness, force }, () => discoverModels(harness, accountId, projectId, force));
+	return span("models.discover", { harness, force }, () => {
+		if (harness === "phaseo") return discoverModels(harness, accountId, projectId, force);
+		const discover = () => span("models.harness-list", { harness }, () => discoverModels(harness, accountId, projectId, force));
+		return force ? harnessModelCache.refresh(harness, accountId, projectId, discover) : harnessModelCache.get(harness, accountId, projectId, discover);
+	});
 }
 async function discoverModels(harness: Harness, accountId: string | undefined, projectId: string | undefined, force: boolean) {
 		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
@@ -394,7 +402,7 @@ async function modelRequest(event: Electron.IpcMainInvokeEvent, harness: unknown
 	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
 }
 ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
-// Only the Phaseo catalog is cached; other harnesses discover live on every request either way.
+// Skips the caches' freshness windows: Phaseo's catalog and the lists local harnesses last gave.
 ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;
@@ -701,10 +709,13 @@ ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 ipcMain.handle("workspace:command", async (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	const command = validateCommand(value);
-	// Archiving a Phaseo account or changing its connection discards its cached catalog.
+	// Archiving a Phaseo account or changing its endpoint discards its cached catalog; a new key only re-checks it.
 	const cached = command.type === "update-account" && (command.archived === true || command.apiKey !== undefined || command.endpoint !== undefined) ? workspaceRuntime.store.getAccounts().find(account => account.id === command.id && account.harness === "phaseo" && account.endpoint) : undefined;
 	const result = await workspaceRuntime.command(command);
-	if (cached) void modelCatalogCache.remove({ endpoint: cached.endpoint!, accountId: cached.id }).catch(() => {});
+	if (cached) {
+		const key = { endpoint: cached.endpoint!, accountId: cached.id };
+		void (command.type === "update-account" && command.archived !== true && command.endpoint === undefined ? modelCatalogCache.expire(key) : modelCatalogCache.remove(key)).catch(() => {});
+	}
 	return result;
 });
 ipcMain.handle("workspace:choose-project", async event => {
@@ -989,6 +1000,7 @@ app.whenReady().then(() => {
 	credentialVault = vault;
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
+	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
 	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.

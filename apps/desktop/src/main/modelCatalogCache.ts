@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ModelOption } from "../shared/workspace";
 import type { ApiModelCatalog, CatalogPageValidator } from "./apiModelCatalog";
@@ -26,10 +26,29 @@ export class ModelCatalogCache {
 			return typeof file?.version === "number" && [1, 2, 3, CATALOG_VERSION].includes(file.version) && file.endpoint === key.endpoint && file.accountId === key.accountId && Number.isFinite(Date.parse(file.fetchedAt)) && Array.isArray(file.models) && file.models.every(model => typeof model?.id === "string" && typeof model.name === "string") ? file : undefined;
 		} catch { return undefined; }
 	}
+	/**
+	 * Another account's current catalog from the same gateway. Signing in again makes a new account, and the catalog barely
+	 * differs between accounts, so it stands in while the account's own one downloads (10 s or more while the app starts).
+	 */
+	private async sameEndpoint(key: ModelCatalogKey): Promise<CatalogFile | undefined> {
+		const own = path.basename(this.filename(key));
+		const names = (await readdir(this.directory).catch(() => [] as string[])).filter(name => name !== own && /^models-[0-9a-f]{32}\.json$/.test(name));
+		const files = await Promise.all(names.map(async name => {
+			try { return JSON.parse(await readFile(path.join(this.directory, name), "utf8")) as CatalogFile; } catch { return undefined; }
+		}));
+		return files.filter(file => file?.version === CATALOG_VERSION && file.endpoint === key.endpoint && Array.isArray(file.models) && file.models.length && Number.isFinite(Date.parse(file.fetchedAt)))
+			.sort((a, b) => Date.parse(b!.fetchedAt) - Date.parse(a!.fetchedAt))[0];
+	}
 	/** Returns the cached list at once, starting a background refresh when it is stale; only an empty cache waits for the network. */
 	async get(key: ModelCatalogKey, fetchModels: CatalogFetch): Promise<ModelOption[]> {
 		const cached = await this.read(key);
-		if (!cached) return this.refresh(key, fetchModels);
+		if (!cached) {
+			const standIn = await this.sameEndpoint(key);
+			if (!standIn) return this.refresh(key, fetchModels);
+			if (!this.refreshes.has(this.filename(key))) this.refresh(key, fetchModels).then(models => { if (JSON.stringify(models) !== JSON.stringify(standIn.models)) this.onChange(key); })
+				.catch(error => this.warn(`Model catalog refresh failed: ${error instanceof Error ? error.message : "unknown error"}`));
+			return standIn.models;
+		}
 		if (cached.version !== CATALOG_VERSION || this.now() - Date.parse(cached.fetchedAt) >= MODEL_CATALOG_FRESH_MS) this.refresh(key, fetchModels).catch(error => this.warn(`Model catalog refresh failed: ${error instanceof Error ? error.message : "unknown error"}`));
 		return cached.models;
 	}
@@ -54,6 +73,11 @@ export class ModelCatalogCache {
 		}).finally(() => { if (this.refreshes.get(file) === refresh) this.refreshes.delete(file); });
 		this.refreshes.set(file, refresh);
 		return refresh;
+	}
+	/** Keeps serving the list, but re-checks it on the next read: a new key for the same account sees the same catalog, give or take. */
+	async expire(key: ModelCatalogKey) {
+		const cached = await this.read(key);
+		if (cached) await this.write(this.filename(key), { ...cached, fetchedAt: new Date(0).toISOString() }).catch(() => {});
 	}
 	async remove(key: ModelCatalogKey) {
 		const file = this.filename(key);
