@@ -38,6 +38,7 @@ import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 import { RewindDialog } from "./RewindDialog";
+import { ContextMeter } from "./ContextMeter";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
 import { QueuePanel, ownQueue, steerBlocker } from "./QueuePanel";
 import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
@@ -264,7 +265,11 @@ function ChatComposer({ task }: { task: Task }) {
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
 			footer={<ChatSpend taskId={task.id} />}
-			model={task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
+			model={<>
+				{task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
+				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
+				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
+			</>}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
