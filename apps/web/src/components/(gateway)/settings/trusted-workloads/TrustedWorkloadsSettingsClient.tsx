@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -73,7 +74,7 @@ export default function TrustedWorkloadsSettingsClient({ data }: { data: Data })
 	if (!data.canManage) return <Notice>{t("adminsOnly")}</Notice>;
 	return (
 		<div className="space-y-8">
-			<p className="rounded-md border-l-2 border-primary/60 bg-muted/30 px-4 py-3 text-sm">{t("howItWorks")}</p>
+			<Callout>{t("howItWorks")}</Callout>
 			<section className="space-y-3">
 				<div className="flex flex-wrap items-end justify-between gap-3">
 					<div>

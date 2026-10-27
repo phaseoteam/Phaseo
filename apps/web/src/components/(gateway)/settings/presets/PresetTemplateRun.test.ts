@@ -1,5 +1,5 @@
 import { sdkCode } from "@/lib/chat/sdkExport";
-import { readTemplateRunError, readTemplateRunReply, templateRunBody } from "./PresetTemplateRun";
+import { readTemplateRunError, readTemplateRunErrorCode, readTemplateRunReply, templateRunBody } from "./PresetTemplateRun";
 
 describe("running a preset template", () => {
 	it("sends the reference as model and prompt id with an empty conversation", () => {
@@ -43,5 +43,12 @@ describe("running a preset template", () => {
 		expect(readTemplateRunError({ error: { code: "not_found", message: "Preset not found" } })).toBe("Preset not found");
 		expect(readTemplateRunError({ error: "chat_privacy_review_required" })).toBe("chat_privacy_review_required");
 		expect(readTemplateRunError(null)).toBeNull();
+	});
+
+	it("recognises a workspace with no credits however the code is placed", () => {
+		expect(readTemplateRunErrorCode({ error: { code: "insufficient_funds", message: "insufficient_funds" }, code: "insufficient_funds" })).toBe("insufficient_funds");
+		expect(readTemplateRunErrorCode({ error: "insufficient_funds" })).toBe("insufficient_funds");
+		expect(readTemplateRunErrorCode({ error: { code: "validation_error" } })).toBe("validation_error");
+		expect(readTemplateRunErrorCode(null)).toBeNull();
 	});
 });

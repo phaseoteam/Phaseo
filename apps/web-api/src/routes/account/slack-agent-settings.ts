@@ -11,6 +11,8 @@ export const MAX_PLAN_PEOPLE = 10_000_000;
 export const MAX_MONTHLY_USD = 100_000;
 export const MAX_INSTRUCTIONS_CHARS = 8_000;
 export const MAX_USAGE_DATA_CHANNELS = 100;
+/** The most models people may choose per message (the slack_installations check). */
+export const MAX_ALLOWED_MODELS = 10;
 export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
 /** The slack_installations column defaults. */
 export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
@@ -22,6 +24,7 @@ export const DEFAULT_ALLOW_EXTERNAL_USERS = false;
  */
 export const DEFAULT_SLACK_AGENT_MODEL = "openai/gpt-6-luna";
 
+export const AUTO_MODEL_ID = "phaseo/auto";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$/;
 /** Public (C) and private (G) Slack channel ids. */
@@ -32,7 +35,8 @@ export type AccessMode = "everyone" | "linked";
 export type UsageDataMode = "off" | "dm" | "dm_and_channels";
 export type SlackAgentStatusChange = "active" | "paused";
 
-type Result<T> = { ok: true; value: T } | { ok: false; message: string };
+/** code: the 400's error code, when it isn't bad_request. */
+type Result<T> = { ok: true; value: T } | { ok: false; message: string; code?: string };
 type Body = Record<string, unknown>;
 
 /** What an admin picks before installing. It travels in the signed OAuth state, in API units. */
@@ -59,6 +63,9 @@ export type SlackAgentRowUpdate = Partial<{
 	monthly_cap_nanos: number;
 	answers_per_person_hour: number;
 	model: string;
+	model_choice_enabled: boolean;
+	allowed_models: string[];
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: AccessMode;
 	usage_data_mode: UsageDataMode;
@@ -75,7 +82,7 @@ export type SlackAgentPatch = {
 };
 
 const ok = <T>(value: T): Result<T> => ({ ok: true, value });
-const fail = (message: string): { ok: false; message: string } => ({ ok: false, message });
+const fail = (message: string, code?: string): { ok: false; message: string; code?: string } => ({ ok: false, message, ...(code ? { code } : {}) });
 
 export function usdToNanos(usd: number): number {
 	return Math.round(usd * NANOS_PER_USD);
@@ -120,9 +127,31 @@ function usd(value: unknown, field: string, allowZero: boolean): Result<number> 
 	return ok(usdToNanos(value) / NANOS_PER_USD);
 }
 
+function isAutoModelId(id: string): boolean {
+	return id.toLowerCase() === AUTO_MODEL_ID;
+}
+
 function model(value: unknown): Result<string> {
 	const text = typeof value === "string" ? value.trim() : "";
 	return MODEL_PATTERN.test(text) ? ok(text) : fail("model must be a model id such as openai/gpt-6-luna");
+}
+
+/**
+ * The models people may choose per message: model ids, each once, at most
+ * MAX_ALLOWED_MODELS. Auto is written as phaseo/auto. Whether each is a catalogue
+ * model, and Auto is allowed, needs the database (the PATCH route).
+ */
+function allowedModelIds(value: unknown): Result<string[]> {
+	if (!Array.isArray(value)) return fail("allowed_models must be a list of model ids");
+	const ids: string[] = [];
+	for (const entry of value) {
+		const parsed = model(entry);
+		if (parsed.ok === false) return fail("allowed_models must be model ids such as openai/gpt-6-luna");
+		const id = isAutoModelId(parsed.value) ? AUTO_MODEL_ID : parsed.value;
+		if (!ids.includes(id)) ids.push(id);
+	}
+	if (ids.length > MAX_ALLOWED_MODELS) return fail(`allowed_models can list at most ${MAX_ALLOWED_MODELS} models`, "too_many_models");
+	return ok(ids);
 }
 
 function instructions(value: unknown): Result<string | null> {
@@ -219,7 +248,7 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 
 const PATCH_FIELDS = new Set([
 	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "answers_per_person_hour",
-	"model", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
 ]);
 
@@ -229,10 +258,10 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 	if (unknown) return fail(`Unknown field: ${unknown}`);
 	const update: SlackAgentRowUpdate = {};
 	const patch: SlackAgentPatch = { update, changedFields: [] };
-	const take = <T>(field: string, parse: (value: unknown) => Result<T>, apply: (value: T) => void): string | null => {
+	const take = <T>(field: string, parse: (value: unknown) => Result<T>, apply: (value: T) => void): { ok: false; message: string; code?: string } | null => {
 		if (body[field] === undefined) return null;
 		const parsed = parse(body[field]);
-		if (parsed.ok === false) return parsed.message;
+		if (parsed.ok === false) return parsed;
 		apply(parsed.value);
 		patch.changedFields.push(field);
 		return null;
@@ -244,6 +273,10 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 		take("monthly_cap_usd", (value) => usd(value, "monthly_cap_usd", false), (value) => { update.monthly_cap_nanos = usdToNanos(value); }),
 		take("answers_per_person_hour", (value) => integer(value, "answers_per_person_hour", 1, MAX_ANSWERS_PER_PERSON_HOUR), (value) => { update.answers_per_person_hour = value; }),
 		take("model", model, (value) => { update.model = value; }),
+		take("model_choice_enabled", (value) => bool(value, "model_choice_enabled"), (value) => { update.model_choice_enabled = value; }),
+		take("allowed_models", allowedModelIds, (value) => { update.allowed_models = value; }),
+		// Off: the agent gets no note tools and no pins; saved notes are kept.
+		take("memory_enabled", (value) => bool(value, "memory_enabled"), (value) => { update.memory_enabled = value; }),
 		take("instructions", instructions, (value) => { update.instructions = value; }),
 		take("access_mode", (value) => oneOf<AccessMode>(value, "access_mode", ["everyone", "linked"]), (value) => { update.access_mode = value; }),
 		take("usage_data_mode", (value) => oneOf<UsageDataMode>(value, "usage_data_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.usage_data_mode = value; }),
@@ -254,8 +287,8 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 		// payment_due and uninstalled are never set here: paying clears payment_due, DELETE uninstalls.
 		take("status", (value) => oneOf<SlackAgentStatusChange>(value, "status", ["active", "paused"]), (value) => { patch.status = value; }),
 	];
-	const problem = problems.find((message) => message !== null);
-	if (problem) return fail(problem);
+	const problem = problems.find((entry) => entry !== null);
+	if (problem) return problem;
 	if (!patch.changedFields.length) return fail("Provide at least one setting to change");
 	return ok(patch);
 }

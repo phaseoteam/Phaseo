@@ -9083,6 +9083,496 @@
 			"ja": "このキーの保管場所（キーを環境変数に保持しているホスティングプラットフォームなど）。任意です。保管場所で情報漏えいが報告された場合、そこに保管されているすべてのキーを見つけて無効化できます。既知の ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。",
 			"zh-Hans": "你存放此密钥的位置，例如在环境变量中保存它的托管平台。可选。如果其中某个位置报告数据泄露，你可以找到并撤销存储在那里的所有密钥。已知 ID：railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。",
 			"ar": "المكان الذي تحتفظ فيه بهذا المفتاح، مثل منصة الاستضافة التي تحتفظ به في متغيرات البيئة. اختياري. إذا أبلغ أحد هذه الأماكن عن اختراق، يمكنك العثور على كل المفاتيح المخزنة فيه وإبطالها. المعرّفات المعروفة: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other."
+		},
+		"List spend rules": {
+			"es": "Listar reglas de gasto",
+			"fr": "Lister les règles de dépenses",
+			"de": "Ausgabenregeln auflisten",
+			"pt-BR": "Listar regras de gastos",
+			"hi": "खर्च नियमों की सूची देखें",
+			"ja": "支出ルールを一覧表示",
+			"zh-Hans": "列出支出规则",
+			"ar": "سرد قواعد الإنفاق"
+		},
+		"Lists the workspace's spend rules. A rule notifies at thresholds in dollars or percent over a scope and a calendar or rolling period. Every workspace member can read them.": {
+			"es": "Lista las reglas de gasto del espacio de trabajo. Una regla avisa al alcanzar umbrales en dólares o en porcentaje para un ámbito y un periodo natural o móvil. Cualquier miembro del espacio de trabajo puede leerlas.",
+			"fr": "Liste les règles de dépenses de l’espace de travail. Une règle avertit à des seuils en dollars ou en pourcentage, pour un périmètre et une période calendaire ou glissante. Tout membre de l’espace de travail peut les lire.",
+			"de": "Listet die Ausgabenregeln des Workspace auf. Eine Regel benachrichtigt bei Schwellenwerten in Dollar oder Prozent für einen Bereich und einen Kalender- oder gleitenden Zeitraum. Jedes Workspace-Mitglied kann sie lesen.",
+			"pt-BR": "Lista as regras de gastos do workspace. Uma regra avisa ao atingir limites em dólares ou em porcentagem para um escopo e um período de calendário ou móvel. Qualquer membro do workspace pode lê-las.",
+			"hi": "वर्कस्पेस के खर्च नियमों की सूची देता है। कोई नियम किसी दायरे और कैलेंडर या रोलिंग अवधि में डॉलर या प्रतिशत की सीमाओं पर सूचना देता है। वर्कस्पेस का हर सदस्य इन्हें पढ़ सकता है।",
+			"ja": "ワークスペースの支出ルールを一覧表示します。ルールは、対象範囲と暦期間またはローリング期間について、ドルまたはパーセントのしきい値で通知します。ワークスペースのメンバーは誰でも参照できます。",
+			"zh-Hans": "列出工作区的支出规则。规则针对某个范围和日历周期或滚动周期，在达到以美元或百分比表示的阈值时发出通知。工作区的所有成员都可以读取。",
+			"ar": "يسرد قواعد الإنفاق في مساحة العمل. تُرسل القاعدة تنبيهًا عند بلوغ حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تقويمية أو متحركة. يمكن لأي عضو في مساحة العمل قراءتها."
+		},
+		"Spend rules": {
+			"es": "Reglas de gasto",
+			"fr": "Règles de dépenses",
+			"de": "Ausgabenregeln",
+			"pt-BR": "Regras de gastos",
+			"hi": "खर्च नियम",
+			"ja": "支出ルール",
+			"zh-Hans": "支出规则",
+			"ar": "قواعد الإنفاق"
+		},
+		"Create a spend rule": {
+			"es": "Crear una regla de gasto",
+			"fr": "Créer une règle de dépenses",
+			"de": "Ausgabenregel erstellen",
+			"pt-BR": "Criar uma regra de gastos",
+			"hi": "खर्च नियम बनाएँ",
+			"ja": "支出ルールを作成",
+			"zh-Hans": "创建支出规则",
+			"ar": "إنشاء قاعدة إنفاق"
+		},
+		"Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.": {
+			"es": "Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.",
+			"fr": "Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont acceptées ; les règles renvoyées avec evaluated à false sont enregistrées et se déclencheront à partir d’une version ultérieure. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.",
+			"de": "Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird akzeptiert; Regeln, die mit evaluated false zurückgegeben werden, werden gespeichert und lösen erst ab einer späteren Version aus. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.",
+			"pt-BR": "Cria uma regra de gastos e define seus destinos de notificação. Qualquer métrica é aceita; regras retornadas com evaluated false são salvas e passarão a disparar em uma versão futura. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.",
+			"hi": "एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।",
+			"ja": "支出ルールを作成し、通知先を設定します。どの指標も受け付けます。evaluated が false で返されるルールは保存され、今後のリリースから発火します。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。",
+			"zh-Hans": "创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。",
+			"ar": "ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقبل كل المقاييس؛ القواعد التي تُعاد مع evaluated بقيمة false تُحفظ وتبدأ بالعمل في إصدار لاحق. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق."
+		},
+		"Spend rule created": {
+			"es": "Regla de gasto creada",
+			"fr": "Règle de dépenses créée",
+			"de": "Ausgabenregel erstellt",
+			"pt-BR": "Regra de gastos criada",
+			"hi": "खर्च नियम बनाया गया",
+			"ja": "支出ルールを作成しました",
+			"zh-Hans": "已创建支出规则",
+			"ar": "تم إنشاء قاعدة الإنفاق"
+		},
+		"Spend rule id.": {
+			"es": "ID de la regla de gasto.",
+			"fr": "ID de la règle de dépenses.",
+			"de": "ID der Ausgabenregel.",
+			"pt-BR": "ID da regra de gastos.",
+			"hi": "खर्च नियम का ID.",
+			"ja": "支出ルールの ID。",
+			"zh-Hans": "支出规则 ID。",
+			"ar": "معرّف قاعدة الإنفاق."
+		},
+		"Get a spend rule": {
+			"es": "Obtener una regla de gasto",
+			"fr": "Obtenir une règle de dépenses",
+			"de": "Ausgabenregel abrufen",
+			"pt-BR": "Obter uma regra de gastos",
+			"hi": "खर्च नियम प्राप्त करें",
+			"ja": "支出ルールを取得",
+			"zh-Hans": "获取支出规则",
+			"ar": "جلب قاعدة إنفاق"
+		},
+		"Returns one spend rule.": {
+			"es": "Devuelve una regla de gasto.",
+			"fr": "Renvoie une règle de dépenses.",
+			"de": "Gibt eine Ausgabenregel zurück.",
+			"pt-BR": "Retorna uma regra de gastos.",
+			"hi": "एक खर्च नियम लौटाता है।",
+			"ja": "支出ルールを 1 件返します。",
+			"zh-Hans": "返回一条支出规则。",
+			"ar": "يعيد قاعدة إنفاق واحدة."
+		},
+		"Spend rule": {
+			"es": "Regla de gasto",
+			"fr": "Règle de dépenses",
+			"de": "Ausgabenregel",
+			"pt-BR": "Regra de gastos",
+			"hi": "खर्च नियम",
+			"ja": "支出ルール",
+			"zh-Hans": "支出规则",
+			"ar": "قاعدة الإنفاق"
+		},
+		"Update a spend rule": {
+			"es": "Actualizar una regla de gasto",
+			"fr": "Mettre à jour une règle de dépenses",
+			"de": "Ausgabenregel aktualisieren",
+			"pt-BR": "Atualizar uma regra de gastos",
+			"hi": "खर्च नियम अपडेट करें",
+			"ja": "支出ルールを更新",
+			"zh-Hans": "更新支出规则",
+			"ar": "تحديث قاعدة إنفاق"
+		},
+		"Changes a spend rule. The fields sent are merged over the stored rule and the whole rule is checked again. destination_ids replaces the rule's destinations; leave it out to keep them.": {
+			"es": "Modifica una regla de gasto. Los campos enviados se combinan con la regla guardada y se vuelve a comprobar la regla completa. destination_ids sustituye los destinos de la regla; omítelo para conservarlos.",
+			"fr": "Modifie une règle de dépenses. Les champs envoyés sont fusionnés avec la règle enregistrée, puis la règle entière est vérifiée à nouveau. destination_ids remplace les destinations de la règle ; omettez-le pour les conserver.",
+			"de": "Ändert eine Ausgabenregel. Die gesendeten Felder werden mit der gespeicherten Regel zusammengeführt und die ganze Regel wird erneut geprüft. destination_ids ersetzt die Ziele der Regel; weglassen, um sie zu behalten.",
+			"pt-BR": "Altera uma regra de gastos. Os campos enviados são mesclados com a regra salva e a regra inteira é verificada novamente. destination_ids substitui os destinos da regra; omita-o para mantê-los.",
+			"hi": "एक खर्च नियम बदलता है। भेजे गए फ़ील्ड सहेजे गए नियम पर मिलाए जाते हैं और पूरे नियम की फिर से जाँच होती है। destination_ids नियम के गंतव्यों को बदल देता है; उन्हें रखने के लिए इसे छोड़ दें।",
+			"ja": "支出ルールを変更します。送信したフィールドは保存済みのルールにマージされ、ルール全体が再度検証されます。destination_ids はルールの通知先を置き換えます。保持する場合は省略してください。",
+			"zh-Hans": "修改支出规则。发送的字段会合并到已保存的规则上，并重新校验整条规则。destination_ids 会替换规则的通知目标；省略则保留原有目标。",
+			"ar": "يغيّر قاعدة إنفاق. تُدمج الحقول المرسلة مع القاعدة المحفوظة ويُعاد التحقق من القاعدة كاملة. يستبدل destination_ids وجهات القاعدة؛ احذفه للإبقاء عليها."
+		},
+		"Spend rule updated": {
+			"es": "Regla de gasto actualizada",
+			"fr": "Règle de dépenses mise à jour",
+			"de": "Ausgabenregel aktualisiert",
+			"pt-BR": "Regra de gastos atualizada",
+			"hi": "खर्च नियम अपडेट किया गया",
+			"ja": "支出ルールを更新しました",
+			"zh-Hans": "已更新支出规则",
+			"ar": "تم تحديث قاعدة الإنفاق"
+		},
+		"Delete a spend rule": {
+			"es": "Eliminar una regla de gasto",
+			"fr": "Supprimer une règle de dépenses",
+			"de": "Ausgabenregel löschen",
+			"pt-BR": "Excluir uma regra de gastos",
+			"hi": "खर्च नियम हटाएँ",
+			"ja": "支出ルールを削除",
+			"zh-Hans": "删除支出规则",
+			"ar": "حذف قاعدة إنفاق"
+		},
+		"Deletes a spend rule. It is no longer evaluated and no longer counts toward the limit of 50 rules.": {
+			"es": "Elimina una regla de gasto. Deja de evaluarse y deja de contar para el límite de 50 reglas.",
+			"fr": "Supprime une règle de dépenses. Elle n’est plus évaluée et ne compte plus dans la limite de 50 règles.",
+			"de": "Löscht eine Ausgabenregel. Sie wird nicht mehr ausgewertet und zählt nicht mehr zum Limit von 50 Regeln.",
+			"pt-BR": "Exclui uma regra de gastos. Ela deixa de ser avaliada e de contar para o limite de 50 regras.",
+			"hi": "एक खर्च नियम हटाता है। उसका मूल्यांकन बंद हो जाता है और वह 50 नियमों की सीमा में नहीं गिना जाता।",
+			"ja": "支出ルールを削除します。評価されなくなり、50 件の上限にも数えられなくなります。",
+			"zh-Hans": "删除支出规则。该规则不再被评估，也不再计入 50 条规则的上限。",
+			"ar": "يحذف قاعدة إنفاق. لا تعود تُقيَّم ولا تُحتسب ضمن حد الخمسين قاعدة."
+		},
+		"Spend rule deleted": {
+			"es": "Regla de gasto eliminada",
+			"fr": "Règle de dépenses supprimée",
+			"de": "Ausgabenregel gelöscht",
+			"pt-BR": "Regra de gastos excluída",
+			"hi": "खर्च नियम हटाया गया",
+			"ja": "支出ルールを削除しました",
+			"zh-Hans": "已删除支出规则",
+			"ar": "تم حذف قاعدة الإنفاق"
+		},
+		"Send a test spend alert": {
+			"es": "Enviar una alerta de gasto de prueba",
+			"fr": "Envoyer une alerte de dépenses de test",
+			"de": "Test-Ausgabenwarnung senden",
+			"pt-BR": "Enviar um alerta de gastos de teste",
+			"hi": "परीक्षण खर्च अलर्ट भेजें",
+			"ja": "テスト用の支出アラートを送信",
+			"zh-Hans": "发送测试支出提醒",
+			"ar": "إرسال تنبيه إنفاق تجريبي"
+		},
+		"Renders the rule's alert from its current value, marked TEST, and sends it now to the rule's destinations, or to the Spend Alerts route when the rule has none. Nothing is recorded. A workspace can send 5 tests a minute.": {
+			"es": "Genera la alerta de la regla con su valor actual, marcada como TEST, y la envía ahora a los destinos de la regla o, si no tiene ninguno, a la ruta de Spend Alerts. No se registra nada. Un espacio de trabajo puede enviar 5 pruebas por minuto.",
+			"fr": "Génère l’alerte de la règle à partir de sa valeur actuelle, marquée TEST, et l’envoie immédiatement aux destinations de la règle, ou à la route Spend Alerts si elle n’en a pas. Rien n’est enregistré. Un espace de travail peut envoyer 5 tests par minute.",
+			"de": "Erzeugt die Warnung der Regel aus ihrem aktuellen Wert, mit TEST gekennzeichnet, und sendet sie sofort an die Ziele der Regel oder, wenn sie keine hat, an die Route für Spend Alerts. Es wird nichts gespeichert. Ein Workspace kann 5 Tests pro Minute senden.",
+			"pt-BR": "Gera o alerta da regra a partir do valor atual, marcado como TEST, e o envia agora aos destinos da regra ou, se ela não tiver nenhum, à rota de Spend Alerts. Nada é registrado. Um workspace pode enviar 5 testes por minuto.",
+			"hi": "नियम का अलर्ट उसके मौजूदा मान से TEST चिह्न के साथ बनाता है और उसे अभी नियम के गंतव्यों पर भेजता है, या कोई गंतव्य न होने पर Spend Alerts रूट पर। कुछ भी रिकॉर्ड नहीं होता। एक वर्कस्पेस प्रति मिनट 5 परीक्षण भेज सकता है।",
+			"ja": "ルールの現在の値からアラートを TEST 付きで作成し、ルールの通知先、通知先がない場合は Spend Alerts のルートへすぐに送信します。何も記録されません。ワークスペースあたり 1 分に 5 回までテストできます。",
+			"zh-Hans": "根据规则的当前值生成标记为 TEST 的提醒，并立即发送到规则的通知目标；规则没有目标时发送到 Spend Alerts 路由。不会记录任何内容。每个工作区每分钟最多可发送 5 次测试。",
+			"ar": "يُنشئ تنبيه القاعدة من قيمتها الحالية مع وسم TEST ويرسله فورًا إلى وجهات القاعدة، أو إلى مسار Spend Alerts إذا لم تكن لها وجهات. لا يُسجَّل أي شيء. يمكن لمساحة العمل إرسال 5 اختبارات في الدقيقة."
+		},
+		"Test alert sent": {
+			"es": "Alerta de prueba enviada",
+			"fr": "Alerte de test envoyée",
+			"de": "Testwarnung gesendet",
+			"pt-BR": "Alerta de teste enviado",
+			"hi": "परीक्षण अलर्ट भेजा गया",
+			"ja": "テストアラートを送信しました",
+			"zh-Hans": "已发送测试提醒",
+			"ar": "تم إرسال التنبيه التجريبي"
+		},
+		"Preview a spend rule": {
+			"es": "Previsualizar una regla de gasto",
+			"fr": "Prévisualiser une règle de dépenses",
+			"de": "Vorschau einer Ausgabenregel",
+			"pt-BR": "Pré-visualizar uma regra de gastos",
+			"hi": "खर्च नियम का पूर्वावलोकन करें",
+			"ja": "支出ルールをプレビュー",
+			"zh-Hans": "预览支出规则",
+			"ar": "معاينة قاعدة إنفاق"
+		},
+		"Returns the rule's current period, spend so far, base, percent and next threshold, computed as the evaluator computes them, without sending or recording anything.": {
+			"es": "Devuelve el periodo actual de la regla, el gasto acumulado, la base, el porcentaje y el siguiente umbral, calculados igual que en la evaluación, sin enviar ni registrar nada.",
+			"fr": "Renvoie la période en cours de la règle, les dépenses à ce jour, la base, le pourcentage et le prochain seuil, calculés comme lors de l’évaluation, sans rien envoyer ni enregistrer.",
+			"de": "Gibt den aktuellen Zeitraum der Regel, die bisherigen Ausgaben, die Basis, den Prozentsatz und den nächsten Schwellenwert zurück, so berechnet wie bei der Auswertung, ohne etwas zu senden oder zu speichern.",
+			"pt-BR": "Retorna o período atual da regra, o gasto até agora, a base, a porcentagem e o próximo limite, calculados como na avaliação, sem enviar nem registrar nada.",
+			"hi": "नियम की मौजूदा अवधि, अब तक का खर्च, आधार, प्रतिशत और अगली सीमा लौटाता है, जिनकी गणना मूल्यांकन की तरह ही होती है, बिना कुछ भेजे या रिकॉर्ड किए।",
+			"ja": "ルールの現在の期間、これまでの支出、基準額、割合、次のしきい値を、評価と同じ方法で計算して返します。送信や記録は行いません。",
+			"zh-Hans": "返回规则的当前周期、目前为止的支出、基数、百分比和下一个阈值，计算方式与评估时相同，不发送也不记录任何内容。",
+			"ar": "يعيد الفترة الحالية للقاعدة والإنفاق حتى الآن والأساس والنسبة المئوية والحد التالي، محسوبةً كما في التقييم، دون إرسال أو تسجيل أي شيء."
+		},
+		"Spend rule preview": {
+			"es": "Vista previa de la regla de gasto",
+			"fr": "Aperçu de la règle de dépenses",
+			"de": "Vorschau der Ausgabenregel",
+			"pt-BR": "Prévia da regra de gastos",
+			"hi": "खर्च नियम का पूर्वावलोकन",
+			"ja": "支出ルールのプレビュー",
+			"zh-Hans": "支出规则预览",
+			"ar": "معاينة قاعدة الإنفاق"
+		},
+		"Number of events to skip for pagination.": {
+			"es": "Número de eventos que se omiten para la paginación.",
+			"fr": "Nombre d’événements à ignorer pour la pagination.",
+			"de": "Anzahl der Ereignisse, die für die Paginierung übersprungen werden.",
+			"pt-BR": "Número de eventos a pular na paginação.",
+			"hi": "पेजिनेशन के लिए छोड़े जाने वाले इवेंट की संख्या।",
+			"ja": "ページ送りでスキップするイベント数。",
+			"zh-Hans": "分页时跳过的事件数。",
+			"ar": "عدد الأحداث التي يتم تخطيها للتقسيم إلى صفحات."
+		},
+		"Maximum number of events to return.": {
+			"es": "Número máximo de eventos que se devuelven.",
+			"fr": "Nombre maximal d’événements à renvoyer.",
+			"de": "Maximale Anzahl zurückgegebener Ereignisse.",
+			"pt-BR": "Número máximo de eventos a retornar.",
+			"hi": "लौटाए जाने वाले इवेंट की अधिकतम संख्या।",
+			"ja": "返すイベントの最大数。",
+			"zh-Hans": "返回的最大事件数。",
+			"ar": "الحد الأقصى لعدد الأحداث المُعادة."
+		},
+		"List spend rule history": {
+			"es": "Listar el historial de una regla de gasto",
+			"fr": "Lister l’historique d’une règle de dépenses",
+			"de": "Verlauf einer Ausgabenregel auflisten",
+			"pt-BR": "Listar o histórico de uma regra de gastos",
+			"hi": "खर्च नियम का इतिहास देखें",
+			"ja": "支出ルールの履歴を一覧表示",
+			"zh-Hans": "列出支出规则历史",
+			"ar": "سرد سجل قاعدة إنفاق"
+		},
+		"Lists the alerts and block events the rule has queued, newest first, with delivery counts, and its most recent period records.": {
+			"es": "Lista las alertas y los eventos de bloqueo que la regla ha puesto en cola, del más reciente al más antiguo, con el recuento de entregas, y sus registros de periodo más recientes.",
+			"fr": "Liste les alertes et les événements de blocage mis en file par la règle, du plus récent au plus ancien, avec le nombre d’envois, ainsi que ses enregistrements de période les plus récents.",
+			"de": "Listet die Warnungen und Sperrereignisse auf, die die Regel eingereiht hat, die neuesten zuerst, mit der Anzahl der Zustellungen, sowie ihre jüngsten Zeitraumeinträge.",
+			"pt-BR": "Lista os alertas e eventos de bloqueio que a regra enfileirou, do mais recente ao mais antigo, com a contagem de entregas, e os registros de período mais recentes.",
+			"hi": "नियम द्वारा कतार में डाले गए अलर्ट और ब्लॉक इवेंट, सबसे नए पहले, डिलीवरी गिनती के साथ, और उसकी सबसे हाल की अवधि के रिकॉर्ड की सूची देता है।",
+			"ja": "ルールがキューに入れたアラートとブロックイベントを新しい順に配信数とともに一覧表示し、直近の期間の記録も返します。",
+			"zh-Hans": "列出规则已排队的提醒和拦截事件（最新的在前）及其投递次数，以及最近的周期记录。",
+			"ar": "يسرد التنبيهات وأحداث الحظر التي أدرجتها القاعدة في قائمة الانتظار، الأحدث أولًا، مع أعداد التسليم، وأحدث سجلات فتراتها."
+		},
+		"Spend rule history": {
+			"es": "Historial de la regla de gasto",
+			"fr": "Historique de la règle de dépenses",
+			"de": "Verlauf der Ausgabenregel",
+			"pt-BR": "Histórico da regra de gastos",
+			"hi": "खर्च नियम का इतिहास",
+			"ja": "支出ルールの履歴",
+			"zh-Hans": "支出规则历史",
+			"ar": "سجل قاعدة الإنفاق"
+		},
+		"spend: spend reached threshold_amount. budget_percent: spend reached threshold_percents of the base. forecast: spend projected to the period end reaches the threshold. spike: spend over the last window_hours is at least spike_multiplier times the usual level and at least spike_floor. balance: the workspace balance or runway falls below the threshold.": {
+			"es": "spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces el nivel habitual y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo baja del umbral.",
+			"fr": "spend : les dépenses ont atteint threshold_amount. budget_percent : les dépenses ont atteint threshold_percents de la base. forecast : les dépenses projetées à la fin de la période atteignent le seuil. spike : les dépenses des dernières window_hours atteignent au moins spike_multiplier fois le niveau habituel et au moins spike_floor. balance : le solde ou l’autonomie de l’espace de travail passe sous le seuil.",
+			"de": "spend: Ausgaben haben threshold_amount erreicht. budget_percent: Ausgaben haben threshold_percents der Basis erreicht. forecast: die bis zum Zeitraumende hochgerechneten Ausgaben erreichen den Schwellenwert. spike: Ausgaben der letzten window_hours betragen mindestens das spike_multiplier-Fache des üblichen Niveaus und mindestens spike_floor. balance: Guthaben oder Reichweite des Workspace fallen unter den Schwellenwert.",
+			"pt-BR": "spend: o gasto atingiu threshold_amount. budget_percent: o gasto atingiu threshold_percents da base. forecast: o gasto projetado para o fim do período atinge o limite. spike: o gasto nas últimas window_hours é pelo menos spike_multiplier vezes o nível habitual e pelo menos spike_floor. balance: o saldo ou a autonomia do workspace fica abaixo do limite.",
+			"hi": "spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।",
+			"ja": "spend: 支出が threshold_amount に達した。budget_percent: 支出が基準額の threshold_percents に達した。forecast: 期間末までの予測支出がしきい値に達する。spike: 直近 window_hours の支出が通常の水準の spike_multiplier 倍以上かつ spike_floor 以上。balance: ワークスペースの残高または残り日数がしきい値を下回る。",
+			"zh-Hans": "spend：支出达到 threshold_amount。budget_percent：支出达到基数的 threshold_percents。forecast：预计到周期结束时的支出达到阈值。spike：最近 window_hours 的支出至少为常规水平的 spike_multiplier 倍且不低于 spike_floor。balance：工作区余额或可用天数低于阈值。",
+			"ar": "spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة الحد. spike: الإنفاق خلال آخر window_hours لا يقل عن spike_multiplier ضعف المستوى المعتاد ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن الحد."
+		},
+		"day, week (from Monday) or month in the rule's time zone, or rolling over the last window_hours.": {
+			"es": "day, week (desde el lunes) o month en la zona horaria de la regla, o rolling sobre las últimas window_hours.",
+			"fr": "day, week (à partir du lundi) ou month dans le fuseau horaire de la règle, ou rolling sur les dernières window_hours.",
+			"de": "day, week (ab Montag) oder month in der Zeitzone der Regel, oder rolling über die letzten window_hours.",
+			"pt-BR": "day, week (a partir de segunda-feira) ou month no fuso horário da regra, ou rolling nas últimas window_hours.",
+			"hi": "नियम के समय क्षेत्र में day, week (सोमवार से) या month, या पिछले window_hours पर rolling।",
+			"ja": "ルールのタイムゾーンでの day、week（月曜始まり）、month、または直近 window_hours の rolling。",
+			"zh-Hans": "规则时区内的 day、week（从周一开始）或 month，或最近 window_hours 的 rolling。",
+			"ar": "day أو week (بدءًا من الاثنين) أو month في المنطقة الزمنية للقاعدة، أو rolling على آخر window_hours."
+		},
+		"notify, or notify and then block once spend reaches block_at_percent of the base or block_at_amount. Blocking is best effort and acts minutes after the threshold. Blocking is not available yet: a rule with action block is refused with a 400 until it is.": {
+			"es": "notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. El bloqueo aún no está disponible: una regla con action block se rechaza con un 400 hasta que lo esté.",
+			"fr": "notify, ou avertir puis bloquer lorsque les dépenses atteignent block_at_percent de la base ou block_at_amount. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil. Le blocage n’est pas encore disponible : une règle avec action block est refusée avec une erreur 400 tant qu’il ne l’est pas.",
+			"de": "notify, oder benachrichtigen und dann sperren, sobald die Ausgaben block_at_percent der Basis oder block_at_amount erreichen. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert. Das Sperren ist noch nicht verfügbar: Eine Regel mit action block wird mit einem 400 abgelehnt, bis es verfügbar ist.",
+			"pt-BR": "notify, ou avisar e depois bloquear quando o gasto atingir block_at_percent da base ou block_at_amount. O bloqueio é feito com o melhor esforço e age minutos após o limite. O bloqueio ainda não está disponível: uma regra com action block é recusada com um 400 até que esteja.",
+			"hi": "notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।",
+			"ja": "notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ブロックはまだ利用できません。action が block のルールは、利用可能になるまで 400 で拒否されます。",
+			"zh-Hans": "notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。",
+			"ar": "notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. الحظر غير متاح بعد: تُرفض القاعدة التي تحمل action block برمز 400 إلى أن يصبح متاحًا."
+		},
+		"A spend rule: thresholds in dollars or percent over a scope and a period that notify, or notify and then block. Amounts are returned in nanodollars and in USD.": {
+			"es": "Una regla de gasto: umbrales en dólares o en porcentaje para un ámbito y un periodo que avisan, o avisan y después bloquean. Los importes se devuelven en nanodólares y en USD.",
+			"fr": "Une règle de dépenses : des seuils en dollars ou en pourcentage, pour un périmètre et une période, qui avertissent, ou avertissent puis bloquent. Les montants sont renvoyés en nanodollars et en USD.",
+			"de": "Eine Ausgabenregel: Schwellenwerte in Dollar oder Prozent für einen Bereich und einen Zeitraum, die benachrichtigen oder benachrichtigen und dann sperren. Beträge werden in Nanodollar und in USD zurückgegeben.",
+			"pt-BR": "Uma regra de gastos: limites em dólares ou em porcentagem para um escopo e um período que avisam, ou avisam e depois bloqueiam. Os valores são retornados em nanodólares e em USD.",
+			"hi": "एक खर्च नियम: किसी दायरे और अवधि में डॉलर या प्रतिशत की सीमाएँ जो सूचना देती हैं, या सूचना देकर फिर ब्लॉक करती हैं। राशियाँ नैनोडॉलर और USD दोनों में लौटाई जाती हैं।",
+			"ja": "支出ルール: 対象範囲と期間に対するドルまたはパーセントのしきい値で、通知するか、通知してからブロックします。金額はナノドルと USD の両方で返されます。",
+			"zh-Hans": "支出规则：针对某个范围和周期、以美元或百分比表示的阈值，用于通知，或先通知再拦截。金额以纳美元和美元两种形式返回。",
+			"ar": "قاعدة إنفاق: حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تُرسل تنبيهًا، أو تنبه ثم تحظر. تُعاد المبالغ بالنانودولار وبالدولار الأمريكي."
+		},
+		"False for rules the evaluator does not handle yet (forecast, spike and balance metrics, rolling periods and previous_period bases). They are saved and fire from a later release.": {
+			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.",
+			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast, spike et balance, périodes rolling et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.",
+			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.",
+			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast, spike e balance, períodos rolling e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura.",
+			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।",
+			"ja": "評価がまだ対応していないルール（forecast・spike・balance の指標、rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。",
+			"zh-Hans": "对于评估尚未支持的规则（forecast、spike 和 balance 指标、rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。",
+			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق."
+		},
+		"Null for the workspace scope; otherwise a key id, a member's user id, a department id, a model id or a provider id.": {
+			"es": "Null para el ámbito del espacio de trabajo; en otro caso, el ID de una clave, el ID de usuario de un miembro, el ID de un departamento, el ID de un modelo o el ID de un proveedor.",
+			"fr": "Null pour le périmètre de l’espace de travail ; sinon l’ID d’une clé, l’ID utilisateur d’un membre, l’ID d’un département, l’ID d’un modèle ou l’ID d’un fournisseur.",
+			"de": "Null für den Workspace-Bereich; sonst eine Schlüssel-ID, die Benutzer-ID eines Mitglieds, eine Abteilungs-ID, eine Modell-ID oder eine Anbieter-ID.",
+			"pt-BR": "Null para o escopo do workspace; caso contrário, o ID de uma chave, o ID de usuário de um membro, o ID de um departamento, o ID de um modelo ou o ID de um provedor.",
+			"hi": "वर्कस्पेस दायरे के लिए null; अन्यथा कुंजी ID, सदस्य का उपयोगकर्ता ID, विभाग ID, मॉडल ID या प्रदाता ID।",
+			"ja": "ワークスペース全体の場合は null。それ以外はキー ID、メンバーのユーザー ID、部署 ID、モデル ID、またはプロバイダー ID。",
+			"zh-Hans": "工作区范围为 null；否则为密钥 ID、成员的用户 ID、部门 ID、模型 ID 或提供商 ID。",
+			"ar": "null لنطاق مساحة العمل؛ وإلا فمعرّف مفتاح أو معرّف مستخدم لعضو أو معرّف قسم أو معرّف نموذج أو معرّف مزوّد."
+		},
+		"Hours in a rolling window: the spike window for spike rules and the burn-rate lookback for balance rules. Null for calendar periods.": {
+			"es": "Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.",
+			"fr": "Heures d’une fenêtre glissante : la fenêtre du pic pour les règles spike et la période d’analyse du rythme de consommation pour les règles balance. Null pour les périodes calendaires.",
+			"de": "Stunden eines gleitenden Fensters: das Spitzenfenster für spike-Regeln und der Rückblick für die Verbrauchsrate bei balance-Regeln. Null für Kalenderzeiträume.",
+			"pt-BR": "Horas de uma janela móvel: a janela do pico nas regras spike e o período de consumo analisado nas regras balance. Null para períodos de calendário.",
+			"hi": "रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।",
+			"ja": "ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。",
+			"zh-Hans": "滚动窗口的小时数：spike 规则的峰值窗口，balance 规则用于计算消耗速度的回看时长。日历周期为 null。",
+			"ar": "ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية."
+		},
+		"IANA time zone for calendar periods. Null uses the workspace's billing time zone.": {
+			"es": "Zona horaria IANA de los periodos naturales. Null usa la zona horaria de facturación del espacio de trabajo.",
+			"fr": "Fuseau horaire IANA des périodes calendaires. Null utilise le fuseau horaire de facturation de l’espace de travail.",
+			"de": "IANA-Zeitzone für Kalenderzeiträume. Null verwendet die Abrechnungszeitzone des Workspace.",
+			"pt-BR": "Fuso horário IANA dos períodos de calendário. Null usa o fuso horário de cobrança do workspace.",
+			"hi": "कैलेंडर अवधियों के लिए IANA समय क्षेत्र। null होने पर वर्कस्पेस का बिलिंग समय क्षेत्र इस्तेमाल होता है।",
+			"ja": "暦期間に使う IANA タイムゾーン。null の場合はワークスペースの請求タイムゾーンを使います。",
+			"zh-Hans": "日历周期使用的 IANA 时区。为 null 时使用工作区的计费时区。",
+			"ar": "المنطقة الزمنية وفق IANA للفترات التقويمية. القيمة null تستخدم المنطقة الزمنية للفوترة في مساحة العمل."
+		},
+		"What threshold_percents are percentages of: amount (base_amount), workspace_budget or key_limit (the base_ref interval, which must match the period), or previous_period.": {
+			"es": "De qué son porcentaje los threshold_percents: amount (base_amount), workspace_budget o key_limit (el intervalo base_ref, que debe coincidir con el periodo) o previous_period.",
+			"fr": "Ce dont threshold_percents sont des pourcentages : amount (base_amount), workspace_budget ou key_limit (l’intervalle base_ref, qui doit correspondre à la période), ou previous_period.",
+			"de": "Wovon threshold_percents Prozentsätze sind: amount (base_amount), workspace_budget oder key_limit (das Intervall base_ref, das zum Zeitraum passen muss) oder previous_period.",
+			"pt-BR": "Do que threshold_percents são porcentagens: amount (base_amount), workspace_budget ou key_limit (o intervalo base_ref, que deve corresponder ao período) ou previous_period.",
+			"hi": "threshold_percents किसके प्रतिशत हैं: amount (base_amount), workspace_budget या key_limit (base_ref अंतराल, जो अवधि से मेल खाना चाहिए), या previous_period।",
+			"ja": "threshold_percents が何に対する割合か: amount（base_amount）、workspace_budget または key_limit（期間と一致する base_ref の間隔）、または previous_period。",
+			"zh-Hans": "threshold_percents 所对应的基数：amount（base_amount）、workspace_budget 或 key_limit（base_ref 间隔，必须与周期一致），或 previous_period。",
+			"ar": "ما تمثل threshold_percents نسبًا منه: amount (base_amount) أو workspace_budget أو key_limit (الفاصل base_ref الذي يجب أن يطابق الفترة) أو previous_period."
+		},
+		"Up to five whole percentages of the base, sorted. Each fires at most once per period; crossing several at once sends one alert naming the highest.": {
+			"es": "Hasta cinco porcentajes enteros de la base, ordenados. Cada uno se activa como máximo una vez por periodo; si se cruzan varios a la vez, se envía una sola alerta con el más alto.",
+			"fr": "Jusqu’à cinq pourcentages entiers de la base, triés. Chacun se déclenche au plus une fois par période ; si plusieurs sont franchis en même temps, une seule alerte est envoyée, avec le plus élevé.",
+			"de": "Bis zu fünf ganzzahlige Prozentsätze der Basis, sortiert. Jeder löst höchstens einmal pro Zeitraum aus; werden mehrere zugleich überschritten, wird eine Warnung mit dem höchsten gesendet.",
+			"pt-BR": "Até cinco porcentagens inteiras da base, ordenadas. Cada uma dispara no máximo uma vez por período; se várias forem cruzadas ao mesmo tempo, um único alerta é enviado com a mais alta.",
+			"hi": "आधार के अधिकतम पाँच पूर्ण प्रतिशत, क्रम में। हर एक प्रति अवधि अधिकतम एक बार ट्रिगर होता है; एक साथ कई पार होने पर सबसे ऊँचे का नाम लेकर एक अलर्ट भेजा जाता है।",
+			"ja": "基準額に対する最大 5 つの整数パーセント（昇順）。各しきい値は期間ごとに最大 1 回発火し、同時に複数を超えた場合は最も高いものを示すアラートを 1 件送ります。",
+			"zh-Hans": "最多五个基数的整数百分比，按升序排列。每个阈值每个周期最多触发一次；同时越过多个阈值时，只发送一条提醒并注明最高的那个。",
+			"ar": "حتى خمس نسب مئوية صحيحة من الأساس، مرتبة. يعمل كل منها مرة واحدة على الأكثر في الفترة؛ وعند تجاوز عدة حدود معًا يُرسل تنبيه واحد يذكر أعلاها."
+		},
+		"Whether a block also stops requests to free models.": {
+			"es": "Si un bloqueo también detiene las solicitudes a modelos gratuitos.",
+			"fr": "Indique si un blocage arrête aussi les requêtes vers les modèles gratuits.",
+			"de": "Ob eine Sperre auch Anfragen an kostenlose Modelle stoppt.",
+			"pt-BR": "Se um bloqueio também interrompe solicitações a modelos gratuitos.",
+			"hi": "क्या ब्लॉक मुफ़्त मॉडल के अनुरोध भी रोकता है।",
+			"ja": "ブロック中に無料モデルへのリクエストも止めるかどうか。",
+			"zh-Hans": "拦截是否也会阻止对免费模型的请求。",
+			"ar": "ما إذا كان الحظر يوقف أيضًا الطلبات إلى النماذج المجانية."
+		},
+		"Minimum minutes between alerts for rolling, spike and balance rules.": {
+			"es": "Minutos mínimos entre alertas en las reglas rolling, spike y balance.",
+			"fr": "Nombre minimal de minutes entre deux alertes pour les règles rolling, spike et balance.",
+			"de": "Mindestabstand in Minuten zwischen Warnungen bei rolling-, spike- und balance-Regeln.",
+			"pt-BR": "Mínimo de minutos entre alertas nas regras rolling, spike e balance.",
+			"hi": "rolling, spike और balance नियमों के लिए अलर्ट के बीच न्यूनतम मिनट।",
+			"ja": "rolling・spike・balance ルールのアラート間の最小間隔（分）。",
+			"zh-Hans": "rolling、spike 和 balance 规则两次提醒之间的最短分钟数。",
+			"ar": "الحد الأدنى من الدقائق بين التنبيهات لقواعد rolling وspike وbalance."
+		},
+		"Notification destinations for this rule's alerts. Empty means the workspace's Spend Alerts route.": {
+			"es": "Destinos de notificación de las alertas de esta regla. Vacío significa la ruta de Spend Alerts del espacio de trabajo.",
+			"fr": "Destinations de notification des alertes de cette règle. Vide signifie la route Spend Alerts de l’espace de travail.",
+			"de": "Benachrichtigungsziele für die Warnungen dieser Regel. Leer bedeutet die Route für Spend Alerts des Workspace.",
+			"pt-BR": "Destinos de notificação dos alertas desta regra. Vazio significa a rota de Spend Alerts do workspace.",
+			"hi": "इस नियम के अलर्ट के सूचना गंतव्य। खाली होने का मतलब वर्कस्पेस का Spend Alerts रूट है।",
+			"ja": "このルールのアラートの通知先。空の場合はワークスペースの Spend Alerts のルートを使います。",
+			"zh-Hans": "此规则提醒的通知目标。为空表示使用工作区的 Spend Alerts 路由。",
+			"ar": "وجهات الإشعار لتنبيهات هذه القاعدة. القيمة الفارغة تعني مسار Spend Alerts في مساحة العمل."
+		},
+		"Spend rule fields to change; at least one. Give amounts as *_usd or as *_nanos (exact nanodollars), not both. Set a field to null to clear it.": {
+			"es": "Campos de la regla de gasto que se cambian; al menos uno. Indica los importes como *_usd o como *_nanos (nanodólares exactos), no ambos. Pon un campo en null para borrarlo.",
+			"fr": "Champs de la règle de dépenses à modifier ; au moins un. Indiquez les montants en *_usd ou en *_nanos (nanodollars exacts), pas les deux. Mettez un champ à null pour l’effacer.",
+			"de": "Zu ändernde Felder der Ausgabenregel; mindestens eines. Beträge als *_usd oder als *_nanos (exakte Nanodollar) angeben, nicht beides. Ein Feld auf null setzen, um es zu leeren.",
+			"pt-BR": "Campos da regra de gastos a alterar; pelo menos um. Informe valores como *_usd ou como *_nanos (nanodólares exatos), não ambos. Defina um campo como null para limpá-lo.",
+			"hi": "बदलने के लिए खर्च नियम के फ़ील्ड; कम से कम एक। राशियाँ *_usd या *_nanos (सटीक नैनोडॉलर) में दें, दोनों नहीं। किसी फ़ील्ड को साफ़ करने के लिए उसे null करें।",
+			"ja": "変更する支出ルールのフィールド（1 つ以上）。金額は *_usd または *_nanos（正確なナノドル）のどちらかで指定し、両方は指定しないでください。フィールドを消去するには null を設定します。",
+			"zh-Hans": "要修改的支出规则字段，至少一个。金额以 *_usd 或 *_nanos（精确纳美元）提供，不能同时提供。将字段设为 null 可将其清除。",
+			"ar": "حقول قاعدة الإنفاق المراد تغييرها؛ حقل واحد على الأقل. أدخل المبالغ بصيغة *_usd أو *_nanos (نانودولار دقيق)، لا كليهما. اضبط الحقل على null لمسحه."
+		},
+		"A spend rule to create. name, metric and period are required. spike rules default to a 3x multiplier and a $5 floor.": {
+			"es": "Una regla de gasto que se crea. name, metric y period son obligatorios. Las reglas spike usan por defecto un multiplicador de 3x y un mínimo de 5 $.",
+			"fr": "Une règle de dépenses à créer. name, metric et period sont obligatoires. Les règles spike utilisent par défaut un multiplicateur de 3x et un plancher de 5 $.",
+			"de": "Eine zu erstellende Ausgabenregel. name, metric und period sind erforderlich. spike-Regeln verwenden standardmäßig einen Multiplikator von 3x und eine Untergrenze von 5 $.",
+			"pt-BR": "Uma regra de gastos a criar. name, metric e period são obrigatórios. Regras spike usam por padrão um multiplicador de 3x e um piso de US$ 5.",
+			"hi": "बनाया जाने वाला खर्च नियम। name, metric और period ज़रूरी हैं। spike नियमों में डिफ़ॉल्ट रूप से 3x गुणक और $5 की न्यूनतम सीमा होती है।",
+			"ja": "作成する支出ルール。name、metric、period は必須です。spike ルールの既定値は倍率 3x、下限 $5 です。",
+			"zh-Hans": "要创建的支出规则。name、metric 和 period 为必填项。spike 规则默认倍数为 3x，下限为 5 美元。",
+			"ar": "قاعدة إنفاق مراد إنشاؤها. الحقول name وmetric وperiod مطلوبة. تستخدم قواعد spike افتراضيًا مضاعفًا قدره 3x وحدًا أدنى قدره 5 دولارات."
+		},
+		"Where a spend rule stands now. Rules without a calendar period have period, value and alert null.": {
+			"es": "La situación actual de una regla de gasto. Las reglas sin periodo natural tienen period, value y alert en null.",
+			"fr": "L’état actuel d’une règle de dépenses. Les règles sans période calendaire ont period, value et alert à null.",
+			"de": "Der aktuelle Stand einer Ausgabenregel. Bei Regeln ohne Kalenderzeitraum sind period, value und alert null.",
+			"pt-BR": "A situação atual de uma regra de gastos. Regras sem período de calendário têm period, value e alert como null.",
+			"hi": "खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।",
+			"ja": "支出ルールの現在の状況。暦期間のないルールでは period、value、alert が null になります。",
+			"zh-Hans": "支出规则的当前状态。没有日历周期的规则，其 period、value 和 alert 为 null。",
+			"ar": "الوضع الحالي لقاعدة الإنفاق. القواعد التي ليس لها فترة تقويمية تكون فيها period وvalue وalert بقيمة null."
+		},
+		"The next threshold the value has not reached: a percent of the base (null for amount thresholds) and its amount.": {
+			"es": "El siguiente umbral que el valor aún no ha alcanzado: un porcentaje de la base (null para umbrales de importe) y su importe.",
+			"fr": "Le prochain seuil que la valeur n’a pas encore atteint : un pourcentage de la base (null pour les seuils en montant) et son montant.",
+			"de": "Der nächste Schwellenwert, den der Wert noch nicht erreicht hat: ein Prozentsatz der Basis (null bei Betragsschwellen) und sein Betrag.",
+			"pt-BR": "O próximo limite que o valor ainda não atingiu: uma porcentagem da base (null para limites de valor) e seu valor.",
+			"hi": "अगली सीमा जिस तक मान अभी नहीं पहुँचा: आधार का प्रतिशत (राशि सीमाओं के लिए null) और उसकी राशि।",
+			"ja": "値がまだ達していない次のしきい値。基準額に対する割合（金額しきい値では null）とその金額です。",
+			"zh-Hans": "当前值尚未达到的下一个阈值：基数的百分比（金额阈值为 null）及其金额。",
+			"ar": "الحد التالي الذي لم تبلغه القيمة بعد: نسبة مئوية من الأساس (null لحدود المبالغ) ومبلغه."
+		},
+		"The text an alert would carry now, naming the highest threshold reached, or the first.": {
+			"es": "El texto que llevaría una alerta ahora, con el umbral más alto alcanzado, o el primero.",
+			"fr": "Le texte que porterait une alerte maintenant, avec le seuil le plus élevé atteint, ou le premier.",
+			"de": "Der Text, den eine Warnung jetzt hätte, mit dem höchsten erreichten Schwellenwert oder dem ersten.",
+			"pt-BR": "O texto que um alerta teria agora, com o limite mais alto atingido, ou o primeiro.",
+			"hi": "अभी किसी अलर्ट में जो पाठ होगा, जिसमें पहुँची गई सबसे ऊँची सीमा, या पहली सीमा का नाम होगा।",
+			"ja": "現在アラートが送られた場合の文面。達した最も高いしきい値、または最初のしきい値を示します。",
+			"zh-Hans": "现在发送提醒时会使用的文本，注明已达到的最高阈值，或第一个阈值。",
+			"ar": "النص الذي سيحمله التنبيه الآن، مع ذكر أعلى حد تم بلوغه، أو الحد الأول."
+		},
+		"The test alert and what happened at each destination.": {
+			"es": "La alerta de prueba y lo que ocurrió en cada destino.",
+			"fr": "L’alerte de test et ce qui s’est passé pour chaque destination.",
+			"de": "Die Testwarnung und was bei jedem Ziel passiert ist.",
+			"pt-BR": "O alerta de teste e o que aconteceu em cada destino.",
+			"hi": "परीक्षण अलर्ट और हर गंतव्य पर क्या हुआ।",
+			"ja": "テストアラートと、各通知先での結果。",
+			"zh-Hans": "测试提醒及其在每个目标处的结果。",
+			"ar": "التنبيه التجريبي وما حدث في كل وجهة."
+		},
+		"rule: the rule's own destinations. routes: the workspace's Spend Alerts route.": {
+			"es": "rule: los destinos propios de la regla. routes: la ruta de Spend Alerts del espacio de trabajo.",
+			"fr": "rule : les destinations propres à la règle. routes : la route Spend Alerts de l’espace de travail.",
+			"de": "rule: die eigenen Ziele der Regel. routes: die Route für Spend Alerts des Workspace.",
+			"pt-BR": "rule: os destinos próprios da regra. routes: a rota de Spend Alerts do workspace.",
+			"hi": "rule: नियम के अपने गंतव्य। routes: वर्कस्पेस का Spend Alerts रूट।",
+			"ja": "rule: ルール自体の通知先。routes: ワークスペースの Spend Alerts のルート。",
+			"zh-Hans": "rule：规则自己的通知目标。routes：工作区的 Spend Alerts 路由。",
+			"ar": "rule: وجهات القاعدة نفسها. routes: مسار Spend Alerts في مساحة العمل."
+		},
+		"Events newest first, with has_more for the next page, and the rule's 12 most recent period records.": {
+			"es": "Eventos del más reciente al más antiguo, con has_more para la página siguiente, y los 12 registros de periodo más recientes de la regla.",
+			"fr": "Événements du plus récent au plus ancien, avec has_more pour la page suivante, et les 12 enregistrements de période les plus récents de la règle.",
+			"de": "Ereignisse, die neuesten zuerst, mit has_more für die nächste Seite, und die 12 jüngsten Zeitraumeinträge der Regel.",
+			"pt-BR": "Eventos do mais recente ao mais antigo, com has_more para a próxima página, e os 12 registros de período mais recentes da regra.",
+			"hi": "इवेंट सबसे नए पहले, अगले पेज के लिए has_more के साथ, और नियम की 12 सबसे हाल की अवधि के रिकॉर्ड।",
+			"ja": "イベント（新しい順、次のページの有無を示す has_more 付き）と、ルールの直近 12 件の期間の記録。",
+			"zh-Hans": "事件（最新的在前，含表示是否有下一页的 has_more）以及规则最近 12 条周期记录。",
+			"ar": "الأحداث الأحدث أولًا، مع has_more للصفحة التالية، وأحدث 12 سجلًا لفترات القاعدة."
+		},
+		"Delivery attempts by status.": {
+			"es": "Intentos de entrega por estado.",
+			"fr": "Tentatives d’envoi par statut.",
+			"de": "Zustellversuche nach Status.",
+			"pt-BR": "Tentativas de entrega por status.",
+			"hi": "स्थिति के अनुसार डिलीवरी प्रयास।",
+			"ja": "ステータス別の配信試行。",
+			"zh-Hans": "按状态统计的投递尝试。",
+			"ar": "محاولات التسليم حسب الحالة."
 		}
 	},
 	"GET /apps": {

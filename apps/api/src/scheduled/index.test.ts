@@ -19,6 +19,7 @@ const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
 const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
+const runSpendRulesSweepMock = vi.fn();
 const runDepartmentBudgetAlertSweepMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
@@ -100,6 +101,11 @@ vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
 	runDepartmentBudgetAlertSweep: (...args: unknown[]) => runDepartmentBudgetAlertSweepMock(...args),
 }));
 
+vi.mock("@/pipeline/notifications/spend-rules", () => ({
+	runSpendRulesSweep: (...args: unknown[]) => runSpendRulesSweepMock(...args),
+	hasSpendRuleSweepActivity: (summary: Record<string, unknown>) => Object.entries(summary).some(([key, value]) => key !== "events" && (value === true || Number(value) > 0)),
+}));
+
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
@@ -167,6 +173,7 @@ describe("handleScheduledEvent", () => {
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runDepartmentBudgetAlertSweepMock.mockReset().mockResolvedValue({ budgets: 0, alerted: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
+		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [] });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
 			claimed: 0,
@@ -468,6 +475,39 @@ describe("handleScheduledEvent", () => {
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T11:00:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 1 });
 			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("sweeps spend rules every five minutes only when enabled, before deliveries, logging only real work", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { SPEND_RULES_ENABLED: "false" } as any);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+
+			runNotificationDeliveryJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(runSpendRulesSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendRulesSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("spend_rules_swept", expect.anything());
+
+			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: [{ workspaceId: "ws_1" }] });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_rules_swept", { dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: 1 });
+
+			// A failed sweep does not stop the deliveries.
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendRulesSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_rules_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
 			error.mockRestore();
 		} finally {
 			log.mockRestore();

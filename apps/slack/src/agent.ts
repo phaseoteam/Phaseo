@@ -9,6 +9,8 @@ import {
 	type AgentModelResponse,
 	type AgentRunResult,
 	type AgentTool,
+	type AgentToolOutput,
+	type AgentUsageSummary,
 } from "@phaseo/agent-sdk";
 import type { Env } from "./env";
 import { withoutTrailingSlashes } from "./url";
@@ -39,12 +41,24 @@ export type AgentTurnRequest = {
 	prompt: string;
 	/** slack:<team>:<user>, the gateway's end user. */
 	endUser: string;
+	/** The answer's gateway session (turnSessionId), shared by all its model requests so Logs can filter to them. */
+	sessionId: string;
 	labels: { slackTeam: string; slackChannel: string };
 	tools: AgentTool<any, any>[];
 	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
 	maxCostUsd: number;
 	signal: AbortSignal;
+	/** Continues a run that paused for the person's answer (ask_question), with its paused tool call's output. */
+	resume?: { run: PausedRun; toolOutputs: AgentToolOutput[] };
 };
+
+/**
+ * A run paused for the person's answer, as pausedRun keeps it: the conversation
+ * so far (Slack text, so it is kept with the thread's coordinator only), the
+ * paused tool call and the step count. What earlier steps cost isn't in it: that
+ * is counted by the turn, so the limit given to the continued run isn't spent twice.
+ */
+export type PausedRun = AgentRunResult<unknown, unknown, unknown>;
 
 export type AgentTurnHooks = {
 	onText(delta: string): Promise<void>;
@@ -58,7 +72,29 @@ export type AgentTurnOutput = {
 	model: string | null;
 	/** Set when a limit stopped the run before the model finished, e.g. step_count:12 or max_cost:0.5. */
 	stopReason: string | null;
+	/** Set when the run paused for the person's answer: what continues it. */
+	paused?: PausedRun;
 };
+
+const NO_USAGE: AgentUsageSummary = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 };
+
+/**
+ * What a paused run needs to continue, and no more: its record (the messages,
+ * the pending tool call, the step count) and one entry per step, so the step
+ * limit spans the continued run. Steps keep their model (the footer's) but not
+ * their usage, items or tool results, which hold web pages and provider data.
+ */
+export function pausedRun(result: AgentRunResult<unknown, unknown, unknown>): PausedRun {
+	return {
+		run: { ...result.run, input: null, usage: { ...NO_USAGE } },
+		steps: result.steps.map((step) => ({ runId: step.runId, index: step.index, status: step.status, model: step.model, createdAt: step.createdAt, updatedAt: step.updatedAt })),
+		stepResults: (result.stepResults ?? []).map((step) => ({ stepIndex: step.stepIndex, text: "", toolCalls: [], toolResults: [], usage: { ...NO_USAGE } })),
+		usage: { ...NO_USAGE },
+		output: undefined,
+		messages: [],
+		items: [],
+	};
+}
 
 export interface AgentRunner {
 	run(request: AgentTurnRequest, hooks: AgentTurnHooks): Promise<AgentTurnOutput>;
@@ -161,6 +197,8 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				model: request.model,
 				user: request.endUser,
 				gatewayTools: GATEWAY_TOOLS,
+				// The Responses API takes the session from the body only.
+				requestOptions: { session_id: request.sessionId },
 			}), (usd) => {
 				spentUsd += usd;
 			});
@@ -172,7 +210,10 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				maxSteps: MAX_STEPS,
 				stopWhen: [stepCountIs(MAX_STEPS), maxCost(request.maxCostUsd)],
 			});
-			const stream = agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
+			// A continued run starts from its paused record, whose steps carry no cost: its usage is this run's alone.
+			const stream = request.resume
+				? agent.continueStream({ run: request.resume.run as AgentRunResult<string, unknown, unknown>, toolOutputs: request.resume.toolOutputs, client, signal: request.signal, devtools: { enabled: false } })
+				: agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
 			let result: AgentRunResult<unknown, unknown, unknown> | null = null;
 			for await (const event of stream.getFullStream()) {
 				if (event.type === "response.output_text.delta") await hooks.onText(event.delta);
@@ -184,12 +225,14 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				costUsd: result.usage?.cost ?? spentUsd,
 				model: lastModel(result),
 				stopReason: result.run.status === "stopped" ? result.run.stopReason ?? null : null,
+				...(result.run.status === "waiting_for_human" ? { paused: pausedRun(result) } : {}),
 			};
 		},
 	};
 }
 
-export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "failed";
+/** access_changed: after a question, the person (or the installation) could no longer use the agent. */
+export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "access_changed" | "failed";
 
 /**
  * Gateway refusals that won't change on a retry, because the agent's model can't
@@ -210,7 +253,7 @@ const MODEL_NOT_ALLOWED_CODES = new Set([
  * with no more specific reason. The gateway uses the same code for unrelated
  * refusals, so it only means "model not allowed" when the agent asked for Auto.
  */
-function isAutoModel(model: string | null | undefined): boolean {
+export function isAutoModel(model: string | null | undefined): boolean {
 	return typeof model === "string" && model.trim().toLowerCase().startsWith("phaseo/auto");
 }
 
@@ -240,16 +283,23 @@ export function classifyTurnError(error: unknown, model?: string | null): TurnEr
 	return "failed";
 }
 
-export function turnErrorText(kind: TurnErrorKind): string {
+/** `chosenForMessage`: the person chose the model with `with <model>:`, so the reply talks about that model. */
+export function turnErrorText(kind: TurnErrorKind, chosenForMessage = false): string {
 	switch (kind) {
 		case "no_credits":
 			return "This Phaseo workspace is out of credits, so I can't answer right now. An admin can add credits in Phaseo billing.";
 		case "cap_reached":
 			return "The Phaseo agent's monthly spending limit on its Phaseo key has been reached. An admin can raise it in Phaseo settings.";
 		case "model_not_allowed":
-			return "The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.";
+			return chosenForMessage
+				? "The model you chose for this message isn't available to the Slack agent. Ask again without `with …:` to use the agent's model, or an admin can change the models you can choose in Phaseo settings."
+				: "The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.";
 		case "model_unavailable":
-			return "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
+			return chosenForMessage
+				? "The model you chose for this message isn't available right now. Please try again in a few minutes, or ask without `with …:` to use the agent's model."
+				: "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
+		case "access_changed":
+			return "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this.";
 		case "failed":
 			return "Sorry, something went wrong while I was answering. Please try again.";
 	}

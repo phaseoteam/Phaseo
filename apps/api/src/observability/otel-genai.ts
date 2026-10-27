@@ -405,6 +405,15 @@ function commonPhaseoAttributes(args: GatewayGenAiTelemetry): Array<OtlpAttribut
 	];
 }
 
+// The request's cost in US dollars as gen_ai.usage.cost, which Langfuse and
+// Opik read as the generation's total cost. It is set only on the provider call
+// that was billed, so tools that add up a trace's spans count it once.
+function costAttribute(args: GatewayGenAiTelemetry): OtlpAttribute | null {
+	const nanos = finite(args.totalNanos);
+	if (nanos === null || String(args.currency ?? "USD").toUpperCase() !== "USD") return null;
+	return attr("gen_ai.usage.cost", nanos / 1_000_000_000);
+}
+
 function metadataAttributes(metadata: GatewayGenAiTelemetry["metadata"]): Array<OtlpAttribute | null> {
 	if (!metadata || typeof metadata !== "object") return [];
 	return Object.entries(metadata)
@@ -489,6 +498,7 @@ function attemptSpans(
 	includeSensitiveContent: boolean,
 ) {
 	const attempts = args.providerAttempts ?? [];
+	const billedAttempt = [...attempts].reverse().find((attempt) => attempt.outcome === "success");
 	let cursor = args.startedAtMs;
 	return attempts.map((attempt) => {
 		const duration = Math.max(0, finite(attempt.duration_ms) ?? 0);
@@ -513,6 +523,7 @@ function attemptSpans(
 			attr("error.type", attempt.outcome === "success"
 				? null
 				: attempt.upstream_error_type ?? attempt.upstream_error_code ?? attempt.outcome),
+			attempt === billedAttempt ? costAttribute(args) : null,
 			...(includeSensitiveContent ? sensitiveAttributes(args) : []),
 		].filter((entry): entry is OtlpAttribute => Boolean(entry));
 		return {
@@ -573,6 +584,7 @@ export function buildGatewayGenAiOtlpPayload(
 				...requestAttributes(args),
 				...commonPhaseoAttributes(args),
 				attr("error.type", args.success ? null : args.errorType ?? String(args.statusCode)),
+				args.success ? costAttribute(args) : null,
 				...(options.includeSensitiveContent ? sensitiveAttributes(args) : []),
 			].filter((entry): entry is OtlpAttribute => Boolean(entry)),
 			status: status(args.success, args.success ? null : `HTTP ${args.statusCode}`),

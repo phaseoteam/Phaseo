@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -3898,10 +3899,9 @@ export default function ProviderCard({
 								onPointLeave={handlePerformancePointLeave}
 							/>
 								{routingHealthSummary ? (
-									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
-										<div className="font-semibold">{routingHealthSummary.label}</div>
-										<p className="mt-1">{routingHealthSummary.description}</p>
-									</div>
+									<Callout tone="warning" title={routingHealthSummary.label}>
+										{routingHealthSummary.description}
+									</Callout>
 								) : null}
 							</section>
 
@@ -3993,14 +3993,13 @@ export default function ProviderCard({
 					))}
 				</div>
 								{privacyReasonMeta.length > 0 ? (
-									<div className="border-l-2 border-red-400 pl-3 text-xs text-red-900 dark:text-red-100">
-										<div className="font-semibold">{isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}</div>
-										<ul className="mt-1 list-inside list-disc space-y-1">
+									<Callout tone="critical" title={isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}>
+										<ul className="list-inside list-disc space-y-1">
 											{privacyReasonMeta.map(({ reason, meta }) => (
 												<li key={reason}>{meta?.label ?? reason}</li>
 											))}
 										</ul>
-									</div>
+									</Callout>
 								) : null}
 							</section>
 

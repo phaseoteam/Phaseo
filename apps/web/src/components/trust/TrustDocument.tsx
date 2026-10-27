@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Callout } from "@/components/ui/callout";
 import { trustLastReviewed } from "@/lib/trust-centre";
 import { useTranslations } from "next-intl";
 
@@ -56,12 +57,7 @@ export function TrustSection({ id, title, children }: { id: string; title: strin
 }
 
 export function TrustCallout({ title, children }: { title: string; children: ReactNode }) {
-	return (
-		<div className="border-l-2 border-amber-500 bg-amber-500/5 px-4 py-3">
-			<p className="font-medium text-foreground">{title}</p>
-			<div className="mt-1">{children}</div>
-		</div>
-	);
+	return <Callout tone="warning" title={title}>{children}</Callout>;
 }
 
 export function TrustTable({ children }: { children: ReactNode }) {

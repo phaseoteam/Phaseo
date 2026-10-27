@@ -1,0 +1,155 @@
+CREATE OR REPLACE FUNCTION public.preview_workspace_spend_rule (
+  p_workspace_id uuid,
+  p_rule_id      uuid,
+  p_now          timestamp with time zone DEFAULT now()
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Where a spend rule stands at p_now, computed as the evaluator computes it
+-- (private.spend_rule_values) without writing anything: the current period, the value so far,
+-- the base and percent, the highest threshold reached, the next threshold, the block point,
+-- this period's state row, and the text an alert would carry now (private.spend_rule_alert_text,
+-- naming the highest threshold reached, else the first). Used by the control API and web-api
+-- preview and by test sends. Rules without a calendar period (rolling, spike, balance) get
+-- period, value and alert null. evaluated is false for rules the evaluator does not handle yet
+-- (private.spend_rule_evaluable). Errors: spend_rule_not_found (deleted, or another workspace).
+declare
+  v_rule public.workspace_spend_rules;
+  v_workspace_name text;
+  v_time_zone text;
+  v_evaluated boolean;
+  v_value record;
+  v_state record;
+  v_reached integer;
+  v_next integer;
+  v_next_nanos numeric;
+  v_block_nanos numeric;
+  v_alert record;
+  v_has_alert boolean := false;
+  v_has_state boolean := false;
+begin
+  if p_workspace_id is null or p_rule_id is null or p_now is null then
+    raise exception 'invalid_spend_rule_preview' using errcode = '22023';
+  end if;
+
+  select rule.* into v_rule
+  from public.workspace_spend_rules rule
+  where rule.id = p_rule_id and rule.workspace_id = p_workspace_id and rule.deleted_at is null;
+  if not found then
+    raise exception 'spend_rule_not_found' using errcode = 'P0002';
+  end if;
+
+  select w.name, coalesce(v_rule.time_zone, settings.billing_time_zone, 'UTC')
+    into v_workspace_name, v_time_zone
+  from public.workspaces w
+  left join public.workspace_settings settings on settings.workspace_id = w.id
+  where w.id = p_workspace_id;
+
+  v_evaluated := private.spend_rule_evaluable(v_rule.metric, v_rule.period, v_rule.base_kind);
+
+  select computed.* into v_value from private.spend_rule_values(p_workspace_id, p_now, p_rule_id) computed;
+  if not found then
+    return jsonb_build_object(
+      'rule_id', v_rule.id,
+      'metric', v_rule.metric,
+      'evaluated', v_evaluated,
+      'computed_at', p_now,
+      'time_zone', v_time_zone,
+      'period', null,
+      'value_nanos', null,
+      'base_kind', v_rule.base_kind,
+      'base_ref', v_rule.base_ref,
+      'base_nanos', null,
+      'percent', null,
+      'threshold_percents', to_jsonb(v_rule.threshold_percents),
+      'threshold_amount_nanos', v_rule.threshold_amount_nanos,
+      'reached_threshold_percent', null,
+      'next_threshold', null,
+      'block_at_nanos', null,
+      'state', null,
+      'alert', null
+    );
+  end if;
+
+  select state.highest_percent_fired, state.amount_fired_at, state.last_fired_at, state.fire_count
+    into v_state
+  from public.workspace_spend_rule_state state
+  where state.rule_id = v_rule.id and state.period_start = v_value.period_start;
+  v_has_state := found;
+
+  if v_rule.metric in ('budget_percent', 'forecast') and v_value.base_nanos > 0 and v_rule.threshold_percents is not null then
+    select
+      max(threshold) filter (where v_value.value_nanos * 100 >= threshold::numeric * v_value.base_nanos),
+      min(threshold) filter (where v_value.value_nanos * 100 < threshold::numeric * v_value.base_nanos)
+      into v_reached, v_next
+    from unnest(v_rule.threshold_percents) threshold;
+    v_next_nanos := ceil(v_next::numeric * v_value.base_nanos / 100);
+  elsif v_rule.threshold_amount_nanos is not null and v_value.value_nanos < v_rule.threshold_amount_nanos then
+    v_next_nanos := v_rule.threshold_amount_nanos;
+  end if;
+
+  if v_rule.action = 'block' then
+    v_block_nanos := case
+      when v_rule.metric = 'spend' then v_rule.block_at_amount_nanos
+      when v_value.base_nanos > 0 then ceil(v_rule.block_at_percent::numeric * v_value.base_nanos / 100)
+    end;
+  end if;
+
+  if v_rule.metric = 'spend' or (v_rule.metric = 'budget_percent' and v_value.base_nanos > 0) then
+    select alert.* into v_alert
+    from private.spend_rule_alert_text(
+      v_workspace_name, v_rule.name, v_rule.metric, v_rule.scope_type, v_rule.scope_id, v_rule.scope_key_id,
+      v_rule.scope_user_id, v_rule.scope_department_id, v_rule.period, v_value.period_end, v_value.time_zone,
+      v_rule.base_kind, v_rule.base_ref, v_value.base_nanos, v_rule.threshold_percents, v_rule.threshold_amount_nanos,
+      v_value.value_nanos, coalesce(v_reached, v_rule.threshold_percents[1])
+    ) alert;
+    v_has_alert := found;
+  end if;
+
+  return jsonb_build_object(
+    'rule_id', v_rule.id,
+    'metric', v_rule.metric,
+    'evaluated', v_evaluated,
+    'computed_at', p_now,
+    'time_zone', v_value.time_zone,
+    'period', jsonb_build_object('kind', v_rule.period, 'start', v_value.period_start, 'end', v_value.period_end),
+    'value_nanos', v_value.value_nanos,
+    'base_kind', v_rule.base_kind,
+    'base_ref', v_rule.base_ref,
+    'base_nanos', v_value.base_nanos,
+    'percent', case when v_value.base_nanos > 0 then round(v_value.value_nanos * 100 / v_value.base_nanos, 1) end,
+    'threshold_percents', to_jsonb(v_rule.threshold_percents),
+    'threshold_amount_nanos', v_rule.threshold_amount_nanos,
+    'reached_threshold_percent', v_reached,
+    'next_threshold', case when v_next_nanos is not null then jsonb_build_object('percent', v_next, 'amount_nanos', v_next_nanos) end,
+    'block_at_nanos', v_block_nanos,
+    'state', case when v_has_state then jsonb_build_object(
+      'highest_percent_fired', v_state.highest_percent_fired,
+      'amount_fired_at', v_state.amount_fired_at,
+      'last_fired_at', v_state.last_fired_at,
+      'fire_count', v_state.fire_count
+    ) end,
+    'alert', case when v_has_alert then jsonb_build_object(
+      'scope_label', v_alert.scope_label,
+      'title', v_alert.title,
+      'message', v_alert.message
+    ) end
+  );
+end;
+$function$;
+
+COMMENT ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) IS 'Read-only preview of a spend rule at p_now: period, value, base, percent, thresholds reached and next, block point, state and the alert text, computed by the evaluator''s own functions. Service role only (control API and web-api).';
+
+REVOKE ALL ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."preview_workspace_spend_rule"(uuid, uuid, timestamp with time zone) FROM "anon", "authenticated";
