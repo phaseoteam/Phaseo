@@ -472,6 +472,7 @@ export function PresetPromptTemplateEditor({
 							<div className="min-w-0 space-y-2">
 								<PresetTemplateCode reference={savedReference ?? presetReference} variables={preview.values} />
 								<p className="text-xs text-muted-foreground">{t("presetTemplate.requestHelp")}</p>
+								<p className="text-xs text-muted-foreground">{t("presetTemplate.pinHelp", { reference: savedReference ?? presetReference })}</p>
 							</div>
 						</div>
 					) : (

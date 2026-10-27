@@ -200,6 +200,7 @@ export interface ChatCompletionsRequest {
     variables?: {
       [key: string]: unknown;
     };
+    version?: string;
   };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {

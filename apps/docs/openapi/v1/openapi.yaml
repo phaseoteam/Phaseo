@@ -9310,6 +9310,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: List preset labels
+      description: >-
+        Lists the named labels, such as production or staging, and the published
+        version each one points at.
+      responses:
+        '200':
+          description: Preset label list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Set a preset label
+      description: >-
+        Points a label at a published version, creating the label or moving it.
+        Requests that pin the label, such as @support-triage@production, use the
+        new version within about 2 minutes. Moving a label back to an earlier
+        version is a rollback.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Label saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Invalid label, or neither or both of version_id and version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Remove a preset label
+      description: >-
+        Removes a label. Requests that still pin it fail with
+        preset_version_not_found.
+      responses:
+        '200':
+          description: Label removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Invalid label
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9853,6 +9962,17 @@ components:
       description: Preset UUID, slug, or canonical name.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: >-
+        Label name, such as production. 1 to 32 lowercase letters, numbers,
+        hyphens or underscores, starting with a letter; it cannot look like a
+        version label (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -18375,6 +18495,14 @@ components:
           description: >-
             Values for the template variables. Image variables take an https
             URL, a data URL or an image part.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            Runs this published version of the preset instead of the current
+            one: its models, parameters and template. Use a version label such
+            as v3, 1.2.0 or 2026.10.27, or a label such as production. The same
+            as setting model to @support-triage@production.
     Preset:
       type: object
       required:
@@ -18567,6 +18695,13 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: >-
+            Named labels, such as production, that point at this version.
+            Returned when listing versions.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -18595,6 +18730,82 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Send exactly one of version_id and version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: The published version to point the label at.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            A version label such as v3, 1.2.0 or 2026.10.27, or another label
+            such as staging to copy where it points.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

@@ -235,6 +235,54 @@ A Phaseo verifica o template quando ele é salvo. Um template com erro de sintax
 
 As alterações salvas chegam às solicitações em cerca de dois minutos.
 
+## Versões e rótulos
+
+Sempre que você publica uma predefinição, a Phaseo salva uma versão imutável (veja [Predefinições](./presets.mdx)). As solicitações executam a última versão publicada, a menos que fixem uma. Uma solicitação fixada usa juntos os modelos, os parâmetros e o template daquela versão.
+
+Fixe uma versão com `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` aceita um rótulo de versão como `v3`, `1.2.0` ou `2026.10.27`, ou um rótulo como `production`. Você também pode colocar a versão no ID do modelo, com ou sem template:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Predefinições públicas usam `@publisher/support-triage@production`. Se `model` e `prompt.version` fixarem uma versão, os dois precisam indicar a mesma.
+
+### Rótulos
+
+Um rótulo é um nome, como `production` ou `staging`, que aponta para uma versão publicada. Os rótulos têm de 1 a 32 letras minúsculas, números, hifens ou sublinhados, começam com uma letra e não podem parecer um rótulo de versão (`v1`, `v2`).
+
+Em **Configurações -> Predefinições**, abra a predefinição e use **Apontar um rótulo** em uma versão para adicionar um rótulo ou movê-lo para lá. Quem criou a predefinição pode alterar os rótulos, assim como proprietários e administradores do espaço de trabalho quando a predefinição é compartilhada. Com uma [chave de API de gerenciamento](../developers/management-api-keys.mdx) que tenha `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+O corpo aceita `version` (um rótulo de versão, ou outro rótulo para copiar para onde ele aponta) ou `version_id`. `GET /v1/presets/{id}/labels` lista os rótulos e `DELETE /v1/presets/{id}/labels/{label}` remove um. Solicitações que fixam um rótulo removido falham até ele ser adicionado de novo.
+
+### Reverter
+
+Para reverter, mova o rótulo para a versão anterior: escolha **Mover production para cá** nessa versão ou envie a mesma solicitação com `"version": "v2"`. As solicitações que fixam `production` voltam a executar a v2, sem nenhuma mudança na sua aplicação.
+
+Mudanças de rótulo chegam às solicitações em cerca de dois minutos, como outras alterações da predefinição.
+
 ## Erros
 
 Problemas de template em uma solicitação retornam `400` com o código `validation_error`. `reason` contém o código do primeiro problema, e `details` lista todos eles com o caminho:
@@ -268,11 +316,13 @@ Problemas de template em uma solicitação retornam `400` com o código `validat
 | `template_limit_exceeded` | As variáveis ou o texto gerado ultrapassam os limites abaixo. |
 | `template_rendered_empty` | O template não gerou nenhuma mensagem de usuário ou de assistente, e a solicitação não enviou nenhuma. |
 | `template_endpoint_unsupported` | A predefinição tem um template e foi chamada por um endpoint diferente dos três acima. |
-| `prompt_model_conflict` | `model` indica uma predefinição ou um modelo diferente de `prompt.id`. |
-| `prompt_version_unsupported` | A solicitação definiu `prompt.version`. |
+| `prompt_model_conflict` | `model` indica uma predefinição ou um modelo diferente de `prompt.id`, ou fixa uma versão diferente de `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` está vazio, tem mais de 64 caracteres ou tem caracteres além de letras, números, `.`, `_`, `+` e `-`. |
 | `prompt_model_fallbacks_unsupported` | A solicitação definiu alternativas em `models`. Liste os modelos alternativos na predefinição. |
 
 Um `prompt.id` que não corresponde a nenhuma predefinição do seu espaço de trabalho retorna `404`.
+
+Uma versão ou um rótulo fixado que não existe, ou que a chave não pode usar, retorna `404` com o motivo `preset_version_not_found`.
 
 ## Limites
 
@@ -295,7 +345,6 @@ Os metadados da solicitação registram a predefinição, os nomes das variávei
 
 ## Limitações atuais
 
-- As solicitações usam o template na última versão salva. Ainda não é possível fixar uma versão anterior com `prompt.version`.
 - Alternativas em `models` não podem ser combinadas com um template. Adicione os modelos alternativos à predefinição.
 - Os templates se aplicam apenas a solicitações de chat completions, Responses e Messages.
 

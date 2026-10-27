@@ -1,0 +1,10 @@
+---
+title: "إزالة تسمية من الإعداد المسبق"
+sidebarTitle: "إزالة التسمية"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "إزالة تسمية من إعداد مسبق."
+---
+<Note>يتطلب هذا المسار مفتاح API للإدارة يتضمن `presets:write` وهوية مستخدم مرتبطة. يمكن لمنشئ الإعداد المسبق تغيير تسمياته، وكذلك مالكو مساحة العمل ومسؤولوها عندما يكون الإعداد المسبق مشتركًا.</Note>
+
+تفشل الطلبات التي ما زالت تثبّت التسمية بالخطأ `preset_version_not_found` حتى تضيفها مرة أخرى.

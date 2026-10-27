@@ -1,0 +1,10 @@
+---
+title: "设置预设标签"
+sidebarTitle: "设置标签"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "将标签指向预设的某个已发布版本，或将其移回以回滚。"
+---
+<Note>此端点需要具有 `presets:write` 的管理 API 密钥以及关联的用户身份。预设的创建者可以更改其标签；预设共享时，工作区所有者和管理员也可以。</Note>
+
+固定到该标签的请求（例如 `@support-triage@production` 或 `prompt.version: "production"`）会在约两分钟内使用新版本。参见[提示词模板](../../guides/prompt-templates.mdx)。

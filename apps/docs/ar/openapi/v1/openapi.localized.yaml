@@ -8871,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: سرد تسميات الإعداد المسبق
+      description: يسرد التسميات المسمّاة، مثل production أو staging، والإصدار المنشور الذي تشير إليه كل منها.
+      responses:
+        '200':
+          description: قائمة تسميات الإعداد المسبق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: لم يتم العثور على الإعداد المسبق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: تعيين تسمية للإعداد المسبق
+      description: يوجّه تسمية إلى إصدار منشور، مع إنشاء التسمية أو نقلها. تستخدم الطلبات التي تثبّت التسمية، مثل @support-triage@production، الإصدار الجديد خلال دقيقتين تقريبًا. إعادة التسمية إلى إصدار سابق هي تراجع.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: تم حفظ التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: تسمية غير صالحة، أو لم يُرسل أي من version_id وversion أو أُرسلا معًا
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: لا يمكن تغيير التسميات إلا لمنشئ الإعداد المسبق أو لمالك مساحة العمل أو مسؤولها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على الإعداد المسبق أو الإصدار
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: إزالة تسمية من الإعداد المسبق
+      description: يزيل تسمية. تفشل الطلبات التي ما زالت تثبّتها بالخطأ preset_version_not_found.
+      responses:
+        '200':
+          description: أُزيلت التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: تسمية غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: لا يمكن تغيير التسميات إلا لمنشئ الإعداد المسبق أو لمالك مساحة العمل أو مسؤولها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على الإعداد المسبق أو التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9365,6 +9462,14 @@ components:
       description: UUID أو slug أو الاسم المعتمد للإعداد المسبق.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: اسم التسمية، مثل production. من 1 إلى 32 حرفًا لاتينيًا صغيرًا أو رقمًا أو شرطة أو شرطة سفلية، تبدأ بحرف؛ ولا يمكن أن تشبه تسمية إصدار (v1، v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17431,6 +17536,10 @@ components:
           type: object
           additionalProperties: true
           description: قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة.
+        version:
+          type: string
+          maxLength: 64
+          description: 'يشغّل هذا الإصدار المنشور من الإعداد المسبق بدلًا من الإصدار الحالي: نماذجه ومعاملاته وقالبه. استخدم تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية مثل production. يعادل تعيين model إلى @support-triage@production.'
     Preset:
       type: object
       required:
@@ -17623,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: التسميات المسمّاة، مثل production، التي تشير إلى هذا الإصدار. تُعاد عند سرد الإصدارات.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17651,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: أرسل واحدًا فقط من version_id وversion.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: الإصدار المنشور الذي ستشير إليه التسمية.
+        version:
+          type: string
+          maxLength: 64
+          description: تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية أخرى مثل staging لنسخ الإصدار الذي تشير إليه.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

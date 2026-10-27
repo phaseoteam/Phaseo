@@ -4241,6 +4241,34 @@ type PresetForkRequest struct {
 	SourceVersionId *string `json:"source_version_id,omitempty"`
 }
 
+type PresetLabel struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+	Label string `json:"label"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	VersionId string `json:"version_id"`
+	VersionLabel *string `json:"version_label"`
+	VersionNumber *int `json:"version_number"`
+}
+
+type PresetLabelDeleteResponse struct {
+	Deleted bool `json:"deleted"`
+	Label string `json:"label"`
+}
+
+type PresetLabelListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type PresetLabelResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type PresetLabelSetRequest struct {
+	Version *string `json:"version,omitempty"`
+	VersionId *string `json:"version_id,omitempty"`
+}
+
 type PresetListResponse struct {
 	Data []map[string]interface{} `json:"data"`
 	TotalCount int `json:"total_count"`
@@ -4363,6 +4391,7 @@ type PresetVersion struct {
 	CreatedBy string `json:"created_by"`
 	Description *string `json:"description,omitempty"`
 	Id string `json:"id"`
+	Labels *[]string `json:"labels,omitempty"`
 	Name string `json:"name"`
 	PresetId string `json:"preset_id"`
 	ReleaseNotes *string `json:"release_notes,omitempty"`
@@ -4490,6 +4519,7 @@ type PromptCacheOptions struct {
 type PromptTemplateReference struct {
 	Id string `json:"id"`
 	Variables *map[string]interface{} `json:"variables,omitempty"`
+	Version *string `json:"version,omitempty"`
 }
 
 type Provider struct {

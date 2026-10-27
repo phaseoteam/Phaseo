@@ -38,6 +38,7 @@ import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SortablePresetList } from "./SortablePresetList";
+import { PresetVersionLabels } from "./PresetVersionLabels";
 import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -804,6 +805,13 @@ export default function PresetForm({
 							onClick={() => setActiveView("reasoning")}
 						/>
 					</div>
+
+					{initialPreset?.id ? (
+						<>
+							<Separator />
+							<PresetVersionLabels presetId={String(initialPreset.id)} reference={savedReference} />
+						</>
+					) : null}
 				</>
 			) : null}
 

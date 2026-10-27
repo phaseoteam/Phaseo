@@ -355,6 +355,11 @@ inline Response DeletePreset(Client& client, const std::map<std::string, std::st
 	return client.request("DELETE", resolved_path, body);
 }
 
+inline Response DeletePresetLabel(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/presets/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/labels/" + path_segment(path.count("label") ? path.at("label") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
 inline Response DeletePrivateModel(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/private-models/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
@@ -825,6 +830,11 @@ inline Response ListOrganisations(Client& client, const std::map<std::string, st
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListPresetLabels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/presets/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/labels";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListPresets(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/presets";
 	return client.request("GET", resolved_path, body);
@@ -1108,6 +1118,11 @@ inline Response RotateWebhookEndpointSecret(Client& client, const std::map<std::
 inline Response RotateWorkspaceNotificationDestinationSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/notifications/destinations/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/rotate-secret";
 	return client.request("POST", resolved_path, body);
+}
+
+inline Response SetPresetLabel(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/presets/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/labels/" + path_segment(path.count("label") ? path.at("label") : std::string{});
+	return client.request("PUT", resolved_path, body);
 }
 
 inline Response SetWorkspaceDepartmentMember(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {

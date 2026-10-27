@@ -6,4 +6,5 @@ export interface PromptTemplateReference {
   variables?: {
     [key: string]: unknown;
   };
+  version?: string;
 }

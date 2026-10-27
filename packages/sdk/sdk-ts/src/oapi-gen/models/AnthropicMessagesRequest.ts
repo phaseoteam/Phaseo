@@ -112,6 +112,7 @@ export interface AnthropicMessagesRequest {
     variables?: {
       [key: string]: unknown;
     };
+    version?: string;
   };
   prompt_cache_key?: string | null;
   provider?: {
