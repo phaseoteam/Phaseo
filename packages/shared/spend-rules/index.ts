@@ -23,8 +23,6 @@ export const SPEND_RULE_PERIODS = ["day", "week", "month", "rolling"] as const;
 export const SPEND_RULE_BASE_KINDS = ["amount", "workspace_budget", "key_limit", "previous_period"] as const;
 export const SPEND_RULE_BASE_REFS = ["daily", "weekly", "monthly"] as const;
 export const SPEND_RULE_ACTIONS = ["notify", "block"] as const;
-/** Nothing enforces blocks yet, so a rule that would block is refused rather than saved to only notify. */
-export const SPEND_RULE_BLOCKS_AVAILABLE = false;
 
 /**
  * What the evaluator handles so far (private.spend_rule_evaluable). Every metric the table
@@ -252,6 +250,12 @@ export type SpendRuleInputOptions = {
 	existing?: SpendRuleFields | null;
 	/** IANA zone validation (each app's parseIanaTimeZone). */
 	parseTimeZone: (value: unknown) => string | null;
+	/**
+	 * Whether the gateway enforces blocks (SPEND_RULE_BLOCKS_ENABLED). While it does not, a write
+	 * that would start blocking is refused rather than saved to only notify; a rule that already
+	 * blocks can still be edited.
+	 */
+	blocksEnabled: boolean;
 };
 
 export type SpendRuleInput = {
@@ -404,6 +408,7 @@ export function parseSpendRuleInput(body: Record<string, unknown>, options: Spen
 
 	const problem = spendRuleProblem(rule);
 	if (problem) return { ok: false, message: problem };
+	if (rule.action === "block" && !options.blocksEnabled && existing?.action !== "block") return { ok: false, message: "action block is not available yet; use notify" };
 	if (rule.scope_id && ["key", "member", "department"].includes(rule.scope_type)) rule.scope_id = rule.scope_id.toLowerCase();
 	return { ok: true, value: { fields: rule, destinationIds } };
 }
@@ -489,7 +494,6 @@ export function spendRuleProblem(rule: SpendRuleFields): string | null {
 		if (metric === "budget_percent" && rule.threshold_percents && rule.block_at_percent < Math.max(...rule.threshold_percents)) {
 			return "block_at_percent must be at least the highest of threshold_percents";
 		}
-		if (!SPEND_RULE_BLOCKS_AVAILABLE) return "action block is not available yet; use notify";
 	} else if (rule.block_at_amount_nanos !== null) {
 		return "block_at_amount is only used by spend rules that block; set it to null";
 	}

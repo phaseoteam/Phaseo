@@ -442,11 +442,11 @@ try {
   // A slot with more workspaces than the limit rotates hourly instead of always taking the first ones.
   await db.exec(`
     create table spend_rule_evaluation_log (workspace_id uuid);
-    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz) rename to evaluate_workspace_spend_rules_logged;
-    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz) returns jsonb language plpgsql as $$
+    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules_logged;
+    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz, p_blocks boolean default false) returns jsonb language plpgsql as $$
     begin
       insert into public.spend_rule_evaluation_log values (p_workspace_id);
-      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now);
+      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now, p_blocks);
     end $$;
   `);
   const slotStart = Date.parse('2026-10-20T15:10:00Z');
@@ -461,8 +461,8 @@ try {
   }
   assert.equal((await one('select count(distinct workspace_id)::int n from spend_rule_evaluation_log')).n, inSlot, 'every workspace in an over-full slot is reached within ceil(n / limit) hours');
   await db.exec(`
-    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz);
-    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz) rename to evaluate_workspace_spend_rules;
+    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean);
+    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules;
     drop table spend_rule_evaluation_log;
   `);
 
