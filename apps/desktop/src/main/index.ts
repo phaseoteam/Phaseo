@@ -140,6 +140,8 @@ let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
 let harnessModelCache: HarnessModelCache;
+/** Ends model discovery still running at quit, such as a background refresh of a harness's list. */
+const modelDiscovery = new AbortController();
 // Before any handler is registered, so each one is traced (slow or failed calls only).
 traceIpcHandlers(ipcMain);
 const diagnostics = registerDiagnosticsIpc(ipcMain, { senderWindow, owners: terminalOwners });
@@ -399,7 +401,7 @@ async function discoverModels(harness: Harness, accountId: string | undefined, p
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 		if (harness === "pi") return await piModels(cwd);
 		if (harness === "claude") {
-			const [aliases, version] = await Promise.all([claudeNativeModels(cwd, AbortSignal.timeout(15000), account), resolveNativeCommand("claude").then(command => harnessVersion(command, app.getPath("userData"))).catch(() => undefined)]);
+			const [aliases, version] = await Promise.all([claudeNativeModels(cwd, AbortSignal.any([AbortSignal.timeout(15000), modelDiscovery.signal]), account), resolveNativeCommand("claude").then(command => harnessVersion(command, app.getPath("userData"))).catch(() => undefined)]);
 			return claudeModelsFor(aliases, version);
 		}
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
@@ -433,6 +435,7 @@ app.on("before-quit", event => {
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
 	for (const controller of phaseoSignIns.values()) controller.abort();
+	modelDiscovery.abort();
 	harnessUpdate?.controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
 	for (const controller of agentChecks.values()) controller.abort();
