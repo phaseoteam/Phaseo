@@ -29,6 +29,7 @@ import { accountSettingsWorkloadIdentityRouter } from "./settings-workload-ident
 import { accountSettingsBudgetsRouter } from "./settings-budgets";
 import { accountSettingsSlackRouter } from "./settings-slack";
 import { accountSettingsSlackMemoryRouter } from "./settings-slack-memory";
+import { accountSettingsSlackSchedulesRouter } from "./settings-slack-schedules";
 import { accountSettingsSpendRulesRouter } from "./settings-spend-rules";
 import { accountSettingsBroadcastRouter } from "./settings-broadcast";
 import { accountSettingsWebhooksRouter } from "./settings-webhooks";
@@ -160,6 +161,7 @@ accountSettingsRouter.route("/", accountSettingsWorkloadIdentityRouter);
 accountSettingsRouter.route("/", accountSettingsBudgetsRouter);
 accountSettingsRouter.route("/", accountSettingsSlackRouter);
 accountSettingsRouter.route("/", accountSettingsSlackMemoryRouter);
+accountSettingsRouter.route("/", accountSettingsSlackSchedulesRouter);
 accountSettingsRouter.route("/", accountSettingsSpendRulesRouter);
 accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);

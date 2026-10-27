@@ -23,6 +23,8 @@ export type TurnRef = {
 	external?: boolean;
 	/** The 2 or 3 allowed models a `compare <model>, <model>:` message asks, in its order. */
 	compare?: string[] | null;
+	/** A run of a recurring task (schedules.ts): the schedule's id and when the run was due, which keys its result. */
+	schedule?: { id: string; runAt: string };
 };
 
 export type TurnOutcome = {

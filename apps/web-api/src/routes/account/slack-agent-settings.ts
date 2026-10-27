@@ -14,6 +14,8 @@ export const MAX_USAGE_DATA_CHANNELS = 100;
 /** The most models people may choose per message (the slack_installations check). */
 export const MAX_ALLOWED_MODELS = 10;
 export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
+/** The most recurring tasks an installation may keep (the slack_installations check). */
+export const MAX_SCHEDULES = 100;
 /** The slack_installations column defaults. */
 export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
 export const DEFAULT_ALLOW_GUESTS = true;
@@ -33,6 +35,7 @@ const CHANNEL_PATTERN = /^[CG][A-Z0-9]{2,31}$/;
 export type OverPlan = "refuse" | "move_up";
 export type AccessMode = "everyone" | "linked";
 export type UsageDataMode = "off" | "dm" | "dm_and_channels";
+export type ScheduleCreators = "everyone" | "linked";
 export type SlackAgentStatusChange = "active" | "paused";
 
 /** code: the 400's error code, when it isn't bad_request. */
@@ -66,6 +69,9 @@ export type SlackAgentRowUpdate = Partial<{
 	model_choice_enabled: boolean;
 	allowed_models: string[];
 	memory_enabled: boolean;
+	schedules_enabled: boolean;
+	schedules_max: number;
+	schedule_creators: ScheduleCreators;
 	instructions: string | null;
 	access_mode: AccessMode;
 	usage_data_mode: UsageDataMode;
@@ -249,7 +255,7 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 const PATCH_FIELDS = new Set([
 	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "answers_per_person_hour",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
-	"allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
+	"schedules_enabled", "schedules_max", "schedule_creators", "allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
 ]);
 
 /** Validates a settings change. Unknown fields are rejected; cross-field rules need the current row (planProblem). */
@@ -277,6 +283,10 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 		take("allowed_models", allowedModelIds, (value) => { update.allowed_models = value; }),
 		// Off: the agent gets no note tools and no pins; saved notes are kept.
 		take("memory_enabled", (value) => bool(value, "memory_enabled"), (value) => { update.memory_enabled = value; }),
+		// Recurring tasks. Off: none are saved and due runs are skipped; a lower maximum keeps the ones saved.
+		take("schedules_enabled", (value) => bool(value, "schedules_enabled"), (value) => { update.schedules_enabled = value; }),
+		take("schedules_max", (value) => integer(value, "schedules_max", 1, MAX_SCHEDULES), (value) => { update.schedules_max = value; }),
+		take("schedule_creators", (value) => oneOf<ScheduleCreators>(value, "schedule_creators", ["everyone", "linked"]), (value) => { update.schedule_creators = value; }),
 		take("instructions", instructions, (value) => { update.instructions = value; }),
 		take("access_mode", (value) => oneOf<AccessMode>(value, "access_mode", ["everyone", "linked"]), (value) => { update.access_mode = value; }),
 		take("usage_data_mode", (value) => oneOf<UsageDataMode>(value, "usage_data_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.usage_data_mode = value; }),

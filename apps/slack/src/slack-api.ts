@@ -166,6 +166,8 @@ export type SlackUser = {
 	is_ultra_restricted?: boolean;
 	/** A user from another organisation in a Slack Connect channel. */
 	is_stranger?: boolean;
+	/** Their time zone, an IANA name such as Europe/London. */
+	tz?: string;
 	enterprise_user?: { enterprise_id?: string };
 };
 

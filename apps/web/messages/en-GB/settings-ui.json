@@ -7073,6 +7073,71 @@
 				"skillNameTaken": "Another saved skill already has this name."
 			}
 		},
+		"schedules": {
+			"title": "Recurring tasks",
+			"description": "Tasks people ask the agent to do regularly in Slack, hourly at the most. Each run posts a short message in its conversation and answers it in the thread, as an answer to the person who set it up: it counts as one answer and keeps to the same limits. Uninstalling deletes them all.",
+			"enable": "Let people set up recurring tasks",
+			"enableHelp": "Turned off, nobody can set one up and none of them run. They're kept, and run again once you turn this back on.",
+			"max": "Most recurring tasks in this workspace",
+			"maxHelp": "From 1 to {max}. Lowering it keeps the ones already set up.",
+			"maxInvalid": "Enter a whole number from 1 to {max}.",
+			"creators": "Who can set them up",
+			"creatorsEveryone": "Everyone who can use the agent",
+			"creatorsLinked": "Only people who connected their Phaseo account",
+			"save": "Save",
+			"saved": "Recurring task settings saved.",
+			"loading": "Loading…",
+			"used": "{used} of {limit} set up",
+			"offNote": "Recurring tasks are turned off, so none of these run until you turn them back on.",
+			"empty": "No recurring tasks yet. People can ask the agent in Slack to do something every hour, day, week or month.",
+			"columns": {
+				"task": "Task",
+				"where": "Where",
+				"often": "How often",
+				"next": "Next run",
+				"by": "Set up by",
+				"last": "Last run",
+				"actions": "Actions"
+			},
+			"channel": "Channel {id}",
+			"directMessage": "Direct message {id}",
+			"frequency": {
+				"hourly": "Every hour at :{minute}",
+				"daily": "Every day at {time}",
+				"weekdays": "Weekdays at {time}",
+				"weekly": "Every {day} at {time}",
+				"monthly": "Monthly on day {day} at {time}"
+			},
+			"timeZone": "{zone} time",
+			"paused": "Paused",
+			"pauseReasons": {
+				"admin": "Paused by an admin",
+				"creatorAccess": "The person who set it up can no longer use the agent",
+				"notInChannel": "The agent can't post in its conversation",
+				"installationPaused": "The agent was paused",
+				"paymentDue": "A Phaseo bill was unpaid",
+				"failures": "3 runs in a row didn't go through"
+			},
+			"lastResult": {
+				"answered": "Answered",
+				"failed": "Failed",
+				"skipped": "Skipped",
+				"running": "Running",
+				"none": "Not run yet"
+			},
+			"failuresInRow": "Failures in a row: {count}",
+			"pause": "Pause",
+			"resume": "Resume",
+			"delete": "Delete",
+			"pausedToast": "Recurring task paused.",
+			"resumedToast": "Recurring task resumed.",
+			"deletedToast": "Recurring task deleted.",
+			"deleteTitle": "Delete {title}?",
+			"deleteDescription": "It won't run again, and the person who set it up isn't told. This can't be undone.",
+			"errors": {
+				"scheduleNotFound": "It was already deleted. Reload to see what's left."
+			}
+		},
 		"uninstall": {
 			"description": "Removes the agent from Slack and deletes its API key. Past charges stay in your billing history.",
 			"button": "Uninstall",

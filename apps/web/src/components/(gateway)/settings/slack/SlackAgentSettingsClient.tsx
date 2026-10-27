@@ -29,6 +29,7 @@ import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
 import { SlackMemorySection } from "./SlackMemorySection";
+import { SlackSchedulesSection } from "./SlackSchedulesSection";
 import {
 	MAX_INSTRUCTIONS_CHARS,
 	callbackNotice,
@@ -404,6 +405,8 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			</Section>
 
 			<SlackMemorySection memoryEnabled={installation.settings.memory_enabled !== false} />
+
+			<SlackSchedulesSection settings={installation.settings} />
 
 			<SlackCustomAppSection view={view} />
 
