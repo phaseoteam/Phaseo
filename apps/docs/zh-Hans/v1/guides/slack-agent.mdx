@@ -8,7 +8,7 @@ icon: "messages-square"
 Slack 智能体正在逐步向各个工作区开放。如果你的设置中还没有出现 **设置 → Slack**，说明你的工作区暂时还不能使用它。
 </Note>
 
-Phaseo 智能体在 Slack 中回答问题。在频道中提及它，或者给它发私信，它就会在线程中回复，并在撰写时以流式方式显示回答。它使用你在 Phaseo 中选择的模型，可以搜索网页和读取网页内容，还能告诉已关联的成员你的工作区在 Phaseo 上的支出、积分、API 密钥用量和模型。它还可以发布自己生成的图表和图片，并读取你分享给它的图片和 PDF。
+Phaseo 智能体在 Slack 中回答问题。在频道中提及它，或者给它发私信，它就会在线程中回复，并在撰写时以流式方式显示回答。它使用你在 Phaseo 中选择的模型，可以搜索网页和读取网页内容，还能告诉已关联的成员你的工作区在 Phaseo 上的支出、积分、API 密钥用量和模型。它还可以发布自己生成的图表和图片，读取你分享给它的图片和 PDF，并替你搜索 Slack 工作区。
 
 所有者和管理员在 **设置 → Slack** 中添加它，选择谁可以使用它，并设置它的限制。你按当月使用过它的人数支付月费，模型 token 则像其他网关请求一样计费。
 
@@ -141,12 +141,45 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 
 ### 更新 Slack 权限
 
-图表和图片需要 Slack 的 `files:write` 权限，读取文件需要 `files:read`。如果智能体是在能使用文件之前添加的，它还没有这些权限：它会告诉大家需要管理员更新它的权限，并且 **设置 → Slack** 会显示 **更新 Slack 权限**。
+图表和图片需要 Slack 的 `files:write` 权限，读取文件需要 `files:read`，搜索 Slack（见下文"搜索 Slack"）需要 `search:read.public` 和 `search:read.files`。如果智能体是在能做这些之前添加的，它还没有这些权限：它会告诉大家需要管理员更新它的权限，并且 **设置 → Slack** 会显示 **更新 Slack 权限**。
 
 1. 选择 **更新 Slack 权限**。Slack 会显示智能体请求的权限。
 2. 为同一个 Slack 工作区批准这些权限。Slack 会把你带回 **设置 → Slack**。
 
-更新会保留智能体的设置、API 密钥、护栏和历史记录。使用你自己的 Slack 应用时，请先把 `files:read` 和 `files:write` 添加到它的清单中（见下文"使用你自己的 Slack 应用"）。
+更新会保留智能体的设置、API 密钥、护栏和历史记录。使用你自己的 Slack 应用时，请先把 **设置 → Slack** 列出的 scope 添加到它的清单中（见下文"使用你自己的 Slack 应用"）。
+
+## 搜索 Slack
+
+智能体可以替提问者搜索你的 Slack 工作区，并在回答中附上它用到的消息和文件的链接。例如：
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **它以你的身份搜索。** 它使用 Slack 的实时搜索，凭 Slack 为你的消息给它的权限进行搜索，因此只会找到你在 Slack 中能看到的内容。它只搜索公开频道，从不搜索私有频道、私信或群组私信。
+- **它为用到的内容附上链接。** 它依据的每条消息或每个文件都有链接，你可以在 Slack 中打开。搜索没有结果时，它会说明。
+- **它可以缩小搜索范围**，限定到某个频道、某个人或某个日期范围；每个回答最多搜索 4 次，每次 10 条结果。
+- **按含义或按关键词。** 在包含 AI 搜索的 Slack 套餐（Business+ 和 Enterprise+）中，用你自己的话提出的问题会按含义搜索；其他套餐按关键词搜索。
+
+在 **设置 → Slack** 的 **Slack 搜索** 中选择它在哪里搜索。更改立即生效。
+
+| 选项 | 在哪里搜索 |
+| --- | --- |
+| **关闭** | 不搜索。 |
+| **私信**（默认） | 仅在与智能体的私信中，因此只有提问者能看到搜索结果。 |
+| **私信和频道** | 有人提及它时，也在频道中搜索。频道里的每个人都能看到回答，包括无法打开所找到频道的访客，因此只有在这对你的工作区没有问题时才选择此项。 |
+
+有些限制来自 Slack：
+
+- 它只在回答消息时搜索：Slack 会随每条提及它或直接发给它的消息给它搜索权限，智能体只保留这项权限到回答完成为止。
+- Slack 不允许应用替访客搜索，智能体也从不替其他公司的人搜索。
+- Slack 允许每个人每分钟搜索约 10 次。超过这个频率时，智能体会用已有的信息回答，并说明情况。
+- Slack 只允许 Slack Marketplace 中的应用和公司自己的应用使用这种搜索。Phaseo 的 Slack 应用会在其 Slack Marketplace 上架获批后才能搜索；在此之前，智能体会说明搜索不可用。如果现在就要搜索，请使用你自己的 Slack 应用（见下文"使用你自己的 Slack 应用"）。
+- 在有搜索功能之前完成的安装需要更新 Slack 权限（见上文"更新 Slack 权限"）。
+
+它找到的内容只用于这次回答，从不保存（见下文"数据与隐私"）。出于同样的原因，搜索过 Slack 的回答不能中途停下来向你提问，也不能保存笔记、置顶、待办或技能，或设置定期任务。
 
 ## 谁可以使用
 
@@ -243,7 +276,7 @@ compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 - **频率：** 每小时（在你选择的分钟）、每天、工作日（周一到周五）、每周你选择的一天，或每月你选择的一天（较短的月份在最后一天运行）。最多每小时一次。
 - **时间：** 设置人在 Slack 中的时区的本地时间，夏令时切换时也保持不变。
 - **位置：** 设置它的频道或私信。每次运行都会在那里发一条简短的 **Scheduled: …** 消息，并在其线程中回答。该线程中的回复是发给智能体的普通消息。
-- **运行内容：** 智能体会把请求保存为一条完整独立的指令，所以每次运行都不依赖设置时的会话。计划运行不会提出带按钮的问题，也不能设置或更改定期任务。
+- **运行内容：** 智能体会把请求保存为一条完整独立的指令，所以每次运行都不依赖设置时的会话。计划运行不会提出带按钮的问题或搜索 Slack，也不能设置或更改定期任务。
 
 每次运行都是对设置人的一次普通回答。智能体会检查此人是否仍可使用它，这次运行计为此人的一次回答，计入你的套餐、**每月支出上限** 和 **每人每小时回答数**，遵守每个回答的限制（见下文“每个回答的限制”），并以平常的页脚结束。
 
@@ -337,6 +370,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 - **短暂的工作记忆。** 对于每个线程，智能体会保留它最近的回复、关于所用工具的简短记录、正在排队的消息、线程中最近消息的 ID（不含文本，用于判断从哪里开始读取），它向谁发送过连接按钮，以及它提出的问题和对应的回答。它们会在线程最后一次活动的 7 天后删除。
 - **可以查看和删除的记忆。** 智能体会保留有人让它保存的笔记、置顶、待办和技能，用它自己的话写，绝不是消息的副本，并附上提出要求的人的 Slack ID。它们会一直保留，直到有人删除、超过保留日期，或你卸载智能体。所有者和管理员可以在 **设置 → Slack** 中查看和删除它们，也可以在那里关闭笔记（见上文“记忆和技能”）。 其他公司的人永远看不到整个工作区的笔记。
 - **分享的文件只读取，不保留。** 智能体会下载它为某个回答读取的图片和 PDF，并按同样的规则随该回答的请求发送给模型。它从不保存这些文件；在回答结束前，只有 Slack 文件 ID 和文件名会和消息一起保留。
+- **不保留 Slack 搜索结果。** 智能体搜索 Slack 时找到的内容会按同样的规则随该回答的请求发送给模型，不会去任何其他地方：不进入它的工作记忆、它的日志或 Phaseo 的数据库，即使在等待你回答问题时也是如此。对于进行过搜索的回答，它的工作记忆只保留用过哪些工具以及它已回答的记录，不保留搜索了什么、找到了什么或写了什么。Slack 替你搜索的权限会和你的消息一起保留，直到回答结束。
 - **定期任务。** 对每个任务，智能体会保留其标题和指令、发布位置、计划和时区、设置人的 Slack ID，以及上次运行的结果。它们会一直保留，直到有人取消或删除该任务，或你卸载智能体。所有者和管理员可以在 **设置 → Slack** 中查看、暂停和删除它们。
 - **不归档任何内容。** Phaseo 不会归档来自 Slack 的任何内容。智能体自己的日志只保留 Slack ID 和状态。
 - **加密的密钥。** 机器人 token 和你的 Slack 应用的密钥都会加密存储，并且不会再次显示。
@@ -383,7 +417,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -413,7 +447,9 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
         "groups:history",
         "users:read",
         "files:read",
-        "files:write"
+        "files:write",
+        "search:read.public",
+        "search:read.files"
       ]
     }
   },
@@ -459,6 +495,8 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 | `users:read` | 检查某人是访客、机器人还是来自其他组织。 |
 | `files:read` | 读取分享给智能体的图片和 PDF。 |
 | `files:write` | 在线程中发布图表和图片。 |
+| `search:read.public` | 替提问者搜索公开频道。 |
+| `search:read.files` | 在这些搜索中包含公开频道中分享的文件。 |
 
 关于你自己的应用，有几条规则：
 

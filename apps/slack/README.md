@@ -64,8 +64,9 @@ Worker's production host and routes.
 - A new scope reaches an installation only when an admin approves it in Slack
   (install, or **Update Slack permissions**). `slack_installations.bot_scopes`
   records what Slack granted (null: the original seven scopes, before
-  `files:read` and `files:write`), and every feature that needs a newer scope
-  checks it with `hasBotScope` and says what an admin can do instead.
+  `files:read`, `files:write`, `search:read.public` and `search:read.files`),
+  and every feature that needs a newer scope checks it with `hasBotScope` and
+  says what an admin can do instead.
 
 ## Durable Objects
 
@@ -77,6 +78,7 @@ Worker's production host and routes.
   - Keeps the timestamps (no text) of the thread's newest known messages, where the next read starts.
   - Remembers who was sent the Connect button in the thread.
   - Holds the running turn's questions: the paused run, the question and its answer. The first answer from the person asked wins and wakes the turn's Workflow; so does stopping the thread while it waits.
+  - Holds Slack's action token for a turn's message while the turn may search Slack (see Slack search), and drops it with the turn. Counts the turn's searches (never what they found).
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
@@ -223,6 +225,80 @@ With `files:write` (`src/chart.ts`, `src/images.ts`, `src/slack-files.ts`):
 
 With `files:read`, images (PNG, JPEG, GIF, WebP, up to 5 MB) and PDFs (up to 10 MB) shared with the message, or by people in the thread messages the turn read, are read for the run: `files.info`, then a download of `url_private_download` with the bot token (only to `files.slack.com`, never following a redirect, capped while it streams), and a check of the file's first bytes. At most 4 files, 12 MB together, newest first. They go to the model as input parts of the run's first user message (`withAttachments` in `src/agent.ts`), and the prompt lists each shared file and why any isn't attached. A model whose catalogue entry takes no images (or files) isn't sent them; Auto is sent them, and when the gateway says no route reads them (`unsupported_modalities`), the run answers again without them and says so. Only file ids and names are kept, with the message in the coordinator; the bytes never leave the run.
 
+### Slack search
+
+`search_slack` (`src/slack-search.ts`) searches the Slack workspace as the person
+asking, with Slack's real-time search (`assistant.search.context`): the bot
+token plus the `action_token` Slack puts on the message that started the turn
+(an `app_mention`, or a direct message to the agent; read from the event, or its
+`assistant_thread` in older payloads). Slack returns only what that person can
+see, and a bot token searches public channels only (`search:read.public`; with
+`search:read.files`, files shared in them too). The query can name a channel
+(`in:<#C…>`), a person (`from:<@U…>`) and UTC dates; it asks for 10 results,
+relevance-sorted (semantic where the workspace's plan has AI search), and an
+answer makes at most 4 searches, counted in the coordinator's `turns.searches`
+across all its runs and retries (`reserveSearch`, which takes one atomically).
+Results come back short: channel, author, date, a
+Slack permalink (anything that isn't a `slack.com` link is dropped) and a
+300-character snippet, for the model to cite.
+
+It is offered only when all of these hold, and the model is told which one
+doesn't otherwise:
+
+- the installation has `search:read.public` (`hasBotScope`);
+- `slack_installations.search_mode` allows the conversation: `off`, `dm` (the
+  default: direct messages with the agent, so only the person asking reads the
+  answer) or `dm_and_channels` (everyone in a channel reads the answer,
+  including guests who can't open the channels found);
+- the person isn't from another organisation (`turn.external`) or a guest
+  (Slack doesn't allow apps to search for guests);
+- the message carried an action token. Scheduled runs have no message, so no
+  token, and never search (`searchAvailability` says `scheduled` before looking
+  for one).
+
+Slack's terms forbid storing or copying what the API returns, so nothing of the
+results outlives the run that asked for them: they go to the model with its
+requests (whose content the agent's key never logs) and nowhere else. Logs
+carry the turn id, counts and Slack's error code.
+
+While the answer is being written, the thread coordinator holds what any answer
+holds so a retried step can finish it (the reply so far, tool notes, the titles
+of charts and images it posted); all of it goes when the answer ends (at most
+`TURN_TIMEOUT_MS`). What stays in the thread's working memory (7 days) for an
+answer that searched is only `SEARCHED_REPLY_MEMORY` in place of its reply and
+the ids of the tools it used (`toolNames`), never what the model gave them.
+
+What the model writes after a search can carry what it found, so once an answer
+has searched (`searchedThisAnswer`: the turn's search count is above 0, or the
+turn has ended), nothing it writes is kept:
+
+- `ask_question` refuses, and tells the model to answer with what it has and say
+  what it would still need, so no run holding results is ever paused and kept in
+  the coordinator. `search_slack` doesn't search in a step that asked a question
+  (the SDK takes a step's questions before its other tools), and a paused run is
+  never kept for an answer that has searched. A question asked before any search
+  still works, and the run after the answer can search.
+- Every tool that saves text refuses with `savingRefusal`: `remember` (notes,
+  pins and to-dos), `save_skill` and `schedule_task` (its title and prompt are
+  kept in Postgres). Reading, ticking off and forgetting notes, and listing and
+  cancelling recurring tasks, still work.
+- The instructions say so whenever search is offered.
+
+Any new tool that keeps what the model writes (in Postgres, the coordinator or
+anywhere else that outlives the answer) must check `searchedThisAnswer` too.
+
+The
+action token waits in the coordinator's `turns.action_token`, set only where the
+turn may search, handed only to the running turn (`actionToken`) and deleted
+with the turn; a message that answers the turn's question brings a fresh one.
+It is never in the Workflow's payload (`TurnRef`) or a step output.
+
+Slack lets only apps published in its directory, and a company's own (internal)
+apps, use this API. The hosted app can't until its Slack Marketplace listing is
+approved: Slack refuses the call, and the model is told search isn't available
+to this app. Rate limits: about 10 searches a minute per person, and more per
+workspace by size; a 429 is passed to the model, never retried.
+
 ### Usage tools
 
 The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
@@ -280,7 +356,8 @@ Turns that aren't scheduled runs get `schedule_task`, `list_schedules` and
 for one conversation, run hourly (at a minute), daily, on weekdays, weekly or
 monthly at a local time in the creator's Slack time zone (`users.info` `tz`).
 The tool returns the next run, which the agent confirms. Someone from another
-organisation can list and cancel but not set one up.
+organisation can list and cancel but not set one up, and an answer that has
+searched Slack sets none up (see Slack search).
 
 - `slack_agent_schedules` holds them. Inserts only go through
   `save_slack_agent_schedule`. It holds the installation's
@@ -322,7 +399,8 @@ A run is claimed once, so overlapping ticks never start it twice. For each run:
 4. The turn is queued in that message's thread coordinator (`turns.schedule_id`,
    `turns.schedule_run_at`) and runs as an `AgentTurnWorkflow`: the same checks,
    the $0.50 and 12-step limits, the usual footer, one answer. Scheduled runs get
-   no `ask_question` and no schedule tools.
+   no `ask_question`, no schedule tools and no `search_slack` (no action token;
+   see Slack search).
 
 `record_slack_agent_schedule_run` records the outcome once per run, keyed by
 `last_run_at`, so a retried Workflow step never counts twice. It is called:

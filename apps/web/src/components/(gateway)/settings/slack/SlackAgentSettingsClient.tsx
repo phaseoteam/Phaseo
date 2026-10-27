@@ -30,8 +30,10 @@ import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, Mod
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
 import { SlackMemorySection } from "./SlackMemorySection";
 import { SlackSchedulesSection } from "./SlackSchedulesSection";
+import { SlackSearchSection } from "./SlackSearchSection";
 import {
 	MAX_INSTRUCTIONS_CHARS,
+	SLACK_SEARCH_SCOPE,
 	callbackNotice,
 	chargeMonth,
 	formatUsd,
@@ -176,7 +178,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
  * before a feature needed them): Slack's consent page again, for the same
  * installation, keeping its settings, key and data.
  */
-function PermissionsUpdate({ customApp }: { customApp: boolean }) {
+function PermissionsUpdate({ customApp, missing }: { customApp: boolean; missing: string[] }) {
 	const t = useTranslations("SettingsUI.slack");
 	const [error, setError] = useState<ActionError | null>(null);
 	const [pending, startUpdate] = useTransition();
@@ -201,7 +203,7 @@ function PermissionsUpdate({ customApp }: { customApp: boolean }) {
 			<Callout tone="warning" title={t("permissions.title")}>
 				<div className="space-y-3">
 					<p>{t("permissions.description")}</p>
-					{customApp ? <p>{t("permissions.customApp")}</p> : null}
+					{customApp ? <p>{t("permissions.customApp", { scopes: missing.join(", ") })}</p> : null}
 					<Button type="button" size="sm" variant="outline" disabled={busy} onClick={update}>{busy ? t("permissions.redirecting") : t("permissions.submit")}</Button>
 				</div>
 			</Callout>
@@ -300,7 +302,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			</div>
 			{status === "payment_due" ? <SlackError error={{ key: "paymentDue" }} /> : null}
 			{status === "paused" ? <Notice>{t("installed.pausedNote")}</Notice> : null}
-			{installation.permissions?.missing.length ? <PermissionsUpdate customApp={installation.uses_custom_app} /> : null}
+			{installation.permissions?.missing.length ? <PermissionsUpdate customApp={installation.uses_custom_app} missing={installation.permissions.missing} /> : null}
 
 			<Section title={t("sections.month")} description={month ? t("month.note", { date: chargeMonth(month.period_start, locale) }) : undefined}>
 				<dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -403,6 +405,8 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 					{view.charges.length ? <>{t("charges.modelSpendNote")} </> : null}{t("charges.note")} <Link href="/settings/credits/transactions" className="underline underline-offset-4">{t("charges.transactions")}</Link>
 				</p>
 			</Section>
+
+			<SlackSearchSection initial={installation.settings.search_mode ?? "dm"} granted={installation.permissions?.granted.includes(SLACK_SEARCH_SCOPE) ?? true} />
 
 			<SlackMemorySection memoryEnabled={installation.settings.memory_enabled !== false} />
 

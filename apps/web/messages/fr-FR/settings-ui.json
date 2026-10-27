@@ -6829,7 +6829,7 @@
 		"addCredits": "Ajouter des crédits",
 		"notices": {
 			"installed": "L’agent Phaseo est maintenant dans {team}.",
-			"permissionsUpdated": "Autorisations Slack mises à jour dans {team}. L’agent peut maintenant publier des graphiques et des images, et lire les fichiers partagés avec lui.",
+			"permissionsUpdated": "Autorisations Slack mises à jour dans {team}. L’agent peut maintenant publier des graphiques et des images, lire les fichiers partagés avec lui et faire des recherches dans Slack.",
 			"permissionsPartial": "Slack n’a pas accordé toutes les autorisations, certaines fonctions restent donc désactivées. Réessayez, et vérifiez que votre application Slack comporte tous les scopes."
 		},
 		"member": {
@@ -6951,10 +6951,22 @@
 		},
 		"permissions": {
 			"title": "Mettre à jour les autorisations Slack",
-			"description": "L’agent peut maintenant publier les graphiques et images qu’il crée, et lire les images et PDF partagés avec lui, dès que Slack l’y autorise. La mise à jour ouvre Slack pour approuver les nouvelles autorisations, et conserve les paramètres, la clé et les données de l’agent.",
-			"customApp": "Ajoutez d’abord les scopes de bot files:read et files:write au manifeste de votre application Slack.",
+			"description": "L’agent peut maintenant publier les graphiques et images qu’il crée, lire les images et PDF partagés avec lui, et faire des recherches dans Slack pour la personne qui pose la question, dès que Slack l’y autorise. La mise à jour ouvre Slack pour approuver les nouvelles autorisations, et conserve les paramètres, la clé et les données de l’agent.",
+			"customApp": "Ajoutez d’abord ces scopes de bot au manifeste de votre application Slack : {scopes}.",
 			"submit": "Mettre à jour les autorisations Slack",
 			"redirecting": "Ouverture de Slack…"
+		},
+		"search": {
+			"title": "Recherche Slack",
+			"description": "L’agent peut faire des recherches dans les canaux publics de votre espace de travail Slack en tant que la personne qui pose la question : il ne trouve donc que ce qu’elle peut voir, et met un lien vers ce qu’il utilise. Rien de ce qu’il trouve n’est conservé.",
+			"off": "Désactivée",
+			"dm": "Messages directs",
+			"dmAndChannels": "Messages directs et canaux",
+			"offHelp": "L’agent ne fait jamais de recherche dans Slack.",
+			"dmHelp": "Uniquement dans les messages directs avec l’agent, pour que seule la personne qui pose la question lise ce qu’il trouve.",
+			"dmAndChannelsHelp": "Aussi dans les canaux. Tous les membres du canal lisent la réponse, y compris les invités qui ne peuvent pas ouvrir les canaux trouvés.",
+			"needsPermissions": "La recherche nécessite d’abord de mettre à jour les autorisations Slack : sélectionnez Mettre à jour les autorisations Slack ci-dessus.",
+			"saved": "Paramètre de recherche Slack enregistré."
 		},
 		"month": {
 			"note": "{date} jusqu’ici, en UTC. Le montant est prélevé sur les crédits à la fin du mois.",

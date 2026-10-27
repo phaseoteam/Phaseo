@@ -8,7 +8,7 @@ icon: "messages-square"
 Slack エージェントはワークスペースに順次提供しています。設定に **設定 → Slack** がまだ表示されない場合、そのワークスペースではまだ利用できません。
 </Note>
 
-Phaseo エージェントは Slack で質問に回答します。チャンネルでメンションするか、ダイレクトメッセージを送ると、スレッドで回答し、書きながらストリーミングで表示します。Phaseo で選んだモデルを使い、Web 検索や Web ページの読み取りができます。また、連携済みのメンバーには、ワークスペースの Phaseo の支出、クレジット、API キーの利用状況、モデルについて答えられます。作成したグラフや画像を投稿したり、共有された画像や PDF を読んだりすることもできます。
+Phaseo エージェントは Slack で質問に回答します。チャンネルでメンションするか、ダイレクトメッセージを送ると、スレッドで回答し、書きながらストリーミングで表示します。Phaseo で選んだモデルを使い、Web 検索や Web ページの読み取りができます。また、連携済みのメンバーには、ワークスペースの Phaseo の支出、クレジット、API キーの利用状況、モデルについて答えられます。作成したグラフや画像を投稿したり、共有された画像や PDF を読んだり、あなたの代わりに Slack ワークスペースを検索したりすることもできます。
 
 オーナーと管理者は **設定 → Slack** からエージェントを追加し、利用できる人を選び、上限を設定します。料金は、その月にエージェントを使った人数に応じた月額料金です。モデルのトークンは、ほかのゲートウェイリクエストと同じように課金されます。
 
@@ -141,12 +141,45 @@ Slack でエージェントを開いて **Home** を選ぶと、使い方、使�
 
 ### Slack 権限を更新する
 
-グラフと画像には Slack の `files:write` 権限が、ファイルの読み取りには `files:read` が必要です。ファイルを使えるようになる前に追加したエージェントには、まだこれらの権限がありません。その場合、エージェントは管理者が権限を更新する必要があると伝え、**設定 → Slack** に **Slack 権限を更新** が表示されます。
+グラフと画像には Slack の `files:write` 権限が、ファイルの読み取りには `files:read` が、Slack の検索（下の「Slack を検索する」を参照）には `search:read.public` と `search:read.files` が必要です。これらができるようになる前に追加したエージェントには、まだこれらの権限がありません。その場合、エージェントは管理者が権限を更新する必要があると伝え、**設定 → Slack** に **Slack 権限を更新** が表示されます。
 
 1. **Slack 権限を更新** を選びます。エージェントが求める権限が Slack に表示されます。
 2. 同じ Slack ワークスペースで承認します。Slack から **設定 → Slack** に戻ります。
 
-更新しても、エージェントの設定、API キー、ガードレール、履歴はそのまま残ります。独自の Slack アプリを使う場合は、先にそのマニフェストに `files:read` と `files:write` を追加してください（下の「独自の Slack アプリを使う」を参照）。
+更新しても、エージェントの設定、API キー、ガードレール、履歴はそのまま残ります。独自の Slack アプリを使う場合は、先に **設定 → Slack** に表示されるスコープをそのマニフェストに追加してください（下の「独自の Slack アプリを使う」を参照）。
+
+## Slack を検索する
+
+エージェントは質問した人の代わりに Slack ワークスペースを検索し、使ったメッセージやファイルへのリンクを付けて回答できます。例:
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **あなたとして検索します。** あなたのメッセージに対して Slack が与える権限で Slack のリアルタイム検索を使うため、あなたが Slack で見られるものだけが見つかります。検索するのはパブリックチャンネルだけで、プライベートチャンネル、ダイレクトメッセージ、グループ DM は検索しません。
+- **使ったものにはリンクを付けます。** 根拠にしたメッセージやファイルにはそれぞれリンクが付くので、Slack で開けます。検索で何も見つからなかったときは、そう伝えます。
+- **検索を絞り込めます。** チャンネル、人、期間で絞り込めます。1 つの回答で最大 4 回、1 回あたり 10 件まで検索します。
+- **意味でもキーワードでも。** AI 検索を含む Slack プラン（Business+ と Enterprise+）では、自分の言葉で書いた質問を意味で検索します。ほかのプランではキーワードで検索します。
+
+どこで検索するかは **設定 → Slack** の **Slack 検索** で選びます。変更はすぐに反映されます。
+
+| オプション | 検索する場所 |
+| --- | --- |
+| **オフ** | どこでも検索しません。 |
+| **ダイレクトメッセージ**（デフォルト） | エージェントとのダイレクトメッセージ内だけです。見つけた内容を読むのは質問した人だけです。 |
+| **ダイレクトメッセージとチャンネル** | 誰かがメンションしたときは、チャンネルでも検索します。回答はチャンネルの全員が読めます。見つかったチャンネルを開けないゲストも含むため、ワークスペースにとって問題がない場合だけ選んでください。 |
+
+Slack による制限もあります:
+
+- 検索するのはメッセージに回答するときだけです。Slack はエージェントをメンションしたメッセージや、エージェントに直接送られたメッセージごとに検索の権限を与えます。エージェントがその権限を保持するのは回答し終えるまでです。
+- Slack はアプリがゲストの代わりに検索することを許可していません。また、エージェントがほかの会社の人の代わりに検索することはありません。
+- Slack で 1 人が検索できるのは 1 分あたり約 10 回です。それを超えると、エージェントは手元の情報で回答し、そのことを伝えます。
+- Slack がこの検索を許可しているのは、Slack Marketplace のアプリと、会社が独自に作ったアプリだけです。Phaseo の Slack アプリは、Slack Marketplace での掲載が承認されると検索できるようになります。それまでは、検索は利用できないとエージェントが伝えます。今すぐ検索するには、独自の Slack アプリを使ってください（下の「独自の Slack アプリを使う」を参照）。
+- 検索機能より前のインストールでは、Slack 権限の更新が必要です（上の「Slack 権限を更新する」を参照）。
+
+見つけた内容はその回答だけに使われ、保存されません（下の「データとプライバシー」を参照）。同じ理由で、Slack を検索した回答では、途中で質問したり、メモ、ピン、To-Do、スキルを保存したり、定期タスクを設定したりできません。
 
 ## 利用できる人
 
@@ -243,7 +276,7 @@ Slack でエージェントを開いて **Home** を選ぶと、使い方、使�
 - **頻度:** 毎時（指定した分）、毎日、平日（月曜から金曜）、毎週指定した曜日、または毎月指定した日（その日がない月は月末）。1 時間に 1 回より多くは実行されません。
 - **時刻:** 設定した人の Slack のタイムゾーンでの現地時刻です。夏時間の切り替えがあってもその時刻を保ちます。
 - **場所:** 設定したチャンネルまたはダイレクトメッセージです。各実行ではそこに短い **Scheduled: …** メッセージを投稿し、そのスレッドで回答します。そのスレッドへの返信は、エージェントへの通常のメッセージとして扱われます。
-- **実行内容:** エージェントは依頼を単独で完結する指示として保存するため、各実行は設定したときの会話がなくても動きます。スケジュールされた実行では、ボタン付きの質問はせず、定期タスクの設定や変更もできません。
+- **実行内容:** エージェントは依頼を単独で完結する指示として保存するため、各実行は設定したときの会話がなくても動きます。スケジュールされた実行では、ボタン付きの質問や Slack の検索はせず、定期タスクの設定や変更もできません。
 
 各実行は、設定した人への通常の回答です。エージェントはその人がまだ利用できるかを確認し、実行はその人の回答の 1 回としてプラン、**月の支出上限**、**1 人 1 時間あたりの回答数** に数えられ、回答ごとの上限（下の「回答ごとの上限」を参照）を守り、いつものフッターで終わります。
 
@@ -337,6 +370,7 @@ Slack の API 利用規約では、Slack のデータでの学習もデータの
 - **作業メモリは短期間だけ保持します。** エージェントはスレッドごとに、最近の自分の回答、使ったツールについての短いメモ、順番を待っているメッセージ、どこから読むかを判断するためのスレッドの最近のメッセージの ID（本文は含みません）、接続ボタンを送った相手、自分がした質問とその答えを保持します。これらはスレッドの最後のアクティビティから 7 日後に削除されます。
 - **メモリは確認でき、削除できます。** エージェントは、保存を頼まれたメモ、ピン、To-Do、スキルを、メッセージのコピーではなく自分の言葉で、頼んだ人の Slack ID とともに保持します。誰かが削除するか、保持期限の日付を過ぎるか、エージェントをアンインストールするまで残ります。オーナーと管理者は **設定 → Slack** で確認・削除でき、メモをオフにすることもできます（上の「メモリとスキル」を参照）。 他社の人がワークスペース全体のメモを見ることはありません。
 - **共有されたファイルは読むだけで、保持しません。** エージェントは回答のために読む画像や PDF をダウンロードし、同じルールのもとで、その回答のリクエストと一緒にモデルへ送ります。保存することはなく、回答が終わるまでメッセージと一緒に Slack のファイル ID とファイル名だけを保持します。
+- **Slack の検索結果は保持しません。** エージェントが Slack を検索して見つけた内容は、同じルールのもとで、その回答のリクエストと一緒にモデルへ送られるだけで、ほかのどこにも残りません。作業メモリにも、ログにも、Phaseo のデータベースにも残らず、質問への回答を待っている間も同じです。検索した回答について作業メモリに残るのは、使ったツールの名前と回答したという記録だけで、何を検索したか、何が見つかったか、何を書いたかは残りません。あなたの代わりに検索する Slack の権限は、回答が終わるまであなたのメッセージと一緒に保持されます。
 - **定期タスク。** エージェントは各タスクについて、タイトルと指示、投稿先、スケジュールとタイムゾーン、設定した人の Slack ID、前回の実行結果を保持します。誰かがタスクをキャンセルまたは削除するか、エージェントをアンインストールするまで残ります。オーナーと管理者は **設定 → Slack** で確認、一時停止、削除できます。
 - **何もアーカイブしません。** Phaseo は Slack のものを何もアーカイブしません。エージェント自身のログには、Slack の ID とステータスだけが残ります。
 - **シークレットは暗号化します。** ボットトークンと Slack アプリのシークレットは暗号化して保存し、二度と表示しません。
@@ -383,7 +417,7 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -413,7 +447,9 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
         "groups:history",
         "users:read",
         "files:read",
-        "files:write"
+        "files:write",
+        "search:read.public",
+        "search:read.files"
       ]
     }
   },
@@ -459,6 +495,8 @@ Phaseo はインストール時に、Slack にちょうど次のボットトー�
 | `users:read` | ゲスト、ボット、他の組織の人かどうかを確認する。 |
 | `files:read` | エージェントに共有された画像や PDF を読む。 |
 | `files:write` | スレッドにグラフや画像を投稿する。 |
+| `search:read.public` | 質問した人の代わりにパブリックチャンネルを検索する。 |
+| `search:read.files` | パブリックチャンネルで共有されたファイルも検索に含める。 |
 
 独自のアプリについてのルール：
 

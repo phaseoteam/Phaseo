@@ -6829,7 +6829,7 @@
 		"addCredits": "Guthaben aufladen",
 		"notices": {
 			"installed": "Der Phaseo-Agent ist jetzt in {team}.",
-			"permissionsUpdated": "Slack-Berechtigungen in {team} aktualisiert. Der Agent kann jetzt Diagramme und Bilder posten und geteilte Dateien lesen.",
+			"permissionsUpdated": "Slack-Berechtigungen in {team} aktualisiert. Der Agent kann jetzt Diagramme und Bilder posten, geteilte Dateien lesen und Slack durchsuchen.",
 			"permissionsPartial": "Slack hat nicht alle Berechtigungen erteilt, daher bleiben einige Funktionen aus. Versuche es noch einmal und prüfe, ob deine Slack-App alle Scopes enthält."
 		},
 		"member": {
@@ -6951,10 +6951,22 @@
 		},
 		"permissions": {
 			"title": "Slack-Berechtigungen aktualisieren",
-			"description": "Der Agent kann jetzt Diagramme und Bilder posten, die er erstellt, und geteilte Bilder und PDFs lesen, sobald Slack es erlaubt. Beim Aktualisieren öffnet sich Slack, um die neuen Berechtigungen zu bestätigen. Einstellungen, Schlüssel und Daten des Agenten bleiben erhalten.",
-			"customApp": "Füge zuerst die Bot-Scopes files:read und files:write zum Manifest deiner Slack-App hinzu.",
+			"description": "Der Agent kann jetzt Diagramme und Bilder posten, die er erstellt, geteilte Bilder und PDFs lesen und Slack für die fragende Person durchsuchen, sobald Slack es erlaubt. Beim Aktualisieren öffnet sich Slack, um die neuen Berechtigungen zu bestätigen. Einstellungen, Schlüssel und Daten des Agenten bleiben erhalten.",
+			"customApp": "Füge zuerst diese Bot-Scopes zum Manifest deiner Slack-App hinzu: {scopes}.",
 			"submit": "Slack-Berechtigungen aktualisieren",
 			"redirecting": "Slack wird geöffnet…"
+		},
+		"search": {
+			"title": "Slack-Suche",
+			"description": "Der Agent kann die öffentlichen Channels deines Slack-Workspace als die fragende Person durchsuchen. So findet er nur, was diese Person sehen kann, und verlinkt, was er verwendet. Was er findet, wird nie gespeichert.",
+			"off": "Aus",
+			"dm": "Direktnachrichten",
+			"dmAndChannels": "Direktnachrichten und Channels",
+			"offHelp": "Der Agent durchsucht Slack nie.",
+			"dmHelp": "Nur in Direktnachrichten mit dem Agenten, damit nur die fragende Person liest, was er findet.",
+			"dmAndChannelsHelp": "Auch in Channels. Alle im Channel lesen die Antwort, auch Gäste, die die gefundenen Channels nicht öffnen können.",
+			"needsPermissions": "Für die Suche müssen zuerst die Slack-Berechtigungen aktualisiert werden: Wähle oben Slack-Berechtigungen aktualisieren.",
+			"saved": "Einstellung für die Slack-Suche gespeichert."
 		},
 		"month": {
 			"note": "{date} bisher, in UTC. Der Betrag wird am Monatsende vom Guthaben abgebucht.",

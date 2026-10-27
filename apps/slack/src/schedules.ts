@@ -1,6 +1,7 @@
 import type { AgentTool } from "@phaseo/agent-sdk";
 import type { Installation } from "./installations";
 import { usersInfo, type SlackClient } from "./slack-api";
+import { savingRefusal, type SearchedThisAnswer } from "./slack-search";
 import type { Db } from "./supabase";
 import type { TurnRef } from "./turns";
 import { ToolInputError } from "./usage-tools";
@@ -16,7 +17,9 @@ import { ToolInputError } from "./usage-tools";
 // cancelling allows the person who set it up and anyone linked to a workspace
 // owner or admin. Someone from another organisation (Slack Connect) can list
 // the conversation's but not set one up, and a scheduled run itself gets none
-// of these tools. Admins see, pause, resume and delete them in Settings → Slack.
+// of these tools. An answer that has searched Slack sets none up, as its title
+// and prompt could carry what the search found (searchedThisAnswer,
+// slack-search.ts). Admins see, pause, resume and delete them in Settings → Slack.
 
 export const MAX_SCHEDULE_TITLE_CHARS = 80;
 export const MAX_SCHEDULE_PROMPT_CHARS = 2_000;
@@ -160,6 +163,8 @@ export type ScheduleToolContext = {
 	runKey: string;
 	/** Short notes of what each tool did, kept as the thread's working memory. */
 	notes: string[];
+	/** Whether the answer has searched Slack: then schedule_task saves nothing, as Slack's terms forbid keeping what search finds (slack-search.ts). */
+	searched: SearchedThisAnswer;
 };
 
 function text(value: unknown, field: string, max: number): string {
@@ -327,6 +332,9 @@ export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>
 			const title = oneLine(text(input.title, "title", MAX_SCHEDULE_TITLE_CHARS));
 			const prompt = text(input.prompt, "prompt", MAX_SCHEDULE_PROMPT_CHARS);
 			const timing = timingInput(input);
+			// Its title and prompt are kept: after a search they could carry what it found.
+			const refused = await savingRefusal(context.searched);
+			if (refused) return { saved: false, note: refused };
 			const creationKey = await scheduleCreationKey(context.runKey, channel, title, timing);
 			const zone = await personTimeZone(slack, slackUserId);
 			const result = await db.rpc<{ status: string; schedule?: ScheduleRow; limit?: number }>("save_slack_agent_schedule", {

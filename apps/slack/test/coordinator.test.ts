@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ThreadCoordinator, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { SEARCHED_REPLY_MEMORY, ThreadCoordinator, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { createWorkflowTurnRunner, type TurnRef, type TurnRunner, type TurnStart } from "../src/turns";
 import { fakeState, FakeStorage, INSTALLATION_ID, storageOf, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
 
@@ -222,8 +222,12 @@ describe("ThreadCoordinator", () => {
 		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
 		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
-		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external", "compare"]));
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external", "compare", "action_token", "searches"]));
 		expect(columns("memory")).toContain("ts");
+		// Its running turn hasn't searched, and can.
+		expect(upgraded.searchCount(1)).toBe(0);
+		expect(upgraded.reserveSearch(1, 4)).toBe(true);
+		expect(upgraded.searchCount(1)).toBe(1);
 		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");
 		upgraded.stageTurnOutput(1, { attempt: 1, costNanos: 1_000, reply: "Answer", tools: [] });
@@ -237,7 +241,58 @@ describe("ThreadCoordinator", () => {
 		await expect(upgraded.finishTurn(1, { status: "done" }, NOW)).resolves.toEqual({ ok: true });
 		expect(upgraded.workingMemory()).toEqual([
 			{ kind: "reply", text: "An older answer", at: NOW, ts: null },
-			{ kind: "reply", text: "Answer", at: NOW, ts: "1792600100.000001" },
+			// It searched above: only a note of its answer is kept.
+			{ kind: "reply", text: SEARCHED_REPLY_MEMORY, at: NOW, ts: "1792600100.000001" },
+		]);
+	});
+
+	it("keeps a message's action token for its running turn only, never in the Workflow's payload, and drops it with the turn", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		await coordinator.enqueue(request("Ev0TEST0002", { messageTs: "1792600000.000300", actionToken: "1234567.890.secondTOKEN" }), NOW);
+		expect(coordinator.actionToken(1)).toBe("1234567.890.abcdefTOKEN");
+		// Queued, not running: not handed out yet.
+		expect(coordinator.actionToken(2)).toBeNull();
+		expect(JSON.stringify(runner.starts)).not.toContain("TOKEN");
+		await coordinator.finishTurn(1, { status: "done", reply: "Done", tools: ["search_slack \"launch plan\": 2 results"] }, NOW);
+		expect(coordinator.actionToken(1)).toBeNull();
+		expect(coordinator.actionToken(2)).toBe("1234567.890.secondTOKEN");
+		expect(JSON.stringify(runner.starts)).not.toContain("TOKEN");
+		await coordinator.finishTurn(2, { status: "done" }, NOW);
+		expect(storageOf(coordinator).db.prepare("SELECT count(*) AS count FROM turns WHERE action_token IS NOT NULL").all()).toEqual([{ count: 0 }]);
+	});
+
+	it("counts a running turn's Slack searches across its runs and retries, up to the most it may make", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		await coordinator.enqueue(request("Ev0TEST0002", { messageTs: "1792600000.000300" }), NOW);
+		expect(coordinator.searchCount(1)).toBe(0);
+		// However many runs ask (a run after a question, or a retried one), the turn makes 4 at most.
+		const reserved = [1, 2, 3, 4, 5, 6].map(() => coordinator.reserveSearch(1, 4));
+		expect(reserved).toEqual([true, true, true, true, false, false]);
+		expect(coordinator.searchCount(1)).toBe(4);
+		// A queued turn can't search yet, and hasn't.
+		expect(coordinator.reserveSearch(2, 4)).toBe(false);
+		expect(coordinator.searchCount(2)).toBeNull();
+		await coordinator.finishTurn(1, { status: "done" }, NOW);
+		// Ended: no more searches, and the count says so.
+		expect(coordinator.reserveSearch(1, 4)).toBe(false);
+		expect(coordinator.searchCount(1)).toBeNull();
+		expect(coordinator.searchCount(2)).toBe(0);
+	});
+
+	it("keeps only a note, not the text, of an answer that searched Slack in the thread's working memory", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001", { actionToken: "1234567.890.abcdefTOKEN" }), NOW);
+		expect(coordinator.reserveSearch(1, 4)).toBe(true);
+		await coordinator.finishTurn(1, {
+			status: "done",
+			reply: "The decision was in #infra: move to eu-west.",
+			tools: ['search_slack "eu-west move": 3 results', 'make_chart: posted a bar chart, "eu-west latency"', "recall eu-west"],
+		}, NOW);
+		// Nothing the model gave its tools either: a later query or a chart's title can quote what it found.
+		expect(coordinator.workingMemory().map((entry) => [entry.kind, entry.text])).toEqual([
+			["tool", "search_slack"],
+			["tool", "make_chart"],
+			["tool", "recall"],
+			["reply", SEARCHED_REPLY_MEMORY],
 		]);
 	});
 
@@ -359,6 +414,16 @@ describe("ThreadCoordinator", () => {
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: ` EU${"!".repeat(3_000)}`, now: NOW })).resolves.toMatchObject({ question: { answer: { by: "message", choice: null, text: `EU${"!".repeat(1_998)}` } } });
 			// Answered: the next message is a new one.
 			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "and another thing", now: NOW })).resolves.toBeNull();
+		});
+
+		it("searches after an answer by message with that message's action token", async () => {
+			await asking();
+			expect(coordinator.actionToken(1)).toBeNull();
+			// Someone else's token never replaces the turn's.
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON02", text: "EU", actionToken: "1234567.890.otherTOKEN", now: NOW });
+			expect(coordinator.actionToken(1)).toBeNull();
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "EU", actionToken: "1234567.890.answerTOKEN", now: NOW });
+			expect(coordinator.actionToken(1)).toBe("1234567.890.answerTOKEN");
 		});
 
 		it("keeps the files shared with an answer in the thread, and takes files alone as an answer", async () => {

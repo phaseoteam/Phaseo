@@ -79,7 +79,7 @@ const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "team_name", "enterprise_id", "bot_user_id", "key_id", "guardrail_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"schedules_enabled", "schedules_max", "schedule_creators", "plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
-	"installed_by", "installed_at", "uninstalled_at", "updated_at", "bot_scopes",
+	"installed_by", "installed_at", "uninstalled_at", "updated_at", "bot_scopes", "search_mode",
 ].join(",");
 const CUSTOM_APP_COLUMNS = "id,slack_app_id,client_id,created_at,updated_at";
 
@@ -121,6 +121,8 @@ type InstallationRow = {
 	updated_at: string;
 	/** What Slack granted at the last install or permissions update; null means the original seven scopes. */
 	bot_scopes: string[] | null;
+	/** Where the agent may search Slack for the person asking: off, dm (the default) or dm_and_channels. */
+	search_mode: string;
 	secrets_ciphertext?: string;
 };
 
@@ -300,6 +302,7 @@ function settingsView(row: InstallationRow, keyLimitNanos: number) {
 		schedules_enabled: row.schedules_enabled,
 		schedules_max: row.schedules_max,
 		schedule_creators: row.schedule_creators,
+		search_mode: row.search_mode,
 		instructions: row.instructions,
 		access_mode: row.access_mode,
 		usage_data_mode: row.usage_data_mode,

@@ -25,6 +25,10 @@ const BOT_SCOPES_LINES = /^ {2}"bot_scopes" .*\n|^ {2}CONSTRAINT "slack_installa
 const schedulesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_schedules.sql'));
 const schedulesMigration = await readFile(new URL(`../migrations/${schedulesMigrationName}`, import.meta.url), 'utf8');
 const SCHEDULE_LINES = /^ {2}"(?:schedules_enabled|schedules_max|schedule_creators)" .*\n|^ {2}CONSTRAINT "slack_installations_(?:schedule_creators|schedules_max)_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:schedules_enabled|schedules_max|schedule_creators)" .*\n\n/gm;
+// Where the agent may search Slack: one column, a check and its comment.
+const searchMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_search.sql'));
+const searchMigration = await readFile(new URL(`../migrations/${searchMigrationName}`, import.meta.url), 'utf8');
+const SEARCH_LINES = /^ {2}"search_mode" .*\n|^ {2}CONSTRAINT "slack_installations_search_mode_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."search_mode" .*\n\n/gm;
 const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
@@ -81,6 +85,7 @@ try {
   await db.exec(migration);
   await db.exec(modelChoiceMigration);
   await db.exec(botScopesMigration);
+  await db.exec(searchMigration);
 
   // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
   // uninstall (slack-agent-memory.test.mjs, slack-agent-schedules.test.mjs).
@@ -109,6 +114,11 @@ try {
       assert.equal(scheduleLines.length, 8, 'slack_installations declares the schedule settings, their checks and comments');
       for (const line of scheduleLines) assert.ok(words(schedulesMigration).includes(words(line)), `the schedules migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(SCHEDULE_LINES, '');
+      // And what the search migration added.
+      const search = definition.match(SEARCH_LINES) ?? [];
+      assert.equal(search.length, 3, 'slack_installations declares the search mode column, check and comment');
+      for (const line of search) assert.ok(words(searchMigration).includes(words(line)), `the search migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(SEARCH_LINES, '');
     }
     assert.ok(migration.includes(definition), `${table} migration matches the declarative definition`);
   }
@@ -165,6 +175,12 @@ try {
   assert.deepEqual(scoped.bot_scopes, ['chat:write', 'files:read', 'files:write']);
   await assert.rejects(rows('update public.slack_installations set bot_scopes = $2 where id = $1', [first.id, Array.from({ length: 51 }, (_, index) => `scope:${index}`)]), /slack_installations_bot_scopes_check/);
   await rows('update public.slack_installations set bot_scopes = null where id = $1', [first.id]);
+  // Slack search: direct messages only by default; off, dm or dm_and_channels.
+  assert.equal(first.search_mode, 'dm');
+  const [searching] = await rows('update public.slack_installations set search_mode = $2 where id = $1 returning search_mode', [first.id, 'dm_and_channels']);
+  assert.equal(searching.search_mode, 'dm_and_channels');
+  await assert.rejects(rows('update public.slack_installations set search_mode = $2 where id = $1', [first.id, 'everywhere']), /slack_installations_search_mode_check/);
+  await rows("update public.slack_installations set search_mode = 'dm' where id = $1", [first.id]);
 
   // One live installation per workspace and per Slack team; uninstalled rows stay for billing history.
   await assert.rejects(install(ws(1), 'T0TEAM0002'), /slack_installations_live_workspace_idx/);

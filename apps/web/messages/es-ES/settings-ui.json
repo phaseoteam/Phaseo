@@ -6829,7 +6829,7 @@
 		"addCredits": "Añadir créditos",
 		"notices": {
 			"installed": "El agente de Phaseo ya está en {team}.",
-			"permissionsUpdated": "Permisos de Slack actualizados en {team}. El agente ya puede publicar gráficos e imágenes y leer los archivos que se le compartan.",
+			"permissionsUpdated": "Permisos de Slack actualizados en {team}. El agente ya puede publicar gráficos e imágenes, leer los archivos que se le compartan y buscar en Slack.",
 			"permissionsPartial": "Slack no concedió todos los permisos, así que algunas funciones siguen desactivadas. Vuelve a intentarlo y comprueba que tu aplicación de Slack incluya todos los scopes."
 		},
 		"member": {
@@ -6951,10 +6951,22 @@
 		},
 		"permissions": {
 			"title": "Actualizar permisos de Slack",
-			"description": "El agente ya puede publicar gráficos e imágenes que crea, y leer imágenes y PDF que se le compartan, en cuanto Slack lo permita. Al actualizar se abre Slack para aprobar los nuevos permisos, y se conservan la configuración, la clave y los datos del agente.",
-			"customApp": "Primero añade los scopes de bot files:read y files:write al manifiesto de tu aplicación de Slack.",
+			"description": "El agente ya puede publicar gráficos e imágenes que crea, leer imágenes y PDF que se le compartan y buscar en Slack para la persona que pregunta, en cuanto Slack lo permita. Al actualizar se abre Slack para aprobar los nuevos permisos, y se conservan la configuración, la clave y los datos del agente.",
+			"customApp": "Primero añade estos scopes de bot al manifiesto de tu aplicación de Slack: {scopes}.",
 			"submit": "Actualizar permisos de Slack",
 			"redirecting": "Abriendo Slack…"
+		},
+		"search": {
+			"title": "Búsqueda en Slack",
+			"description": "El agente puede buscar en los canales públicos de tu espacio de trabajo de Slack como la persona que pregunta, así que solo encuentra lo que esa persona puede ver, y enlaza lo que usa. Nunca se guarda nada de lo que encuentra.",
+			"off": "Desactivada",
+			"dm": "Mensajes directos",
+			"dmAndChannels": "Mensajes directos y canales",
+			"offHelp": "El agente nunca busca en Slack.",
+			"dmHelp": "Solo en mensajes directos con el agente, así que solo la persona que pregunta lee lo que encuentra.",
+			"dmAndChannelsHelp": "También en canales. Todos en el canal leen la respuesta, incluidos los invitados que no pueden abrir los canales encontrados.",
+			"needsPermissions": "Para buscar, primero hay que actualizar los permisos de Slack: selecciona Actualizar permisos de Slack arriba.",
+			"saved": "Ajuste de búsqueda en Slack guardado."
 		},
 		"month": {
 			"note": "{date} hasta ahora, en UTC. El cargo se descuenta de los créditos cuando termina el mes.",

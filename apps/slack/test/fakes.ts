@@ -204,6 +204,7 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		allow_external_users: false,
 		status: "active",
 		bot_scopes: null,
+		search_mode: "dm",
 		...overrides,
 	};
 }
@@ -298,8 +299,9 @@ export type FakeSlackFile = { info: Record<string, unknown>; bytes?: Uint8Array;
 
 /**
  * Records Web API calls. users.info answers from `users`, files.info from
- * `files`, and files.getUploadURLExternal hands out upload URLs whose bytes land
- * in `uploads`; everything else is ok.
+ * `files`, assistant.search.context from `searchResponse`, and
+ * files.getUploadURLExternal hands out upload URLs whose bytes land in
+ * `uploads`; everything else is ok.
  */
 export class FakeSlack {
 	calls: SlackCall[] = [];
@@ -320,6 +322,8 @@ export class FakeSlack {
 	repliesCap = 15;
 	/** The ts of the next posted or streamed message; by default 1792600100.000001, .000002 and so on. */
 	nextTs: (() => string) | null = null;
+	/** What assistant.search.context returns (besides ok): its results and response_metadata. */
+	searchResponse: Record<string, unknown> = { results: { messages: [] }, response_metadata: { next_cursor: "" } };
 	private streams = 0;
 
 	/**
@@ -356,6 +360,7 @@ export class FakeSlack {
 					return { ok: true, data: { ok: true, channel: args.channel, ts: this.nextTs?.() ?? `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
 				}
 				if (method === "conversations.replies") return { ok: true, data: { ok: true, ...this.repliesPage(args) } as T };
+				if (method === "assistant.search.context") return { ok: true, data: { ok: true, ...this.searchResponse } as T };
 				if (method === "files.info") {
 					const file = this.files.get(String(args.file));
 					return file ? { ok: true, data: { ok: true, file: file.info } as T } : { ok: false, error: "file_not_found" };

@@ -26,6 +26,9 @@ export const SLACK_AGENT_BOT_SCOPES = [
 	// Charts and generated images are uploaded to the thread; images and PDFs shared in it are read.
 	"files:read",
 	"files:write",
+	// Slack's real-time search, as the person asking: public channels' messages, and files shared in them.
+	"search:read.public",
+	"search:read.files",
 ] as const;
 
 export const SLACK_AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";
