@@ -179,7 +179,7 @@ Alguns limites vêm do Slack:
 - O Slack só permite essa pesquisa para apps do Slack Marketplace e para os apps próprios de uma empresa. O app do Slack da Phaseo poderá pesquisar quando a página dele no Slack Marketplace for aprovada; até lá, o agente avisa que a pesquisa não está disponível. Para pesquisar já, use seu próprio app do Slack (veja "Usar seu próprio app do Slack" abaixo).
 - Instalações anteriores à pesquisa precisam de permissões do Slack atualizadas (veja "Atualizar permissões do Slack" acima).
 
-O que ele encontra só é usado para essa resposta e nunca é armazenado (veja "Dados e privacidade" abaixo). Pelo mesmo motivo, uma resposta que pesquisou no Slack não pode parar para fazer uma pergunta a você, salvar notas, notas fixadas, tarefas ou habilidades, nem configurar uma tarefa recorrente.
+O que ele encontra só é usado para essa resposta e nunca é armazenado (veja "Dados e privacidade" abaixo). Pelo mesmo motivo, uma resposta que pesquisou no Slack não pode parar para fazer uma pergunta a você, salvar notas, notas fixadas, tarefas ou habilidades, configurar uma tarefa recorrente nem publicar uma página compartilhada.
 
 ## Quem pode usar
 
@@ -306,7 +306,7 @@ Quando uma resposta é longa ou rica demais para uma mensagem do Slack, como um 
 - `@Phaseo make a page comparing our spend by model this month`
 - `@Phaseo turn the decisions in this thread into a one-page summary`
 
-Uma página é um único arquivo HTML escrito pelo agente. Ela pode ser interativa, como uma tabela que dá para ordenar ou um gráfico que mostra detalhes ao passar o mouse, mas não pode carregar nada de outro lugar, como scripts, fontes ou imagens de outros sites, nem enviar nada para lugar nenhum. As páginas abrem em `slack.phaseo.app` numa sandbox fechada, então uma página não consegue acessar seu login no Phaseo ou no Slack.
+Uma página é um único arquivo HTML escrito pelo agente, com texto, tabelas e gráficos. As páginas são estáticas: antes de guardar uma página, o Phaseo remove scripts, links, formulários e tudo o que seria carregado de outro lugar, como fontes ou imagens de outros sites. Por isso, uma página não consegue executar scripts nem enviar nada para lugar nenhum, e os endereços da web aparecem nela como texto simples. As páginas abrem em `slack.phaseo.app` numa sandbox fechada, então uma página não consegue acessar seu login no Phaseo ou no Slack.
 
 | Quem pode ver uma página | Como |
 | --- | --- |
@@ -321,6 +321,7 @@ O agente usa o padrão escolhido pelos seus administradores, a menos que alguém
 - Cada resposta pode publicar até 3 páginas, e cada workspace do Slack mantém até 200 páginas ao mesmo tempo. Uma página pode ter até 512 KB.
 - Publicar faz parte da resposta: não custa nada a mais, e os tokens de modelo usados para escrever a página contam para o limite de $0.50 da resposta.
 - Pessoas de outras empresas em canais compartilhados do Slack Connect não podem publicar páginas.
+- Uma resposta que pesquisou no Slack não pode publicar uma página, porque uma página guarda o que o agente escreveu (veja "Pesquisar no Slack" acima).
 
 ### O que os administradores controlam nas páginas
 
@@ -406,7 +407,7 @@ Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-
 - **Arquivos compartilhados são lidos, não guardados.** O agente baixa as imagens e os PDFs que lê para uma resposta e os envia ao modelo com as solicitações dessa resposta, com as mesmas regras. Ele nunca os armazena; só os IDs de arquivo do Slack e os nomes ficam com a mensagem até a resposta terminar.
 - **Os resultados da pesquisa no Slack não são guardados.** O que o agente encontra ao pesquisar no Slack vai para o modelo com as solicitações dessa resposta, com as mesmas regras, e para nenhum outro lugar: nem para a memória de trabalho dele, nem para os logs dele, nem para o banco de dados da Phaseo, nem enquanto ele espera a sua resposta a uma pergunta. Numa resposta que pesquisou, a memória de trabalho dele guarda só quais ferramentas ele usou e uma nota de que respondeu, não o que pesquisou, o que encontrou nem o que escreveu. A permissão do Slack para pesquisar por você fica com a sua mensagem até a resposta terminar.
 - **Tarefas recorrentes.** Para cada tarefa, o agente guarda o título e a instrução, onde ela publica, o agendamento e o fuso horário, o ID do Slack da pessoa que a configurou e como foi a última execução. Elas ficam até alguém cancelar ou excluir a tarefa, ou você desinstalar o agente. Proprietários e administradores podem vê-las, pausá-las e excluí-las em **Configurações → Slack**.
-- **Páginas compartilhadas até expirarem.** Uma página publicada pelo agente pode incluir o que foi dito no Slack ou o que ele encontrou. O Phaseo guarda a página, o título, o ID do Slack da pessoa que pediu e quantas vezes ela foi aberta até a página expirar (depois de 7, 30 ou 90 dias, como seus administradores escolheram), um proprietário ou administrador excluí-la ou você desinstalar o agente. Qualquer pessoa com o link pode abri-la, ou só membros do seu workspace do Slack que fizeram login, conforme a configuração da página. As páginas nunca aparecem nos logs do Phaseo.
+- **Páginas compartilhadas até expirarem.** Uma página publicada pelo agente pode incluir o que foi dito no Slack ou o que ele encontrou, mas nunca resultados de uma pesquisa no Slack. As páginas são estáticas, então uma página não consegue executar scripts nem enviar nada para lugar nenhum. O Phaseo guarda a página, o título, o ID do Slack da pessoa que pediu e quantas vezes ela foi aberta até a página expirar (depois de 7, 30 ou 90 dias, como seus administradores escolheram), um proprietário ou administrador excluí-la ou você desinstalar o agente. Qualquer pessoa com o link pode abri-la, ou só membros do seu workspace do Slack que fizeram login, conforme a configuração da página. As páginas nunca aparecem nos logs do Phaseo.
 - **Nada arquivado.** A Phaseo não arquiva nada do Slack. Os logs do próprio agente guardam apenas IDs e status do Slack.
 - **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
 

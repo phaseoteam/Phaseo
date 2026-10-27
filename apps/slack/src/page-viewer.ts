@@ -2,26 +2,27 @@ import { userFacts } from "./access";
 import { botToken, type Deps } from "./events";
 import { appClientCredentials, loadInstallation, type Installation } from "./installations";
 import { base64UrlDecode, base64UrlEncode, signSlackToken, verifySlackToken } from "./lib/slack-secrets";
+import { cleanPageHtml } from "./page-html";
 import { effectivePageAccess, PAGE_ID_PATTERN, pageStoreByKey, pagesOrigin, pageUrl, STORE_KEY_PATTERN } from "./pages";
 import { usersInfo, type SlackUser } from "./slack-api";
 
 // Serving shared pages (pages.ts) at /p/<store>/<page>, and Sign in with Slack for
 // the pages shared with a Slack workspace.
 //
-// A page is the agent's HTML, so it is never a document of its own. The response
-// is a page of this Worker's that holds nothing but an iframe, whose srcdoc is the
-// page and whose sandbox is allow-scripts. The sandbox gives the page an opaque
-// origin, so its scripts can't read this Worker's cookies or call its routes, and
-// it can't open pop-ups, submit forms or navigate the top page. The srcdoc
-// document inherits the outer page's PAGE_CSP, whose fetch directives stop the
-// page loading anything or making requests (only inline styles, inline scripts
-// and data: images), and whose frame-src 'none' blocks every navigation of the
-// frame, so no script, link or refresh can carry the page's text to another site
-// in a URL. Neither CSP nor the sandbox covers WebRTC (STUN and TURN servers) or
-// Chromium's <link rel=prerender> (a GET of any URL), and a blocked navigation
-// still makes Chromium look up and connect to its host name: see the README.
-// Nothing is cached and no referrer is sent, so the link stays out of other
-// sites' logs.
+// A page is the agent's HTML, so it is never a document of its own, and it is
+// static: HTML and CSS, without scripts or links. The response is a page of this
+// Worker's that holds nothing but an iframe, whose srcdoc is the page cleaned
+// again (page-html.ts; it was cleaned when published) and whose sandbox allows
+// nothing: no scripts, so nothing can build a URL or reach WebRTC, an opaque
+// origin with no cookies or storage, and no pop-ups, forms or top navigation.
+// The srcdoc document inherits the outer page's PAGE_CSP, whose fetch
+// directives stop it loading anything (only inline styles and data: images),
+// and whose frame-src 'none' blocks any navigation of the frame. The cleaning
+// removes what CSP and the sandbox can't stop on their own: <link rel=prerender>
+// (Chromium fetches it whatever the policy), and links and refreshes, whose
+// host Chromium looks up even when frame-src blocks the navigation. See the
+// README. Nothing is cached and no referrer is sent, so the link stays out of
+// other sites' logs.
 //
 // A workspace page needs a session for its installation: a signed cookie for
 // /p/ that lasts SESSION_TTL_SECONDS. Without one, the viewer is sent to Slack's
@@ -41,7 +42,6 @@ import { usersInfo, type SlackUser } from "./slack-api";
 /** The outer page's policy, which the page in its srcdoc frame inherits. */
 export const PAGE_CSP = [
 	"default-src 'none'",
-	"script-src 'unsafe-inline'",
 	"style-src 'unsafe-inline'",
 	"img-src data:",
 	"connect-src 'none'",
@@ -51,8 +51,8 @@ export const PAGE_CSP = [
 	"frame-ancestors 'none'",
 	"base-uri 'none'",
 ].join("; ");
-/** The page's frame: scripts in an opaque origin, and nothing else (no same-origin, top navigation, pop-ups or forms). */
-export const PAGE_SANDBOX = "allow-scripts";
+/** The page's frame allows nothing: no scripts, same origin, top navigation, pop-ups or forms. */
+export const PAGE_SANDBOX = "";
 /** This Worker's own messages: no scripts at all. */
 const MESSAGE_CSP = "default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 const COMMON_HEADERS: Record<string, string> = {
@@ -99,11 +99,17 @@ function randomNonce(): string {
 	return base64UrlEncode(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-/** A page as the agent wrote it, in the sandboxed frame of a page that holds nothing else. */
+/**
+ * A page, cleaned again whatever stored it (and by the rules in force now), in
+ * the sandboxed frame of a page that holds nothing else. A page that no longer
+ * passes is not shown.
+ */
 export function pageResponse(page: { title: string; html: string }, headers: Record<string, string> = {}): Response {
+	const cleaned = cleanPageHtml(page.html);
+	if (cleaned.status !== "ok") return messagePage(410, "Page unavailable", "This page can't be shown any more.", undefined, headers);
 	const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(page.title)}</title>`
 		+ "<style>html,body{height:100%;margin:0}iframe{display:block;width:100%;height:100%;border:0}</style></head>"
-		+ `<body><iframe sandbox="${PAGE_SANDBOX}" title="${escapeHtml(page.title)}" srcdoc="${escapeHtml(page.html)}"></iframe></body></html>`;
+		+ `<body><iframe sandbox="${PAGE_SANDBOX}" title="${escapeHtml(page.title)}" srcdoc="${escapeHtml(cleaned.html)}"></iframe></body></html>`;
 	return new Response(body, { status: 200, headers: { ...COMMON_HEADERS, "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": PAGE_CSP, ...headers } });
 }
 
@@ -220,8 +226,9 @@ export async function servePage(deps: ViewerDeps, request: Request, storeKey: st
 		if (checked instanceof Response) return checked;
 		headers = checked;
 	}
-	if (request.method === "GET") await store.recordView(pageId);
-	return pageResponse(page, headers);
+	const response = pageResponse(page, headers);
+	if (request.method === "GET" && response.status === 200) await store.recordView(pageId);
+	return response;
 }
 
 /** Sends the viewer to Sign in with Slack for the installation's workspace. */

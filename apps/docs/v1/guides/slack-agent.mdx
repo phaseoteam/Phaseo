@@ -180,7 +180,7 @@ A few limits come from Slack:
 - Slack allows this search only for apps in the Slack Marketplace and for a company's own apps. Phaseo's Slack app can search once its Slack Marketplace listing is approved; until then, the agent says search isn't available. To search now, use [your own Slack app](#use-your-own-slack-app).
 - Installations from before search need [updated Slack permissions](#update-slack-permissions).
 
-What it finds is used for that answer only and never stored (see [Data and privacy](#data-and-privacy)). For the same reason, an answer that has searched Slack can't stop to ask you a question, save notes, pins, to-dos or skills, or set up a recurring task.
+What it finds is used for that answer only and never stored (see [Data and privacy](#data-and-privacy)). For the same reason, an answer that has searched Slack can't stop to ask you a question, save notes, pins, to-dos or skills, set up a recurring task, or publish a shared page.
 
 ## Who can use it
 
@@ -307,7 +307,7 @@ When an answer is too long or too rich for a Slack message, such as a report, a 
 - `@Phaseo make a page comparing our spend by model this month`
 - `@Phaseo turn the decisions in this thread into a one-page summary`
 
-A page is one HTML file the agent writes. It can be interactive, such as a table you can sort or a chart that shows details when you point at it, but it can't load anything from elsewhere, such as scripts, fonts or images from other sites, and it can't send anything anywhere. Pages open on `slack.phaseo.app` in a locked-down sandbox, so a page can't reach your Phaseo or Slack sign-in.
+A page is one HTML file the agent writes, with text, tables and charts. Pages are static: before keeping a page, Phaseo takes out scripts, links, forms and anything that would load from elsewhere, such as fonts or images from other sites. So a page can't run scripts or send anything anywhere, and web addresses on it are plain text. Pages open on `slack.phaseo.app` in a locked-down sandbox, so a page can't reach your Phaseo or Slack sign-in.
 
 | Who can view a page | How |
 | --- | --- |
@@ -322,6 +322,7 @@ The agent uses your admins' default unless someone asks for the other, for examp
 - Each answer can publish up to 3 pages, and each Slack workspace keeps up to 200 pages at a time. A page can be up to 512 KB.
 - Publishing is part of the answer: it costs nothing extra, and the model tokens spent writing the page count toward the answer's $0.50 limit.
 - People from other companies in shared Slack Connect channels can't publish pages.
+- An answer that has searched Slack can't publish a page, because a page keeps what the agent wrote (see [Searching Slack](#searching-slack)).
 
 ### What admins control for pages
 
@@ -407,7 +408,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **Shared files are read, not kept.** The agent downloads the images and PDFs it reads for an answer and sends them to the model with that answer's requests, under the same rules. It never stores them; only their Slack file IDs and names are kept with the message until the answer ends.
 - **Slack search results aren't kept.** What the agent finds when it [searches Slack](#searching-slack) goes to the model with that answer's requests, under the same rules, and nowhere else: not in its working memory, its logs or Phaseo's database, not even while it waits for your answer to a question. For an answer that searched, its working memory keeps only which tools it used and a note that it answered, not what it searched for, what it found or what it wrote. Slack's permission to search for you is kept with your message until the answer ends.
 - **Recurring tasks.** For each task, the agent keeps its title and instruction, where it posts, its schedule and time zone, the Slack ID of the person who set it up and how its last run went. They stay until someone cancels or deletes the task, or you uninstall the agent. Owners and admins can see, pause and delete them in **Settings → Slack**.
-- **Shared pages until they expire.** A page the agent publishes can include what was said in Slack or what it found. Phaseo keeps the page, its title, the Slack ID of the person who asked for it and how often it was opened until it expires (after 7, 30 or 90 days, as your admins chose), an owner or admin deletes it, or you uninstall the agent. Anyone with its link can open it, or only signed-in members of your Slack workspace, as set for the page. Pages never appear in Phaseo's logs.
+- **Shared pages until they expire.** A page the agent publishes can include what was said in Slack or what it found, but never Slack search results. Pages are static, so a page can't run scripts or send anything anywhere. Phaseo keeps the page, its title, the Slack ID of the person who asked for it and how often it was opened until it expires (after 7, 30 or 90 days, as your admins chose), an owner or admin deletes it, or you uninstall the agent. Anyone with its link can open it, or only signed-in members of your Slack workspace, as set for the page. Pages never appear in Phaseo's logs.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 

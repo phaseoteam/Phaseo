@@ -179,7 +179,7 @@ Certaines limites viennent de Slack :
 - Slack ne permet cette recherche qu’aux applications du Slack Marketplace et aux applications propres d’une entreprise. L’application Slack de Phaseo pourra chercher une fois sa fiche sur le Slack Marketplace approuvée ; d’ici là, l’agent indique que la recherche n’est pas disponible. Pour chercher dès maintenant, utilisez votre propre application Slack (voir « Utiliser votre propre application Slack » plus bas).
 - Les installations antérieures à la recherche ont besoin d’autorisations Slack mises à jour (voir « Mettre à jour les autorisations Slack » plus haut).
 
-Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente.
+Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente, ni publier de page partagée.
 
 ## Qui peut l’utiliser
 
@@ -306,7 +306,7 @@ Quand une réponse est trop longue ou trop riche pour un message Slack, comme un
 - `@Phaseo make a page comparing our spend by model this month`
 - `@Phaseo turn the decisions in this thread into a one-page summary`
 
-Une page est un seul fichier HTML écrit par l’agent. Elle peut être interactive, comme un tableau que l’on peut trier ou un graphique qui affiche des détails au survol, mais elle ne peut rien charger d’ailleurs, comme des scripts, des polices ou des images d’autres sites, ni rien envoyer nulle part. Les pages s’ouvrent sur `slack.phaseo.app` dans un bac à sable verrouillé, si bien qu’une page ne peut pas atteindre votre connexion à Phaseo ou à Slack.
+Une page est un seul fichier HTML écrit par l’agent, avec du texte, des tableaux et des graphiques. Les pages sont statiques : avant de conserver une page, Phaseo en retire les scripts, les liens, les formulaires et tout ce qui se chargerait d’ailleurs, comme des polices ou des images d’autres sites. Une page ne peut donc ni exécuter de scripts ni rien envoyer nulle part, et les adresses web y figurent en texte brut. Les pages s’ouvrent sur `slack.phaseo.app` dans un bac à sable verrouillé, si bien qu’une page ne peut pas atteindre votre connexion à Phaseo ou à Slack.
 
 | Qui peut voir une page | Comment |
 | --- | --- |
@@ -321,6 +321,7 @@ L’agent applique le choix par défaut de vos administrateurs, sauf si quelqu�
 - Chaque réponse peut publier jusqu’à 3 pages, et chaque espace de travail Slack conserve jusqu’à 200 pages à la fois. Une page peut faire jusqu’à 512 Ko.
 - La publication fait partie de la réponse : elle ne coûte rien de plus, et les tokens de modèle utilisés pour écrire la page comptent dans la limite de $0.50 de la réponse.
 - Les personnes d’autres entreprises dans des canaux Slack Connect partagés ne peuvent pas publier de pages.
+- Une réponse qui a cherché dans Slack ne peut pas publier de page, car une page conserve ce que l’agent a écrit (voir « Rechercher dans Slack » plus haut).
 
 ### Ce que les administrateurs contrôlent pour les pages
 
@@ -406,7 +407,7 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Les fichiers partagés sont lus, pas conservés.** L’agent télécharge les images et PDF qu’il lit pour une réponse et les envoie au modèle avec les requêtes de cette réponse, selon les mêmes règles. Il ne les conserve jamais ; seuls leurs identifiants de fichier Slack et leurs noms restent avec le message jusqu’à la fin de la réponse.
 - **Les résultats de recherche Slack ne sont pas conservés.** Ce que l’agent trouve en cherchant dans Slack est envoyé au modèle avec les requêtes de cette réponse, selon les mêmes règles, et nulle part ailleurs : ni dans sa mémoire de travail, ni dans ses journaux, ni dans la base de données de Phaseo, pas même pendant qu’il attend votre réponse à une question. Pour une réponse qui a cherché, sa mémoire de travail ne garde que les outils qu’il a utilisés et une note indiquant qu’il a répondu, ni ce qu’il a cherché, ni ce qu’il a trouvé, ni ce qu’il a écrit. L’autorisation de Slack de chercher pour vous est conservée avec votre message jusqu’à la fin de la réponse.
 - **Tâches récurrentes.** Pour chaque tâche, l’agent conserve son titre et son instruction, l’endroit où elle publie, sa planification et son fuseau horaire, l’ID Slack de la personne qui l’a créée et le résultat de sa dernière exécution. Elles restent jusqu’à ce que quelqu’un annule ou supprime la tâche, ou que vous désinstalliez l’agent. Les propriétaires et administrateurs peuvent les voir, les mettre en pause et les supprimer dans **Paramètres → Slack**.
-- **Des pages partagées jusqu’à leur expiration.** Une page publiée par l’agent peut reprendre ce qui a été dit dans Slack ou ce qu’il a trouvé. Phaseo conserve la page, son titre, l’ID Slack de la personne qui l’a demandée et le nombre de fois où elle a été ouverte jusqu’à son expiration (après 7, 30 ou 90 jours, selon le choix de vos administrateurs), jusqu’à ce qu’un propriétaire ou un administrateur la supprime ou que vous désinstalliez l’agent. Selon le réglage de la page, toute personne disposant de son lien peut l’ouvrir, ou seulement les membres de votre espace de travail Slack connectés. Les pages n’apparaissent jamais dans les journaux de Phaseo.
+- **Des pages partagées jusqu’à leur expiration.** Une page publiée par l’agent peut reprendre ce qui a été dit dans Slack ou ce qu’il a trouvé, mais jamais des résultats d’une recherche dans Slack. Les pages sont statiques : une page ne peut ni exécuter de scripts ni rien envoyer nulle part. Phaseo conserve la page, son titre, l’ID Slack de la personne qui l’a demandée et le nombre de fois où elle a été ouverte jusqu’à son expiration (après 7, 30 ou 90 jours, selon le choix de vos administrateurs), jusqu’à ce qu’un propriétaire ou un administrateur la supprime ou que vous désinstalliez l’agent. Selon le réglage de la page, toute personne disposant de son lien peut l’ouvrir, ou seulement les membres de votre espace de travail Slack connectés. Les pages n’apparaissent jamais dans les journaux de Phaseo.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 

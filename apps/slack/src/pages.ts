@@ -3,15 +3,19 @@ import type { AgentTool } from "@phaseo/agent-sdk";
 import type { Env } from "./env";
 import { appClientCredentials, loadInstallation, type Installation } from "./installations";
 import { base64UrlEncode } from "./lib/slack-secrets";
+import { cleanPageHtml } from "./page-html";
+import { savingRefusal, type SearchedThisAnswer } from "./slack-search";
 import { createDb, type Db } from "./supabase";
 import type { TurnRef } from "./turns";
 import { ToolInputError } from "./usage-tools";
 
-// Shared pages: the agent publishes a self-contained HTML page (a report, a
-// table, a chart or a small interactive view) with publish_page and links it in
-// its reply. Each installation's pages live in its PageStore (SQLite storage),
-// under a random 128-bit id, until they expire (the installation's
-// page_expiry_days: 7, 30 or 90) or an admin deletes them in Settings → Slack.
+// Shared pages: the agent publishes a static HTML page (a report, a table or a
+// chart, in HTML and CSS with inline SVG) with publish_page and links it in its
+// reply. The page is cleaned before it is stored (page-html.ts): no scripts,
+// links or anything loaded from elsewhere. Each installation's pages live in its
+// PageStore (SQLite storage), under a random 128-bit id, until they expire (the
+// installation's page_expiry_days: 7, 30 or 90) or an admin deletes them in
+// Settings → Slack.
 // The store deletes everything when the installation is uninstalled: at once
 // when the app is removed in Slack or in Phaseo settings, and otherwise the next
 // time it checks (a view, or its daily alarm).
@@ -23,6 +27,8 @@ import { ToolInputError } from "./usage-tools";
 // installation. Someone from another organisation (Slack Connect) is never
 // offered the tool. A scheduled run answers as the person who set it up, with
 // their current external flag, so it is offered only when they could publish.
+// A page keeps what the model wrote for up to 90 days, so once the answer has
+// searched Slack (searchedThisAnswer) the tool publishes nothing.
 //
 // Who can view a page (page-viewer.ts serves them):
 //   link       anyone with the link, while the installation allows link sharing
@@ -323,6 +329,15 @@ export type PublishPageOptions = {
 	url: (pageId: string) => string;
 	/** Short notes for the thread's working memory. */
 	notes: string[];
+	/** Whether the answer has searched Slack: then nothing is published. */
+	searched: SearchedThisAnswer;
+};
+
+/** What the model is told when a page can't be cleaned into something to show. */
+const UNCLEAN_PAGE: Record<"empty" | "too_deep" | "unstable", string> = {
+	empty: "the page has nothing left to show once scripts, links, forms and anything loaded from elsewhere are taken out. Write it as static HTML and CSS: text, tables and inline SVG charts.",
+	too_deep: "the page's elements are nested too deeply. Write it with simpler markup.",
+	unstable: "the page's markup couldn't be checked, because it parses differently each time. Write it with simpler, well-formed markup.",
 };
 
 export function publishPageTool(options: PublishPageOptions): AgentTool<any, any> {
@@ -334,10 +349,10 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
 	return {
 		id: PUBLISH_PAGE_TOOL_ID,
 		description: [
-			"Publish a web page (a report, a table, a chart or a small interactive view) and get its link.",
+			"Publish a static web page (a report, a table or a chart) and get its link.",
 			"Use it when someone asks for a page, report or dashboard, or when the answer is too long or too rich for a Slack message. Then give the link in your reply as a Markdown link with the page's title, and sum up the page in a sentence or two.",
-			"Write one complete, self-contained HTML document with inline <style> and <script> only. The page can't load anything: no external scripts, styles, fonts, images or requests, so draw charts with inline SVG or canvas and embed any image as a data: URL.",
-			"Scripts run in a sandbox: no forms, pop-ups, alert dialogs, cookies, storage or network. Links don't open anything, not even #anchors on the page, so write any URL out as text and scroll within the page with buttons that call scrollIntoView().",
+			"Write one complete HTML document of static HTML and CSS in a <style>: text, headings, tables, lists, <details> sections, and charts drawn with inline SVG.",
+			"A page has no scripts, links, forms or anything loaded from elsewhere: scripts, event handlers, links, external images, stylesheets and fonts are taken out. So write any URL out as text, and embed an image only as a data: URL (PNG, JPEG, GIF or WebP).",
 			`At most ${(MAX_PAGE_BYTES / 1024).toLocaleString("en-US")} KB, and ${MAX_PAGES_PER_ANSWER} pages per answer. The page is kept for ${expiryDays} days, then deleted.`,
 			who,
 			"Put only what the people in this conversation would share with its viewers on it, and never secrets or credentials.",
@@ -364,8 +379,13 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
 			const asked = input.access ?? defaultAccess;
 			if (typeof asked !== "string" || !(modes as string[]).includes(asked)) throw new ToolInputError(`access must be one of: ${modes.join(", ")}`);
 			const access = asked as PageAccess;
+			// A page keeps what the model wrote: after a search it could carry what the search found.
+			const refused = await savingRefusal(options.searched);
+			if (refused) return { published: false, note: refused };
+			const cleaned = cleanPageHtml(html);
+			if (cleaned.status !== "ok") throw new ToolInputError(UNCLEAN_PAGE[cleaned.status]);
 			const now = options.now();
-			const result = await options.publish({ title, html, access, expiresAt: now + expiryDays * DAY_MS });
+			const result = await options.publish({ title, html: cleaned.html, access, expiresAt: now + expiryDays * DAY_MS });
 			options.notes.push(PUBLISH_PAGE_TOOL_ID);
 			switch (result.status) {
 				case "answer_limit":
@@ -381,6 +401,10 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
 						who_can_view: accessText(access),
 						expires_on: new Date(result.expiresAt).toISOString().slice(0, 10),
 						pages_left_in_answer: MAX_PAGES_PER_ANSWER - result.answerPages,
+						...(cleaned.removed.length ? {
+							removed: cleaned.removed,
+							note: "A page can't have scripts, links, forms or anything loaded from elsewhere, so these were taken out of it. If the page needed them, say what's missing.",
+						} : {}),
 					};
 			}
 		},
@@ -390,9 +414,10 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
 /**
  * publish_page for a turn, when it may publish: pages are on and served here, the
  * person isn't from another organisation, and at least one way of sharing is
- * allowed. Its pages go to the installation's store.
+ * allowed. Its pages go to the installation's store. `searched`: whether the
+ * answer has searched Slack, so it may publish nothing.
  */
-export async function turnPageTools(deps: { env: Env; db: Db; now: () => number }, turn: Pick<TurnRef, "eventId" | "slackUserId" | "external">, installation: Installation, notes: string[]): Promise<AgentTool<any, any>[]> {
+export async function turnPageTools(deps: { env: Env; db: Db; now: () => number }, turn: Pick<TurnRef, "eventId" | "slackUserId" | "external">, installation: Installation, notes: string[], searched: SearchedThisAnswer): Promise<AgentTool<any, any>[]> {
 	if (!installation.pages_enabled || turn.external || !UUID_PATTERN.test(installation.id)) return [];
 	const origin = pagesOrigin(deps.env);
 	if (!origin) return [];
@@ -407,6 +432,7 @@ export async function turnPageTools(deps: { env: Env; db: Db; now: () => number 
 		expiryDays: pageExpiryDays(installation),
 		now: deps.now,
 		notes,
+		searched,
 		url: (pageId) => pageUrl(origin, storeKey, pageId),
 		publish: async (page) => {
 			const result: PublishResult = await store.publish({ ...page, installationId: installation.id, eventId: turn.eventId, createdBy: turn.slackUserId, now: deps.now() });
