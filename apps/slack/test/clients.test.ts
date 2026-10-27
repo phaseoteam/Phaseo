@@ -77,6 +77,11 @@ describe("user facts and replies", () => {
 		expect(userFacts({ id: "U0OUTSIDE1", team_id: "T0TEST0001", is_stranger: true }, installation).isExternal).toBe(true);
 		expect(userFacts({ id: "U0OUTSIDE2", team_id: "T0OTHER001" }, installation).isExternal).toBe(true);
 		expect(userFacts({ id: "U0SISTER01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } }, { team_id: "T0TEST0001", enterprise_id: "E0ORG00001" }).isExternal).toBe(false);
+		// An org-wide install: inside means a member of its enterprise, whatever is_stranger says.
+		const org = { team_id: null, enterprise_id: "E0ORG00001" };
+		expect(userFacts({ id: "U0MEMBER01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } }, org).isExternal).toBe(false);
+		expect(userFacts({ id: "U0PARTNER1", team_id: "T0PARTNER1", is_stranger: false }, org).isExternal).toBe(true);
+		expect(userFacts({ id: "U0OTHERORG", team_id: "T0OTHER001", enterprise_user: { enterprise_id: "E0OTHER001" } }, org).isExternal).toBe(true);
 	});
 
 	it("words every refusal politely, with money in US format, and says nothing to bots", () => {

@@ -5,6 +5,7 @@ import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountCo
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { slackAgentSettingsEnabled } from "@/lib/flags";
 import type { SlackAgentInstallation, SlackCustomApp } from "@/components/(gateway)/settings/slack/slackAgentForm";
+import type { SlackAgentMemory, SlackAgentSkill } from "@/components/(gateway)/settings/slack/slackAgentMemory";
 
 const PATH = "/api/account/settings/slack";
 const SLACK_AUTHORIZE_ORIGIN = "https://slack.com";
@@ -100,6 +101,67 @@ export async function removeSlackCustomApp() {
 			body: JSON.stringify({ workspaceId: context.workspaceId }),
 		});
 		refresh();
+		return { ok: true as const };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+const MEMORY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MEMORY_KINDS = new Set(["note", "pin", "todo"]);
+
+/** A note's or skill's path; only an id goes into it. */
+function memoryPath(collection: "notes" | "skills", id: string): `/api/account/${string}` {
+	if (!MEMORY_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/memory`, 400, "Not a valid id", undefined, "bad_request");
+	return `${PATH}/memory/${collection}/${id}`;
+}
+
+/** What the agent remembers: its notes (all, or one kind) and its saved skills. */
+export async function loadSlackAgentMemory(kind: string) {
+	try {
+		const context = await account();
+		const query = new URLSearchParams({ workspaceId: context.workspaceId });
+		if (MEMORY_KINDS.has(kind)) query.set("kind", kind);
+		const memory = await fetchAccountWebApi<SlackAgentMemory>(`${PATH}/memory?${query}`, context.accessToken);
+		return { ok: true as const, memory };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function deleteSlackAgentNote(id: string) {
+	try {
+		const context = await account();
+		await fetchAccountWebApi(memoryPath("notes", id), context.accessToken, {
+			method: "DELETE",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function updateSlackAgentSkill(id: string, patch: Record<string, string>) {
+	try {
+		const context = await account();
+		const result = await fetchAccountWebApi<{ skill: SlackAgentSkill }>(memoryPath("skills", id), context.accessToken, {
+			method: "PATCH",
+			body: JSON.stringify({ ...patch, workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const, skill: result.skill };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function deleteSlackAgentSkill(id: string) {
+	try {
+		const context = await account();
+		await fetchAccountWebApi(memoryPath("skills", id), context.accessToken, {
+			method: "DELETE",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
 		return { ok: true as const };
 	} catch (error) {
 		return failure(error);

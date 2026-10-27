@@ -38,7 +38,7 @@ const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b
 function installationRow(overrides: Record<string, unknown> = {}) {
 	return {
 		id: INSTALLATION_ID, workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
-		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", instructions: null,
+		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, instructions: null,
 		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], plan_people: 10, over_plan: "refuse",
 		max_people: null, monthly_cap_nanos: 25_000_000_000, answers_per_person_hour: 60, allow_guests: true,
 		allow_external_users: false, status: "active", installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
@@ -80,6 +80,8 @@ type Fixture = {
 	autoRouting?: boolean | "error";
 	/** The agent key's created_by (default user-a, the installer). */
 	keyCreatedBy?: string | null;
+	/** Public catalogue models (v2_models, not hidden or disabled), or "error" when the catalogue can't be read. */
+	catalogue?: string[] | "error";
 };
 
 function parse(text: string): any {
@@ -130,6 +132,11 @@ function database(fixture: Fixture = {}) {
 			return rows(fixture.modelSpend ?? []);
 		}
 		if (path.endsWith("/slack_agent_charges")) return rows(fixture.charges ?? []);
+		if (path.endsWith("/v2_models")) {
+			if (fixture.catalogue === "error") return Response.json({ code: "57014", message: "canceling statement due to statement timeout" }, { status: 500 });
+			const wanted = (url.searchParams.get("model_slug") ?? "").replace(/^in\.\(|\)$/g, "").split(",").map((slug) => slug.replace(/^"|"$/g, ""));
+			return rows((fixture.catalogue ?? []).filter((slug) => wanted.includes(slug)).map((model_slug) => ({ model_slug })));
+		}
 		if (path.endsWith("/slack_user_links")) return new Response(null, { status: 201 });
 		if (path.endsWith("/workspace_member_guardrails")) return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
 		if (path.endsWith("/key_guardrails")) {
@@ -791,6 +798,118 @@ describe("Slack agent settings changes", () => {
 			expect((await patch(body)).status, JSON.stringify(body)).toBe(200);
 			expect(gateChecks(requests)).toHaveLength(0);
 		}
+	});
+
+	describe("model choice", () => {
+		const CATALOGUE = ["openai/gpt-6-luna", "anthropic/claude-opus-5-5"];
+
+		it("saves the switch and the allowed models, once each and with Auto written one way", async () => {
+			const requests = database({ role: "admin", installation: {}, catalogue: CATALOGUE, autoRouting: true });
+			const response = await patch({ model_choice_enabled: true, allowed_models: [" openai/gpt-6-luna ", "Phaseo/Auto", "anthropic/claude-opus-5-5", "openai/gpt-6-luna"] });
+			expect(response.status).toBe(200);
+			expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({
+				model_choice_enabled: true,
+				allowed_models: ["openai/gpt-6-luna", "phaseo/auto", "anthropic/claude-opus-5-5"],
+			});
+			// Only catalogue models are looked up, public ones only.
+			const lookup = find(requests, "GET", "/v2_models")[0].url.searchParams;
+			expect(lookup.get("model_slug")).toBe("in.(openai/gpt-6-luna,anthropic/claude-opus-5-5)");
+			expect(lookup.get("hidden")).toBe("eq.false");
+			expect(lookup.get("status")).toBe("neq.disabled");
+			expect(((await response.json()) as any).installation.settings).toMatchObject({
+				model_choice_enabled: true,
+				allowed_models: ["openai/gpt-6-luna", "phaseo/auto", "anthropic/claude-opus-5-5"],
+			});
+			const audit = find(requests, "POST", "/workspace_audit_events")[0].body;
+			expect(audit.metadata.changed_fields.sort()).toEqual(["allowed_models", "model_choice_enabled"]);
+		});
+
+		it("refuses models outside the public catalogue, naming them", async () => {
+			const requests = database({ role: "admin", installation: {}, catalogue: CATALOGUE });
+			const response = await patch({ model_choice_enabled: true, allowed_models: ["openai/gpt-6-luna", "acme/hidden-model", "acme/gone"] });
+			expect(response.status).toBe(400);
+			expect(await response.json()).toEqual({
+				error: "unknown_models",
+				message: "These aren't models in the Phaseo catalogue: acme/hidden-model, acme/gone",
+				models: ["acme/hidden-model", "acme/gone"],
+			});
+			expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+			// A catalogue that can't be read saves nothing.
+			database({ role: "admin", installation: {}, catalogue: "error" });
+			expect((await patch({ allowed_models: ["openai/gpt-6-luna"] })).status).toBe(503);
+		});
+
+		it("needs a model to choose while it is on", async () => {
+			for (const [installation, body] of [
+				[{}, { model_choice_enabled: true }],
+				[{}, { model_choice_enabled: true, allowed_models: [] }],
+				[{ model_choice_enabled: true, allowed_models: ["openai/gpt-6-luna"] }, { allowed_models: [] }],
+			] as const) {
+				const requests = database({ role: "admin", installation, catalogue: CATALOGUE });
+				const response = await patch(body);
+				expect(response.status, JSON.stringify(body)).toBe(400);
+				expect(await response.json()).toMatchObject({ error: "model_choice_needs_models" });
+				expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+			}
+			// Off, the list can be emptied; and an existing list lets it be switched on alone.
+			database({ role: "admin", installation: { model_choice_enabled: true, allowed_models: ["openai/gpt-6-luna"] }, catalogue: CATALOGUE });
+			expect((await patch({ model_choice_enabled: false, allowed_models: [] })).status).toBe(200);
+			database({ role: "admin", installation: { allowed_models: ["openai/gpt-6-luna"] }, catalogue: CATALOGUE });
+			expect((await patch({ model_choice_enabled: true })).status).toBe(200);
+		});
+
+		it("checks the list's shape and size, with a code for too many", async () => {
+			const cases: Array<[unknown, string, string]> = [
+				["openai/gpt-6-luna", "bad_request", "allowed_models must be a list of model ids"],
+				[["openai/gpt-6-luna", " "], "bad_request", "allowed_models must be model ids"],
+				[[42], "bad_request", "allowed_models must be model ids"],
+				[Array.from({ length: 11 }, (_, index) => `acme/model-${index}`), "too_many_models", "at most 10 models"],
+			];
+			for (const [allowed, code, message] of cases) {
+				database({ role: "admin", installation: {}, catalogue: CATALOGUE });
+				const response = await patch({ allowed_models: allowed });
+				expect(response.status, JSON.stringify(allowed).slice(0, 60)).toBe(400);
+				const body = (await response.json()) as any;
+				expect(body.error).toBe(code);
+				expect(body.message).toContain(message);
+			}
+			database({ role: "admin", installation: {} });
+			expect(await (await patch({ model_choice_enabled: "yes" })).json()).toMatchObject({ error: "bad_request", message: "model_choice_enabled must be true or false" });
+		});
+
+		it("adds Auto only where the agent's key has access to it, and keeps it where it is already allowed", async () => {
+			let requests = database({ role: "admin", installation: {}, catalogue: CATALOGUE, autoRouting: false });
+			const refused = await patch({ model_choice_enabled: true, allowed_models: ["phaseo/auto", "openai/gpt-6-luna"] });
+			expect(refused.status).toBe(400);
+			expect(await refused.json()).toMatchObject({ error: "auto_routing_unavailable" });
+			expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+			// Auto alone isn't looked up in the catalogue.
+			requests = database({ role: "admin", installation: { allowed_models: ["phaseo/auto"] }, catalogue: CATALOGUE, autoRouting: false });
+			expect((await patch({ model_choice_enabled: true, allowed_models: ["phaseo/auto"] })).status).toBe(200);
+			expect(gateChecks(requests)).toHaveLength(0);
+			expect(find(requests, "GET", "/v2_models")).toHaveLength(0);
+		});
+	});
+
+	it("turns the agent's memory off and on, and returns the switch", async () => {
+		let requests = database({ role: "admin", installation: {} });
+		const off = await patch({ memory_enabled: false });
+		expect(off.status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ memory_enabled: false });
+		expect(((await off.json()) as any).installation.settings).toMatchObject({ memory_enabled: false });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata.changed_fields).toEqual(["memory_enabled"]);
+		// Turning it off keeps the notes: nothing else is written.
+		expect(requests.filter((entry) => entry.method !== "GET").map((entry) => entry.url.pathname)).toEqual([
+			expect.stringContaining("/slack_installations"), expect.stringContaining("/workspace_audit_events"),
+		]);
+		requests = database({ role: "admin", installation: { memory_enabled: false } });
+		expect(((await (await patch({ memory_enabled: true })).json()) as any).installation.settings.memory_enabled).toBe(true);
+		for (const value of ["no", 0, null]) {
+			database({ role: "admin", installation: {} });
+			expect(await (await patch({ memory_enabled: value })).json()).toMatchObject({ error: "bad_request", message: "memory_enabled must be true or false" });
+		}
+		database({ role: "member", installation: {} });
+		expect((await patch({ memory_enabled: false })).status).toBe(403);
 	});
 
 	it("is for admins, and 404s without an installation", async () => {

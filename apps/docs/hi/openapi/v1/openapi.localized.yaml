@@ -4883,6 +4883,234 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRules
+      summary: खर्च नियमों की सूची देखें
+      description: वर्कस्पेस के खर्च नियमों की सूची देता है। कोई नियम किसी दायरे और कैलेंडर या रोलिंग अवधि में डॉलर या प्रतिशत की सीमाओं पर सूचना देता है। वर्कस्पेस का हर सदस्य इन्हें पढ़ सकता है।
+      responses:
+        '200':
+          description: खर्च नियम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createSpendRule
+      summary: खर्च नियम बनाएँ
+      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleInput'
+      responses:
+        '201':
+          description: खर्च नियम बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getSpendRule
+      summary: खर्च नियम प्राप्त करें
+      description: एक खर्च नियम लौटाता है।
+      responses:
+        '200':
+          description: खर्च नियम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateSpendRule
+      summary: खर्च नियम अपडेट करें
+      description: एक खर्च नियम बदलता है। भेजे गए फ़ील्ड सहेजे गए नियम पर मिलाए जाते हैं और पूरे नियम की फिर से जाँच होती है। destination_ids नियम के गंतव्यों को बदल देता है; उन्हें रखने के लिए इसे छोड़ दें।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleUpdateInput'
+      responses:
+        '200':
+          description: खर्च नियम अपडेट किया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteSpendRule
+      summary: खर्च नियम हटाएँ
+      description: एक खर्च नियम हटाता है। उसका मूल्यांकन बंद हो जाता है और वह 50 नियमों की सीमा में नहीं गिना जाता।
+      responses:
+        '200':
+          description: खर्च नियम हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/test:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testSpendRule
+      summary: परीक्षण खर्च अलर्ट भेजें
+      description: नियम का अलर्ट उसके मौजूदा मान से TEST चिह्न के साथ बनाता है और उसे अभी नियम के गंतव्यों पर भेजता है, या कोई गंतव्य न होने पर Spend Alerts रूट पर। कुछ भी रिकॉर्ड नहीं होता। एक वर्कस्पेस प्रति मिनट 5 परीक्षण भेज सकता है।
+      responses:
+        '200':
+          description: परीक्षण अलर्ट भेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleTestResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: previewSpendRule
+      summary: खर्च नियम का पूर्वावलोकन करें
+      description: नियम की मौजूदा अवधि, अब तक का खर्च, आधार, प्रतिशत और अगली सीमा लौटाता है, जिनकी गणना मूल्यांकन की तरह ही होती है, बिना कुछ भेजे या रिकॉर्ड किए।
+      responses:
+        '200':
+          description: खर्च नियम का पूर्वावलोकन
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRulePreviewResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRuleHistory
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: पेजिनेशन के लिए छोड़े जाने वाले इवेंट की संख्या।
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+        - name: limit
+          in: query
+          required: false
+          description: लौटाए जाने वाले इवेंट की अधिकतम संख्या।
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: खर्च नियम का इतिहास देखें
+      description: नियम द्वारा कतार में डाले गए अलर्ट और ब्लॉक इवेंट, सबसे नए पहले, डिलीवरी गिनती के साथ, और उसकी सबसे हाल की अवधि के रिकॉर्ड की सूची देता है।
+      responses:
+        '200':
+          description: खर्च नियम का इतिहास
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -21581,6 +21809,756 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    SpendRuleMetric:
+      type: string
+      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
+      enum:
+        - spend
+        - budget_percent
+        - forecast
+        - spike
+        - balance
+    SpendRuleScope:
+      type: string
+      enum:
+        - workspace
+        - key
+        - member
+        - department
+        - model
+        - provider
+    SpendRulePeriod:
+      type: string
+      description: नियम के समय क्षेत्र में day, week (सोमवार से) या month, या पिछले window_hours पर rolling।
+      enum:
+        - day
+        - week
+        - month
+        - rolling
+    SpendRuleAction:
+      type: string
+      description: 'notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।'
+      enum:
+        - notify
+        - block
+    SpendRule:
+      type: object
+      description: 'एक खर्च नियम: किसी दायरे और अवधि में डॉलर या प्रतिशत की सीमाएँ जो सूचना देती हैं, या सूचना देकर फिर ब्लॉक करती हैं। राशियाँ नैनोडॉलर और USD दोनों में लौटाई जाती हैं।'
+      required:
+        - id
+        - workspace_id
+        - name
+        - enabled
+        - metric
+        - evaluated
+        - scope_type
+        - scope_id
+        - period
+        - window_hours
+        - time_zone
+        - base_kind
+        - base_ref
+        - base_amount_nanos
+        - base_amount_usd
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - runway_days
+        - spike_multiplier
+        - spike_floor_nanos
+        - spike_floor_usd
+        - action
+        - block_at_percent
+        - block_at_amount_nanos
+        - block_at_amount_usd
+        - block_free_models
+        - cooldown_minutes
+        - destination_ids
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: वर्कस्पेस दायरे के लिए null; अन्यथा कुंजी ID, सदस्य का उपयोगकर्ता ID, विभाग ID, मॉडल ID या प्रदाता ID।
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: कैलेंडर अवधियों के लिए IANA समय क्षेत्र। null होने पर वर्कस्पेस का बिलिंग समय क्षेत्र इस्तेमाल होता है।
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'threshold_percents किसके प्रतिशत हैं: amount (base_amount), workspace_budget या key_limit (base_ref अंतराल, जो अवधि से मेल खाना चाहिए), या previous_period।'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: आधार के अधिकतम पाँच पूर्ण प्रतिशत, क्रम में। हर एक प्रति अवधि अधिकतम एक बार ट्रिगर होता है; एक साथ कई पार होने पर सबसे ऊँचे का नाम लेकर एक अलर्ट भेजा जाता है।
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: क्या ब्लॉक मुफ़्त मॉडल के अनुरोध भी रोकता है।
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: rolling, spike और balance नियमों के लिए अलर्ट के बीच न्यूनतम मिनट।
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: इस नियम के अलर्ट के सूचना गंतव्य। खाली होने का मतलब वर्कस्पेस का Spend Alerts रूट है।
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SpendRuleUpdateInput:
+      type: object
+      description: बदलने के लिए खर्च नियम के फ़ील्ड; कम से कम एक। राशियाँ *_usd या *_nanos (सटीक नैनोडॉलर) में दें, दोनों नहीं। किसी फ़ील्ड को साफ़ करने के लिए उसे null करें।
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: वर्कस्पेस दायरे के लिए null; अन्यथा कुंजी ID, सदस्य का उपयोगकर्ता ID, विभाग ID, मॉडल ID या प्रदाता ID।
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: कैलेंडर अवधियों के लिए IANA समय क्षेत्र। null होने पर वर्कस्पेस का बिलिंग समय क्षेत्र इस्तेमाल होता है।
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'threshold_percents किसके प्रतिशत हैं: amount (base_amount), workspace_budget या key_limit (base_ref अंतराल, जो अवधि से मेल खाना चाहिए), या previous_period।'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: आधार के अधिकतम पाँच पूर्ण प्रतिशत, क्रम में। हर एक प्रति अवधि अधिकतम एक बार ट्रिगर होता है; एक साथ कई पार होने पर सबसे ऊँचे का नाम लेकर एक अलर्ट भेजा जाता है।
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: क्या ब्लॉक मुफ़्त मॉडल के अनुरोध भी रोकता है।
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: rolling, spike और balance नियमों के लिए अलर्ट के बीच न्यूनतम मिनट।
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: इस नियम के अलर्ट के सूचना गंतव्य। खाली होने का मतलब वर्कस्पेस का Spend Alerts रूट है।
+      additionalProperties: false
+    SpendRuleInput:
+      description: बनाया जाने वाला खर्च नियम। name, metric और period ज़रूरी हैं। spike नियमों में डिफ़ॉल्ट रूप से 3x गुणक और $5 की न्यूनतम सीमा होती है।
+      allOf:
+        - $ref: '#/components/schemas/SpendRuleUpdateInput'
+        - type: object
+          required:
+            - name
+            - metric
+            - period
+    SpendRuleResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRule'
+    SpendRuleListResponse:
+      type: object
+      required:
+        - data
+        - max_rules
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendRule'
+        max_rules:
+          type: integer
+          example: 50
+    SpendRuleDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+    SpendRulePreview:
+      type: object
+      description: खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।
+      required:
+        - rule_id
+        - metric
+        - evaluated
+        - computed_at
+        - time_zone
+        - period
+        - value_nanos
+        - value_usd
+        - base_kind
+        - base_ref
+        - base_nanos
+        - base_usd
+        - percent
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - reached_threshold_percent
+        - next_threshold
+        - block_at_nanos
+        - block_at_usd
+        - state
+        - alert
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+        computed_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+        period:
+          type: object
+          nullable: true
+          required:
+            - kind
+            - start
+            - end
+          properties:
+            kind:
+              $ref: '#/components/schemas/SpendRulePeriod'
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        value_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        value_usd:
+          type: number
+          nullable: true
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_usd:
+          type: number
+          nullable: true
+        percent:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        reached_threshold_percent:
+          type: integer
+          nullable: true
+        next_threshold:
+          type: object
+          nullable: true
+          description: 'अगली सीमा जिस तक मान अभी नहीं पहुँचा: आधार का प्रतिशत (राशि सीमाओं के लिए null) और उसकी राशि।'
+          required:
+            - percent
+            - amount_nanos
+            - amount_usd
+          properties:
+            percent:
+              type: integer
+              nullable: true
+            amount_nanos:
+              type: integer
+              format: int64
+            amount_usd:
+              type: number
+        block_at_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_usd:
+          type: number
+          nullable: true
+        state:
+          type: object
+          nullable: true
+          required:
+            - highest_percent_fired
+            - amount_fired_at
+            - last_fired_at
+            - fire_count
+          properties:
+            highest_percent_fired:
+              type: integer
+              nullable: true
+            amount_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            last_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            fire_count:
+              type: integer
+        alert:
+          type: object
+          nullable: true
+          description: अभी किसी अलर्ट में जो पाठ होगा, जिसमें पहुँची गई सबसे ऊँची सीमा, या पहली सीमा का नाम होगा।
+          required:
+            - scope_label
+            - title
+            - message
+          properties:
+            scope_label:
+              type: string
+            title:
+              type: string
+            message:
+              type: string
+    SpendRulePreviewResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRulePreview'
+    SpendRuleTestResult:
+      type: object
+      description: परीक्षण अलर्ट और हर गंतव्य पर क्या हुआ।
+      required:
+        - rule_id
+        - rule_name
+        - test
+        - title
+        - message
+        - source
+        - delivered
+        - failed
+        - deliveries
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        test:
+          type: boolean
+        title:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+          enum:
+            - rule
+            - routes
+          description: 'rule: नियम के अपने गंतव्य। routes: वर्कस्पेस का Spend Alerts रूट।'
+        delivered:
+          type: integer
+        failed:
+          type: integer
+        deliveries:
+          type: array
+          items:
+            type: object
+            required:
+              - destination_id
+              - name
+              - type
+              - delivered
+              - status
+              - error
+            properties:
+              destination_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              type:
+                type: string
+              delivered:
+                type: boolean
+              status:
+                type: integer
+                nullable: true
+              error:
+                type: string
+                nullable: true
+    SpendRuleTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleTestResult'
+    SpendRuleHistory:
+      type: object
+      description: इवेंट सबसे नए पहले, अगले पेज के लिए has_more के साथ, और नियम की 12 सबसे हाल की अवधि के रिकॉर्ड।
+      required:
+        - events
+        - has_more
+        - periods
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - kind
+              - created_at
+              - deliveries
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - spend_alert
+                  - spend_blocked
+              created_at:
+                type: string
+                format: date-time
+              title:
+                type: string
+                nullable: true
+              message:
+                type: string
+                nullable: true
+              state:
+                type: string
+                nullable: true
+              threshold_percent:
+                type: integer
+                nullable: true
+              thresholds_crossed:
+                type: array
+                items:
+                  type: integer
+                nullable: true
+              threshold_amount_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              threshold_amount_usd:
+                type: number
+                nullable: true
+              value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              value_usd:
+                type: number
+                nullable: true
+              base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              base_usd:
+                type: number
+                nullable: true
+              percent:
+                type: number
+                nullable: true
+              period:
+                type: object
+                nullable: true
+                additionalProperties: true
+              deliveries:
+                type: object
+                description: स्थिति के अनुसार डिलीवरी प्रयास।
+                required:
+                  - sent
+                  - failed
+                  - pending
+                properties:
+                  sent:
+                    type: integer
+                  failed:
+                    type: integer
+                  pending:
+                    type: integer
+        has_more:
+          type: boolean
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+              - period_start
+              - period_end
+              - highest_percent_fired
+              - amount_fired_at
+              - last_fired_at
+              - fire_count
+              - last_value_nanos
+              - last_value_usd
+              - last_base_nanos
+              - last_base_usd
+            properties:
+              period_start:
+                type: string
+                format: date-time
+                nullable: true
+              period_end:
+                type: string
+                format: date-time
+                nullable: true
+              highest_percent_fired:
+                type: integer
+                nullable: true
+              amount_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              last_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              fire_count:
+                type: integer
+              last_value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_value_usd:
+                type: number
+                nullable: true
+              last_base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_base_usd:
+                type: number
+                nullable: true
+    SpendRuleHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleHistory'
     WorkspaceApp:
       type: object
       required:

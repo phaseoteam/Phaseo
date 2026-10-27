@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { CheckCircle2, MessagesSquare, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { confirmSlackLink, type SlackLinkResult } from "./actions";
 
 export type SlackLinkCopy = {
@@ -34,7 +35,7 @@ export default function SlackLinkConfirm({ token, locale, copy }: { token: strin
 				<h1 className="text-xl font-semibold">{copy.title}</h1>
 			</div>
 			<p className="text-sm text-muted-foreground">{copy.description}</p>
-			<p className="rounded-md border-l-2 border-amber-500/70 bg-amber-500/5 px-4 py-3 text-sm">{copy.warning}</p>
+			<Callout tone="warning">{copy.warning}</Callout>
 			<Button type="button" disabled={pending} onClick={() => startTransition(async () => setResult(await confirmSlackLink(token, locale)))}>
 				{pending ? copy.confirming : copy.confirm}
 			</Button>

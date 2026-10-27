@@ -3302,6 +3302,175 @@ pub struct ServerToolUsage {
 	pub web_search_requests: Option<i64>,
 }
 
+pub struct SpendRule {
+	pub action: String,
+	pub base_amount_nanos: Option<i64>,
+	pub base_amount_usd: Option<f64>,
+	pub base_kind: Option<String>,
+	pub base_ref: Option<String>,
+	pub block_at_amount_nanos: Option<i64>,
+	pub block_at_amount_usd: Option<f64>,
+	pub block_at_percent: i64,
+	pub block_free_models: bool,
+	pub cooldown_minutes: i64,
+	pub created_at: String,
+	pub created_by: Option<String>,
+	pub destination_ids: Vec<String>,
+	pub enabled: bool,
+	pub evaluated: bool,
+	pub id: String,
+	pub metric: String,
+	pub name: String,
+	pub period: String,
+	pub runway_days: Option<i64>,
+	pub scope_id: Option<String>,
+	pub scope_type: String,
+	pub spike_floor_nanos: Option<i64>,
+	pub spike_floor_usd: Option<f64>,
+	pub spike_multiplier: Option<f64>,
+	pub threshold_amount_nanos: Option<i64>,
+	pub threshold_amount_usd: Option<f64>,
+	pub threshold_percents: Option<Vec<i64>>,
+	pub time_zone: Option<String>,
+	pub updated_at: String,
+	pub window_hours: Option<i64>,
+	pub workspace_id: String,
+}
+
+pub type SpendRuleAction = JsonValue;
+
+pub struct SpendRuleDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SpendRuleHistory {
+	pub events: Vec<HashMap<String, String>>,
+	pub has_more: bool,
+	pub periods: Vec<HashMap<String, String>>,
+}
+
+pub struct SpendRuleHistoryResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SpendRuleInput {
+	pub action: Option<String>,
+	pub base_amount_nanos: Option<Option<i64>>,
+	pub base_amount_usd: Option<Option<f64>>,
+	pub base_kind: Option<Option<String>>,
+	pub base_ref: Option<Option<String>>,
+	pub block_at_amount_nanos: Option<Option<i64>>,
+	pub block_at_amount_usd: Option<Option<f64>>,
+	pub block_at_percent: Option<i64>,
+	pub block_free_models: Option<bool>,
+	pub cooldown_minutes: Option<i64>,
+	pub destination_ids: Option<Vec<String>>,
+	pub enabled: Option<bool>,
+	pub metric: String,
+	pub name: String,
+	pub period: String,
+	pub runway_days: Option<Option<i64>>,
+	pub scope_id: Option<Option<String>>,
+	pub scope_type: Option<String>,
+	pub spike_floor_nanos: Option<Option<i64>>,
+	pub spike_floor_usd: Option<Option<f64>>,
+	pub spike_multiplier: Option<Option<f64>>,
+	pub threshold_amount_nanos: Option<Option<i64>>,
+	pub threshold_amount_usd: Option<Option<f64>>,
+	pub threshold_percents: Option<Option<Vec<i64>>>,
+	pub time_zone: Option<Option<String>>,
+	pub window_hours: Option<Option<i64>>,
+}
+
+pub struct SpendRuleListResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub max_rules: i64,
+}
+
+pub type SpendRuleMetric = JsonValue;
+
+pub type SpendRulePeriod = JsonValue;
+
+pub struct SpendRulePreview {
+	pub alert: Option<HashMap<String, String>>,
+	pub base_kind: Option<String>,
+	pub base_nanos: Option<i64>,
+	pub base_ref: Option<String>,
+	pub base_usd: Option<f64>,
+	pub block_at_nanos: Option<i64>,
+	pub block_at_usd: Option<f64>,
+	pub computed_at: String,
+	pub evaluated: bool,
+	pub metric: String,
+	pub next_threshold: Option<HashMap<String, String>>,
+	pub percent: Option<f64>,
+	pub period: Option<HashMap<String, String>>,
+	pub reached_threshold_percent: Option<i64>,
+	pub rule_id: String,
+	pub state: Option<HashMap<String, String>>,
+	pub threshold_amount_nanos: Option<i64>,
+	pub threshold_amount_usd: Option<f64>,
+	pub threshold_percents: Option<Vec<i64>>,
+	pub time_zone: String,
+	pub value_nanos: Option<i64>,
+	pub value_usd: Option<f64>,
+}
+
+pub struct SpendRulePreviewResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SpendRuleResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub type SpendRuleScope = JsonValue;
+
+pub struct SpendRuleTestResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SpendRuleTestResult {
+	pub delivered: i64,
+	pub deliveries: Vec<HashMap<String, String>>,
+	pub failed: i64,
+	pub message: String,
+	pub rule_id: String,
+	pub rule_name: String,
+	pub source: String,
+	pub test: bool,
+	pub title: String,
+}
+
+pub struct SpendRuleUpdateInput {
+	pub action: Option<String>,
+	pub base_amount_nanos: Option<Option<i64>>,
+	pub base_amount_usd: Option<Option<f64>>,
+	pub base_kind: Option<Option<String>>,
+	pub base_ref: Option<Option<String>>,
+	pub block_at_amount_nanos: Option<Option<i64>>,
+	pub block_at_amount_usd: Option<Option<f64>>,
+	pub block_at_percent: Option<i64>,
+	pub block_free_models: Option<bool>,
+	pub cooldown_minutes: Option<i64>,
+	pub destination_ids: Option<Vec<String>>,
+	pub enabled: Option<bool>,
+	pub metric: Option<String>,
+	pub name: Option<String>,
+	pub period: Option<String>,
+	pub runway_days: Option<Option<i64>>,
+	pub scope_id: Option<Option<String>>,
+	pub scope_type: Option<String>,
+	pub spike_floor_nanos: Option<Option<i64>>,
+	pub spike_floor_usd: Option<Option<f64>>,
+	pub spike_multiplier: Option<Option<f64>>,
+	pub threshold_amount_nanos: Option<Option<i64>>,
+	pub threshold_amount_usd: Option<Option<f64>>,
+	pub threshold_percents: Option<Option<Vec<i64>>>,
+	pub time_zone: Option<Option<String>>,
+	pub window_hours: Option<Option<i64>>,
+}
+
 pub struct SubagentToolDefinition {
 	pub parameters: Option<HashMap<String, String>>,
 	pub r#type: String,

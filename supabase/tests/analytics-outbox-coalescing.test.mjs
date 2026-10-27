@@ -21,6 +21,13 @@ async function fixture(current) {
     // The fixture has no keys table; the view reads a key's creator for spend attribution.
     await db.exec('create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid, oauth_user_id uuid);');
     await db.exec(await read('../schemas/private/views/v2_usage_overview_requests.sql'));
+    // The processor marks rebuilt workspaces that have an enabled spend rule. Only the columns it reads.
+    await db.exec(`create table public.workspace_spend_rules (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+        enabled boolean not null default true, deleted_at timestamptz);
+      create index on public.workspace_spend_rules (workspace_id, id) where deleted_at is null;
+      insert into public.workspace_spend_rules (workspace_id) values (md5('workspace')::uuid);
+      insert into public.workspace_spend_rules (workspace_id, enabled) values (md5('other-workspace')::uuid, false);`);
+    await db.exec(await read('../schemas/public/tables/workspace_spend_rule_dirty.sql'));
   }
   await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));
   if (current) await db.exec(await read('../schemas/public/functions/refresh_v2_analytics_range.sql'));
@@ -135,6 +142,9 @@ try {
   await assertOverviewRollupExact(after, 'The 15-minute rollup counts every request once');
   assert.equal(Number((await after.query("select count(distinct bucket_start) n from v2_private_usage_15m where workspace_id=md5('workspace')::uuid")).rows[0].n), 2);
   assert(newWork.grains < oldWork.grains / 2, 'Already covered events remove repeated summary rebuilds');
+  // Spend rules: the workspace with an enabled rule is marked once; one with only a disabled rule is not.
+  assert.deepEqual((await after.query('select workspace_id from public.workspace_spend_rule_dirty')).rows.map(row => row.workspace_id), [(await after.query("select md5('workspace')::uuid id")).rows[0].id]);
+  await after.exec("update public.workspace_spend_rules set enabled = true where workspace_id = md5('other-workspace')::uuid; update public.workspace_spend_rules set deleted_at = now() where workspace_id = md5('workspace')::uuid; delete from public.workspace_spend_rule_dirty");
   const publicCount = Number((await after.query('select sum(requests) n from v2_public_usage_daily')).rows[0].n);
   assert.equal(publicCount,3002-Math.floor(3000/13));
   // A correction arriving during a rebuild must not be acknowledged as covered.
@@ -153,6 +163,7 @@ try {
   assert.equal((await after.query("select status from v2_analytics_outbox where request_event_id=md5('1')::uuid")).rows[0].status,'pending');
   await drain(after, true);
   assert.equal(Number((await after.query("select sum(quantity) n from v2_private_usage_daily_meters where meter_key='input_tokens'")).rows[0].n),9010);
+  assert.equal(Number((await after.query('select count(*) n from public.workspace_spend_rule_dirty')).rows[0].n), 0, 'a deleted rule does not mark its workspace');
   // Moving an event requires rebuilding both the former and new identities.
   await after.exec("update v2_request_facts set routed_model_slug='model-b',provider_model_id='route-b',occurred_at=occurred_at+interval '1 day',cloudflare_colo='LHR' where request_event_id=md5('1')::uuid");
   await drain(after, true);

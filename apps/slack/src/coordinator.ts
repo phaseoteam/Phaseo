@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { compareTs, MAX_KNOWN_MESSAGES } from "./history";
+import { MAX_OWN_ANSWER_CHARS, QUESTION_TIMEOUT_MS, questionMemory, type QuestionAnswer, type QuestionDraft, type QuestionState } from "./questions";
 import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunner, type TurnStart } from "./turns";
 
 // ThreadCoordinator: one per Slack thread, named installation:channel:thread_ts.
@@ -17,13 +18,17 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 //   at the right place (history.ts).
 // - Remembers who was sent the Connect your Phaseo account button in this thread,
 //   so the agent offers it at most once per person here.
+// - Holds the running turn's questions (questions.ts): the paused run, the
+//   question and its answer. The first answer from the person asked wins, and
+//   wakes the turn's Workflow; so does stopping the thread while it waits.
 // - Deletes everything 7 days after the last activity (an alarm). This is the only
-//   place Slack text is kept: an open turn's message, thread history and staged
-//   reply until the turn ends, and the working memory, all gone within 7 days, as
-//   Slack's API terms require. Workflow step outputs carry ids and statuses only.
+//   place Slack text is kept: an open turn's message, thread history, staged
+//   reply and questions until the turn ends, and the working memory, all gone
+//   within 7 days, as Slack's API terms require. Workflow step outputs carry ids
+//   and statuses only.
 
 const RETENTION_MS = 7 * 24 * 60 * 60_000;
-/** A running turn that hasn't reported back after this long is failed, so the queue moves on. */
+/** A running turn that hasn't reported back after this long is failed, so the queue moves on. While its question waits, this counts from when the question closes (turnDeadline). */
 export const TURN_TIMEOUT_MS = 20 * 60_000;
 const MAX_QUEUED = 5;
 const MAX_MEMORY_ENTRIES = 20;
@@ -31,15 +36,22 @@ const MAX_REPLY_CHARS = 4_000;
 const MAX_TOOL_CHARS = 200;
 const MAX_TOOLS_PER_TURN = 5;
 const MAX_MESSAGE_CHARS = 40_000;
+/** A paused run is kept in one row; SQLite in Durable Objects holds at most 2 MB a value. */
+const MAX_PAUSED_RUN_BYTES = 1_500_000;
 
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
-	/** The person's message. Kept only until the turn ends. */
+	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
 	text: string;
 };
 
 export type EnqueueResult =
 	| { status: "started"; turnId: number; position: number }
-	| { status: "queued"; turnId: number; position: number }
+	/**
+	 * waitingFor: the running turn waits for this person's answer to its question.
+	 * waitingUntil: when that question expires; the meter keeps this turn's place
+	 * until then, so a long wait can't drop it from the monthly count.
+	 */
+	| { status: "queued"; turnId: number; position: number; waitingFor?: string; waitingUntil?: number }
 	| { status: "duplicate" }
 	| { status: "queue_full" };
 
@@ -75,7 +87,7 @@ export type TurnInput = {
 	/** The reply text and tool notes, staged by the run until the turn ends. */
 	stagedReply: string | null;
 	stagedTools: string[];
-	/** What each attempt of the run spent, in nanodollars, by attempt number. */
+	/** What each attempt of the run spent, in nanodollars, by attempt ("1", "2"; after question n, "n:1" and so on). */
 	attemptCosts: Record<string, number>;
 	memory: MemoryEntry[];
 };
@@ -94,9 +106,20 @@ type TurnRow = {
 	message_ts: string;
 	slack_user_id: string;
 	kind: "mention" | "dm";
+	model: string | null;
+	external: number | null;
 	status: "queued" | "running";
 	started_at: number | null;
+	/** Since when the turn has been going again after a question: posted (until it expires), answered or closed. */
+	waiting_until: number | null;
 };
+
+/** What recording an answer did. */
+export type AnswerResult =
+	| { status: "answered"; turnId: number; question: QuestionState; askerId: string }
+	| { status: "not_asker"; askerId: string }
+	/** Answered already, expired, stopped, or the turn has ended. */
+	| { status: "closed"; question: QuestionState | null; askerId: string | null };
 
 function turnRef(row: TurnRow): TurnRef {
 	return {
@@ -110,10 +133,12 @@ function turnRef(row: TurnRow): TurnRef {
 		messageTs: row.message_ts,
 		slackUserId: row.slack_user_id,
 		kind: row.kind,
+		...(row.model ? { model: row.model } : {}),
+		...(row.external ? { external: true } : {}),
 	};
 }
 
-const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, status, started_at";
+const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, status, started_at, waiting_until";
 
 /** Columns added after the first release, created on objects that predate them. */
 const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
@@ -122,8 +147,17 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "staged_reply", "TEXT"],
 	["turns", "staged_tools", "TEXT"],
 	["turns", "attempt_costs", "TEXT"],
+	["turns", "model", "TEXT"],
+	["turns", "external", "INTEGER"],
 	["memory", "ts", "TEXT"],
+	["turns", "waiting_until", "INTEGER"],
 ];
+
+/** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
+function turnDeadline(turn: Pick<TurnRow, "started_at" | "waiting_until">): number | null {
+	if (turn.started_at == null) return null;
+	return Math.max(turn.started_at, turn.waiting_until ?? 0) + TURN_TIMEOUT_MS;
+}
 
 /** A turn's context as stored. Turns read before ThreadContext stored the messages alone. */
 function storedContext(value: string): ThreadContext {
@@ -168,6 +202,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		this.sql.exec("CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)");
 		this.sql.exec("CREATE TABLE IF NOT EXISTS known_messages (ts TEXT PRIMARY KEY)");
 		this.sql.exec("CREATE TABLE IF NOT EXISTS link_offers (slack_user_id TEXT PRIMARY KEY, at INTEGER NOT NULL)");
+		this.sql.exec("CREATE TABLE IF NOT EXISTS questions (turn_id INTEGER NOT NULL, n INTEGER NOT NULL, state TEXT NOT NULL, paused_run TEXT, PRIMARY KEY (turn_id, n))");
 		// Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
 		// existing object's table as it was, so add whichever are missing.
 		const columns = new Map<string, Set<string>>();
@@ -200,8 +235,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		const lastActivity = Number(this.meta("last_activity") ?? now);
 		const running = this.running();
 		const deleteAt = lastActivity + RETENTION_MS;
-		const at = running?.started_at != null ? Math.min(deleteAt, running.started_at + TURN_TIMEOUT_MS) : deleteAt;
-		await this.ctx.storage.setAlarm(at);
+		const deadline = running ? turnDeadline(running) : null;
+		await this.ctx.storage.setAlarm(deadline !== null ? Math.min(deleteAt, deadline) : deleteAt);
 	}
 
 	/** True the first time an event id is seen in this thread. */
@@ -223,10 +258,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, text, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, text, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
-				request.messageTs, request.slackUserId, request.kind, request.text.slice(0, MAX_MESSAGE_CHARS), now,
+				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0, request.text.slice(0, MAX_MESSAGE_CHARS), now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});
@@ -235,7 +270,20 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		await this.startNext(now);
 		const started = this.sql.exec<{ status: string }>("SELECT status FROM turns WHERE id = ?", queued.turnId).toArray()[0];
 		// Gone already means a runner that finishes at once ran it.
-		return started?.status === "queued" ? queued : { status: "started", turnId: queued.turnId, position: 0 };
+		if (started?.status !== "queued") return { status: "started", turnId: queued.turnId, position: 0 };
+		const running = this.running();
+		const waiting = running ? this.openQuestion(running.id) : null;
+		if (!running || !waiting) return queued;
+		return {
+			...queued,
+			...(waiting.expiresAt ? { waitingUntil: waiting.expiresAt } : {}),
+			...(running.slack_user_id !== request.slackUserId ? { waitingFor: running.slack_user_id } : {}),
+		};
+	}
+
+	/** The event ids of the turns queued behind the running one, whose meter places a question's wait must keep. */
+	async queuedEventIds(): Promise<string[]> {
+		return this.sql.exec<{ event_id: string }>("SELECT event_id FROM turns WHERE status = 'queued' ORDER BY id").toArray().map((row) => row.event_id);
 	}
 
 	/** Starts queued turns while the thread is idle. A runner that finishes at once lets the next one start. */
@@ -274,17 +322,28 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		// A turn that staged its reply reports back with ids only.
 		const reply = outcome.reply ?? turn.staged_reply ?? undefined;
 		const tools = outcome.tools ?? (turn.staged_tools ? JSON.parse(turn.staged_tools) as string[] : []);
+		const questions = this.questions(turnId);
 		this.ctx.storage.transactionSync(() => {
 			// The message and its thread history go with the turn; only the bot's side stays as working memory.
 			this.sql.exec("DELETE FROM turns WHERE id = ?", turnId);
+			this.sql.exec("DELETE FROM questions WHERE turn_id = ?", turnId);
 			if (this.meta("cancel_turn_id") === String(turnId)) this.sql.exec("DELETE FROM meta WHERE key = 'cancel_turn_id'");
-			for (const tool of tools.slice(0, MAX_TOOLS_PER_TURN)) {
-				if (tool.trim()) this.sql.exec("INSERT INTO memory (kind, text, at) VALUES ('tool', ?, ?)", tool.trim().slice(0, MAX_TOOL_CHARS), now);
+			const remember = (entry: { reply?: string; ts: string | null; tools: string[] }) => {
+				for (const tool of entry.tools.slice(0, MAX_TOOLS_PER_TURN)) {
+					if (tool.trim()) this.sql.exec("INSERT INTO memory (kind, text, at) VALUES ('tool', ?, ?)", tool.trim().slice(0, MAX_TOOL_CHARS), now);
+				}
+				if (entry.reply?.trim()) this.sql.exec("INSERT INTO memory (kind, text, at, ts) VALUES ('reply', ?, ?, ?)", entry.reply.trim().slice(0, MAX_REPLY_CHARS), now, entry.ts);
+			};
+			// An answer that asked questions: what it wrote before each, and each question with what became of it.
+			for (const question of questions) {
+				if (question.leg) remember(question.leg);
+				if (question.ts) remember({ reply: questionMemory(question, turn.slack_user_id), ts: question.ts, tools: [] });
 			}
-			if (reply?.trim()) this.sql.exec("INSERT INTO memory (kind, text, at, ts) VALUES ('reply', ?, ?, ?)", reply.trim().slice(0, MAX_REPLY_CHARS), now, turn.reply_ts);
+			remember({ reply, ts: turn.reply_ts, tools });
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
-			// The reply is a message in the thread too.
-			if (turn.reply_ts) this.storeKnown([...this.knownMessages(), turn.reply_ts]);
+			// The replies and questions are messages in the thread too.
+			const posted = [...questions.flatMap((question) => [question.leg?.ts ?? null, question.ts]), turn.reply_ts].filter((ts): ts is string => ts !== null);
+			if (posted.length) this.storeKnown([...this.knownMessages(), ...posted]);
 		});
 		if (outcome.status !== "done") await this.releaseMeter(turn);
 		await this.touch(now);
@@ -302,7 +361,9 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/**
 	 * Stops the thread: flags the running turn to stop at its next step and drops
-	 * the queued ones. Returns the running turn's id, if any.
+	 * the queued ones. A turn waiting for an answer to its question is woken, so it
+	 * stops now rather than when the question expires. Returns the running turn's
+	 * id, if any.
 	 */
 	async cancel(now = Date.now()): Promise<{ cancelled: boolean; turnId: number | null; dropped: number }> {
 		const running = this.running();
@@ -312,8 +373,182 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			this.sql.exec("DELETE FROM turns WHERE status = 'queued'");
 		});
 		for (const turn of queued) await this.releaseMeter(turn);
+		const waiting = running ? this.openQuestion(running.id) : null;
+		if (running && waiting) await this.wake(running, waiting.n);
 		await this.touch(now);
 		return { cancelled: Boolean(running) || queued.length > 0, turnId: running?.id ?? null, dropped: queued.length };
+	}
+
+	/** Tells a turn's Workflow that its question has an answer, or that it should stop waiting. A failure only leaves it to the question's timeout. */
+	private async wake(turn: TurnRow, n: number): Promise<void> {
+		try {
+			await this.runner.wake?.(turnRef(turn), n);
+		} catch (error) {
+			console.error("[slack-agent] waiting turn not woken", { turnId: turn.id, question: n, error: error instanceof Error ? error.message : "unknown" });
+		}
+	}
+
+	private questions(turnId: number): QuestionState[] {
+		return this.sql.exec<{ state: string }>("SELECT state FROM questions WHERE turn_id = ? ORDER BY n", turnId).toArray().map((row) => JSON.parse(row.state) as QuestionState);
+	}
+
+	/** A turn's question n, while the turn is queued or running. */
+	question(turnId: number, n: number): QuestionState | null {
+		const row = this.sql.exec<{ state: string }>("SELECT state FROM questions WHERE turn_id = ? AND n = ?", turnId, n).toArray()[0];
+		return row ? JSON.parse(row.state) as QuestionState : null;
+	}
+
+	private saveQuestion(turnId: number, question: QuestionState): void {
+		this.sql.exec("UPDATE questions SET state = ? WHERE turn_id = ? AND n = ?", JSON.stringify(question), turnId, question.n);
+	}
+
+	/** The person a running turn answers (the only one who may answer its questions), or null when it isn't running. */
+	askerOf(turnId: number): string | null {
+		const running = this.running();
+		return running?.id === turnId ? running.slack_user_id : null;
+	}
+
+	/** The running turn's question that is posted and waiting for its answer. */
+	private openQuestion(turnId: number): QuestionState | null {
+		return this.questions(turnId).find((question) => question.status === "open") ?? null;
+	}
+
+	/**
+	 * The run paused for the person's answer: keeps the paused run and question n
+	 * until the turn ends. A retried run replaces its own question while it is
+	 * still unposted, never one that was posted. False when the turn has ended,
+	 * or the paused run is too big to keep.
+	 */
+	holdForAnswer(turnId: number, n: number, input: { run: string; question: QuestionDraft }): boolean {
+		if (new TextEncoder().encode(input.run).byteLength > MAX_PAUSED_RUN_BYTES) return false;
+		return this.ctx.storage.transactionSync(() => {
+			if (!this.sql.exec("SELECT 1 FROM turns WHERE id = ? AND status = 'running'", turnId).toArray().length) return false;
+			const existing = this.question(turnId, n);
+			if (existing && existing.status !== "pending") return false;
+			const question: QuestionState = { ...input.question, n, status: "pending", ts: null, expiresAt: null, answer: null, leg: null };
+			this.sql.exec(
+				"INSERT INTO questions (turn_id, n, state, paused_run) VALUES (?, ?, ?, ?) ON CONFLICT (turn_id, n) DO UPDATE SET state = excluded.state, paused_run = excluded.paused_run",
+				turnId, n, JSON.stringify(question), input.run,
+			);
+			return true;
+		});
+	}
+
+	/** The paused run question n continues, once it is answered. */
+	pausedRun(turnId: number, n: number): { run: string; question: QuestionState } | null {
+		const row = this.sql.exec<{ state: string; paused_run: string | null }>("SELECT state, paused_run FROM questions WHERE turn_id = ? AND n = ?", turnId, n).toArray()[0];
+		return row?.paused_run ? { run: row.paused_run, question: JSON.parse(row.state) as QuestionState } : null;
+	}
+
+	/**
+	 * Before question n is posted, the reply written so far is finished: it moves
+	 * from the turn's staged reply to the question, so the answer after the
+	 * question starts a new message. Safe to repeat.
+	 */
+	closeLegReply(turnId: number, n: number): void {
+		this.ctx.storage.transactionSync(() => {
+			const question = this.question(turnId, n);
+			const turn = this.sql.exec<{ staged_reply: string | null; staged_tools: string | null; reply_ts: string | null }>(
+				"SELECT staged_reply, staged_tools, reply_ts FROM turns WHERE id = ?", turnId,
+			).toArray()[0];
+			if (!question || question.leg || !turn) return;
+			question.leg = { reply: turn.staged_reply ?? "", ts: turn.reply_ts, tools: turn.staged_tools ? JSON.parse(turn.staged_tools) as string[] : [] };
+			this.saveQuestion(turnId, question);
+			this.sql.exec("UPDATE turns SET staged_reply = NULL, staged_tools = NULL, reply_ts = NULL WHERE id = ?", turnId);
+		});
+	}
+
+	/**
+	 * Question n's message is in Slack: it opens for an hour. Recorded as soon as
+	 * Slack returns the ts, so a retry updates the message instead of posting it
+	 * again. Earlier paused runs are dropped: their answers have run. Returns the
+	 * question as it is now (a quick answer may already be in).
+	 */
+	async questionPosted(turnId: number, n: number, ts: string, now = Date.now()): Promise<QuestionState | null> {
+		const question = this.ctx.storage.transactionSync(() => {
+			const current = this.question(turnId, n);
+			if (!current) return null;
+			current.ts ??= ts;
+			// Stopped while the question was being posted: cancel() found nothing open to wake, so it never opens.
+			if (current.status === "pending" && this.isCancelled(turnId)) current.status = "cancelled";
+			if (current.status === "pending") {
+				current.status = "open";
+				current.expiresAt = now + QUESTION_TIMEOUT_MS;
+				this.sql.exec("UPDATE turns SET waiting_until = ? WHERE id = ?", current.expiresAt, turnId);
+			}
+			this.saveQuestion(turnId, current);
+			this.sql.exec("UPDATE questions SET paused_run = NULL WHERE turn_id = ? AND n < ?", turnId, n);
+			return current;
+		});
+		if (question) await this.touch(now);
+		return question;
+	}
+
+	/**
+	 * An answer to the running turn's question n. Only the person the turn answers
+	 * may answer, and only once, while the question is open. The answer wakes the
+	 * turn's Workflow.
+	 */
+	async answerQuestion(input: { turnId: number; n: number; slackUserId: string; answer: QuestionAnswer; now?: number }): Promise<AnswerResult> {
+		const now = input.now ?? Date.now();
+		const running = this.running();
+		if (!running || running.id !== input.turnId) return { status: "closed", question: null, askerId: null };
+		const result = this.ctx.storage.transactionSync((): AnswerResult => {
+			const question = this.question(running.id, input.n);
+			if (!question) return { status: "closed", question: null, askerId: running.slack_user_id };
+			if (input.slackUserId !== running.slack_user_id) return { status: "not_asker", askerId: running.slack_user_id };
+			const expired = question.expiresAt !== null && question.expiresAt <= now;
+			if (question.status !== "open" || expired || this.isCancelled(running.id)) return { status: "closed", question, askerId: running.slack_user_id };
+			const choice = input.answer.by === "button" && input.answer.choice !== null && question.options[input.answer.choice] !== undefined ? input.answer.choice : null;
+			if (input.answer.by === "button" && choice === null) return { status: "closed", question, askerId: running.slack_user_id };
+			const text = choice !== null ? question.options[choice] : input.answer.text.trim().slice(0, MAX_OWN_ANSWER_CHARS);
+			if (!text) return { status: "closed", question, askerId: running.slack_user_id };
+			question.status = "answered";
+			question.answer = { by: input.answer.by, choice, text };
+			this.saveQuestion(running.id, question);
+			// The answer starts the turn's next run: its timeout counts from here.
+			this.sql.exec("UPDATE turns SET waiting_until = ? WHERE id = ?", now, running.id);
+			return { status: "answered", turnId: running.id, question, askerId: running.slack_user_id };
+		});
+		if (result.status === "answered") {
+			await this.wake(running, input.n);
+			await this.touch(now);
+		}
+		return result;
+	}
+
+	/**
+	 * A message from the person the running turn waits on, while its question is
+	 * open, is their answer. Null when it isn't one (no open question, or someone
+	 * else wrote it): it is a new message to answer.
+	 */
+	async answerWithMessage(input: { slackUserId: string; text: string; now?: number }): Promise<Extract<AnswerResult, { status: "answered" }> | null> {
+		const running = this.running();
+		const question = running ? this.openQuestion(running.id) : null;
+		if (!running || !question || running.slack_user_id !== input.slackUserId || !input.text.trim()) return null;
+		const result = await this.answerQuestion({ turnId: running.id, n: question.n, slackUserId: input.slackUserId, answer: { by: "message", choice: null, text: input.text }, now: input.now });
+		return result.status === "answered" ? result : null;
+	}
+
+	/**
+	 * The turn stops waiting on question n: answered, or else stopped (the thread
+	 * was cancelled, or `stop`: the installation no longer answers) or expired.
+	 * Later clicks are told it is closed. Null when the turn has ended.
+	 */
+	async closeQuestion(turnId: number, n: number, options: { stop?: boolean; now?: number } = {}): Promise<QuestionState | null> {
+		const now = options.now ?? Date.now();
+		const question = this.ctx.storage.transactionSync(() => {
+			const current = this.question(turnId, n);
+			if (!current) return null;
+			if (current.status === "pending" || current.status === "open") {
+				current.status = this.isCancelled(turnId) || options.stop ? "cancelled" : "expired";
+				this.saveQuestion(turnId, current);
+				this.sql.exec("UPDATE turns SET waiting_until = ? WHERE id = ?", now, turnId);
+			}
+			return current;
+		});
+		if (question) await this.touch(now);
+		return question;
 	}
 
 	/** For the running turn, between steps. */
@@ -411,7 +646,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	 * reply step to deliver and moved to working memory when the turn ends, with
 	 * what this attempt has spent, so a retried run counts it against the turn's cap.
 	 */
-	stageTurnOutput(turnId: number, output: { attempt: number; costNanos: number; reply: string; tools: string[] }): void {
+	stageTurnOutput(turnId: number, output: { attempt: number | string; costNanos: number; reply: string; tools: string[] }): void {
 		this.ctx.storage.transactionSync(() => {
 			const row = this.sql.exec<{ attempt_costs: string | null }>("SELECT attempt_costs FROM turns WHERE id = ?", turnId).toArray()[0];
 			if (!row) return;
@@ -439,7 +674,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	async alarm(): Promise<void> {
 		const now = Date.now();
 		const running = this.running();
-		if (running?.started_at != null && running.started_at + TURN_TIMEOUT_MS <= now) {
+		const deadline = running ? turnDeadline(running) : null;
+		if (running && deadline !== null && deadline <= now) {
 			console.warn("[slack-agent] turn timed out", { turnId: running.id, installationId: running.installation_id });
 			await this.endTurn(running.id, { status: "failed" }, now);
 			await this.startNext(now);

@@ -25,8 +25,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { INCLUDED_ANSWERS_PER_PERSON } from "@/lib/slack-agent/pricing";
 import { startSlackInstall, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { AccessField, Choice, FieldProblem, LimitsFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
+import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
+import { SlackMemorySection } from "./SlackMemorySection";
 import {
 	MAX_INSTRUCTIONS_CHARS,
 	callbackNotice,
@@ -275,6 +276,18 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 				</div>
 			</Section>
 
+			<Section title={t("sections.modelChoice")} description={t("modelChoice.description")}>
+				<ModelChoiceFields
+					enabled={draft.modelChoiceEnabled}
+					models={draft.allowedModels}
+					autoAvailable={view.auto_routing === true}
+					disabled={busy}
+					problem={problem}
+					onEnabledChange={(enabled) => set("modelChoiceEnabled", enabled)}
+					onModelsChange={(models) => set("allowedModels", models)}
+				/>
+			</Section>
+
 			<Section title={t("sections.access")}>
 				<AccessField value={draft.accessMode} disabled={busy} onChange={(mode) => set("accessMode", mode)} />
 			</Section>
@@ -345,6 +358,8 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 					{view.charges.length ? <>{t("charges.modelSpendNote")} </> : null}{t("charges.note")} <Link href="/settings/credits/transactions" className="underline underline-offset-4">{t("charges.transactions")}</Link>
 				</p>
 			</Section>
+
+			<SlackMemorySection memoryEnabled={installation.settings.memory_enabled !== false} />
 
 			<SlackCustomAppSection view={view} />
 

@@ -38,7 +38,7 @@ const FLUSH_INTERVAL_MS = 60_000;
 const FLUSH_DELAY_MS = 10_000;
 const FLUSH_BATCH = 1_000;
 const MAX_BATCHES_PER_ALARM = 20;
-/** A pending answer older than this is assumed lost (its turn never reported back). */
+/** A pending answer older than this is assumed lost (its turn never reported back). An answer waiting for a reply to its question is kept longer (keepPending). */
 const PENDING_TTL_MS = 30 * 60_000;
 /** Answered event ids are kept this long so a retried recordAnswer counts once. */
 const ANSWERED_TTL_MS = 2 * 24 * 60 * 60_000;
@@ -279,6 +279,15 @@ export class WorkspaceMeter extends DurableObject<Env> {
 	/** Drops a pending answer that was never given. */
 	release(input: { eventId: string }): void {
 		this.sql.exec("DELETE FROM pending WHERE event_id = ?", input.eventId);
+	}
+
+	/**
+	 * An answer that waits for the person's reply to its question (up to an hour)
+	 * is still in progress: its pending place is kept until PENDING_TTL_MS after
+	 * `until`, not after it was admitted. It stays one answer.
+	 */
+	keepPending(input: { eventId: string; until: number }): void {
+		this.sql.exec("UPDATE pending SET at = max(at, ?) WHERE event_id = ?", input.until, input.eventId);
 	}
 
 	/**

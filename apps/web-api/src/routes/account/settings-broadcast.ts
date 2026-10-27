@@ -96,9 +96,11 @@ function sampleTrace(name: string, privateMode: boolean) {
 		{ key: "gen_ai.usage.input_tokens", value: { intValue: "50" } },
 		{ key: "gen_ai.usage.output_tokens", value: { intValue: "100" } },
 	];
+	// Messages in the gateway's gen_ai form, so each preset's renames and
+	// message format apply to the sample as they do to real traces.
 	if (!privateMode) attributes.push(
-		{ key: "trace.input", value: { stringValue: "What is the capital of France?" } },
-		{ key: "trace.output", value: { stringValue: "Paris" } },
+		{ key: "gen_ai.input.messages", value: { stringValue: JSON.stringify([{ role: "user", parts: [{ type: "text", content: "What is the capital of France?" }] }]) } },
+		{ key: "gen_ai.output.messages", value: { stringValue: JSON.stringify([{ role: "assistant", parts: [{ type: "text", content: "Paris" }], finish_reason: "stop" }]) } },
 	);
 	return { resourceSpans: [{ resource: { attributes: [{ key: "service.name", value: { stringValue: "phaseo-gateway" } }] }, scopeSpans: [{ scope: { name: "phaseo" }, spans: [{ traceId: crypto.randomUUID().replaceAll("-", ""), spanId: crypto.randomUUID().replaceAll("-", "").slice(0, 16), name: "Test Generation", kind: 3, startTimeUnixNano: now.toString(), endTimeUnixNano: (now + 1_500_000_000n).toString(), status: { code: 1 }, attributes }] }] }] };
 }

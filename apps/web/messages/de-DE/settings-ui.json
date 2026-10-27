@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "Speichere das Preset, um es auszuführen.",
 		"runUnsaved": "Speichere deine Änderungen an der Vorlage, um sie auszuführen.",
 		"runFailed": "Die Anfrage ist fehlgeschlagen ({status}).",
+		"runNoCredits": "Dein Workspace hat kein Guthaben mehr, daher kann das Preset nicht ausgeführt werden.",
+		"runAddCredits": "Guthaben aufladen",
 		"replyMeta": "{model} · {input} Eingabe- und {output} Ausgabe-Tokens",
 		"replyEmpty": "Das Modell hat keinen Text zurückgegeben.",
 		"issuesTitle": "Behebe diese Punkte, um das Ergebnis zu sehen"
@@ -6847,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "Agent",
+			"modelChoice": "Modellwahl",
 			"access": "Wer ihn nutzen kann",
 			"usageData": "Nutzungsdaten",
 			"limits": "Limits",
@@ -6867,6 +6870,20 @@
 			"label": "Anweisungen",
 			"help": "Zusätzliche Vorgaben, die der Agent in jeder Antwort befolgt, etwa zum Ton oder Schwerpunkt.",
 			"placeholder": "Antworte kurz. Verlinke unser Handbuch, wenn es hilft."
+		},
+		"modelChoice": {
+			"description": "Lass Personen für eine einzelne Nachricht das Modell wählen, aus den Modellen, die du erlaubst. Andere Nachrichten nutzen das Modell des Agenten.",
+			"enable": "Modellwahl pro Nachricht erlauben",
+			"enableHelp": "Personen beginnen eine Nachricht mit {prefix} und nennen ein erlaubtes Modell mit Namen oder ID. Ist das Modell nicht erlaubt, bekommen sie privat eine Liste der erlaubten Modelle, und die Nachricht wird nicht beantwortet.",
+			"models": "Wählbare Modelle ({count} von {max})",
+			"add": "Modell hinzufügen",
+			"remove": "{model} entfernen",
+			"auto": "Automatisch",
+			"full": "Du kannst bis zu {max} Modelle erlauben. Entferne eines, um ein anderes hinzuzufügen.",
+			"includeAuto": "„Automatisch“ einbeziehen",
+			"includeAutoHelp": "Personen können „Automatisch“ wählen. Dann sucht Phaseo ein passendes Modell für diese Nachricht aus.",
+			"autoUnavailable": "„Automatisch“ ist für diesen Workspace nicht verfügbar, daher können Nachrichten, die es wählen, nicht beantwortet werden. Schalte „Automatisch“ einbeziehen aus.",
+			"help": "Jede Antwort behält ihr Kostenlimit von {cost} und ihr Limit von {steps} Schritten, egal welches Modell antwortet. In ihrer Fußzeile steht das Modell, das geantwortet hat."
 		},
 		"access": {
 			"everyone": "Alle in Slack",
@@ -6982,6 +6999,70 @@
 			"removeDescription": "Phaseo löscht die gespeicherten Angaben. Spätere Installationen nutzen die Slack-App von Phaseo.",
 			"notAvailable": "Eine eigene Slack-App zu nutzen ist noch nicht verfügbar."
 		},
+		"memory": {
+			"title": "Gedächtnis und Skills",
+			"description": "Notizen, Pins und To-dos, die der Agent speichert, wenn ihn jemand bittet, sich etwas zu merken, und Skills, die er auf Wunsch speichert. Es sind kurze Notizen in den Worten des Agenten, keine Kopien von Slack-Nachrichten. Beim Deinstallieren werden alle gelöscht.",
+			"enable": "Agent darf Notizen behalten",
+			"enableHelp": "Notizen, Pins und To-dos, die er auf Wunsch speichert und in späteren Antworten sieht. Ausgeschaltet speichert und sieht er keine. Bereits gespeicherte Notizen bleiben erhalten, und du kannst sie hier weiter ansehen und löschen. Skills funktionieren in beiden Fällen.",
+			"externalHelp": "Personen aus anderen Unternehmen (Slack Connect) sehen und speichern nur Notizen für ihre eigene Unterhaltung, nie die des ganzen Workspace.",
+			"turnedOn": "Der Agent behält wieder Notizen.",
+			"turnedOff": "Der Agent behält keine Notizen mehr. Gespeicherte Notizen bleiben erhalten.",
+			"loading": "Wird geladen…",
+			"notesTitle": "Notizen, Pins und To-dos",
+			"skillsTitle": "Skills",
+			"used": "{used} von {limit} gespeichert",
+			"filter": "Anzeigen",
+			"filters": {
+				"all": "Alle",
+				"note": "Notizen",
+				"pin": "Pins",
+				"todo": "To-dos"
+			},
+			"kinds": {
+				"note": "Notiz",
+				"pin": "Pin",
+				"todo": "To-do"
+			},
+			"columns": {
+				"note": "Notiz",
+				"kind": "Art",
+				"where": "Wo",
+				"saved": "Gespeichert",
+				"actions": "Aktionen"
+			},
+			"workspaceWide": "Ganzer Workspace",
+			"channel": "Kanal {id}",
+			"directMessage": "Direktnachricht {id}",
+			"by": "von {user}",
+			"doneOn": "Erledigt am {date}",
+			"expires": "Behalten bis {date}",
+			"noNotes": "Noch nichts gespeichert. In Slack kann man den Agenten bitten, sich etwas zu merken, es anzupinnen oder als To-do festzuhalten.",
+			"noNotesOfKind": "Nichts dieser Art gespeichert.",
+			"noSkills": "Noch keine Skills gespeichert. In Slack kann man den Agenten bitten, einen Skill für eine wiederkehrende Aufgabe zu speichern.",
+			"skillMeta": "Gespeichert von {user} · aktualisiert am {date}",
+			"skillName": "Name",
+			"skillDescription": "Beschreibung",
+			"skillInstructions": "Anweisungen",
+			"edit": "Bearbeiten",
+			"delete": "Löschen",
+			"saveSkill": "Skill speichern",
+			"skillSaved": "Skill gespeichert.",
+			"skillDeleted": "Skill gelöscht.",
+			"noteDeleted": "Notiz gelöscht.",
+			"deleteNote": "Notiz löschen",
+			"deleteNoteTitle": "Diese Notiz löschen?",
+			"deleteNoteDescription": "Der Agent vergisst sie sofort. Das lässt sich nicht rückgängig machen.",
+			"deleteSkillTitle": "{name} löschen?",
+			"deleteSkillDescription": "Der Agent kann ihn dann nicht mehr verwenden. Das lässt sich nicht rückgängig machen.",
+			"problems": {
+				"required": "Darf nicht leer sein.",
+				"tooLong": "Höchstens {max} Zeichen."
+			},
+			"errors": {
+				"memoryNotFound": "Das wurde bereits gelöscht. Lade die Seite neu, um den aktuellen Stand zu sehen.",
+				"skillNameTaken": "Ein anderer gespeicherter Skill hat bereits diesen Namen."
+			}
+		},
 		"uninstall": {
 			"description": "Entfernt den Agenten aus Slack und löscht seinen API-Schlüssel. Frühere Abrechnungen bleiben in deinem Abrechnungsverlauf.",
 			"button": "Deinstallieren",
@@ -7000,6 +7081,8 @@
 			"answersPerHour": "Gib eine ganze Zahl von 1 bis {max} ein.",
 			"tokenLimit": "Gib einen Betrag bis {max} ein oder lass das Feld leer für kein Limit.",
 			"model": "Wähle ein Modell.",
+			"allowedModelsEmpty": "Füge mindestens ein Modell hinzu oder schalte die Modellwahl aus.",
+			"tooManyModels": "Erlaube höchstens {max} Modelle.",
 			"instructions": "Halte die Anweisungen bei höchstens {max} Zeichen.",
 			"channelIds": "Gib Slack-Channel-IDs wie C0123ABCD ein, getrennt durch Kommas.",
 			"tooManyChannels": "Gib höchstens {max} Channels an.",
@@ -7035,6 +7118,9 @@
 			"sessionMismatch": "Schließe die Installation mit dem Admin-Konto ab, das sie gestartet hat.",
 			"installFailed": "Die Installation wurde nicht abgeschlossen, und nichts wurde eingerichtet. Versuche es erneut.",
 			"autoUnavailable": "„Automatisch“ ist für diesen Workspace nicht verfügbar. Wähle ein bestimmtes Modell.",
+			"unknownModels": "Einige dieser Modelle sind nicht mehr im Phaseo-Katalog. Entferne sie und speichere erneut.",
+			"modelChoiceNeedsModels": "Füge mindestens ein wählbares Modell hinzu oder schalte die Modellwahl aus.",
+			"tooManyModels": "Du kannst höchstens {max} Modelle erlauben.",
 			"invalid": "Prüfe die Einstellungen und versuche es erneut.",
 			"invalidWithMessage": "Prüfe die Einstellungen und versuche es erneut: {message}",
 			"unavailable": "Phaseo konnte das gerade nicht erledigen. Versuche es gleich noch einmal.",

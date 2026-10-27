@@ -11,7 +11,7 @@ import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/p
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
 import { normalizeModelLicense } from "@/models/license";
-import { PRIVATE_NO_STORE_HEADERS, withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
 // raw request timestamps, request content, and request identifiers. App
@@ -700,6 +700,26 @@ function cataloguePolicy(catalogueVersion: ModelsCatalogueVersion, includeVirtua
 		: versionPolicy;
 }
 
+// Gateway enrichment (monitor RPC plus route and provider lookups) averages
+// ~1.5 s and peaks above 4 s. The web client waits 15 s, so allow 6 s.
+export const GATEWAY_ENRICHMENT_TIMEOUT_MS = 6_000;
+
+// If enrichment still misses its deadline, cache the metadata-only response
+// for a minute without stale serving: a slow database then costs about one
+// miss per minute per colo, and the full catalogue returns on the next miss.
+export const DEGRADED_CATALOGUE_EDGE_TTL_SECONDS = 60;
+
+function degradedCataloguePolicy(catalogueVersion: ModelsCatalogueVersion): PublicCachePolicy {
+	return {
+		...cataloguePolicy(catalogueVersion),
+		edgeTtlSeconds: DEGRADED_CATALOGUE_EDGE_TTL_SECONDS,
+		staleWhileRevalidateSeconds: 0,
+		staleIfErrorSeconds: 0,
+		browserTtlSeconds: 0,
+		browserStaleWhileRevalidateSeconds: 0,
+	};
+}
+
 function notFound(c: { json: (value: unknown, status: number) => Response }) {
 	return c.json({ error: "model_not_found" }, 404);
 }
@@ -919,7 +939,7 @@ publicModelsRouter.get("/", async (c) => {
 		let gatewayDataComplete = c.req.query("include_gateway_data") !== "false";
 		let gatewayRowsByModelId = new Map<string, Record<string, unknown>[]>();
 		if (gatewayDataComplete) {
-			try { gatewayRowsByModelId = await fetchGatewayMonitorRows(c.env, catalogueVersion, AbortSignal.timeout(2_000)); }
+			try { gatewayRowsByModelId = await fetchGatewayMonitorRows(c.env, catalogueVersion, AbortSignal.timeout(GATEWAY_ENRICHMENT_TIMEOUT_MS)); }
 			catch (error) {
 				console.error("[web-api/models] optional gateway enrichment failed", error);
 				gatewayDataComplete = false;
@@ -985,8 +1005,7 @@ publicModelsRouter.get("/", async (c) => {
 		}));
 		const response = c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion, gateway_data_complete: gatewayDataComplete });
 		if (!gatewayDataComplete && c.req.query("include_gateway_data") !== "false") {
-			for (const [key, value] of Object.entries(PRIVATE_NO_STORE_HEADERS)) response.headers.set(key, value);
-			return response;
+			return withPublicCache(response, degradedCataloguePolicy(catalogueVersion));
 		}
 		return withPublicCache(response, cataloguePolicy(catalogueVersion));
 	} catch (error) {
