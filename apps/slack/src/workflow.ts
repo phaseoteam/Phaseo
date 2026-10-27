@@ -29,6 +29,7 @@ import { DEFAULT_IMAGE_MODEL, generateImageTool } from "./images";
 import { hasBotScope, installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
 import { loadTurnMemory, memoryInstructions, memoryPromptLines, memoryTools, noteAccess, type NoteAccess } from "./memory";
 import { modelChoiceOn, withoutMention } from "./model-choice";
+import { turnPageTools } from "./pages";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { reportScheduledRun, skippedTurnOutcome } from "./scheduled-runs";
@@ -52,8 +53,9 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //            meter keeps Slack's Retry-After so no other thread reads until then
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
-//            agent step (with ask_model, it can ask other allowed models); or,
-//            for a Compare, each compared model at once, with one reply
+//            agent step (with ask_model, it can ask other allowed models, and with
+//            publish_page, publish a shared page to link); or, for a Compare,
+//            each compared model at once, with one reply
 //   reply    finish the Slack message with a footer (every model used, linked to
 //            its page, and the cost, linked to the answer's requests in Logs):
 //            stop the stream, or write the staged answer when the live stream
@@ -91,8 +93,8 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 // the action token the coordinator holds for the turn's message. The results
 // go to the model and nowhere else. Once the answer has searched (the
 // coordinator counts its searches, across its runs and retries), it asks no
-// questions and saves no notes, skills or recurring tasks (searchedThisAnswer),
-// so nothing the model writes after a search is kept.
+// questions, saves no notes, skills or recurring tasks and publishes no pages
+// (searchedThisAnswer), so nothing the model writes after a search is kept.
 //
 // An unanswered question ends the answer there, and the answer is still counted
 // (the person saw it). Stopping the thread while it waits ends it uncounted. The
@@ -233,9 +235,9 @@ export type SearchOffer = { availability: SearchAvailability; asker: string; inC
 
 /**
  * posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode), and a
- * scheduled run can't ask questions; search: whether it can search Slack.
+ * scheduled run can't ask questions; search: whether it can search Slack; pages: whether it can publish shared pages.
  */
-export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }, schedules?: ScheduleMode, search?: SearchOffer): string {
+export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number, access: NoteAccess, external = false, posts: PostAbilities = { charts: false, images: false }, schedules?: ScheduleMode, search?: SearchOffer, pages = false): string {
 	const lines = [
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
@@ -259,6 +261,7 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 	} else {
 		lines.push("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack), and answer in text meanwhile.");
 	}
+	if (pages) lines.push("When an answer is too long or too rich for Slack, you can publish it as a web page with publish_page and link it. A page is static HTML and CSS (text, tables and charts drawn with inline SVG), with no scripts or links, so write any URL on it as text.");
 	if (search) lines.push(searchInstructions(search.availability, search.asker, search.inChannel));
 	if (installation.instructions?.trim()) lines.push("", "Instructions from this workspace's admins:", installation.instructions.trim());
 	return lines.join("\n");
@@ -588,13 +591,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	} : undefined;
 
 	const schedules = scheduleMode(installation, turn);
+	// publish_page, where this person may publish shared pages; nothing once the answer has searched Slack.
+	const pageTools = await turnPageTools(deps, turn, installation, notes, searched);
 	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		...gateway,
 		model,
-		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, schedules, search),
+		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, schedules, search, pageTools.length > 0),
 		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
 		// Nobody waits in a scheduled run's thread to answer a question.
-		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg, searched), ...fileTools, ...searchTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools],
+		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg, searched), ...fileTools, ...searchTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools, ...pageTools],
 		maxCostUsd: budgetUsd,
 		// The models it asks and the images it makes.
 		otherCostUsd: () => consultedUsd() + toolUsd,

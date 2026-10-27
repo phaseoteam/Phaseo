@@ -7189,6 +7189,51 @@
 				"scheduleNotFound": "It was already deleted. Reload to see what's left."
 			}
 		},
+		"pages": {
+			"title": "Shared pages",
+			"description": "Web pages the agent publishes and links in its reply when a report, table or chart is too much for a Slack message. A page can include what was said in Slack, so it's kept only until it expires. Uninstalling deletes them all.",
+			"enable": "Let the agent publish pages",
+			"enableHelp": "Turned off, it publishes none. Pages already published stay until they expire or you delete them here.",
+			"externalHelp": "People from other companies (Slack Connect) can't publish pages.",
+			"turnedOn": "The agent can publish pages again.",
+			"turnedOff": "The agent no longer publishes pages. Published pages stay until they expire.",
+			"saved": "Saved.",
+			"loading": "Loading…",
+			"unavailable": "Shared pages aren't available here.",
+			"expiry": "Keep new pages for",
+			"days": "{days} days",
+			"expiryHelp": "Pages are deleted when they expire. A change applies to new pages.",
+			"linkAccess": "Anyone with the link can view pages",
+			"linkAccessHelp": "Turned off, every page needs a Slack sign-in, including pages already published.",
+			"defaultAccess": "New pages are open to",
+			"access": {
+				"link": "Anyone with the link",
+				"workspace": "People in this Slack workspace"
+			},
+			"workspaceHelp": "People sign in with Slack to view a workspace page. Guests can view it only when guests may use the agent. The agent uses this unless someone asks for the other.",
+			"noSignIn": "Sign in with Slack isn't set up for this Slack app, so pages are open to anyone with the link.",
+			"noWay": "With link sharing off and Sign in with Slack not set up, the agent can't publish pages.",
+			"listTitle": "Published pages",
+			"used": "{used} of {limit} kept",
+			"empty": "No pages yet. People can ask the agent in Slack for a report, table or chart as a page.",
+			"columns": {
+				"page": "Page",
+				"access": "Who can view",
+				"published": "Published",
+				"expires": "Expires",
+				"views": "Views",
+				"actions": "Actions"
+			},
+			"by": "by {user}",
+			"delete": "Delete",
+			"deletePage": "Delete page",
+			"deleteTitle": "Delete {title}?",
+			"deleteDescription": "Its link stops working straight away. This can't be undone.",
+			"deleted": "Page deleted.",
+			"errors": {
+				"pageNotFound": "It was already deleted or has expired. Reload to see what's left."
+			}
+		},
 		"uninstall": {
 			"description": "Removes the agent from Slack and deletes its API key. Past charges stay in your billing history.",
 			"button": "Uninstall",

@@ -35,6 +35,10 @@ CREATE TABLE "public"."slack_installations" (
   "schedule_creators"       text                     NOT NULL DEFAULT 'everyone'::text,
   "bot_scopes"              text[],
   "search_mode"             text                     NOT NULL DEFAULT 'dm'::text,
+  "pages_enabled"           boolean                  NOT NULL DEFAULT true,
+  "page_expiry_days"        integer                  NOT NULL DEFAULT 30,
+  "page_default_access"     text                     NOT NULL DEFAULT 'link'::text,
+  "page_link_access"        boolean                  NOT NULL DEFAULT true,
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
@@ -49,6 +53,9 @@ CREATE TABLE "public"."slack_installations" (
   CONSTRAINT "slack_installations_model_check" CHECK (((length(model) >= 1) AND (length(model) <= 200))),
   CONSTRAINT "slack_installations_monthly_cap_check" CHECK ((monthly_cap_nanos > 0)),
   CONSTRAINT "slack_installations_over_plan_check" CHECK ((over_plan = ANY (ARRAY['refuse'::text, 'move_up'::text]))),
+  CONSTRAINT "slack_installations_page_access_check" CHECK ((page_link_access OR (page_default_access = 'workspace'::text))),
+  CONSTRAINT "slack_installations_page_default_access_check" CHECK ((page_default_access = ANY (ARRAY['link'::text, 'workspace'::text]))),
+  CONSTRAINT "slack_installations_page_expiry_days_check" CHECK ((page_expiry_days = ANY (ARRAY[7, 30, 90]))),
   CONSTRAINT "slack_installations_pkey" PRIMARY KEY (id),
   CONSTRAINT "slack_installations_plan_people_check" CHECK (((plan_people >= 1) AND (plan_people <= 10000000))),
   CONSTRAINT "slack_installations_schedule_creators_check" CHECK ((schedule_creators = ANY (ARRAY['everyone'::text, 'linked'::text]))),
@@ -123,6 +130,14 @@ COMMENT ON COLUMN "public"."slack_installations"."schedule_creators" IS 'Who may
 COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
 
 COMMENT ON COLUMN "public"."slack_installations"."search_mode" IS 'Where the agent may search Slack as the person asking (Slack''s real-time search, with the search:read.public scope): off, dm (direct messages with the agent, the default, so only the person asking reads what it finds) or dm_and_channels. Search results are never stored.';
+
+COMMENT ON COLUMN "public"."slack_installations"."pages_enabled" IS 'Whether the agent may publish shared pages (on by default). Off, it publishes none; pages already published stay until they expire or an admin deletes them.';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_expiry_days" IS 'How many days a new shared page is kept before the Slack Worker deletes it: 7, 30 (default) or 90.';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_default_access" IS 'Who can view a new shared page unless the agent picks otherwise: link (anyone with the link) or workspace (people in the Slack workspace, after signing in with Slack).';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_link_access" IS 'Whether pages may be shared with anyone who has the link. Off, page_default_access must be workspace, and link pages already published need a Slack sign-in too.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

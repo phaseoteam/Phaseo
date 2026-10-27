@@ -197,7 +197,7 @@ describe("an answer that searched Slack", () => {
 	});
 
 	it("is explained to the model whenever it can search", () => {
-		expect(searchInstructions("on", "U0PERSON01", false)).toContain("once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos, skills or recurring tasks");
+		expect(searchInstructions("on", "U0PERSON01", false)).toContain("once you've searched in an answer you can't ask a question with ask_question, save notes, pins, to-dos, skills or recurring tasks, or publish shared pages");
 		expect(searchInstructions("off", "U0PERSON01", false)).not.toContain("ask_question");
 		expect(searchInstructions("scheduled", "U0PERSON01", false)).toBe("You can't search Slack messages in a scheduled run: Slack lets you search only while answering someone's message. If the task needs a Slack search, say so.");
 	});

@@ -29,6 +29,10 @@ const SCHEDULE_LINES = /^ {2}"(?:schedules_enabled|schedules_max|schedule_creato
 const searchMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_search.sql'));
 const searchMigration = await readFile(new URL(`../migrations/${searchMigrationName}`, import.meta.url), 'utf8');
 const SEARCH_LINES = /^ {2}"search_mode" .*\n|^ {2}CONSTRAINT "slack_installations_search_mode_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."search_mode" .*\n\n/gm;
+// The pages migration adds the shared page settings: four columns, three checks and their comments.
+const pagesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_pages.sql'));
+const pagesMigration = await readFile(new URL(`../migrations/${pagesMigrationName}`, import.meta.url), 'utf8');
+const PAGES_LINES = /^ {2}"(?:pages_enabled|page_expiry_days|page_default_access|page_link_access)" .*\n|^ {2}CONSTRAINT "slack_installations_page_(?:access|default_access|expiry_days)_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:pages_enabled|page_expiry_days|page_default_access|page_link_access)" .*\n\n/gm;
 const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
@@ -86,6 +90,7 @@ try {
   await db.exec(modelChoiceMigration);
   await db.exec(botScopesMigration);
   await db.exec(searchMigration);
+  await db.exec(pagesMigration);
 
   // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
   // uninstall (slack-agent-memory.test.mjs, slack-agent-schedules.test.mjs).
@@ -119,6 +124,11 @@ try {
       assert.equal(search.length, 3, 'slack_installations declares the search mode column, check and comment');
       for (const line of search) assert.ok(words(searchMigration).includes(words(line)), `the search migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(SEARCH_LINES, '');
+      // And what the pages migration added.
+      const pagesLines = definition.match(PAGES_LINES) ?? [];
+      assert.equal(pagesLines.length, 11, 'slack_installations declares the shared page settings, their checks and comments');
+      for (const line of pagesLines) assert.ok(words(pagesMigration).includes(words(line)), `the pages migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(PAGES_LINES, '');
     }
     assert.ok(migration.includes(definition), `${table} migration matches the declarative definition`);
   }
@@ -181,6 +191,17 @@ try {
   assert.equal(searching.search_mode, 'dm_and_channels');
   await assert.rejects(rows('update public.slack_installations set search_mode = $2 where id = $1', [first.id, 'everywhere']), /slack_installations_search_mode_check/);
   await rows("update public.slack_installations set search_mode = 'dm' where id = $1", [first.id]);
+  // Shared pages are on, kept 30 days and open to anyone with the link, until an admin changes it.
+  assert.equal(first.pages_enabled, true);
+  assert.equal(first.page_expiry_days, 30);
+  assert.equal(first.page_default_access, 'link');
+  assert.equal(first.page_link_access, true);
+  await assert.rejects(rows('update public.slack_installations set page_expiry_days = 14 where id = $1', [first.id]), /slack_installations_page_expiry_days_check/);
+  await assert.rejects(rows("update public.slack_installations set page_default_access = 'public' where id = $1", [first.id]), /slack_installations_page_default_access_check/);
+  // Without link sharing, new pages must default to the Slack workspace.
+  await assert.rejects(rows('update public.slack_installations set page_link_access = false where id = $1', [first.id]), /slack_installations_page_access_check/);
+  await rows("update public.slack_installations set page_link_access = false, page_default_access = 'workspace', page_expiry_days = 90 where id = $1", [first.id]);
+  await rows("update public.slack_installations set page_link_access = true, page_default_access = 'link', page_expiry_days = 30 where id = $1", [first.id]);
 
   // One live installation per workspace and per Slack team; uninstalled rows stay for billing history.
   await assert.rejects(install(ws(1), 'T0TEAM0002'), /slack_installations_live_workspace_idx/);

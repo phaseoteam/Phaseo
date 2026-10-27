@@ -179,7 +179,7 @@ Einige Grenzen setzt Slack:
 - Slack erlaubt diese Suche nur Apps im Slack Marketplace und den eigenen Apps eines Unternehmens. Die Slack-App von Phaseo kann suchen, sobald ihr Eintrag im Slack Marketplace genehmigt ist; bis dahin sagt der Agent, dass die Suche nicht verfügbar ist. Um schon jetzt zu suchen, nutze deine eigene Slack-App (siehe unten, „Deine eigene Slack-App verwenden“).
 - Installationen von vor der Suche brauchen aktualisierte Slack-Berechtigungen (siehe oben, „Slack-Berechtigungen aktualisieren“).
 
-Was er findet, wird nur für diese Antwort verwendet und nie gespeichert (siehe unten, „Daten und Datenschutz“). Aus demselben Grund kann eine Antwort, die Slack durchsucht hat, nicht innehalten, um dir eine Frage zu stellen, keine Notizen, Pins, To-dos oder Skills speichern und keine wiederkehrende Aufgabe einrichten.
+Was er findet, wird nur für diese Antwort verwendet und nie gespeichert (siehe unten, „Daten und Datenschutz“). Aus demselben Grund kann eine Antwort, die Slack durchsucht hat, nicht innehalten, um dir eine Frage zu stellen, keine Notizen, Pins, To-dos oder Skills speichern, keine wiederkehrende Aufgabe einrichten und keine geteilte Seite veröffentlichen.
 
 ## Wer ihn nutzen kann
 
@@ -299,6 +299,41 @@ Inhaber und Administratoren legen sie unter **Wiederkehrende Aufgaben** in **Ein
 
 Derselbe Abschnitt listet jede Aufgabe: was sie tut, wo sie postet, wie oft, ihren nächsten Lauf, wer sie eingerichtet hat und wie ihr letzter Lauf ausging. Du kannst jede davon pausieren, fortsetzen oder löschen. Eine fortgesetzte Aufgabe läuft zu ihrem nächsten Termin, und ihre Fehler zählen wieder ab null. Beim Deinstallieren des Agenten werden alle seine wiederkehrenden Aufgaben gelöscht.
 
+## Geteilte Seiten
+
+Wenn eine Antwort für eine Slack-Nachricht zu lang oder zu umfangreich ist, etwa ein Bericht, eine Tabelle oder ein Diagramm, kann der Agent sie als Webseite veröffentlichen und in seiner Antwort verlinken. Bitte ihn zum Beispiel so darum:
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+Eine Seite ist eine einzelne HTML-Datei, die der Agent schreibt, mit Text, Tabellen und Diagrammen. Seiten sind statisch: Bevor Phaseo eine Seite aufbewahrt, entfernt es Skripte, Links, Formulare und alles, was von anderswo geladen würde, etwa Schriften oder Bilder anderer Websites. Eine Seite kann also keine Skripte ausführen und nichts irgendwohin senden, und Webadressen stehen darauf als reiner Text. Seiten öffnen sich auf `slack.phaseo.app` in einer abgeschotteten Sandbox, sodass eine Seite nicht an deine Anmeldung bei Phaseo oder Slack herankommt.
+
+| Wer eine Seite sehen kann | Wie |
+| --- | --- |
+| **Alle mit dem Link** (Standard) | Alle, die den Link haben, ohne Anmeldung. Der Link ist lang und zufällig, er lässt sich also nicht erraten. |
+| **Personen in diesem Slack-Workspace** | Mitglieder deines Slack-Workspace, nachdem sie sich mit Slack angemeldet haben. Gäste nur, solange **Gäste zulassen** an ist, Personen aus anderen Unternehmen gar nicht. Eine Anmeldung gilt 8 Stunden. |
+
+Der Agent nimmt die Standardeinstellung deiner Administratoren, außer jemand bittet um die andere, zum Beispiel `@Phaseo make it a page only our Slack workspace can see`.
+
+### Limits für Seiten
+
+- Eine Seite wird standardmäßig 30 Tage aufbewahrt und dann gelöscht. Administratoren können für neue Seiten 7, 30 oder 90 Tage wählen.
+- Jede Antwort kann bis zu 3 Seiten veröffentlichen, und jeder Slack-Workspace behält bis zu 200 Seiten gleichzeitig. Eine Seite darf bis zu 512 KB groß sein.
+- Das Veröffentlichen gehört zur Antwort: Es kostet nichts extra, und die Modell-Tokens für das Schreiben der Seite zählen zum Limit der Antwort von $0.50.
+- Personen aus anderen Unternehmen in geteilten Slack-Connect-Kanälen können keine Seiten veröffentlichen.
+- Eine Antwort, die Slack durchsucht hat, kann keine Seite veröffentlichen, weil eine Seite aufbewahrt, was der Agent geschrieben hat (siehe oben, „Slack durchsuchen“).
+
+### Was Administratoren für Seiten steuern
+
+Unter **Geteilte Seiten** in **Einstellungen → Slack**:
+
+- **Agent darf Seiten veröffentlichen** (standardmäßig an) schaltet das Veröffentlichen aus. Bereits veröffentlichte Seiten bleiben, bis sie ablaufen oder du sie löschst.
+- **Neue Seiten aufbewahren für** 7, 30 oder 90 Tage.
+- **Alle mit dem Link können Seiten ansehen** (standardmäßig an). Ausgeschaltet braucht jede Seite eine Anmeldung mit Slack, auch bereits veröffentlichte.
+- **Neue Seiten sind offen für** legt die Standardeinstellung fest, wenn beide Möglichkeiten verfügbar sind.
+- Die Liste zeigt für jede Seite den Titel, wer sie angefragt hat, wann sie veröffentlicht wurde und wann sie abläuft und wie oft sie geöffnet wurde. Inhaber und Administratoren können jede Seite löschen, und ihr Link funktioniert dann sofort nicht mehr. Öffnen können sie eine Seite, wenn deren Zugriff es erlaubt: Für eine Seite für den Slack-Workspace müssen sie sich als Mitglied mit Slack anmelden. Das Aktivitätsprotokoll des Workspace hält Löschungen ohne den Titel fest.
+
+**Personen in diesem Slack-Workspace** braucht „Mit Slack anmelden“ für die Slack-App, die der Agent nutzt. Solange das nicht eingerichtet ist, sagt **Einstellungen → Slack** das, und Seiten sind für alle mit dem Link offen. Mit deiner eigenen Slack-App muss ihr Manifest die Weiterleitungs-URL `https://slack.phaseo.app/p/signin` enthalten, wie das Manifest von Phaseo (siehe unten, „Deine eigene Slack-App verwenden“).
 ## Limits
 
 Inhaber und Administratoren legen diese Werte unter **Einstellungen → Slack** fest:
@@ -372,10 +407,11 @@ Die API-Bedingungen von Slack erlauben weder Training mit Slack-Daten noch deren
 - **Geteilte Dateien werden gelesen, nicht behalten.** Der Agent lädt die Bilder und PDFs, die er für eine Antwort liest, herunter und schickt sie mit den Anfragen dieser Antwort an das Modell, nach denselben Regeln. Er speichert sie nie; nur ihre Slack-Datei-IDs und Namen bleiben mit der Nachricht erhalten, bis die Antwort fertig ist.
 - **Slack-Suchergebnisse werden nicht behalten.** Was der Agent beim Durchsuchen von Slack findet, geht mit den Anfragen dieser Antwort an das Modell, nach denselben Regeln, und nirgendwohin sonst: nicht in sein Arbeitsgedächtnis, nicht in seine Logs und nicht in die Datenbank von Phaseo, auch nicht, während er auf deine Antwort auf eine Frage wartet. Bei einer Antwort, die gesucht hat, behält sein Arbeitsgedächtnis nur, welche Tools er genutzt hat, und einen Hinweis, dass er geantwortet hat, nicht, wonach er gesucht, was er gefunden oder was er geschrieben hat. Die Berechtigung von Slack, für dich zu suchen, bleibt bei deiner Nachricht, bis die Antwort fertig ist.
 - **Wiederkehrende Aufgaben.** Für jede Aufgabe behält der Agent ihren Titel und ihre Anweisung, wo sie postet, ihren Zeitplan und ihre Zeitzone, die Slack-ID der Person, die sie eingerichtet hat, und wie ihr letzter Lauf ausging. Sie bleiben, bis jemand die Aufgabe storniert oder löscht oder du den Agenten deinstallierst. Inhaber und Administratoren können sie unter **Einstellungen → Slack** sehen, pausieren und löschen.
+- **Geteilte Seiten bis zu ihrem Ablauf.** Eine Seite, die der Agent veröffentlicht, kann enthalten, was in Slack gesagt wurde oder was er gefunden hat, aber nie Ergebnisse einer Slack-Suche. Seiten sind statisch, eine Seite kann also keine Skripte ausführen und nichts irgendwohin senden. Phaseo behält die Seite, ihren Titel, die Slack-ID der Person, die sie angefragt hat, und wie oft sie geöffnet wurde, bis sie abläuft (nach 7, 30 oder 90 Tagen, wie deine Administratoren es gewählt haben), ein Inhaber oder Administrator sie löscht oder du den Agenten deinstallierst. Öffnen können sie alle mit ihrem Link oder nur angemeldete Mitglieder deines Slack-Workspace, je nach Einstellung der Seite. Seiten erscheinen nie in den Logs von Phaseo.
 - **Nichts archiviert.** Phaseo archiviert nichts aus Slack. Die eigenen Logs des Agenten enthalten nur Slack-IDs und Status.
 - **Verschlüsselte Secrets.** Bot-Tokens und die Secrets deiner Slack-App werden verschlüsselt gespeichert und nie wieder angezeigt.
 
-Beim Deinstallieren werden der API-Schlüssel des Agenten, seine Notizen, gespeicherten Skills und wiederkehrenden Aufgaben gelöscht und seine Guardrail entfernt.
+Beim Deinstallieren werden der API-Schlüssel des Agenten, seine Notizen, gespeicherten Skills und wiederkehrenden Aufgaben gelöscht und seine Guardrail entfernt. Auch seine geteilten Seiten werden gelöscht, und ihre Links funktionieren nicht mehr.
 
 ## Deine eigene Slack-App verwenden
 
@@ -435,7 +471,8 @@ Wähle unter **Einstellungen → Slack** bei **Slack-App** die Option **Deine Sl
   },
   "oauth_config": {
     "redirect_urls": [
-      "https://phaseo.app/api/account/settings/slack/oauth/callback"
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
     ],
     "scopes": {
       "bot": [
@@ -504,11 +541,13 @@ Ein paar Regeln für deine eigene App:
 - Das Manifest nutzt das Agent-Messaging-Erlebnis von Slack (`agent_view`), das einzige, das Slack neuen Apps anbietet.
 - Eine Slack-App kann mit einem Phaseo-Workspace verbunden sein, und ein Phaseo-Workspace kann eine Slack-App speichern.
 - Solange der Agent mit deiner App installiert ist, kannst du nur ihre Secrets ersetzen. Um zu einer anderen App oder zurück zu der von Phaseo zu wechseln, deinstalliere ihn zuerst.
+- Die zweite Weiterleitungs-URL im Manifest, `https://slack.phaseo.app/p/signin`, lässt Personen sich mit Slack anmelden, um Seiten zu sehen, die mit deinem Slack-Workspace geteilt sind. Hast du deine App aus einem älteren Manifest erstellt, füge sie auf der Seite **App Manifest** der App hinzu.
 
 ## Pausieren oder deinstallieren
 
 - **Antworten pausieren** unter **Einstellungen → Slack** stoppt alle Antworten, bis du **Antworten fortsetzen** wählst. Wer dem Agenten schreibt, bekommt einen privaten Hinweis, dass er pausiert ist. Wiederkehrende Aufgaben, die fällig werden, während er pausiert ist, werden ebenfalls pausiert; setze sie unter **Wiederkehrende Aufgaben** fort.
 - **Deinstallieren** stoppt den Agenten sofort, löscht seinen API-Schlüssel, seine Notizen, gespeicherten Skills und wiederkehrenden Aufgaben, entfernt seine Guardrail und entfernt die App aus Slack. Wenn Slack das Entfernen nicht bestätigt, sagt Phaseo dir das, und du solltest die App auch in Slack entfernen. Die Guardrail bleibt, wenn du sie anderen Schlüsseln oder Mitgliedern zugewiesen hast.
+- Beim Deinstallieren werden auch die geteilten Seiten des Agenten gelöscht, sodass ihre Links nicht mehr funktionieren.
 - Wenn die App in Slack entfernt oder ihr Bot-Token widerrufen wird, wird sie in Phaseo auf dieselbe Weise deinstalliert.
 
 Frühere Abrechnungen bleiben in deinem Abrechnungsverlauf. Die Personen, die den Agenten in dem Monat genutzt haben, in dem du ihn deinstallierst, werden trotzdem am Ende dieses Monats abgerechnet. Du kannst den Agenten jederzeit wieder hinzufügen.
@@ -543,3 +582,5 @@ Wenn der Agent gar nicht antwortet:
 - Prüfe bei deiner eigenen Slack-App, dass beide Request-URLs mit deiner App-ID enden, dass Slack sie als verifiziert anzeigt und dass die App unter **Einstellungen → Slack** gespeichert ist.
 
 Wenn die Installation nicht abgeschlossen wird, zeigt **Einstellungen → Slack** den Grund an. Am häufigsten fehlt noch die Prüfung der Datenschutzeinstellungen (öffne einmal **Chat**), oder der Slack-Workspace hat den Agenten bereits aus einem anderen Phaseo-Workspace (deinstalliere ihn dort zuerst).
+
+Wenn sich eine geteilte Seite nicht öffnet, ist sie vielleicht abgelaufen oder wurde gelöscht: Bitte den Agenten um eine neue. Eine Seite, die mit deinem Slack-Workspace geteilt ist, fragt nach einer Anmeldung mit Slack; melde dich mit diesem Workspace an. Gäste können sie nur öffnen, solange **Gäste zulassen** an ist.

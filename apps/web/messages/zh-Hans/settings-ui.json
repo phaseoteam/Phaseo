@@ -7189,6 +7189,51 @@
 				"scheduleNotFound": "它已被删除。请重新加载查看剩余内容。"
 			}
 		},
+		"pages": {
+			"title": "共享页面",
+			"description": "当报告、表格或图表放不进一条 Slack 消息时，智能体会发布网页并在回复中附上链接。页面可能包含 Slack 里的对话内容，因此只保留到过期为止。卸载会删除全部页面。",
+			"enable": "允许智能体发布页面",
+			"enableHelp": "关闭后不再发布。已发布的页面会保留到过期，或直到你在这里删除。",
+			"externalHelp": "其他公司的人（Slack Connect）不能发布页面。",
+			"turnedOn": "智能体可以再次发布页面。",
+			"turnedOff": "智能体不再发布页面。已发布的页面会保留到过期。",
+			"saved": "已保存。",
+			"loading": "正在加载…",
+			"unavailable": "此处无法使用共享页面。",
+			"expiry": "新页面保留时长",
+			"days": "{days} 天",
+			"expiryHelp": "页面过期后会被删除。更改只对新页面生效。",
+			"linkAccess": "拥有链接的任何人都可以查看页面",
+			"linkAccessHelp": "关闭后，每个页面都需要用 Slack 登录才能查看，已发布的页面也一样。",
+			"defaultAccess": "新页面向谁开放",
+			"access": {
+				"link": "拥有链接的任何人",
+				"workspace": "此 Slack 工作区的成员"
+			},
+			"workspaceHelp": "查看工作区页面需要用 Slack 登录。只有在允许访客使用智能体时，访客才能查看。除非有人要求另一种方式，智能体都会使用此设置。",
+			"noSignIn": "此 Slack 应用尚未设置用 Slack 登录，因此页面对拥有链接的任何人开放。",
+			"noWay": "链接共享已关闭，且未设置用 Slack 登录，智能体无法发布页面。",
+			"listTitle": "已发布的页面",
+			"used": "已保留 {used} / {limit}",
+			"empty": "还没有页面。可以在 Slack 中让智能体把报告、表格或图表做成页面。",
+			"columns": {
+				"page": "页面",
+				"access": "谁可以查看",
+				"published": "发布时间",
+				"expires": "过期时间",
+				"views": "查看次数",
+				"actions": "操作"
+			},
+			"by": "应 {user} 请求",
+			"delete": "删除",
+			"deletePage": "删除页面",
+			"deleteTitle": "删除 {title}？",
+			"deleteDescription": "链接会立即失效。此操作无法撤销。",
+			"deleted": "页面已删除。",
+			"errors": {
+				"pageNotFound": "页面已被删除或已过期。请重新加载查看剩余内容。"
+			}
+		},
 		"uninstall": {
 			"description": "从 Slack 中移除智能体并删除其 API 密钥。历史扣费仍保留在你的账单记录中。",
 			"button": "卸载",

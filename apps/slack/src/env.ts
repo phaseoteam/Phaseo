@@ -1,5 +1,6 @@
 import type { ThreadCoordinator } from "./coordinator";
 import type { WorkspaceMeter } from "./meter";
+import type { PageStore } from "./pages";
 import type { TurnRef } from "./turns";
 
 // Bindings, vars and secrets of the Slack agent Worker (wrangler.jsonc). Secrets
@@ -11,7 +12,11 @@ export interface Env {
 	METERS: DurableObjectNamespace<WorkspaceMeter>;
 	/** Agent turns (AgentTurnWorkflow), one instance per Slack event. */
 	AGENT_TURNS: Workflow<TurnRef>;
+	/** One PageStore per installation: the agent's shared pages, deleted at expiry and on uninstall. */
+	PAGES: DurableObjectNamespace<PageStore>;
 	ENV?: string;
+	/** This Worker's public origin (https://slack.phaseo.app): shared page links and their Slack sign-in. Unset: no shared pages. */
+	PUBLIC_ORIGIN?: string;
 	/** The gateway's base URL (default https://api.phaseo.app/v1), which agent turns call. */
 	PHASEO_API_BASE_URL?: string;
 	/** Where the account linking page lives (default https://phaseo.app). */
@@ -21,7 +26,7 @@ export interface Env {
 	SLACK_SIGNING_SECRET?: string;
 	/** The hosted app's id (A...). When set, events for any other app are refused at /events. */
 	SLACK_APP_ID?: string;
-	/** The hosted app's client credentials, only needed to refresh rotating bot tokens. */
+	/** The hosted app's client credentials: refreshing rotating bot tokens, and Sign in with Slack for shared pages. */
 	SLACK_CLIENT_ID?: string;
 	SLACK_CLIENT_SECRET?: string;
 

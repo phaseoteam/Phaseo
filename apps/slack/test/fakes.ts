@@ -7,6 +7,7 @@ import type { SlackClient, SlackResult, SlackUser } from "../src/slack-api";
 import { DbError, type Db } from "../src/supabase";
 import { ThreadCoordinator } from "../src/coordinator";
 import { WorkspaceMeter } from "../src/meter";
+import { PageStore } from "../src/pages";
 
 // Fakes for tests on Node: Durable Object state backed by a real SQLite database
 // (node:sqlite), Durable Object namespaces that build the real classes, an
@@ -16,8 +17,9 @@ import { WorkspaceMeter } from "../src/meter";
 type SqliteStatement = { all(...params: unknown[]): Record<string, unknown>[] };
 type SqliteDatabase = { prepare(sql: string): SqliteStatement; exec(sql: string): void };
 
-const { DatabaseSync } = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } })
-	.process.getBuiltinModule("node:sqlite") as { DatabaseSync: new (path: string) => SqliteDatabase };
+const builtin = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process.getBuiltinModule;
+const { DatabaseSync } = builtin("node:sqlite") as { DatabaseSync: new (path: string) => SqliteDatabase };
+const { createHash } = builtin("node:crypto") as { createHash(algorithm: string): { update(text: string): { digest(encoding: "hex"): string } } };
 
 export class FakeStorage {
 	readonly db = new DatabaseSync(":memory:");
@@ -84,9 +86,19 @@ export function fakeState(storage = new FakeStorage()): DurableObjectState {
 
 export class FakeNamespace<T> {
 	readonly instances = new Map<string, T>();
+	private readonly names = new Map<string, string>();
 	constructor(private readonly create: (name: string) => T) {}
+	/** Like Cloudflare's: a 64-character hex id for each name. */
 	idFromName(name: string) {
-		return { name, toString: () => name };
+		const hex = createHash("sha256").update(name).digest("hex");
+		this.names.set(hex, name);
+		return { name, toString: () => hex };
+	}
+	/** Only ids this namespace made, as Cloudflare refuses any other. */
+	idFromString(hex: string) {
+		const name = this.names.get(hex);
+		if (name === undefined) throw new TypeError("Invalid Durable Object ID");
+		return { name, toString: () => hex };
 	}
 	get(id: { name: string }): T {
 		let instance = this.instances.get(id.name);
@@ -98,7 +110,7 @@ export class FakeNamespace<T> {
 	}
 }
 
-export function storageOf(object: WorkspaceMeter | ThreadCoordinator): FakeStorage {
+export function storageOf(object: WorkspaceMeter | ThreadCoordinator | PageStore): FakeStorage {
 	return (object as unknown as { ctx: { storage: FakeStorage } }).ctx.storage;
 }
 
@@ -119,6 +131,7 @@ export type TestWorld = {
 	env: Env;
 	meters: FakeNamespace<WorkspaceMeter>;
 	threads: FakeNamespace<ThreadCoordinator>;
+	pages: FakeNamespace<PageStore>;
 	db: FakeDb;
 	slack: FakeSlack;
 	clock: { now: number };
@@ -165,11 +178,17 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 		thread.deps = deps;
 		return thread;
 	});
+	const pages = new FakeNamespace<PageStore>(() => {
+		const store = new PageStore(fakeState(), env);
+		store.db = db;
+		return store;
+	});
 	env.METERS = meters as unknown as Env["METERS"];
 	env.THREADS = threads as unknown as Env["THREADS"];
+	env.PAGES = pages as unknown as Env["PAGES"];
 	const turns = new FakeWorkflow();
 	env.AGENT_TURNS = turns as unknown as Env["AGENT_TURNS"];
-	return { env, meters, threads, db, slack, clock, deps, turns };
+	return { env, meters, threads, pages, db, slack, clock, deps, turns };
 }
 
 export async function installationRow(overrides: Partial<Installation> = {}, secrets: Record<string, string> = {}): Promise<Installation> {
@@ -205,6 +224,10 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		status: "active",
 		bot_scopes: null,
 		search_mode: "dm",
+		pages_enabled: true,
+		page_expiry_days: 30,
+		page_default_access: "link",
+		page_link_access: true,
 		...overrides,
 	};
 }

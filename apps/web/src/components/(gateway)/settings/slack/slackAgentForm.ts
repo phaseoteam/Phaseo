@@ -14,6 +14,7 @@ export type SlackSearchMode = "off" | "dm" | "dm_and_channels";
 export const SLACK_SEARCH_MODES: readonly SlackSearchMode[] = ["off", "dm", "dm_and_channels"];
 /** The Slack scope searching needs; installations from before it lack it until an admin updates the Slack permissions. */
 export const SLACK_SEARCH_SCOPE = "search:read.public";
+export type SlackPageAccess = "link" | "workspace";
 
 export type SlackAgentSettings = {
 	plan_people: number;
@@ -40,6 +41,12 @@ export type SlackAgentSettings = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	token_monthly_limit_usd: number;
+	/** Shared pages the agent publishes (absent from an API that predates them): on or off, days a new one is kept, who may view it. */
+	pages_enabled?: boolean;
+	page_expiry_days?: number;
+	page_default_access?: SlackPageAccess;
+	/** Whether a page may be open to anyone with its link. Off, every page needs a Slack sign-in. */
+	page_link_access?: boolean;
 };
 
 export type SlackAgentInstallation = {

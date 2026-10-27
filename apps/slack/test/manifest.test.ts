@@ -4,6 +4,7 @@ import { ORIGINAL_BOT_SCOPES } from "../src/installations";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { createApp } from "../src/index";
 import { hostedApp } from "../src/installations";
+import { SIGN_IN_PATH } from "../src/page-viewer";
 import { encryptSlackSecrets } from "../src/lib/slack-secrets";
 import { signSlackRequest } from "../src/signature";
 import {
@@ -25,8 +26,9 @@ import {
 // guide prints the same manifest in every docs language, with YOUR_APP_ID in the
 // request URLs, for companies that use their own Slack app. These checks keep
 // both in step with the code: the bot scopes web-api asks for at install, the
-// events this Worker handles, the OAuth redirect, and the production host and
-// routes Slack sends requests to.
+// events this Worker handles, the OAuth redirects (install, and Sign in with
+// Slack for shared pages), and the production host and routes Slack sends
+// requests to.
 
 type Manifest = {
 	features: { agent_view?: { agent_description?: string }; assistant_view?: unknown; app_home?: Record<string, boolean> };
@@ -127,12 +129,15 @@ describe("Slack app manifest", () => {
 		expect(manifest.oauth_config.scopes.user).toBeUndefined();
 	});
 
-	it("registers web-api's OAuth callback as the only redirect URL", () => {
+	it("registers web-api's OAuth callback and the shared pages' Sign in with Slack redirect, and nothing else", () => {
 		const source = read("../../web-api/src/routes/account/settings-slack.ts");
 		const origin = source.match(/const DEFAULT_WEB_ORIGIN = "([^"]+)"/)?.[1];
 		const path = source.match(/const CALLBACK_PATH = "([^"]+)"/)?.[1];
 		expect(origin && path).toBeTruthy();
-		expect(manifest.oauth_config.redirect_urls).toEqual([`${origin}${path}`]);
+		// The production Worker's PUBLIC_ORIGIN and the path page-viewer.ts sends Slack.
+		const publicOrigin = read("../wrangler.jsonc").match(/"PUBLIC_ORIGIN":\s*"([^"]+)"/)?.[1];
+		expect(publicOrigin).toBe("https://slack.phaseo.app");
+		expect(manifest.oauth_config.redirect_urls).toEqual([`${origin}${path}`, `${publicOrigin}${SIGN_IN_PATH}`]);
 	});
 
 	it("subscribes to exactly the bot events the Worker handles", async () => {

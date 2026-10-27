@@ -1866,7 +1866,7 @@ describe("Slack search", () => {
 		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(refusals).toEqual([{ asked: false, error: expect.stringContaining("You searched Slack in this answer, so you can't ask a question") }]);
-		expect(agent.requests[0].instructions).toContain("Slack's terms don't allow keeping anything its search finds, so once you've searched in an answer you can't ask a question with ask_question or save notes, pins, to-dos, skills or recurring tasks.");
+		expect(agent.requests[0].instructions).toContain("Slack's terms don't allow keeping anything its search finds, so once you've searched in an answer you can't ask a question with ask_question, save notes, pins, to-dos, skills or recurring tasks, or publish shared pages.");
 		expect(step.waits).toEqual([]);
 		expect(step.outputs.map((entry) => entry.name)).not.toContain("ask-1");
 	});
@@ -1948,6 +1948,30 @@ describe("Slack search", () => {
 		expect(results).toEqual([expect.objectContaining({ saved: true }), refused, refused, refused]);
 		expect(world.db.rpcs.filter((call) => call.fn.startsWith("save_")).map((call) => call.args.p_text ?? call.args.p_instructions)).toEqual(["Mobile ships later."]);
 		expect(JSON.stringify(world.db.rpcs)).not.toContain(SNIPPET);
+	});
+
+	it("publishes no shared page once the answer has searched", async () => {
+		world.env.PUBLIC_ORIGIN = "https://slack.phaseo.app";
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			// Before a search, as ever.
+			results.push(await callTool(request, "publish_page", { title: "Launch status", html: "<h1>Mobile ships later.</h1>" }));
+			await callTool(request, "search_slack", { query: "launch plan" });
+			results.push(await callTool(request, "publish_page", { title: "Launch plan", html: `<h1>Launch plan</h1><p>${SNIPPET}</p>` }));
+			await hooks.onText("I can't put what Slack search finds on a page.");
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(results).toEqual([
+			expect.objectContaining({ url: expect.stringMatching(/^https:\/\/slack\.phaseo\.app\/p\//), title: "Launch status" }),
+			{ published: false, note: expect.stringContaining("you searched Slack in this answer") },
+		]);
+		const pages = world.pages.get(world.pages.idFromName(INSTALLATION_ID));
+		expect((await pages.list(NOW)).map((page) => page.title)).toEqual(["Launch status"]);
+		expect(JSON.stringify(storageOf(pages).db.prepare("SELECT * FROM pages").all())).not.toContain(SNIPPET);
 	});
 
 	it("makes at most 4 searches in an answer, however often its run starts again", async () => {

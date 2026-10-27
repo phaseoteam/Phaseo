@@ -14,7 +14,8 @@
 	"dependencies": {
 		"@phaseo/agent-sdk": "workspace:*",
 		"@resvg/resvg-wasm": "2.6.2",
-		"hono": "^4.13.11"
+		"hono": "^4.13.11",
+		"parse5": "7.3.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20260710.1",

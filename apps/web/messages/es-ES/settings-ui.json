@@ -7189,6 +7189,51 @@
 				"scheduleNotFound": "Ya se había eliminado. Recarga para ver lo que queda."
 			}
 		},
+		"pages": {
+			"title": "Páginas compartidas",
+			"description": "Páginas web que el agente publica y enlaza en su respuesta cuando un informe, una tabla o un gráfico no caben bien en un mensaje de Slack. Una página puede incluir lo que se dijo en Slack, así que solo se conserva hasta que caduca. Al desinstalar se eliminan todas.",
+			"enable": "Permitir que el agente publique páginas",
+			"enableHelp": "Si lo desactivas, no publica ninguna. Las páginas ya publicadas se mantienen hasta que caducan o las eliminas aquí.",
+			"externalHelp": "Las personas de otras empresas (Slack Connect) no pueden publicar páginas.",
+			"turnedOn": "El agente puede volver a publicar páginas.",
+			"turnedOff": "El agente ya no publica páginas. Las publicadas se mantienen hasta que caducan.",
+			"saved": "Guardado.",
+			"loading": "Cargando…",
+			"unavailable": "Las páginas compartidas no están disponibles aquí.",
+			"expiry": "Conservar las páginas nuevas durante",
+			"days": "{days} días",
+			"expiryHelp": "Las páginas se eliminan al caducar. Un cambio se aplica a las páginas nuevas.",
+			"linkAccess": "Cualquiera con el enlace puede ver las páginas",
+			"linkAccessHelp": "Si lo desactivas, todas las páginas piden iniciar sesión con Slack, también las ya publicadas.",
+			"defaultAccess": "Las páginas nuevas están abiertas a",
+			"access": {
+				"link": "Cualquiera con el enlace",
+				"workspace": "Personas de este espacio de trabajo de Slack"
+			},
+			"workspaceHelp": "Para ver una página del espacio de trabajo, las personas inician sesión con Slack. Los invitados solo pueden si los invitados pueden usar el agente. El agente usa esta opción salvo que alguien pida la otra.",
+			"noSignIn": "Iniciar sesión con Slack no está configurado para esta app de Slack, así que las páginas están abiertas a cualquiera con el enlace.",
+			"noWay": "Sin compartir por enlace y sin iniciar sesión con Slack configurado, el agente no puede publicar páginas.",
+			"listTitle": "Páginas publicadas",
+			"used": "{used} de {limit} conservadas",
+			"empty": "Todavía no hay páginas. En Slack se le puede pedir al agente un informe, una tabla o un gráfico como página.",
+			"columns": {
+				"page": "Página",
+				"access": "Quién puede verla",
+				"published": "Publicada",
+				"expires": "Caduca",
+				"views": "Visitas",
+				"actions": "Acciones"
+			},
+			"by": "por {user}",
+			"delete": "Eliminar",
+			"deletePage": "Eliminar página",
+			"deleteTitle": "¿Eliminar {title}?",
+			"deleteDescription": "Su enlace deja de funcionar al instante. No se puede deshacer.",
+			"deleted": "Página eliminada.",
+			"errors": {
+				"pageNotFound": "Ya se había eliminado o ha caducado. Recarga para ver lo que queda."
+			}
+		},
 		"uninstall": {
 			"description": "Quita el agente de Slack y elimina su clave de API. Los cargos anteriores se mantienen en tu historial de facturación.",
 			"button": "Desinstalar",

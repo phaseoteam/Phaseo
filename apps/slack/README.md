@@ -13,6 +13,8 @@ Worker reads the same tables.
 | `POST /events` | Events API request URL for the hosted Phaseo app. |
 | `POST /events/:appId` | Events API request URL for a company's own Slack app (`:appId` is its Slack app id, `A...`). Its signing secret is read from `slack_apps`. |
 | `POST /interactions`, `POST /interactions/:appId` | Interactivity request URL (Cancel, Connect account, feedback, question buttons and the Other form). |
+| `GET /p/:store/:page` | A shared page the agent published (see [Shared pages](#shared-pages)). |
+| `GET /p/signin` | Sign in with Slack's redirect, for pages shared with a Slack workspace. Registered in the manifest. |
 | `GET /health` | Liveness. |
 
 A cron trigger (every minute, production only) starts the recurring tasks that
@@ -59,6 +61,8 @@ Worker's production host and routes.
   `app_home_opened` and the tab doesn't appear; nothing else depends on them.
 - Token rotation is off. Slack can't turn it off again, and the hosted app's
   client credentials are optional secrets here.
+- The second redirect URL, `https://slack.phaseo.app/p/signin`, is Sign in with
+  Slack for shared pages. It only works for an app whose manifest lists it.
 - Editing the manifest file doesn't change the live Slack app: paste the new
   manifest on the app's App Manifest page in Slack too.
 - A new scope reaches an installation only when an admin approves it in Slack
@@ -87,9 +91,11 @@ Worker's production host and routes.
   - Serialises bot token refreshes when Slack rotates tokens.
   - Keeps Slack's `Retry-After` when a thread read gets 429, so no thread of the installation reads until it has passed.
   - Keeps an answer that waits for a reply to its question pending for the wait (`keepPending`), so it stays one answer.
+- `PageStore` (`PAGES`), one per installation: its shared pages (see [Shared pages](#shared-pages)).
 
-Both use SQLite storage. Neither keeps Slack text longer than 7 days, and logs
-carry ids and statuses only, as Slack's API terms require.
+All three use SQLite storage. The coordinator and the meter keep no Slack text
+longer than 7 days, and a shared page is kept until it expires (at most 90
+days). Logs carry ids and statuses only, as Slack's API terms require.
 
 ## Agent turns
 
@@ -279,8 +285,10 @@ turn has ended), nothing it writes is kept:
   never kept for an answer that has searched. A question asked before any search
   still works, and the run after the answer can search.
 - Every tool that saves text refuses with `savingRefusal`: `remember` (notes,
-  pins and to-dos), `save_skill` and `schedule_task` (its title and prompt are
-  kept in Postgres). Reading, ticking off and forgetting notes, and listing and
+  pins and to-dos), `save_skill`, `schedule_task` (its title and prompt are
+  kept in Postgres) and `publish_page` (a shared page keeps what the model wrote
+  for up to 90 days). Each checks after its input and before it stores
+  anything. Reading, ticking off and forgetting notes, and listing and
   cancelling recurring tasks, still work.
 - The instructions say so whenever search is offered.
 
@@ -424,6 +432,169 @@ pause, resume (`set_slack_agent_schedule_status`) and delete them in
 Settings → Slack (web-api `/api/account/settings/slack/schedules`). Uninstalling
 deletes them (the `delete_slack_agent_schedules` trigger).
 
+## Shared pages
+
+With `publish_page` (`src/pages.ts`) the agent publishes a static HTML page (a
+report, a table or a chart, in HTML and CSS with inline SVG) and links it in its
+reply. The installation's `PageStore` keeps it under a random 128-bit id; the
+link is `PUBLIC_ORIGIN/p/<store>/<page>`, where `<store>` is the store's Durable
+Object id, so the URL doesn't reveal the installation.
+
+- **Offered** when `pages_enabled` is on, `PUBLIC_ORIGIN` is set, the person
+  isn't from another organisation (the turn's `external` flag), and at least one
+  way of sharing is allowed. A turn answers as its person, so a scheduled run is
+  offered it only when the person who set it up could publish.
+- **Static**: pages hold Slack text, and the model can be steered by
+  instructions in what it reads, so a page can't run scripts or send anything
+  anywhere. `publish_page` stores the page cleaned (`src/page-html.ts`, see
+  below), tells the model what it took out, and refuses a page with nothing left
+  to show. The tool's description and the agent's instructions say a page is
+  static HTML and CSS, with URLs written out as text.
+- **Not after a search**: a page keeps what the model wrote for up to 90 days,
+  so once the answer has searched Slack (`searchedThisAnswer`), `publish_page`
+  refuses with `savingRefusal` before it stores anything (see
+  [Slack search](#slack-search)).
+- **Limits**: at most 512 KB, 3 pages per answer (counted by the answer's event
+  id in the store, across retries and questions) and 200 live pages per
+  installation. Publishing is part of the answer: no extra charge, and the
+  tokens count against its $0.50.
+- **Expiry**: `page_expiry_days` (7, 30 or 90; 30 by default) when published.
+  The store's alarm deletes expired pages; a view or a listing deletes an expired
+  one too.
+- **Uninstall**: removing the app in Slack deletes the store's pages at once
+  (`handleRemoval`), and so does uninstalling in Phaseo settings (web-api calls
+  `SlackAgentAdmin.deletePages`). As a backstop, every view and a daily alarm
+  check the installation, and an uninstalled one's pages are deleted.
+- **Kept out of logs**: a page's HTML, title and id never go into logs or
+  Workflow step outputs, and the thread's working memory notes only
+  `publish_page`.
+
+**Cleaning** (`src/page-html.ts`, `cleanPageHtml`). The page is parsed with
+`parse5`, which builds the tree the HTML standard specifies, as the browser
+builds it in the page's frame (never in quirks mode, as a `srcdoc` document
+isn't, and with scripting off, as in a sandbox without `allow-scripts`, so
+`<noscript>` holds markup). Everything not on an allowlist is removed:
+
+- dropped with their content: `script`, `noscript`, `template`, `link`, `meta`,
+  `base`, `iframe`, `frame`, `frameset`, `object`, `embed`, `portal`, `video`,
+  `audio`, `source`, form controls (`input`, `button`, `select`, `textarea`…),
+  `map`/`area`, MathML, and in SVG anything but shapes, text, gradients,
+  patterns, clipping, masks, markers and filters (so no SVG `script`,
+  `foreignObject`, `image`, `use`, `feImage`, `animate` or `set`);
+- any other HTML element that isn't kept (`form`, `canvas`, custom elements) is
+  replaced by its content, so its text stays;
+- only listed attributes stay: no `on*` handlers, `href`/`xlink:href` (a link
+  keeps its text), `srcset`, `action`, `formaction`, `ping`, `background`,
+  `poster`, `target`, `attributionsrc` and so on. `<img>` keeps `src` only for a
+  `data:image/(png|jpeg|gif|webp)` URL, and is dropped without one;
+- `style` attributes, SVG attributes (presentation attributes are CSS) and
+  `<style>` elements go when their CSS could load anything, read after CSS
+  escapes and comments: `url()` other than a `data:` image or a `#fragment` of
+  the page (gradients and filters), `@import`, `image-set()`, `image()`,
+  `cross-fade()`, `element()`, `src()`, `expression()`, `-moz-binding`,
+  `behavior` and `javascript:`. A `<style>`'s leading `@import` rules (web
+  fonts, usually) are taken out first, so the rest of it can stay.
+
+The tree is serialised and the result cleaned again until it doesn't change (at
+most 3 passes), so the browser parses exactly what was checked; a page that
+doesn't settle, nests more than 200 deep, or has no text, image or SVG left is
+refused. `publish_page` stores the cleaned page, and the viewer cleans it again
+before every view (a page that no longer passes is a 410 and counts no view), so
+no page reaches a browser uncleaned, whatever stored it, under the rules in force
+at the time. Cleaning a 430 KB table takes about 170 ms when publishing (two
+passes) and 50 ms per view. Comments, `<meta charset>` and viewport tags are
+dropped without being reported.
+
+**Serving** (`src/page-viewer.ts`). A page is never served as a document of
+its own. `/p/<store>/<page>` answers with a page of the Worker's that holds only
+an `<iframe sandbox="" srcdoc="…">`, the cleaned page escaped into `srcdoc`, and
+the page's title (escaped) as its `<title>`. That outer page is served with
+`Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; child-src 'none'; form-action 'none'; frame-ancestors 'none'; base-uri 'none'`,
+plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+`Cache-Control: private, no-store`, `X-Frame-Options: DENY` and `noindex`. It
+has no scripts of its own, and nothing from the page reaches its markup unescaped.
+
+- The empty sandbox runs no scripts at all, and gives the page an opaque origin
+  with no cookies or storage. Without `allow-top-navigation`, `allow-popups` or
+  `allow-forms` it can't navigate the outer page, open windows or submit forms.
+- The `srcdoc` document inherits the outer page's policy, which allows no
+  scripts, and whose fetch directives stop it loading or sending anything (only
+  inline styles and `data:` images).
+- `frame-src 'none'` is checked against the outer page whenever the frame
+  navigates, so no navigation leaves the frame. Pages have no links anyway, not
+  even `#anchors` (in `srcdoc` they would resolve against the outer page's URL).
+
+The cleaning closes what CSP and the sandbox can't on their own. Found in
+Chromium 151 with the earlier serving (a frame with `allow-scripts`):
+
+- **`<link rel=prerender>`**: NoStatePrefetch sends a GET for any URL, whatever
+  the policy (`prefetch-src` included), also from a static `<link>` or one inside
+  `<noscript>`. `<link>` is removed.
+- **WebRTC**: `RTCPeerConnection` contacts any STUN or TURN server the page
+  names. It needs a script, and pages have none.
+- **Host names**: a navigation or frame that `frame-src` blocks (a link click,
+  a refresh, an `<iframe src>`, an SVG link, an SVG `<set>` that gives a link its
+  `href`) still makes Chromium look up the host and connect to it, so a host name
+  could carry data. Links, refreshes, frames and SVG animation are removed.
+
+Checked in Chromium 151 (Playwright, a local "attacker" HTTP/WebSocket/UDP
+server that `*.attacker.example` resolves to, and a net log for host lookups;
+the script is outside the repo), 54 attack pages served three ways:
+
+| Serving | Pages that reached the attacker |
+| --- | --- |
+| Earlier: frame with `allow-scripts`, no cleaning | 15: prerender (full GET with the page's text), WebRTC STUN/TURN (UDP and TCP), and host lookups and connections from blocked navigations and frames |
+| Static frame and policy, no cleaning | 7: static and `<noscript>` prerender (full GET), and host lookups from link clicks (HTML and SVG, with data in the host), an SVG `<set href>` and `<iframe src>` |
+| As served now: cleaned, static frame and policy | **0**, and no host lookups in the net log |
+
+The 54 cover scripted navigations, `top` navigation, `document.write`
+refreshes, prerender (static, scripted, in `<noscript>`), speculation rules,
+`fetch`, WebSocket, `sendBeacon`, WebRTC (STUN, TURN over UDP and TCP), SVG
+`<script>`, `on*` handlers, prefetch, stylesheet, preconnect and DNS-prefetch
+links, refreshes (data in the query and in the host), link clicks (plain,
+`target=_top`/`_blank`, data in the host, SVG links, SVG `<set href>`),
+`<a ping>`, forms, CSS `url()` (also escaped), `@import`, fonts, `image-set()`,
+style attributes, images, `srcset`, `attributionsrc`, SVG `<image>`, `<use>`
+and `<feImage>`, `<iframe>`, `<object>`, `<embed>`, media posters, `<base>`,
+`background`, three mutation-XSS shapes (MathML `<mglyph>`, `<style>` closed
+inside SVG, `<noscript>` attributes) and a same-origin refresh. In a page as
+served now, inline styles, `<style>`, `data:` images, inline SVG with gradient
+fills and `<details>` work, the document is in standards mode with a `null`
+origin, and scripts don't run.
+
+Still open: nothing found in Chromium. Firefox and Safari weren't checked (the
+local builds don't match this Playwright version), though the cleaning doesn't
+depend on the browser. A page can still show a URL as text, and someone could
+copy it, as with any text the agent writes.
+
+Link unfurlers (Slackbot and others) get a generic page and count no view.
+
+**Who can view**: `link` (anyone with the link, while `page_link_access` is on)
+or `workspace`. A workspace page (and a link page once link sharing is turned
+off) needs a session for its installation: a cookie for `/p/` signed with
+`SLACK_STATE_SECRET` (purpose `page_session`), valid 8 hours. Without one, the
+viewer goes through Sign in with Slack (OpenID Connect, scope `openid`, with the
+installation's team) using the client credentials of the app the installation
+uses: the hosted app's `SLACK_CLIENT_ID` and `SLACK_CLIENT_SECRET`, or a
+company app's from `slack_apps`. A short-lived cookie binds the sign-in to the
+browser and holds the page to return to, so the page id never goes to Slack. The
+ID token comes straight from `openid.connect.token` over TLS; its issuer,
+audience, expiry and nonce are checked. Membership is decided like answers:
+`users.info` with the bot token, no bots, nobody from another organisation, no
+deactivated accounts, guests only where `allow_guests` is on. The session holds
+whether its person was a guest and when Slack last said so, and every view
+checks it again: a guest's session ends once `allow_guests` is off, without a
+Slack call, and once the last check is 10 minutes old the view asks `users.info`
+again (one call at most) and renews the cookie, which still ends 8 hours after
+sign-in. Someone who left the workspace, or became a guest where guests aren't
+allowed, loses access within 10 minutes; if Slack can't answer, the view is a
+503 and the session stays. Without client credentials the `workspace` mode
+isn't offered, and Settings says so.
+
+**Settings → Slack** (web-api `/api/account/settings/slack/pages`) lists and
+deletes pages through the service binding to the `SlackAgentAdmin` entrypoint
+(`src/admin.ts`), which nothing on the internet can reach.
+
 ## Secrets
 
 Set production secrets with `wrangler secret put <NAME> --env production`.
@@ -440,7 +611,7 @@ missing.
 | `SUPABASE_URL` | yes | The Supabase project URL. |
 | The Supabase service key (named in `src/env.ts`) | yes | The Slack tables deny every other role. |
 | `SLACK_APP_ID` | no | The hosted app's id. When set, `/events` refuses events for any other app. |
-| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They are only needed when token rotation is on, to refresh bot tokens. |
+| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They refresh bot tokens when token rotation is on, and they turn on Sign in with Slack for shared pages: without them, pages can only be open to anyone with the link. |
 | `SLACK_SECRETS_ENCRYPTION_KEY_VERSION` | no | Defaults to `v1`. It must match web-api. |
 | `DISCORD_SIGNUP_WEBHOOK_URL` | no | Phaseo's internal Discord webhook, the same value as web-api. When set, removing the app inside Slack posts a short alert (workspace, Slack team, hosted or company app). Without it there is no alert. |
 
@@ -448,6 +619,9 @@ Vars:
 - `ENV`.
 - `PHASEO_WEB_ORIGIN`: where `/slack/link` lives (default `https://phaseo.app`).
 - `PHASEO_API_BASE_URL`: the gateway (default `https://api.phaseo.app/v1`).
+- `PUBLIC_ORIGIN`: this Worker's public origin, for shared page links and their
+  sign-in redirect (`https://slack.phaseo.app` in production). Unset (the preview
+  Worker), the agent publishes no pages.
 
 Agent turns call the gateway's public URL rather than a service binding. A
 service binding's request carries no country, and providers that refuse requests

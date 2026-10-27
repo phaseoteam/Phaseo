@@ -12,6 +12,7 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
+import { pageStoreFor } from "./pages";
 import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
@@ -430,8 +431,8 @@ async function handleStop(deps: Deps, app: SlackAppContext, envelope: SlackEnvel
  * Slack sends both, in either order. One database call deletes the installation's
  * gateway key, marks it uninstalled and removes its guardrail (web-api's uninstall
  * order) and records slack_agent.uninstalled_in_slack. It is safe to repeat, and an
- * event older than a reinstall does nothing. Then the meter closes for good and
- * the Phaseo team gets an internal alert. Each queued turn re-reads the
+ * event older than a reinstall does nothing. Then the meter closes for good, the
+ * shared pages are deleted and the Phaseo team gets an internal alert. Each queued turn re-reads the
  * installation before it runs, so none answers.
  */
 async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEnvelope, event: SlackEvent): Promise<EventOutcome> {
@@ -454,6 +455,12 @@ async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	} catch {
 		// The installation is already gone, so no event reaches the meter again.
 		console.error("[slack-agent] meter not closed after uninstall", { installationId: installation.id });
+	}
+	try {
+		await pageStoreFor(deps.env, installation.id).removeAll();
+	} catch {
+		// Its next view or daily check finds the installation gone and deletes them.
+		console.error("[slack-agent] shared pages not deleted after uninstall", { installationId: installation.id });
 	}
 	console.log("[slack-agent] uninstalled in Slack", { installationId: installation.id, event: event.type });
 	// Slack waits for this event's answer (up to three seconds), so the alert runs after it.

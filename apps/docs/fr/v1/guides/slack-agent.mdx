@@ -179,7 +179,7 @@ Certaines limites viennent de Slack :
 - Slack ne permet cette recherche qu’aux applications du Slack Marketplace et aux applications propres d’une entreprise. L’application Slack de Phaseo pourra chercher une fois sa fiche sur le Slack Marketplace approuvée ; d’ici là, l’agent indique que la recherche n’est pas disponible. Pour chercher dès maintenant, utilisez votre propre application Slack (voir « Utiliser votre propre application Slack » plus bas).
 - Les installations antérieures à la recherche ont besoin d’autorisations Slack mises à jour (voir « Mettre à jour les autorisations Slack » plus haut).
 
-Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente.
+Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente, ni publier de page partagée.
 
 ## Qui peut l’utiliser
 
@@ -299,6 +299,41 @@ Les propriétaires et administrateurs les définissent sous **Tâches récurrent
 
 La même section liste chaque tâche : ce qu’elle fait, où elle publie, sa fréquence, sa prochaine exécution, qui l’a créée et le résultat de sa dernière exécution. Vous pouvez mettre en pause, reprendre ou supprimer n’importe laquelle. Une tâche reprise s’exécute à sa prochaine heure, et ses échecs repartent de zéro. Désinstaller l’agent supprime toutes ses tâches récurrentes.
 
+## Pages partagées
+
+Quand une réponse est trop longue ou trop riche pour un message Slack, comme un rapport, un tableau ou un graphique, l’agent peut la publier sous forme de page web et la mettre en lien dans sa réponse. Demandez-la-lui, par exemple :
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+Une page est un seul fichier HTML écrit par l’agent, avec du texte, des tableaux et des graphiques. Les pages sont statiques : avant de conserver une page, Phaseo en retire les scripts, les liens, les formulaires et tout ce qui se chargerait d’ailleurs, comme des polices ou des images d’autres sites. Une page ne peut donc ni exécuter de scripts ni rien envoyer nulle part, et les adresses web y figurent en texte brut. Les pages s’ouvrent sur `slack.phaseo.app` dans un bac à sable verrouillé, si bien qu’une page ne peut pas atteindre votre connexion à Phaseo ou à Slack.
+
+| Qui peut voir une page | Comment |
+| --- | --- |
+| **Toute personne disposant du lien** (par défaut) | Toute personne qui a le lien, sans se connecter. Le lien est long et aléatoire, il ne peut donc pas être deviné. |
+| **Les personnes de cet espace de travail Slack** | Les membres de votre espace de travail Slack, après s’être connectés avec Slack. Les invités seulement tant que **Autoriser les invités** est activé, et les personnes d’autres entreprises jamais. Une connexion dure 8 heures. |
+
+L’agent applique le choix par défaut de vos administrateurs, sauf si quelqu’un demande l’autre, par exemple `@Phaseo make it a page only our Slack workspace can see`.
+
+### Limites des pages
+
+- Une page est conservée 30 jours par défaut, puis supprimée. Les administrateurs peuvent choisir 7, 30 ou 90 jours pour les nouvelles pages.
+- Chaque réponse peut publier jusqu’à 3 pages, et chaque espace de travail Slack conserve jusqu’à 200 pages à la fois. Une page peut faire jusqu’à 512 Ko.
+- La publication fait partie de la réponse : elle ne coûte rien de plus, et les tokens de modèle utilisés pour écrire la page comptent dans la limite de $0.50 de la réponse.
+- Les personnes d’autres entreprises dans des canaux Slack Connect partagés ne peuvent pas publier de pages.
+- Une réponse qui a cherché dans Slack ne peut pas publier de page, car une page conserve ce que l’agent a écrit (voir « Rechercher dans Slack » plus haut).
+
+### Ce que les administrateurs contrôlent pour les pages
+
+Sous **Pages partagées**, dans **Paramètres → Slack** :
+
+- **Permettre à l’agent de publier des pages** (activé par défaut) désactive la publication. Les pages déjà publiées restent jusqu’à leur expiration ou jusqu’à ce que vous les supprimiez.
+- **Conserver les nouvelles pages pendant** 7, 30 ou 90 jours.
+- **Toute personne disposant du lien peut voir les pages** (activé par défaut). Désactivé, chaque page demande une connexion avec Slack, y compris les pages déjà publiées.
+- **Les nouvelles pages sont ouvertes à** fixe le choix par défaut quand les deux options sont disponibles.
+- La liste affiche le titre de chaque page, qui l’a demandée, quand elle a été publiée et quand elle expire, et combien de fois elle a été ouverte. Les propriétaires et les administrateurs peuvent supprimer n’importe quelle page, et son lien cesse aussitôt de fonctionner. Ils peuvent ouvrir une page quand son accès le permet : une page réservée à l’espace de travail Slack leur demande de se connecter avec Slack en tant que membres. Le journal d’activité de l’espace de travail enregistre les suppressions sans le titre.
+
+**Les personnes de cet espace de travail Slack** demande que la connexion avec Slack soit configurée pour l’application Slack utilisée par l’agent. Tant qu’elle ne l’est pas, **Paramètres → Slack** l’indique, et les pages sont ouvertes à toute personne disposant du lien. Avec votre propre application Slack, son manifeste doit inclure l’URL de redirection `https://slack.phaseo.app/p/signin`, comme le manifeste de Phaseo (voir « Utiliser votre propre application Slack », plus bas).
 ## Limites
 
 Les propriétaires et les administrateurs les définissent dans **Paramètres → Slack** :
@@ -372,10 +407,11 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Les fichiers partagés sont lus, pas conservés.** L’agent télécharge les images et PDF qu’il lit pour une réponse et les envoie au modèle avec les requêtes de cette réponse, selon les mêmes règles. Il ne les conserve jamais ; seuls leurs identifiants de fichier Slack et leurs noms restent avec le message jusqu’à la fin de la réponse.
 - **Les résultats de recherche Slack ne sont pas conservés.** Ce que l’agent trouve en cherchant dans Slack est envoyé au modèle avec les requêtes de cette réponse, selon les mêmes règles, et nulle part ailleurs : ni dans sa mémoire de travail, ni dans ses journaux, ni dans la base de données de Phaseo, pas même pendant qu’il attend votre réponse à une question. Pour une réponse qui a cherché, sa mémoire de travail ne garde que les outils qu’il a utilisés et une note indiquant qu’il a répondu, ni ce qu’il a cherché, ni ce qu’il a trouvé, ni ce qu’il a écrit. L’autorisation de Slack de chercher pour vous est conservée avec votre message jusqu’à la fin de la réponse.
 - **Tâches récurrentes.** Pour chaque tâche, l’agent conserve son titre et son instruction, l’endroit où elle publie, sa planification et son fuseau horaire, l’ID Slack de la personne qui l’a créée et le résultat de sa dernière exécution. Elles restent jusqu’à ce que quelqu’un annule ou supprime la tâche, ou que vous désinstalliez l’agent. Les propriétaires et administrateurs peuvent les voir, les mettre en pause et les supprimer dans **Paramètres → Slack**.
+- **Des pages partagées jusqu’à leur expiration.** Une page publiée par l’agent peut reprendre ce qui a été dit dans Slack ou ce qu’il a trouvé, mais jamais des résultats d’une recherche dans Slack. Les pages sont statiques : une page ne peut ni exécuter de scripts ni rien envoyer nulle part. Phaseo conserve la page, son titre, l’ID Slack de la personne qui l’a demandée et le nombre de fois où elle a été ouverte jusqu’à son expiration (après 7, 30 ou 90 jours, selon le choix de vos administrateurs), jusqu’à ce qu’un propriétaire ou un administrateur la supprime ou que vous désinstalliez l’agent. Selon le réglage de la page, toute personne disposant de son lien peut l’ouvrir, ou seulement les membres de votre espace de travail Slack connectés. Les pages n’apparaissent jamais dans les journaux de Phaseo.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 
-La désinstallation supprime la clé d’API de l’agent, ses notes, ses compétences enregistrées et ses tâches récurrentes, et retire son garde-fou.
+La désinstallation supprime la clé d’API de l’agent, ses notes, ses compétences enregistrées et ses tâches récurrentes, et retire son garde-fou. Ses pages partagées sont aussi supprimées, et leurs liens cessent de fonctionner.
 
 ## Utiliser votre propre application Slack
 
@@ -435,7 +471,8 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
   },
   "oauth_config": {
     "redirect_urls": [
-      "https://phaseo.app/api/account/settings/slack/oauth/callback"
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
     ],
     "scopes": {
       "bot": [
@@ -504,11 +541,13 @@ Quelques règles pour votre propre application :
 - Le manifeste utilise l’expérience de messagerie d’agent de Slack (`agent_view`), la seule que Slack propose aux nouvelles applications.
 - Une application Slack peut être connectée à un seul espace de travail Phaseo, et un espace de travail Phaseo peut enregistrer une seule application Slack.
 - Tant que l’agent est installé avec votre application, vous ne pouvez remplacer que ses secrets. Pour passer à une autre application, ou revenir à celle de Phaseo, désinstallez-le d’abord.
+- La deuxième URL de redirection du manifeste, `https://slack.phaseo.app/p/signin`, permet de se connecter avec Slack pour voir les pages partagées avec votre espace de travail Slack. Si vous avez créé votre application à partir d’un manifeste plus ancien, ajoutez-la sur la page **App Manifest** de l’application.
 
 ## Mettre en pause ou désinstaller
 
 - **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause. Les tâches récurrentes qui arrivent à échéance pendant la pause sont aussi mises en pause ; reprenez-les sous **Tâches récurrentes**.
 - **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes, ses compétences enregistrées et ses tâches récurrentes, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
+- La désinstallation supprime aussi les pages partagées de l’agent, si bien que leurs liens cessent de fonctionner.
 - Retirer l’application dans Slack, ou révoquer son token de bot, la désinstalle de la même façon dans Phaseo.
 
 Les facturations passées restent dans votre historique de facturation. Les personnes qui ont utilisé l’agent pendant le mois où vous le désinstallez sont tout de même facturées à la fin de ce mois. Vous pouvez rajouter l’agent à tout moment.
@@ -543,3 +582,5 @@ Si l’agent ne répond pas du tout :
 - Avec votre propre application Slack, vérifiez que les deux URL de requête se terminent par l’ID de votre application, que Slack les affiche comme vérifiées et que l’application est enregistrée dans **Paramètres → Slack**.
 
 Si l’installation n’aboutit pas, **Paramètres → Slack** en indique la raison. Les plus fréquentes sont une vérification de confidentialité pas encore faite (ouvrez **Chat** une fois) et un espace de travail Slack qui a déjà l’agent depuis un autre espace de travail Phaseo (désinstallez-le d’abord là-bas).
+
+Si une page partagée ne s’ouvre pas, elle a peut-être expiré ou été supprimée : demandez-en une nouvelle à l’agent. Une page partagée avec votre espace de travail Slack demande une connexion avec Slack ; connectez-vous avec cet espace de travail. Les invités ne peuvent l’ouvrir que tant que **Autoriser les invités** est activé.
