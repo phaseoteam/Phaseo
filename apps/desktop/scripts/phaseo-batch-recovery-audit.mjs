@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { readAgentRun } from "./fixtures/agentRunFixture.mjs";
 import { installControlActions } from './fixtures/control-actions.mjs';
 import { javascriptLiteral } from "./javascript-literal.mjs";
 const arg = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -127,7 +128,7 @@ if (stage) {
   await crash(); held.destroy();
   const pending = JSON.parse(readFileSync(path.join(profile, 'pending.json'), 'utf8'));
   const db = new DatabaseSync(path.join(profile, 'workspace/workspace.sqlite'));
-  const checkpoint = JSON.parse(db.prepare('SELECT data FROM agent_runs WHERE id=?').get(pending.runId).data); db.close();
+  const checkpoint = readAgentRun(db, pending.runId); db.close();
   assert.deepEqual(checkpoint.run.pause.pendingToolCalls.map(item => item.call.id), ['two']);
   assert.equal(typeof checkpoint.run.pause.pendingToolCalls[0].executionStartedAt, 'string');
   assert.deepEqual(checkpoint.run.messages.filter(message => message.role === 'tool').map(message => message.toolCallId), ['one']);

@@ -7,6 +7,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { readAgentRun } from "./fixtures/agentRunFixture.mjs";
 const mode = process.argv.includes("--mode=chat") ? "chat" : "code";
 const image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=";
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-skill-crash-")), project = path.join(profile, "project"), workspace = path.join(profile, "workspace"), skill = path.join(workspace, "skills/review/SKILL.md"); mkdirSync(project); mkdirSync(path.dirname(skill), { recursive: true });
@@ -24,7 +25,7 @@ const server = createServer(async (request, response) => {
   if (mode === "chat") {
    assert.equal(request.url, "/v1/chat/completions");
    const guidance = body.messages.find(message => message.role === "system")?.content;
-   assert.ok(body.tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", ...orchestrationTools].includes(tool.function.name)));
+   assert.ok(body.tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", "load_tools", ...orchestrationTools].includes(tool.function.name)));
    assert.ok(body.messages.some(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => part.image_url?.url === "data:image/png;base64," + image)));
    assert.equal(body.messages.filter(message => message.role === "user" && JSON.stringify(message.content).includes("Owned crash recovery")).length, 1);
    if (calls === 1) { assert.ok(!guidance.includes("Initial crash guidance")); name = "load_skill"; input = { id: "global:review" }; }
@@ -33,13 +34,14 @@ const server = createServer(async (request, response) => {
     assert.equal(calls, 3); assert.ok(guidance.includes("Changed after crash") && guidance.includes("Changed pending guidance"));
     assert.ok(!guidance.includes("Initial crash guidance") && !guidance.includes("Original pending guidance"));
     assert.equal(body.messages.filter(message => message.role === "tool" && message.tool_call_id === "chat-2").length, 1);
-    assert.equal(body.messages.filter(message => message.role === "user" && message.content === "Continue from where you stopped.").length, 1);
+    assert.ok(body.messages.filter(message => message.role === "user" && message.content === "Continue from where you stopped.").length <= 1, "Continue sent more than once");
    }
    response.setHeader("content-type", "text/event-stream"); response.end("data: " + JSON.stringify({ choices: [{ delta: name ? { tool_calls: [{ index: 0, id: "chat-" + calls, type: "function", function: { name, arguments: JSON.stringify(input) } }] } : { content: "Recovery finished" }, finish_reason: name ? "tool_calls" : "stop" }] }) + "\n\ndata: [DONE]\n\n"); return;
   }
   assert.equal(request.url, "/v1/responses");
   assert.equal(body.input.filter(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => part.image_url === "data:image/png;base64," + image)).length, 1);
-  if (calls >= 3) assert.equal(body.input.filter(message => message.role === "user" && message.content === "Continue from where you stopped.").length, 1);
+  // A run paused on a tool call continues from that call, so a "Continue" nudge is optional, but never repeated.
+  if (calls >= 3) assert.ok(body.input.filter(message => message.role === "user" && message.content === "Continue from where you stopped.").length <= 1, "Continue sent more than once");
   if (calls === 1) { assert.ok(!body.instructions.includes("Initial crash guidance")); name = "load_skill"; input = { id: "global:review" }; }
   else if (calls === 2) { assert.ok(body.instructions.includes("Initial crash guidance")); name = "write_project_file"; input = { path: "effect.txt", content: "Stale effect", expectedHash: "new", instructionRevision: body.instructions.match(/instructionRevision ([a-f0-9]{64})/)?.[1] }; }
   else if (calls === 3) { assert.ok(body.instructions.includes("Changed after crash")); assert.ok(JSON.stringify(body.input).includes("Project instructions changed")); assert.ok(!existsSync(path.join(project, "effect.txt"))); name = "write_project_file"; input = { path: "effect.txt", content: "Fresh approved effect", expectedHash: "new", instructionRevision: body.instructions.match(/instructionRevision ([a-f0-9]{64})/)?.[1] }; }
@@ -59,7 +61,7 @@ const stop = child => { if (child.exitCode !== null || child.signalCode !== null
  if (process.platform === "win32") { try { execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" }); } catch { child.kill("SIGKILL"); } } else child.kill("SIGKILL"); };
 try {
  active = launch("write"); const deadline = Date.now() + 30000; while (!active.output().includes("SKILL_RECOVERY_PENDING")) { assert.ok(active.child.exitCode === null, "First app exited before its checkpoint"); assert.ok(Date.now() < deadline, "Checkpoint deadline expired"); await new Promise(resolve => setTimeout(resolve, 25)); }
- stop(active.child); await active.exited; const pending = JSON.parse(readFileSync(path.join(profile, "pending.json"), "utf8")), before = new DatabaseSync(path.join(workspace, "workspace.sqlite")); const run = JSON.parse(before.prepare("SELECT data FROM agent_runs WHERE id=?").get(pending.runId).data); before.close(); assert.equal(run.run.status, "waiting_for_human"); assert.equal(run.run.context.phaseoModelSkills[0].id, "global:review"); assert.ok(!existsSync(path.join(project, "effect.txt"))); assert.equal(calls, 2);
+ stop(active.child); await active.exited; const pending = JSON.parse(readFileSync(path.join(profile, "pending.json"), "utf8")), before = new DatabaseSync(path.join(workspace, "workspace.sqlite")); const run = readAgentRun(before, pending.runId); before.close(); assert.equal(run.run.status, "waiting_for_human"); assert.equal(run.run.context.phaseoModelSkills[0].id, "global:review"); assert.ok(!existsSync(path.join(project, "effect.txt"))); assert.equal(calls, 2);
  assert.ok(JSON.stringify(run.run.messages).includes("data:image/png;base64," + image));
  if (mode === "chat") { assert.equal(run.run.pause.pendingToolCalls[0].call.input.id, "global:explain"); writeFileSync(pendingSkill, readFileSync(pendingSkill, "utf8").replace("Original pending guidance", "Changed pending guidance")); }
  writeFileSync(skill, definition("Changed after crash")); active = launch("read"); const result = await active.exited; assert.equal(result.code, 0); assert.ok(active.output().includes("SKILL_RECOVERY_RESUMED")); assert.ok(!fixtureError); assert.equal(calls, mode === "chat" ? 3 : 4); console.log("PHASEO_SKILL_RECOVERY_AUDIT", JSON.stringify({ mode, processRestarts: 1, forcedCrash: true, durableSkillContext: true, changedGuidanceReviewed: true, ...(mode === "chat" ? { originalImageRetained: true, historyRetainedOnce: true, pendingSkillReapproved: true, personalChat: true } : { staleEffectBlocked: true, freshEffect: true }), loopbackModelRequests: calls, providerInferenceCalls: 0, packaged: Boolean(entry) }));
