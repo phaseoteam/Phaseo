@@ -16,6 +16,7 @@ import { parseIanaTimeZone } from "@/lib/time-zones";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { SpendRuleTestError, sendSpendRuleTest } from "@/pipeline/notifications/spend-rule-test";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { publishSpendBlockEntry, spendRuleBlocksEnabled } from "@core/spend-blocks";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -147,7 +148,7 @@ async function handleCreate(req: Request) {
 	if ("response" in access) return access.response;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
-	const parsed = parseSpendRuleInput(body, { parseTimeZone: parseIanaTimeZone });
+	const parsed = parseSpendRuleInput(body, { parseTimeZone: parseIanaTimeZone, blocksEnabled: spendRuleBlocksEnabled() });
 	if (parsed.ok === false) return badRequest(parsed.message);
 	try {
 		const { data, error } = await saveRule(access.auth, null, parsed.value.fields, parsed.value.destinationIds);
@@ -189,7 +190,7 @@ async function handleUpdate(req: Request) {
 			.eq("workspace_id", access.auth.workspaceId).eq("id", id).is("deleted_at", null).maybeSingle();
 		if (loadError) throw loadError;
 		if (!existing) return notFound();
-		const parsed = parseSpendRuleInput(body, { existing: spendRuleFieldsFromRow(existing as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone });
+		const parsed = parseSpendRuleInput(body, { existing: spendRuleFieldsFromRow(existing as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone, blocksEnabled: spendRuleBlocksEnabled() });
 		if (parsed.ok === false) return badRequest(parsed.message);
 		const { data, error } = await saveRule(access.auth, id, parsed.value.fields, parsed.value.destinationIds);
 		if (error) {
@@ -199,6 +200,8 @@ async function handleUpdate(req: Request) {
 		}
 		const rule = savedRule(data);
 		await audit(access.auth, "updated", rule, { ...ruleMetadata(rule), changed: Object.keys(body).sort() });
+		// A disabled, rescoped or raised rule lifts its block in the same transaction.
+		if (rule.action === "block" || "action" in body) await publishSpendBlockEntry(access.auth.workspaceId);
 		return json({ data: rule }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("spend_rules.update", error);
@@ -219,6 +222,7 @@ async function handleDelete(req: Request) {
 		if (!data) return notFound();
 		const rule = formatSpendRule(data as unknown as SpendRuleRow);
 		await audit(access.auth, "deleted", rule, { metric: rule.metric, scope_type: rule.scope_type, scope_id: rule.scope_id });
+		if (rule.action === "block") await publishSpendBlockEntry(access.auth.workspaceId);
 		return json({ data: { id: rule.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("spend_rules.delete", error);

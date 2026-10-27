@@ -6,9 +6,9 @@ CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events (
   SET search_path TO ''
   AS $function$
 -- Turns new workspace events into push events (workspace_notification_events), one per dedupe key:
---   email_outbox            auto_top_up_failed, payment_method_expiring and spend_alert (money;
---                           a spend alert also reaches the scoped key's creator, or the member
---                           of a member rule, through key_created_by),
+--   email_outbox            auto_top_up_failed, payment_method_expiring, spend_alert and
+--                           spend_blocked (money; a spend alert or block also reaches the scoped
+--                           key's creator, or the member of a member rule, through key_created_by),
 --                           model_deprecation (deprecations), model_substitution and
 --                           rate_limit_throttled (traffic), and security_leaked_key (security; one
 --                           per exposed key, though the email has a row per recipient, with the
@@ -55,7 +55,7 @@ begin
         and o.created_at > v_now - interval '2 days'
         and o.created_at <= v_now
         and o.kind in ('auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'model_substitution',
-          'rate_limit_throttled', 'security_leaked_key', 'spend_alert')
+          'rate_limit_throttled', 'security_leaked_key', 'spend_alert', 'spend_blocked')
         and o.workspace_id is not null
       order by o.created_at, o.id
       limit p_limit
@@ -69,7 +69,7 @@ begin
         v_row.workspace_id,
         v_row.kind,
         case
-          when v_row.kind in ('auto_top_up_failed', 'payment_method_expiring', 'spend_alert') then 'money'
+          when v_row.kind in ('auto_top_up_failed', 'payment_method_expiring', 'spend_alert', 'spend_blocked') then 'money'
           when v_row.kind = 'model_deprecation' then 'deprecations'
           when v_row.kind = 'security_leaked_key' then 'security'
           else 'traffic'
@@ -81,7 +81,7 @@ begin
         end,
         coalesce(k.id, mk.id),
         coalesce(k.created_by, mk.created_by,
-          case when v_row.kind = 'spend_alert' and v_row.payload #>> '{scope,type}' = 'member' and v_row.payload #>> '{scope,user_id}' ~* v_uuid
+          case when v_row.kind in ('spend_alert', 'spend_blocked') and v_row.payload #>> '{scope,type}' = 'member' and v_row.payload #>> '{scope,user_id}' ~* v_uuid
             then (v_row.payload #>> '{scope,user_id}')::uuid end),
         v_row.payload - 'user_first_name',
         v_row.created_at
@@ -90,7 +90,7 @@ begin
         on k.workspace_id = v_row.workspace_id
         and ((v_row.kind = 'security_leaked_key' and coalesce(v_row.payload ->> 'key_type', 'api_key') = 'api_key'
             and k.id = case when v_row.payload ->> 'key_id' ~* v_uuid then (v_row.payload ->> 'key_id')::uuid end)
-          or (v_row.kind = 'spend_alert' and v_row.payload #>> '{scope,type}' = 'key'
+          or (v_row.kind in ('spend_alert', 'spend_blocked') and v_row.payload #>> '{scope,type}' = 'key'
             and k.id = case when v_row.payload #>> '{scope,key_id}' ~* v_uuid then (v_row.payload #>> '{scope,key_id}')::uuid end))
       left join public.management_keys mk
         on v_row.kind = 'security_leaked_key' and v_row.payload ->> 'key_type' = 'management_key'

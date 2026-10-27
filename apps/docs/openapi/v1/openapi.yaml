@@ -779,6 +779,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -825,6 +827,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -949,6 +953,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -5545,6 +5551,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Also return lifted blocks, newest first.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of blocks to return.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: List spend blocks
+      description: >-
+        Lists the workspace's spend blocks, newest first: the blocks that spend
+        rules with action block have started once spend reached their block
+        point. Active blocks only, unless include_lifted is true. Owners and
+        admins only.
+      responses:
+        '200':
+          description: Spend blocks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend block id.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Lift a spend block
+      description: >-
+        Lifts an active spend block so requests in its scope are accepted again
+        within about a minute. The rule does not block again until its period
+        resets, but it keeps sending alerts. Owners and admins only; the lift is
+        recorded in the audit log and queues a spend_blocked event with state
+        lifted. Returns 404 for an unknown block and 409 spend_block_not_active
+        when it was already lifted.
+      responses:
+        '200':
+          description: The lifted spend block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -9691,6 +9774,16 @@ components:
         successful responses, and only when at least one parameter from the
         request body was dropped. Parameters that come from a preset or a
         default value are not listed.
+      schema:
+        type: string
+    SpendWarning:
+      description: >-
+        Sent while a spend rule that blocks covers the request and spend has
+        passed its last alert threshold but not yet its block point. Lists up to
+        three rules as rule_id, scope and resets_at, for example `rule_id=...;
+        scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Once spend reaches
+        the block point, requests in scope get a 429 with code
+        spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -23182,8 +23275,9 @@ components:
       description: >-
         notify, or notify and then block once spend reaches block_at_percent of
         the base or block_at_amount. Blocking is best effort and acts minutes
-        after the threshold. Blocking is not available yet: a rule with action
-        block is refused with a 400 until it is.
+        after the threshold. While blocking is switched off for the gateway, a
+        rule that would start blocking is refused with a 400, and a rule that
+        already blocks only notifies.
       enum:
         - notify
         - block
@@ -23956,6 +24050,128 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: >-
+        Why a spend block was lifted: manual (an owner or admin), period_reset,
+        below_limit (spend is under the block point again, for example after a
+        budget was raised), rule_changed, rule_disabled or rule_deleted.
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: >-
+        A block a spend rule started once spend reached its block point. While
+        it is active, requests in its scope get a 429 with code
+        spend_rule_blocked and Retry-After set to resets_at. Free models are
+        exempt unless block_free_models is true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The rule that started the block; null once the rule was deleted
+            outright.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: >-
+            Display name of the scope (key, department or model name, member
+            email, or the id).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the block lifts by itself (the end of the rule's period).
+        spend_nanos:
+          type: integer
+          description: Spend in the rule's scope when the block started, in nanodollars.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: The block point, in nanodollars.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: The owner or admin who lifted the block, for manual lifts.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: Not lifted, and its reset has not passed.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:
