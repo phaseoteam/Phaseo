@@ -378,6 +378,22 @@ describe("ThreadCoordinator", () => {
 				{ kind: "chart", title: "Spend by week", shown: true },
 				{ kind: "image", title: "A fox", shown: false },
 			]);
+			// Past the chart limit, images are still kept: the answer's image limit counts them.
+			for (let index = 0; index < 25; index += 1) coordinator.recordPostedFile(1, { kind: "chart", title: `Chart ${index}`, shown: true });
+			coordinator.recordPostedFile(1, { kind: "image", title: "A badger", shown: true });
+			const posted = coordinator.turnInput(1)!.postedFiles;
+			expect(posted.filter((file) => file.kind === "chart")).toHaveLength(20);
+			expect(posted.filter((file) => file.kind === "image").map((file) => file.title)).toEqual(["A fox", "A badger"]);
+		});
+
+		it("gives the files of every answered question, the latest answer's first", async () => {
+			await asking();
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "this one", files: [{ id: "F0FIRST001", name: "first.pdf" }], now: NOW });
+			await coordinator.closeQuestion(1, 1, { now: NOW });
+			expect(coordinator.holdForAnswer(1, 2, { run: "{}", question: { ...DRAFT, callId: "call_q2" } })).toBe(true);
+			await coordinator.questionPosted(1, 2, "1792600100.000003", NOW);
+			await coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "and this", files: [{ id: "F0SECOND01", name: "second.png" }], now: NOW });
+			expect(coordinator.answeredFiles(1)).toEqual([{ id: "F0SECOND01", name: "second.png" }, { id: "F0FIRST001", name: "first.pdf" }]);
 		});
 
 		it("refuses answers once the hour is up, and closes as expired, or stopped when the thread was cancelled", async () => {

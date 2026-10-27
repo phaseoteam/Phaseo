@@ -286,8 +286,8 @@ function postedLines(files: PostedFile[]): string[] {
 }
 
 /**
- * The files shared with an answer to the agent's question (the run after it),
- * then with the message, then in the thread messages read (people's only),
+ * The files shared with answers to the agent's questions (the runs after them,
+ * the latest answer's first), then with the message, then in the thread messages read (people's only),
  * newest first.
  */
 function sharedFiles(input: TurnInput, turn: TurnRef, source: ContextResult["source"], answerFiles: SharedFileRef[] = []): SharedFile[] {
@@ -392,7 +392,9 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const memory = await loadTurnMemory(deps.db, installation.id, turn.channel, access);
 
 	// Files shared in the thread, and with an answer to the question this run follows, read for this run only.
-	const answerFiles = paused?.question.answer?.files ?? [];
+	// Every answered question's files: the paused run's messages hold none of their bytes.
+	const answerFiles = paused ? await coordinator.answeredFiles(turn.turnId) : [];
+	const latestAnswerFiles = paused?.question.answer?.files ?? [];
 	const shared = sharedFiles(input, turn, context.source, answerFiles);
 	const outcomes = shared.length
 		? await readSharedFiles(slack, shared, { canRead: hasBotScope(installation, "files:read"), readable: await readableKinds(deps.db, model) })
@@ -447,7 +449,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 
 	// After a question, the run goes on from the paused one with the answer, the files shared with it, and what was posted.
 	const posted = postedLines(input.postedFiles);
-	const answerLines = (from: FileOutcome[]) => fileLines(from.filter((outcome) => answerFiles.some((file) => file.id === outcome.file.id)));
+	const answerLines = (from: FileOutcome[]) => fileLines(from.filter((outcome) => latestAnswerFiles.some((file) => file.id === outcome.file.id)));
 	const resumeWith = (lines: string[]): AgentTurnRequest["resume"] => paused ? {
 		run: JSON.parse(paused.run) as PausedRun,
 		toolOutputs: [{

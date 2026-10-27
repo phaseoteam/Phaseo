@@ -102,7 +102,8 @@ export type TurnInput = {
 /** A chart or image an answer made; `shown`: it is in the thread. An image counts once it is paid for, shown or not. */
 export type PostedFile = { kind: "chart" | "image"; title: string; shown: boolean };
 
-const MAX_POSTED_FILES = 20;
+/** Charts kept per answer. Every image is kept: the answer's image limit counts them (images.ts caps how many are made). */
+const MAX_POSTED_CHARTS = 20;
 
 const MAX_CONTEXT_ENTRIES = 20;
 const MAX_CONTEXT_CHARS = 4_000;
@@ -407,6 +408,11 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		return this.sql.exec<{ state: string }>("SELECT state FROM questions WHERE turn_id = ? ORDER BY n", turnId).toArray().map((row) => JSON.parse(row.state) as QuestionState);
 	}
 
+	/** The files shared with the answers to a turn's questions, the latest answer's first. */
+	answeredFiles(turnId: number): SharedFileRef[] {
+		return this.questions(turnId).reverse().flatMap((question) => question.answer?.files ?? []);
+	}
+
 	/** A turn's question n, while the turn is queued or running. */
 	question(turnId: number, n: number): QuestionState | null {
 		const row = this.sql.exec<{ state: string }>("SELECT state FROM questions WHERE turn_id = ? AND n = ?", turnId, n).toArray()[0];
@@ -692,7 +698,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			const row = this.sql.exec<{ posted_files: string | null }>("SELECT posted_files FROM turns WHERE id = ?", turnId).toArray()[0];
 			if (!row) return;
 			const files = row.posted_files ? JSON.parse(row.posted_files) as PostedFile[] : [];
-			if (files.length >= MAX_POSTED_FILES) return;
+			if (file.kind === "chart" && files.filter((entry) => entry.kind === "chart").length >= MAX_POSTED_CHARTS) return;
 			files.push({ kind: file.kind, title: file.title.slice(0, MAX_TOOL_CHARS), shown: file.shown });
 			this.sql.exec("UPDATE turns SET posted_files = ? WHERE id = ?", JSON.stringify(files), turnId);
 		});
