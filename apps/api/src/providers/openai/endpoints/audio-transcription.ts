@@ -7,7 +7,7 @@ import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/
 import { buildAdapterPayload } from "../../utils";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
-import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
+import { applyProviderSpeechToTextBilling, estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
 
 function normalizeModelName(model?: string | null): string {
     if (!model) return "";
@@ -359,7 +359,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		const usageFinalizer = async () => {
 			const upstreamUsage = await collectTranscriptionStreamUsage(accountingStream);
 			const estimated = await estimateOpenAiSpeechToTextUsage({ file: body.file, prompt: body.prompt });
-			return { ...baseBill, usage: mergeSpeechToTextUsage(upstreamUsage, estimated) };
+			return { ...baseBill, usage: applyProviderSpeechToTextBilling(args.providerId, mergeSpeechToTextUsage(upstreamUsage, estimated)) };
 		};
 		return {
 			kind: "stream",
@@ -383,7 +383,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             prompt: body.prompt,
             text: typeof normalized?.text === "string" ? normalized.text : undefined,
         });
-        usage = mergeSpeechToTextUsage(usage, estimated);
+        usage = applyProviderSpeechToTextBilling(args.providerId, mergeSpeechToTextUsage(usage, estimated));
         if (normalized && typeof normalized === "object") {
             normalized.usage = usage;
         }

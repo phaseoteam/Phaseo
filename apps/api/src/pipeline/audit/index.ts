@@ -3,7 +3,7 @@
 // Why: Ensures observability for every request.
 // How: Builds audit rows and ships them to Supabase with retries.
 
-import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled } from "@/runtime/env";
+import { getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
 import type { Endpoint, RequestLabel } from "@core/types";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
@@ -12,7 +12,12 @@ import {
 	buildV2RequestUsageMeters,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
-import { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } from "./io-logging";
+import {
+    persistGatewayIoLog,
+    recordGatewayIoLogZeroDataRetentionSkip,
+    requestZeroDataRetention,
+    resolveGatewayIoLoggingPolicy,
+} from "./io-logging";
 import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
@@ -115,8 +120,6 @@ const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
 let gatewayRequestsSupportsUsageColumns: boolean | null = null;
 let gatewayRequestsSupportsTelemetryColumns: boolean | null = null;
-let gatewayRequestDetailsTableAvailable: boolean | null = null;
-let warnedMissingGatewayRequestDetailsTable = false;
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -164,23 +167,6 @@ function isMissingColumnError(
     if (!message.toLowerCase().includes(column.toLowerCase())) return false;
     if (!table) return true;
     return message.toLowerCase().includes(table.toLowerCase());
-}
-
-function isMissingTableError(error: unknown, table: string): boolean {
-    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
-    const cause = candidate?.cause && typeof candidate.cause === "object"
-        ? candidate.cause as Record<string, unknown>
-        : null;
-    const code = String(cause?.code ?? candidate?.code ?? "");
-    const message = String(cause?.message ?? candidate?.message ?? "");
-    if (code !== "PGRST205" && code !== "42P01") return false;
-    const normalizedTable = table.toLowerCase();
-    const normalizedMessage = message.toLowerCase();
-    return (
-        normalizedMessage.includes(normalizedTable) ||
-        normalizedMessage.includes(`'${normalizedTable}'`) ||
-        normalizedMessage.includes(`"${normalizedTable}"`)
-    );
 }
 
 function isMissingRpcError(error: unknown, rpc: string): boolean {
@@ -289,7 +275,14 @@ async function insertGatewayRequest(row: any) {
     throw lastError;
 }
 
-type RateLimitPolicyRejection = { policy_id: string; limit_scope: string; limit: "requests" | "tokens" };
+type RateLimitPolicyRejection = { policy_id: string; limit_scope: string; limit: "requests" | "tokens" | "concurrent_requests" | "unavailable" };
+
+const POLICY_REJECTION_LIMITS: Record<string, RateLimitPolicyRejection["limit"]> = {
+    policy_requests_per_minute: "requests",
+    policy_tokens_per_minute: "tokens",
+    policy_concurrent_requests: "concurrent_requests",
+    policy_unavailable: "unavailable",
+};
 
 /** The workspace rate limit policy that rejected a request, from its stored error payload. */
 export function rateLimitPolicyRejection(
@@ -298,10 +291,11 @@ export function rateLimitPolicyRejection(
 ): RateLimitPolicyRejection | null {
     if (errorCode !== "user:rate_limit_exceeded") return null;
     const reason = errorPayload?.reason;
-    if (reason !== "policy_requests_per_minute" && reason !== "policy_tokens_per_minute") return null;
+    const limit = typeof reason === "string" ? POLICY_REJECTION_LIMITS[reason] : undefined;
+    if (!limit) return null;
     const { policy_id: policyId, limit_scope: limitScope } = errorPayload!;
     if (typeof policyId !== "string" || typeof limitScope !== "string") return null;
-    return { policy_id: policyId, limit_scope: limitScope, limit: reason === "policy_tokens_per_minute" ? "tokens" : "requests" };
+    return { policy_id: policyId, limit_scope: limitScope, limit };
 }
 
 async function upsertV2RequestFact(args: {
@@ -512,82 +506,6 @@ async function upsertV2RequestFact(args: {
     if (baseError) throw baseError;
 }
 
-function normalizeJsonValue(value: unknown): unknown {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean"
-    ) {
-        return value;
-    }
-    try {
-        return JSON.parse(JSON.stringify(value));
-    } catch {
-        return null;
-    }
-}
-
-function extractReplayContent(value: unknown): unknown {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-    const payload = value as Record<string, unknown>;
-    if (Array.isArray(payload.messages)) return payload.messages;
-    if (Array.isArray(payload.input)) return payload.input;
-    if (Array.isArray(payload.input_items)) return payload.input_items;
-    if (Array.isArray(payload.contents)) return payload.contents;
-    return null;
-}
-
-async function insertGatewayRequestDetails(row: any) {
-    if (gatewayRequestDetailsTableAvailable === false) {
-        return;
-    }
-    const client = supaAdmin();
-    const payload = row;
-    const { error } = await client
-        .from("gateway_request_details")
-        .insert(payload);
-    if (error) {
-        if (
-            isLocalTestingModeEnabled() &&
-            isMissingTableError(error, "gateway_request_details")
-        ) {
-            gatewayRequestDetailsTableAvailable = false;
-            if (!warnedMissingGatewayRequestDetailsTable) {
-                warnedMissingGatewayRequestDetailsTable = true;
-                console.warn(
-                    "[audit] gateway_request_details not available in local testing mode; skipping request detail persistence."
-                );
-            }
-            return;
-        }
-        const err = new Error(`[audit] insert gateway_request_details error: ${error?.message ?? "unknown"}`);
-        (err as any).cause = error;
-        throw err;
-    }
-    if (gatewayRequestDetailsTableAvailable === null) {
-        gatewayRequestDetailsTableAvailable = true;
-    }
-}
-
-async function insertGatewayRequestDetailsNonBlocking(
-    row: Record<string, unknown>,
-    context: string,
-) {
-    try {
-        await retryWithBackoff(
-            () => insertGatewayRequestDetails(row),
-            context,
-        );
-    } catch (error) {
-        console.error("[audit] failed to persist request details", {
-            context,
-            error: error instanceof Error ? error.message : String(error),
-        });
-    }
-}
-
 function buildSupaRow(args: {
     requestId: string; workspaceId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
@@ -756,6 +674,8 @@ export async function auditSuccess(input: {
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     errorPayload?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
@@ -967,9 +887,18 @@ export async function auditSuccess(input: {
                     error: v2Error instanceof Error ? v2Error.message : String(v2Error),
                 });
             }
+            // Zero data retention from the request, its preset or its routing diagnostics
+            // turns capture off, so the I/O log doesn't keep its content.
             const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                 workspaceId: args.workspaceId,
                 keyId: args.keyId ?? null,
+                zeroDataRetention: requestZeroDataRetention({
+                    zeroDataRetention: args.zeroDataRetention,
+                    requestPayload: args.requestPayload,
+                    metadata: args.detailMetadata,
+                    gatewayResponse: args.gatewayResponse,
+                    providerResponse: args.providerResponse,
+                }),
             });
             if (ioLoggingPolicy.captureEnabled) {
                 await persistGatewayIoLog({
@@ -989,30 +918,10 @@ export async function auditSuccess(input: {
                 serverToolTrace: args.serverToolTrace,
 				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
+                zeroDataRetention: args.zeroDataRetention === true,
                 }, ioLoggingPolicy);
-                await insertGatewayRequestDetailsNonBlocking(
-                    {
-                    gateway_request_id: insertedRow.id,
-                    gateway_request_created_at: insertedRow.created_at,
-                    request_id: args.requestId,
-                    workspace_id: args.workspaceId,
-                    app_id: appId ?? null,
-                    key_id: args.keyId ?? null,
-                    endpoint: args.endpoint,
-                    model_id: args.model,
-                    provider: args.provider ?? null,
-                    status_code: args.statusCode,
-                    success: true,
-                    request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                    request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                    gateway_response: normalizeJsonValue(args.gatewayResponse),
-                    response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                    provider_request: normalizeJsonValue(args.providerRequest),
-                    provider_response: normalizeJsonValue(args.providerResponse),
-                    metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                    },
-                    "supabase_audit_success_details_insert",
-                );
+            } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
             }
             if (v2PersistenceError) throw v2PersistenceError;
         } catch (err) {
@@ -1030,6 +939,8 @@ type AuditFailureBefore = {
     stage: "before";
     requestId: string;
     workspaceId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model?: string | null;
     requestedModel?: string | null;
@@ -1078,6 +989,8 @@ type AuditFailureExecute = {
     stage: "execute";
     requestId: string;
     workspaceId: string;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model: string;
     requestedModel?: string;
@@ -1267,6 +1180,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                         workspaceId: args.workspaceId,
                         keyId: args.keyId ?? null,
+                        zeroDataRetention: requestZeroDataRetention({
+                            zeroDataRetention: args.zeroDataRetention,
+                            requestPayload: args.requestPayload,
+                            metadata: args.detailMetadata,
+                            gatewayResponse: args.gatewayResponse,
+                            providerResponse: args.providerResponse,
+                        }),
                     });
                     if (ioLoggingPolicy.captureEnabled) {
                         await persistGatewayIoLog({
@@ -1284,30 +1204,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerRequest: null,
                         providerResponse: args.providerResponse,
                         metadata: args.detailMetadata ?? {},
+                        zeroDataRetention: args.zeroDataRetention === true,
                         }, ioLoggingPolicy);
-                        await insertGatewayRequestDetailsNonBlocking(
-                            {
-                            gateway_request_id: insertedRow.id,
-                            gateway_request_created_at: insertedRow.created_at,
-                            request_id: args.requestId,
-                            workspace_id: args.workspaceId,
-                            app_id: resolvedAppId ?? null,
-                            key_id: args.keyId ?? null,
-                            endpoint: args.endpoint,
-                            model_id: args.requestedModel ?? args.model ?? "unknown",
-                            provider: args.provider ?? null,
-                            status_code: args.statusCode,
-                            success: false,
-                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                            gateway_response: normalizeJsonValue(args.gatewayResponse),
-                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                            provider_request: null,
-                            provider_response: normalizeJsonValue(args.providerResponse),
-                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                            },
-                            "supabase_audit_failure_before_details_insert",
-                        );
+                    } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                        await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                     }
                     if (v2PersistenceError) throw v2PersistenceError;
                 } catch (err) {
@@ -1460,6 +1360,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                 const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                     workspaceId: args.workspaceId,
                     keyId: args.keyId ?? null,
+                    zeroDataRetention: requestZeroDataRetention({
+                        zeroDataRetention: args.zeroDataRetention,
+                        requestPayload: args.requestPayload,
+                        metadata: args.detailMetadata,
+                        gatewayResponse: args.gatewayResponse,
+                        providerResponse: args.providerResponse,
+                    }),
                 });
                 if (ioLoggingPolicy.captureEnabled) {
                     await persistGatewayIoLog({
@@ -1479,30 +1386,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     serverToolTrace: args.serverToolTrace,
 					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
+                    zeroDataRetention: args.zeroDataRetention === true,
                     }, ioLoggingPolicy);
-                    await insertGatewayRequestDetailsNonBlocking(
-                        {
-                        gateway_request_id: insertedRow.id,
-                        gateway_request_created_at: insertedRow.created_at,
-                        request_id: args.requestId,
-                        workspace_id: args.workspaceId,
-                        app_id: resolvedAppId ?? null,
-                        key_id: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        model_id: args.model,
-                        provider: args.provider ?? null,
-                        status_code: args.statusCode,
-                        success: false,
-                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                        gateway_response: normalizeJsonValue(args.gatewayResponse),
-                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                        provider_request: normalizeJsonValue(args.providerRequest),
-                        provider_response: normalizeJsonValue(args.providerResponse),
-                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                        },
-                        "supabase_audit_failure_execute_details_insert",
-                    );
+                } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                    await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                 }
                 if (v2PersistenceError) throw v2PersistenceError;
             } catch (err) {

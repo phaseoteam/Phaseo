@@ -143,7 +143,7 @@ describe("account policy settings routes", () => {
 				{ provider_model_id: "pm-openai", model_slug: "openai/gpt-test" },
 				{ provider_model_id: "pm-anthropic", model_slug: "anthropic/claude-test" },
 			]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
+			if (url.includes("v2_effective_route_capabilities")) return new Response(JSON.stringify([
 				{ provider_model_id: "pm-openai", capability_id: "responses" },
 				{ provider_model_id: "pm-anthropic", capability_id: "messages" },
 			]), { status: 200 });
@@ -299,6 +299,28 @@ describe("account policy settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/preset_versions") && url.includes("visibility=eq.public"))).toBe(true);
 	});
 
+	it("rejects a preset whose prompt template does not parse, before touching the database", async () => {
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			requestedUrls.push(url);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/presets", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", name: "@triage", config: { prompt: { messages: [{ role: "user", content: "Hi {{name" }] } } }),
+		}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+
+		expect(response.status).toBe(400);
+		const body = await response.json() as Record<string, any>;
+		expect(body.error).toBe("invalid_prompt_template");
+		expect(body.issues[0]).toMatchObject({ keyword: "template_syntax", path: ["prompt", "messages", 0, "content"] });
+		expect(requestedUrls.some((url) => url.includes("/presets"))).toBe(false);
+	});
+
 	it("returns private routing, preset, and guardrail payloads", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -330,7 +352,7 @@ describe("account policy settings routes", () => {
 				return new Response(JSON.stringify(providers), { status: 200 });
 			}
 			if (url.includes("data_api_provider_models")) return new Response(JSON.stringify([{ provider_id: "openai", api_model_id: "gpt-test", internal_model_id: "openai/gpt-test", is_active_gateway: true }]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) {
+			if (url.includes("v2_effective_route_capabilities")) {
                 expect(new URL(url).searchParams.get("or")).toContain("metadata->data_policy.not.is.null");
                 expect(new URL(url).searchParams.get("provider_model_id")).toBe("in.(pm-native)");
                 expect(new URL(url).searchParams.get("limit")).toBe("500");

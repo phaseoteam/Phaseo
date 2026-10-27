@@ -858,4 +858,44 @@ describe("openai embeddings executor", () => {
 		expect((result as any).bill?.usage?.image_pixels).toBe(50_000);
 		expect((result as any).bill?.usage?.total_tokens).toBe(93);
 	});
+
+	it("sends voyage base64 images and videos as the documented data URLs", async () => {
+		setupRuntimeFromEnv({
+			VOYAGE_API_KEY: "test-voyage-key",
+		} as any);
+
+		const mock = installFetchMock([
+			{
+				match: (url) => url === "https://api.voyage.example/v1/multimodalembeddings",
+				response: jsonResponse({
+					object: "list",
+					model: "voyage-multimodal-3.5",
+					data: [{ object: "embedding", index: 0, embedding: [0.11, 0.22] }],
+					usage: { text_tokens: 2, image_pixels: 50_000, video_pixels: 100_000, total_tokens: 260 },
+				}),
+			},
+		]);
+
+		const result = await executor(buildArgs({
+			providerId: "voyage",
+			ir: {
+				model: "voyage/voyage-multimodal-3.5",
+				input: [[
+					{ type: "text", text: "Raw base64 media" } as any,
+					{ type: "image", source: "data", data: "iVBORw0KGgo=", mimeType: "image/png" } as any,
+					{ type: "video", url: "data:video/mp4;base64,AAAAIGZ0eXA=" } as any,
+				]],
+			},
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls[0]?.bodyJson?.inputs?.[0]?.content).toEqual([
+			{ type: "text", text: "Raw base64 media" },
+			{ type: "image_base64", image_base64: "data:image/png;base64,iVBORw0KGgo=" },
+			{ type: "video_base64", video_base64: "data:video/mp4;base64,AAAAIGZ0eXA=" },
+		]);
+		expect((result as any).bill?.usage?.image_pixels).toBe(50_000);
+		expect((result as any).bill?.usage?.video_pixels).toBe(100_000);
+	});
 });

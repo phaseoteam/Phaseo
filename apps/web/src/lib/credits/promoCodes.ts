@@ -70,9 +70,18 @@ export function resolveRedeemMessage(
 		: defaultRedeemMessageForStatus(status);
 }
 
+/** The credit_ledger ref_type of the Slack agent's month-end charge (kind "charge"). */
+export const SLACK_AGENT_CHARGE_REF_TYPE = "slack_agent_month";
+
+export function isSlackAgentCharge(refType: string | null | undefined): boolean {
+	return String(refType ?? "").toLowerCase() === SLACK_AGENT_CHARGE_REF_TYPE;
+}
+
 export function getCreditTransactionKindLabel(
-	kind: string | null | undefined
+	kind: string | null | undefined,
+	refType?: string | null
 ): string | null {
+	if (isSlackAgentCharge(refType)) return "Slack agent";
 	const normalized = String(kind ?? "").toLowerCase();
 	if (!normalized) return null;
 	if (normalized === "promo_code") return "Promo Credit";

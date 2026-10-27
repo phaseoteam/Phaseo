@@ -4,7 +4,10 @@ const state = vi.hoisted(() => ({
 	rpc: vi.fn(),
 	dispatched: [] as Array<Promise<unknown>>,
 	adminThrows: false,
+	shadow: vi.fn(),
 }));
+
+vi.mock("@core/spend-limits", () => ({ shadowSpendLimitOnce: state.shadow }));
 
 vi.mock("./context", () => ({ fetchGatewayContext: vi.fn() }));
 
@@ -57,6 +60,7 @@ describe("budget alerts from rejected requests", () => {
 		state.rpc.mockReset();
 		state.dispatched = [];
 		state.adminThrows = false;
+		state.shadow.mockReset();
 		resetRememberedSpendLimits();
 	});
 
@@ -112,5 +116,22 @@ describe("budget alerts from rejected requests", () => {
 
 		expect(state.rpc).not.toHaveBeenCalled();
 		expect(state.dispatched).toHaveLength(0);
+	});
+
+	it("hands the legacy decision to the spend-limit shadow for opted-in capped API keys only", async () => {
+		state.rpc.mockResolvedValue({ data: true, error: null });
+		const blocked = blockedContext("daily_request_limit_reached");
+		vi.mocked(fetchGatewayContext).mockResolvedValue(blocked);
+		expect((await request({ shadowSpendLimit: true })).ok).toBe(false);
+		expect(state.shadow).toHaveBeenCalledWith({ workspaceId: "ws_1", keyId: "key_1", requestId: "req_1" }, blocked.keyLimit);
+
+		state.shadow.mockClear();
+		await request({ shadowSpendLimit: true, internal: true });
+		// Batch and realtime callers, and OAuth requests, do not opt in.
+		await request();
+		// An allowed key without limits or budgets has nothing to compare.
+		vi.mocked(fetchGatewayContext).mockResolvedValue({ ...blocked, keyLimit: { ok: true, reason: null, resetAt: null, buckets: null, budgets: [] } });
+		await request({ shadowSpendLimit: true });
+		expect(state.shadow).not.toHaveBeenCalled();
 	});
 });

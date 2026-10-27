@@ -120,6 +120,10 @@ class AnthropicMessagesRequest
 	/** @var array|null */
 	public $plugins;
 	/** @var array<string, mixed>|null */
+	public $prompt;
+	/** @var string|null */
+	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
 	public $provider_options;
@@ -171,6 +175,24 @@ class AnthropicMessagesResponse
 	public $type;
 	/** @var array<string, mixed>|null */
 	public $usage;
+}
+
+class AnthropicSystemMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+}
+
+class AnthropicSystemTextBlock
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
 }
 
 class AnthropicTool
@@ -245,6 +267,8 @@ class ApiKey
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
@@ -283,6 +307,8 @@ class ApiKeyCreateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $workspace_id;
 }
@@ -355,6 +381,8 @@ class ApiKeyRotateResponse
 
 class ApiKeyScopeValue { }
 
+class ApiKeyStorageLocations { }
+
 class ApiKeyUpdateRequest
 {
 	/** @var string|null */
@@ -377,6 +405,8 @@ class ApiKeyUpdateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var mixed|null */
+	public $storage_locations;
 }
 
 class ApiKeyUsageBucket
@@ -443,6 +473,8 @@ class ApiKeyWithValue
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
@@ -1037,6 +1069,8 @@ class ChatCompletionsRequest
 	public $prediction;
 	/** @var float|null */
 	public $presence_penalty;
+	/** @var array<string, mixed>|null */
+	public $prompt;
 	/** @var string|null */
 	public $prompt_cache_key;
 	/** @var array<string, mixed>|null */
@@ -1119,6 +1153,8 @@ class ChatImageOutputPart
 
 class ChatMessage
 {
+	/** @var array<string, mixed>|null */
+	public $audio;
 	/** @var array|null */
 	public $audios;
 	/** @var string|null|array */
@@ -1159,6 +1195,32 @@ class ChatReasoningDetail
 	public $text;
 	/** @var string */
 	public $type;
+}
+
+class ChatResponseMessage
+{
+	/** @var array<string, mixed>|null */
+	public $audio;
+	/** @var array|null */
+	public $audios;
+	/** @var string|null|array */
+	public $content;
+	/** @var array|null */
+	public $images;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $reasoning;
+	/** @var string|null */
+	public $reasoning_content;
+	/** @var array|null */
+	public $reasoning_details;
+	/** @var string */
+	public $role;
+	/** @var string|null */
+	public $tool_call_id;
+	/** @var array|null */
+	public $tool_calls;
 }
 
 class Classifier
@@ -1509,7 +1571,7 @@ class DecisionBoxAnswer
 {
 	/** @var array<string, mixed> */
 	public $box;
-	/** @var float */
+	/** @var float|null */
 	public $confidence;
 	/** @var string|null */
 	public $name;
@@ -1737,6 +1799,76 @@ class DeletedResponse
 {
 	/** @var string */
 	public $deleted;
+}
+
+class DepartmentBudget
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $department_id;
+	/** @var string|null */
+	public $department_name;
+	/** @var bool */
+	public $exceeded;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $interval;
+	/** @var float */
+	public $limit;
+	/** @var int */
+	public $limit_nanos;
+	/** @var float */
+	public $remaining;
+	/** @var int */
+	public $remaining_nanos;
+	/** @var string|null */
+	public $reset_at;
+	/** @var string */
+	public $updated_at;
+	/** @var float */
+	public $usage;
+	/** @var int */
+	public $usage_nanos;
+	/** @var string|null */
+	public $window_start;
+	/** @var string */
+	public $workspace_id;
+}
+
+class DepartmentBudgetInput
+{
+	/** @var string */
+	public $department_id;
+	/** @var string */
+	public $interval;
+	/** @var float */
+	public $limit;
+}
+
+class DepartmentBudgetInterval { }
+
+class DepartmentBudgetListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class DepartmentBudgetResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class DepartmentBudgetUpdateInput
+{
+	/** @var string|null */
+	public $interval;
+	/** @var float|null */
+	public $limit;
 }
 
 class DynamicRoute
@@ -4531,6 +4663,8 @@ class Preset
 
 class PresetConfig
 {
+	/** @var array<string, mixed>|null */
+	public $prompt;
 }
 
 class PresetCreateRequest
@@ -4569,6 +4703,46 @@ class PresetListResponse
 	public $data;
 	/** @var int */
 	public $total_count;
+}
+
+class PresetPromptTemplate
+{
+	/** @var array */
+	public $messages;
+	/** @var array<string, mixed>|null */
+	public $response_format;
+	/** @var string|null */
+	public $syntax;
+	/** @var mixed|null */
+	public $tool_choice;
+	/** @var array|null */
+	public $tools;
+	/** @var array<string, mixed>|null */
+	public $variables;
+}
+
+class PresetPromptTemplateMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+}
+
+class PresetPromptVariable
+{
+	/** @var mixed|null */
+	public $default;
+	/** @var string|null */
+	public $description;
+	/** @var array|null */
+	public $enum;
+	/** @var int|null */
+	public $max_length;
+	/** @var bool|null */
+	public $required;
+	/** @var string */
+	public $type;
 }
 
 class PresetPublisher
@@ -4923,6 +5097,14 @@ class PromptCacheOptions
 	public $mode;
 	/** @var string|null */
 	public $ttl;
+}
+
+class PromptTemplateReference
+{
+	/** @var string */
+	public $id;
+	/** @var array<string, mixed>|null */
+	public $variables;
 }
 
 class Provider
@@ -5511,6 +5693,8 @@ class ResponsesRequest
 	public $plugins;
 	/** @var string|null */
 	public $previous_response_id;
+	/** @var array<string, mixed>|null */
+	public $prompt;
 	/** @var string|null */
 	public $prompt_cache_key;
 	/** @var array<string, mixed>|null */
@@ -6921,10 +7105,16 @@ class WorkspaceNotificationDestination
 {
 	/** @var string|null */
 	public $created_at;
+	/** @var bool|null */
+	public $has_signing_secret;
 	/** @var string */
 	public $id;
 	/** @var string */
 	public $name;
+	/** @var string|null */
+	public $signing_secret;
+	/** @var string|null */
+	public $signing_secret_rotated_at;
 	/** @var string */
 	public $status;
 	/** @var string */
@@ -7001,6 +7191,8 @@ class WorkspaceNotificationRouteMap
 {
 	/** @var array */
 	public $auto_top_up_failed;
+	/** @var array */
+	public $broadcast_destination_failing;
 	/** @var array */
 	public $low_balance;
 	/** @var array */

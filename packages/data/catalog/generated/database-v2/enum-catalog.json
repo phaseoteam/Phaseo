@@ -1,5 +1,6 @@
 {
   "models": [
+    "abliteration-ai/abliterated-model-large-flash",
     "ai21/jamba-1.5-large-instruct",
     "ai21/jamba-2-3b",
     "ai21/jamba-large-1.5",
@@ -247,6 +248,7 @@
     "cursor/composer-1.5",
     "cursor/composer-2.5",
     "databricks/dbrx-instruct",
+    "dealignai/deepseek-v4.1-flash-uncensored",
     "deepseek/deepseek-chat",
     "deepseek/deepseek-chat-v3-0324",
     "deepseek/deepseek-chat-v3.1",
@@ -288,6 +290,7 @@
     "deepseek/deepseek-v4-pro",
     "deepseek/deepseek-v4-pro-0813",
     "deepseek/deepseek-v4-pro-free",
+    "deepseek/deepseek-v4.1-flash-1017",
     "deepseek/deepseek-v4.1-flash-beta",
     "deepseek/deepseek-vl2",
     "deepseek/deepseek-vl2-small",
@@ -1886,6 +1889,7 @@
     "deepseek/deepseek-v4-flash-vision-exp",
     "deepseek/deepseek-v4-pro",
     "deepseek/deepseek-v4-pro-0813",
+    "deepseek/deepseek-v4.1-flash-1017",
     "deepseek/deepseek-v4.1-flash-beta",
     "early-access/ea-29b-a4b",
     "eleven-labs/eleven-flash-v2",
@@ -2404,6 +2408,7 @@
     "cursor",
     "cyfragovpl",
     "databricks",
+    "dealignai",
     "decart",
     "deepseek",
     "dots-studio",

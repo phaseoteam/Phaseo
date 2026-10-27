@@ -6,6 +6,7 @@ import { decodeExtractionRequest, encodeExtractionResponse } from "@protocols/ex
 import { ExtractionsSchema } from "@core/extraction";
 import { formatClientPayload } from "../after/payload";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
+import { resetManagedCredentialStateForTests } from "./managedCredentials";
 
 const guardCandidatesMock = vi.fn();
 const guardPricingFoundMock = vi.fn();
@@ -25,6 +26,8 @@ const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
 const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
 const classifyHealthCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+// Providers whose (mocked) text executor reads its managed key like the OpenAI-compatible wire.
+const openAICompatTextProviders = vi.hoisted(() => new Set<string>());
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => runtimeBindings.value ?? {},
@@ -65,6 +68,7 @@ vi.mock("./health", () => ({
 vi.mock("../../executors", () => ({
 	resolveProviderExecutor: (...args: any[]) => resolveProviderExecutorMock(...args),
 	normalizeCapability: (capability: string) => capability,
+	textExecutorUsesOpenAICompatKey: (providerId: string) => openAICompatTextProviders.has(providerId),
 }));
 
 vi.mock("@core/customer-rate-limits", () => ({
@@ -288,6 +292,79 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
 	});
 
+	const syncMediaCases = [
+		["image.generate", "images.generations"],
+		["image.edit", "images.edits"],
+		["audio.speech", "audio.speech"],
+		["audio.transcription", "audio.transcription"],
+		["audio.translations", "audio.translations"],
+		["music.generate", "music.generate"],
+		["ocr", "ocr"],
+	] as const;
+
+	function mediaCandidates() {
+		const candidates = ["first", "second"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "media-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+	}
+
+	const succeeded = () => ({
+		kind: "completed", ir: { ok: true }, upstream: new Response("{}", { status: 200 }),
+		bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+	});
+
+	it.each(syncMediaCases)("does not send a %s request to a second provider once the first has answered 2xx", async (capability, endpoint) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" });
+			fetchSpy.mockRestore();
+			// The provider has charged; mapping or pricing its answer then fails.
+			throw new Error("pricing_rule_missing:output_image");
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability, endpoint }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(first).toHaveBeenCalledTimes(1);
+		expect(second).not.toHaveBeenCalled();
+		expect((result as Response).status).toBe(502);
+	});
+
+	it("does not send a media request elsewhere when a later call fails after an earlier provider call succeeded", async () => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/music", { method: "POST" });
+			fetchSpy.mockRestore();
+			return { kind: "completed", upstream: new Response("{}", { status: 500 }), bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		await doRequestWithIR(createCtx({ capability: "music.generate", endpoint: "music.generate" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["a non-2xx answer", 503],
+		["a transport error", "transport"],
+	] as const)("still fails a media request over to the next provider after %s", async (_label, failure) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: failure === "transport" ? 200 : failure }));
+			if (failure === "transport") fetchSpy.mockRejectedValue(new Error("Network connection lost."));
+			const response = await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" }).finally(() => fetchSpy.mockRestore());
+			return { kind: "completed", upstream: response, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability: "image.generate", endpoint: "images.generations" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).toHaveBeenCalledTimes(1);
+		expect((result as any).ok).toBe(true);
+	});
+
     it.each(["completed", "stream"] as const)("retains private health identity through %s execution", async kind => {
         const candidate = { providerId: "private-model", privateEndpoint: { baseUrl: "https://private.example/v1", supportsResponses: true }, pricingCard: { currency: "USD", rules: [] }, byokMeta: [{ id: "route-1", key: "test-private-key", value: "test-private-key", alwaysUse: true, routingMode: "priority" }], providerModelSlug: "private", capabilityParams: {} };
         const scopedProvider = "private-model:workspace-a:route-1";
@@ -458,6 +535,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 
 			expect((result as any).ok).toBe(true);
 			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(["slow"]);
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
+	it.each([
+		["gemini-4-argon", ["google-vertex"]],
+		["gemini-3.6-flash", ["google-vertex", "google-ai-studio"]],
+	])("gives streaming %s the long-thinking headers deadline only where documented", async (model, expectedProviders) => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		try {
+			const candidates = ["google-vertex", "google-ai-studio"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: model, capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			// The first chunk, and so the headers, arrives after the model has thought.
+			vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => new Promise<Response>((resolve, reject) => {
+				const timer = setTimeout(() => resolve(new Response("{}", { status: 200 })), String(input).includes("google-vertex") ? 80 : 0);
+				init?.signal?.addEventListener("abort", () => { clearTimeout(timer); reject(init.signal!.reason); });
+			}));
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/models/${model}:streamGenerateContent?alt=sse`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: true });
+
+			const result = await doRequestWithIR(ctx, { model: `google/${model}`, prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(expectedProviders);
 		} finally {
 			runtimeBindings.value = null;
 			vi.restoreAllMocks();
@@ -1327,5 +1438,121 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executors.first).toHaveBeenCalledTimes(1);
 		expect(executors.second).not.toHaveBeenCalled();
 		expect(executors.third).not.toHaveBeenCalled();
+	});
+});
+
+describe("doRequestWithIR managed credentials", () => {
+	const pricingCard = { provider: "test", model: "deepseek/deepseek-v4-flash", endpoint: "chat.completions", currency: "USD", rules: [] };
+	const route = (providerId: string, extra: Record<string, unknown> = {}) => ({
+		providerId,
+		pricingCard,
+		byokMeta: [],
+		providerModelSlug: "deepseek-v4-flash",
+		capabilityParams: {},
+		maxInputTokens: null,
+		maxOutputTokens: null,
+		...extra,
+	});
+	const failing = (status: number, keySource: "gateway" | "byok" = "gateway") => vi.fn().mockResolvedValue({
+		kind: "completed",
+		ir: {},
+		upstream: new Response(JSON.stringify({ error: { message: "upstream said no" } }), { status }),
+		bill: { cost_cents: 0, currency: "USD" },
+		keySource,
+		byokKeyId: keySource === "byok" ? "byok_1" : null,
+	});
+	const run = (candidates: any[]) => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		return doRequestWithIR(
+			createCtx({ endpoint: "chat.completions", capability: "text.generate", model: "deepseek/deepseek-v4-flash" }),
+			{ model: "deepseek/deepseek-v4-flash", messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }] } as any,
+			createTiming(),
+		);
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetManagedCredentialStateForTests();
+		openAICompatTextProviders.clear();
+		for (const id of ["canopy-wave", "baseten", "atlascloud"]) openAICompatTextProviders.add(id);
+		runtimeBindings.value = { BASETEN_API_KEY: "bt-key", ATLAS_CLOUD_API_KEY: "atlas-key" };
+		guardPricingFoundMock.mockResolvedValue({ ok: true });
+		freeQuotaMock.mockResolvedValue(null);
+		policyGuardMock.mockResolvedValue(null);
+		guardAllFailedMock.mockResolvedValue({ ok: false, response: new Response(JSON.stringify({ error: "all_failed" }), { status: 502 }) });
+		admitThroughBreakerMock.mockResolvedValue("closed");
+		onCallStartMock.mockResolvedValue(undefined);
+		onCallEndMock.mockResolvedValue(undefined);
+		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
+		reportProbeResultMock.mockResolvedValue(undefined);
+		rankProvidersMock.mockImplementation(async (candidates: any[]) => candidates.map((candidate) => ({ candidate, health: {} })));
+	});
+
+	it("never tries a provider whose managed key is missing", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500), baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("canopy-wave"), route("baseten")]);
+
+		expect(executors["canopy-wave"]).not.toHaveBeenCalled();
+		expect(executors.baseten).toHaveBeenCalledTimes(1);
+		expect(rankProvidersMock.mock.calls[0][0].map((candidate: any) => candidate.providerId)).toEqual(["baseten"]);
+	});
+
+	it("still sends a BYOK request to a provider without a managed key", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500, "byok") };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+		const byok = { id: "byok_1", providerId: "canopy-wave", fingerprintSha256: "f", keyVersion: "1", routingMode: "fallback", key: "sk-own" };
+
+		await run([route("canopy-wave", { byokMeta: [byok] })]);
+
+		expect(executors["canopy-wave"]).toHaveBeenCalledTimes(1);
+		expect(executors["canopy-wave"].mock.calls[0][0]).toMatchObject({ byokMeta: [expect.objectContaining({ id: "byok_1" })] });
+	});
+
+	it("returns a credentials error without any attempt when no candidate can authenticate", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		const response = await run([route("canopy-wave")]) as Response;
+
+		expect(executors["canopy-wave"]).not.toHaveBeenCalled();
+		expect(response.status).toBe(502);
+		expect(await response.json()).toMatchObject({
+			error: "upstream_error",
+			reason: "canopy-wave_key_missing",
+			provider_failure_diagnostics: { category: "credentials_not_configured" },
+		});
+	});
+
+	it("skips a provider for managed traffic after its managed key returns 402", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { atlascloud: failing(402), baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(executors.atlascloud).toHaveBeenCalledTimes(1);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(executors.atlascloud).toHaveBeenCalledTimes(1);
+		expect(executors.baseten).toHaveBeenCalledTimes(2);
+	});
+
+	it("does not let a customer's BYOK 402 affect anyone else", async () => {
+		const byok = { id: "byok_1", providerId: "atlascloud", fingerprintSha256: "f", keyVersion: "1", routingMode: "priority", key: "sk-own" };
+		// The customer's key is out of credit; the gateway's own key is fine.
+		const atlascloud = vi.fn(async (args: any) => {
+			const ownKey = (args.byokMeta ?? []).length > 0;
+			return (await failing(ownKey ? 402 : 500, ownKey ? "byok" : "gateway")());
+		});
+		const executors: Record<string, any> = { atlascloud, baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("atlascloud", { byokMeta: [byok] }), route("baseten")]);
+		const firstRequestCalls = atlascloud.mock.calls.length;
+		expect(atlascloud.mock.calls[0][0].byokMeta).toHaveLength(1);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(atlascloud).toHaveBeenCalledTimes(firstRequestCalls + 1);
+		expect(atlascloud.mock.calls.at(-1)![0].byokMeta ?? []).toHaveLength(0);
 	});
 });

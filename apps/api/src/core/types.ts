@@ -56,6 +56,8 @@ export type RequestMeta = {
     requestUserId?: string | null;
     sessionId?: string | null;
     trace?: Record<string, unknown> | null;
+    /** The body's `metadata` as string pairs, for Broadcast. */
+    requestMetadata?: Record<string, string> | null;
     otelTraceContext?: {
         traceId: string;
         parentSpanId: string;

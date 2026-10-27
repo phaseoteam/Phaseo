@@ -36,7 +36,7 @@ Most providers cache repeated prompt prefixes automatically. Claude needs an exp
 | [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) on Google AI Studio and [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | Automatic on Gemini 2.5 and later | `cached_content` for an explicit cache you created |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | Automatic | `prompt_cache_key` and the `x-grok-conv-id` header |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | Automatic | Nothing extra |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | Automatic, with the 5-minute TTL | Nothing extra |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | Automatic, with a 5-minute TTL; a 1-hour TTL is opt-in on Kimi K3 | `prompt_cache_key` and `prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | Automatic on the models Groq lists | Nothing extra |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | Automatic | `prompt_cache_key`, plus the `x-session-affinity` header and `user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | Automatic | `prompt_cache_key` |
@@ -45,6 +45,9 @@ Most providers cache repeated prompt prefixes automatically. Claude needs an exp
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automatic (implicit); explicit caches are opt-in | Block `cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automatic; Venice adds Claude breakpoints itself | Block `cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automatic; a retention window is opt-in | `prompt_cache_key`, `prompt_cache_breakpoint`, and `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatic; explicit caching on Claude and Gemini 2.5 models | Block `cache_control` on Claude and Gemini 2.5 models, without a `ttl` |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automatic | `prompt_cache_key` and the `x-session-affinity` header |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | Automatic | `prompt_cache_key` and the `x-session-id` header |
 
 Other OpenAI-compatible providers receive `prompt_cache_key` when their API accepts it, and no other cache controls. Phaseo always sends a hash of your workspace and key rather than the key itself. See [Provider affinity](#provider-affinity).
 
@@ -126,11 +129,12 @@ Each provider receives the mark in its own form:
 | OpenAI and Azure OpenAI, earlier models | Removed | Removed |
 | DeepInfra | Removed | Sent |
 | Alibaba Model Studio and Venice | Sent | Removed |
+| Inference.net, Claude and Gemini 2.5 models | Sent without a `ttl` | Removed |
 | Other providers | Removed | Removed |
 
-Marks on tool definitions reach only Claude routes, Alibaba Model Studio, and Venice; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
+Marks on tool definitions reach only Claude routes, Alibaba Model Studio, Venice, and Inference.net's Claude and Gemini 2.5 models; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
 
-Amazon Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet, and 3 Opus for 5 minutes only, and Bedrock can reject a `ttl` on those models. On those routes Phaseo sends your breakpoints without `ttl`, so they cache for 5 minutes, and reports a removed `1h` as `cache_control.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`.
+Amazon Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet, and 3 Opus for 5 minutes only, and Bedrock can reject a `ttl` on those models. On those routes Phaseo sends your breakpoints without `ttl`, so they cache for 5 minutes, and reports a removed `1h` as `cache_control.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`. Inference.net documents breakpoints without a `ttl`, so Phaseo removes and reports a `ttl` there in the same way, and the writes are billed as 5-minute writes.
 
 ### OpenAI retention and options
 
@@ -138,10 +142,13 @@ OpenAI's cache controls depend on the model generation. Phaseo sends each one on
 
 | Field | Values | Sent to |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` or `explicit`; `ttl`: `30m`, or `12h` on OpenAI | OpenAI and Azure OpenAI GPT-5.6 and later, and DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` or `explicit`; `ttl`: `30m` or `12h` | OpenAI GPT-5.6 and later |
+| `prompt_cache_options` | `mode`: `implicit` or `explicit`; `ttl`: `30m` | Azure OpenAI GPT-5.6 and later |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` or `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, or `1h` on Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` or `24h` | OpenAI and Azure OpenAI models before GPT-5.6 |
 
-On GPT-5.6 and later, OpenAI accepts a `ttl` of `30m` (the default) or `12h`, and Azure OpenAI only `30m`. `explicit` mode caches only the breakpoints you place. DeepInfra uses the same object with a `ttl` of `5m` or `1h`, and needs `prompt_cache_key` on every request in the session. Other providers receive neither field.
+On GPT-5.6 and later, OpenAI accepts a `ttl` of `30m` (the default) or `12h`, and Azure OpenAI only `30m`. `explicit` mode caches only the breakpoints you place. DeepInfra uses the same object with a `ttl` of `5m` or `1h`, and needs `prompt_cache_key` on every request in the session. Moonshot AI takes `mode: "implicit"` and a `ttl` of `5m` (the default) or `1h`. Phaseo sends `1h` only to Kimi K3 routes that have a 1-hour write price, so those writes are billed at that price; elsewhere it removes the `ttl` and reports it as `prompt_cache_options.ttl` in the `X-Phaseo-Dropped-Params` header. Other providers receive neither field.
 
 Send either field at the top level or under `provider_options.openai`. When both are present, the top-level value wins:
 
@@ -203,7 +210,7 @@ Gemini caches implicitly on Gemini 2.5 and later, with nothing to send. To use a
 ```
 
 - On Google AI Studio, `cached_content` works only with your own Google API key (BYOK). With Phaseo's key the request returns 400, because the cache belongs to the account that created it.
-- On Vertex AI, the cache must belong to the Google Cloud project of the credential that serves the request, so use your own Vertex AI credential.
+- On Vertex AI, `cached_content` works only with your own Vertex AI credential; with Phaseo's credential the request returns 400. Send the cache's full name, `projects/{project}/locations/{location}/cachedContents/{id}`, and Phaseo sends the request to that project and location. A short name such as `cachedContents/abc123` uses the `project_id` and `region` in your service-account JSON, and returns 400 if either is missing.
 - Google does not support explicit caches on Gemini 4 Argon and later.
 
 `provider_options.google.cache_control` and `provider_options.google.cache_ttl` are accepted but not sent to Google.
@@ -436,8 +443,8 @@ as that provider's cached input is cheaper than its standard input.
 Phaseo sends a hash of your workspace and `prompt_cache_key` to providers, never
 the raw key, so the same key in two workspaces never shares a provider cache. With
 only a `session_id`, Phaseo derives that hash from the session for OpenAI, xAI,
-Fireworks and Cerebras. Fireworks and Cloudflare Workers AI also receive it in the
-`x-session-affinity` header, and xAI receives it as `x-grok-conv-id` unless you set
+Fireworks and Cerebras. Fireworks, Cloudflare Workers AI and Baseten also receive it in the
+`x-session-affinity` header, Morph in the `x-session-id` header, and xAI receives it as `x-grok-conv-id` unless you set
 `provider_options.xai.conversation_id`. Responses still echo your own
 `prompt_cache_key`.
 

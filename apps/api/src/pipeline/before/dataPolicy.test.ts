@@ -17,6 +17,16 @@ function provider(overrides: Partial<GatewayProviderSnapshot> = {}): GatewayProv
 }
 
 describe("resolveEffectiveDataPolicy", () => {
+    it("denies expired or malformed catalog snapshots even when the provider default is Yes", () => {
+        for (const validUntil of ["2000-01-01T00:00:00Z", "invalid", null]) {
+            const result = resolveEffectiveDataPolicy({ endpoint: "text.generate", provider: provider({
+                zeroDataRetention: true, capabilityParams: { data_policy: {
+                    catalogManaged: true, validUntil, zeroDataRetention: true, tier: "private", confidence: "confirmed",
+                } },
+            }) });
+            expect(result).toMatchObject({ tier: "unknown", confidence: "unknown", zdrEligibility: "ineligible" });
+        }
+    });
     it("inherits the provider policy for stateless inference", () => {
         expect(resolveEffectiveDataPolicy({ endpoint: "responses", provider: provider() })).toMatchObject({
             tier: "private",

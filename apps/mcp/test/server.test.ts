@@ -83,11 +83,11 @@ describe("Phaseo MCP server metadata", () => {
 					items: {
 						type: "object",
 						properties: {
-							releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+							releaseDate: { type: ["string", "null"] },
 							inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 							outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
-							inputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
-							outputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							inputPriceProviderId: { type: ["string", "null"] },
+							outputPriceProviderId: { type: ["string", "null"] },
 							hasFreeProvider: { type: "boolean" },
 							providerSupport: {
 								type: "array",
@@ -97,11 +97,11 @@ describe("Phaseo MCP server metadata", () => {
 										pricing: {
 											type: "object",
 											properties: {
-												inputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
-												outputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												inputPricePerToken: { type: ["string", "null"] },
+												outputPricePerToken: { type: ["string", "null"] },
 												inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 												outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
-												currency: { anyOf: [{ type: "string" }, { type: "null" }] },
+												currency: { type: ["string", "null"] },
 												isFree: { type: "boolean" },
 											},
 											required: [
@@ -130,7 +130,7 @@ describe("Phaseo MCP server metadata", () => {
 				model: {
 					type: "object",
 					properties: {
-						releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+						releaseDate: { type: ["string", "null"] },
 						providerSupport: {
 							type: "array",
 							items: {

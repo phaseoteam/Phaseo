@@ -14,6 +14,7 @@ import {
     resetRecordedModelSubstitutions,
     parseModelSuccessorResolution,
     parseSuccessorRedirectPolicy,
+    requestMayIncurSkippedMeters,
     successorPriceAllowed,
     successorRedirectTarget,
     type ModelSuccessorResolution,
@@ -30,6 +31,7 @@ const eligible: ModelSuccessorResolution = {
     reason: "eligible",
     priceRatio: 1,
     priceComparable: true,
+    priceSkippedMeters: [],
     workspaceOverride: false,
 };
 const on: SuccessorRedirectPolicy = { enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} };
@@ -39,10 +41,14 @@ describe("model successor redirect", () => {
         expect(parseModelSuccessorResolution({
             model: "lab/old", replacement_model: "lab/mid", unserved_since: "2026-10-01T00:00:00+00:00", target: "lab/new",
             chain: ["lab/mid", "lab/new", 3], reason: "eligible", price_ratio: "1.25", price_comparable: true,
+            price_skipped_meters: ["native_web_search_requests", 7],
         })).toEqual({
             model: "lab/old", replacementModel: "lab/mid", unservedSince: "2026-10-01T00:00:00+00:00", target: "lab/new",
-            chain: ["lab/mid", "lab/new"], reason: "eligible", priceRatio: 1.25, priceComparable: true, workspaceOverride: false,
+            chain: ["lab/mid", "lab/new"], reason: "eligible", priceRatio: 1.25, priceComparable: true,
+            priceSkippedMeters: ["native_web_search_requests"], workspaceOverride: false,
         });
+        // Older resolutions without the field skipped nothing.
+        expect(parseModelSuccessorResolution({ model: "lab/old", price_comparable: true })?.priceSkippedMeters).toEqual([]);
         expect(parseModelSuccessorResolution(null)).toBeNull();
         expect(parseModelSuccessorResolution({ target: "lab/new" })).toBeNull();
     });
@@ -73,6 +79,54 @@ describe("model successor redirect", () => {
         const unknown = { ...eligible, priceRatio: null, priceComparable: false };
         expect(successorPriceAllowed(unknown, { ...on, pricePolicy: "limit", maxPriceIncreasePercent: 1000 })).toBe(false);
         expect(successorPriceAllowed(unknown, { ...on, pricePolicy: "any" })).toBe(true);
+    });
+
+    it("only trusts skipped meters for requests that cannot incur them", () => {
+        const text = { model: "lab/old", messages: [{ role: "user", content: "hi" }] };
+        const skipped = { ...eligible, priceSkippedMeters: ["native_web_search_requests", "input_audio_tokens", "output_audio_tokens"] };
+        expect(successorPriceAllowed(skipped, on, text)).toBe(true);
+        expect(successorPriceAllowed(skipped, { ...on, pricePolicy: "any" }, { ...text, web_search_options: {} })).toBe(true);
+        expect(successorRedirectTarget(skipped, on, { ...text, tools: [{ type: "web_search" }] })).toBeNull();
+        expect(successorRedirectTarget({ ...skipped, workspaceOverride: true }, on, { ...text, tools: [{ type: "web_search" }] }))
+            .not.toBeNull();
+    });
+
+    it.each([
+        ["Chat function tools", { messages: [{ role: "user", content: "hi" }], tools: [{ type: "function", function: { name: "f" } }] }, false],
+        ["Messages client tools", { messages: [], tools: [{ name: "f", input_schema: {} }] }, false],
+        ["Responses web search", { input: "hi", tools: [{ type: "web_search_preview" }] }, true],
+        ["Messages web search", { messages: [], tools: [{ type: "web_search_20250305", name: "web_search" }] }, true],
+        ["the gateway's web search", { messages: [], tools: [{ type: "phaseo:web_search" }] }, true],
+        ["a function named like web search", { messages: [], tools: [{ type: "function", function: { name: "web_search" } }] }, true],
+        ["web_search_options", { messages: [], web_search_options: {} }, true],
+        ["plugins", { messages: [], plugins: [{ id: "web" }] }, true],
+    ])("detects web tools: %s", (_name, body, expected) => {
+        expect(requestMayIncurSkippedMeters(body, ["native_web_search_requests"])).toBe(expected);
+    });
+
+    it.each([
+        ["text only", { messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }] }, []],
+        ["Chat image_url", { messages: [{ role: "user", content: [{ type: "image_url", image_url: { url: "https://x" } }] }] }, ["image"]],
+        ["Chat input_audio", { messages: [{ role: "user", content: [{ type: "input_audio", input_audio: { data: "", format: "wav" } }] }] }, ["audio"]],
+        ["Responses input_image", { input: [{ role: "user", content: [{ type: "input_image", image_url: "https://x" }] }] }, ["image"]],
+        ["Messages image source", { messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "" } }] }] }, ["image"]],
+        ["Gemini inline video", { contents: [{ parts: [{ inlineData: { mimeType: "video/mp4", data: "" } }] }] }, ["video"]],
+        ["a file of unknown type", { input: [{ role: "user", content: [{ type: "input_file", file_id: "f" }] }] }, ["image", "audio", "video"]],
+    ])("detects input modalities: %s", (_name, body, expected) => {
+        for (const modality of ["image", "audio", "video"]) {
+            expect(requestMayIncurSkippedMeters(body, [`input_${modality}_tokens`])).toBe(expected.includes(modality));
+        }
+    });
+
+    it("detects requested output modalities and treats unknown meters as incurred", () => {
+        const text = { messages: [{ role: "user", content: "hi" }] };
+        expect(requestMayIncurSkippedMeters(text, ["output_audio_tokens"])).toBe(false);
+        expect(requestMayIncurSkippedMeters({ ...text, modalities: ["text", "audio"] }, ["output_audio_tokens"])).toBe(true);
+        expect(requestMayIncurSkippedMeters({ ...text, audio: { voice: "alloy" } }, ["output_audio_tokens"])).toBe(true);
+        expect(requestMayIncurSkippedMeters({ ...text, generationConfig: { responseModalities: ["IMAGE"] } }, ["output_image_tokens"])).toBe(true);
+        expect(requestMayIncurSkippedMeters({ input: "draw", tools: [{ type: "image_generation" }] }, ["output_image"])).toBe(true);
+        expect(requestMayIncurSkippedMeters(text, ["requests"])).toBe(true);
+        expect(requestMayIncurSkippedMeters(text, [])).toBe(false);
     });
 
     it("redirects only eligible models for workspaces that turned it on", () => {

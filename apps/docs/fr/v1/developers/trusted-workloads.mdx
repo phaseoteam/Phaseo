@@ -1,0 +1,186 @@
+---
+title: "Workloads de confiance"
+description: "Permettez aux déploiements Vercel et aux jobs GitHub Actions d'appeler Phaseo avec un jeton OIDC de courte durée au lieu d'une clé API."
+icon: "fingerprint-pattern"
+---
+
+<Note>
+Les workloads de confiance sont en bêta et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Workloads de confiance** n'apparaît pas dans votre tableau de bord, votre espace de travail n'y a pas encore accès.
+</Note>
+
+Vercel et GitHub Actions donnent à chaque déploiement ou job un jeton signé qui indique qui il est, par exemple « ceci est le déploiement de production du projet `website` » ou « ceci est un workflow de `acme/app` ». Le jeton expire en quelques heures. Avec les workloads de confiance, vous indiquez à Phaseo à quels workloads faire confiance, et ceux-ci envoient ce jeton au lieu d'une clé API. Rien de durable n'a besoin d'être stocké dans les paramètres de votre projet ni dans les secrets de CI.
+
+Les clés API continuent de fonctionner. Utilisez les workloads de confiance pour le code exécuté sur Vercel ou dans GitHub Actions, et gardez les clés API pour tout le reste, comme les serveurs hébergés ailleurs, les scripts locaux et les applications mobiles.
+
+---
+
+## Fonctionnement
+
+1. Un propriétaire ou un administrateur de l'espace de travail crée une **règle de confiance** dans **Paramètres → Workloads de confiance**. La règle indique la plateforme, votre équipe Vercel ou votre propriétaire GitHub, ainsi que des conditions facultatives comme un projet, un dépôt, une branche ou un environnement.
+2. Votre code demande à la plateforme un jeton pour l'audience `https://api.phaseo.app` et l'envoie sous la forme `Authorization: Bearer <token>`.
+3. Phaseo vérifie la signature et l'expiration du jeton, puis recherche exactement une règle active qui lui correspond.
+4. La requête s'exécute avec la clé de cette règle. Elle reçoit les mêmes limites de débit, budgets, journaux et facturation qu'une requête faite avec une clé API.
+
+### Pourquoi l'audience est importante
+
+Les jetons doivent être émis pour l'audience `https://api.phaseo.app`. Par défaut, Vercel et GitHub Actions émettent des jetons pour une audience partagée par tous les services que votre workload appelle. Si Phaseo les acceptait, un jeton envoyé à un autre service pourrait être réutilisé pour appeler Phaseo. Phaseo refuse les jetons dont l'audience est différente.
+
+---
+
+## Créer une règle de confiance
+
+<Steps>
+<Step title="Ouvrez Workloads de confiance">
+Accédez à **Paramètres → Workloads de confiance** et sélectionnez **Nouvelle règle**. Seuls les propriétaires et les administrateurs de l'espace de travail peuvent gérer les règles.
+</Step>
+<Step title="Choisissez la plateforme et renseignez les ID">
+<Tabs>
+<Tab title="Vercel">
+- **Slug de l'équipe** : le slug de l'équipe, comme dans `vercel.com/<team-slug>`. Laissez-le vide si votre projet utilise le mode d'émetteur global de Vercel (émetteur `https://oidc.vercel.com` au lieu de `https://oidc.vercel.com/<team-slug>`).
+- **ID de l'équipe** : commence par `team_`. Vous le trouverez dans les paramètres de l'équipe sur Vercel.
+- **ID du projet** (recommandé) : commence par `prj_`. Vous le trouverez dans les paramètres du projet sur Vercel. Sans lui, tous les projets de l'équipe sont considérés comme fiables.
+- **Environnement** : production, aperçu ou développement. Ne cochez aucune case pour accepter n'importe quel environnement.
+</Tab>
+<Tab title="GitHub Actions">
+- **ID du propriétaire** : l'ID numérique de l'utilisateur ou de l'organisation propriétaire du dépôt.
+- **ID du dépôt** (recommandé) : l'ID numérique du dépôt. Sans lui, tous les dépôts du propriétaire sont considérés comme fiables.
+- **Branche ou tag** et **Environnement** (facultatifs) : par exemple `refs/heads/main` ou `production`.
+
+Obtenez les deux ID avec la CLI GitHub :
+
+```bash
+gh api repos/OWNER/REPO --jq '.id, .owner.id'
+```
+
+Phaseo utilise des ID numériques, car les noms peuvent être modifiés ou repris par quelqu'un d'autre.
+</Tab>
+</Tabs>
+</Step>
+<Step title="Définissez le jeton le plus long accepté">
+Dans **Jeton le plus long accepté (heures)**, indiquez la durée de vie maximale que vous acceptez. Les jetons émis pour durer plus longtemps sont refusés. Le maximum est de 12 heures, ce qui couvre les jetons de développement Vercel.
+</Step>
+</Steps>
+
+Les règles prennent effet en une minute environ. Si vous désactivez ou supprimez une règle, ses jetons cessent de fonctionner dans le même délai.
+
+---
+
+## Appeler Phaseo avec un jeton
+
+<Tabs>
+<Tab title="Vercel">
+Utilisez `getVercelOidcToken` depuis le point d'entrée serveur de `@vercel/oidc` 4.x. En passant `audience`, le jeton du déploiement est échangé contre un jeton émis pour Phaseo.
+
+Avec le [SDK TypeScript](../sdk-reference/typescript/overview.mdx), passez une fonction comme `apiKey`. Le SDK l'appelle avant chaque requête, si bien que chaque requête utilise un jeton à jour :
+
+```ts
+import Phaseo from "@phaseo/sdk";
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+	apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-mini",
+	input: "Hello from a trusted workload",
+});
+```
+
+Passer une fonction comme `apiKey` nécessite une version de `@phaseo/sdk` postérieure à la 3.0.0.
+
+Avec n'importe quel client HTTP, demandez un jeton à chaque requête et envoyez-le comme jeton bearer :
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const token = await getVercelOidcToken({ audience: "https://api.phaseo.app" });
+
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${token}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "openai/gpt-5-mini",
+		messages: [{ role: "user", content: "Hello from a trusted workload" }],
+	}),
+});
+```
+
+Ne stockez pas le jeton dans une variable de module : Vercel peut le changer d'une requête à l'autre.
+</Tab>
+<Tab title="GitHub Actions">
+Le job a besoin de l'autorisation `id-token: write` pour demander un jeton.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken("https://api.phaseo.app");
+            const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-5-mini",
+                messages: [{ role: "user", content: "Hello from GitHub Actions" }],
+              }),
+            });
+            core.info(String(response.status));
+```
+
+Depuis une étape shell, demandez le jeton avec `curl` :
+
+```bash
+TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+  "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.phaseo.app" | jq -r .value)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+Les jetons GitHub Actions sont de courte durée ; demandez-en donc un nouveau pour les jobs longs.
+</Tab>
+</Tabs>
+
+---
+
+## Comportement et limites
+
+- **Les mêmes contrôles qu'une clé.** Les requêtes s'exécutent avec la clé de la règle : les limites de débit de la clé, les budgets, les liens vers les départements, les listes d'adresses IP autorisées, les paramètres de journalisation et la facturation s'appliquent comme d'habitude.
+- **Appels de modèles uniquement.** Les jetons de workloads fonctionnent là où fonctionne une clé API du gateway. Les API de gestion les refusent.
+- **Une seule règle correspondante.** Si deux espaces de travail font confiance au même workload, Phaseo ne peut pas savoir lequel vous visez et refuse la requête. Envoyez l'ID de l'espace de travail dans l'en-tête `x-phaseo-workspace` pour en choisir un.
+- **Durée de vie du jeton.** Les jetons émis pour durer plus longtemps que le **Jeton le plus long accepté** de la règle sont refusés.
+- **Les clés API ne changent pas.** Les workloads de confiance ajoutent une seconde méthode d'authentification ; ils ne modifient ni ne désactivent les clés API.
+
+---
+
+## Dépannage
+
+Un jeton refusé renvoie `401` avec l'un de ces messages :
+
+| Message | Signification | Que faire |
+| --- | --- | --- |
+| `workload_token_wrong_audience` | Le jeton n'a pas été émis pour `https://api.phaseo.app`. | Demandez le jeton avec cette audience. |
+| `workload_issuer_not_trusted` | Aucune règle active n'utilise l'émetteur de ce jeton. | Vérifiez le slug de l'équipe Vercel ou le mode d'émetteur, et que la règle est activée. |
+| `workload_identity_no_matching_policy` | Le jeton est valide, mais aucune règle active ne lui correspond. | Vérifiez les ID d'équipe, de propriétaire, de projet ou de dépôt, les conditions d'environnement, de branche ou de tag, et que la durée de vie du jeton ne dépasse pas le **Jeton le plus long accepté** de la règle. |
+| `workload_identity_ambiguous` | Plusieurs espaces de travail font confiance à ce workload. | Envoyez `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_not_enabled` | Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail. | Utilisez une clé API pour le moment. |
+| `workload_token_expired` | Le jeton a expiré. | Demandez un nouveau jeton pour chaque requête ou étape du job. |
+| `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus de 12 heures, le maximum accepté par Phaseo. | Demandez un jeton de plus courte durée. |
+| `workload_token_invalid_signature` | La signature du jeton ne correspond pas aux clés de la plateforme. | Envoyez le jeton tel que la plateforme l'a émis, sans le modifier. |
+| `workload_jwks_unavailable` | Phaseo n'a pas pu récupérer les clés de signature de la plateforme. | Réessayez après une courte attente. |

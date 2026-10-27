@@ -1,7 +1,7 @@
 import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
-import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
+import { PUBLIC_DATA_POLICY_CACHE, PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -56,9 +56,7 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 const CACHE_PROFILES = {
 	catalogue: PUBLIC_MODEL_CATALOGUE_CACHE,
 	overview: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 60 * 60,
-		staleIfErrorSeconds: 24 * 60 * 60,
+		...PUBLIC_DATA_POLICY_CACHE,
 		cacheTags: ["web-api-model-details"],
 	},
 	benchmarks: {
@@ -78,7 +76,7 @@ const CACHE_PROFILES = {
 		cacheTags: ["web-api-model-subscriptions"],
 	},
 	pricing: {
-		...PUBLIC_LIVE_DATA_CACHE,
+		...PUBLIC_DATA_POLICY_CACHE,
 		cacheTags: ["web-api-model-pricing"],
 	},
 	performance: {

@@ -7,10 +7,17 @@ describe("isAnalyticsBlockedPath", () => {
 		expect(isAnalyticsBlockedPath(`/de-DE/feedback/${token}/unsubscribe`)).toBe(true);
 	});
 
+	it("blocks the Slack agent's account links, whose token is in the query", () => {
+		expect(isAnalyticsBlockedPath("/slack/link")).toBe(true);
+		expect(isAnalyticsBlockedPath("/ja/slack/link")).toBe(true);
+	});
+
 	it("leaves every other page alone", () => {
 		expect(isAnalyticsBlockedPath("/")).toBe(false);
 		expect(isAnalyticsBlockedPath("/models/feedback")).toBe(false);
 		expect(isAnalyticsBlockedPath("/redeem")).toBe(false);
+		expect(isAnalyticsBlockedPath("/settings/slack")).toBe(false);
+		expect(isAnalyticsBlockedPath("/slack/linked-accounts")).toBe(false);
 	});
 });
 

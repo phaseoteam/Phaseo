@@ -52,7 +52,7 @@ function supabase() {
 				const base = chain({ data: destination, error: null });
 				base.insert = (payload: Record<string, unknown>) => {
 					state.inserted = payload;
-					return chain(state.insertError ? { data: null, error: state.insertError } : { data: destination, error: null });
+					return chain(state.insertError ? { data: null, error: state.insertError } : { data: { ...destination, destination_id: payload.destination_id ?? destination.destination_id }, error: null });
 				};
 				return base;
 			}
@@ -128,6 +128,39 @@ describe("observability destination management", () => {
 		expect(state.inserted).toMatchObject({ destination_config: {}, destination_config_key_version: "v1" });
 		expect(state.inserted?.destination_config_ciphertext).not.toContain("Bearer secret");
 		expect(state.auditEvents[0]).toMatchObject({ action: "observability.destination.created", target_id: "destination_1" });
+	});
+
+	it("creates object storage destinations and returns their type", async () => {
+		const configs: Record<string, Record<string, string>> = {
+			s3: { bucket: "traces", region: "eu-west-2", access_key_id: "AKIA", secret_access_key: "secret" },
+			r2: { bucket: "traces", account_id: "0123456789abcdef0123456789abcdef", access_key_id: "key", secret_access_key: "secret" },
+			gcs: { bucket: "project_logs", access_key_id: "GOOG1", secret_access_key: "secret" },
+		};
+		for (const [type, config] of Object.entries(configs)) {
+			vi.resetModules();
+			const { observabilityRoutes } = await import("./observability");
+			const response = await observabilityRoutes.request("https://example.com/destinations", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ type, name: "Archive", config }),
+			});
+			const body = await response.json() as Record<string, any>;
+			expect({ type, status: response.status }).toEqual({ type, status: 201 });
+			expect(body.data).toMatchObject({ type, configured: true });
+			expect(body.data.config).toBeUndefined();
+			expect(state.inserted?.destination_config_ciphertext).not.toContain("secret");
+		}
+	});
+
+	it("names the object storage field at fault", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const response = await observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "s3", name: "Archive", config: { bucket: "Bad_Bucket", access_key_id: "AKIA", secret_access_key: "secret" } }),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ message: "bucket must be 3-63 lower-case letters, digits, dots or hyphens" });
 	});
 
 	it("rejects private destination endpoints", async () => {

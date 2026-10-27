@@ -12,19 +12,12 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 	return cherryPickIRParams(ir, args.capabilityParams);
 }
 
-export function shouldForceQianfanChat(rawRequest: unknown): boolean {
-	return Boolean(
-		rawRequest &&
-		typeof rawRequest === "object" &&
-		!Array.isArray(rawRequest) &&
-		Array.isArray((rawRequest as Record<string, unknown>).messages) &&
-		!("input" in rawRequest),
-	);
-}
-
+// Every surface goes to Chat Completions. Qianfan's /v2/responses takes flat
+// function tools and documents no tool_choice, max_output_tokens, temperature or
+// response format, while Chat documents all of them.
+// https://cloud.baidu.com/doc/qianfan-api/s/vmhejnuy8
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const forceChat = shouldForceQianfanChat(args.ir.rawRequest);
-	return executeOpenAIWire(args, { forceChat, transientRetries: 1 });
+	return executeOpenAIWire(args, { forceChat: true, transientRetries: 1 });
 }
 
 export function postprocess(ir: IRChatRequest): IRChatRequest {

@@ -181,6 +181,21 @@ jobs:
             - name: Validate shared request classifier rules
               run: pnpm run validate:request-classifiers
 
+            - name: Validate shared workspace budget rules
+              run: pnpm run validate:workspace-budgets
+
+            - name: Validate shared prompt template rules
+              run: pnpm run validate:prompt-templates
+
+            - name: Validate shared Slack agent pricing
+              run: pnpm run validate:slack-agent-pricing
+
+            - name: Validate shared Slack agent secrets format
+              run: pnpm run validate:slack-secrets
+
+            - name: Validate shared key storage locations
+              run: pnpm run validate:key-storage-locations
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |
@@ -209,6 +224,7 @@ jobs:
                   node supabase/tests/rankings-rolling-periods.test.mjs
                   node supabase/tests/rankings-distributions.test.mjs
                   node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
+                  node supabase/tests/benchmark-direction-default.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/update-model-statuses.test.ts
@@ -424,7 +440,7 @@ jobs:
         needs: openapi-lint
         strategy:
             matrix:
-                app: [api, docs, web, web-api, mcp]
+                app: [api, docs, web, web-api, mcp, slack]
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -480,6 +496,13 @@ jobs:
                   pnpm --filter @phaseo/mcp typecheck
                   pnpm --filter @phaseo/mcp test
                   pnpm --filter @phaseo/mcp build:production
+
+            - name: Slack agent typecheck, test & production build
+              if: matrix.app == 'slack'
+              run: |
+                  pnpm --filter @phaseo/slack-agent typecheck
+                  pnpm --filter @phaseo/slack-agent test
+                  pnpm --filter @phaseo/slack-agent build:production
 
     api-aimock:
         name: API AIMock matrix
@@ -634,7 +657,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Set up Python for SDK builds
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: "3.12"
 
@@ -757,9 +780,9 @@ jobs:
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
+              uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
               with:
-                  ruby-version: "3.2"
+                  ruby-version: "4.0"
 
             - name: Setup Rust
               if: matrix.sdk == 'rust'
@@ -813,6 +836,8 @@ jobs:
                       name: Deploy Web API
                     - target: mcp
                       name: Deploy MCP
+                    - target: slack
+                      name: Deploy Slack agent
                     - target: docs
                       name: Deploy Docs
         steps:
@@ -900,11 +925,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies (for Cloudflare Workers)
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -1010,7 +1035,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_API_TOKEN
 
             - name: Load global Cloudflare account ID from Infisical
@@ -1021,7 +1046,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_ACCOUNT_ID
 
             - name: Load global OpenRouter key from Infisical
@@ -1032,7 +1057,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
                   secret-name: OPENROUTER_API_KEY
 
             - name: Load public model discovery webhook from Infisical
@@ -1043,7 +1068,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 
             - name: Load model update Discord role from Infisical
@@ -1054,7 +1079,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_ROLE_ID
 
             - name: Deploy API app to Cloudflare
@@ -1074,7 +1099,9 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /gateway
+                  include-imports: false
+                  recursive: false
 
             - name: Deploy regional API Worker to Cloudflare
               if: matrix.target == 'api-eu' || matrix.target == 'api-us'
@@ -1122,6 +1149,23 @@ jobs:
                   workingDirectory: apps/mcp
                   command: deploy --env production
 
+            # The Worker's secrets are set on Cloudflare (apps/slack/README.md);
+            # deploy fails if a required one is missing.
+            - name: Build Slack agent workspace dependencies
+              if: matrix.target == 'slack'
+              run: |
+                  corepack pnpm --filter @phaseo/sdk build
+                  corepack pnpm --filter @phaseo/agent-sdk build
+
+            - name: Deploy Slack agent Worker to Cloudflare
+              if: matrix.target == 'slack'
+              uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/slack
+                  command: deploy --env production
+
             # ---------- DOCS ----------
             - name: Docs (Mintlify deploy is handled by GitHub App)
               if: matrix.target == 'docs'
@@ -1154,7 +1198,7 @@ jobs:
               run: corepack pnpm install --frozen-lockfile
             - name: Setup Python
               if: matrix.sdk == 'py'
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: "3.12"
             - name: Install Python test tooling
@@ -1185,9 +1229,9 @@ jobs:
                   java-version: "17"
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
+              uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
               with:
-                  ruby-version: "3.2"
+                  ruby-version: "4.0"
             - name: Setup Rust
               if: matrix.sdk == 'rust'
               run: rustup component add clippy rustfmt
@@ -1437,7 +1481,7 @@ jobs:
               run: pnpm --filter @phaseo/agent-sdk publish --access public --no-git-checks
 
             - name: Set up Python (for PyPI publish)
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: 3.12
 
@@ -1491,7 +1535,7 @@ jobs:
 
             - name: Publish Python SDK to PyPI (Trusted Publishing)
               if: steps.pypi-release.outputs.should_publish == 'true'
-              uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+              uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
               with:
                   packages-dir: packages/sdk/sdk-py/dist
                   skip-existing: true

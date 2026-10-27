@@ -99,6 +99,7 @@ export const AIMOCK_SPEECH_PROVIDERS = AIMOCK_OPENAI_V1_PROVIDERS.filter((provid
     supportsCapability(providerId, "audio.speech") &&
     providerId !== "google-ai-studio" &&
     providerId !== "xiaomi" &&
+	providerId !== "mistral" &&
 	providerId !== "minimax");
 
 export const AIMOCK_TRANSCRIPTION_PROVIDERS = AIMOCK_OPENAI_V1_PROVIDERS.filter((providerId) =>

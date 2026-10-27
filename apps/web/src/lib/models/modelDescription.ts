@@ -263,7 +263,8 @@ export function buildModelOverviewMetadataTitle(
 			count: providerCount,
 			context: formatContextLength(signals.contextLength ?? 0),
 		};
-		const fullKey = signals.hasPricing && providerCount > 0
+		// "Compare {count} Providers" only reads right for two or more.
+		const fullKey = signals.hasPricing && providerCount > 1
 			? "pricingWithProviders"
 			: signals.hasPricing
 				? "pricing"

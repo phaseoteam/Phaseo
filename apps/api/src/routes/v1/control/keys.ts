@@ -15,8 +15,11 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
+
+const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
 import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
+import { parseKeyStorageLocations } from "@core/key-storage-locations";
 
 type KeyRow = {
 	id: string;
@@ -40,6 +43,7 @@ type KeyRow = {
 	monthly_limit_requests?: number | null;
 	scopes?: string | null;
 	department_id?: string | null;
+	storage_locations?: string[] | null;
 };
 
 type KeyUsageRow = {
@@ -55,7 +59,7 @@ type KeyUsageRow = {
 	last_used_at?: string | null;
 };
 
-const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id";
+const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations";
 const KEY_WITH_KID_COLUMNS = `${KEY_COLUMNS}, kid`;
 
 const DEFAULT_LIMIT = 100;
@@ -280,6 +284,7 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 		last_used_at: usage?.last_used_at ?? row.last_used_at ?? null,
 		expires_at: row.expires_at ?? null,
 		department_id: row.department_id ?? null,
+		storage_locations: row.storage_locations ?? [],
 	};
 }
 
@@ -516,7 +521,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (!includeDisabled) {
@@ -532,7 +537,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME);
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 		if (!includeDisabled) {
 			countQuery = countQuery.eq("status", "active").eq("soft_blocked", false);
 		}
@@ -595,6 +600,7 @@ async function handleCreateKey(req: Request) {
 	if (!name) {
 		return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
 	const limit = parseLimitNumber(body.limit);
@@ -612,6 +618,10 @@ async function handleCreateKey(req: Request) {
 	const departmentId = parseDepartmentId(body.department_id);
 	if (departmentId.ok === false) {
 		return json({ error: "bad_request", message: departmentId.message }, 400, { "Cache-Control": "no-store" });
+	}
+	const storageLocations = parseKeyStorageLocations(body.storage_locations ?? []);
+	if (storageLocations.ok === false) {
+		return json({ error: "bad_request", message: storageLocations.message }, 400, { "Cache-Control": "no-store" });
 	}
 
 	try {
@@ -652,6 +662,7 @@ async function handleCreateKey(req: Request) {
 			weekly_limit_cost_nanos: 0,
 			monthly_limit_cost_nanos: 0,
 			soft_blocked: softBlocked,
+			storage_locations: storageLocations.value,
 			...(expiresAt.value !== undefined ? { expires_at: expiresAt.value } : {}),
 			...(departmentId.value ? { department_id: departmentId.value } : {}),
 		};
@@ -674,6 +685,8 @@ async function handleCreateKey(req: Request) {
 			throw new Error(error.message || "Failed to create API key");
 		}
 		if (!data) throw new Error("Failed to create API key");
+		// A key linked to a department counts toward that department's rate limit.
+		if (departmentId.value) await publishRateLimitPlan(workspaceScope.workspaceId);
 		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
 
 		// The secret is shown once. Return it at the top level, where key-creation clients
@@ -717,7 +730,7 @@ async function handleGetKey(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (error) {
@@ -785,7 +798,7 @@ async function handleUpdateKey(req: Request) {
 			.from("keys")
 			.select(KEY_WITH_KID_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -801,13 +814,27 @@ async function handleUpdateKey(req: Request) {
 			if (!nextName) {
 				return json({ error: "bad_request", message: "name cannot be empty" }, 400, { "Cache-Control": "no-store" });
 			}
+			if (isManagedKeyName(nextName)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 			updatePayload.name = nextName;
 		}
-		if (typeof body.disabled === "boolean") {
+		// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
+		// disabled: true already holds for them, so only turning them on is refused.
+		const revoked = ["revoked", "compromised"].includes(String(existing.status ?? "").toLowerCase());
+		if (body.disabled === false && revoked) {
+			return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
+		}
+		if (typeof body.disabled === "boolean" && !revoked) {
 			updatePayload.status = body.disabled ? "paused" : "active";
 		}
 		if (typeof body.soft_blocked === "boolean") {
 			updatePayload.soft_blocked = body.soft_blocked;
+		}
+		if (body.storage_locations !== undefined) {
+			const storageLocations = parseKeyStorageLocations(body.storage_locations, existing.storage_locations ?? []);
+			if (storageLocations.ok === false) {
+				return json({ error: "bad_request", message: storageLocations.message }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.storage_locations = storageLocations.value;
 		}
 		if (expiresAt.value !== undefined) {
 			updatePayload.expires_at = expiresAt.value;
@@ -843,6 +870,9 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(updateError.message || "Failed to update API key");
 		}
 		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		if (departmentId.value !== undefined && departmentId.value !== (existing.department_id ?? null)) {
+			await publishRateLimitPlan(auth.value.workspaceId);
+		}
 
 		const { data: updated, error: refetchError } = await supabase
 			.from("keys")
@@ -894,7 +924,7 @@ async function handleDeleteKey(req: Request) {
 			.from("keys")
 			.select("id, workspace_id, kid, name, status")
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -963,15 +993,18 @@ async function handleRotateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
-			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id")
-			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
+			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,storage_locations,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id,key_kind")
+			.eq("workspace_id", auth.value.workspaceId).not("name", "in", MANAGED_KEY_NAMES_FILTER).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
+		// Rotating would mint a secret that acts as the workload policy's key.
+		if (existing.key_kind === "workload_identity") return json({ error: "key_not_rotatable", message: "Workload identity keys have no secret to rotate." }, 409, { "Cache-Control": "no-store" });
 		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();
 		const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : `${existing.name} (rotated)`;
+		if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(auth.value.workspaceId);
 		const { data: replacement, error: insertError } = await supabase.from("keys").insert({
 			workspace_id: auth.value.workspaceId, name, kid: generated.kid,
@@ -979,6 +1012,7 @@ async function handleRotateKey(req: Request) {
 			status: "active", scopes: existing.scopes ?? "[]", created_by: creatorUserId,
 			soft_blocked: Boolean(existing.soft_blocked),
 			ip_allowlist: existing.ip_allowlist ?? [],
+			storage_locations: existing.storage_locations ?? [],
 			daily_limit_requests: existing.daily_limit_requests ?? 0,
 			weekly_limit_requests: existing.weekly_limit_requests ?? 0,
 			monthly_limit_requests: existing.monthly_limit_requests ?? 0,
@@ -1014,7 +1048,8 @@ async function handleRotateKey(req: Request) {
 				throw invalidationError;
 			}
 		}
-		if (rateLimitCopied) await publishRateLimitPlan(auth.value.workspaceId);
+		// The replacement also keeps the old key's department link.
+		if (rateLimitCopied || existing.department_id) await publishRateLimitPlan(auth.value.workspaceId);
 		await auditApiKey(auth.value, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }

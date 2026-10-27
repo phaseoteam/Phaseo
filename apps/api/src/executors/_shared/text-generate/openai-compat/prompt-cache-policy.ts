@@ -18,6 +18,40 @@ const OPENAI_CACHE_PROVIDERS = new Set(["openai", "openai-eu", "azure"]);
 // - OpenRouter: https://openrouter.ai/docs/guides/best-practices/prompt-caching
 const CACHE_CONTROL_PROVIDERS = new Set(["alibaba", "alibaba-cloud", "qwen", "venice", "openrouter"]);
 
+// Inference.net documents block cache_control on its Claude and Gemini 2.5 model pages:
+// "Mark it with cache_control: { "type": "ephemeral" } to set a cache point"
+// (https://inference.net/models/claude-opus-5/, https://inference.net/models/gemini-2.5-pro/).
+// Its newer Gemini pages describe automatic caching with no request field
+// (https://inference.net/models/gemini-3.6-flash/), so their marks are stripped.
+// The pages name no ttl, so a ttl is removed before the request is built (see
+// pipeline/execute/cacheTtl.ts) and writes are billed as 5-minute writes.
+const INFERENCE_NET_CACHE_CONTROL_MODEL = /claude|gemini-2\.5/i;
+
+/** Whether this upstream takes Anthropic-style block cache_control for the model. */
+export function acceptsBlockCacheControl(providerId: string, models: Array<string | null | undefined>): boolean {
+	if (CACHE_CONTROL_PROVIDERS.has(providerId)) return true;
+	if (providerId === "inference-net") {
+		return models.some((model) => typeof model === "string" && INFERENCE_NET_CACHE_CONTROL_MODEL.test(model));
+	}
+	return false;
+}
+
+// Moonshot documents `prompt_cache_options` on Chat Completions: "mode: only implicit.
+// ttl: 5m (default) or 1h" (https://platform.kimi.ai/docs/api/chat). A 1-hour ttl only
+// reaches routes priced for 1-hour writes (see pipeline/execute/cacheTtl.ts).
+const MOONSHOT_PROVIDERS = new Set(["moonshotai"]);
+const MOONSHOT_CACHE_TTLS: ReadonlySet<string> = new Set(["5m", "1h"]);
+
+function moonshotPromptCacheOptions(value: unknown): Record<string, string> | undefined {
+	if (!value || typeof value !== "object") return undefined;
+	const { mode, ttl } = value as { mode?: unknown; ttl?: unknown };
+	const options: Record<string, string> = {};
+	if (mode === "implicit") options.mode = "implicit";
+	const normalisedTtl = typeof ttl === "string" ? ttl.trim().toLowerCase() : "";
+	if (MOONSHOT_CACHE_TTLS.has(normalisedTtl)) options.ttl = normalisedTtl;
+	return Object.keys(options).length > 0 ? options : undefined;
+}
+
 // DeepInfra documents `prompt_cache_breakpoint` and `prompt_cache_options`
 // (`{ mode: "explicit", ttl: "5m" | "1h" }`) and ignores them on models without
 // support: https://docs.deepinfra.com/chat/prompt-cache-retention
@@ -142,7 +176,7 @@ export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: 
 		? (explicit ? "openai-explicit" : "openai-implicit")
 		: OPENAI_STYLE_BREAKPOINT_PROVIDERS.has(providerId)
 			? "openai-style"
-			: CACHE_CONTROL_PROVIDERS.has(providerId) ? "cache-control" : "none";
+			: acceptsBlockCacheControl(providerId, [args.model, args.irModel]) ? "cache-control" : "none";
 
 	for (const message of Array.isArray(request.messages) ? request.messages : []) {
 		if (!message || typeof message !== "object") continue;
@@ -173,6 +207,11 @@ export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: 
 			const { ttl: _ttl, ...options } = request.prompt_cache_options;
 			request.prompt_cache_options = options;
 		}
+	} else if (MOONSHOT_PROVIDERS.has(providerId)) {
+		const options = moonshotPromptCacheOptions(request.prompt_cache_options);
+		if (options) request.prompt_cache_options = options;
+		else delete request.prompt_cache_options;
+		delete request.prompt_cache_retention;
 	} else if (mode !== "openai-style") {
 		delete request.prompt_cache_options;
 		delete request.prompt_cache_retention;

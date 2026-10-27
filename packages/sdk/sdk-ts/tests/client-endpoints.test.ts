@@ -181,6 +181,38 @@ describe("Phaseo endpoints discovery helper", () => {
     ]);
   });
 
+  test("looks a model up once per client, even for concurrent first requests, and not at all when lifecycle checks are off", async () => {
+    const seen: string[] = [];
+    const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      seen.push(`${String(init?.method ?? "GET").toUpperCase()} ${url}`);
+      if (url.startsWith("https://example.test/models?")) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse({ ok: true, models: [{ model_id: "voyage/rerank-2", status: "active" }] });
+      }
+      return jsonResponse({ model: "voyage/rerank-2", results: [] });
+    }) as unknown as typeof fetch;
+    const rerank = (client: Phaseo) => client.rerank.create({ model: "voyage/rerank-2", query: "best", documents: ["a"] });
+
+    const checked = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
+    await Promise.all([rerank(checked), rerank(checked)]);
+    await rerank(checked);
+    expect(seen).toEqual([
+      "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1",
+      "POST https://example.test/rerank",
+      "POST https://example.test/rerank",
+      "POST https://example.test/rerank",
+    ]);
+
+    seen.length = 0;
+    const unchecked = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl, modelLifecycleChecks: false });
+    await rerank(unchecked);
+    expect(seen).toEqual(["POST https://example.test/rerank"]);
+    // An explicit lookup still works with the checks off.
+    await expect(unchecked.models.getDeprecationInfo("voyage/rerank-2")).resolves.toMatchObject({ modelId: "voyage/rerank-2", status: "active" });
+    expect(seen).toEqual(["POST https://example.test/rerank", "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1"]);
+  });
+
 });
 
 function jsonResponse(body: unknown) {
