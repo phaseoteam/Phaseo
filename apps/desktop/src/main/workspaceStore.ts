@@ -27,6 +27,7 @@ import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatc
 import { recordIfSlow } from "./diagnostics/tracer";
 import { untrustedBlock, untrustedLabel } from "../shared/untrustedContent";
 import { AgentRuns, agentRunsSchema } from "./agentRuns";
+import { requeued, rewindConversation } from "./taskRewind";
 
 /** Store transactions this slow are traced; faster ones are not, so streaming writes cost nothing on disk. */
 const SLOW_STORE_MS = 50;
@@ -819,6 +820,13 @@ export class WorkspaceStore {
 				const turnIds = new Set(messages.filter(message => message.role === "user" && message.id !== command.messageId).map(message => message.id));
 				const fork: Task = { ...task, messages, activities: command.messageId ? task.activities?.filter(activity => [...turnIds].some(id => activity.id.startsWith(id + ":"))) : task.activities, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, delegation: undefined, launch: undefined, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: partial ? undefined : task.nativeSessionId, handoffFrom: partial ? task.harness : task.handoffFrom, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
 				this.saveTask(fork); return fork;
+			}
+			case "rewind": {
+				const message = rewindConversation(task, command.messageId);
+				// The Phaseo harness keeps its runs (with their messages) beside the chat; the removed turns go with them.
+				this.agentRuns.deleteForTask(task.id);
+				if (command.resend) task.queue.unshift(requeued(message));
+				break;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
 			case "link-pull-request": case "unlink-pull-request": case "watch-pull-request":

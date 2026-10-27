@@ -678,6 +678,10 @@ ipcMain.handle("workspace:task-history", (event, query: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.taskHistory(query);
 });
+ipcMain.handle("workspace:checkpoint-changes", (event, taskId: unknown, messageId: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof taskId !== "string" || typeof messageId !== "string" || !taskId || !messageId || taskId.length > 200 || messageId.length > 200) throw new Error("Invalid checkpoint request.");
+	return workspaceRuntime.checkpointChanges(taskId, messageId);
+});
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
@@ -739,6 +743,14 @@ ipcMain.handle("workspace:paste-image", async (event, id: unknown, name: unknown
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before attaching images.");
 	const bytes = Buffer.from(data); if (!imageMime(bytes)) throw new Error("Paste a PNG, JPEG, GIF or WebP image.");
 	const attachment = await workspaceRuntime.attachments.prepare(id, name || "Pasted image.png", bytes);
+	try { if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw new Error("This chat is unavailable."); workspaceRuntime.store.saveAttachment(attachment); return attachment; }
+	catch (error) { await workspaceRuntime.attachments.discard(attachment); throw error; }
+});
+ipcMain.handle("workspace:paste-file", async (event, id: unknown, name: unknown, data: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || typeof name !== "string" || !name.trim() || name.length > 200 || !(data instanceof Uint8Array) || data.byteLength > 10 * 1024 * 1024 || shutdownStarted) throw new Error("Invalid file.");
+	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before adding files.");
+	// prepare accepts what Attach files does: images, PDFs and UTF-8 text.
+	const attachment = await workspaceRuntime.attachments.prepare(id, name, Buffer.from(data));
 	try { if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw new Error("This chat is unavailable."); workspaceRuntime.store.saveAttachment(attachment); return attachment; }
 	catch (error) { await workspaceRuntime.attachments.discard(attachment); throw error; }
 });

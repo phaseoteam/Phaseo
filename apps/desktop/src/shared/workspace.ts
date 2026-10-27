@@ -22,7 +22,7 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
-import type { GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { CheckpointChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
@@ -160,11 +160,13 @@ export type WorkspaceCommand =
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
-	| { type: "steer"; id: string; text: string; attachments?: string[] }
+	| { type: "steer"; id: string; text: string; attachments?: string[]; /** Sends this queued message into the running turn instead; it returns to the queue if the agent refuses it. */ queuedId?: string }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
 	| { type: "fork"; id: string; messageId?: string }
+	/** Edit from here: removes this message of the person's and everything after it; restoreFiles puts the project back to the turn's snapshot, resend sends the message again (Regenerate). */
+	| { type: "rewind"; id: string; messageId: string; restoreFiles?: boolean; resend?: boolean }
 	| { type: "approval"; id: string; approvalId: string; decision: ApprovalDecision; /** Plan revisions: what to change. */ feedback?: string }
 	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]>; dismissed?: boolean }
 	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null; declined?: boolean }
@@ -181,6 +183,8 @@ export type WorkspaceApi = {
 	overview: () => Promise<WorkspaceOverview>;
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
 	task: (id: string) => Promise<Task>;
+	/** What restoring the project to the snapshot before this message's turn would change (Edit from here). */
+	checkpointChanges: (taskId: string, messageId: string) => Promise<CheckpointChange[]>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
 	missions: () => Promise<Mission[]>;
@@ -216,6 +220,8 @@ export type WorkspaceApi = {
 	/** A pull request's stored review guide; with write, writes one for the current head first (T3's Guide tab). */
 	pullRequestGuide: (projectId: string, number: number, write?: boolean) => Promise<PullRequestGuideResult>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
+	/** A dropped or pasted file, or a long paste: an image, a PDF or UTF-8 text, as Attach files accepts. */
+	pasteFile: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
@@ -382,11 +388,16 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "send": case "steer":
 				if (command.threadReferences !== undefined && (command.type !== "send" || !Array.isArray(command.threadReferences) || command.threadReferences.length > 10 || command.threadReferences.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)))) throw new Error("Invalid chat references.");
 				string("text", true, 100000);
+				if (command.queuedId !== undefined && (command.type !== "steer" || typeof command.queuedId !== "string" || !command.queuedId || command.queuedId.length > 100)) throw new Error("Invalid queued message.");
 				if (command.nativeAction !== undefined) { if (command.type !== "send") throw new Error("Native actions cannot steer a turn."); const action = validateNativeAction(command.nativeAction); if (nativeActionText(action) !== command.text) throw new Error("Native action does not match this message."); command.nativeAction = action; }
 				if (command.attachments !== undefined && (!Array.isArray(command.attachments) || command.attachments.length > 10 || command.attachments.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) || new Set(command.attachments).size !== command.attachments.length)) throw new Error("Invalid attachments.");
 				break;
 			case "cancel": case "resume": break;
 			case "fork": string("messageId", false); break;
+			case "rewind":
+				string("messageId");
+				for (const key of ["restoreFiles", "resend"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
+				break;
 			case "approval":
 				string("approvalId");
 				if (!["accept", "decline", "always", "never"].includes(command.decision as string)) throw new Error("Invalid approval decision.");
