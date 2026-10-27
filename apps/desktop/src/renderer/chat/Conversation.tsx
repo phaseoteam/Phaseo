@@ -17,6 +17,7 @@ import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
+import { QuoteToolbar } from "./QuoteToolbar";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -122,7 +123,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
 				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
-				: <div key={entry.value.id} data-selectable className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
+				: <div key={entry.value.id} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
 	</div>;
@@ -167,7 +168,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			</ProposedPlan>)}
 			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
-			{final?.kind === "message" && <div data-selectable data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
+			{final?.kind === "message" && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
 				<CopyButton text={final.value.text} />
 				{onRegenerate && user && <ActionButton label="Regenerate" disabled={!canBranch} onClick={() => onRegenerate(user)}><RotateCcw /></ActionButton>}
@@ -276,6 +277,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 			</div>
 		</ScrollArea>
 		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
+		<QuoteToolbar root={content} />
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}

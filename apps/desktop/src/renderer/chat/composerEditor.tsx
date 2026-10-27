@@ -142,13 +142,19 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	useEffect(() => {
 		if (!editor) return;
 		const attach = (event: Event) => {
-			const detail = (event as CustomEvent<{ files?: File[]; text?: string; mentions?: Mention[]; handled?: boolean }>).detail;
+			const detail = (event as CustomEvent<{ files?: File[]; text?: string; mentions?: Mention[]; quote?: string[]; handled?: boolean }>).detail;
 			if (!detail || detail.handled || editor.isDestroyed || !editor.isEditable) return;
 			if (detail.files?.length) { if (!latest.current.onFiles) return; latest.current.onFiles(detail.files); }
 			if (detail.mentions?.length) insertRef.current(detail.mentions);
 			if (detail.text) {
 				const empty = editor.state.doc.textContent.trim() === "";
 				editor.chain().focus("end").insertContent([...empty ? [] : [{ type: "hardBreak" }], { type: "text", text: detail.text }]).run();
+			}
+			// A quoted passage (Quote on a reply) goes in as its own lines, with an empty line under it to reply on.
+			if (detail.quote?.length) {
+				const empty = editor.state.doc.textContent.trim() === "";
+				const lines = detail.quote.flatMap((line, index): JSONContent[] => [...index ? [{ type: "hardBreak" }] : [], { type: "text", text: line }]);
+				editor.chain().focus("end").insertContent([...empty ? [] : [{ type: "hardBreak" }, { type: "hardBreak" }], ...lines, { type: "hardBreak" }, { type: "hardBreak" }]).run();
 			}
 			detail.handled = true;
 		};
