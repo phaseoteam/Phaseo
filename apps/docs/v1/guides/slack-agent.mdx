@@ -96,7 +96,7 @@ When the agent needs you to choose between a few options or approve something be
 
 ### Home tab
 
-Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages.
+Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages. It also lists the recurring tasks you set up, with their next run (see [Scheduled tasks](#scheduled-tasks)).
 
 With your own Slack app, the Home tab needs the latest [manifest](#use-your-own-slack-app): `home_tab_enabled` set to `true` and the `app_home_opened` bot event.
 
@@ -181,6 +181,43 @@ With every message, the agent sees the names and descriptions of the 20 most rec
 - Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
 - Uninstalling the agent deletes all its notes and skills. Adding it again starts with an empty memory.
 
+## Scheduled tasks
+
+Ask the agent to do something regularly, and it sets up a recurring task in that conversation. For example:
+
+- `@Phaseo every weekday at 9:00, summarise yesterday's news about electric vehicles`
+- `@Phaseo every Monday at 8:30, list last week's Phaseo spend by model`
+- `@Phaseo on the 1st of every month at 10:00, list the API keys nobody used last month`
+- `@Phaseo which recurring tasks are set up here?` or `@Phaseo cancel the Monday spend summary`
+
+The agent confirms what it set up: what it does, where it posts, how often, and when it next runs.
+
+- **How often:** every hour (at the minute you choose), every day, on weekdays (Monday to Friday), once a week on a day you choose, or once a month on a day you choose (in shorter months, on their last day). Never more often than once an hour.
+- **When:** at a local time in the Slack time zone of the person who set it up, also when the clocks change.
+- **Where:** in the channel or direct message where it was set up. Each run posts a short **Scheduled: …** message there and answers it in the thread. Replies in that thread are ordinary messages to the agent.
+- **What runs:** the agent saves the request as a self-contained instruction, so each run works without the conversation it was set up in. Scheduled runs don't ask questions with buttons, and can't set up or change recurring tasks.
+
+Each run is an ordinary answer to the person who set it up. The agent checks they can still use it, the run counts as one of their answers for your plan, the **Monthly spending cap** and **Answers per person per hour**, it keeps to the [limits on each answer](#limits-on-each-answer), and it ends with the usual footer.
+
+When a run can't go ahead:
+
+- If the person who set it up can no longer use the agent, the agent has been paused in Phaseo, or it can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
+- Any other run that doesn't go through, such as one refused because the **Monthly spending cap** is reached, counts as a failure. After 3 in a row the task is paused, and the agent tells the person who set it up in a direct message.
+
+People can cancel the tasks they set up by asking the agent. Owners and admins of the Phaseo workspace who have [linked their Slack account](#link-a-slack-account) can cancel anyone's. People from other companies in shared Slack Connect channels can see a conversation's tasks but can't set them up. The agent's **Home** tab lists your own tasks.
+
+### Recurring task settings
+
+Owners and admins set these under **Recurring tasks** in **Settings → Slack**:
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Let people set up recurring tasks** | Turned off, nobody can set one up and none of them run. They're kept, and run again once you turn it back on. | On |
+| **Most recurring tasks in this workspace** | From 1 to 100. Lowering it keeps the ones already set up. | 20 |
+| **Who can set them up** | **Everyone who can use the agent**, or **Only people who connected their Phaseo account**. | Everyone |
+
+The same section lists every task: what it does, where it posts, how often, its next run, who set it up and what its last run did. You can pause, resume or delete any of them. A resumed task runs at its next time, and its failures count from zero again. Uninstalling the agent deletes all its recurring tasks.
+
 ## Limits
 
 Owners and admins set these in **Settings → Slack**:
@@ -251,10 +288,11 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
+- **Recurring tasks.** For each task, the agent keeps its title and instruction, where it posts, its schedule and time zone, the Slack ID of the person who set it up and how its last run went. They stay until someone cancels or deletes the task, or you uninstall the agent. Owners and admins can see, pause and delete them in **Settings → Slack**.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
-Uninstalling deletes the agent's API key, notes and saved skills, and removes its guardrail.
+Uninstalling deletes the agent's API key, notes, saved skills and recurring tasks, and removes its guardrail.
 
 ## Use your own Slack app
 
@@ -378,8 +416,8 @@ A few rules for your own app:
 
 ## Pause or uninstall
 
-- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused.
-- **Uninstall** stops the agent straight away, deletes its API key, notes and saved skills, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
+- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks that come due while it's paused are paused too; resume them under **Recurring tasks**.
+- **Uninstall** stops the agent straight away, deletes its API key, notes, saved skills and recurring tasks, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
 
 Past charges stay in your billing history. The people who used the agent in the month you uninstall are still charged when that month ends. You can add the agent again at any time.
