@@ -795,6 +795,28 @@ describe("OpenTelemetry tools", () => {
 		expect(redacted["llm.request.type"]).toBe("chat");
 	});
 
+	it("keeps tool calls in Respan's indexed messages", () => {
+		const payload = buildGatewayGenAiOtlpPayload({
+			...SAMPLE_TELEMETRY,
+			requestPayload: {
+				messages: [
+					{ role: "user", content: "Find ticket 48213" },
+					{ role: "assistant", content: null, tool_calls: [{ id: "call_1", type: "function", function: { name: "lookup_ticket", arguments: "{\"id\":48213}" } }] },
+				],
+			},
+			responsePayload: { choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "call_2", type: "function", function: { name: "close_ticket", arguments: "{\"id\":48213}" } }] }, finish_reason: "tool_calls" }] },
+		}, { includeSensitiveContent: true });
+		expect(llmAttributes("respan", payload)).toMatchObject({
+			"gen_ai.prompt.1.role": "assistant",
+			"gen_ai.prompt.1.tool_calls.0.id": "call_1",
+			"gen_ai.prompt.1.tool_calls.0.name": "lookup_ticket",
+			"gen_ai.prompt.1.tool_calls.0.arguments": "{\"id\":48213}",
+			"gen_ai.completion.0.tool_calls.0.id": "call_2",
+			"gen_ai.completion.0.tool_calls.0.name": "close_ticket",
+			"gen_ai.completion.0.tool_calls.0.arguments": "{\"id\":48213}",
+		});
+	});
+
 	it("renames Langfuse's messages rather than sending them twice", () => {
 		const attributes = llmAttributes("langfuse");
 		expect(JSON.parse(String(attributes["langfuse.observation.input"]))[0].role).toBe("user");

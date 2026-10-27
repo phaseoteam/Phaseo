@@ -523,7 +523,23 @@ function indexedMessageAttributes(prefix: string, json: unknown, defaultRole: st
 	return messages.flatMap((message, index) => [
 		{ key: `${prefix}.${index}.role`, value: { stringValue: String(message?.role ?? defaultRole) } },
 		{ key: `${prefix}.${index}.content`, value: { stringValue: messageText(message ?? {}) } },
+		...toolCallAttributes(`${prefix}.${index}`, message?.tool_calls),
 	]);
+}
+
+const toolValue = (value: unknown) => typeof value === "string" ? value : value === null || value === undefined ? "" : JSON.stringify(value);
+
+// A message's tool calls as indexed tool_calls.M.id, name and arguments, the
+// OpenLLMetry names, so a tool-only reply keeps its calls. Calls are either
+// { id, name, arguments } or a provider's { id, function: { name, arguments } }.
+function toolCallAttributes(prefix: string, calls: unknown): OtlpAttribute[] {
+	if (!Array.isArray(calls)) return [];
+	return calls.flatMap((call: Record<string, any>, index) => {
+		const fn = call?.function && typeof call.function === "object" ? call.function : call ?? {};
+		return [["id", call?.id], ["name", fn.name], ["arguments", fn.arguments]]
+			.filter(([, value]) => value !== null && value !== undefined && value !== "")
+			.map(([field, value]) => ({ key: `${prefix}.tool_calls.${index}.${field}`, value: { stringValue: toolValue(value) } }));
+	});
 }
 
 function indexedMessages(attributes: OtlpAttribute[]): OtlpAttribute[] {
