@@ -28,7 +28,10 @@ import type { TurnRef } from "./turns";
 // as a failure, and the third failure in a row pauses it. The creator is told
 // privately (a message in the app's DM) when it pauses for failures or because
 // the agent can't post there. The run's answer reports back the same way when
-// its turn finishes (workflow.ts).
+// its turn finishes (workflow.ts, whose step is retried until it's recorded), and
+// the thread's coordinator records it as failed when it gives up on the turn: its
+// Workflow couldn't be started, or it timed out (coordinator.ts). Reports outside
+// a Workflow step are tried a few times.
 //
 // Logs carry ids and outcomes only, never a schedule's text.
 
@@ -43,6 +46,9 @@ const CANT_POST = new Set([
 ]);
 /** Pauses the creator is told about privately. Someone who lost access isn't messaged. */
 const TOLD = new Set(["failures", "not_in_channel"]);
+/** Tries at recording a run outside a Workflow step, RECORD_RETRY_MS more apart each time. */
+const RECORD_ATTEMPTS = 3;
+const RECORD_RETRY_MS = 250;
 
 /** A due run, as claim_slack_agent_schedules returns it. */
 export type ClaimedRun = ScheduleTiming & {
@@ -72,12 +78,16 @@ export function scheduledTurnText(run: Pick<ClaimedRun, "title" | "prompt"> & Sc
 	return `Task: ${run.title}\nRuns: ${describeTiming(run)}\n\n${run.prompt}`;
 }
 
-/** The short top-level message each run answers in the thread of. */
+/**
+ * The short top-level message each run answers in the thread of. The title is
+ * someone's text: escaped, and verbatim so Slack doesn't turn @here, @channel or
+ * @everyone in it into a mention (the fallback text is posted with parse none).
+ */
 export function scheduledMessage(run: Pick<ClaimedRun, "title"> & ScheduleTiming): { text: string; blocks: unknown[] } {
 	return {
-		text: `Scheduled: ${run.title}`,
+		text: `Scheduled: ${slackText(run.title)}`,
 		blocks: [
-			{ type: "section", text: { type: "mrkdwn", text: `*Scheduled:* ${slackText(run.title)}` } },
+			{ type: "section", text: { type: "mrkdwn", text: `*Scheduled:* ${slackText(run.title)}`, verbatim: true } },
 			{ type: "context", elements: [{ type: "mrkdwn", text: `A recurring task, ${slackText(describeTiming(run))}.` }] },
 		],
 	};
@@ -94,12 +104,15 @@ export function pausedNotice(recorded: Pick<Recorded, "pause_reason" | "title" |
 	return `I've paused your recurring task ${title} because its last 3 runs didn't go through. ${after}`;
 }
 
+export type ScheduledRunRef = { scheduleId: string; runAt: string; installationId: string };
+
 /**
  * Records what became of a run, once (a repeat changes nothing), and tells the
  * creator privately when that paused the schedule for failures or because the
- * agent can't post there. Never throws.
+ * agent can't post there. Throws when the run couldn't be recorded, so the
+ * Workflow step that reports it is retried; telling the creator never throws.
  */
-export async function reportScheduledRun(deps: Deps, run: { scheduleId: string; runAt: string; installationId: string }, outcome: RunOutcome, installation?: Installation | null): Promise<void> {
+export async function reportScheduledRun(deps: Deps, run: ScheduledRunRef, outcome: RunOutcome, installation?: Installation | null): Promise<void> {
 	let recorded: Recorded | null;
 	try {
 		recorded = await deps.db.rpc<Recorded>("record_slack_agent_schedule_run", {
@@ -109,9 +122,9 @@ export async function reportScheduledRun(deps: Deps, run: { scheduleId: string; 
 			p_reason: outcome.result === "answered" ? null : outcome.reason,
 			p_pause: outcome.result !== "answered" && outcome.pause === true,
 		});
-	} catch {
+	} catch (error) {
 		console.error("[slack-agent] scheduled run not recorded", { scheduleId: run.scheduleId, result: outcome.result });
-		return;
+		throw error;
 	}
 	if (!recorded?.paused || !recorded.created_by || !TOLD.has(recorded.pause_reason ?? "")) return;
 	console.log("[slack-agent] schedule paused", { scheduleId: run.scheduleId, reason: recorded.pause_reason });
@@ -120,11 +133,28 @@ export async function reportScheduledRun(deps: Deps, run: { scheduleId: string; 
 		const token = live ? await botToken(deps, live) : null;
 		if (!token) return;
 		// A user id as the channel: the app's direct message with them.
-		const sent = await deps.slack(token).call("chat.postMessage", { channel: recorded.created_by, text: pausedNotice(recorded) });
+		const sent = await deps.slack(token).call("chat.postMessage", { channel: recorded.created_by, text: pausedNotice(recorded), parse: "none" });
 		if (!sent.ok) console.warn("[slack-agent] creator not told the schedule paused", { scheduleId: run.scheduleId });
 	} catch {
 		console.error("[slack-agent] creator not told the schedule paused", { scheduleId: run.scheduleId });
 	}
+}
+
+/**
+ * Reports a run where no Workflow step retries it: one the cron tick couldn't
+ * start, or one its thread gave up on. Tries RECORD_ATTEMPTS times, a moment
+ * apart, then gives up (the run stays unrecorded). Never throws.
+ */
+export async function reportScheduledRunWithRetries(deps: Deps, run: ScheduledRunRef, outcome: RunOutcome, installation?: Installation | null): Promise<void> {
+	for (let attempt = 1; attempt <= RECORD_ATTEMPTS; attempt += 1) {
+		try {
+			await reportScheduledRun(deps, run, outcome, installation);
+			return;
+		} catch {
+			if (attempt < RECORD_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, RECORD_RETRY_MS * attempt));
+		}
+	}
+	console.error("[slack-agent] scheduled run not recorded, gave up", { scheduleId: run.scheduleId, result: outcome.result, attempts: RECORD_ATTEMPTS });
 }
 
 /** What a turn the AgentTurnWorkflow skipped (its load step) means for its schedule. */
@@ -177,7 +207,7 @@ export async function startScheduledRun(deps: Deps, run: ClaimedRun, installatio
 			}
 		}
 		console.log("[slack-agent] scheduled run not started", { scheduleId: run.schedule_id, installationId: run.installation_id, result: outcome.result, reason: outcome.reason });
-		await reportScheduledRun(deps, ref, outcome, installation);
+		await reportScheduledRunWithRetries(deps, ref, outcome, installation);
 		return outcome.result;
 	};
 	try {
@@ -211,7 +241,7 @@ export async function startScheduledRun(deps: Deps, run: ClaimedRun, installatio
 		admitted = true;
 
 		const message = scheduledMessage(run);
-		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: run.channel_id, text: message.text, blocks: message.blocks, unfurl_links: false, unfurl_media: false });
+		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: run.channel_id, text: message.text, blocks: message.blocks, parse: "none", unfurl_links: false, unfurl_media: false });
 		if (posted.ok === false || typeof posted.data.ts !== "string") {
 			const cantPost = posted.ok === false && CANT_POST.has(posted.error);
 			return await end(cantPost ? { result: "skipped", reason: "not_in_channel", pause: true } : { result: "failed", reason: "slack_post_failed" });

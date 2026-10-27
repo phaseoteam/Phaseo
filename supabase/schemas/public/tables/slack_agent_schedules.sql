@@ -11,10 +11,12 @@ CREATE TABLE "public"."slack_agent_schedules" (
   "day_of_month"       smallint,
   "timezone"           text                     NOT NULL,
   "created_by"         text                     NOT NULL,
+  "creation_key"       text                     NOT NULL,
   "status"             text                     NOT NULL DEFAULT 'active'::text,
   "pause_reason"       text,
   "next_run_at"        timestamp with time zone NOT NULL,
   "last_run_at"        timestamp with time zone,
+  "last_claimed_at"    timestamp with time zone,
   "last_result"        text,
   "last_result_reason" text,
   "failures"           smallint                 NOT NULL DEFAULT 0,
@@ -22,11 +24,13 @@ CREATE TABLE "public"."slack_agent_schedules" (
   "updated_at"         timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "slack_agent_schedules_channel_id_check" CHECK ((channel_id ~ '^[CDG][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_agent_schedules_created_by_check" CHECK ((created_by ~ '^[UW][A-Z0-9]{2,31}$'::text)),
+  CONSTRAINT "slack_agent_schedules_creation_key_check" CHECK (((char_length(creation_key) >= 1) AND (char_length(creation_key) <= 200))),
   CONSTRAINT "slack_agent_schedules_day_of_month_check" CHECK ((((frequency = 'monthly'::text) AND (day_of_month IS NOT NULL) AND (day_of_month >= 1) AND (day_of_month <= 31)) OR ((frequency <> 'monthly'::text) AND (day_of_month IS NULL)))),
   CONSTRAINT "slack_agent_schedules_day_of_week_check" CHECK ((((frequency = 'weekly'::text) AND (day_of_week IS NOT NULL) AND (day_of_week >= 1) AND (day_of_week <= 7)) OR ((frequency <> 'weekly'::text) AND (day_of_week IS NULL)))),
   CONSTRAINT "slack_agent_schedules_failures_check" CHECK ((failures >= 0)),
   CONSTRAINT "slack_agent_schedules_frequency_check" CHECK ((frequency = ANY (ARRAY['hourly'::text, 'daily'::text, 'weekdays'::text, 'weekly'::text, 'monthly'::text]))),
   CONSTRAINT "slack_agent_schedules_hour_check" CHECK ((((frequency = 'hourly'::text) AND (hour IS NULL)) OR ((frequency <> 'hourly'::text) AND (hour IS NOT NULL) AND (hour >= 0) AND (hour <= 23)))),
+  CONSTRAINT "slack_agent_schedules_installation_id_creation_key_key" UNIQUE (installation_id, creation_key),
   CONSTRAINT "slack_agent_schedules_installation_id_fkey" FOREIGN KEY (installation_id) REFERENCES public.slack_installations(id) ON DELETE CASCADE,
   CONSTRAINT "slack_agent_schedules_last_result_check" CHECK (((last_result IS NULL) OR (last_result = ANY (ARRAY['answered'::text, 'failed'::text, 'skipped'::text])))),
   CONSTRAINT "slack_agent_schedules_last_result_reason_check" CHECK (((last_result_reason IS NULL) OR (last_result_reason ~ '^[a-z_]{1,40}$'::text))),
@@ -67,7 +71,11 @@ COMMENT ON COLUMN "public"."slack_agent_schedules"."created_by" IS 'The Slack us
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."timezone" IS 'The creator''s IANA time zone from Slack (users.info tz) when it was set up. hour, minute, day_of_week (1 Monday to 7 Sunday) and day_of_month are local times there.';
 
+COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys the schedule_task call that saved it (the Slack event it answered, the answer''s part and the call''s number in it), so a retried Workflow step gets the schedule it saved instead of a second one.';
+
 COMMENT ON COLUMN "public"."slack_agent_schedules"."last_run_at" IS 'The time the last claimed run was due. With last_result null, that run hasn''t reported back yet.';
+
+COMMENT ON COLUMN "public"."slack_agent_schedules"."last_claimed_at" IS 'When the last run was claimed, which can be later than it was due. The next run is at least 59 minutes after it, also after a resume.';
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."failures" IS 'Runs in a row that failed or were skipped. The third pauses the schedule (pause_reason failures) and the creator is told privately.';
 

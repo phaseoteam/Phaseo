@@ -1,7 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { defaultDeps, type Deps } from "./events";
 import { compareTs, MAX_KNOWN_MESSAGES } from "./history";
 import { MAX_OWN_ANSWER_CHARS, QUESTION_TIMEOUT_MS, questionMemory, type QuestionAnswer, type QuestionDraft, type QuestionState } from "./questions";
+import { reportScheduledRunWithRetries } from "./scheduled-runs";
 import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunner, type TurnStart } from "./turns";
 
 // ThreadCoordinator: one per Slack thread, named installation:channel:thread_ts.
@@ -11,6 +13,8 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 //   starts when the turn reports back (finishTurn). Starting never waits for the
 //   run itself, so the object is idle (and unbilled) while an answer is written.
 // - Holds a cancel flag that the running turn checks between steps.
+// - Records a recurring task's run as failed when it gives up on its turn (its
+//   Workflow couldn't be started, or it timed out), since nothing else would.
 // - Keeps working memory: the bot's earlier replies and short tool summaries, so a
 //   turn has context when Slack's history API is rate limited.
 // - Keeps the timestamps (never the text) of the thread's newest messages it
@@ -174,10 +178,13 @@ function storedContext(value: string): ThreadContext {
 export class ThreadCoordinator extends DurableObject<Env> {
 	/** Starts turns; replaced in tests. */
 	runner: TurnRunner;
+	/** The database and Slack, to record a scheduled run the thread gives up on; replaced in tests. */
+	deps: Deps;
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 		this.runner = createWorkflowTurnRunner(env);
+		this.deps = defaultDeps(env);
 		this.migrate();
 	}
 
@@ -302,15 +309,25 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			this.sql.exec("DELETE FROM meta WHERE key = 'cancel_turn_id'");
 			await this.scheduleAlarm(now);
 			let start: TurnStart;
+			let notStarted = false;
 			try {
 				start = await this.runner.start(turnRef({ ...next, status: "running", started_at: now }));
 			} catch (error) {
 				console.error("[slack-agent] turn failed to start", { turnId: next.id, error: error instanceof Error ? error.message : "unknown" });
 				start = { finished: { status: "failed" } };
+				notStarted = true;
 			}
 			if ("started" in start) return;
 			await this.endTurn(next.id, start.finished, now);
+			if (notStarted) await this.reportGivenUp(next, "start_failed");
 		}
+	}
+
+	/** A scheduled run's turn the thread ended itself: no Workflow reports it, so its run is recorded as failed here. */
+	private async reportGivenUp(turn: TurnRow, reason: "start_failed" | "timed_out"): Promise<void> {
+		if (!turn.schedule_id || !turn.schedule_run_at) return;
+		// A Workflow that reports back later changes nothing: each run is recorded once.
+		await reportScheduledRunWithRetries(this.deps, { scheduleId: turn.schedule_id, runAt: turn.schedule_run_at, installationId: turn.installation_id }, { result: "failed", reason });
 	}
 
 	/** The running turn reports back. Stores its working memory and starts the next queued turn. */
@@ -684,6 +701,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		if (running && deadline !== null && deadline <= now) {
 			console.warn("[slack-agent] turn timed out", { turnId: running.id, installationId: running.installation_id });
 			await this.endTurn(running.id, { status: "failed" }, now);
+			await this.reportGivenUp(running, "timed_out");
 			await this.startNext(now);
 		}
 		const lastActivity = Number(this.meta("last_activity") ?? 0);

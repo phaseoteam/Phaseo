@@ -4,9 +4,11 @@
 -- * slack_agent_schedules: a self-contained prompt the agent answers in one conversation, hourly, daily, on
 --   weekdays, weekly or monthly at a local time in the creator's Slack time zone. Service role only, like the
 --   other slack_* tables; inserts only through save_slack_agent_schedule, which enforces the per-installation
---   maximum, the admins' switch and who may create them. Hourly is the finest frequency.
+--   maximum, the admins' switch and who may create them, and saves once per tool call (creation_key).
+--   Hourly is the finest frequency.
 -- * claim_slack_agent_schedules: the Worker's cron trigger (every minute) claims due rows once with
---   FOR UPDATE SKIP LOCKED through a partial index, and moves each to its next run at least 59 minutes on.
+--   FOR UPDATE SKIP LOCKED through a partial index, and moves each to its next run at least 59 minutes
+--   after the claim (last_claimed_at).
 -- * record_slack_agent_schedule_run, cancel_slack_agent_schedule and set_slack_agent_schedule_status for the
 --   Worker's runs and tools and for Settings > Slack.
 -- * slack_installations: schedules_enabled (on), schedules_max (20) and schedule_creators (everyone).
@@ -48,10 +50,12 @@ CREATE TABLE "public"."slack_agent_schedules" (
   "day_of_month"       smallint,
   "timezone"           text                     NOT NULL,
   "created_by"         text                     NOT NULL,
+  "creation_key"       text                     NOT NULL,
   "status"             text                     NOT NULL DEFAULT 'active'::text,
   "pause_reason"       text,
   "next_run_at"        timestamp with time zone NOT NULL,
   "last_run_at"        timestamp with time zone,
+  "last_claimed_at"    timestamp with time zone,
   "last_result"        text,
   "last_result_reason" text,
   "failures"           smallint                 NOT NULL DEFAULT 0,
@@ -59,11 +63,13 @@ CREATE TABLE "public"."slack_agent_schedules" (
   "updated_at"         timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "slack_agent_schedules_channel_id_check" CHECK ((channel_id ~ '^[CDG][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_agent_schedules_created_by_check" CHECK ((created_by ~ '^[UW][A-Z0-9]{2,31}$'::text)),
+  CONSTRAINT "slack_agent_schedules_creation_key_check" CHECK (((char_length(creation_key) >= 1) AND (char_length(creation_key) <= 200))),
   CONSTRAINT "slack_agent_schedules_day_of_month_check" CHECK ((((frequency = 'monthly'::text) AND (day_of_month IS NOT NULL) AND (day_of_month >= 1) AND (day_of_month <= 31)) OR ((frequency <> 'monthly'::text) AND (day_of_month IS NULL)))),
   CONSTRAINT "slack_agent_schedules_day_of_week_check" CHECK ((((frequency = 'weekly'::text) AND (day_of_week IS NOT NULL) AND (day_of_week >= 1) AND (day_of_week <= 7)) OR ((frequency <> 'weekly'::text) AND (day_of_week IS NULL)))),
   CONSTRAINT "slack_agent_schedules_failures_check" CHECK ((failures >= 0)),
   CONSTRAINT "slack_agent_schedules_frequency_check" CHECK ((frequency = ANY (ARRAY['hourly'::text, 'daily'::text, 'weekdays'::text, 'weekly'::text, 'monthly'::text]))),
   CONSTRAINT "slack_agent_schedules_hour_check" CHECK ((((frequency = 'hourly'::text) AND (hour IS NULL)) OR ((frequency <> 'hourly'::text) AND (hour IS NOT NULL) AND (hour >= 0) AND (hour <= 23)))),
+  CONSTRAINT "slack_agent_schedules_installation_id_creation_key_key" UNIQUE (installation_id, creation_key),
   CONSTRAINT "slack_agent_schedules_installation_id_fkey" FOREIGN KEY (installation_id) REFERENCES public.slack_installations(id) ON DELETE CASCADE,
   CONSTRAINT "slack_agent_schedules_last_result_check" CHECK (((last_result IS NULL) OR (last_result = ANY (ARRAY['answered'::text, 'failed'::text, 'skipped'::text])))),
   CONSTRAINT "slack_agent_schedules_last_result_reason_check" CHECK (((last_result_reason IS NULL) OR (last_result_reason ~ '^[a-z_]{1,40}$'::text))),
@@ -104,7 +110,11 @@ COMMENT ON COLUMN "public"."slack_agent_schedules"."created_by" IS 'The Slack us
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."timezone" IS 'The creator''s IANA time zone from Slack (users.info tz) when it was set up. hour, minute, day_of_week (1 Monday to 7 Sunday) and day_of_month are local times there.';
 
+COMMENT ON COLUMN "public"."slack_agent_schedules"."creation_key" IS 'Keys the schedule_task call that saved it (the Slack event it answered, the answer''s part and the call''s number in it), so a retried Workflow step gets the schedule it saved instead of a second one.';
+
 COMMENT ON COLUMN "public"."slack_agent_schedules"."last_run_at" IS 'The time the last claimed run was due. With last_result null, that run hasn''t reported back yet.';
+
+COMMENT ON COLUMN "public"."slack_agent_schedules"."last_claimed_at" IS 'When the last run was claimed, which can be later than it was due. The next run is at least 59 minutes after it, also after a resume.';
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."failures" IS 'Runs in a row that failed or were skipped. The third pauses the schedule (pause_reason failures) and the creator is told privately.';
 
@@ -200,7 +210,8 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_schedule (
   p_day_of_week     integer,
   p_day_of_month    integer,
   p_timezone        text,
-  p_created_by      text
+  p_created_by      text,
+  p_creation_key    text
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -215,6 +226,9 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_schedule (
 -- installation. Hourly is the finest frequency, so nothing runs more often.
 -- Locks the installation row like the memory functions, so the cap holds and
 -- uninstalling, which deletes every schedule, can't miss one.
+-- p_creation_key keys the tool call (its Slack event, the answer's part and the
+-- call's number in it): saving again with the same key, as a retried Workflow
+-- step does, returns the schedule saved the first time and saves nothing.
 -- Returns {status: saved | full | off | link_required | not_installed,
 -- schedule?, limit?}. Service role only.
 declare
@@ -227,6 +241,12 @@ begin
   for no key update;
   if not found then
     return jsonb_build_object('status', 'not_installed');
+  end if;
+  select * into v_schedule
+  from public.slack_agent_schedules schedule
+  where schedule.installation_id = p_installation_id and schedule.creation_key = p_creation_key;
+  if found then
+    return jsonb_build_object('status', 'saved', 'schedule', to_jsonb(v_schedule) - 'installation_id');
   end if;
   if not v_installation.schedules_enabled then
     return jsonb_build_object('status', 'off');
@@ -242,10 +262,10 @@ begin
   end if;
 
   insert into public.slack_agent_schedules (
-    installation_id, channel_id, title, prompt, frequency, hour, minute, day_of_week, day_of_month, timezone, created_by, next_run_at
+    installation_id, channel_id, title, prompt, frequency, hour, minute, day_of_week, day_of_month, timezone, created_by, creation_key, next_run_at
   )
   values (
-    p_installation_id, p_channel_id, btrim(p_title), btrim(p_prompt), p_frequency, p_hour, p_minute, p_day_of_week, p_day_of_month, p_timezone, p_created_by,
+    p_installation_id, p_channel_id, btrim(p_title), btrim(p_prompt), p_frequency, p_hour, p_minute, p_day_of_week, p_day_of_month, p_timezone, p_created_by, p_creation_key,
     public.slack_agent_schedule_next_run(p_frequency, p_hour, p_minute, p_day_of_week, p_day_of_month, p_timezone, now())
   )
   returning * into v_schedule;
@@ -253,15 +273,15 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text) IS 'For the Slack Worker''s schedule_task tool: saves a recurring task, at most schedules_max per installation, while recurring tasks are on and the creator may set them up. Returns {status: saved | full | off | link_required | not_installed, schedule?, limit?}.';
+COMMENT ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text, text) IS 'For the Slack Worker''s schedule_task tool: saves a recurring task, at most schedules_max per installation, while recurring tasks are on and the creator may set them up; a repeat with the same p_creation_key returns the one already saved. Returns {status: saved | full | off | link_required | not_installed, schedule?, limit?}.';
 
-GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text, text) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text, text) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."save_slack_agent_schedule"(uuid, text, text, text, text, integer, integer, integer, integer, text, text, text) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
   p_limit integer
@@ -288,10 +308,11 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
   -- The Slack Worker's cron trigger calls this every minute: it claims the active
   -- schedules that are due, oldest first, at most p_limit (1 to 200, default 50),
   -- through the partial index on next_run_at. A claimed row's last_run_at becomes
-  -- the time this run was due, and its next_run_at moves on to its next local
-  -- time at least 59 minutes later, so no schedule runs more than once an hour.
-  -- Rows another claim holds are skipped, so a run is claimed once, whichever tick
-  -- gets there first; run_at keys the run for the Worker's retries.
+  -- the time this run was due and last_claimed_at the time it was claimed, and
+  -- its next_run_at moves on to its next local time at least 59 minutes after the
+  -- claim, so no schedule runs more than once an hour, even when a run is claimed
+  -- late. Rows another claim holds are skipped, so a run is claimed once,
+  -- whichever tick gets there first; run_at keys the run for the Worker's retries.
   -- A schedule whose installation isn't active (paused by an admin, or a charge
   -- unpaid) is paused with that reason instead, and while admins have turned
   -- recurring tasks off its runs are skipped. Neither is returned. Uninstalling
@@ -307,9 +328,10 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
   ), claimed as (
     update public.slack_agent_schedules schedule
     set last_run_at = schedule.next_run_at,
+        last_claimed_at = now(),
         next_run_at = public.slack_agent_schedule_next_run(
           schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
-          greatest(now(), schedule.next_run_at + interval '59 minutes')
+          now() + interval '59 minutes'
         ),
         status = case when installation.status = 'active' then 'active' else 'paused' end,
         pause_reason = case installation.status
@@ -336,7 +358,7 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
   order by claimed.last_run_at;
 $function$;
 
-COMMENT ON FUNCTION "public"."claim_slack_agent_schedules"(integer) IS 'For the Slack Worker''s cron trigger: claims due schedules once (FOR UPDATE SKIP LOCKED), moves each to its next local time at least 59 minutes on, pauses those of installations that aren''t active, skips them while recurring tasks are off, and returns the runs to start.';
+COMMENT ON FUNCTION "public"."claim_slack_agent_schedules"(integer) IS 'For the Slack Worker''s cron trigger: claims due schedules once (FOR UPDATE SKIP LOCKED), moves each to its next local time at least 59 minutes after the claim, pauses those of installations that aren''t active, skips them while recurring tasks are off, and returns the runs to start.';
 
 GRANT EXECUTE ON FUNCTION "public"."claim_slack_agent_schedules"(integer) TO "service_role";
 
@@ -490,7 +512,8 @@ CREATE OR REPLACE FUNCTION public.set_slack_agent_schedule_status (
 -- installation's schedules (web-api checks who they are). Pausing records the
 -- reason admin. Resuming clears the reason and the failures in a row, and the
 -- schedule next runs at its next local time after now, and at least 59 minutes
--- after its last run, so resuming can't make it run more than once an hour.
+-- after its last run was claimed, so resuming can't make it run more than once
+-- an hour.
 -- Returns the schedule without its installation id, or null when the
 -- installation has no such schedule. Service role only.
 declare
@@ -506,7 +529,7 @@ begin
       next_run_at = case
         when p_status = 'active' and schedule.status <> 'active' then public.slack_agent_schedule_next_run(
           schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
-          greatest(now(), schedule.last_run_at + interval '59 minutes')
+          greatest(now(), schedule.last_claimed_at + interval '59 minutes')
         )
         else schedule.next_run_at
       end
@@ -519,7 +542,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) IS 'For web-api (Settings > Slack): pauses (reason admin) or resumes a schedule. Resuming clears failures and moves next_run_at to its next local time at least 59 minutes after its last run. Returns the schedule, or null.';
+COMMENT ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) IS 'For web-api (Settings > Slack): pauses (reason admin) or resumes a schedule. Resuming clears failures and moves next_run_at to its next local time at least 59 minutes after its last run was claimed. Returns the schedule, or null.';
 
 GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) TO "service_role";
 

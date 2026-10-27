@@ -159,12 +159,16 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 		};
 		return meter;
 	});
-	const threads = new FakeNamespace<ThreadCoordinator>(() => new ThreadCoordinator(fakeState(), env));
+	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
+	const threads = new FakeNamespace<ThreadCoordinator>(() => {
+		const thread = new ThreadCoordinator(fakeState(), env);
+		thread.deps = deps;
+		return thread;
+	});
 	env.METERS = meters as unknown as Env["METERS"];
 	env.THREADS = threads as unknown as Env["THREADS"];
 	const turns = new FakeWorkflow();
 	env.AGENT_TURNS = turns as unknown as Env["AGENT_TURNS"];
-	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
 	return { env, meters, threads, db, slack, clock, deps, turns };
 }
 

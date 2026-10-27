@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
+import { TURN_TIMEOUT_MS } from "../src/coordinator";
 import { homeView, publishHome, type HomeFacts } from "../src/home";
 import type { Installation } from "../src/installations";
-import { pausedNotice, runDueSchedules, scheduledEventId, startScheduledRun, type ClaimedRun } from "../src/scheduled-runs";
+import { pausedNotice, runDueSchedules, scheduledEventId, scheduledMessage, startScheduledRun, type ClaimedRun } from "../src/scheduled-runs";
 import { describeTiming, formatRunTime, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
 import type { TurnRef } from "../src/turns";
 import { runTurn, type StepConfig, type StepRunner } from "../src/workflow";
@@ -46,6 +47,20 @@ function rpcCalls(fn: string) {
 
 function meter() {
 	return world.meters.get(world.meters.idFromName(INSTALLATION_ID));
+}
+
+/** Makes one database function fail `times` times, as if Postgres were unavailable, then answer again. */
+function failRpc(fn: string, times: number) {
+	const rpc = world.db.rpc.bind(world.db);
+	let left = times;
+	world.db.rpc = async <T>(name: string, args: Record<string, unknown>): Promise<T> => {
+		if (name === fn && left > 0) {
+			left -= 1;
+			world.db.rpcs.push({ fn: name, args });
+			throw new Error("database unavailable");
+		}
+		return rpc<T>(name, args);
+	};
 }
 
 /** Runs steps like Workflows does (retries up to the limit, outputs kept as JSON). */
@@ -124,7 +139,7 @@ describe("schedule timing", () => {
 describe("schedule tools", () => {
 	const tools = (canCreate = true) => {
 		const notes: string[] = [];
-		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel: CHANNEL, slackUserId: PERSON, canCreate, notes });
+		const list = scheduleTools({ db: world.db, slack: world.slack.client(BOT_TOKEN), installationId: INSTALLATION_ID, channel: CHANNEL, slackUserId: PERSON, canCreate, runKey: "Ev0SAVE0001:0", notes });
 		const byId = (id: string) => list.find((tool) => tool.id === id)!;
 		return { list, notes, run: (id: string, input: Record<string, unknown> = {}) => (byId(id).execute as (input: unknown) => Promise<any>)(input) };
 	};
@@ -140,7 +155,7 @@ describe("schedule tools", () => {
 		const result = await run("schedule_task", { title: "  Weekly   spend ", prompt: "Summarise it.", frequency: "weekly", time: "09:00", day_of_week: "monday" });
 		expect(rpcCalls("save_slack_agent_schedule")).toEqual([{
 			p_installation_id: INSTALLATION_ID, p_channel_id: CHANNEL, p_title: "Weekly spend", p_prompt: "Summarise it.", p_frequency: "weekly",
-			p_hour: 9, p_minute: 0, p_day_of_week: 1, p_day_of_month: null, p_timezone: "Europe/London", p_created_by: PERSON,
+			p_hour: 9, p_minute: 0, p_day_of_week: 1, p_day_of_month: null, p_timezone: "Europe/London", p_created_by: PERSON, p_creation_key: "Ev0SAVE0001:0:1",
 		}]);
 		expect(world.slack.of("users.info").map((call) => call.args.user)).toEqual([PERSON]);
 		expect(result).toEqual({
@@ -148,6 +163,41 @@ describe("schedule tools", () => {
 			next_run: "Mon, Nov 2, 2026, 09:00 (Europe/London)",
 		});
 		expect(notes).toEqual(["schedule_task weekly"]);
+	});
+
+	it("keys each save by the turn's event, its run and the call's number, so a retried run step saves nothing twice", async () => {
+		world.db.rpcResults.save_slack_agent_schedule = { status: "saved", schedule: savedRow() };
+		const ts = "1792600000.000001";
+		const threadKey = `${INSTALLATION_ID}:${CHANNEL}:${ts}`;
+		await world.threads.get(world.threads.idFromName(threadKey)).enqueue({
+			threadKey, eventId: "Ev0SAVE0001", installationId: INSTALLATION_ID, teamId: TEAM_ID, channel: CHANNEL, threadTs: ts, messageTs: ts,
+			slackUserId: PERSON, kind: "mention", text: "Every Monday at 9, summarise our spend.",
+		}, NOW);
+		const turn = world.turns.created[0].params as TurnRef;
+		const input = { title: "Weekly spend", prompt: "Summarise it.", frequency: "weekly", time: "09:00", day_of_week: "monday" };
+		let attempts = 0;
+		const agent = new ScriptedAgent(async (hooks) => {
+			attempts += 1;
+			const save = agent.requests.at(-1)!.tools.find((tool) => tool.id === "schedule_task")!.execute as (input: unknown) => Promise<unknown>;
+			// An invalid call isn't numbered.
+			await expect(save({ ...input, time: "25:00" })).rejects.toThrow(/24-hour/);
+			await save(input);
+			if (attempts === 2) await save({ ...input, title: "Monthly spend", frequency: "monthly", day_of_month: 1 });
+			await hooks.onText("Saved.");
+			if (attempts === 1) {
+				// The step dies after the schedule was saved (here: the coordinator can't stage the answer), so the model runs again.
+				const coordinator = world.threads.get(world.threads.idFromName(threadKey));
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+			}
+			return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null };
+		});
+		await expect(runTurn({ ...world.deps, agent }, turn, new FakeStep())).resolves.toEqual({ status: "answered" });
+		expect(attempts).toBe(2);
+		expect(rpcCalls("save_slack_agent_schedule").map((args) => args.p_creation_key)).toEqual(["Ev0SAVE0001:0:1", "Ev0SAVE0001:0:1", "Ev0SAVE0001:0:2"]);
 	});
 
 	it("falls back to UTC, and says so, when Slack gives no time zone it knows", async () => {
@@ -210,9 +260,10 @@ describe("scheduled runs", () => {
 		const [post] = world.slack.of("chat.postMessage");
 		expect(post.args).toMatchObject({
 			channel: CHANNEL,
-			text: "Scheduled: Weekly <spend> & models",
+			text: "Scheduled: Weekly &lt;spend&gt; &amp; models",
+			parse: "none",
 			blocks: [
-				{ type: "section", text: { type: "mrkdwn", text: "*Scheduled:* Weekly &lt;spend&gt; &amp; models" } },
+				{ type: "section", text: { type: "mrkdwn", text: "*Scheduled:* Weekly &lt;spend&gt; &amp; models", verbatim: true } },
 				{ type: "context", elements: [{ type: "mrkdwn", text: "A recurring task, every weekday, Monday to Friday, at 09:00 (Europe/London time)." }] },
 			],
 		});
@@ -233,6 +284,13 @@ describe("scheduled runs", () => {
 		expect(coordinator.turnInput(1)?.text).toBe("Task: Weekly <spend> & models\nRuns: every weekday, Monday to Friday, at 09:00 (Europe/London time)\n\nSummarise last week's Phaseo spend by model.");
 		expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 0, pending: 1 });
 		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([]);
+	});
+
+	it("never turns a title's @here, @channel, @everyone or <!here> into a mention", () => {
+		const message = scheduledMessage({ ...claimed(), title: "@here <!channel> @everyone standup" });
+		expect(message.text).toBe("Scheduled: @here &lt;!channel&gt; @everyone standup");
+		expect(message.blocks[0]).toEqual({ type: "section", text: { type: "mrkdwn", text: "*Scheduled:* @here &lt;!channel&gt; @everyone standup", verbatim: true } });
+		expect(pausedNotice({ pause_reason: "failures", title: "<!here> standup", channel_id: CHANNEL })).toContain("\"&lt;!here&gt; standup\"");
 	});
 
 	it("skips and pauses when the creator can no longer use the agent, without posting", async () => {
@@ -267,7 +325,7 @@ describe("scheduled runs", () => {
 		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "skipped", p_reason: "not_in_channel", p_pause: true }]);
 		expect(meter().usage(NOW)).toMatchObject({ pending: 0 });
 		const [, notice] = world.slack.of("chat.postMessage");
-		expect(notice.args).toEqual({ channel: PERSON, text: pausedNotice({ pause_reason: "not_in_channel", title: "Weekly spend", channel_id: CHANNEL }) });
+		expect(notice.args).toEqual({ channel: PERSON, text: pausedNotice({ pause_reason: "not_in_channel", title: "Weekly spend", channel_id: CHANNEL }), parse: "none" });
 		expect(notice.args.text).toContain(`<#${CHANNEL}>`);
 		expect(world.turns.created).toEqual([]);
 	});
@@ -344,6 +402,58 @@ describe("scheduled runs", () => {
 		const notice = world.slack.of("chat.postMessage").find((call) => call.args.channel === PERSON);
 		expect(notice?.args.text).toBe("I've paused your recurring task \"Weekly spend\" because its last 3 runs didn't go through. A Phaseo workspace owner or admin can resume it in Phaseo settings, or you can ask me to set it up again.");
 	});
+
+	it("records a run as failed when its thread can't start the Workflow, and gives the meter place back", async () => {
+		world.turns.create = async () => {
+			throw new Error("workflows_unavailable");
+		};
+		await startScheduledRun(world.deps, claimed());
+		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "failed", p_reason: "start_failed", p_pause: false }]);
+		expect(meter().usage(NOW)).toMatchObject({ pending: 0 });
+	});
+
+	it("records a run as failed when its thread times it out", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		try {
+			vi.setSystemTime(NOW);
+			await startScheduledRun(world.deps, claimed());
+			const turn = world.turns.created[0].params as TurnRef;
+			vi.setSystemTime(NOW + TURN_TIMEOUT_MS);
+			await world.threads.get(world.threads.idFromName(turn.threadKey)).alarm();
+			expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "failed", p_reason: "timed_out", p_pause: false }]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("retries the Workflow's finish step until the run is recorded", async () => {
+		await startScheduledRun(world.deps, claimed());
+		const turn = world.turns.created[0].params as TurnRef;
+		failRpc("record_slack_agent_schedule_run", 1);
+		const agent = new ScriptedAgent(async (hooks) => {
+			await hooks.onText("Done.");
+			return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null };
+		});
+		await expect(runTurn({ ...world.deps, agent }, turn, new FakeStep())).resolves.toEqual({ status: "answered" });
+		expect(rpcCalls("record_slack_agent_schedule_run").map((args) => args.p_result)).toEqual(["answered", "answered"]);
+		// The retried step counts the answer once.
+		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		// A database that stays down fails the step after its retries, rather than finishing unrecorded.
+		await startScheduledRun(world.deps, claimed({ run_at: "2026-10-27T10:00:00+00:00" }));
+		failRpc("record_slack_agent_schedule_run", 10);
+		await expect(runTurn({ ...world.deps, agent }, world.turns.created[1].params as TurnRef, new FakeStep())).rejects.toThrow(/database unavailable/);
+		expect(rpcCalls("record_slack_agent_schedule_run")).toHaveLength(2 + 4);
+	});
+
+	it("tries a run the cron tick couldn't start a few times, then gives up without throwing", async () => {
+		await install({ schedule_creators: "linked" });
+		failRpc("record_slack_agent_schedule_run", 1);
+		expect(await startScheduledRun(world.deps, claimed())).toBe("skipped");
+		expect(rpcCalls("record_slack_agent_schedule_run")).toHaveLength(2);
+		failRpc("record_slack_agent_schedule_run", 10);
+		expect(await startScheduledRun(world.deps, claimed())).toBe("skipped");
+		expect(rpcCalls("record_slack_agent_schedule_run")).toHaveLength(2 + 3);
+	});
 });
 
 describe("normal turns", () => {
@@ -364,7 +474,7 @@ describe("home tab", () => {
 	});
 
 	it("explains recurring tasks while they're on, and lists the viewer's own", () => {
-		const view = JSON.stringify(homeView(facts({
+		const home = homeView(facts({
 			schedules: {
 				enabled: true,
 				mine: [
@@ -372,7 +482,11 @@ describe("home tab", () => {
 					{ title: "Daily", channel_id: "D0DIRECT01", status: "paused", pause_reason: "admin", next_run_at: "2026-11-02T09:00:00Z", frequency: "daily", hour: 8, minute: 30, day_of_week: null, day_of_month: null, timezone: "UTC" },
 				],
 			},
-		})));
+		}));
+		const view = JSON.stringify(home);
+		// People's titles: Slack leaves @here and the like in them as text.
+		const list = (home.blocks as Array<{ text?: { text: string; verbatim?: boolean } }>).find((block) => block.text?.text.startsWith("*Your recurring tasks*"));
+		expect(list?.text?.verbatim).toBe(true);
 		expect(view).toContain("*Recurring tasks:*");
 		expect(view).toContain("*Your recurring tasks*");
 		expect(view).toContain(`• *Weekly &lt;spend&gt;*, every Monday at 09:00 (Europe/London time) in <#${CHANNEL}>: next Mon, Nov 2, 2026, 09:00 (Europe/London)`);

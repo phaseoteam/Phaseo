@@ -246,10 +246,10 @@ async function offerConnect(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
  * The usage tools or the Connect button where they apply, then the note tools the turn's access allows, the skill
  * tools and the recurring task tools (none in a scheduled run).
  */
-function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess, schedules: ScheduleMode) {
+function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[], access: NoteAccess, schedules: ScheduleMode, leg: number) {
 	const memory = [
 		...memoryTools({ db: deps.db, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, now: deps.now, notes, access, external: turn.external === true }),
-		...(schedules === "run" ? [] : scheduleTools({ db: deps.db, slack, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, canCreate: schedules === "create", notes })),
+		...(schedules === "run" ? [] : scheduleTools({ db: deps.db, slack, installationId: installation.id, channel: turn.channel, slackUserId: turn.slackUserId, canCreate: schedules === "create", runKey: `${turn.eventId}:${leg}`, notes })),
 	];
 	if (offered.usageTools) return [...usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }), ...memory];
 	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack)), ...memory];
@@ -359,7 +359,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			sessionId: turnSessionId(turn),
 			labels: { slackTeam: team, slackChannel: turn.channel },
 			// Nobody waits in a scheduled run's thread to answer a question.
-			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules), ...(schedules === "run" ? [] : [askQuestion])],
+			tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg), ...(schedules === "run" ? [] : [askQuestion])],
 			maxCostUsd: budgetUsd,
 			signal: controller.signal,
 			...(resume ? { resume } : {}),

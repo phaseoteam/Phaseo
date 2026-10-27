@@ -152,6 +152,12 @@ export type ScheduleToolContext = {
 	slackUserId: string;
 	/** schedule_task is offered: recurring tasks are on and the person isn't from another organisation. */
 	canCreate: boolean;
+	/**
+	 * Keys this run of the turn: its Slack event and the run after question n (eventId:n). schedule_task adds
+	 * the call's number in the run, so a retried run (new model tool call ids, maybe new wording) gets the
+	 * schedule its first attempt saved instead of a second one.
+	 */
+	runKey: string;
 	/** Short notes of what each tool did, kept as the thread's working memory. */
 	notes: string[];
 };
@@ -244,6 +250,7 @@ function scheduleView(row: ScheduleRow, channel: string) {
 /** The recurring task tools: schedule_task when the turn may set one up, then list_schedules and cancel_schedule. */
 export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>[] {
 	const { db, slack, installationId, channel, slackUserId, notes } = context;
+	let saves = 0;
 	const tools: AgentTool<any, any>[] = [
 		{
 			id: "list_schedules",
@@ -304,6 +311,8 @@ export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>
 			const title = oneLine(text(input.title, "title", MAX_SCHEDULE_TITLE_CHARS));
 			const prompt = text(input.prompt, "prompt", MAX_SCHEDULE_PROMPT_CHARS);
 			const timing = timingInput(input);
+			// Numbered before anything waits, so calls in one step keep their order on a retry.
+			const creationKey = `${context.runKey}:${++saves}`;
 			const zone = await personTimeZone(slack, slackUserId);
 			const result = await db.rpc<{ status: string; schedule?: ScheduleRow; limit?: number }>("save_slack_agent_schedule", {
 				p_installation_id: installationId,
@@ -317,6 +326,7 @@ export function scheduleTools(context: ScheduleToolContext): AgentTool<any, any>
 				p_day_of_month: timing.day_of_month,
 				p_timezone: zone.timezone,
 				p_created_by: slackUserId,
+				p_creation_key: creationKey,
 			});
 			notes.push(`schedule_task ${timing.frequency}`);
 			switch (result?.status) {

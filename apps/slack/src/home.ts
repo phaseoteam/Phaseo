@@ -51,8 +51,9 @@ function escapeText(text: string): string {
 	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function section(text: string) {
-	return { type: "section", text: { type: "mrkdwn", text } };
+/** verbatim: Slack leaves mentions in the text as they are, for text people wrote (schedule titles). */
+function section(text: string, verbatim = false) {
+	return { type: "section", text: { type: "mrkdwn", text, ...(verbatim ? { verbatim: true } : {}) } };
 }
 
 /** The Home tab's view. */
@@ -95,7 +96,7 @@ export function homeView(facts: HomeFacts) {
 			"*Your recurring tasks*",
 			...facts.schedules.mine.map(scheduleLine),
 			"_Ask the agent to list or cancel them. Owners and admins can also pause them in Phaseo settings._",
-		].join("\n")));
+		].join("\n"), true));
 	}
 	if (facts.account === "not_linked" && facts.connectUrl) {
 		blocks.push(...connectAccountMessage(facts.connectUrl, installation.access_mode === "linked" ? "access" : "usage").blocks);

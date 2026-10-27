@@ -229,12 +229,15 @@ organisation can list and cancel but not set one up.
   `save_slack_agent_schedule`. It holds the installation's
   `schedules_enabled` switch, `schedule_creators` (`linked` needs a linked
   account) and `schedules_max` (20 by default, at most 100), under a lock on
-  the installation row.
+  the installation row. Each `schedule_task` call passes a `creation_key` (the
+  turn's event id, the run after question n, and the call's number in that run),
+  so a retried run step gets the schedule it saved instead of a second one.
 - `cancel_slack_agent_schedule` lets the creator cancel, or a Slack person
   linked to an owner or admin of the workspace.
 - `slack_agent_schedule_next_run` computes every next run in the database.
-  Hourly is the finest frequency, and a claimed run's next one is at least 59
-  minutes later, so nothing runs more than once an hour.
+  Hourly is the finest frequency, and a run's next one is at least 59 minutes
+  after it was claimed (`last_claimed_at`), even when it was claimed late, and
+  after a resume, so nothing runs more than once an hour.
 
 The cron trigger (`* * * * *`, `env.production` only; the preview Worker has
 none) calls `claim_slack_agent_schedules` once a tick (`src/scheduled-runs.ts`).
@@ -242,7 +245,8 @@ In one statement that call:
 
 - takes up to 50 due rows through the partial index on `next_run_at`,
   `FOR UPDATE SKIP LOCKED`;
-- sets `last_run_at` to the time each was due and moves `next_run_at` on;
+- sets `last_run_at` to the time each was due (which keys the run),
+  `last_claimed_at` to now, and moves `next_run_at` on;
 - pauses the rows of installations that aren't active, and skips them while
   recurring tasks are off.
 
@@ -253,15 +257,22 @@ A run is claimed once, so overlapping ticks never start it twice. For each run:
    organisation the installation refuses.
 2. The meter admits it like a message, for the creator. The run's event id
    (`Sched<schedule id><due epoch>`) makes a repeat a no-op.
-3. A short `Scheduled: <title>` message goes to the conversation.
+3. A short `Scheduled: <title>` message goes to the conversation. The title is
+   escaped, verbatim and posted with `parse: none`, so `@here` and the like in it
+   never become mentions (the same for the Home tab and the creator's DM).
 4. The turn is queued in that message's thread coordinator (`turns.schedule_id`,
    `turns.schedule_run_at`) and runs as an `AgentTurnWorkflow`: the same checks,
    the $0.50 and 12-step limits, the usual footer, one answer. Scheduled runs get
    no `ask_question` and no schedule tools.
 
 `record_slack_agent_schedule_run` records the outcome once per run, keyed by
-`last_run_at`, so a retried Workflow step never counts twice. It is called when
-the run can't start, and from the turn's `skip` or `finish` step.
+`last_run_at`, so a retried Workflow step never counts twice. It is called:
+
+- when the run can't start (tried 3 times, then given up);
+- by the thread coordinator when it gives up on the turn: its Workflow couldn't
+  be created (`start_failed`) or it timed out (`timed_out`), also tried 3 times;
+- from the turn's `skip` or `finish` step, which fails when the call doesn't go
+  through, so Workflows retries it (up to 3 times).
 
 - Lost access, a paused installation or a conversation the agent can't post in
   (`not_in_channel` and similar) pause the schedule with that reason.

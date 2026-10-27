@@ -96,8 +96,8 @@ try {
     await db.exec(`set role ${role}`);
     await assert.rejects(rows('select * from public.slack_agent_schedules'), /permission denied/);
     await assert.rejects(rows('select * from public.claim_slack_agent_schedules(10)'), /permission denied/);
-    await assert.rejects(rows('select public.save_slack_agent_schedule($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-      [installationId, CHANNEL, 'x', 'x', 'daily', 9, 0, null, null, 'UTC', PERSON]), /permission denied/);
+    await assert.rejects(rows('select public.save_slack_agent_schedule($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+      [installationId, CHANNEL, 'x', 'x', 'daily', 9, 0, null, null, 'UTC', PERSON, 'Ev0000000001:0:1']), /permission denied/);
     await assert.rejects(rows('select public.cancel_slack_agent_schedule($1, $2, $3)', [installationId, WORKSPACE, PERSON]), /permission denied/);
     await db.exec('reset role');
   }
@@ -127,10 +127,11 @@ try {
   // Saving: what the agent's schedule_task tool calls.
   await assert.rejects(rows(`insert into public.slack_agent_schedules (installation_id, channel_id, title, prompt, frequency, minute, timezone, created_by, next_run_at)
     values ($1, $2, 'x', 'x', 'hourly', 0, 'UTC', $3, now())`, [installationId, CHANNEL, PERSON]), /permission denied/, 'only through the save function');
+  let saves = 0;
   const save = async ({ installation = installationId, channel = CHANNEL, title = 'Weekly spend', prompt = 'Summarise last week\'s Phaseo spend by model.',
-    frequency = 'weekly', hour = 9, minute = 0, dayOfWeek = 1, dayOfMonth = null, tz = 'Europe/London', by = PERSON } = {}) =>
-    (await rows('select public.save_slack_agent_schedule($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) as result',
-      [installation, channel, title, prompt, frequency, hour, minute, dayOfWeek, dayOfMonth, tz, by]))[0].result;
+    frequency = 'weekly', hour = 9, minute = 0, dayOfWeek = 1, dayOfMonth = null, tz = 'Europe/London', by = PERSON, key = `Ev${++saves}:0:1` } = {}) =>
+    (await rows('select public.save_slack_agent_schedule($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) as result',
+      [installation, channel, title, prompt, frequency, hour, minute, dayOfWeek, dayOfMonth, tz, by, key]))[0].result;
   const weekly = await save({ title: '  Weekly spend  ' });
   assert.equal(weekly.status, 'saved');
   assert.equal(weekly.schedule.title, 'Weekly spend', 'saved trimmed');
@@ -150,9 +151,10 @@ try {
   await assert.rejects(save({ channel: 'general' }), /slack_agent_schedules_channel_id_check/);
   await assert.rejects(save({ by: 'someone' }), /slack_agent_schedules_created_by_check/);
   await assert.rejects(save({ tz: 'Mars/Olympus_Mons' }), /time zone/);
+  await assert.rejects(save({ key: '' }), /slack_agent_schedules_creation_key_check/);
   await db.exec('reset role');
-  await assert.rejects(rows(`insert into public.slack_agent_schedules (installation_id, channel_id, title, prompt, frequency, minute, timezone, created_by, next_run_at)
-    values ($1, $2, 'x', 'x', 'hourly', 0, '-03', $3, now())`, [installationId, CHANNEL, PERSON]), /slack_agent_schedules_timezone_check/, 'IANA names only');
+  await assert.rejects(rows(`insert into public.slack_agent_schedules (installation_id, channel_id, title, prompt, frequency, minute, timezone, created_by, creation_key, next_run_at)
+    values ($1, $2, 'x', 'x', 'hourly', 0, '-03', $3, 'Ev0:0:1', now())`, [installationId, CHANNEL, PERSON]), /slack_agent_schedules_timezone_check/, 'IANA names only');
   await db.exec('set role service_role');
   assert.deepEqual(await save({ installation: '00000000-0000-4000-8000-0000000000ff' }), { status: 'not_installed' });
 
@@ -173,14 +175,19 @@ try {
   const hourly = await save({ title: 'Hourly status', frequency: 'hourly', hour: null, minute: 5, dayOfWeek: null });
   const daily = await save({ title: 'Daily digest', frequency: 'daily', dayOfWeek: null, tz: 'America/New_York' });
   assert.deepEqual(await save({ title: 'One too many' }), { status: 'full', limit: 4 }, 'at most schedules_max');
+  const schedule = async (id) => (await rows('select * from public.slack_agent_schedules where id = $1', [id]))[0];
+  // A retried Workflow step saves again with the same key: it gets the schedule saved the first time, even when full.
+  const replayed = await save({ title: 'Hourly status, reworded', frequency: 'hourly', hour: null, minute: 10, dayOfWeek: null, key: (await schedule(hourly.schedule.id)).creation_key });
+  assert.deepEqual([replayed.status, replayed.schedule.id, replayed.schedule.title, replayed.schedule.minute], ['saved', hourly.schedule.id, 'Hourly status', 5]);
   assert.equal((await save({ installation: otherId })).status, 'saved', 'another installation has its own maximum');
+  assert.equal((await save({ installation: otherId, key: (await schedule(hourly.schedule.id)).creation_key })).status, 'saved', 'keys are per installation');
   const count = async (installation = installationId) => (await rows('select count(*)::int as n from public.slack_agent_schedules where installation_id = $1', [installation]))[0].n;
   assert.equal(await count(), 4);
+  assert.equal(await count(otherId), 2);
 
   // Claiming: due rows once, the next run at least 59 minutes on.
   const claim = async (limit = 50) => rows('select * from public.claim_slack_agent_schedules($1)', [limit]);
   assert.deepEqual(await claim(), [], 'nothing is due yet');
-  const schedule = async (id) => (await rows('select * from public.slack_agent_schedules where id = $1', [id]))[0];
   const makeDue = async (id, minutesAgo) => {
     await db.exec('reset role');
     await rows(`update public.slack_agent_schedules set next_run_at = date_trunc('minute', now()) - make_interval(mins => $2) where id = $1`, [id, minutesAgo]);
@@ -217,6 +224,25 @@ try {
   await makeDue(daily.schedule.id, 1);
   assert.deepEqual((await claim(1)).map((row) => row.schedule_id), [hourly.schedule.id]);
   assert.deepEqual((await claim(1)).map((row) => row.schedule_id), [daily.schedule.id]);
+
+  // A run claimed late, 59.5 minutes after it was due: the next run is still at least 59 minutes after the
+  // claim, not at its minute moments later. Resuming it keeps that gap too.
+  const setStatus = async (id, status, installation = installationId) =>
+    (await rows('select public.set_slack_agent_schedule_status($1, $2, $3) as result', [installation, id, status]))[0].result;
+  const soon = (new Date().getUTCMinutes() + 2) % 60;
+  await db.exec('reset role');
+  await rows(`update public.slack_agent_schedules set minute = $2, next_run_at = now() - interval '59 minutes 30 seconds' where id = $1`, [hourly.schedule.id, soon]);
+  await db.exec('set role service_role');
+  const claimedFrom = Date.now();
+  assert.deepEqual((await claim()).map((row) => row.schedule_id), [hourly.schedule.id]);
+  const late = await schedule(hourly.schedule.id);
+  assert.ok(late.last_claimed_at.getTime() >= claimedFrom, 'when it was claimed');
+  assert.ok(late.last_claimed_at.getTime() - late.last_run_at.getTime() >= 59 * MINUTE, 'last_run_at stays when it was due');
+  assert.ok(late.next_run_at.getTime() >= late.last_claimed_at.getTime() + 59 * MINUTE, 'an hour after the claim at the soonest');
+  assert.equal(late.next_run_at.getUTCMinutes(), soon, 'at its minute');
+  await setStatus(hourly.schedule.id, 'paused');
+  const resumedLate = await setStatus(hourly.schedule.id, 'active');
+  assert.ok(Date.parse(resumedLate.next_run_at) >= late.last_claimed_at.getTime() + 59 * MINUTE, 'resuming keeps the hour after the claim');
 
   // Recording what became of a run.
   const record = async (id, runAt, result, { reason = null, pause = false } = {}) =>
@@ -255,8 +281,6 @@ try {
   assert.equal((await schedule(hourly.schedule.id)).status, 'paused');
 
   // Settings: pause and resume.
-  const setStatus = async (id, status, installation = installationId) =>
-    (await rows('select public.set_slack_agent_schedule_status($1, $2, $3) as result', [installation, id, status]))[0].result;
   const resumed = await setStatus(daily.schedule.id, 'active');
   assert.deepEqual([resumed.status, resumed.pause_reason, resumed.failures], ['active', null, 0]);
   assert.ok(Date.parse(resumed.next_run_at) > Date.now(), 'resumed from now');
@@ -319,7 +343,7 @@ try {
   assert.equal((await rows('select public.uninstall_slack_agent_from_slack($1, $2, $3)', [installationId, 'app_uninstalled', '2026-10-21T10:00:00Z'])).length, 1);
   await db.exec('reset role');
   assert.equal(await count(), 0);
-  assert.equal(await count(otherId), 1, 'and nothing else\'s');
+  assert.equal(await count(otherId), 2, 'and nothing else\'s');
   await db.exec('set role service_role');
   assert.deepEqual(await save(), { status: 'not_installed' });
   await rows(`update public.slack_installations set status = 'uninstalled', uninstalled_at = now() where id = $1`, [otherId]);

@@ -12,7 +12,8 @@ CREATE OR REPLACE FUNCTION public.set_slack_agent_schedule_status (
 -- installation's schedules (web-api checks who they are). Pausing records the
 -- reason admin. Resuming clears the reason and the failures in a row, and the
 -- schedule next runs at its next local time after now, and at least 59 minutes
--- after its last run, so resuming can't make it run more than once an hour.
+-- after its last run was claimed, so resuming can't make it run more than once
+-- an hour.
 -- Returns the schedule without its installation id, or null when the
 -- installation has no such schedule. Service role only.
 declare
@@ -28,7 +29,7 @@ begin
       next_run_at = case
         when p_status = 'active' and schedule.status <> 'active' then public.slack_agent_schedule_next_run(
           schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
-          greatest(now(), schedule.last_run_at + interval '59 minutes')
+          greatest(now(), schedule.last_claimed_at + interval '59 minutes')
         )
         else schedule.next_run_at
       end
@@ -41,7 +42,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) IS 'For web-api (Settings > Slack): pauses (reason admin) or resumes a schedule. Resuming clears failures and moves next_run_at to its next local time at least 59 minutes after its last run. Returns the schedule, or null.';
+COMMENT ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) IS 'For web-api (Settings > Slack): pauses (reason admin) or resumes a schedule. Resuming clears failures and moves next_run_at to its next local time at least 59 minutes after its last run was claimed. Returns the schedule, or null.';
 
 GRANT EXECUTE ON FUNCTION "public"."set_slack_agent_schedule_status"(uuid, uuid, text) TO "service_role";
 
