@@ -5308,7 +5308,7 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
-    "context_length": 104857,
+    "context_length": 1048576,
     "max_output_tokens": 1048576,
     "effective_from": "2026-07-16T02:27:39Z",
     "effective_to": null,

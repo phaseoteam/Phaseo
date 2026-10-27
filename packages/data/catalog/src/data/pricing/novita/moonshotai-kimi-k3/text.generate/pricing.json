@@ -64,6 +64,46 @@
         "accessed_at": "2026-08-20T00:00:00Z",
         "notes": "First-party model pricing."
       }
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k3",
+        "accessed_at": "2026-10-27T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    },
+    {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k3",
+        "accessed_at": "2026-10-27T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
     }
   ],
   "regions": [],
@@ -80,7 +120,7 @@
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-20T00:00:00Z",
+    "checked_at": "2026-10-27T00:00:00Z",
     "notes": "Verified from Novita's first-party pricing catalog and model page."
   }
 }
