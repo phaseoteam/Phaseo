@@ -65,6 +65,38 @@ Phaseo 使用数字 ID，因为名称可能会被修改，或被他人占用。
 
 ---
 
+## 使用 Terraform 或 API 管理策略
+
+你也可以用代码管理策略，只需使用具有 `keys:read`、`keys:write` 和 `keys:delete` 权限的[管理密钥](./management-api-keys.mdx)。仅限已开通可信工作负载的工作区使用。
+
+在 Terraform 中使用 `phaseo_trusted_workload` 资源：
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` 的值为 `vercel` 或 `github_actions`。对于 Vercel，还要将 `issuer` 设为 `https://oidc.vercel.com/<team-slug>`（全局签发者模式下为 `https://oidc.vercel.com`），并使用 `project_id`、`environment` 等条件。更改平台、签发者或所有者会替换该策略。策略不含密钥，因此 Terraform state 中不会保存任何敏感信息。
+
+通过 API 时，将相同的字段发送到 `/v1/workload-identity/policies`。在 API 中，平台字段名为 `provider`：
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## 使用令牌调用 Phaseo
 
 <Tabs>
