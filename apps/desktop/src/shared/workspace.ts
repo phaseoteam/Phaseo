@@ -17,6 +17,7 @@ import type { WorkspacePreferences } from "./preferences";
 import type { InstructionDocument, InstructionEdit } from "./instructions";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
+import type { ProjectContentSearch } from "./projectSearch";
 import type { ConversationFindQuery, ConversationFindResult, MessageSearchHit, MessageSearchQuery } from "./conversationSearch";
 import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
 import type { WorkspaceOverview } from "./workspaceOverview";
@@ -253,6 +254,8 @@ export type WorkspaceApi = {
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	/** Files and folders matching a query, best first, for `@` mentions. */
 	searchFiles: (projectId: string, query: string) => Promise<ProjectFile[]>;
+	/** Lines containing the text across the project's files Git does not ignore (Search in files). */
+	searchContents: (projectId: string, query: string) => Promise<ProjectContentSearch>;
 	editors: () => Promise<EditorInstallation[]>;
 	openProject: (projectId: string, request: ProjectOpenRequest) => Promise<void>;
 	readFile: (projectId: string, filename: string) => Promise<string>;

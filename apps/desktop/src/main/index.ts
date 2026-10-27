@@ -50,6 +50,7 @@ import { gitReview, listProjectFiles, projectRelativePath, readFilePreview, read
 import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
 import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
+import { searchProjectContents } from "./projectContentSearch";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -550,6 +551,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
 ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.search", undefined, () => searchProjectFiles(root, query as string)); });
+ipcMain.handle("workspace:search-contents", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.searchContents", undefined, () => searchProjectContents(root, query)); });
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");

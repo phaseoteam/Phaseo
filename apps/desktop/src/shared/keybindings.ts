@@ -18,6 +18,8 @@ export const keybindingCommands = [
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	// Shares Mod+F with the Pull requests page's search: that page replaces the chat while it is open.
 	{ command: "chat.find", label: "Find in chat", group: "Chats", keys: ["mod+f"], when: "chatOpen && !terminalFocused && !browserFocused" },
+	{ command: "filePicker.toggle", label: "Go to file", group: "Chats", keys: ["mod+p"], when: "chatOpen && !terminalFocused && !browserFocused" },
+	{ command: "projectSearch.toggle", label: "Search in files", group: "Chats", keys: ["mod+shift+f"], when: "chatOpen && !terminalFocused && !browserFocused" },
 	{ command: "rightPanel.toggle", label: "Toggle right pane", group: "Panes", keys: ["mod+alt+b"] },
 	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen && !terminalFocused" },
 	{ command: "terminal.toggle", label: "Toggle terminal", group: "Panes", keys: ["mod+j"] },

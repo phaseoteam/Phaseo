@@ -89,6 +89,7 @@ const desktopApi: PhaseoDesktopApi = {
 		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),
 		listFiles: (id, directory) => ipcRenderer.invoke("workspace:list-files", id, directory),
 		searchFiles: (id, query) => ipcRenderer.invoke("workspace:search-files", id, query),
+		searchContents: (id, query) => ipcRenderer.invoke("workspace:search-contents", id, query),
 		editors: () => ipcRenderer.invoke("workspace:editors"),
 		openProject: (id, request) => ipcRenderer.invoke("workspace:open-project", id, request),
 		readFile: (id, filename) => ipcRenderer.invoke("workspace:read-file", id, filename),
