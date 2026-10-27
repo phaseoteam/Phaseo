@@ -628,7 +628,8 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		const access = await turnAccess(deps, turn);
 		if (access.status === "skip") {
 			console.log("[slack-agent] answer stopped after a question", { turnId: turn.turnId, question: leg, reason: access.reason });
-			return { status: "cancelled", ts: null, streamed: false, explained: true, costNanos, model: null, error: null };
+			// Not explained yet: the reply step tells the person why it stopped (privately, as nothing follows the question).
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos, model: null, error: "access_changed" };
 		}
 		return runAgent(deps, turn, coordinator, { usageTools: access.usageTools, connectOffer: access.connectOffer }, context, leg, attempt);
 	})

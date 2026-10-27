@@ -231,7 +231,8 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 	};
 }
 
-export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "failed";
+/** access_changed: after a question, the person (or the installation) could no longer use the agent. */
+export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "access_changed" | "failed";
 
 /**
  * Gateway refusals that won't change on a retry, because the agent's model can't
@@ -297,6 +298,8 @@ export function turnErrorText(kind: TurnErrorKind, chosenForMessage = false): st
 			return chosenForMessage
 				? "The model you chose for this message isn't available right now. Please try again in a few minutes, or ask without `with …:` to use the agent's model."
 				: "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
+		case "access_changed":
+			return "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this.";
 		case "failed":
 			return "Sorry, something went wrong while I was answering. Please try again.";
 	}

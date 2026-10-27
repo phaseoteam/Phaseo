@@ -1032,8 +1032,15 @@ describe("AgentTurnWorkflow", () => {
 			};
 			const stopped = askingAgent();
 			turn = await startTurn({ channel: "D0DIRECT01" });
-			await expect(runTurn(deps(stopped), turn, step)).resolves.toEqual({ status: "cancelled" });
+			world.slack.calls = [];
+			await expect(runTurn(deps(stopped), turn, step)).resolves.toEqual({ status: "failed" });
 			expect(stopped.requests).toHaveLength(1);
+			// The person is told why, privately, and the session isn't left processing.
+			expect(world.slack.ephemerals().map((call) => [call.args.user, call.args.text])).toEqual([
+				["U0PERSON01", "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this."],
+			]);
+			expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status).at(-1)).toBe("active");
+			// Not counted: only the first answer is, and no place is held.
 			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 		});
 
