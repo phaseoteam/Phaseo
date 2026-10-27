@@ -17,6 +17,11 @@ export type SlackAgentSettings = {
 	monthly_cap_usd: number;
 	answers_per_person_hour: number;
 	model: string;
+	/** People may start a message with "with <model>:" to have one of allowed_models answer it. */
+	model_choice_enabled: boolean;
+	allowed_models: string[];
+	/** The agent's notes, pins and to-dos. Off: it saves and sees none, saved ones are kept, and skills still work. */
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: SlackAccessMode;
 	usage_data_mode: SlackUsageDataMode;
@@ -97,6 +102,11 @@ export const MIN_CUSTOM_PLAN_PEOPLE = 101;
 export const MAX_PLAN_PEOPLE = 10_000_000;
 export const MAX_INSTRUCTIONS_CHARS = 8_000;
 export const MAX_USAGE_DATA_CHANNELS = 100;
+/** The most models people may choose per message. */
+export const MAX_ALLOWED_MODELS = 10;
+/** Each answer's limits, whichever model answers (apps/slack/src/agent.ts: TURN_MAX_COST_USD, MAX_STEPS). */
+export const TURN_COST_LIMIT_USD = 0.5;
+export const TURN_STEP_LIMIT = 12;
 /** The plan choice for a workspace bigger than the largest standard plan. */
 export const CUSTOM_PLAN = "custom";
 export const STANDARD_PLAN_PEOPLE: readonly number[] = PLAN_TIERS.map((tier) => tier.people);
@@ -179,6 +189,9 @@ export type SlackInstallDraft = SlackLimitsDraft & {
 
 export type SlackSettingsDraft = SlackLimitsDraft & {
 	model: string;
+	modelChoiceEnabled: boolean;
+	/** Model ids, in the order the admin added them; Auto is phaseo/auto. */
+	allowedModels: string[];
 	instructions: string;
 	accessMode: SlackAccessMode;
 	usageDataMode: SlackUsageDataMode;
@@ -187,13 +200,13 @@ export type SlackSettingsDraft = SlackLimitsDraft & {
 
 export type SlackDraftField =
 	| "customPlanPeople" | "maxPeople" | "monthlyCapUsd" | "answersPerPersonHour" | "tokenLimitUsd"
-	| "model" | "instructions" | "channelIds";
+	| "model" | "allowedModels" | "instructions" | "channelIds";
 
 /** A form problem; its code is a SettingsUI.slack.problems key. */
 export type SlackDraftProblem = {
 	field: SlackDraftField;
 	code: "planPeople" | "maxPeople" | "maxPeopleBelowPlan" | "monthlyCap" | "capBelowPlan" | "answersPerHour" | "tokenLimit"
-		| "model" | "instructions" | "channelIds" | "tooManyChannels";
+		| "model" | "allowedModelsEmpty" | "tooManyModels" | "instructions" | "channelIds" | "tooManyChannels";
 	values?: Record<string, string | number>;
 };
 
@@ -230,6 +243,8 @@ export function settingsDraftFrom(settings: SlackAgentSettings): SlackSettingsDr
 		allowExternalUsers: settings.allow_external_users,
 		tokenLimitUsd: settings.token_monthly_limit_usd > 0 ? amountInput(settings.token_monthly_limit_usd) : "",
 		model: settings.model,
+		modelChoiceEnabled: settings.model_choice_enabled,
+		allowedModels: settings.allowed_models,
 		instructions: settings.instructions ?? "",
 		accessMode: settings.access_mode,
 		usageDataMode: settings.usage_data_mode,
@@ -327,6 +342,8 @@ export function installPayload(draft: SlackInstallDraft, customAppId: string | n
 export function settingsPatch(draft: SlackSettingsDraft, saved: SlackSettingsDraft): Built<Record<string, unknown>> {
 	const model = buildModel(draft.model);
 	if (!model.ok) return model;
+	if (draft.modelChoiceEnabled && !draft.allowedModels.length) return { ok: false, problem: { field: "allowedModels", code: "allowedModelsEmpty" } };
+	if (draft.allowedModels.length > MAX_ALLOWED_MODELS) return { ok: false, problem: { field: "allowedModels", code: "tooManyModels", values: { max: MAX_ALLOWED_MODELS } } };
 	const instructions = draft.instructions.trim();
 	if ([...instructions].length > MAX_INSTRUCTIONS_CHARS) {
 		return { ok: false, problem: { field: "instructions", code: "instructions", values: { max: MAX_INSTRUCTIONS_CHARS.toLocaleString("en-US") } } };
@@ -350,6 +367,8 @@ export function settingsPatch(draft: SlackSettingsDraft, saved: SlackSettingsDra
 	if (changed("allowExternalUsers")) patch.allow_external_users = limits.value.allow_external_users;
 	if (changedText("tokenLimitUsd")) patch.token_monthly_limit_usd = limits.value.token_monthly_limit_usd;
 	if (model.value !== saved.model.trim()) patch.model = model.value;
+	if (changed("modelChoiceEnabled")) patch.model_choice_enabled = draft.modelChoiceEnabled;
+	if (draft.allowedModels.join(",") !== saved.allowedModels.join(",")) patch.allowed_models = draft.allowedModels;
 	if (instructions !== saved.instructions.trim()) patch.instructions = instructions || null;
 	if (changed("accessMode")) patch.access_mode = draft.accessMode;
 	if (changed("usageDataMode")) patch.usage_data_mode = draft.usageDataMode;
@@ -381,7 +400,8 @@ export type SlackErrorKey =
 	| "notAvailable" | "forbidden" | "privacyReview" | "paymentDue" | "appConflict" | "appTaken" | "appInUse" | "appNotFound"
 	| "appMissing" | "appUnavailable" | "alreadyInstalled" | "teamInUse" | "notInstalled" | "conflict" | "keyMissing"
 	| "slackDenied" | "slackError" | "slackResponseInvalid" | "stateExpired" | "stateInvalid" | "signInRequired"
-	| "sessionMismatch" | "installFailed" | "autoUnavailable" | "invalid" | "unavailable" | "generic";
+	| "sessionMismatch" | "installFailed" | "autoUnavailable" | "unknownModels" | "modelChoiceNeedsModels" | "tooManyModels"
+	| "invalid" | "unavailable" | "generic";
 
 // Every error code the Slack settings routes return, including the OAuth
 // callback's ?error= values.
@@ -413,6 +433,9 @@ const ERROR_KEYS: Record<string, SlackErrorKey> = {
 	session_mismatch: "sessionMismatch",
 	install_failed: "installFailed",
 	auto_routing_unavailable: "autoUnavailable",
+	unknown_models: "unknownModels",
+	model_choice_needs_models: "modelChoiceNeedsModels",
+	too_many_models: "tooManyModels",
 	bad_request: "invalid",
 	settings_unavailable: "unavailable",
 	settings_write_failed: "unavailable",

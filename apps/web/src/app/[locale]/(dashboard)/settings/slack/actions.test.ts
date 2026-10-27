@@ -4,7 +4,17 @@ jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAcco
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { slackAgentSettingsEnabled } from "@/lib/flags";
-import { removeSlackCustomApp, saveSlackCustomApp, startSlackInstall, uninstallSlackAgent, updateSlackAgent } from "./actions";
+import {
+	deleteSlackAgentNote,
+	deleteSlackAgentSkill,
+	loadSlackAgentMemory,
+	removeSlackCustomApp,
+	saveSlackCustomApp,
+	startSlackInstall,
+	uninstallSlackAgent,
+	updateSlackAgent,
+	updateSlackAgentSkill,
+} from "./actions";
 
 const mockEnabled = slackAgentSettingsEnabled as jest.MockedFunction<typeof slackAgentSettingsEnabled>;
 const mockContext = getServerAccountContext as jest.MockedFunction<typeof getServerAccountContext>;
@@ -73,5 +83,37 @@ describe("Slack settings actions", () => {
 		fetchMock.mockResolvedValue(respond(200, { deleted: true }));
 		expect(await removeSlackCustomApp()).toEqual({ ok: true });
 		expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ workspaceId: "workspace-a" });
+	});
+
+	it("reads the agent's memory for the active workspace, one kind or all", async () => {
+		const memory = { notes: [], notes_total: 0, notes_used: 0, notes_limit: 500, skills: [], skills_limit: 100 };
+		fetchMock.mockImplementation(async () => respond(200, memory));
+		expect(await loadSlackAgentMemory("pin")).toEqual({ ok: true, memory });
+		expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/api\/account\/settings\/slack\/memory\?workspaceId=workspace-a&kind=pin$/);
+		await loadSlackAgentMemory("all");
+		await loadSlackAgentMemory("messages&workspaceId=other");
+		expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/slack\/memory\?workspaceId=workspace-a$/);
+		expect(String(fetchMock.mock.calls[2][0])).toMatch(/\/slack\/memory\?workspaceId=workspace-a$/);
+	});
+
+	it("deletes notes and edits or deletes skills by id only", async () => {
+		const id = "00000000-0000-4000-8000-0000000000e1";
+		fetchMock.mockImplementation(async () => respond(200, { id, deleted: true }));
+		expect(await deleteSlackAgentNote(id)).toEqual({ ok: true });
+		expect(await deleteSlackAgentSkill(id)).toEqual({ ok: true });
+		expect(fetchMock.mock.calls.map(([url, init]) => [String(url).replace(/^.*\/api/, "/api"), init.method, JSON.parse(init.body)])).toEqual([
+			[`/api/account/settings/slack/memory/notes/${id}`, "DELETE", { workspaceId: "workspace-a" }],
+			[`/api/account/settings/slack/memory/skills/${id}`, "DELETE", { workspaceId: "workspace-a" }],
+		]);
+		fetchMock.mockResolvedValue(respond(200, { skill: { id, name: "Weekly summary" } }));
+		expect(await updateSlackAgentSkill(id, { name: "Weekly summary", workspaceId: "someone-else" })).toMatchObject({ ok: true, skill: { name: "Weekly summary" } });
+		expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ name: "Weekly summary", workspaceId: "workspace-a" });
+		fetchMock.mockResolvedValue(respond(409, { error: "skill_name_taken", message: "Another saved skill has this name" }));
+		expect(await updateSlackAgentSkill(id, { name: "Daily" })).toMatchObject({ ok: false, status: 409, code: "skill_name_taken" });
+
+		fetchMock.mockClear();
+		expect(await deleteSlackAgentNote("../../custom-app")).toMatchObject({ ok: false, status: 400, code: "bad_request" });
+		expect(await deleteSlackAgentSkill(`${id}/x`)).toMatchObject({ ok: false, status: 400 });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

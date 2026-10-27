@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "请先保存预设再运行。",
 		"runUnsaved": "请先保存模板更改再运行。",
 		"runFailed": "请求失败（{status}）。",
+		"runNoCredits": "你的工作区已没有剩余额度，因此无法运行此预设。",
+		"runAddCredits": "添加额度",
 		"replyMeta": "{model} · 输入 {input} 个 token，输出 {output} 个 token",
 		"replyEmpty": "模型没有返回文本。",
 		"issuesTitle": "修正以下问题后即可查看结果"
@@ -6847,6 +6849,7 @@
 		},
 		"sections": {
 			"agent": "智能体",
+			"modelChoice": "模型选择",
 			"access": "谁可以使用",
 			"usageData": "用量数据",
 			"limits": "限制",
@@ -6867,6 +6870,20 @@
 			"label": "指令",
 			"help": "智能体在每次回答中都会遵循的额外说明，例如语气或重点。",
 			"placeholder": "回答尽量简短。需要时附上我们的员工手册链接。"
+		},
+		"modelChoice": {
+			"description": "让成员在你允许的模型中，为单条消息选择模型。其他消息使用智能体的模型。",
+			"enable": "允许按消息选择模型",
+			"enableHelp": "成员以 {prefix} 开头发送消息，并用名称或 ID 指定一个允许的模型。如果该模型不在允许范围内，对方会私下收到可选模型列表，这条消息不会得到回答。",
+			"models": "可选模型（{count}/{max}）",
+			"add": "添加模型",
+			"remove": "移除 {model}",
+			"auto": "自动",
+			"full": "最多可允许 {max} 个模型。请先移除一个，再添加其他模型。",
+			"includeAuto": "包含“自动”",
+			"includeAutoHelp": "成员可以选择“自动”，由 Phaseo 为这条消息挑选合适的模型。",
+			"autoUnavailable": "此工作区无法使用“自动”，因此选择它的消息无法得到回答。请关闭“包含自动”。",
+			"help": "无论由哪个模型回答，每次回答的 {cost} 费用上限和 {steps} 步上限都不变。回答的页脚会显示作答的模型。"
 		},
 		"access": {
 			"everyone": "Slack 中的所有人",
@@ -6982,6 +6999,70 @@
 			"removeDescription": "Phaseo 会删除已保存的信息。之后的安装将使用 Phaseo 的 Slack 应用。",
 			"notAvailable": "使用你自己的 Slack 应用的功能暂不可用。"
 		},
+		"memory": {
+			"title": "记忆和技能",
+			"description": "有人让智能体记住某件事时它保存的笔记、置顶和待办，以及有人让它保存的技能。这些是智能体用自己的话写下的简短笔记，而不是 Slack 消息的副本。卸载后会全部删除。",
+			"enable": "允许智能体保留笔记",
+			"enableHelp": "智能体在被要求时保存、并在之后的回答中参考的笔记、置顶和待办。关闭后，它既不保存也不查看任何笔记。已保存的笔记会保留，你仍可以在这里查看和删除。技能不受影响。",
+			"externalHelp": "其他公司的人（Slack Connect）只能查看和保存自己所在对话的笔记，看不到整个工作区的笔记。",
+			"turnedOn": "智能体会重新保留笔记。",
+			"turnedOff": "智能体不再保留笔记。已保存的笔记会保留。",
+			"loading": "正在加载…",
+			"notesTitle": "笔记、置顶和待办",
+			"skillsTitle": "技能",
+			"used": "已保存 {used} / {limit}",
+			"filter": "显示",
+			"filters": {
+				"all": "全部",
+				"note": "笔记",
+				"pin": "置顶",
+				"todo": "待办"
+			},
+			"kinds": {
+				"note": "笔记",
+				"pin": "置顶",
+				"todo": "待办"
+			},
+			"columns": {
+				"note": "笔记",
+				"kind": "类型",
+				"where": "位置",
+				"saved": "保存时间",
+				"actions": "操作"
+			},
+			"workspaceWide": "整个工作区",
+			"channel": "频道 {id}",
+			"directMessage": "私信 {id}",
+			"by": "由 {user} 保存",
+			"doneOn": "{date} 完成",
+			"expires": "保留至 {date}",
+			"noNotes": "还没有保存任何内容。可以在 Slack 中让智能体记住或置顶某件事，或把它记为待办。",
+			"noNotesOfKind": "还没有保存此类内容。",
+			"noSkills": "还没有保存技能。可以在 Slack 中让智能体为重复的任务保存一个技能。",
+			"skillMeta": "由 {user} 保存 · {date} 更新",
+			"skillName": "名称",
+			"skillDescription": "描述",
+			"skillInstructions": "指令",
+			"edit": "编辑",
+			"delete": "删除",
+			"saveSkill": "保存技能",
+			"skillSaved": "技能已保存。",
+			"skillDeleted": "技能已删除。",
+			"noteDeleted": "笔记已删除。",
+			"deleteNote": "删除笔记",
+			"deleteNoteTitle": "删除这条笔记？",
+			"deleteNoteDescription": "智能体会立即忘记它。此操作无法撤销。",
+			"deleteSkillTitle": "删除 {name}？",
+			"deleteSkillDescription": "智能体将无法再使用它。此操作无法撤销。",
+			"problems": {
+				"required": "不能为空。",
+				"tooLong": "最多 {max} 个字符。"
+			},
+			"errors": {
+				"memoryNotFound": "它已被删除。请重新加载以查看剩余内容。",
+				"skillNameTaken": "已有另一个保存的技能使用这个名称。"
+			}
+		},
 		"uninstall": {
 			"description": "从 Slack 中移除智能体并删除其 API 密钥。历史扣费仍保留在你的账单记录中。",
 			"button": "卸载",
@@ -7000,6 +7081,8 @@
 			"answersPerHour": "请输入 1 到 {max} 之间的整数。",
 			"tokenLimit": "请输入不超过 {max} 的金额，或留空表示不限制。",
 			"model": "请选择一个模型。",
+			"allowedModelsEmpty": "请至少添加一个模型，或关闭模型选择。",
+			"tooManyModels": "最多允许 {max} 个模型。",
 			"instructions": "指令最多 {max} 个字符。",
 			"channelIds": "请输入 Slack 频道 ID，例如 C0123ABCD，用逗号分隔。",
 			"tooManyChannels": "最多列出 {max} 个频道。",
@@ -7035,6 +7118,9 @@
 			"sessionMismatch": "请使用发起安装的管理员账户完成安装。",
 			"installFailed": "安装未完成，也没有进行任何设置。请重试。",
 			"autoUnavailable": "此工作区无法使用“自动”。请选择指定模型。",
+			"unknownModels": "其中一些模型已不在 Phaseo 目录中。请移除它们后重新保存。",
+			"modelChoiceNeedsModels": "请至少添加一个可选模型，或关闭模型选择。",
+			"tooManyModels": "最多可允许 {max} 个模型。",
 			"invalid": "请检查设置后重试。",
 			"invalidWithMessage": "请检查设置后重试：{message}",
 			"unavailable": "Phaseo 暂时无法完成此操作。请稍后再试。",

@@ -5811,6 +5811,312 @@ class ServerToolUsage
 	public $web_search_requests;
 }
 
+class SpendRule
+{
+	/** @var string */
+	public $action;
+	/** @var int|null */
+	public $base_amount_nanos;
+	/** @var float|null */
+	public $base_amount_usd;
+	/** @var string|null */
+	public $base_kind;
+	/** @var string|null */
+	public $base_ref;
+	/** @var int|null */
+	public $block_at_amount_nanos;
+	/** @var float|null */
+	public $block_at_amount_usd;
+	/** @var int */
+	public $block_at_percent;
+	/** @var bool */
+	public $block_free_models;
+	/** @var int */
+	public $cooldown_minutes;
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var array */
+	public $destination_ids;
+	/** @var bool */
+	public $enabled;
+	/** @var bool */
+	public $evaluated;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $metric;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $period;
+	/** @var int|null */
+	public $runway_days;
+	/** @var string|null */
+	public $scope_id;
+	/** @var string */
+	public $scope_type;
+	/** @var int|null */
+	public $spike_floor_nanos;
+	/** @var float|null */
+	public $spike_floor_usd;
+	/** @var float|null */
+	public $spike_multiplier;
+	/** @var int|null */
+	public $threshold_amount_nanos;
+	/** @var float|null */
+	public $threshold_amount_usd;
+	/** @var array|null */
+	public $threshold_percents;
+	/** @var string|null */
+	public $time_zone;
+	/** @var string */
+	public $updated_at;
+	/** @var int|null */
+	public $window_hours;
+	/** @var string */
+	public $workspace_id;
+}
+
+class SpendRuleAction { }
+
+class SpendRuleDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SpendRuleHistory
+{
+	/** @var array */
+	public $events;
+	/** @var bool */
+	public $has_more;
+	/** @var array */
+	public $periods;
+}
+
+class SpendRuleHistoryResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SpendRuleInput
+{
+	/** @var string|null */
+	public $action;
+	/** @var int|null */
+	public $base_amount_nanos;
+	/** @var float|null */
+	public $base_amount_usd;
+	/** @var string|null */
+	public $base_kind;
+	/** @var string|null */
+	public $base_ref;
+	/** @var int|null */
+	public $block_at_amount_nanos;
+	/** @var float|null */
+	public $block_at_amount_usd;
+	/** @var int|null */
+	public $block_at_percent;
+	/** @var bool|null */
+	public $block_free_models;
+	/** @var int|null */
+	public $cooldown_minutes;
+	/** @var array|null */
+	public $destination_ids;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string */
+	public $metric;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $period;
+	/** @var int|null */
+	public $runway_days;
+	/** @var string|null */
+	public $scope_id;
+	/** @var string|null */
+	public $scope_type;
+	/** @var int|null */
+	public $spike_floor_nanos;
+	/** @var float|null */
+	public $spike_floor_usd;
+	/** @var float|null */
+	public $spike_multiplier;
+	/** @var int|null */
+	public $threshold_amount_nanos;
+	/** @var float|null */
+	public $threshold_amount_usd;
+	/** @var array|null */
+	public $threshold_percents;
+	/** @var string|null */
+	public $time_zone;
+	/** @var int|null */
+	public $window_hours;
+}
+
+class SpendRuleListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var int */
+	public $max_rules;
+}
+
+class SpendRuleMetric { }
+
+class SpendRulePeriod { }
+
+class SpendRulePreview
+{
+	/** @var array<string, mixed>|null */
+	public $alert;
+	/** @var string|null */
+	public $base_kind;
+	/** @var int|null */
+	public $base_nanos;
+	/** @var string|null */
+	public $base_ref;
+	/** @var float|null */
+	public $base_usd;
+	/** @var int|null */
+	public $block_at_nanos;
+	/** @var float|null */
+	public $block_at_usd;
+	/** @var string */
+	public $computed_at;
+	/** @var bool */
+	public $evaluated;
+	/** @var string */
+	public $metric;
+	/** @var array<string, mixed>|null */
+	public $next_threshold;
+	/** @var float|null */
+	public $percent;
+	/** @var array<string, mixed>|null */
+	public $period;
+	/** @var int|null */
+	public $reached_threshold_percent;
+	/** @var string */
+	public $rule_id;
+	/** @var array<string, mixed>|null */
+	public $state;
+	/** @var int|null */
+	public $threshold_amount_nanos;
+	/** @var float|null */
+	public $threshold_amount_usd;
+	/** @var array|null */
+	public $threshold_percents;
+	/** @var string */
+	public $time_zone;
+	/** @var int|null */
+	public $value_nanos;
+	/** @var float|null */
+	public $value_usd;
+}
+
+class SpendRulePreviewResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SpendRuleResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SpendRuleScope { }
+
+class SpendRuleTestResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SpendRuleTestResult
+{
+	/** @var int */
+	public $delivered;
+	/** @var array */
+	public $deliveries;
+	/** @var int */
+	public $failed;
+	/** @var string */
+	public $message;
+	/** @var string */
+	public $rule_id;
+	/** @var string */
+	public $rule_name;
+	/** @var string */
+	public $source;
+	/** @var bool */
+	public $test;
+	/** @var string */
+	public $title;
+}
+
+class SpendRuleUpdateInput
+{
+	/** @var string|null */
+	public $action;
+	/** @var int|null */
+	public $base_amount_nanos;
+	/** @var float|null */
+	public $base_amount_usd;
+	/** @var string|null */
+	public $base_kind;
+	/** @var string|null */
+	public $base_ref;
+	/** @var int|null */
+	public $block_at_amount_nanos;
+	/** @var float|null */
+	public $block_at_amount_usd;
+	/** @var int|null */
+	public $block_at_percent;
+	/** @var bool|null */
+	public $block_free_models;
+	/** @var int|null */
+	public $cooldown_minutes;
+	/** @var array|null */
+	public $destination_ids;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $metric;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $period;
+	/** @var int|null */
+	public $runway_days;
+	/** @var string|null */
+	public $scope_id;
+	/** @var string|null */
+	public $scope_type;
+	/** @var int|null */
+	public $spike_floor_nanos;
+	/** @var float|null */
+	public $spike_floor_usd;
+	/** @var float|null */
+	public $spike_multiplier;
+	/** @var int|null */
+	public $threshold_amount_nanos;
+	/** @var float|null */
+	public $threshold_amount_usd;
+	/** @var array|null */
+	public $threshold_percents;
+	/** @var string|null */
+	public $time_zone;
+	/** @var int|null */
+	public $window_hours;
+}
+
 class SubagentToolDefinition
 {
 	/** @var array<string, mixed>|null */

@@ -10,6 +10,7 @@ const KEY = `${INSTALLATION_ID}:C0CHANNEL1:1792600000.000100`;
 class RecordingRunner implements TurnRunner {
 	starts: TurnRef[] = [];
 	next: TurnStart = { started: true };
+	wake?: TurnRunner["wake"];
 	async start(turn: TurnRef): Promise<TurnStart> {
 		this.starts.push(turn);
 		return this.next;
@@ -221,7 +222,7 @@ describe("ThreadCoordinator", () => {
 		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
 		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
-		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs"]));
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs", "model", "external"]));
 		expect(columns("memory")).toContain("ts");
 		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");
@@ -238,6 +239,15 @@ describe("ThreadCoordinator", () => {
 			{ kind: "reply", text: "An older answer", at: NOW, ts: null },
 			{ kind: "reply", text: "Answer", at: NOW, ts: "1792600100.000001" },
 		]);
+	});
+
+	it("keeps, per turn, whether the person is from another organisation", async () => {
+		runner.next = { finished: { status: "done" } };
+		admitInMeter("Ev0TEST0001");
+		await coordinator.enqueue(request("Ev0TEST0001", { external: true }), NOW);
+		admitInMeter("Ev0TEST0002");
+		await coordinator.enqueue(request("Ev0TEST0002"), NOW);
+		expect(runner.starts.map((turn) => turn.external)).toEqual([true, undefined]);
 	});
 
 	it("keeps each attempt's cost once, however often it is staged", async () => {
@@ -297,8 +307,125 @@ describe("ThreadCoordinator", () => {
 		vi.setSystemTime(NOW + 10 * DAY);
 		await coordinator.alarm();
 		expect(storage.alarm).toBeNull();
-		for (const table of ["events", "turns", "memory", "meta", "known_messages", "link_offers"]) expect(storage.count(table)).toBe(0);
+		for (const table of ["events", "turns", "memory", "meta", "known_messages", "link_offers", "questions"]) expect(storage.count(table)).toBe(0);
 		// A new message after that starts from nothing.
 		await expect(coordinator.claimEvent("Ev0TEST0001", NOW + 11 * DAY)).resolves.toBe(true);
+	});
+
+	describe("a turn's questions", () => {
+		const DRAFT = { callId: "call_q1", text: "Which region?", options: ["EU", "US"], other: false };
+		const button = (choice: number) => ({ by: "button" as const, choice, text: "" });
+
+		/** A running turn whose question 1 is posted. */
+		async function asking() {
+			await coordinator.enqueue(request("Ev0TEST0001"), NOW);
+			expect(coordinator.holdForAnswer(1, 1, { run: "{\"run\":\"paused\"}", question: DRAFT })).toBe(true);
+			await coordinator.questionPosted(1, 1, "1792600100.000002", NOW);
+		}
+
+		it("keeps the paused run and question until it's posted, and never replaces a posted one", async () => {
+			await expect(coordinator.enqueue(request("Ev0TEST0001"), NOW)).resolves.toMatchObject({ status: "started" });
+			expect(coordinator.holdForAnswer(1, 1, { run: "{}", question: DRAFT })).toBe(true);
+			// A retried run replaces its own unposted question.
+			expect(coordinator.holdForAnswer(1, 1, { run: "{\"retried\":true}", question: { ...DRAFT, callId: "call_q2" } })).toBe(true);
+			expect(coordinator.question(1, 1)).toMatchObject({ n: 1, callId: "call_q2", status: "pending", ts: null });
+			await expect(coordinator.questionPosted(1, 1, "1792600100.000002", NOW)).resolves.toMatchObject({ status: "open", ts: "1792600100.000002", expiresAt: NOW + 60 * 60_000 });
+			expect(coordinator.holdForAnswer(1, 1, { run: "{}", question: DRAFT })).toBe(false);
+			expect(coordinator.pausedRun(1, 1)).toMatchObject({ run: "{\"retried\":true}" });
+			// Too big to keep in one row, or for a turn that isn't running.
+			expect(coordinator.holdForAnswer(1, 2, { run: "x".repeat(1_500_001), question: DRAFT })).toBe(false);
+			// The limit is in UTF-8 bytes: 600,000 three-byte characters are 1.8 MB.
+			expect(coordinator.holdForAnswer(1, 2, { run: "語".repeat(600_000), question: DRAFT })).toBe(false);
+			expect(coordinator.holdForAnswer(9, 1, { run: "{}", question: DRAFT })).toBe(false);
+		});
+
+		it("takes the first answer from the person asked, and wakes the turn", async () => {
+			const wakes: Array<[number, number]> = [];
+			runner.wake = async (turn, n) => { wakes.push([turn.turnId, n]); };
+			await asking();
+			await expect(coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON02", answer: button(0), now: NOW })).resolves.toEqual({ status: "not_asker", askerId: "U0PERSON01" });
+			await expect(coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(7), now: NOW })).resolves.toMatchObject({ status: "closed" });
+			await expect(coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(1), now: NOW + 1_000 })).resolves.toMatchObject({ status: "answered", turnId: 1, askerId: "U0PERSON01", question: { status: "answered", answer: { by: "button", choice: 1, text: "US" } } });
+			await expect(coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(0), now: NOW + 2_000 })).resolves.toMatchObject({ status: "closed", question: { answer: { choice: 1 } } });
+			expect(wakes).toEqual([[1, 1]]);
+			// Closing after the answer keeps it.
+			await expect(coordinator.closeQuestion(1, 1, { now: NOW + 3_000 })).resolves.toMatchObject({ status: "answered" });
+		});
+
+		it("takes a message from the person asked as their answer, and not one from anyone else", async () => {
+			await asking();
+			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON02", text: "me?", now: NOW })).resolves.toBeNull();
+			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "   ", now: NOW })).resolves.toBeNull();
+			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: ` EU${"!".repeat(3_000)}`, now: NOW })).resolves.toMatchObject({ question: { answer: { by: "message", choice: null, text: `EU${"!".repeat(1_998)}` } } });
+			// Answered: the next message is a new one.
+			await expect(coordinator.answerWithMessage({ slackUserId: "U0PERSON01", text: "and another thing", now: NOW })).resolves.toBeNull();
+		});
+
+		it("refuses answers once the hour is up, and closes as expired, or stopped when the thread was cancelled", async () => {
+			await asking();
+			await expect(coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(0), now: NOW + 60 * 60_000 })).resolves.toMatchObject({ status: "closed" });
+			await expect(coordinator.closeQuestion(1, 1, { now: NOW + 60 * 60_000 })).resolves.toMatchObject({ status: "expired" });
+
+			await coordinator.finishTurn(1, { status: "done" }, NOW);
+			await coordinator.enqueue(request("Ev0TEST0002"), NOW);
+			coordinator.holdForAnswer(2, 1, { run: "{}", question: DRAFT });
+			await coordinator.questionPosted(2, 1, "1792600100.000003", NOW);
+			await coordinator.cancel(NOW);
+			await expect(coordinator.answerQuestion({ turnId: 2, n: 1, slackUserId: "U0PERSON01", answer: button(0), now: NOW })).resolves.toMatchObject({ status: "closed" });
+			await expect(coordinator.closeQuestion(2, 1, { now: NOW })).resolves.toMatchObject({ status: "cancelled" });
+		});
+
+		it("wakes a waiting turn when the thread is stopped, and tells others who write that it's waiting", async () => {
+			const wakes: Array<[number, number]> = [];
+			runner.wake = async (turn, n) => { wakes.push([turn.turnId, n]); };
+			await asking();
+			// Both say when the question expires, so the meter keeps their places that long.
+			await expect(coordinator.enqueue(request("Ev0TEST0002", { slackUserId: "U0PERSON02" }), NOW)).resolves.toEqual({ status: "queued", turnId: 2, position: 1, waitingFor: "U0PERSON01", waitingUntil: NOW + 60 * 60_000 });
+			await expect(coordinator.enqueue(request("Ev0TEST0003"), NOW)).resolves.toEqual({ status: "queued", turnId: 3, position: 2, waitingUntil: NOW + 60 * 60_000 });
+			await expect(coordinator.queuedEventIds()).resolves.toEqual(["Ev0TEST0002", "Ev0TEST0003"]);
+			await coordinator.cancel(NOW);
+			expect(wakes).toEqual([[1, 1]]);
+			// A turn that can't be woken waits out its question instead; stopping still works.
+			runner.wake = async () => { throw new Error("instance_gone"); };
+			await expect(coordinator.cancel(NOW)).resolves.toMatchObject({ turnId: 1 });
+		});
+
+		it("doesn't time out a turn while its question waits, but does once it has gone 20 minutes past it", async () => {
+			vi.useFakeTimers({ toFake: ["Date"] });
+			await asking();
+			const storage = storageOf(coordinator);
+			expect(storage.alarm).toBe(NOW + 60 * 60_000 + TURN_TIMEOUT_MS);
+			vi.setSystemTime(NOW + TURN_TIMEOUT_MS);
+			await coordinator.alarm();
+			expect(coordinator.status()).toMatchObject({ running: 1 });
+			// Answered at 30 minutes: the run after it has 20 minutes from then.
+			await coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(0), now: NOW + 30 * 60_000 });
+			expect(storage.alarm).toBe(NOW + 30 * 60_000 + TURN_TIMEOUT_MS);
+			vi.setSystemTime(NOW + 30 * 60_000 + TURN_TIMEOUT_MS);
+			await coordinator.alarm();
+			expect(coordinator.status()).toMatchObject({ running: null });
+			expect(storage.count("questions")).toBe(0);
+		});
+
+		it("remembers the reply before each question, the question and what became of it, then the rest of the answer", async () => {
+			await asking();
+			coordinator.setReplyTs(1, "1792600100.000001");
+			coordinator.stageTurnOutput(1, { attempt: 1, costNanos: 0, reply: "First part.", tools: ["get_spend 2026-10-01 to 2026-10-21 by day"] });
+			coordinator.closeLegReply(1, 1);
+			// Safe to repeat: the reply moved to the question once.
+			coordinator.closeLegReply(1, 1);
+			expect(coordinator.turnInput(1)).toMatchObject({ replyTs: null, stagedReply: null, stagedTools: [] });
+			await coordinator.answerQuestion({ turnId: 1, n: 1, slackUserId: "U0PERSON01", answer: button(0), now: NOW });
+			coordinator.setReplyTs(1, "1792600100.000003");
+			coordinator.stageTurnOutput(1, { attempt: "1:1", costNanos: 0, reply: "Second part.", tools: [] });
+			await coordinator.finishTurn(1, { status: "done" }, NOW);
+			expect(coordinator.workingMemory().map((entry) => [entry.kind, entry.text, entry.ts])).toEqual([
+				["tool", "get_spend 2026-10-01 to 2026-10-21 by day", null],
+				["reply", "First part.", "1792600100.000001"],
+				["reply", "You asked <@U0PERSON01>: Which region? (options: EU, US). <@U0PERSON01> chose: EU", "1792600100.000002"],
+				["reply", "Second part.", "1792600100.000003"],
+			]);
+			expect(storageOf(coordinator).count("questions")).toBe(0);
+		});
 	});
 });

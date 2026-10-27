@@ -151,6 +151,29 @@ describe("processBroadcastQueueBatch", () => {
 		}
 	});
 
+	it("splits OTLP requests at a preset's lower limit, such as New Relic's 1 MB", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		state.destinations = [{ id: "nr", destination_id: "new_relic", destination_config: { license_key: "nr-1" }, enabled: true }];
+		const events = Array.from({ length: 25 }, (_, index) => {
+			const queued = message({ eventId: `req_${index}`, destinationIds: ["nr"] });
+			const base = telemetry(`req_${index}`);
+			queued.body.telemetry = { ...base, args: { ...base.args, requestPayload: { messages: [{ role: "user", content: "a".repeat(60_000) }] } } } as BroadcastTelemetry;
+			return queued;
+		});
+
+		const summary = await processBroadcastQueueBatch(batch(...events));
+
+		expect(summary.delivered).toBe(25);
+		expect(summary.requests).toBeGreaterThan(1);
+		for (const [url, init] of fetchMock.mock.calls as Array<[URL, RequestInit]>) {
+			expect(url.toString()).toBe("https://otlp.nr-data.net/v1/traces");
+			// The body is gzipped protobuf; the split is made on the JSON size,
+			// which bounds it.
+			expect((init.body as Uint8Array).byteLength).toBeLessThan(1_000_000);
+		}
+	});
+
 	it("sends webhooks one event per request", async () => {
 		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 204 }));
 		vi.stubGlobal("fetch", fetchMock);

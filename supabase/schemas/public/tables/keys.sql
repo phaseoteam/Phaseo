@@ -33,7 +33,7 @@ CREATE TABLE "public"."keys" (
     (COALESCE(oauth_scopes, ARRAY[]::text[]) @> ARRAY['gateway:access'::text]))),
   CONSTRAINT "keys_hash_key" UNIQUE (hash),
   CONSTRAINT "keys_id_workspace_id_key" UNIQUE (id, workspace_id),
-  CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text, 'workload_identity'::text]))),
+  CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text, 'workload_identity'::text, 'desktop'::text]))),
   CONSTRAINT "keys_key_kind_check" CHECK ((key_kind = ANY (ARRAY['standard'::text, 'oauth_delegated'::text, 'workload_identity'::text]))),
   CONSTRAINT "keys_oauth_user_id_fkey" FOREIGN KEY (oauth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "keys_pkey" PRIMARY KEY (id),
@@ -57,7 +57,7 @@ CREATE INDEX keys_expires_at_idx ON public.keys USING btree (expires_at)
 CREATE UNIQUE INDEX keys_kid_uidx ON public.keys USING btree (kid);
 
 CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (oauth_user_id, workspace_id, oauth_client_id)
-  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text));
+  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text) AND (issued_via <> 'desktop'::text));
 
 CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);

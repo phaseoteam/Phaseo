@@ -4904,6 +4904,208 @@ type ServerToolUsage struct {
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }
 
+type SpendRule struct {
+	Action string `json:"action"`
+	BaseAmountNanos *int `json:"base_amount_nanos"`
+	BaseAmountUsd *float64 `json:"base_amount_usd"`
+	BaseKind *string `json:"base_kind"`
+	BaseRef *string `json:"base_ref"`
+	BlockAtAmountNanos *int `json:"block_at_amount_nanos"`
+	BlockAtAmountUsd *float64 `json:"block_at_amount_usd"`
+	BlockAtPercent int `json:"block_at_percent"`
+	BlockFreeModels bool `json:"block_free_models"`
+	CooldownMinutes int `json:"cooldown_minutes"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	DestinationIds []string `json:"destination_ids"`
+	Enabled bool `json:"enabled"`
+	Evaluated bool `json:"evaluated"`
+	Id string `json:"id"`
+	Metric string `json:"metric"`
+	Name string `json:"name"`
+	Period string `json:"period"`
+	RunwayDays *int `json:"runway_days"`
+	ScopeId *string `json:"scope_id"`
+	ScopeType string `json:"scope_type"`
+	SpikeFloorNanos *int `json:"spike_floor_nanos"`
+	SpikeFloorUsd *float64 `json:"spike_floor_usd"`
+	SpikeMultiplier *float64 `json:"spike_multiplier"`
+	ThresholdAmountNanos *int `json:"threshold_amount_nanos"`
+	ThresholdAmountUsd *float64 `json:"threshold_amount_usd"`
+	ThresholdPercents *[]int `json:"threshold_percents"`
+	TimeZone *string `json:"time_zone"`
+	UpdatedAt string `json:"updated_at"`
+	WindowHours *int `json:"window_hours"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type SpendRuleAction string
+
+const (
+	SpendRuleActionNotify SpendRuleAction = "notify"
+	SpendRuleActionBlock SpendRuleAction = "block"
+)
+
+
+type SpendRuleDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type SpendRuleHistory struct {
+	Events []map[string]interface{} `json:"events"`
+	HasMore bool `json:"has_more"`
+	Periods []map[string]interface{} `json:"periods"`
+}
+
+type SpendRuleHistoryResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type SpendRuleInput struct {
+	Action *string `json:"action,omitempty"`
+	BaseAmountNanos *int `json:"base_amount_nanos,omitempty"`
+	BaseAmountUsd *float64 `json:"base_amount_usd,omitempty"`
+	BaseKind *string `json:"base_kind,omitempty"`
+	BaseRef *string `json:"base_ref,omitempty"`
+	BlockAtAmountNanos *int `json:"block_at_amount_nanos,omitempty"`
+	BlockAtAmountUsd *float64 `json:"block_at_amount_usd,omitempty"`
+	BlockAtPercent *int `json:"block_at_percent,omitempty"`
+	BlockFreeModels *bool `json:"block_free_models,omitempty"`
+	CooldownMinutes *int `json:"cooldown_minutes,omitempty"`
+	DestinationIds *[]string `json:"destination_ids,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	Metric string `json:"metric"`
+	Name string `json:"name"`
+	Period string `json:"period"`
+	RunwayDays *int `json:"runway_days,omitempty"`
+	ScopeId *string `json:"scope_id,omitempty"`
+	ScopeType *string `json:"scope_type,omitempty"`
+	SpikeFloorNanos *int `json:"spike_floor_nanos,omitempty"`
+	SpikeFloorUsd *float64 `json:"spike_floor_usd,omitempty"`
+	SpikeMultiplier *float64 `json:"spike_multiplier,omitempty"`
+	ThresholdAmountNanos *int `json:"threshold_amount_nanos,omitempty"`
+	ThresholdAmountUsd *float64 `json:"threshold_amount_usd,omitempty"`
+	ThresholdPercents *[]int `json:"threshold_percents,omitempty"`
+	TimeZone *string `json:"time_zone,omitempty"`
+	WindowHours *int `json:"window_hours,omitempty"`
+}
+
+type SpendRuleListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+	MaxRules int `json:"max_rules"`
+}
+
+type SpendRuleMetric string
+
+const (
+	SpendRuleMetricSpend SpendRuleMetric = "spend"
+	SpendRuleMetricBudgetPercent SpendRuleMetric = "budget_percent"
+	SpendRuleMetricForecast SpendRuleMetric = "forecast"
+	SpendRuleMetricSpike SpendRuleMetric = "spike"
+	SpendRuleMetricBalance SpendRuleMetric = "balance"
+)
+
+
+type SpendRulePeriod string
+
+const (
+	SpendRulePeriodDay SpendRulePeriod = "day"
+	SpendRulePeriodWeek SpendRulePeriod = "week"
+	SpendRulePeriodMonth SpendRulePeriod = "month"
+	SpendRulePeriodRolling SpendRulePeriod = "rolling"
+)
+
+
+type SpendRulePreview struct {
+	Alert *map[string]interface{} `json:"alert"`
+	BaseKind *string `json:"base_kind"`
+	BaseNanos *int `json:"base_nanos"`
+	BaseRef *string `json:"base_ref"`
+	BaseUsd *float64 `json:"base_usd"`
+	BlockAtNanos *int `json:"block_at_nanos"`
+	BlockAtUsd *float64 `json:"block_at_usd"`
+	ComputedAt string `json:"computed_at"`
+	Evaluated bool `json:"evaluated"`
+	Metric string `json:"metric"`
+	NextThreshold *map[string]interface{} `json:"next_threshold"`
+	Percent *float64 `json:"percent"`
+	Period *map[string]interface{} `json:"period"`
+	ReachedThresholdPercent *int `json:"reached_threshold_percent"`
+	RuleId string `json:"rule_id"`
+	State *map[string]interface{} `json:"state"`
+	ThresholdAmountNanos *int `json:"threshold_amount_nanos"`
+	ThresholdAmountUsd *float64 `json:"threshold_amount_usd"`
+	ThresholdPercents *[]int `json:"threshold_percents"`
+	TimeZone string `json:"time_zone"`
+	ValueNanos *int `json:"value_nanos"`
+	ValueUsd *float64 `json:"value_usd"`
+}
+
+type SpendRulePreviewResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type SpendRuleResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type SpendRuleScope string
+
+const (
+	SpendRuleScopeWorkspace SpendRuleScope = "workspace"
+	SpendRuleScopeKey SpendRuleScope = "key"
+	SpendRuleScopeMember SpendRuleScope = "member"
+	SpendRuleScopeDepartment SpendRuleScope = "department"
+	SpendRuleScopeModel SpendRuleScope = "model"
+	SpendRuleScopeProvider SpendRuleScope = "provider"
+)
+
+
+type SpendRuleTestResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type SpendRuleTestResult struct {
+	Delivered int `json:"delivered"`
+	Deliveries []map[string]interface{} `json:"deliveries"`
+	Failed int `json:"failed"`
+	Message string `json:"message"`
+	RuleId string `json:"rule_id"`
+	RuleName string `json:"rule_name"`
+	Source string `json:"source"`
+	Test bool `json:"test"`
+	Title string `json:"title"`
+}
+
+type SpendRuleUpdateInput struct {
+	Action *string `json:"action,omitempty"`
+	BaseAmountNanos *int `json:"base_amount_nanos,omitempty"`
+	BaseAmountUsd *float64 `json:"base_amount_usd,omitempty"`
+	BaseKind *string `json:"base_kind,omitempty"`
+	BaseRef *string `json:"base_ref,omitempty"`
+	BlockAtAmountNanos *int `json:"block_at_amount_nanos,omitempty"`
+	BlockAtAmountUsd *float64 `json:"block_at_amount_usd,omitempty"`
+	BlockAtPercent *int `json:"block_at_percent,omitempty"`
+	BlockFreeModels *bool `json:"block_free_models,omitempty"`
+	CooldownMinutes *int `json:"cooldown_minutes,omitempty"`
+	DestinationIds *[]string `json:"destination_ids,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	Metric *string `json:"metric,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Period *string `json:"period,omitempty"`
+	RunwayDays *int `json:"runway_days,omitempty"`
+	ScopeId *string `json:"scope_id,omitempty"`
+	ScopeType *string `json:"scope_type,omitempty"`
+	SpikeFloorNanos *int `json:"spike_floor_nanos,omitempty"`
+	SpikeFloorUsd *float64 `json:"spike_floor_usd,omitempty"`
+	SpikeMultiplier *float64 `json:"spike_multiplier,omitempty"`
+	ThresholdAmountNanos *int `json:"threshold_amount_nanos,omitempty"`
+	ThresholdAmountUsd *float64 `json:"threshold_amount_usd,omitempty"`
+	ThresholdPercents *[]int `json:"threshold_percents,omitempty"`
+	TimeZone *string `json:"time_zone,omitempty"`
+	WindowHours *int `json:"window_hours,omitempty"`
+}
+
 type SubagentToolDefinition struct {
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Type string `json:"type"`
