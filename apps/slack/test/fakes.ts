@@ -189,6 +189,8 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		access_mode: "everyone",
 		usage_data_mode: "dm",
 		usage_data_channel_ids: [],
+		schedules_enabled: true,
+		schedule_creators: "everyone",
 		plan_people: 3,
 		over_plan: "refuse",
 		max_people: null,
