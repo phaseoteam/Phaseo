@@ -4701,6 +4701,52 @@ module Phaseo
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
     ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :fusion_requests, :image_generation_requests, :search_models_requests, :subagent_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    # @!attribute [rw] active
+    #   @return [Boolean]
+    # @!attribute [rw] block_free_models
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] lift_reason
+    #   @return [Object, nil]
+    # @!attribute [rw] lifted_at
+    #   @return [String, nil]
+    # @!attribute [rw] lifted_by
+    #   @return [String, nil]
+    # @!attribute [rw] limit_nanos
+    #   @return [Integer]
+    # @!attribute [rw] limit_usd
+    #   @return [Float]
+    # @!attribute [rw] period_start
+    #   @return [String]
+    # @!attribute [rw] resets_at
+    #   @return [String, nil]
+    # @!attribute [rw] rule_id
+    #   @return [String, nil]
+    # @!attribute [rw] rule_name
+    #   @return [String, nil]
+    # @!attribute [rw] scope_id
+    #   @return [String, nil]
+    # @!attribute [rw] scope_label
+    #   @return [String]
+    # @!attribute [rw] scope_type
+    #   @return [String]
+    # @!attribute [rw] spend_nanos
+    #   @return [Integer]
+    # @!attribute [rw] spend_usd
+    #   @return [Float]
+    # @!attribute [rw] started_at
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    SpendBlock = Struct.new(:active, :block_free_models, :id, :lift_reason, :lifted_at, :lifted_by, :limit_nanos, :limit_usd, :period_start, :resets_at, :rule_id, :rule_name, :scope_id, :scope_label, :scope_type, :spend_nanos, :spend_usd, :started_at, :workspace_id, keyword_init: true)
+    SpendBlockLiftReason = Object
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    SpendBlockListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendBlockResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] action
     #   @return [String]
     # @!attribute [rw] base_amount_nanos

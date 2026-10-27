@@ -1000,6 +1000,14 @@ function invalidateApiKeyCache(Client $client, ?array $path = null, ?array $quer
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function liftSpendBlock(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-blocks/" . rawurlencode((string)($path["id"] ?? "")) . "/lift";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function listApiKeys(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1270,6 +1278,13 @@ function listRateLimitPolicies(Client $client, ?array $path = null, ?array $quer
 {
 	$path = $path ?? [];
 	$resolvedPath = "/rate-limits/policies";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listSpendBlocks(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-blocks";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

@@ -12,6 +12,7 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 ENV = "staging"
 NODE_ENV = "production"

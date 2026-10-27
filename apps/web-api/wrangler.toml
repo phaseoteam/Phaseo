@@ -29,6 +29,10 @@ PROVIDER_MODEL_REVIEW_SLACK_USER_ID = "U0AGDKDBLP6"
 # PostHog project 81404's public write-only key, the same one the website ships to
 # browsers. Feedback answers are sent to its survey with it. Not a credential.
 POSTHOG_PROJECT_API_KEY = "phc_nnjuRkJpsqSm4SDVhT6jVjNysvbMedzoj4u5taUQaJ3"
+
+# Display only: tells Settings whether spend rule blocks are enforced. Keep it equal to the
+# gateway's SPEND_RULE_BLOCKS_ENABLED (apps/api/wrangler*.toml), which does the enforcing.
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 
@@ -59,6 +63,7 @@ routes = []
 [env.staging.vars]
 ENV = "staging"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 
 [[env.staging.r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"

@@ -23,10 +23,23 @@ import {
 	buildPipelineExecutionErrorResponse,
 	logPipelineExecutionError,
 } from "./error-response";
-import { rejectedByRateLimitPolicy, withRateLimitPolicyHeaders } from "@core/rate-limit-policies";
+import { rejectedByRateLimitPolicy as rejectedByRateLimitPolicyOnly, withRateLimitPolicyHeaders as withRateLimitPolicyHeadersOnly } from "@core/rate-limit-policies";
 import {
 	createConcurrencyLeases, releaseConcurrencyAfter, releaseConcurrencyLeases, type ConcurrencyLeases,
 } from "@core/customer-rate-limits";
+import { rejectedBySpendBlockForEveryModel, withSpendWarningHeader } from "@core/spend-blocks";
+import type { PipelineContext } from "./before/types";
+
+// Admission headers on every response: rate limit policy headers and the spend rule warning.
+function withRateLimitPolicyHeaders(response: Response, ctx: PipelineContext): Response {
+	return withSpendWarningHeader(withRateLimitPolicyHeadersOnly(response, ctx), ctx);
+}
+
+// Other models share an exhausted policy allowance, and a spend block on the workspace, key,
+// member or department; model fallbacks are not tried then.
+function rejectedByRateLimitPolicy(ctx: PipelineContext): boolean {
+	return rejectedByRateLimitPolicyOnly(ctx) || rejectedBySpendBlockForEveryModel(ctx);
+}
 
 const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
 const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);

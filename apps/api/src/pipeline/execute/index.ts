@@ -118,6 +118,7 @@ import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
+import { applySpendRuleBlocks } from "@core/spend-blocks";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import { applyUpstreamPromptCacheKey, resolveUpstreamPromptCacheKey } from "./prompt-cache-key";
 import { resolveSessionAffinityPreference } from "./sticky-routing";
@@ -691,6 +692,15 @@ export async function doRequestWithIR(
 		}
 		candidates = filtered;
 	}
+
+	// 1.55) Spend rule blocks: drop the routes an active block covers (free routes stay unless
+	// the rule blocks free models), or refuse the request with a 429 when none is left. Read from
+	// the isolate cache or KV once per request, never from Postgres; fails open.
+	const spendGate = await timing.timer.span("execute_spend_rule_blocks", () =>
+		applySpendRuleBlocks(ctx, candidates, baseModel),
+	);
+	if (spendGate.response) return spendGate.response;
+	candidates = spendGate.candidates;
 
 	// 1.6) Guard: Ensure at least one provider has pricing configured
 	const anyPricingAvailable = candidates.some((entry) => Boolean(entry.pricingCard));

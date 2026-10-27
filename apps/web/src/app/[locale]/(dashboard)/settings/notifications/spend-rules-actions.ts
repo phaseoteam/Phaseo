@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import type {
+	SpendBlock,
 	SpendRule,
 	SpendRuleHistory,
 	SpendRulePreview,
@@ -124,6 +125,21 @@ export async function spendRuleHistory(id: string, page: { limit?: number; offse
 		if (page.offset !== undefined) query.set("offset", String(page.offset));
 		const response = await fetchAccountWebApi<{ history: SpendRuleHistory }>(`${rulePath(id, "/history")}?${query}`, context.accessToken);
 		return { ok: true, history: response.history };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+/** Lifts an active spend block (owners and admins). It stays lifted until the rule's period resets. */
+export async function liftSpendBlock(id: string): Promise<{ ok: true; block: SpendBlock } | SpendRuleActionError> {
+	try {
+		const context = await account();
+		const response = await fetchAccountWebApi<{ block: SpendBlock }>(`${BASE}/blocks/${encodeURIComponent(id)}/lift`, context.accessToken, {
+			method: "POST",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		refresh();
+		return { ok: true, block: response.block };
 	} catch (error) {
 		return failure(error);
 	}

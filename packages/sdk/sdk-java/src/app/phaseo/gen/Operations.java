@@ -670,6 +670,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object liftSpendBlock(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-blocks/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/lift";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object listApiKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -857,6 +862,11 @@ public final class Operations {
 
 	public static Object listRateLimitPolicies(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/rate-limits/policies";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listSpendBlocks(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-blocks";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
