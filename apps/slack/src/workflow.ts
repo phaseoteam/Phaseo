@@ -4,6 +4,7 @@ import {
 	createSdkAgentRunner,
 	gatewayBaseUrl,
 	gatewayFetch,
+	isAutoModel,
 	MAX_STEPS,
 	TURN_MAX_COST_USD,
 	turnErrorText,
@@ -307,6 +308,22 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 }
 
 /**
+ * The footer's model names, from the catalogue. A chosen model is shown by its
+ * own name: the model a response reports can be a provider's id for the same
+ * model, so it is never compared with the choice. With Auto, the model it picked
+ * is added, but only when the response names a catalogue model. Falls back to the
+ * chosen id when the catalogue can't be read.
+ */
+export async function footerModels(db: TurnDeps["db"], chosen: string, answeredBy: string | null): Promise<{ model: string; answeredBy: string | null }> {
+	const auto = isAutoModel(chosen);
+	const wanted = auto ? (answeredBy?.includes("/") && !isAutoModel(answeredBy) ? answeredBy : null) : chosen;
+	if (!wanted) return { model: auto ? "Auto" : chosen, answeredBy: null };
+	const rows = await db.select<{ name: string | null }>("v2_models", { select: "name", model_slug: `eq.${wanted}`, limit: "1" }).catch(() => []);
+	const name = rows[0]?.name?.trim() || null;
+	return auto ? { model: "Auto", answeredBy: name } : { model: name ?? chosen, answeredBy: null };
+}
+
+/**
  * Finishes the Slack message from what the run staged. Throws on a failed Slack
  * write so the step retries; each try is safe to repeat.
  */
@@ -319,7 +336,7 @@ async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	const input = await coordinator.turnInput(turn.turnId);
 	const ts = input?.replyTs ?? run.ts;
 	const text = input?.stagedReply ?? "";
-	const footer = run.status === "failed" ? null : footerText({ model: installation.model || DEFAULT_MODEL, answeredBy: run.model, costNanos: run.costNanos });
+	const footer = run.status === "failed" ? null : footerText({ ...await footerModels(deps.db, installation.model || DEFAULT_MODEL, run.model), costNanos: run.costNanos });
 	// A run step that failed outright never wrote its error into the reply.
 	const closing = run.explained ? null : turnErrorText(run.error ?? "failed");
 	if (ts && run.streamed) {
