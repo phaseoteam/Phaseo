@@ -173,10 +173,10 @@ Recusas de convidados, de pessoas de outras empresas e pelo limite por hora não
 
 ## Dados e privacidade
 
-Os termos da API do Slack não permitem treinar com dados do Slack nem guardá-los, então o agente é configurado assim:
+Os termos da API do Slack não permitem treinar com dados do Slack nem arquivá-los, então o agente é configurado assim:
 
 - **Nenhum conteúdo de mensagem nos logs da Phaseo.** A chave de API do agente nunca guarda o conteúdo das solicitações nem das respostas, seja em logs, caches ou telemetria, independentemente das configurações do seu espaço de trabalho. As solicitações dele continuam aparecendo no seu uso e nos seus logs sem conteúdo, com os [rótulos de solicitação](./request-labels.mdx) `app=slack-agent`, `slack_team` e `slack_channel` e o [título do app](./app-attribution.mdx) `Phaseo Slack agent`.
-- **Nenhum provedor que treina com prompts.** O [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desativa o treinamento com modelos pagos e gratuitos e a publicação de prompts, então provedores que treinam com prompts nunca são usados. Provedores que guardam logs sem treinar com eles podem responder; os logs, caches e a telemetria da Phaseo continuam sem guardar o conteúdo das mensagens.
+- **Nenhum provedor que treina com prompts.** O [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desativa o treinamento com modelos pagos e gratuitos e a publicação de prompts, então provedores que treinam com prompts nunca são usados. Provedores que guardam logs sem treinar com eles podem responder e podem manter o conteúdo das mensagens nesses logs conforme as próprias políticas; os logs, caches e a telemetria da Phaseo continuam sem guardar o conteúdo das mensagens.
 - **Memória de trabalho curta.** Para cada thread, o agente guarda suas respostas recentes, notas curtas sobre as ferramentas que usou, as mensagens que aguardam a vez, os IDs (não o texto) das mensagens recentes da thread para saber de onde ler e a quem já enviou o botão para conectar a conta. Elas são excluídas 7 dias depois da última atividade da thread.
 - **Nada arquivado.** A Phaseo não arquiva nada do Slack. Os logs do próprio agente guardam apenas IDs e status do Slack.
 - **Segredos criptografados.** Os tokens de bot e os segredos do seu app do Slack são guardados criptografados e nunca mais são exibidos.
