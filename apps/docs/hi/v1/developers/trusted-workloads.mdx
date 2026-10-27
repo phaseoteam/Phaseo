@@ -65,6 +65,38 @@ Phaseo संख्यात्मक ID इस्तेमाल करता �
 
 ---
 
+## Terraform या API से पॉलिसी मैनेज करें
+
+आप पॉलिसी को कोड के रूप में भी मैनेज कर सकते हैं। इसके लिए ऐसी [मैनेजमेंट की](./management-api-keys.mdx) चाहिए जिसके पास `keys:read`, `keys:write` और `keys:delete` अनुमतियाँ हों। यह सिर्फ़ उन वर्कस्पेस में काम करता है जिनमें ट्रस्टेड वर्कलोड पहले से उपलब्ध हैं।
+
+Terraform में `phaseo_trusted_workload` रिसोर्स इस्तेमाल करें:
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` की वैल्यू `vercel` या `github_actions` होती है। Vercel के लिए `issuer` भी सेट करें: `https://oidc.vercel.com/<team-slug>`, या ग्लोबल issuer मोड में `https://oidc.vercel.com`। साथ ही `project_id` और `environment` जैसी शर्तें इस्तेमाल करें। प्लेटफ़ॉर्म, issuer या owner बदलने पर पॉलिसी बदलकर नई बन जाती है। पॉलिसी में कोई सीक्रेट नहीं होता, इसलिए Terraform state में कुछ भी संवेदनशील सेव नहीं होता।
+
+API से यही फ़ील्ड `/v1/workload-identity/policies` पर भेजें। API में प्लेटफ़ॉर्म का नाम `provider` है:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## टोकन से Phaseo को कॉल करें
 
 <Tabs>

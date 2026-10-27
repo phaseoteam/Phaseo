@@ -22,6 +22,8 @@
   "workflows": [
     { "name": "phaseo-slack-agent-turns-preview", "binding": "AGENT_TURNS", "class_name": "AgentTurnWorkflow" }
   ],
+  // Recurring tasks run from production's cron trigger only, so a preview never claims them.
+  "triggers": { "crons": [] },
   "secrets": {
     "required": [
       "SLACK_SIGNING_SECRET",
@@ -56,6 +58,8 @@
       "workflows": [
         { "name": "phaseo-slack-agent-turns", "binding": "AGENT_TURNS", "class_name": "AgentTurnWorkflow" }
       ],
+      // Every minute: one indexed claim of the recurring tasks that are due (scheduled-runs.ts).
+      "triggers": { "crons": ["* * * * *"] },
       "secrets": {
         "required": [
           "SLACK_SIGNING_SECRET",

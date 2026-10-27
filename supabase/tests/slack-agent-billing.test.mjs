@@ -17,6 +17,10 @@ const MODEL_CHOICE_LINES = /^ {2}"(?:model_choice_enabled|allowed_models)" .*\n|
 const memoryMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_memory_and_skills.sql'));
 const memoryMigration = await readFile(new URL(`../migrations/${memoryMigrationName}`, import.meta.url), 'utf8');
 const MEMORY_LINES = /^ {2}"memory_enabled" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."memory_enabled" .*\n\n/gm;
+// The schedules migration adds the recurring task settings to slack_installations: three columns, two checks and their comments.
+const schedulesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_schedules.sql'));
+const schedulesMigration = await readFile(new URL(`../migrations/${schedulesMigrationName}`, import.meta.url), 'utf8');
+const SCHEDULE_LINES = /^ {2}"(?:schedules_enabled|schedules_max|schedule_creators)" .*\n|^ {2}CONSTRAINT "slack_installations_(?:schedule_creators|schedules_max)_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:schedules_enabled|schedules_max|schedule_creators)" .*\n\n/gm;
 // The pages migration adds the shared page settings: four columns, three checks and their comments.
 const pagesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_pages.sql'));
 const pagesMigration = await readFile(new URL(`../migrations/${pagesMigrationName}`, import.meta.url), 'utf8');
@@ -78,10 +82,12 @@ try {
   await db.exec(modelChoiceMigration);
   await db.exec(pagesMigration);
 
-  // The memory migration added the trigger that deletes the agent's memory on uninstall (slack-agent-memory.test.mjs).
+  // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
+  // uninstall (slack-agent-memory.test.mjs, slack-agent-schedules.test.mjs).
   const MEMORY_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_memory\n[\s\S]*?;\n/;
+  const SCHEDULES_TRIGGER = /\nCREATE TRIGGER slack_installations_delete_agent_schedules\n[\s\S]*?;\n/;
   for (const table of TABLES) {
-    let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '');
+    let definition = (await schema(`public/tables/${table}.sql`)).replace(MEMORY_TRIGGER, '').replace(SCHEDULES_TRIGGER, '');
     if (table === 'slack_installations') {
       // The first migration's table, plus what the model choice migration added to it.
       const added = definition.match(MODEL_CHOICE_LINES) ?? [];
@@ -93,6 +99,11 @@ try {
       assert.equal(memoryLines.length, 2, 'slack_installations declares the memory switch and its comment');
       for (const line of memoryLines) assert.ok(words(memoryMigration).includes(words(line)), `the memory migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(MEMORY_LINES, '');
+      // And what the schedules migration added.
+      const scheduleLines = definition.match(SCHEDULE_LINES) ?? [];
+      assert.equal(scheduleLines.length, 8, 'slack_installations declares the schedule settings, their checks and comments');
+      for (const line of scheduleLines) assert.ok(words(schedulesMigration).includes(words(line)), `the schedules migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(SCHEDULE_LINES, '');
       // And what the pages migration added.
       const pagesLines = definition.match(PAGES_LINES) ?? [];
       assert.equal(pagesLines.length, 11, 'slack_installations declares the shared page settings, their checks and comments');

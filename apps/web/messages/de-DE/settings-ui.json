@@ -7064,6 +7064,71 @@
 				"skillNameTaken": "Ein anderer gespeicherter Skill hat bereits diesen Namen."
 			}
 		},
+		"schedules": {
+			"title": "Wiederkehrende Aufgaben",
+			"description": "Aufgaben, die der Agent in Slack regelmäßig erledigen soll, höchstens stündlich. Jeder Lauf postet eine kurze Nachricht in seiner Unterhaltung und beantwortet sie im Thread als Antwort an die Person, die sie eingerichtet hat: Er zählt als eine Antwort und hält dieselben Limits ein. Beim Deinstallieren werden alle gelöscht.",
+			"enable": "Wiederkehrende Aufgaben erlauben",
+			"enableHelp": "Ausgeschaltet kann niemand eine einrichten und keine läuft. Sie bleiben gespeichert und laufen wieder, sobald du das wieder einschaltest.",
+			"max": "Höchstzahl wiederkehrender Aufgaben in diesem Workspace",
+			"maxHelp": "Von 1 bis {max}. Eine niedrigere Zahl behält die bereits eingerichteten.",
+			"maxInvalid": "Gib eine ganze Zahl von 1 bis {max} ein.",
+			"creators": "Wer sie einrichten kann",
+			"creatorsEveryone": "Alle, die den Agenten nutzen können",
+			"creatorsLinked": "Nur Personen, die ihr Phaseo-Konto verbunden haben",
+			"save": "Speichern",
+			"saved": "Einstellungen für wiederkehrende Aufgaben gespeichert.",
+			"loading": "Wird geladen…",
+			"used": "{used} von {limit} eingerichtet",
+			"offNote": "Wiederkehrende Aufgaben sind ausgeschaltet, daher läuft keine davon, bis du sie wieder einschaltest.",
+			"empty": "Noch keine wiederkehrenden Aufgaben. Personen können den Agenten in Slack bitten, etwas jede Stunde, jeden Tag, jede Woche oder jeden Monat zu tun.",
+			"columns": {
+				"task": "Aufgabe",
+				"where": "Wo",
+				"often": "Wie oft",
+				"next": "Nächster Lauf",
+				"by": "Eingerichtet von",
+				"last": "Letzter Lauf",
+				"actions": "Aktionen"
+			},
+			"channel": "Kanal {id}",
+			"directMessage": "Direktnachricht {id}",
+			"frequency": {
+				"hourly": "Jede Stunde um :{minute}",
+				"daily": "Jeden Tag um {time}",
+				"weekdays": "Werktags um {time}",
+				"weekly": "Jeden {day} um {time}",
+				"monthly": "Monatlich am {day}. um {time}"
+			},
+			"timeZone": "Zeit {zone}",
+			"paused": "Pausiert",
+			"pauseReasons": {
+				"admin": "Von einem Admin pausiert",
+				"creatorAccess": "Die Person, die sie eingerichtet hat, kann den Agenten nicht mehr nutzen",
+				"notInChannel": "Der Agent kann nicht in seiner Unterhaltung posten",
+				"installationPaused": "Der Agent wurde pausiert",
+				"paymentDue": "Eine Phaseo-Rechnung war unbezahlt",
+				"failures": "3 Läufe hintereinander sind nicht durchgegangen"
+			},
+			"lastResult": {
+				"answered": "Beantwortet",
+				"failed": "Fehlgeschlagen",
+				"skipped": "Übersprungen",
+				"running": "Läuft",
+				"none": "Noch nicht gelaufen"
+			},
+			"failuresInRow": "Fehler hintereinander: {count}",
+			"pause": "Pausieren",
+			"resume": "Fortsetzen",
+			"delete": "Löschen",
+			"pausedToast": "Wiederkehrende Aufgabe pausiert.",
+			"resumedToast": "Wiederkehrende Aufgabe fortgesetzt.",
+			"deletedToast": "Wiederkehrende Aufgabe gelöscht.",
+			"deleteTitle": "{title} löschen?",
+			"deleteDescription": "Sie läuft nicht mehr, und die Person, die sie eingerichtet hat, wird nicht benachrichtigt. Das lässt sich nicht rückgängig machen.",
+			"errors": {
+				"scheduleNotFound": "Sie wurde bereits gelöscht. Lade neu, um zu sehen, was übrig ist."
+			}
+		},
 		"pages": {
 			"title": "Geteilte Seiten",
 			"description": "Webseiten, die der Agent veröffentlicht und in seiner Antwort verlinkt, wenn ein Bericht, eine Tabelle oder ein Diagramm für eine Slack-Nachricht zu viel ist. Eine Seite kann enthalten, was in Slack gesagt wurde, und wird deshalb nur bis zu ihrem Ablauf aufbewahrt. Beim Deinstallieren werden alle gelöscht.",

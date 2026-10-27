@@ -172,7 +172,12 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 		};
 		return meter;
 	});
-	const threads = new FakeNamespace<ThreadCoordinator>(() => new ThreadCoordinator(fakeState(), env));
+	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
+	const threads = new FakeNamespace<ThreadCoordinator>(() => {
+		const thread = new ThreadCoordinator(fakeState(), env);
+		thread.deps = deps;
+		return thread;
+	});
 	const pages = new FakeNamespace<PageStore>(() => {
 		const store = new PageStore(fakeState(), env);
 		store.db = db;
@@ -183,7 +188,6 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 	env.PAGES = pages as unknown as Env["PAGES"];
 	const turns = new FakeWorkflow();
 	env.AGENT_TURNS = turns as unknown as Env["AGENT_TURNS"];
-	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
 	return { env, meters, threads, pages, db, slack, clock, deps, turns };
 }
 
@@ -208,6 +212,8 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		access_mode: "everyone",
 		usage_data_mode: "dm",
 		usage_data_channel_ids: [],
+		schedules_enabled: true,
+		schedule_creators: "everyone",
 		plan_people: 3,
 		over_plan: "refuse",
 		max_people: null,

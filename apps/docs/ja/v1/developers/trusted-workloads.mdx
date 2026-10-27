@@ -65,6 +65,38 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
 
 ---
 
+## Terraform または API でポリシーを管理する
+
+`keys:read`、`keys:write`、`keys:delete` の権限を持つ[管理キー](./management-api-keys.mdx)を使えば、ポリシーをコードとして管理することもできます。利用できるのは、信頼済みワークロードが有効になっているワークスペースだけです。
+
+Terraform では `phaseo_trusted_workload` リソースを使います。
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` には `vercel` または `github_actions` を指定します。Vercel の場合は `issuer` も指定してください。チーム単位の発行者モードでは `https://oidc.vercel.com/<team-slug>`、グローバル発行者モードでは `https://oidc.vercel.com` です。条件には `project_id` や `environment` などを使います。プラットフォーム、発行者、オーナーを変更すると、ポリシーは作り直されます。ポリシーにはシークレットがないため、Terraform の state に機密情報は保存されません。
+
+API では、同じフィールドを `/v1/workload-identity/policies` に送ります。API ではプラットフォームを `provider` と呼びます。
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## トークンで Phaseo を呼び出す
 
 <Tabs>

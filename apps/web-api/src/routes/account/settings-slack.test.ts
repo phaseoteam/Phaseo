@@ -39,7 +39,8 @@ function installationRow(overrides: Record<string, unknown> = {}) {
 	return {
 		id: INSTALLATION_ID, workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
 		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, instructions: null,
-		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], plan_people: 10, over_plan: "refuse",
+		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], schedules_enabled: true, schedules_max: 20, schedule_creators: "everyone",
+		plan_people: 10, over_plan: "refuse",
 		max_people: null, monthly_cap_nanos: 25_000_000_000, answers_per_person_hour: 60, allow_guests: true,
 		allow_external_users: false, status: "active", pages_enabled: true, page_expiry_days: 30, page_default_access: "link", page_link_access: true,
 		installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
@@ -948,6 +949,27 @@ describe("Slack agent settings changes", () => {
 			database({ role: "admin", installation: {} });
 			expect(await (await patch(body)).json()).toMatchObject({ error: "bad_request", message });
 		}
+	});
+
+	it("sets the recurring task settings: on or off, the most per workspace, and who may set them up", async () => {
+		const requests = database({ role: "admin", installation: {} });
+		const response = await patch({ schedules_enabled: false, schedules_max: 5, schedule_creators: "linked" });
+		expect(response.status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ schedules_enabled: false, schedules_max: 5, schedule_creators: "linked" });
+		expect(((await response.json()) as any).installation.settings).toMatchObject({ schedules_enabled: false, schedules_max: 5, schedule_creators: "linked" });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata.changed_fields).toEqual(["schedules_enabled", "schedules_max", "schedule_creators"]);
+		for (const [field, value, message] of [
+			["schedules_enabled", "no", "schedules_enabled must be true or false"],
+			["schedules_max", 0, "schedules_max must be a whole number from 1 to 100"],
+			["schedules_max", 101, "schedules_max must be a whole number from 1 to 100"],
+			["schedules_max", 2.5, "schedules_max must be a whole number from 1 to 100"],
+			["schedule_creators", "admins", "schedule_creators must be one of: everyone, linked"],
+		] as const) {
+			database({ role: "admin", installation: {} });
+			expect(await (await patch({ [field]: value })).json()).toMatchObject({ error: "bad_request", message });
+		}
+		database({ role: "member", installation: {} });
+		expect((await patch({ schedules_enabled: false })).status).toBe(403);
 	});
 
 	it("is for admins, and 404s without an installation", async () => {

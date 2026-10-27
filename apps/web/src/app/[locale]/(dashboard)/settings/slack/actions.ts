@@ -7,6 +7,7 @@ import { slackAgentSettingsEnabled } from "@/lib/flags";
 import type { SlackAgentInstallation, SlackCustomApp } from "@/components/(gateway)/settings/slack/slackAgentForm";
 import type { SlackAgentMemory, SlackAgentSkill } from "@/components/(gateway)/settings/slack/slackAgentMemory";
 import type { SlackAgentPages } from "@/components/(gateway)/settings/slack/slackAgentPages";
+import type { SlackAgentSchedule, SlackAgentSchedules } from "@/components/(gateway)/settings/slack/slackAgentSchedules";
 
 const PATH = "/api/account/settings/slack";
 const SLACK_AUTHORIZE_ORIGIN = "https://slack.com";
@@ -188,6 +189,49 @@ export async function deleteSlackAgentPage(id: string) {
 		// Only a page id goes into the path.
 		if (!PAGE_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/pages`, 400, "Not a valid id", undefined, "bad_request");
 		await fetchAccountWebApi(`${PATH}/pages/${id}`, context.accessToken, {
+			method: "DELETE",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+/** A schedule's path; only an id goes into it. */
+function schedulePath(id: string): `/api/account/${string}` {
+	if (!MEMORY_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/schedules`, 400, "Not a valid id", undefined, "bad_request");
+	return `${PATH}/schedules/${id}`;
+}
+
+/** The workspace's recurring tasks, with the admins' settings. */
+export async function loadSlackAgentSchedules() {
+	try {
+		const context = await account();
+		const schedules = await fetchAccountWebApi<SlackAgentSchedules>(`${PATH}/schedules?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
+		return { ok: true as const, schedules };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function setSlackAgentScheduleStatus(id: string, status: "active" | "paused") {
+	try {
+		const context = await account();
+		const result = await fetchAccountWebApi<{ schedule: SlackAgentSchedule }>(schedulePath(id), context.accessToken, {
+			method: "PATCH",
+			body: JSON.stringify({ status, workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const, schedule: result.schedule };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function deleteSlackAgentSchedule(id: string) {
+	try {
+		const context = await account();
+		await fetchAccountWebApi(schedulePath(id), context.accessToken, {
 			method: "DELETE",
 			body: JSON.stringify({ workspaceId: context.workspaceId }),
 		});
