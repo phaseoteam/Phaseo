@@ -10,6 +10,16 @@ on:
             - "pnpm-lock.yaml"
             - "pnpm-workspace.yaml"
             - ".github/workflows/desktop.yml"
+    push:
+        branches: [main]
+        paths:
+            - "apps/desktop/**"
+            - "packages/sdk/agent-sdk-ts/**"
+            - "packages/sdk/sdk-ts/**"
+            - "package.json"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - ".github/workflows/desktop.yml"
     workflow_dispatch:
 
 permissions:
