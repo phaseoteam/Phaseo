@@ -12,7 +12,7 @@ Worker reads the same tables.
 |---|---|
 | `POST /events` | Events API request URL for the hosted Phaseo app. |
 | `POST /events/:appId` | Events API request URL for a company's own Slack app (`:appId` is its Slack app id, `A...`). Its signing secret is read from `slack_apps`. |
-| `POST /interactions`, `POST /interactions/:appId` | Interactivity request URL (Cancel, Connect account, feedback). |
+| `POST /interactions`, `POST /interactions/:appId` | Interactivity request URL (Cancel, Connect account, feedback, question buttons and the Other form). |
 | `GET /health` | Liveness. |
 
 Every Slack request is checked against its v0 signature over the raw body, with
@@ -50,6 +50,9 @@ Worker's production host and routes.
   `assistant_view`). It gives the app its Messages tab and agent sessions.
 - `app_uninstalled` and `tokens_revoked` need no scope, but Slack only sends them
   to apps that subscribe.
+- `features.app_home.home_tab_enabled` and the `app_home_opened` event give the
+  app its Home tab. Until a Slack app's manifest has both, Slack sends no
+  `app_home_opened` and the tab doesn't appear; nothing else depends on them.
 - Token rotation is off. Slack can't turn it off again, and the hosted app's
   client credentials are optional secrets here.
 - Editing the manifest file doesn't change the live Slack app: paste the new
@@ -64,6 +67,7 @@ Worker's production host and routes.
   - Keeps working memory: the bot's replies and short tool summaries.
   - Keeps the timestamps (no text) of the thread's newest known messages, where the next read starts.
   - Remembers who was sent the Connect button in the thread.
+  - Holds the running turn's questions: the paused run, the question and its answer. The first answer from the person asked wins and wakes the turn's Workflow; so does stopping the thread while it waits.
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
@@ -71,6 +75,7 @@ Worker's production host and routes.
   - Flushes running totals to `record_slack_agent_people` at most about once a minute.
   - Serialises bot token refreshes when Slack rotates tokens.
   - Keeps Slack's `Retry-After` when a thread read gets 429, so no thread of the installation reads until it has passed.
+  - Keeps an answer that waits for a reply to its question pending for the wait (`keepPending`), so it stays one answer.
 
 Both use SQLite storage. Neither keeps Slack text longer than 7 days, and logs
 carry ids and statuses only, as Slack's API terms require.
@@ -78,7 +83,8 @@ carry ids and statuses only, as Slack's API terms require.
 ## Agent turns
 
 Each answer is an `AgentTurnWorkflow` instance (`AGENT_TURNS`, Cloudflare
-Workflows), one per Slack event, kept for 1 day. It has five steps:
+Workflows), one per Slack event, kept for 1 day. It has five steps, and four
+more for each question the agent asks (see below):
 
 1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
 2. `context`: one `conversations.replies` read of up to 15 messages, ending at the message answered (`src/history.ts`). Slack allows apps outside the Marketplace about one read a minute per workspace, 15 messages each, and returns a range's earliest messages first, so the read starts at the oldest of the 8 newest messages the coordinator knows (in a channel, never more than 30 minutes back; the first read in a thread goes 30 minutes back). Slack sends the thread's first message with every read. When the stretch held more, the prompt says messages are missing. Only the installation's bot user (or its app) is the agent in the prompt; other bots and apps are labelled `Another app (name)`. When Slack rate limits the read, the coordinator's working memory is used alone, and the meter keeps Slack's `Retry-After`: until it passes, every thread of the installation skips its read and uses working memory too. Reads aren't spaced otherwise, for the hosted app or a company's own app: Slack tolerates small bursts, and a refused read only costs that turn its read.
@@ -120,6 +126,43 @@ with the turn (the coordinator's `turns.model`), and the prompt is the message
 without the prefix. The run re-checks the live installation and falls back to
 its model if an admin removed the choice meanwhile. The turn's $0.50 and 12-step
 limits don't change.
+
+### Questions with buttons
+
+The agent always has `ask_question` (`src/questions.ts`): a short question and 2
+to 5 short options, optionally with **Other…** for an answer in the person's own
+words. The tool pauses the agent SDK run (it returns null from `onToolCalled`,
+so the run waits for that call's output) and the run step ends `waiting`, with
+the paused run (its messages and step count, not its costs or items) kept in the
+coordinator. Then, for question `n` (at most 3 per answer):
+
+1. `ask-n`: finishes the reply so far without a footer, posts the question with a button per option (`chat.postMessage`), stores its `ts` at once, keeps the meter's pending answer for the wait, and leaves the session `processing` so Slack's stop button stays.
+2. `answer-n`: `step.waitForEvent` (type `answer-n`, timeout 1 hour), between steps. The coordinator sends the event (`instance.sendEvent`, with the question number only) when the person answers or the thread is stopped.
+3. `close-n`: closes the question in the coordinator (answered, expired, or stopped: cancelled, paused or uninstalled) and shows that on its message.
+4. `resume-n`: continues the paused run with the answer as the call's output (`continueStream`), like the run step: one retry, every earlier attempt's cost counted against the $0.50 limit, and the 12 steps spanning the whole answer.
+
+Only the person the turn answers can answer; anyone else who clicks gets a
+private note, and the first answer wins (a double click changes nothing). They
+answer with a button, the Other form (`views.open`, then `view_submission`), or
+a message in the thread, which is taken as the answer and isn't metered as a new
+one. Anyone else who writes meanwhile is queued and told privately whose answer
+it waits for. Unanswered, the question says it expired after an hour, and the
+answer ends there and is counted (the person saw it). Stopping the thread while
+it waits ends it uncounted. The coordinator times a waiting turn out 20 minutes
+after its question closes, not after the turn started. Step outputs and the
+Workflow event hold ids and statuses only; the question, options and answer live
+in the coordinator.
+
+### Home tab
+
+`app_home_opened` for the `home` tab publishes the person's Home tab
+(`views.publish`, `src/home.ts`): how to use the agent, its model, whether their
+Phaseo account is connected (with the Connect button when connecting would let
+them use the agent or ask about usage), and this month's answers in the Slack
+workspace for someone linked to a member of the workspace. It holds settings and
+counts, never message text.
+
+### Usage tools
 
 The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
 `find_models`. They are offered only when the installation's `usage_data_mode`

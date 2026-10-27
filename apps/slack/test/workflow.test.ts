@@ -1,13 +1,17 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest } from "../src/agent";
+import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
-import type { TurnRequest } from "../src/coordinator";
-import type { Installation } from "../src/installations";
+import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { processEvent, type SlackEnvelope } from "../src/events";
+import { hostedApp, type Installation } from "../src/installations";
+import { handleInteraction } from "../src/interactions";
+import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
-	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, HOSTED_APP_ID, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, WORKSPACE_ID, type TestWorld,
+	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
+	type SlackCall, type TestWorld,
 } from "./fakes";
 
 const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
@@ -18,6 +22,16 @@ const USER = "00000000-0000-4000-8000-0000000000d1";
 class FakeStep implements StepRunner {
 	outputs: Array<{ name: string; attempt: number; output: unknown }> = [];
 	failures: Array<{ name: string; attempt: number }> = [];
+	waits: Array<{ name: string; type: string; timeout: string | number }> = [];
+	/** What happens while a turn waits for an event: by default nothing, and the wait times out. */
+	onWait: ((name: string) => Promise<"event" | "timeout">) | null = null;
+
+	async waitForEvent(name: string, options: { type: string; timeout: string | number }): Promise<unknown> {
+		this.waits.push({ name, ...options });
+		if ((this.onWait ? await this.onWait(name) : "timeout") === "timeout") throw new Error(`waitForEvent ${name} timed out`);
+		return { type: options.type, payload: {}, timestamp: new Date(0) };
+	}
+
 	async do<T>(name: string, config: StepConfig, callback: (context: { attempt: number }) => Promise<T>): Promise<T> {
 		for (let attempt = 1; ; attempt += 1) {
 			try {
@@ -157,8 +171,10 @@ describe("AgentTurnWorkflow", () => {
 			model: "phaseo/auto",
 			endUser: `slack:${TEAM_ID}:U0PERSON01`,
 			labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
-			tools: [],
 		});
+		// Every answer can ask the person a question.
+		expect(request.tools.map((tool) => tool.id)).toEqual(["ask_question"]);
+		expect(request.resume).toBeUndefined();
 		expect(request.prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
 		expect(request.instructions).toContain("can't see this workspace's Phaseo usage");
 	});
@@ -205,7 +221,7 @@ describe("AgentTurnWorkflow", () => {
 
 	it("offers usage tools only where usage_data_mode allows and to a linked member", async () => {
 		const agent = new ScriptedAgent(async () => answer());
-		const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id);
+		const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
 		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["connect_phaseo_account"]);
@@ -540,7 +556,7 @@ describe("AgentTurnWorkflow", () => {
 
 		it("isn't offered where linking wouldn't bring the usage tools, nor to someone already linked", async () => {
 			const agent = new ScriptedAgent(async () => answer());
-			const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id);
+			const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
 			// A channel that usage_data_mode doesn't cover.
 			await runTurn(deps(agent), await startTurn({ channel: "C0CHANNEL1" }), step);
 			expect(toolIds()).toEqual([]);
@@ -772,6 +788,363 @@ describe("AgentTurnWorkflow", () => {
 		expect(agent.requests).toHaveLength(0);
 		expect(world.slack.calls).toHaveLength(0);
 		expect(meter().usage(NOW).pending).toBe(0);
+	});
+
+	describe("questions with buttons", () => {
+		const QUESTION_TS = "1792600100.000002";
+		/** The paused run the runner hands back; the turn keeps it in the coordinator and passes it back as it is. */
+		const PAUSED = {
+			run: { id: "run_q", agentId: "phaseo-slack-agent", status: "waiting_for_human", input: null, messages: [{ role: "user", content: "hello" }], stepCount: 1, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-21T12:00:00.000Z" },
+			steps: [], stepResults: [], messages: [], items: [],
+		} as unknown as PausedRun;
+
+		type Asking = { before?: string; question?: Record<string, unknown>; costs?: [number, number]; after?: (request: AgentTurnRequest) => Promise<string> };
+
+		/** An agent that writes `before`, asks with the real ask_question tool (which pauses the run), then answers from the person's answer. */
+		function askingAgent(options: Asking = {}) {
+			const [firstCost, secondCost] = options.costs ?? [0.1, 0.05];
+			return new ScriptedAgent(async (request, hooks) => {
+				if (!request.resume) {
+					if (options.before) await hooks.onText(options.before);
+					await hooks.onStep({ costUsd: firstCost });
+					const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+					const paused = await tool.onToolCalled!(options.question ?? { question: "Which region?", options: ["EU", "US"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+					if (paused !== null) throw new Error(`question refused: ${JSON.stringify(paused)}`);
+					return { costUsd: firstCost, model: "openai/gpt-test", stopReason: null, paused: PAUSED };
+				}
+				await hooks.onText(options.after ? await options.after(request) : "Done.");
+				return answer("openai/gpt-test", secondCost);
+			});
+		}
+
+		function click(turn: TurnRef, user: string, choice: number | "other") {
+			return handleInteraction(world.deps, hostedApp(world.env)!, {
+				type: "block_actions",
+				api_app_id: HOSTED_APP_ID,
+				team: { id: TEAM_ID },
+				user: { id: user, team_id: TEAM_ID },
+				channel: { id: turn.channel },
+				container: { channel_id: turn.channel, message_ts: QUESTION_TS, thread_ts: turn.threadTs },
+				message: { ts: QUESTION_TS, thread_ts: turn.threadTs },
+				trigger_id: "1337.42.abcdef",
+				actions: [{ action_id: choice === "other" ? "question_other" : `question_answer_${choice}`, value: answerValue(turn.threadTs, turn.turnId, 1, choice) }],
+			});
+		}
+
+		/** Updates of the question's message (replies are updated with markdown_text, never blocks). */
+		const questionUpdates = () => world.slack.of("chat.update").filter((call) => Array.isArray(call.args.blocks));
+		const context = (call: SlackCall) => JSON.stringify((call.args.blocks as unknown[]).at(-1));
+
+		it("posts the question with buttons, waits for the answer, and continues the run from it as one answer", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent({
+				before: "One thing first.",
+				after: async (request) => {
+					expect(request.resume?.toolOutputs).toEqual([{ toolCallId: "call_q1", output: { answered: true, answer: "EU" } }]);
+					expect(request.resume?.run).toEqual(JSON.parse(JSON.stringify(PAUSED)));
+					// The earlier run's spend counts against the turn's limit.
+					expect(request.maxCostUsd).toBeCloseTo(0.4, 9);
+					// No step left after this one: the tool says so instead of pausing.
+					const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+					expect(await tool.onToolCalled!({ question: "Again?", options: ["Yes", "No"] }, { stepIndex: 11, toolCall: { id: "call_q2" } } as never)).toMatchObject({ asked: false, error: expect.stringContaining("no steps left") });
+					return "Using EU.";
+				},
+			});
+			step.onWait = async () => {
+				// The answer is in progress past the meter's usual 30 minutes, and the coordinator won't time it out while it waits.
+				expect(meter().usage(NOW + 45 * 60_000).pending).toBe(1);
+				expect(storageOf(coordinatorOf(turn)).alarm).toBe(NOW + 60 * 60_000 + TURN_TIMEOUT_MS);
+				await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("answered");
+				return "event";
+			};
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+			const recipient = { recipient_user_id: "U0PERSON01", recipient_team_id: TEAM_ID };
+			expect(world.slack.calls.map((call) => [call.method, call.args.ts ?? null])).toEqual([
+				["agents.sessions.setStatus", null],
+				["chat.startStream", null],
+				// The reply before the question is finished, without a footer.
+				["chat.stopStream", "1792600100.000001"],
+				["chat.postMessage", null],
+				["agents.sessions.setStatus", null],
+				// The click shows the answer at once; the close step shows it again.
+				["chat.update", QUESTION_TS],
+				["chat.update", QUESTION_TS],
+				// The answer after the question is a new message, with the footer for the whole answer.
+				["chat.startStream", null],
+				["chat.stopStream", "1792600100.000003"],
+			]);
+			expect(world.slack.of("chat.stopStream")[0].args).toEqual({ channel: "C0CHANNEL1", ts: "1792600100.000001" });
+			const [question] = world.slack.of("chat.postMessage");
+			expect(question.args).toMatchObject({ channel: "C0CHANNEL1", thread_ts: turn.threadTs, text: "Which region?\nOnly <@U0PERSON01> can answer. This question expires in an hour." });
+			expect((question.args.blocks as Array<{ type: string; elements?: Array<Record<string, unknown>> }>)[1].elements!.map((button) => [button.action_id, (button.text as { text: string }).text, button.value])).toEqual([
+				["question_answer_0", "EU", `${turn.threadTs}|${turn.turnId}|1|0`],
+				["question_answer_1", "US", `${turn.threadTs}|${turn.turnId}|1|1`],
+			]);
+			expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "processing"]);
+			const answered = questionUpdates().at(-1)!;
+			expect(answered.args.text).toBe("Which region?\n<@U0PERSON01> chose: EU");
+			expect((answered.args.blocks as unknown[]).map((block) => (block as { type: string }).type)).toEqual(["section", "context"]);
+			expect(world.slack.of("chat.startStream")[1].args).toEqual({ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Using EU.", ...recipient });
+			expect(world.slack.of("chat.stopStream")[1].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.1500") }] }]);
+
+			expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 1, pending: 0 });
+			expect(coordinatorOf(turn).workingMemory().map((entry) => [entry.text, entry.ts])).toEqual([
+				["One thing first.", "1792600100.000001"],
+				["You asked <@U0PERSON01>: Which region? (options: EU, US). <@U0PERSON01> chose: EU", QUESTION_TS],
+				["Using EU.", "1792600100.000003"],
+			]);
+			expect(coordinatorOf(turn).knownMessages()).toEqual([turn.messageTs, "1792600100.000001", QUESTION_TS, "1792600100.000003"]);
+
+			expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "ask-1", "close-1", "resume-1", "reply", "finish"]);
+			expect(step.waits).toEqual([{ name: "answer-1", type: "answer-1", timeout: "1 hour" }]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
+			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ status: "answered", costNanos: 150_000_000 });
+			const stored = JSON.stringify(step.outputs);
+			for (const text of ["Which region", "One thing", "Using EU", "\"EU\""]) expect(stored).not.toContain(text);
+		});
+
+		it("lets only the person asked answer, tells anyone else privately, and takes one answer however often they click", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent({ after: async (request) => `You chose ${(request.resume?.toolOutputs[0].output as { answer: string }).answer}.` });
+			step.onWait = async () => {
+				await expect(click(turn, "U0PERSON02", 1)).resolves.toBe("refused");
+				await expect(click(turn, "U0PERSON01", 1)).resolves.toBe("answered");
+				await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("refused");
+				await expect(click(turn, "U0PERSON02", 0)).resolves.toBe("refused");
+				return "event";
+			};
+			turn = await startTurn();
+			await runTurn(deps(agent), turn, step);
+			expect(agent.requests).toHaveLength(2);
+			expect(world.slack.of("chat.startStream").at(-1)?.args.markdown_text).toBe("You chose US.");
+			// A second click on their own answer needs no note.
+			expect(world.slack.ephemerals().map((call) => [call.args.user, call.args.text, call.args.thread_ts])).toEqual([
+				["U0PERSON02", "Only <@U0PERSON01> can answer this question.", turn.threadTs],
+				["U0PERSON02", "Only <@U0PERSON01> can answer this question.", turn.threadTs],
+			]);
+			// After the answer ended, the question is closed.
+			await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("refused");
+			expect(world.slack.ephemerals().at(-1)?.args.text).toBe("This question is closed, so I can't take an answer to it now. Ask me again in the thread.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("expires after an hour without an answer: says so on the question, ends the answer politely, and still counts it", async () => {
+			const agent = askingAgent();
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "expired" });
+			expect(agent.requests).toHaveLength(1);
+			expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "ask-1", "close-1", "reply", "finish"]);
+			const [expired] = questionUpdates();
+			expect(expired.args.text).toBe("Which region?\nNo answer within an hour, so I stopped here. Ask me again when you're ready.");
+			expect(context(expired)).not.toContain("question_answer");
+			// Nothing streamed before the question, so there's no other message.
+			expect(world.slack.of("chat.startStream")).toHaveLength(0);
+			expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "processing", "active"]);
+			// The person saw the question: it's their answer.
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+			expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["You asked <@U0PERSON01>: Which region? (options: EU, US). No answer within an hour, so I stopped here. Ask me again when you're ready."]);
+			await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("refused");
+		});
+
+		it("stops at once when the thread is stopped while it waits, and doesn't count the answer", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent();
+			step.onWait = async () => {
+				await coordinatorOf(turn).cancel(NOW);
+				return "event";
+			};
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(agent.requests).toHaveLength(1);
+			expect(questionUpdates().at(-1)?.args.text).toBe("Which region?\nStopped before an answer.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+			expect(coordinatorOf(turn).status()).toMatchObject({ running: null });
+		});
+
+		it("doesn't go on when the thread is stopped after the answer came in, nor once the installation is paused", async () => {
+			let turn!: TurnRef;
+			step.onWait = async () => {
+				await click(turn, "U0PERSON01", 0);
+				await coordinatorOf(turn).cancel(NOW);
+				return "event";
+			};
+			const agent = askingAgent();
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(agent.requests).toHaveLength(1);
+
+			step = new FakeStep();
+			step.onWait = async () => {
+				await click(turn, "U0PERSON01", 0);
+				await install({ status: "paused" });
+				return "event";
+			};
+			const paused = askingAgent();
+			turn = await startTurn();
+			await expect(runTurn(deps(paused), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(paused.requests).toHaveLength(1);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("ends at once, without waiting, when the thread is stopped while the question is being posted", async () => {
+			let turn!: TurnRef;
+			// The stop lands after Slack posted the question but before the coordinator opened it.
+			world.slack.nextTs = () => {
+				world.slack.nextTs = null;
+				void coordinatorOf(turn).cancel(NOW);
+				return QUESTION_TS;
+			};
+			const agent = askingAgent();
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(step.waits).toEqual([]);
+			expect(agent.requests).toHaveLength(1);
+			expect(questionUpdates().at(-1)?.args.text).toBe("Which region?\nStopped before an answer.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("reads access again after a question: usage tools taken away while it waited aren't offered, and a removed link stops the answer", async () => {
+			world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
+			world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
+			let turn!: TurnRef;
+			let resumedTools: string[] = [];
+			const agent = askingAgent({ after: async (request) => { resumedTools = request.tools.map((tool) => tool.id); return "Done."; } });
+			step.onWait = async () => {
+				world.db.tables.workspace_members = [];
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			turn = await startTurn({ channel: "D0DIRECT01" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests[0].tools.map((tool) => tool.id)).toContain("get_spend");
+			expect(resumedTools).not.toContain("get_spend");
+
+			// Only linked people may use it, and the link went while it waited: the answer stops there.
+			step = new FakeStep();
+			await install({ access_mode: "linked" });
+			world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
+			step.onWait = async () => {
+				world.db.tables.slack_user_links = [];
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			const stopped = askingAgent();
+			turn = await startTurn({ channel: "D0DIRECT01" });
+			world.slack.calls = [];
+			await expect(runTurn(deps(stopped), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(stopped.requests).toHaveLength(1);
+			// The person is told why, privately, and the session isn't left processing.
+			expect(world.slack.ephemerals().map((call) => [call.args.user, call.args.text])).toEqual([
+				["U0PERSON01", "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this."],
+			]);
+			expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status).at(-1)).toBe("active");
+			// Not counted: only the first answer is, and no place is held.
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("keeps the meter places of turns queued behind a question for as long as it waits", async () => {
+			let turn!: TurnRef;
+			step.onWait = async () => {
+				expect(meter().usage(NOW + 45 * 60_000).pending).toBe(2);
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			turn = await startTurn();
+			// Someone else asks in the same thread before the question goes out: queued behind it.
+			const coordinator = coordinatorOf(turn);
+			meter().admit({
+				settings: { id: INSTALLATION_ID, workspace_id: WORKSPACE_ID, status: "active", plan_people: 100, over_plan: "refuse", max_people: null, monthly_cap_nanos: 100_000_000_000, answers_per_person_hour: 60, allow_guests: true, allow_external_users: false },
+				slackUserId: "U0PERSON02", facts: { isBot: false, isExternal: false, isGuest: false }, eventId: "Ev0QUEUED01", now: NOW,
+			});
+			await expect(coordinator.enqueue({
+				threadKey: turn.threadKey, eventId: "Ev0QUEUED01", installationId: INSTALLATION_ID, teamId: TEAM_ID, channel: turn.channel, threadTs: turn.threadTs,
+				messageTs: "1792600000.009999", slackUserId: "U0PERSON02", kind: "mention", text: `<@${BOT_USER_ID}> me next`,
+			}, NOW)).resolves.toMatchObject({ status: "queued" });
+			await expect(runTurn(deps(askingAgent()), turn, step)).resolves.toEqual({ status: "answered" });
+		});
+
+		it("takes a reply in the thread from the person asked as their answer, and tells anyone else who writes that it's waiting", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent({ after: async (request) => JSON.stringify(request.resume?.toolOutputs[0].output) });
+			const inThread = (user: string, text: string, eventId: string, ts: string) =>
+				processEvent(world.deps, hostedApp(world.env)!, eventEnvelope(mention({ user, text, ts, thread_ts: turn.threadTs, event_ts: ts }), { event_id: eventId }) as SlackEnvelope);
+			step.onWait = async () => {
+				await expect(inThread("U0PERSON02", `<@${BOT_USER_ID}> can I ask something?`, "Ev0OTHER001", "1792600050.000100")).resolves.toBe("queued");
+				// Queued behind the question: its place is kept as long as the question's, past the meter's usual 30 minutes.
+				expect(meter().usage(NOW + 45 * 60_000).pending).toBe(2);
+				await expect(inThread("U0PERSON01", `<@${BOT_USER_ID}> Germany, please`, "Ev0REPLY001", "1792600050.000200")).resolves.toBe("answered_question");
+				return "event";
+			};
+			turn = await startTurn();
+			await runTurn(deps(agent), turn, step);
+			expect(world.slack.of("chat.startStream").at(-1)?.args.markdown_text).toBe(JSON.stringify({ answered: true, answer: "Germany, please", in_their_own_words: true }));
+			expect(world.slack.ephemerals().map((call) => [call.args.user, call.args.text])).toEqual([
+				["U0PERSON02", "I'm waiting for <@U0PERSON01> to answer my question in this thread. I'll answer you after that."],
+			]);
+			expect(questionUpdates().at(-1)?.args.text).toBe("Which region?\n<@U0PERSON01> answered in the thread: Germany, please");
+			// Their reply wasn't a new answer: one counted, and only the other person's message holds a place.
+			expect(meter().usage(NOW)).toMatchObject({ people: 2, answers: 1, pending: 1 });
+		});
+
+		it("opens a form for their own words with Other, and continues from what they wrote", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent({
+				question: { question: "Which region?", options: ["EU", "US"], allow_other: true },
+				after: async (request) => JSON.stringify(request.resume?.toolOutputs[0].output),
+			});
+			step.onWait = async () => {
+				await expect(click(turn, "U0PERSON02", "other")).resolves.toBe("refused");
+				await expect(click(turn, "U0PERSON01", "other")).resolves.toBe("form_opened");
+				const [opened] = world.slack.of("views.open");
+				const view = opened.args.view as { callback_id: string; private_metadata: string };
+				expect(opened.args.trigger_id).toBe("1337.42.abcdef");
+				expect(view).toMatchObject({ type: "modal", callback_id: "question_other", private_metadata: `C0CHANNEL1|${turn.threadTs}|${turn.turnId}|1` });
+				await expect(handleInteraction(world.deps, hostedApp(world.env)!, {
+					type: "view_submission",
+					api_app_id: HOSTED_APP_ID,
+					team: { id: TEAM_ID },
+					user: { id: "U0PERSON01", team_id: TEAM_ID },
+					view: { callback_id: "question_other", private_metadata: view.private_metadata, state: { values: { answer: { answer: { value: "Somewhere in <Asia>" } } } } },
+				})).resolves.toBe("answered");
+				return "event";
+			};
+			turn = await startTurn();
+			await runTurn(deps(agent), turn, step);
+			const [question] = world.slack.of("chat.postMessage");
+			expect(JSON.stringify(question.args.blocks)).toContain("\"action_id\":\"question_other\"");
+			expect(context(question)).toContain("You can also reply in this thread.");
+			expect(world.slack.of("chat.startStream").at(-1)?.args.markdown_text).toBe(JSON.stringify({ answered: true, answer: "Somewhere in <Asia>", in_their_own_words: true }));
+			// Their words are shown as they wrote them, not as Slack markup.
+			expect(questionUpdates().at(-1)?.args.text).toBe("Which region?\n<@U0PERSON01> answered: Somewhere in &lt;Asia&gt;");
+			expect(world.slack.ephemerals().map((call) => call.args.text)).toEqual(["Only <@U0PERSON01> can answer this question."]);
+		});
+
+		it("doesn't run the model after the answer when the run before the question used the whole limit", async () => {
+			let turn!: TurnRef;
+			const agent = askingAgent({ costs: [0.5, 0] });
+			step.onWait = async () => {
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests).toHaveLength(1);
+			expect(world.slack.of("chat.startStream").at(-1)?.args.markdown_text).toBe("_I stopped here to keep this answer within its $0.50 cost limit._");
+			expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.5000", "Auto") }] }]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("ends the answer with a private note when the question can't be posted", async () => {
+			world.slack.failures.set("chat.postMessage", ["channel_not_found", "channel_not_found", "channel_not_found", "channel_not_found"]);
+			const agent = askingAgent();
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(step.waits).toEqual([]);
+			expect(world.slack.ephemerals().map((call) => call.args.text)).toEqual(["Sorry, something went wrong while I was answering. Please try again."]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
 	});
 
 	it("ends the turn with a private reply when the run step fails outright", async () => {

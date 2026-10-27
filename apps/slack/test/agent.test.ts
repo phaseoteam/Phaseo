@@ -1,6 +1,7 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest, type PausedRun } from "../src/agent";
+import { askQuestionTool, type QuestionDraft } from "../src/questions";
 
 function sse(events: unknown[]): Response {
 	return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "Content-Type": "text/event-stream" } });
@@ -167,6 +168,60 @@ describe("the SDK agent runner", () => {
 		const text = turnErrorText("model_not_allowed");
 		expect(text).toBe("The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.");
 		expect(text).not.toMatch(/guardrail|policy|alpha|provider/i);
+	});
+
+	it("pauses at ask_question, keeps the run small, and continues it from the answer, spending only the new run's cost", async () => {
+		const bodies: Array<Record<string, any>> = [];
+		const askCall = { type: "function_call", id: "fc_1", call_id: "call_q1", name: "ask_question", arguments: JSON.stringify({ question: "Which region?", options: ["EU", "US"] }) };
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			bodies.push((await capture(input, init)).body);
+			if (bodies.length === 1) {
+				return sse([
+					{ type: "response.output_text.delta", delta: "One thing first." },
+					{ type: "response.completed", response: { id: "resp_q", model: "openai/gpt-test", status: "completed", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "One thing first." }] }, askCall], usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15, cost: 0.003 } } },
+				]);
+			}
+			return sse([{ type: "response.output_text.delta", delta: "Using EU." }, { ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Using EU." }] }], usage: { ...COMPLETED.response.usage, cost: 0.002 } } }]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const asked: QuestionDraft[] = [];
+		const tool = () => askQuestionTool({ refusal: () => null, onAsk: (question) => { asked.push(question); } });
+		const hooks = { onText: async () => undefined, onStep: async () => undefined };
+
+		const first = await runner.run(request({ tools: [tool()] }), hooks);
+		expect(asked).toEqual([{ callId: "call_q1", text: "Which region?", options: ["EU", "US"], other: false }]);
+		expect(first).toMatchObject({ costUsd: 0.003, model: "openai/gpt-test", stopReason: null });
+		expect(first.paused?.run.status).toBe("waiting_for_human");
+		// What is kept: the conversation and one entry per step, without costs, items or the prompt input.
+		const kept = JSON.parse(JSON.stringify(first.paused)) as PausedRun;
+		expect(kept.stepResults).toEqual([{ stepIndex: 0, text: "", toolCalls: [], toolResults: [], usage: { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 } }]);
+		expect(kept.steps).toEqual([expect.objectContaining({ index: 0, model: "openai/gpt-test" })]);
+		expect(kept.run).toMatchObject({ input: null, stepCount: 1, usage: { cost: 0 } });
+		expect(kept.run.pause?.pendingToolCalls?.map((entry) => entry.call.id)).toEqual(["call_q1"]);
+
+		const second = await runner.run(request({ tools: [tool()], maxCostUsd: 0.497, resume: { run: kept, toolOutputs: [{ toolCallId: "call_q1", output: { answered: true, answer: "EU" } }] } }), hooks);
+		expect(second).toEqual({ costUsd: 0.002, model: "openai/gpt-test", stopReason: null });
+		expect(bodies).toHaveLength(2);
+		// The continued request carries the whole conversation and the answer as the question's output.
+		const input = JSON.stringify(bodies[1].input);
+		expect(input).toContain("New message from <@U0PERSON01>");
+		expect(input).toContain("call_q1");
+		expect(input).toContain("EU");
+	});
+
+	it("counts the steps before a question toward the 12-step limit of the continued run", async () => {
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const paused: PausedRun = {
+			run: { id: "run_1", agentId: "phaseo-slack-agent", status: "waiting_for_human", input: null, messages: [{ role: "user", content: "hello" }, { role: "assistant", content: "", toolCalls: [{ id: "call_q1", name: "ask_question", input: { question: "Which?", options: ["A", "B"] } }] }], pause: { reason: "Pending tool calls require input", requestedAt: "2026-10-21T12:00:00.000Z", kind: "hitl", pendingToolCalls: [{ call: { id: "call_q1", name: "ask_question", input: { question: "Which?", options: ["A", "B"] } }, kind: "hitl" }] }, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-21T12:00:00.000Z", stepCount: 11 },
+			steps: [],
+			stepResults: Array.from({ length: 11 }, (_, stepIndex) => ({ stepIndex, text: "", toolCalls: [], toolResults: [], usage: { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 } })),
+			output: undefined, messages: [], items: [],
+		};
+		const output = await runner.run(request({ tools: [askQuestionTool({ refusal: () => null, onAsk: () => undefined })], resume: { run: paused, toolOutputs: [{ toolCallId: "call_q1", output: { answered: true, answer: "A" } }] } }), { onText: async () => undefined, onStep: async () => undefined });
+		// 11 steps before the question: the continued run's first step is the twelfth, and the limit stops it there.
+		expect(fetchImpl).toHaveBeenCalledTimes(1);
+		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "step_count:12" });
 	});
 
 	it("surfaces a gateway refusal from a streamed request as an error the turn can classify", async () => {

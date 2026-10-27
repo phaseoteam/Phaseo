@@ -199,4 +199,22 @@ describe("routes", () => {
 		}
 		await expect(settled()).resolves.toEqual(["acknowledged", "acknowledged"]);
 	});
+
+	it("closes the Other form at once with an empty 200, and takes the answer after", async () => {
+		const payload = {
+			type: "view_submission",
+			api_app_id: HOSTED_APP_ID,
+			team: { id: TEAM_ID },
+			user: { id: "U0PERSON01", team_id: TEAM_ID },
+			view: { callback_id: "question_other", private_metadata: "C0CHANNEL1|1792600000.000100|1|1", state: { values: { answer: { answer: { value: "Friday" } } } } },
+		};
+		const response = await signed("/interactions", new URLSearchParams({ payload: JSON.stringify(payload) }).toString(), { contentType: "application/x-www-form-urlencoded" });
+		expect(response.status).toBe(200);
+		await expect(response.text()).resolves.toBe("");
+		// No turn waits on that question here: they're told privately it's closed.
+		await expect(settled()).resolves.toEqual(["refused"]);
+		expect(world.slack.ephemerals().map((call) => call.args)).toEqual([
+			{ channel: "C0CHANNEL1", user: "U0PERSON01", text: "This question is closed, so I can't take an answer to it now. Ask me again in the thread.", thread_ts: "1792600000.000100" },
+		]);
+	});
 });
