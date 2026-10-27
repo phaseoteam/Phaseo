@@ -5,7 +5,7 @@
 ```mdx
 <Update label="October 24, 2026" tags={["Product"]} rss={{ title: "October 24, 2026: Product" }}>
 
-- Short product change, with a [docs link](./guides/example.mdx).
+- Short product change, with a [docs link](/v1/guides/broadcast).
 - Another product change.
 
 </Update>
@@ -18,7 +18,7 @@
 
 <Update label="October 24, 2026" tags={["Models"]} rss={{ title: "October 24, 2026: Models" }}>
 
-![Model name model release artwork](../images/model-releases/2026-10-24--provider--model.png)
+![Model name model release artwork](/images/model-releases/2026-10-24--provider--model.png)
 
 - [Provider: Model Name](https://phaseo.app/models/provider/model-id)
 
@@ -31,7 +31,7 @@ Rules:
 - `rss.title` is `<label>: <tag>`, so feed readers can tell same-day entries apart.
 - No `##`/`###` headings and no styled `<p>` labels inside or between updates. The tag already names the category.
 - No `***` separators.
-- Image paths are relative: `../images/...` from `changelog.mdx`, and `../../images/...` from `changelog/*.mdx`. On locale pages, add one more `../`, or use the absolute `/images/...`.
+- Image paths: either relative (`../images/...` from `changelog.mdx`, `../../images/...` from `changelog/*.mdx`, one more `../` on locale pages) or root-absolute `/images/...`, which works everywhere.
 
 ## Models entries
 

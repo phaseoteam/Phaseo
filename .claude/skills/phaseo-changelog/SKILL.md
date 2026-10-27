@@ -1,6 +1,6 @@
 ---
 name: phaseo-changelog
-description: Write and maintain the Phaseo docs changelog (`apps/docs/v1/changelog.mdx` and `apps/docs/v1/changelog/*.mdx`, plus the 8 locale copies) in the tagged `<Update>` format that Mintlify's filters need. Use when adding entries, backfilling product or API/SDK changes from merged PRs, adding model releases, or auditing changelog pages.
+description: Write and maintain the Phaseo docs changelog (`apps/docs/v1/changelog.mdx` and `apps/docs/v1/changelog/*.mdx`, plus the 8 locale copies) in the tagged Update-component format that Mintlify filters need. Use when adding entries, backfilling product or API/SDK changes from merged PRs, adding model releases, or auditing changelog pages.
 ---
 
 # Phaseo Changelog
