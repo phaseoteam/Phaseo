@@ -5448,6 +5448,69 @@ module Phaseo
     # @!attribute [rw] search_context_size
     #   @return [String, nil]
     WebSearchPlugin = Struct.new(:enabled, :engine, :exclude_domains, :id, :include_domains, :max_results, :max_uses, :search_context_size, keyword_init: true)
+    # @!attribute [rw] audience
+    #   @return [String]
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] issuer
+    #   @return [String]
+    # @!attribute [rw] key_id
+    #   @return [String]
+    # @!attribute [rw] last_used_at
+    #   @return [String, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] owner_id
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [String]
+    # @!attribute [rw] status
+    #   @return [String]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_id, :provider, :status, :updated_at, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    WorkloadIdentityPolicyDeleteResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] issuer
+    #   @return [String, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] owner_id
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [String]
+    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_id, :provider, keyword_init: true)
+    # @!attribute [rw] audience
+    #   @return [String]
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    WorkloadIdentityPolicyListResponse = Struct.new(:audience, :data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    WorkloadIdentityPolicyResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    WorkloadIdentityPolicyUpdateInput = Struct.new(:claim_conditions, :max_token_lifetime_seconds, :name, :status, keyword_init: true)
+    WorkloadIdentityProvider = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by
