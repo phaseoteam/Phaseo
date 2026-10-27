@@ -190,7 +190,11 @@ Text files up to 1 MB are edited in place and saved automatically half a second 
 
 ### Terminal
 
-A terminal fills its tab, with split side by side, split stacked, new terminal and close in a small cluster at the top right (`Ctrl+D`, `Ctrl+Shift+D`, `Ctrl+N` and `Ctrl+W` while a terminal has focus). A tab holds up to four terminals per split group; with more than one terminal, a list on the right switches between them. A terminal closes when its process exits. A chat's terminals can also open in a drawer under the chat (280 pixels tall by default, 180 pixels up to three quarters of the window; drag its top edge to resize).
+A terminal fills its tab, with split side by side, split stacked, new terminal and close in a small cluster at the top right (`Ctrl+D`, `Ctrl+Shift+D`, `Ctrl+N` and `Ctrl+W` while a terminal has focus). A tab holds up to four terminals per split group; with more than one terminal, a list on the right switches between them. A terminal closes when its process exits.
+
+As in T3 Code, right-click a terminal for **Copy**, **Paste**, **Select all**, **Clear** and **Add to chat**, which puts the selected output into the open chat's composer as a quoted `text` block headed with the terminal's name. Web addresses in the output open in the chat's browser (Ctrl-click or ⌘-click: the system browser). File paths open in the Files pane: relative ones are read from the terminal's folder, `file:line`, `file:line:column` and `file(line,column)` scroll to and highlight that line, and only paths inside the chat's project are links. Scrolled up from the newest output, **Jump to latest** brings you back.
+
+A chat's terminals can also open in a drawer under the chat (280 pixels tall by default, 180 pixels up to three quarters of the window; drag its top edge to resize).
 
 ## Code chats: settle and snooze
 
