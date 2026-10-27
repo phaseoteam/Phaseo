@@ -51,16 +51,19 @@ export function noteAccess(installation: Pick<Installation, "memory_enabled">, t
 const NOTES_HOW = "Save one with remember only when someone asks you to remember, pin or track something, or for a lasting fact the team will need again, such as a decision, a convention or a deadline. Write a short note in your own words; never copy whole messages or threads.";
 const NOTE_TOOLS_HOW = "Use recall before saying you don't know something you may have been told, update_todo to tick off a to-do, and forget when someone asks you to.";
 const SKILLS_HOW = "Saved skills are instructions people saved for tasks they repeat. When a request matches one, call use_skill and follow what it says. Call save_skill only when someone explicitly asks you to save a skill.";
+/** Skills apply to the whole workspace, so someone from another organisation can use them but not save them. */
+const SKILLS_HOW_EXTERNAL = "Saved skills are instructions people saved for tasks they repeat. When a request matches one, call use_skill and follow what it says. The person asking is from another organisation, so they can't save skills; if they ask, say someone in this workspace can save it.";
 
-/** What the agent is told about its memory and skills, for the turn's note access. */
-export function memoryInstructions(access: NoteAccess): string[] {
+/** What the agent is told about its memory and skills, for the turn's note access and whether the person is from another organisation. */
+export function memoryInstructions(access: NoteAccess, external = false): string[] {
+	const skills = external ? SKILLS_HOW_EXTERNAL : SKILLS_HOW;
 	switch (access) {
 		case "off":
-			return ["This workspace's admins have turned your memory (notes, pins and to-dos) off. If someone asks you to remember, pin or track something, say an admin has turned memory off in Phaseo.", SKILLS_HOW];
+			return ["This workspace's admins have turned your memory (notes, pins and to-dos) off. If someone asks you to remember, pin or track something, say an admin has turned memory off in Phaseo.", skills];
 		case "conversation":
-			return [`You have a memory for this conversation: notes, pins and to-dos. The person asking is from another organisation, so you can only see and save this conversation's notes; if they ask you to keep something for the whole workspace, save it for this conversation and say so. ${NOTES_HOW} ${NOTE_TOOLS_HOW}`, SKILLS_HOW];
+			return [`You have a memory for this conversation: notes, pins and to-dos. The person asking is from another organisation, so you can only see and save this conversation's notes; if they ask you to keep something for the whole workspace, save it for this conversation and say so. ${NOTES_HOW} ${NOTE_TOOLS_HOW}`, skills];
 		case "workspace":
-			return [`You have a memory for this Slack workspace: notes, pins and to-dos. ${NOTES_HOW} Keep it to this conversation unless they ask for the whole workspace. ${NOTE_TOOLS_HOW}`, SKILLS_HOW];
+			return [`You have a memory for this Slack workspace: notes, pins and to-dos. ${NOTES_HOW} Keep it to this conversation unless they ask for the whole workspace. ${NOTE_TOOLS_HOW}`, skills];
 	}
 }
 
@@ -182,9 +185,11 @@ export type MemoryToolContext = {
 	notes: string[];
 	/** Which notes the turn can see and save (noteAccess). Off: only the skill tools. */
 	access: NoteAccess;
+	/** The person is from another organisation: they can use skills but not save them. */
+	external?: boolean;
 };
 
-/** The note tools the turn's access allows, then the skill tools, which every turn gets. */
+/** The note tools the turn's access allows, then the skill tools, which every turn gets (without save_skill for someone from another organisation). */
 export function memoryTools(context: MemoryToolContext): AgentTool<any, any>[] {
 	return [...(context.access === "off" ? [] : noteTools(context, context.access === "workspace")), ...skillTools(context)];
 }
@@ -307,7 +312,7 @@ function noteTools(context: MemoryToolContext, workspace: boolean): AgentTool<an
 
 function skillTools(context: MemoryToolContext): AgentTool<any, any>[] {
 	const { db, installationId, slackUserId, notes } = context;
-	return [
+	const tools: AgentTool<any, any>[] = [
 		{
 			id: "save_skill",
 			description: "Save a skill: named instructions for a task people repeat, which anyone can then ask you to use. Only when someone explicitly asks you to save a skill.",
@@ -383,4 +388,5 @@ function skillTools(context: MemoryToolContext): AgentTool<any, any>[] {
 			},
 		},
 	];
+	return context.external ? tools.filter((tool) => tool.id !== "save_skill") : tools;
 }

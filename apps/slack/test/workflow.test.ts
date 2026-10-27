@@ -250,10 +250,10 @@ describe("AgentTurnWorkflow", () => {
 		world.db.failingRpcs.add("load_slack_agent_turn_memory");
 		await runTurn(deps(agent), await startTurn(), step);
 		expect(agent.requests[1].prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
-		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, "ask_question"]);
 	});
 
-	it("shows someone from another organisation only this conversation's notes, and keeps skills", async () => {
+	it("shows someone from another organisation only this conversation's notes, and lets them use skills but not save them", async () => {
 		world.db.rpcResults.load_slack_agent_turn_memory = {
 			pins: [
 				{ id: "00000000-0000-4000-8000-0000000000e1", scope: "channel", text: "Release notes go out on Tuesdays.", created_at: "2026-10-20T09:00:00Z" },
@@ -273,7 +273,9 @@ describe("AgentTurnWorkflow", () => {
 		expect(request.prompt).not.toContain("fiscal year");
 		expect(request.prompt).toContain("- Weekly report: Summarise the week.");
 		expect(request.instructions).toContain("The person asking is from another organisation");
-		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+		// Skills apply to the whole workspace: they can use them, not save them.
+		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS.filter((id) => id !== "save_skill"), "ask_question"]);
+		expect(request.instructions).toContain("they can't save skills");
 		expect((request.tools.find((tool) => tool.id === "remember")!.parameters as any).properties.scope.enum).toEqual(["conversation"]);
 
 		// Someone from this organisation in the same thread sees the workspace's too.
@@ -291,7 +293,7 @@ describe("AgentTurnWorkflow", () => {
 		const agent = new ScriptedAgent(async () => answer());
 		await runTurn(deps(agent), await startTurn(), step);
 		const [request] = agent.requests;
-		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS]);
+		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS, "ask_question"]);
 		expect(request.prompt).toBe([
 			"Saved skills (call use_skill to load one):",
 			"- Weekly report: Summarise the week.",
@@ -318,7 +320,7 @@ describe("AgentTurnWorkflow", () => {
 		world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["get_spend", "get_credit_balance", "get_key_usage", "find_models"]);
-		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS]);
+		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, "ask_question"]);
 		expect(agent.requests.at(-1)!.instructions).toContain("You can look up this Phaseo workspace's spend");
 		// The same member in a channel: only with dm_and_channels and the channel listed.
 		await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
