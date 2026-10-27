@@ -25,10 +25,12 @@ const vercel = (overrides = {}) => {
 
 try {
   const sql = await migration('_workload_identity_policies.sql');
-  // The migration must carry the declarative definitions verbatim.
-  for (const file of ['public/tables/workload_identity_policies.sql', 'public/functions/create_workload_identity_policy.sql', 'public/functions/active_workload_identity_issuers.sql']) {
+  const capSql = await migration('_workload_identity_policy_cap.sql');
+  // The migrations must carry the current declarative definitions verbatim.
+  for (const file of ['public/tables/workload_identity_policies.sql', 'public/functions/active_workload_identity_issuers.sql']) {
     assert.ok(sql.includes(await readFile(new URL(file, schemas), 'utf8')), `migration includes ${file}`);
   }
+  assert.ok(capSql.includes(await readFile(new URL('public/functions/create_workload_identity_policy.sql', schemas), 'utf8')), 'cap migration includes create_workload_identity_policy.sql');
   const keysSchema = await readFile(new URL('public/tables/keys.sql', schemas), 'utf8');
   for (const constraint of sql.match(/ADD CONSTRAINT "keys_[a-z_]+" CHECK \(.*\);/g)) {
     assert.ok(keysSchema.includes(constraint.replace(/^ADD /, '').replace(/;$/, '')), `keys.sql has ${constraint}`);
@@ -55,6 +57,7 @@ try {
     insert into public.workspaces(id) values ('${ws}');
   `);
   await db.exec(sql);
+  await db.exec(capSql);
 
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);
@@ -85,6 +88,20 @@ try {
   const [policy] = await rows('select * from public.workload_identity_policies where id = $1', [created.policy_id]);
   assert.equal(policy.max_token_lifetime_seconds, 43200);
   assert.deepEqual(policy.claim_conditions, { project_id: ['prj_1'], environment: ['production'] });
+
+  // The cap holds at 50 policies per workspace, without leaving a stray key.
+  const capWorkspace = '20000000-0000-4000-8000-000000000009';
+  await db.exec('reset role');
+  await db.exec(`insert into public.workspaces(id) values ('${capWorkspace}')`);
+  await db.exec('set role service_role');
+  const atCap = (await rows('select count(*)::int as n from public.workload_identity_policies where workspace_id = $1', [capWorkspace]))[0].n;
+  assert.equal(atCap, 0);
+  for (let i = 0; i < 50; i += 1) {
+    await rows(create, [capWorkspace, ...vercel({ name: `Cap ${i}`, owner: `team_cap${i}` }).slice(1)]);
+  }
+  const keysBeforeCap = (await rows('select count(*)::int as n from public.keys where workspace_id = $1', [capWorkspace]))[0].n;
+  await assert.rejects(rows(create, [capWorkspace, ...vercel({ name: 'Over', owner: 'team_over' }).slice(1)]), /workload_identity_policy_limit/);
+  assert.equal((await rows('select count(*)::int as n from public.keys where workspace_id = $1', [capWorkspace]))[0].n, keysBeforeCap);
 
   // A rejected policy must not leave a stray secretless key behind.
   const before = (await rows('select count(*)::int as n from public.keys'))[0].n;
