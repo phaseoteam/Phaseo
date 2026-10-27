@@ -7,18 +7,25 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
 import { ModelStack, modelName } from "../chat/ModelPicker";
+import { useEffect, useState } from "react";
+import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
+import { requestFind } from "../chat/ChatFind";
 
 export function CommandPalette() {
 	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openUsage, selectedId, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
+	const [search, setSearch] = useState("");
+	const messageSearch = useMessageSearch(search, commandsOpen);
+	// The palette opens empty each time, as it did when its input kept its own value.
+	useEffect(() => { if (!commandsOpen) setSearch(""); }, [commandsOpen]);
 	const grouped = new Set(compareGroups.flatMap(group => group.taskIds));
 	const tasks = overview.tasks.filter(task => !task.delegation?.parentTaskId && !grouped.has(task.id)).slice(0, 200);
 	const projectName = (id?: string) => overview.projects.find(project => project.id === id)?.name;
 	const current = selectedId ? taskById(selectedId) : undefined, linked = current?.pullRequests ?? [];
 	return <CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
-		<CommandInput autoFocus placeholder="Search chats and commands…" wrapperClassName="p-2" />
+		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder="Search chats, messages and commands…" wrapperClassName="p-2" />
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
-			<CommandEmpty>Nothing matches.</CommandEmpty>
+			{!messageSearch.hits.length && !messageSearch.searching && <CommandEmpty>Nothing matches.</CommandEmpty>}
 			<CommandGroup heading="Actions">
 				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcut("chat.new")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => setMode("chat"))}><MessageSquare />Switch to Chat<CommandShortcut>{shortcut("mode.chat")}</CommandShortcut></CommandItem>
@@ -58,6 +65,7 @@ export function CommandPalette() {
 					<StatusDot task={task} />
 				</CommandItem>)}
 			</CommandGroup>}
+			<MessageSearchResults query={search} {...messageSearch} onOpen={hit => run(() => { select(hit.taskId); requestFind({ taskId: hit.taskId, query: search.trim(), messageId: hit.messageId }); })} />
 		</CommandList></ScrollArea>
 	</CommandDialog>;
 }
