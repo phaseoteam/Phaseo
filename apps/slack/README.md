@@ -86,8 +86,9 @@ Workflows), one per Slack event, kept for 1 day. It has five steps:
    - `user: slack:<team>:<user>`;
    - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
    - `x-title: Phaseo Slack agent`;
-   - `provider.data_collection: "deny"`;
    - the gateway's web search and fetch tools.
+
+   Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training or prompt publishing; providers that keep logs without training may answer), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400.
 
    It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
 4. `reply`: finishes the Slack message with a footer (model and cost). It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
@@ -114,7 +115,11 @@ they ask about usage, at most once per person in a thread.
 
 ## Secrets
 
-Set with `wrangler secret put <NAME> [--env production]`.
+Set production secrets with `wrangler secret put <NAME> --env production`.
+Without `--env production` the secret goes to the preview Worker, because
+secrets aren't shared between environments. CI deploys the production Worker
+on every push to `main`, and the deploy fails while a required secret is
+missing.
 
 | Secret | Required | What it is |
 |---|---|---|
@@ -126,6 +131,7 @@ Set with `wrangler secret put <NAME> [--env production]`.
 | `SLACK_APP_ID` | no | The hosted app's id. When set, `/events` refuses events for any other app. |
 | `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They are only needed when token rotation is on, to refresh bot tokens. |
 | `SLACK_SECRETS_ENCRYPTION_KEY_VERSION` | no | Defaults to `v1`. It must match web-api. |
+| `DISCORD_SIGNUP_WEBHOOK_URL` | no | Phaseo's internal Discord webhook, the same value as web-api. When set, removing the app inside Slack posts a short alert (workspace, Slack team, hosted or company app). Without it there is no alert. |
 
 Vars:
 - `ENV`.

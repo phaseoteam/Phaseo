@@ -1,4 +1,5 @@
 import { connectAccountMessage, forgetInstallationFacts, isLinked, linkUrl, lookupUserFacts, refusalText, type ReplyReason } from "./access";
+import { alertUninstalledInSlack } from "./alerts";
 import type { EnqueueResult } from "./coordinator";
 import type { Env } from "./env";
 import {
@@ -27,6 +28,8 @@ export type Deps = {
 	db: Db;
 	slack: (token: string) => SlackClient;
 	now: () => number;
+	/** Work that may finish after Slack is answered (the request's waitUntil). Without it, it is awaited. */
+	waitUntil?: (work: Promise<unknown>) => void;
 };
 
 export function defaultDeps(env: Env): Deps {
@@ -317,8 +320,9 @@ async function handleStop(deps: Deps, app: SlackAppContext, envelope: SlackEnvel
  * Slack sends both, in either order. One database call deletes the installation's
  * gateway key, marks it uninstalled and removes its guardrail (web-api's uninstall
  * order) and records slack_agent.uninstalled_in_slack. It is safe to repeat, and an
- * event older than a reinstall does nothing. Then the meter closes for good. Each
- * queued turn re-reads the installation before it runs, so none answers.
+ * event older than a reinstall does nothing. Then the meter closes for good and
+ * the Phaseo team gets an internal alert. Each queued turn re-reads the
+ * installation before it runs, so none answers.
  */
 async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEnvelope, event: SlackEvent): Promise<EventOutcome> {
 	const revokedBots = event.type === "tokens_revoked" ? (Array.isArray(event.tokens?.bot) ? event.tokens.bot : []) : null;
@@ -342,5 +346,9 @@ async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		console.error("[slack-agent] meter not closed after uninstall", { installationId: installation.id });
 	}
 	console.log("[slack-agent] uninstalled in Slack", { installationId: installation.id, event: event.type });
+	// Slack waits for this event's answer (up to three seconds), so the alert runs after it.
+	const alert = alertUninstalledInSlack(deps.env, deps.db, installation, revokedBots ? "tokens_revoked" : "app_uninstalled");
+	if (deps.waitUntil) deps.waitUntil(alert);
+	else await alert;
 	return "uninstalled";
 }

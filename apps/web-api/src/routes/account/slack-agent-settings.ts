@@ -16,7 +16,11 @@ export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
 export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
 export const DEFAULT_ALLOW_GUESTS = true;
 export const DEFAULT_ALLOW_EXTERNAL_USERS = false;
-export const DEFAULT_SLACK_AGENT_MODEL = "phaseo/auto";
+/**
+ * The model when an install doesn't choose one. Auto (phaseo/auto) is only open
+ * to some workspaces, so the default is a model every workspace can use.
+ */
+export const DEFAULT_SLACK_AGENT_MODEL = "openai/gpt-6-luna";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$/;
@@ -118,7 +122,7 @@ function usd(value: unknown, field: string, allowZero: boolean): Result<number> 
 
 function model(value: unknown): Result<string> {
 	const text = typeof value === "string" ? value.trim() : "";
-	return MODEL_PATTERN.test(text) ? ok(text) : fail("model must be a model id such as phaseo/auto");
+	return MODEL_PATTERN.test(text) ? ok(text) : fail("model must be a model id such as openai/gpt-6-luna");
 }
 
 function instructions(value: unknown): Result<string | null> {

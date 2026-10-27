@@ -15,5 +15,9 @@ export interface WorkspaceNotificationSettingsResponse {
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      billing_time_zone: string;
+      department_attribution: "all" | "primary";
+    };
   };
 }

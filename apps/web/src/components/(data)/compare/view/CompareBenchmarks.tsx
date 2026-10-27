@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareGroup, CompareRow, CompareSection, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
+import { ComparePeers } from "./ComparePeers";
 import { Segmented } from "./ComparePricing";
 import {
 	bestIndices,
@@ -15,7 +16,7 @@ import {
 	intervalsOverlap,
 	pickResult,
 } from "./compareViewMath";
-import type { CompareEffort, CompareViewBenchmark, CompareViewModel } from "./types";
+import type { CompareEffort, ComparePeerBoard, CompareViewBenchmark, CompareViewModel } from "./types";
 
 const AA_HEADLINE_ID = /^aa-intelligence-index(-v\d+)?$/;
 
@@ -129,7 +130,7 @@ function EffortBarCard({ benchmark, models, effort }: { benchmark: CompareViewBe
 	);
 }
 
-export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewModel[]; benchmarks: CompareViewBenchmark[] }) {
+export function CompareBenchmarks({ models, benchmarks, peers }: { models: CompareViewModel[]; benchmarks: CompareViewBenchmark[]; peers: ComparePeerBoard[] }) {
 	const t = useTranslations("Catalogue.compareView");
 	const ids = useMemo(() => models.map((model) => model.id), [models]);
 	const levels = useMemo(() => effortLevels(benchmarks, ids), [benchmarks, ids]);
@@ -188,6 +189,7 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 					{headline ? <EffortBarCard benchmark={headline} models={models} effort={effort} /> : null}
 				</div>
 			) : null}
+			<ComparePeers boards={peers} models={models} />
 			{rows.length ? (
 				<CompareGrid label={t("sharedBenchmarks")}>
 					{categories.map(([category, list]) => (

@@ -1,0 +1,14 @@
+interface:
+  display_name: "Phaseo Migration"
+  short_description: "Move an existing LLM integration to Phaseo"
+  brand_color: "#0069A8"
+  default_prompt: "Use $phaseo-migration to move this project's AI requests to Phaseo with a minimal diff."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "phaseo-docs"
+      description: "Phaseo documentation search"
+      transport: "streamable_http"
+      url: "https://phaseo.app/docs/mcp"

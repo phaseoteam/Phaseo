@@ -6,6 +6,7 @@ const db = new PGlite();
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const billing = await read('../migrations/20261021203244_slack_agent_billing.sql');
+const guardrailRule = await read('../migrations/20261026223103_slack_agent_guardrail_allows_logging_providers.sql');
 const migration = await read('../migrations/20261022113514_slack_agent_uninstall_from_slack.sql');
 const schemaFile = await read('../schemas/public/functions/uninstall_slack_agent_from_slack.sql');
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';
@@ -26,9 +27,10 @@ try {
     create table public.workspaces (id uuid primary key);
     create table public.keys (id uuid primary key, workspace_id uuid not null, hash text not null,
       status text not null default 'active', soft_blocked boolean not null default false, expires_at timestamptz);
-    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null, enabled boolean not null default true,
+    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null, description text, enabled boolean not null default true,
       privacy_enable_paid_may_train boolean not null default true, privacy_enable_free_may_train boolean not null default true,
-      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true);
+      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true,
+      updated_at timestamptz not null default now());
     create table public.key_guardrails (key_id uuid not null references public.keys(id) on delete cascade,
       guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade, primary key (key_id, guardrail_id));
     create table public.workspace_member_guardrails (workspace_id uuid not null, user_id uuid not null,
@@ -48,10 +50,11 @@ try {
       ('${SHARED_KEY}', '${SHARED_WORKSPACE}', 'hash-2'), ('${OTHER_KEY}', '${SHARED_WORKSPACE}', 'hash-3');
     insert into public.workspace_guardrails (id, workspace_id, privacy_enable_paid_may_train, privacy_enable_free_may_train,
       privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging)
-      values ('${GUARDRAIL}', '${WORKSPACE}', false, false, false, false), ('${SHARED_GUARDRAIL}', '${SHARED_WORKSPACE}', false, false, false, false);
+      values ('${GUARDRAIL}', '${WORKSPACE}', false, false, false, true), ('${SHARED_GUARDRAIL}', '${SHARED_WORKSPACE}', false, false, false, true);
     insert into public.key_guardrails values ('${KEY}', '${GUARDRAIL}'), ('${SHARED_KEY}', '${SHARED_GUARDRAIL}'), ('${OTHER_KEY}', '${SHARED_GUARDRAIL}');
   `);
   await db.exec(billing);
+  await db.exec(guardrailRule);
   await db.exec(migration);
   assert.ok(migration.includes(schemaFile), 'the migration matches the declarative definition');
 

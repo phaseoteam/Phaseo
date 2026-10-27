@@ -5703,7 +5703,7 @@ export type CreateRateLimitAssignmentParams = {
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -5759,7 +5759,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -8621,7 +8621,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -8660,7 +8660,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -11856,7 +11856,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -11909,7 +11909,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -12862,6 +12862,10 @@ export async function getWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      billing_time_zone: string;
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -12882,6 +12886,10 @@ export async function getWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        billing_time_zone: string;
+        department_attribution: "all" | "primary";
       };
     };
   }>({
@@ -14535,6 +14543,7 @@ export type ListDataModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -14656,6 +14665,7 @@ export type ListDataModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -16027,6 +16037,7 @@ export type ListModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -16148,6 +16159,7 @@ export type ListModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -17547,7 +17559,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -17601,7 +17613,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -17686,6 +17698,7 @@ export type ListTeamModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -17807,6 +17820,7 @@ export type ListTeamModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -19671,6 +19685,9 @@ export async function listWorkspaceNotificationRoutes(
     model_substitution: string[];
     payment_method_expiring: string[];
     rate_limit_throttled: string[];
+    spend_alert: string[];
+    spend_blocked: string[];
+    spend_report: string[];
   };
 }> {
   const { path, query, headers, body } = args;
@@ -19684,6 +19701,9 @@ export async function listWorkspaceNotificationRoutes(
       model_substitution: string[];
       payment_method_expiring: string[];
       rate_limit_throttled: string[];
+      spend_alert: string[];
+      spend_blocked: string[];
+      spend_report: string[];
     };
   }>({
     method: "GET",
@@ -23969,7 +23989,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -24029,7 +24049,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitPolicy(
   client: Client,
@@ -24636,7 +24656,10 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
-      | "broadcast_destination_failing";
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -24661,7 +24684,10 @@ export async function updateWorkspaceNotificationRoute(
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
-      | "broadcast_destination_failing";
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24678,7 +24704,10 @@ export async function updateWorkspaceNotificationRoute(
         | "model_deprecation"
         | "model_substitution"
         | "rate_limit_throttled"
-        | "broadcast_destination_failing";
+        | "broadcast_destination_failing"
+        | "spend_alert"
+        | "spend_blocked"
+        | "spend_report";
     };
   }>({
     method: "PUT",
@@ -24711,6 +24740,10 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       enabled: boolean;
       threshold_usd?: number;
     };
+    spend?: {
+      billing_time_zone?: string;
+      department_attribution?: "all" | "primary";
+    };
   };
 };
 
@@ -24737,6 +24770,10 @@ export async function updateWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      billing_time_zone: string;
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24757,6 +24794,10 @@ export async function updateWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        billing_time_zone: string;
+        department_attribution: "all" | "primary";
       };
     };
   }>({

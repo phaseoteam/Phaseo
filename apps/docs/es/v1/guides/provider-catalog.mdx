@@ -1,6 +1,6 @@
 ---
 title: "Publicar un catálogo de proveedor"
-description: "Publica feeds de modelos V1 o V1.1 con ofertas normalizadas por nivel de servicio y límites de uso."
+description: "Publica feeds de modelos V1, V1.1 o V1.2 con ofertas normalizadas por nivel de servicio, políticas de datos y límites de uso."
 icon: "list"
 ---
 
@@ -12,11 +12,11 @@ Los feeds V1 existentes siguen funcionando sin cambios. Un documento `{"data": [
 
 V1.1 declara `"schema_version": "1.1"` y publica `service_tiers` dentro de cada modelo. El importador selecciona el formato a partir del documento. Los parámetros de consulta de la URL, como `?format=phaseo-v1.1`, son convenciones opcionales de tu endpoint; Phaseo no deduce la versión a partir de la URL.
 
-Descarga el [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema) o el [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Las versiones no compatibles se rechazan de forma explícita.
+Descarga el [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema), el [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) o el [esquema V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). Las versiones no compatibles se rechazan de forma explícita.
 
-### Políticas de datos V1.2 (vista previa)
+### Políticas de datos V1.2
 
-V1.2 añade declaraciones de entrenamiento y retención específicas de cada capacidad a cada nivel de servicio. Coordina la activación con Phaseo antes de publicar estos campos; los importadores anteriores los rechazan. Los feeds V1 y V1.1 siguen siendo compatibles.
+V1.2 añade declaraciones de entrenamiento y retención específicas de cada capacidad a cada nivel de servicio. Puedes publicar V1.2 en cualquier momento. Phaseo valida las declaraciones al importarlas, pero no otorgan ninguna garantía hasta que Phaseo apruebe tu fuente de políticas. Los feeds V1 y V1.1 siguen siendo compatibles.
 
 V1.2 también acepta `declarations` opcionales por modelo o nivel para la identidad del modelo, límites tipados de entrada/salida, descripciones de parámetros, precios y capacidad por ámbito, descuentos y detalles de despliegue. Se validan y conservan para su revisión. No habilitan parámetros ni cambian automáticamente los precios facturables, la aplicación de límites de capacidad o las garantías de residencia. Los resultados de validación identifican las declaraciones almacenadas; sigue publicando los precios y capacidades efectivos mediante sus campos existentes.
 

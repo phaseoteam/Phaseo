@@ -1,6 +1,7 @@
 import {
 	autoRoutingFlag,
 	requestClassifiersFlag,
+	workloadIdentityFlag,
 	batchApiFlag,
 	enterpriseSelfServePreviewEnabled,
 	realtimeVoiceFlag,
@@ -18,9 +19,10 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 	// Explicitly opt this boundary into request time so Cache Components does not
 	// attempt to evaluate those values during prerendering.
 	await connection();
-	const [autoRouting, classifiers, slackAgent, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
+	const [autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
 		autoRoutingFlag().catch(() => false),
 		requestClassifiersFlag().catch(() => false),
+		workloadIdentityFlag().catch(() => false),
 		slackAgentSettingsEnabled(),
 		enterpriseSelfServePreviewEnabled().catch(() => false),
 		batchApiFlag().catch(() => false),
@@ -34,7 +36,7 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 		<SearchWrapper
 			{...props}
 			isAdmin={Boolean(authHeader?.user?.id) && authHeader?.userRole === "admin"}
-			capabilities={{ autoRouting, classifiers, slackAgent, enterprise, webhooks, video, realtime, games }}
+			capabilities={{ autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games }}
 			accountQueryScope={toAccountQueryScope({
 				userId: authHeader?.user?.id,
 				workspaceId: authHeader?.currentTeamId,

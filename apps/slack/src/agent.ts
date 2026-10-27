@@ -17,9 +17,11 @@ import { withoutTrailingSlashes } from "./url";
 // gateway. The real runner uses @phaseo/agent-sdk against the gateway through the
 // PHASEO_API service binding, with the installation's managed key.
 //
-// Every request carries the Slack data rules: provider data_collection "deny"
-// (no provider that trains on or keeps prompts), and the key itself stores no
-// content (never_store_content, set at install).
+// The Slack data rules live on the installation's key, not in the request: its
+// "Slack agent" guardrail allows no provider that trains on prompts (the gateway
+// applies it from provider data-policy metadata), and the key stores no
+// content (never_store_content, set at install). The request must not send
+// provider.data_collection: the gateway rejects "deny" with a 400.
 
 export const AGENT_ID = "phaseo-slack-agent";
 export const MAX_STEPS = 12;
@@ -138,7 +140,6 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 					headers: { "x-title": APP_TITLE, "x-phaseo-metadata": requestLabelsHeader(request.labels) },
 				},
 				model: request.model,
-				provider: { data_collection: "deny" },
 				user: request.endUser,
 				gatewayTools: GATEWAY_TOOLS,
 			}), (usd) => {
@@ -169,7 +170,30 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 	};
 }
 
-export type TurnErrorKind = "no_credits" | "cap_reached" | "model_unavailable" | "failed";
+export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "failed";
+
+/**
+ * Gateway refusals that won't change on a retry, because the agent's model can't
+ * be used with its key: no provider meets its guardrail, or a workspace policy
+ * blocks the model or its providers. The gateway names them in
+ * `error_operational_kind`. Guardrails that block a message's content (prompt
+ * injection, sensitive info) aren't among them.
+ */
+const MODEL_NOT_ALLOWED_CODES = new Set([
+	"data_handling_policy_no_routes",
+	"provider_restricted_by_policy",
+	"model_restricted_by_policy",
+	"auto_routing_feature_flag_disabled",
+]);
+
+/**
+ * A workspace without Auto Routing gets a plain `not_supported` for phaseo/auto,
+ * with no more specific reason. The gateway uses the same code for unrelated
+ * refusals, so it only means "model not allowed" when the agent asked for Auto.
+ */
+function isAutoModel(model: string | null | undefined): boolean {
+	return typeof model === "string" && model.trim().toLowerCase().startsWith("phaseo/auto");
+}
 
 function errorCodes(error: unknown): { status: number | null; codes: string[]; failedProviders: number } {
 	// The SDK wraps gateway errors as AgentGatewayError; fromUnknown also reads anything that isn't.
@@ -178,18 +202,20 @@ function errorCodes(error: unknown): { status: number | null; codes: string[]; f
 	if (!gateway) return { status: null, codes: [], failedProviders: 0 };
 	const body = (gateway.body && typeof gateway.body === "object" ? gateway.body : {}) as Record<string, unknown>;
 	const nested = body.error && typeof body.error === "object" ? body.error as Record<string, unknown> : {};
-	const codes = [gateway.reason, gateway.errorType, body.code, body.error, nested.code, nested.type, nested.reason]
+	const codes = [gateway.reason, gateway.errorType, body.code, body.error, body.error_operational_kind, nested.code, nested.type, nested.reason]
 		.filter((value): value is string => typeof value === "string")
 		.map((value) => value.toLowerCase());
 	return { status: gateway.status, codes, failedProviders: gateway.failedProviders.length };
 }
 
-/** Which plain reply a failed turn gets. */
-export function classifyTurnError(error: unknown): TurnErrorKind {
+/** Which plain reply a failed turn gets. `model` is the model the agent asked for. */
+export function classifyTurnError(error: unknown, model?: string | null): TurnErrorKind {
 	const { status, codes, failedProviders } = errorCodes(error);
 	if (status === null) return "failed";
 	if (status === 402 || codes.some((code) => /insufficient_(funds|quota|credits)/.test(code))) return "no_credits";
 	if (codes.some((code) => /(_limit_reached|_budget_reached|key_limit_exceeded|spend_limit)/.test(code))) return "cap_reached";
+	if (codes.some((code) => MODEL_NOT_ALLOWED_CODES.has(code))) return "model_not_allowed";
+	if (isAutoModel(model) && codes.includes("not_supported")) return "model_not_allowed";
 	if (status === 404 || codes.some((code) => /(model_not_found|model_unavailable|unsupported_model|no_.*providers?|not_found_error)/.test(code))
 		|| (status >= 500 && failedProviders > 0)) return "model_unavailable";
 	return "failed";
@@ -201,6 +227,8 @@ export function turnErrorText(kind: TurnErrorKind): string {
 			return "This Phaseo workspace is out of credits, so I can't answer right now. An admin can add credits in Phaseo billing.";
 		case "cap_reached":
 			return "The Phaseo agent's monthly spending limit on its Phaseo key has been reached. An admin can raise it in Phaseo settings.";
+		case "model_not_allowed":
+			return "The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.";
 		case "model_unavailable":
 			return "The model this agent uses isn't available right now. Please try again in a few minutes, or an admin can choose another model in Phaseo settings.";
 		case "failed":

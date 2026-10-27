@@ -26,11 +26,11 @@ try {
       id uuid primary key default gen_random_uuid(), workspace_id uuid not null, name text, hash text, prefix text, status text,
       scopes jsonb, created_by uuid, kid text unique, key_kind text not null default 'standard', oauth_client_id text, oauth_user_id uuid,
       oauth_scopes text[], oauth_resource text, issued_via text not null default 'dashboard', expires_at timestamptz,
-      constraint keys_issued_via_check check (issued_via in ('dashboard', 'oauth_pkce', 'cli')));
+      constraint keys_issued_via_check check (issued_via in ('dashboard', 'oauth_pkce', 'cli', 'workload_identity')));
     insert into public.workspace_members values ('${ws}', '${user}');
-    insert into public.keys (workspace_id, issued_via) values ('${ws}', 'oauth_pkce');
+    insert into public.keys (workspace_id, issued_via) values ('${ws}', 'oauth_pkce'), ('${ws}', 'workload_identity');
   `);
-  const migration = await readFile(new URL('../migrations/20261026220751_desktop_session_keys.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261027094126_desktop_session_keys.sql', import.meta.url), 'utf8');
   await db.exec(migration); await db.exec(migration);
   const schema = await readFile(new URL('../schemas/public/functions/issue_desktop_session_key.sql', import.meta.url), 'utf8');
   assert.ok(migration.includes(schema.slice(schema.indexOf('declare'), schema.indexOf('$function$;'))), 'the schema file matches the migration');
@@ -62,6 +62,8 @@ try {
   await db.exec(`update public.oauth_authorizations set revoked_at = now()`);
   await db.exec('set role service_role'); await issue(ws); await db.exec('reset role');
   assert.deepEqual((await db.query('select scopes, revoked_at from public.oauth_authorizations')).rows, [{ scopes: ['gateway:access', 'models:read'], revoked_at: null }]);
+  // Keys from OIDC workload identity (#3243) still pass the widened check.
+  await db.exec(`insert into public.keys (workspace_id, issued_via) values ('${ws}', 'workload_identity')`);
   await assert.rejects(db.exec(`insert into public.keys (workspace_id, issued_via) values ('${ws}', 'other')`), /keys_issued_via_check/);
   console.log('desktop session keys: ok');
 } finally {

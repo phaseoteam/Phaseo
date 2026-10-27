@@ -23,7 +23,7 @@ Phaseo エージェントは Slack で質問に回答します。チャンネル
 <Steps>
 <Step title="動作を選ぶ">
 
-**設定 → Slack** を開きます。**Slack に追加** で、モデル、エージェントを利用できる人、利用状況データを共有できる場所、上限（下の「上限」を参照）を選びます。**自動** を選ぶと、Phaseo が質問ごとに適したモデルを選びます。これらはすべて後から変更できます。
+**設定 → Slack** を開きます。**Slack に追加** で、モデル、エージェントを利用できる人、利用状況データを共有できる場所、上限（下の「上限」を参照）を選びます。ワークスペースで自動ルーティングを利用できる場合は、**自動** を選ぶと Phaseo が質問ごとに適したモデルを選びます。利用できない場合は特定のモデルを選んでください。これらはすべて後から変更できます。
 
 </Step>
 
@@ -43,7 +43,7 @@ Slack のアプリ一覧からエージェントを開き、メッセージを�
 インストールすると、Phaseo ワークスペースに次の 2 つが作成されます。
 
 - **エージェント用の API キー。** Phaseo が管理するため、API キーの一覧には表示されません。エージェントのモデルのトークンはこのキーで課金されます。
-- **そのキーに付く Slack agent という名前のガードレール。** Slack のメッセージを学習とログから除外します（下の「データとプライバシー」を参照）。
+- **そのキーに付く Slack agent という名前のガードレール。** Slack のメッセージを学習から除外します（下の「データとプライバシー」を参照）。
 
 1 つの Slack ワークスペースに同時に追加できるのは、1 つの Phaseo ワークスペースのエージェントだけです。
 
@@ -173,11 +173,10 @@ Slack のアプリ一覧からエージェントを開き、メッセージを�
 
 ## データとプライバシー
 
-Slack の API 利用規約では、Slack のデータでの学習もデータの保持も認められていないため、エージェントは次のように設定されています。
+Slack の API 利用規約では、Slack のデータでの学習もデータのアーカイブも認められていないため、エージェントは次のように設定されています。
 
 - **Phaseo のログにメッセージの内容を残しません。** エージェントの API キーは、ワークスペースの設定にかかわらず、リクエストやレスポンスの内容をログ、キャッシュ、テレメトリーのどこにも保存しません。リクエスト自体は内容なしで利用状況とログに表示され、[リクエストラベル](./request-labels.mdx) `app=slack-agent`、`slack_team`、`slack_channel` と[アプリのタイトル](./app-attribution.mdx) `Phaseo Slack agent` が付きます。
-- **学習もログを取るプロバイダーも使いません。** **Slack agent** [ガードレール](../cookbook/guardrails-for-api-keys.mdx)は、有料・無料モデルでの学習、プロンプトの公開、入出力をログに残すプロバイダーをオフにします。
-- **データを収集しません。** すべてのリクエストで、データを収集しないプロバイダーを指定します（`provider.data_collection: "deny"`）。
+- **プロンプトで学習するプロバイダーは使いません。** **Slack agent** [ガードレール](../cookbook/guardrails-for-api-keys.mdx)は、有料・無料モデルでの学習とプロンプトの公開をオフにするため、プロンプトで学習するプロバイダーは使われません。ログを保持しても学習には使わないプロバイダーは回答できます。こうしたプロバイダーは、自社のポリシーに従ってメッセージの内容をログに保持する場合があります。Phaseo 自身のログ、キャッシュ、テレメトリーにはメッセージの内容は保存されません。
 - **作業メモリは短期間だけ保持します。** エージェントはスレッドごとに、最近の自分の回答、使ったツールについての短いメモ、順番を待っているメッセージ、どこから読むかを判断するためのスレッドの最近のメッセージの ID（本文は含みません）、接続ボタンを送った相手を保持します。これらはスレッドの最後のアクティビティから 7 日後に削除されます。
 - **何もアーカイブしません。** Phaseo は Slack のものを何もアーカイブしません。エージェント自身のログには、Slack の ID とステータスだけが残ります。
 - **シークレットは暗号化します。** ボットトークンと Slack アプリのシークレットは暗号化して保存し、二度と表示しません。
@@ -224,7 +223,7 @@ Slack でアプリの **App Manifest** ページを開きます。2 つのリク
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -327,6 +326,7 @@ Phaseo はインストール時に、Slack にちょうど次のボットトー�
 | "Connect your Phaseo account to use the Phaseo agent here." | アクセスが **連携済みのアカウントのみ** です。 | Slack アカウントを連携します（上の「Slack アカウントを連携する」を参照）。 |
 | "I'm still working through earlier messages in this thread." | このスレッドではすでに 5 件のメッセージが待っています。 | それらの回答を待ちます。 |
 | "Sorry, I couldn't check your Slack account just now." | Slack が照会に応答しませんでした。 | 1 分後にもう一度試します。 |
+| "The model chosen for this agent isn't available to the Slack agent." | ゲートウェイがエージェントのキーでそのモデルを使えません。自動ルーティングなしで **自動** を選んでいるか、**Slack agent** ガードレールを満たすプロバイダーがそのモデルにありません。 | **設定 → Slack** で別のモデルを選びます。 |
 
 エージェントがまったく返信しない場合：
 

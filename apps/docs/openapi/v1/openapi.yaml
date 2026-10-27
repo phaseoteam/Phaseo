@@ -4846,9 +4846,8 @@ paths:
       summary: List rate limit policies
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, department,
-        guardrail and end-user-default assignments; concurrent_requests is not
-        enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -4870,9 +4869,9 @@ paths:
       summary: Create a rate limit policy
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
-        concurrent request limits. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, department, guardrail and
-        end-user-default assignments; concurrent_requests is not enforced yet.
+        concurrent request limits. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4908,9 +4907,9 @@ paths:
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
       description: >-
-        Returns one rate limit policy. The gateway enforces requests_per_minute
-        and tokens_per_minute for key, member, department, guardrail and
-        end-user-default assignments; concurrent_requests is not enforced yet.
+        Returns one rate limit policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -4933,9 +4932,9 @@ paths:
       description: >-
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
-        gateway enforces requests_per_minute and tokens_per_minute for key,
-        member, department, guardrail and end-user-default assignments;
-        concurrent_requests is not enforced yet.
+        gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4963,9 +4962,8 @@ paths:
       summary: Delete a rate limit policy
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, department,
-        guardrail and end-user-default assignments; concurrent_requests is not
-        enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4988,9 +4986,9 @@ paths:
       summary: List rate limit assignments
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
-        target type. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, department, guardrail and
-        end-user-default assignments; concurrent_requests is not enforced yet.
+        target type. The gateway enforces requests_per_minute, tokens_per_minute
+        and concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       parameters:
         - name: policy_id
           in: query
@@ -5044,9 +5042,9 @@ paths:
       description: >-
         Applies a policy to one API key, workspace member, department, or
         guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, department, guardrail and
-        end-user-default assignments; concurrent_requests is not enforced yet.
+        can have one policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5083,9 +5081,8 @@ paths:
       summary: Get a rate limit assignment
       description: >-
         Returns one rate limit assignment. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, department,
-        guardrail and end-user-default assignments; concurrent_requests is not
-        enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -5107,9 +5104,8 @@ paths:
       summary: Change an assignment's policy
       description: >-
         Switches the policy applied to an assignment's target. The gateway
-        enforces requests_per_minute and tokens_per_minute for key, member,
-        department, guardrail and end-user-default assignments;
-        concurrent_requests is not enforced yet.
+        enforces requests_per_minute, tokens_per_minute and concurrent_requests
+        for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5137,9 +5133,8 @@ paths:
       summary: Delete a rate limit assignment
       description: >-
         Removes a policy from its target. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, department,
-        guardrail and end-user-default assignments; concurrent_requests is not
-        enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -15836,6 +15831,7 @@ components:
         - cursor
         - cyfragovpl
         - databricks
+        - dealignai
         - decart
         - deepseek
         - dots-studio
@@ -22718,12 +22714,42 @@ components:
         model_deprecation:
           type: boolean
       additionalProperties: false
+    WorkspaceSpendAttribution:
+      type: string
+      description: >-
+        How spend rules count a person's spend toward departments when their key
+        has no department of its own: all counts it toward every department they
+        belong to; primary counts it toward their primary department only. A
+        key's own department always wins.
+      enum:
+        - all
+        - primary
+    WorkspaceBillingTimeZone:
+      type: string
+      maxLength: 64
+      description: >-
+        IANA time zone for the calendar periods of spend rules that have no time
+        zone of their own, and for spend reports. Defaults to UTC. Enforced key
+        limits and workspace budgets always use UTC.
+      example: Europe/London
+    WorkspaceSpendSettings:
+      type: object
+      required:
+        - department_attribution
+        - billing_time_zone
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+      additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
       required:
         - auto_top_up
         - low_balance_email
         - email_preferences
+        - spend
       properties:
         auto_top_up:
           $ref: '#/components/schemas/WorkspaceAutoTopUpSettings'
@@ -22731,6 +22757,8 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailSettings'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferences'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettings'
       additionalProperties: false
     WorkspaceNotificationSettingsResponse:
       type: object
@@ -22794,6 +22822,17 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettingsUpdate'
+      additionalProperties: false
+    WorkspaceSpendSettingsUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -22932,6 +22971,9 @@ components:
         - model_substitution
         - rate_limit_throttled
         - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -22942,6 +22984,9 @@ components:
         - model_substitution
         - rate_limit_throttled
         - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
       properties:
         low_balance:
           type: array
@@ -22974,6 +23019,21 @@ components:
             type: string
             format: uuid
         broadcast_destination_failing:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_alert:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_blocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_report:
           type: array
           items:
             type: string
@@ -24884,6 +24944,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
+        - deepseek/deepseek-v4.1-flash-1017
         - deepseek/deepseek-v4.1-flash-beta
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b

@@ -92,7 +92,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 	const t = useTranslations("SettingsUI.slack");
 	const hosted = view.configured.hosted_app;
 	const customApp = view.configured.custom_app ? view.custom_app : null;
-	const [draft, setDraft] = useState<SlackInstallDraft>(() => installDraftDefaults(!hosted && Boolean(customApp)));
+	const [draft, setDraft] = useState<SlackInstallDraft>(() => installDraftDefaults(!hosted && Boolean(customApp), view.auto_routing === true));
 	const [problem, setProblem] = useState<SlackDraftProblem | null>(null);
 	const [error, setError] = useState<ActionError | null>(null);
 	const [pending, startInstall] = useTransition();
@@ -133,7 +133,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 			{!hosted ? <Notice>{customApp ? t("install.customAppOnly", { appId: customApp.slack_app_id }) : t("install.hostedUnavailable")}</Notice> : null}
 
 			<Section title={t("sections.agent")}>
-				<ModelField value={draft.model} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
+				<ModelField value={draft.model} autoAvailable={view.auto_routing === true} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
 			</Section>
 			<Section title={t("sections.access")}>
 				<AccessField value={draft.accessMode} disabled={busy} onChange={(mode) => set("accessMode", mode)} />
@@ -233,6 +233,8 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 
 	const month = installation.month;
 	const number = (value: number) => value.toLocaleString(locale);
+	// Null or missing when web-api couldn't read it: say so rather than show $0.00.
+	const modelSpend = (value: number | null | undefined) => (typeof value === "number" ? formatUsd(value) : t("month.modelSpendUnavailable"));
 	const statusLabel = status === "active" || status === "paused" || status === "payment_due" ? t(`status.${status}`) : status;
 
 	return (
@@ -255,16 +257,17 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			{status === "paused" ? <Notice>{t("installed.pausedNote")}</Notice> : null}
 
 			<Section title={t("sections.month")} description={month ? t("month.note", { date: chargeMonth(month.period_start, locale) }) : undefined}>
-				<dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				<dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 					<Stat label={t("month.people")} value={number(month?.people ?? 0)} detail={t("month.peopleDetail")} />
 					<Stat label={t("month.answers")} value={number(month?.answers ?? 0)} detail={t("month.included", { count: number((month?.people ?? 0) * INCLUDED_ANSWERS_PER_PERSON) })} />
-					<Stat label={t("month.estimate")} value={formatUsd(month?.estimated_charge_usd ?? 0)} detail={t("month.cap", { cap: formatUsd(installation.settings.monthly_cap_usd) })} />
 					<Stat label={t("month.plan")} value={t("month.planValue", { people: number(plan.people) })} detail={t("month.planPrice", { price: formatUsd(plan.price_usd) })} />
+					<Stat label={t("month.estimate")} value={formatUsd(month?.estimated_charge_usd ?? 0)} detail={t("month.cap", { cap: formatUsd(installation.settings.monthly_cap_usd) })} />
+					<Stat label={t("month.modelSpend")} value={modelSpend(month?.model_spend_usd)} detail={t("month.modelSpendDetail")} />
 				</dl>
 			</Section>
 
 			<Section title={t("sections.agent")}>
-				<ModelField value={draft.model} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
+				<ModelField value={draft.model} autoAvailable={view.auto_routing === true} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
 				<div className="space-y-1.5">
 					<Label htmlFor="slack-instructions">{t("instructions.label")}</Label>
 					<Textarea id="slack-instructions" value={draft.instructions} rows={4} maxLength={MAX_INSTRUCTIONS_CHARS} disabled={busy} placeholder={t("instructions.placeholder")} aria-invalid={problem?.field === "instructions" || undefined} aria-describedby="slack-instructions-help" onChange={(event) => set("instructions", event.target.value)} />
@@ -319,6 +322,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 									<TableHead className="text-right">{t("charges.people")}</TableHead>
 									<TableHead className="text-right">{t("charges.answers")}</TableHead>
 									<TableHead className="text-right">{t("charges.amount")}</TableHead>
+									<TableHead className="text-right">{t("charges.modelSpend")}</TableHead>
 									<TableHead>{t("charges.status")}</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -329,6 +333,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 										<TableCell className="text-right tabular-nums">{number(charge.people)}</TableCell>
 										<TableCell className="text-right tabular-nums">{number(charge.answers)}</TableCell>
 										<TableCell className="text-right tabular-nums">{formatUsd(charge.amount_usd)}</TableCell>
+										<TableCell className="text-right tabular-nums">{modelSpend(charge.model_spend_usd)}</TableCell>
 										<TableCell>{charge.status === "charged" ? t("charges.charged") : t("charges.pending")}</TableCell>
 									</TableRow>
 								))}
@@ -337,7 +342,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 					</div>
 				) : <p className="text-sm text-muted-foreground">{t("charges.empty")}</p>}
 				<p className="text-xs text-muted-foreground">
-					{t("charges.note")} <Link href="/settings/credits/transactions" className="underline underline-offset-4">{t("charges.transactions")}</Link>
+					{view.charges.length ? <>{t("charges.modelSpendNote")} </> : null}{t("charges.note")} <Link href="/settings/credits/transactions" className="underline underline-offset-4">{t("charges.transactions")}</Link>
 				</p>
 			</Section>
 

@@ -23,7 +23,7 @@ accountSettingsWorkspaceUsersRouter.get("/workspace-users/:userId", async (c) =>
 	const [member, workspace, keys] = await Promise.all([
 		context.client.from("workspace_members").select("role,joined_at").eq("workspace_id", context.workspaceId).eq("user_id", userId).maybeSingle(),
 		context.client.from("workspaces").select("owner_user_id").eq("id", context.workspaceId).maybeSingle(),
-		context.client.from("keys").select("id,workspace_id,name,prefix,status,created_at,last_used_at,expires_at", { count: "exact" }).eq("workspace_id", context.workspaceId).eq("created_by", userId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }).order("id").range((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+		context.client.from("keys").select("id,workspace_id,name,prefix,status,created_at,last_used_at,expires_at", { count: "exact" }).eq("workspace_id", context.workspaceId).eq("created_by", userId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).neq("key_kind", "workload_identity").order("created_at", { ascending: false }).order("id").range((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
 	]);
 	if (member.error || workspace.error || keys.error) return c.json({ error: "user_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!member.data && workspace.data?.owner_user_id !== userId && !keys.count) {

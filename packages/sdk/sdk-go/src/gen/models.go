@@ -2829,6 +2829,7 @@ const (
 	KnownModelIdDeepseekDeepseekV4FlashVisionExp KnownModelId = "deepseek/deepseek-v4-flash-vision-exp"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
 	KnownModelIdDeepseekDeepseekV4Pro0813 KnownModelId = "deepseek/deepseek-v4-pro-0813"
+	KnownModelIdDeepseekDeepseekV41Flash1017 KnownModelId = "deepseek/deepseek-v4.1-flash-1017"
 	KnownModelIdDeepseekDeepseekV41FlashBeta KnownModelId = "deepseek/deepseek-v4.1-flash-beta"
 	KnownModelIdDeepseekDeepseekV41FlashPreview KnownModelId = "deepseek/deepseek-v4.1-flash-preview"
 	KnownModelIdEarlyAccessEa29bA4b KnownModelId = "early-access/ea-29b-a4b"
@@ -4059,6 +4060,7 @@ const (
 	OrganisationIdCursor OrganisationId = "cursor"
 	OrganisationIdCyfragovpl OrganisationId = "cyfragovpl"
 	OrganisationIdDatabricks OrganisationId = "databricks"
+	OrganisationIdDealignai OrganisationId = "dealignai"
 	OrganisationIdDecart OrganisationId = "decart"
 	OrganisationIdDeepseek OrganisationId = "deepseek"
 	OrganisationIdDotsStudio OrganisationId = "dots-studio"
@@ -5410,6 +5412,8 @@ type WorkspaceAutoTopUpUpdate struct {
 	PaymentMethodId *string `json:"payment_method_id,omitempty"`
 }
 
+type WorkspaceBillingTimeZone = string
+
 type WorkspaceBudget struct {
 	CreatedAt string `json:"created_at"`
 	CreatedBy *string `json:"created_by,omitempty"`
@@ -5768,6 +5772,9 @@ const (
 	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
 	WorkspaceNotificationEventKindBroadcastDestinationFailing WorkspaceNotificationEventKind = "broadcast_destination_failing"
+	WorkspaceNotificationEventKindSpendAlert WorkspaceNotificationEventKind = "spend_alert"
+	WorkspaceNotificationEventKindSpendBlocked WorkspaceNotificationEventKind = "spend_blocked"
+	WorkspaceNotificationEventKindSpendReport WorkspaceNotificationEventKind = "spend_report"
 )
 
 
@@ -5784,6 +5791,9 @@ type WorkspaceNotificationRouteMap struct {
 	ModelSubstitution []string `json:"model_substitution"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
 	RateLimitThrottled []string `json:"rate_limit_throttled"`
+	SpendAlert []string `json:"spend_alert"`
+	SpendBlocked []string `json:"spend_blocked"`
+	SpendReport []string `json:"spend_report"`
 }
 
 type WorkspaceNotificationRouteResponse struct {
@@ -5802,6 +5812,7 @@ type WorkspaceNotificationSettings struct {
 	AutoTopUp map[string]interface{} `json:"auto_top_up"`
 	EmailPreferences map[string]interface{} `json:"email_preferences"`
 	LowBalanceEmail map[string]interface{} `json:"low_balance_email"`
+	Spend map[string]interface{} `json:"spend"`
 }
 
 type WorkspaceNotificationSettingsResponse struct {
@@ -5812,6 +5823,7 @@ type WorkspaceNotificationSettingsUpdateRequest struct {
 	AutoTopUp *map[string]interface{} `json:"auto_top_up,omitempty"`
 	EmailPreferences *map[string]interface{} `json:"email_preferences,omitempty"`
 	LowBalanceEmail *map[string]interface{} `json:"low_balance_email,omitempty"`
+	Spend *map[string]interface{} `json:"spend,omitempty"`
 }
 
 type WorkspaceNotificationTestResponse struct {
@@ -5956,6 +5968,24 @@ type WorkspaceSettingsUpdateRequest struct {
 	ResponseHealingLocked *bool `json:"response_healing_locked,omitempty"`
 	ResponseHealingMode *string `json:"response_healing_mode,omitempty"`
 	RoutingMode *string `json:"routing_mode,omitempty"`
+}
+
+type WorkspaceSpendAttribution string
+
+const (
+	WorkspaceSpendAttributionAll WorkspaceSpendAttribution = "all"
+	WorkspaceSpendAttributionPrimary WorkspaceSpendAttribution = "primary"
+)
+
+
+type WorkspaceSpendSettings struct {
+	BillingTimeZone string `json:"billing_time_zone"`
+	DepartmentAttribution string `json:"department_attribution"`
+}
+
+type WorkspaceSpendSettingsUpdate struct {
+	BillingTimeZone *string `json:"billing_time_zone,omitempty"`
+	DepartmentAttribution *string `json:"department_attribution,omitempty"`
 }
 
 type WorkspaceSsoResponse struct {

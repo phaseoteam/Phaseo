@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DEFAULT_CUSTOMER_RATE_LIMIT_LADDER, classifyCustomerTier, customerRateLimitLadder, customerTierKey,
-	isPublishedCustomerTier, parseCustomerRateLimitLadder, publishedCustomerTier, resolveCustomerLimits,
+	isPublishedCustomerTier, parseCustomerRateLimitLadder, publishedCustomerTier, resolveCustomerLimits, selfServeRaiseStatus,
 	type CustomerRateLimitInputs,
 } from "./customer-rate-limit-ladder";
 
@@ -78,6 +78,7 @@ describe("customer rate-limit trust ladder", () => {
 		"{\"tiers\":{\"new\":{\"requestsPerMinute\":1.5}}}", "{\"tiers\":{\"new\":{\"minAgeDays\":1}}}",
 		"{\"tiers\":{\"standard\":{\"minAgeDays\":-1}}}", "{\"tiers\":{\"enterprise\":{\"billingModes\":[1]}}}",
 		"{\"tiers\":{\"trusted\":{\"requestsPerMinute\":20}}}",
+		"{\"selfServeRaise\":{\"durationDays\":0}}", "{\"selfServeRaise\":{\"minAgeDays\":-1}}", "{\"selfServeRaise\":{\"tier\":\"enterprise\"}}",
 	])("rejects invalid tuning %s", (raw) => {
 		expect(() => parseCustomerRateLimitLadder(raw)).toThrow("invalid_customer_rate_limit_ladder");
 	});
@@ -96,5 +97,71 @@ describe("customer rate-limit trust ladder", () => {
 		for (const value of [null, {}, { tier: "override" }, { tier: "new", override: { requestsPerMinute: 0 } }, { tier: "new", override: [] }]) {
 			expect(isPublishedCustomerTier(value)).toBe(false);
 		}
+	});
+});
+
+describe("self-serve rate limit raises", () => {
+	const raised = (overrides: Partial<CustomerRateLimitInputs> = {}) => inputs({
+		created_at: daysAgo(10), has_paid_top_up: true, lifetime_paid_spend_nanos: usd(20),
+		raise_tier: "trusted", raise_expires_at: daysAgo(-20), ...overrides,
+	});
+
+	it("publishes an active raise above the classified tier, and only then", () => {
+		expect(publishedCustomerTier(raised(), ladder, now)).toEqual({ tier: "standard", raise: { tier: "trusted", expiresAt: now + 20 * 86_400_000 } });
+		expect(publishedCustomerTier(raised({ raise_expires_at: daysAgo(1) }), ladder, now)).toEqual({ tier: "standard" });
+		// Already trusted on its own: the raise adds nothing.
+		expect(publishedCustomerTier(raised({ created_at: daysAgo(40), lifetime_paid_spend_nanos: usd(80) }), ladder, now)).toEqual({ tier: "trusted" });
+		expect(publishedCustomerTier(raised({ raise_tier: "vip" }), ladder, now)).toEqual({ tier: "standard" });
+		// Rows from before raises existed.
+		expect(publishedCustomerTier(inputs({ has_paid_top_up: true }), ladder, now)).toEqual({ tier: "standard" });
+	});
+
+	it("applies a raise only while raises are enabled and it has not expired, and an override still wins", () => {
+		const published = { tier: "standard" as const, raise: { tier: "trusted" as const, expiresAt: now + 1000 } };
+		expect(resolveCustomerLimits(published, ladder, now)).toMatchObject({ tier: "standard", requestsPerMinute: 25 });
+		expect(resolveCustomerLimits(published, ladder, now, { raisesEnabled: true })).toMatchObject({ tier: "trusted", requestsPerMinute: 60 });
+		expect(resolveCustomerLimits(published, ladder, now + 1000, { raisesEnabled: true })).toMatchObject({ tier: "standard" });
+		expect(resolveCustomerLimits({ ...published, override: { requestsPerMinute: 5 } }, ladder, now, { raisesEnabled: true }))
+			.toMatchObject({ tier: "override", requestsPerMinute: 5 });
+		expect(isPublishedCustomerTier(published)).toBe(true);
+		expect(isPublishedCustomerTier({ tier: "standard", raise: { tier: "vip", expiresAt: now } })).toBe(false);
+		expect(isPublishedCustomerTier({ tier: "standard", raise: { tier: "trusted" } })).toBe(false);
+	});
+
+	const status = (overrides: Partial<CustomerRateLimitInputs> = {}, options: { enabled?: boolean; lastRequestedAt?: number | null } = {}) =>
+		selfServeRaiseStatus({
+			inputs: inputs({ created_at: daysAgo(10), has_paid_top_up: true, lifetime_paid_spend_nanos: usd(20), ...overrides }),
+			ladder, now, enabled: options.enabled ?? true, lastRequestedAt: options.lastRequestedAt ?? null,
+		});
+
+	it("lets an established paying standard workspace raise itself to trusted", () => {
+		expect(status()).toEqual({
+			tier: "standard", requestsPerMinute: 25, target: "trusted", targetRequestsPerMinute: 60,
+			eligible: true, refusal: null, activeUntil: null, availableAt: null, durationDays: 30,
+			thresholds: { minAgeDays: 7, minLifetimePaidSpendUsd: 10 },
+		});
+	});
+
+	it.each([
+		["the feature is off", {}, { enabled: false }, "disabled"],
+		["an operator override applies", { override_requests_per_minute: 200 }, {}, "override"],
+		["a raise is already active", { raise_tier: "trusted", raise_expires_at: daysAgo(-5) }, {}, "raised"],
+		["the workspace is already trusted", { created_at: daysAgo(40), lifetime_paid_spend_nanos: usd(80) }, {}, "top_tier"],
+		["the workspace is invoiced", { billing_mode: "invoice" }, {}, "top_tier"],
+		["it never paid", { has_paid_top_up: false, created_at: daysAgo(10) }, {}, "no_paid_top_up"],
+		["it is too new", { created_at: daysAgo(6) }, {}, "too_new"],
+		["it paid too little", { lifetime_paid_spend_nanos: usd(9.99) }, {}, "not_enough_spend"],
+		["it raised in the cooldown", {}, { lastRequestedAt: now - 59 * 86_400_000 }, "cooldown"],
+	] as const)("refuses when %s", (_label, overrides, options, refusal) => {
+		const result = status(overrides as Partial<CustomerRateLimitInputs>, options);
+		expect(result).toMatchObject({ eligible: false, refusal });
+	});
+
+	it("reports when an active raise ends and when the next one is available", () => {
+		expect(status({ raise_tier: "trusted", raise_expires_at: daysAgo(-5) })).toMatchObject({ tier: "trusted", requestsPerMinute: 60, activeUntil: now + 5 * 86_400_000 });
+		expect(status({}, { lastRequestedAt: now - 50 * 86_400_000 })).toMatchObject({ availableAt: now + 10 * 86_400_000 });
+		expect(status({}, { lastRequestedAt: now - 60 * 86_400_000 })).toMatchObject({ eligible: true });
+		expect(parseCustomerRateLimitLadder(JSON.stringify({ selfServeRaise: { durationDays: 14, minLifetimePaidSpendUsd: 0 } })).selfServeRaise)
+			.toEqual({ durationDays: 14, cooldownDays: 60, minAgeDays: 7, minLifetimePaidSpendUsd: 0 });
 	});
 });

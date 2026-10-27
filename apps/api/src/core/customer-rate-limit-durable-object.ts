@@ -22,6 +22,11 @@ const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
  * after each request attempt completes with its real usage, in one-second
  * buckets (at most 60, however busy the scope) checkpointed the same way.
  *
+ * Policy scopes with a concurrency limit hold one slot per request in flight.
+ * Slots live in memory only: a restart forgets them, so a scope may briefly
+ * admit more than its limit, rather than keep slots whose release was lost
+ * until they expire. Every slot carries an expiry for the same reason.
+ *
  * Limits are supplied by the caller (see `resolveCustomerLimits`); this object
  * performs no KV or network reads.
  */
@@ -36,6 +41,8 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	private lastTokenCheckpoint = 0;
 	private freeDay = -1;
 	private freeUsed = 0;
+	/** Lease ID -> expiry (epoch ms) of a concurrency slot in use. */
+	private readonly slots = new Map<string, number>();
 
 	constructor(ctx: DurableObjectState, env: GatewayBindings) {
 		super(ctx, env);
@@ -148,6 +155,33 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 		const now = Date.now();
 		this.expireTokens(now);
 		return this.tokenStatus(now, limit);
+	}
+
+	private expireSlots(now: number): void {
+		for (const [leaseId, expiresAt] of this.slots) if (expiresAt <= now) this.slots.delete(leaseId);
+	}
+
+	/**
+	 * Takes a concurrency slot for one request, unless `limit` slots are in use.
+	 * Taking a slot the lease already holds succeeds without taking another, so
+	 * every attempt of a request shares one slot.
+	 */
+	async acquireConcurrency(scopeKey: string, leaseId: string, limit: number, ttlMs: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const max = Number.isSafeInteger(limit) && limit > 0 ? limit : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireSlots(now);
+		if (!this.slots.has(leaseId) && this.slots.size >= max) {
+			return { allowed: false, limit: max, remaining: 0, retryAfterSeconds: 1 };
+		}
+		this.slots.set(leaseId, now + (Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : MINUTE_MS));
+		return { allowed: true, limit: max, remaining: Math.max(0, max - this.slots.size), retryAfterSeconds: 0 };
+	}
+
+	async releaseConcurrency(scopeKey: string, leaseId: string): Promise<void> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.slots.delete(leaseId);
 	}
 
 	private rollFreeDay(day: number): void {

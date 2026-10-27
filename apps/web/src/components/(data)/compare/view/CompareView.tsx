@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Check, Link2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CompareModelOption } from "../types";
+import { CompareActivity } from "./CompareActivity";
 import { CompareBenchmarks } from "./CompareBenchmarks";
 import { CompareGridProvider } from "./CompareGrid";
 import { CompareHeader } from "./CompareHeader";
@@ -61,7 +62,8 @@ export function CompareView({
 			<div className="space-y-10">
 				<div className="mb-4 space-y-3">
 					<nav aria-label={t("breadcrumb")} className="text-xs text-muted-foreground">
-						<Link href={pathname} className="hover:underline">{t("compare")}</Link>
+						{/* On a pair page ("/compare/a-vs-b") the crumb goes back to "/compare". */}
+						<Link href={/\/compare\/[^/]+$/.test(pathname) ? pathname.slice(0, pathname.lastIndexOf("/")) : pathname} className="hover:underline">{t("compare")}</Link>
 						<span aria-hidden> / </span>
 						<span>{title}</span>
 					</nav>
@@ -70,16 +72,17 @@ export function CompareView({
 							<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
 							<p className="mt-1.5 text-sm text-muted-foreground">{t("headerSub")}</p>
 						</div>
-						<div className="flex gap-2">
+						{/* Wraps on phones: the chat button carries the model name, which can be long. */}
+						<div className="flex min-w-0 max-w-full flex-wrap gap-2">
 							<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={copyLink}>
 								{copied ? <Check className="size-4" /> : <Link2 className="size-4" />}
 								{copied ? t("copied") : t("copyLink")}
 							</Button>
 							{chatModel ? (
-								<Button asChild size="sm" className="rounded-md">
+								<Button asChild size="sm" className="min-w-0 max-w-full shrink rounded-md">
 									<Link href={`/chat?model=${encodeURIComponent(chatModel.id)}`}>
 										<MessageSquare className="size-4" />
-										{t("tryInChat", { name: chatModel.name })}
+										<span className="truncate">{t("tryInChat", { name: chatModel.name })}</span>
 									</Link>
 								</Button>
 							) : null}
@@ -112,8 +115,9 @@ export function CompareView({
 				<ComparePricing models={priced} tiers={tiers} />
 				<CompareCalculator models={priced} tiers={tiers} />
 				<ComparePerformance models={models} usage={usage} />
+				<CompareActivity models={models} usage={usage} />
 				<CompareFeatures models={models} priced={priced} tiers={tiers} />
-				<CompareBenchmarks models={models} benchmarks={view.benchmarks} />
+				<CompareBenchmarks models={models} benchmarks={view.benchmarks} peers={view.peers ?? []} />
 				<CompareProviders models={models} />
 				<CompareDetails models={models} />
 				{pages > 1 ? <p className="text-xs text-muted-foreground sm:hidden">{t("phoneBestNote")}</p> : null}

@@ -120,7 +120,8 @@ describe("routes", () => {
 		const retried = await signed("/events", body, { headers: { "X-Slack-Retry-Num": "1", "X-Slack-Retry-Reason": "http_error" } });
 		expect(retried.status).toBe(200);
 		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "uninstalled" });
-		expect(waits).toHaveLength(0);
+		// The uninstall itself is done before answering; only the internal alert runs after.
+		expect(waits).toHaveLength(1);
 	});
 
 	it("refuses an event for another app", async () => {

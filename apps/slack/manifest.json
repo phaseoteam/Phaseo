@@ -7,7 +7,7 @@
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {

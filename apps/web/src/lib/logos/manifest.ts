@@ -14,6 +14,9 @@ export const logoManifest = {
 	"abliteration-ai": {
 		color: "/logos/abliteration-ai.svg",
 	},
+	dealignai: {
+		color: "/logos/dealignai.svg",
+	},
 	apodex: {
 		light: "/logos/apodex_light.svg",
 		dark: "/logos/apodex_dark.svg",

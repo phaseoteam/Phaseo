@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import BudgetsSettingsClient from "@/components/(gateway)/settings/budgets/BudgetsSettingsClient";
+import DepartmentBudgetsSection from "@/components/(gateway)/settings/budgets/DepartmentBudgetsSection";
 import type { SettingsBudgetsInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 
@@ -16,6 +17,7 @@ export default withSettingsResource("budgets", function BudgetsContent({ initial
 				actions={<ProductFeedbackButton surface="settings_budgets" prompt={t("budgets.feedback")} />}
 			/>
 			<BudgetsSettingsClient data={initialData} />
+			<DepartmentBudgetsSection data={initialData} />
 		</div>
 	);
 });

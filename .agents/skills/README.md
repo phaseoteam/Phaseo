@@ -11,10 +11,12 @@ Reusable coding-agent skills that help teams ship against Phaseo faster. Public 
 
 The [`phaseoteam/skills`](https://github.com/phaseoteam/skills) repository mirrors the docs copy for skills.sh (`npx skills add phaseoteam/skills`).
 
-After editing a public skill, run:
+It also copies every skill, public and internal, to `.claude/skills`, because Claude Code only discovers project skills there. Never edit `.claude/skills` directly; CI fails if it drifts from `.agents/skills` (`pnpm skills:check`).
+
+After editing any skill, run:
 
 ```bash
-pnpm skills:sync      # copy to the docs and the plugin
+pnpm skills:sync      # copy to the docs, the plugin and .claude/skills
 pnpm skills:validate  # frontmatter, structure, evals, links and examples
 ```
 
@@ -113,7 +115,7 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 
 ## Internal skills
 
-- `phaseo-model-provider-onboarding`: use Supabase to onboard models, routes, aliases and pricing
+- `phaseo-model-provider-onboarding`: required for every new model; onboard models, routes, capabilities, pricing, plans and benchmarks in Supabase
 - `phaseo-internal-model-onboarding`: admin-only model setup, private logs and public exclusion
 - `phaseo-database-changes`: schema and RPC migrations, with direct Supabase catalogue updates
 - `phaseo-product-docs`: product-facing rewrite workflow for docs, cookbook pages and guides

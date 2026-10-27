@@ -12,10 +12,12 @@ begin
   end if;
 
   if tg_table_name = 'workspace_guardrails' then
-    -- Renaming or other edits are fine while every privacy switch stays off.
+    -- Renaming or other edits are fine while training and prompt publishing stay off.
+    -- Providers that keep logs may serve the agent: they don't train on it, and
+    -- Phaseo stores no content for its key (never_store_content).
     if tg_op = 'UPDATE' and new.enabled
       and not new.privacy_enable_paid_may_train and not new.privacy_enable_free_may_train
-      and not new.privacy_enable_free_may_publish_prompts and not new.privacy_enable_input_output_logging then
+      and not new.privacy_enable_free_may_publish_prompts then
       return new;
     end if;
     if exists (
@@ -24,7 +26,7 @@ begin
     ) then
       raise exception 'slack_agent_guardrail_protected'
         using errcode = '23514',
-          detail = 'This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.';
+          detail = 'This guardrail keeps Slack data out of training and prompt publishing. Uninstall the Slack agent to change or remove it.';
     end if;
   else
     if tg_op = 'UPDATE' and new.key_id = old.key_id and new.guardrail_id = old.guardrail_id then
@@ -37,7 +39,7 @@ begin
     ) then
       raise exception 'slack_agent_guardrail_protected'
         using errcode = '23514',
-          detail = 'This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.';
+          detail = 'This guardrail keeps Slack data out of training and prompt publishing. Uninstall the Slack agent to change or remove it.';
     end if;
   end if;
 
@@ -48,7 +50,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."protect_slack_agent_guardrail"() IS 'Keeps a live Slack agent installation''s privacy guardrail in force: it cannot be deleted, disabled, have a privacy switch turned back on, or be detached from the installation''s key until the agent is uninstalled.';
+COMMENT ON FUNCTION "public"."protect_slack_agent_guardrail"() IS 'Keeps a live Slack agent installation''s privacy guardrail in force: it cannot be deleted, disabled, have training or prompt publishing turned back on, or be detached from the installation''s key until the agent is uninstalled.';
 
 REVOKE ALL ON FUNCTION "public"."protect_slack_agent_guardrail"() FROM "postgres";
 

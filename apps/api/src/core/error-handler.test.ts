@@ -273,6 +273,9 @@ describe("handleError", () => {
 		const policy = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: "rate_limit_exceeded", reason: "policy_requests_per_minute" } };
 		const provider = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: { code: "rate_limit_exceeded", message: "Too many requests" } } };
 		expect(classifyAttribution(policy)).toBe("user");
+		for (const reason of ["policy_tokens_per_minute", "policy_concurrent_requests", "policy_unavailable"]) {
+			expect(classifyAttribution({ ...policy, body: { ...policy.body, reason } })).toBe("user");
+		}
 		expect(classifyAttribution(provider)).toBe(classifyAttribution({ ...provider, errorCode: "upstream_error" }));
 	});
 

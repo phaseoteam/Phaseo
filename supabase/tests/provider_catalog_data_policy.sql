@@ -26,9 +26,15 @@ begin
  snapshot := jsonb_set(document,'{0,serviceTiers}',jsonb_build_array(jsonb_build_object('serviceTier','standard','providerModelSlug','native','availability','ready','pricing',document->0->'pricing','dataPolicy',jsonb_build_object('capabilities',jsonb_build_array(policy)))));
  snapshot := jsonb_set(snapshot,'{0,declarations}','{"hugging_face_id":"lab/model","quantization":"fp8","passthrough_parameters":{"seed":{"type":"integer","min":0}}}'::jsonb);
  snapshot := jsonb_set(snapshot,'{0,serviceTiers,0,declarations}','{"deployment_region":"US","discount_to_user":0.2}'::jsonb);
+ -- A v1.2 offer that has never declared a policy keeps inheriting the provider default.
+ insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run,'catalog-policy-test','manual');
+ perform public.apply_provider_catalog_snapshot('catalog-policy-test',run,jsonb_set(snapshot,'{0,serviceTiers,0,dataPolicy}','null'::jsonb));
+ select provider_model_id into strict offer from public.v2_model_provider_routes where provider_slug='catalog-policy-test';
+ assert (select not (metadata ? 'catalog_data_policy') from public.v2_route_capabilities where provider_model_id=offer and capability_id='text.generate'), 'Undeclared offer must not become catalog-managed';
+ assert public.resolve_catalog_data_policy(offer,'text.generate') is null, 'Undeclared offer must fall back to the provider default';
+ run := gen_random_uuid();
  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run,'catalog-policy-test','manual');
  perform public.apply_provider_catalog_snapshot('catalog-policy-test',run,snapshot);
- select provider_model_id into strict offer from public.v2_model_provider_routes where provider_slug='catalog-policy-test';
  assert (select metadata->'catalog_declarations'->'model'->>'quantization'='fp8'
    and metadata->'catalog_declarations'->'offer'->>'deployment_region'='US'
    from public.v2_model_provider_routes where provider_model_id=offer), 'Rich claims must survive database promotion';

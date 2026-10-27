@@ -69,10 +69,11 @@ describe("the SDK agent runner", () => {
 		expect(sent.body).toMatchObject({
 			model: "phaseo/auto",
 			user: "slack:T0TEST0001:U0PERSON01",
-			provider: { data_collection: "deny" },
 			stream: true,
 			instructions: "You are the Phaseo agent.",
 		});
+		// The guardrail on the key carries the data rules; the gateway rejects provider.data_collection "deny".
+		expect(sent.body).not.toHaveProperty("provider");
 		expect(sent.body.tools).toEqual([
 			{ type: "function", function: { name: "get_spend", description: "Spend", parameters: { type: "object", properties: {} } } },
 			{ type: "phaseo:web_search" },
@@ -113,6 +114,43 @@ describe("the SDK agent runner", () => {
 		// The SDK can wrap the gateway error.
 		expect(classifyTurnError(new Error("run failed", { cause: error(402, {}) }))).toBe("no_credits");
 		expect(turnErrorText("no_credits")).toBe("This Phaseo workspace is out of credits, so I can't answer right now. An admin can add credits in Phaseo billing.");
+	});
+
+	it("says the model isn't available to the agent when the gateway refuses it for the key, without internal details", async () => {
+		// The bodies the gateway sends (captured live on 2026-10-26): the specific reason is in
+		// error_operational_kind, and there is no top-level `reason`.
+		const refused = (kind: string, message: string) => new AgentGatewayError({
+			status: 403, statusText: "Forbidden",
+			body: {
+				error: { code: "guardrail_blocked", message, type: "permission_error", param: null },
+				code: "guardrail_blocked", error_type: "user", error_origin: "user", description: message, message,
+				error_operational_kind: kind, guardrail: { type: "data_handling", scope: "workspace", active_guardrail_ids: ["g1"] },
+			},
+		});
+		const refusals = [
+			refused("data_handling_policy_no_routes", "No provider routes satisfy the workspace data-handling policy"),
+			refused("provider_restricted_by_policy", "All provider routes for this model are blocked by a workspace policy or guardrail"),
+			refused("model_restricted_by_policy", "Model \"openai/gpt-6-luna\" is blocked by a workspace policy or guardrail"),
+		];
+		for (const refusal of refusals) expect(classifyTurnError(refusal, "openai/gpt-6-luna")).toBe("model_not_allowed");
+		expect(classifyTurnError(new Error("run failed", { cause: refusals[0] }), "openai/gpt-6-luna")).toBe("model_not_allowed");
+		// A guardrail that blocks the message itself is not about the model.
+		expect(classifyTurnError(refused("prompt_injection_detected", "Request blocked by prompt injection guardrail"), "openai/gpt-6-luna")).toBe("failed");
+
+		// Auto without access is a plain not_supported; the same code means something else for other models.
+		const notSupported = new AgentGatewayError({
+			status: 400, statusText: "Bad Request",
+			body: {
+				error: { code: "not_supported", message: "Auto Routing is currently available to selected Alpha workspaces.", type: "invalid_request_error", param: null },
+				code: "not_supported", error_type: "user", error_origin: "user",
+			},
+		});
+		expect(classifyTurnError(notSupported, "phaseo/auto")).toBe("model_not_allowed");
+		expect(classifyTurnError(notSupported, "openai/gpt-6-luna")).toBe("failed");
+		expect(classifyTurnError(notSupported)).toBe("failed");
+		const text = turnErrorText("model_not_allowed");
+		expect(text).toBe("The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.");
+		expect(text).not.toMatch(/guardrail|policy|alpha|provider/i);
 	});
 
 	it("surfaces a gateway refusal from a streamed request as an error the turn can classify", async () => {
