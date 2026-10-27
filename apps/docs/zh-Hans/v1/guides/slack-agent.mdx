@@ -81,6 +81,24 @@ with openai/gpt-6-luna: draft a reply to this customer
 - 无论哪个模型回答，每个回答的限制（$0.50 和 12 步，见下文“每个回答的限制”）都不变。模型 token 按该模型自己的价格计费。
 - **Slack agent** 护栏仍然适用。如果所选模型没有任何提供商满足它，智能体会说明原因，而不回答。
 
+### 带按钮的问题
+
+当智能体需要你在几个选项中做出选择，或在继续之前批准某件事时，它会在线程中提问，每个选项一个按钮，最多 5 个。它也可以提供 **Other…**，点击后会打开一个小表单，让你用自己的话回答。
+
+- 只有它正在回答的那个人可以回答。其他人点击按钮时，会收到一条只有自己能看到的提示。
+- 你也可以直接在线程中回复（在频道中需要提及智能体）。你的回复会被当作你的回答。
+- 你回答后，按钮会被替换为你的回答，智能体会从停下的地方继续。
+- 一个问题最多等待一小时。超过一小时后，问题会显示已过期，这次回答到此结束。准备好后再问一次即可。
+- 等待期间，Slack 的停止按钮同样可用。
+- 等待期间，线程中其他人的消息会排队等待，并会私下告知他们智能体正在等谁回答。
+- 一次回答最多可以问 3 个问题。整个过程算作一次回答，每个回答的限制覆盖全部内容，包括每个问题之前和之后。
+
+### Home 标签页
+
+在 Slack 中打开智能体并选择 **Home**，可以查看使用方法、它使用的模型，以及你的 Phaseo 账户是否已连接。如果尚未连接，而连接会有帮助（在 **仅限已关联的账户** 时，或在允许 **用量数据** 的地方），标签页会显示 **Connect your Phaseo account** 按钮。已连接账户的 Phaseo 工作区成员还能看到智能体本月（UTC）在这个 Slack 工作区中给出了多少次回答。标签页只显示设置和数字，从不显示消息。
+
+使用你自己的 Slack 应用时，Home 标签页需要最新的清单：把 `home_tab_enabled` 设为 `true`，并添加机器人事件 `app_home_opened`。
+
 ## 谁可以使用
 
 在 **谁可以使用** 中选择：
@@ -194,7 +212,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 
 - **Phaseo 的日志中没有消息内容。** 无论你的工作区如何设置，智能体的 API 密钥都从不存储请求或响应的内容，无论是在日志、缓存还是遥测中。它的请求仍会以不含内容的形式出现在你的用量和日志中，并带有[请求标签](./request-labels.mdx) `app=slack-agent`、`slack_team` 和 `slack_channel`，以及[应用标题](./app-attribution.mdx) `Phaseo Slack agent`。
 - **不使用会用提示词训练的提供商。** **Slack agent** [护栏](../cookbook/guardrails-for-api-keys.mdx)会关闭在付费和免费模型上的训练以及提示词发布，因此绝不会使用会用提示词训练的提供商。保留日志但不用于训练的提供商可以回答，并可能按其自身政策在这些日志中保留消息内容；Phaseo 自身的日志、缓存和遥测仍不保存任何消息内容。
-- **短暂的工作记忆。** 对于每个线程，智能体会保留它最近的回复、关于所用工具的简短记录、正在排队的消息、线程中最近消息的 ID（不含文本，用于判断从哪里开始读取），以及它向谁发送过连接按钮。它们会在线程最后一次活动的 7 天后删除。
+- **短暂的工作记忆。** 对于每个线程，智能体会保留它最近的回复、关于所用工具的简短记录、正在排队的消息、线程中最近消息的 ID（不含文本，用于判断从哪里开始读取），它向谁发送过连接按钮，以及它提出的问题和对应的回答。它们会在线程最后一次活动的 7 天后删除。
 - **不归档任何内容。** Phaseo 不会归档来自 Slack 的任何内容。智能体自己的日志只保留 Slack ID 和状态。
 - **加密的密钥。** 机器人 token 和你的 Slack 应用的密钥都会加密存储，并且不会再次显示。
 
@@ -244,7 +262,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
   },
   "features": {
     "app_home": {
-      "home_tab_enabled": false,
+      "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
@@ -280,7 +298,8 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
         "message.im",
         "agent_session_stopped",
         "app_uninstalled",
-        "tokens_revoked"
+        "tokens_revoked",
+        "app_home_opened"
       ]
     },
     "interactivity": {
@@ -299,7 +318,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 | 重定向 URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
 | Event Subscriptions 请求 URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
 | Interactivity 请求 URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
-| 机器人事件 | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked` |
+| 机器人事件 | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked`、`app_home_opened` |
 
 安装时，Phaseo 会向 Slack 请求的正是以下机器人 token 权限范围，所以应用需要具备全部这些权限范围：
 

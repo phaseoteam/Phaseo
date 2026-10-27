@@ -81,6 +81,24 @@ with openai/gpt-6-luna: draft a reply to this customer
 - Chaque réponse garde les mêmes limites ($0.50 et 12 étapes, voir « Limites de chaque réponse » plus bas), quel que soit le modèle qui répond. Les tokens du modèle sont facturés à son propre prix.
 - Le garde-fou **Slack agent** s’applique toujours. Si aucun fournisseur du modèle choisi ne le respecte, l’agent le dit au lieu de répondre.
 
+### Questions avec des boutons
+
+Quand l’agent a besoin que vous choisissiez entre quelques options ou que vous approuviez quelque chose avant de continuer, il vous pose la question dans le fil avec un bouton par option, jusqu’à 5. Il peut aussi proposer **Other…**, qui ouvre un petit formulaire pour répondre avec vos propres mots.
+
+- Seule la personne à qui il répond peut répondre. Toute autre personne qui choisit un bouton reçoit une note privée.
+- Vous pouvez aussi répondre dans le fil (dans un canal, en mentionnant l’agent). Votre message compte alors comme votre réponse.
+- Dès que vous répondez, votre réponse remplace les boutons et l’agent reprend là où il s’était arrêté.
+- Une question attend jusqu’à une heure. Ensuite, la question indique qu’elle a expiré et la réponse s’arrête là. Posez de nouveau votre question quand vous êtes prêt.
+- Le bouton d’arrêt de Slack fonctionne aussi pendant qu’il attend.
+- Pendant qu’il attend, les messages des autres personnes dans le fil attendent leur tour, et elles sont informées en privé de la personne qu’il attend.
+- Une réponse peut poser jusqu’à 3 questions. Le tout compte comme une seule réponse, et les limites de chaque réponse couvrent l’ensemble, avant et après chaque question.
+
+### Onglet Home
+
+Ouvrez l’agent dans Slack et choisissez **Home** pour voir comment l’utiliser, le modèle qu’il utilise et si votre compte Phaseo est connecté. S’il ne l’est pas et que le connecter serait utile (avec **Comptes associés uniquement**, ou là où les **Données d’utilisation** sont autorisées), l’onglet affiche le bouton **Connect your Phaseo account**. Les membres de l’espace de travail Phaseo qui ont connecté leur compte voient aussi combien de réponses l’agent a données dans l’espace de travail Slack ce mois-ci (UTC). L’onglet n’affiche que des paramètres et des chiffres, jamais de messages.
+
+Avec votre propre application Slack, l’onglet Home a besoin du dernier manifeste : `home_tab_enabled` à `true` et l’événement de bot `app_home_opened`.
+
 ## Qui peut l’utiliser
 
 Choisissez sous **Qui peut l’utiliser** :
@@ -194,7 +212,7 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 
 - **Aucun contenu de message dans les journaux de Phaseo.** La clé d’API de l’agent ne stocke jamais le contenu des requêtes ni des réponses, ni dans les journaux, ni dans les caches, ni dans la télémétrie, quels que soient les réglages de votre espace de travail. Ses requêtes apparaissent tout de même dans votre utilisation et vos journaux, sans contenu, avec les [libellés de requête](./request-labels.mdx) `app=slack-agent`, `slack_team` et `slack_channel` et le [titre d’application](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Aucun fournisseur qui s’entraîne sur les prompts.** Le [garde-fou](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** désactive l’entraînement sur les modèles payants et gratuits et la publication des prompts : les fournisseurs qui s’entraînent sur les prompts ne sont jamais utilisés. Des fournisseurs qui conservent des journaux sans s’en servir pour l’entraînement peuvent répondre, et peuvent garder le contenu des messages dans ces journaux selon leurs propres règles ; les journaux, caches et la télémétrie de Phaseo ne conservent toujours aucun contenu de message.
-- **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, et les personnes à qui il a envoyé le bouton de connexion. Ils sont supprimés 7 jours après la dernière activité du fil.
+- **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, les personnes à qui il a envoyé le bouton de connexion, et les questions qu’il a posées avec leurs réponses. Ils sont supprimés 7 jours après la dernière activité du fil.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 
@@ -244,7 +262,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
   },
   "features": {
     "app_home": {
-      "home_tab_enabled": false,
+      "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
@@ -280,7 +298,8 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
         "message.im",
         "agent_session_stopped",
         "app_uninstalled",
-        "tokens_revoked"
+        "tokens_revoked",
+        "app_home_opened"
       ]
     },
     "interactivity": {
@@ -299,7 +318,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
 | URL de redirection | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
 | URL de requête d’Event Subscriptions | `https://slack.phaseo.app/events/YOUR_APP_ID` |
 | URL de requête d’Interactivity | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
-| Événements de bot | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked` |
+| Événements de bot | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 Phaseo demande à Slack exactement ces scopes du token de bot lors de l’installation : l’application doit donc tous les avoir.
 

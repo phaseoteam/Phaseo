@@ -82,6 +82,24 @@ with openai/gpt-6-luna: draft a reply to this customer
 - Each answer keeps the same [limits](#limits-on-each-answer), $0.50 and 12 steps, whichever model answers. The model's tokens are billed at its own price.
 - The **Slack agent** guardrail still applies. If no provider of the chosen model meets it, the agent says so instead of answering.
 
+### Questions with buttons
+
+When the agent needs you to choose between a few options or approve something before it goes on, it asks in the thread with a button for each option, up to 5. It can also offer **Other…**, which opens a small form for an answer in your own words.
+
+- Only the person it's answering can answer. Anyone else who selects a button gets a private note.
+- You can also reply in the thread instead (in a channel, mention the agent). Your reply is taken as your answer.
+- Once you answer, the buttons are replaced with your answer and the agent carries on from where it stopped.
+- A question waits for up to an hour. After that, the question says it expired and the answer ends there. Ask again when you're ready.
+- Slack's stop button also works while it waits.
+- While it waits, other people's messages in the thread wait their turn, and they're told privately who it's waiting for.
+- One answer can ask up to 3 questions. The whole thing counts as one answer, and the [limits on each answer](#limits-on-each-answer) cover all of it, before and after each question.
+
+### Home tab
+
+Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages.
+
+With your own Slack app, the Home tab needs the latest [manifest](#use-your-own-slack-app): `home_tab_enabled` set to `true` and the `app_home_opened` bot event.
+
 ## Who can use it
 
 Choose under **Who can use it**:
@@ -195,7 +213,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
-- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, and who it has sent the Connect button. They're deleted 7 days after the thread's last activity.
+- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
@@ -245,7 +263,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
   },
   "features": {
     "app_home": {
-      "home_tab_enabled": false,
+      "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
@@ -281,7 +299,8 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
         "message.im",
         "agent_session_stopped",
         "app_uninstalled",
-        "tokens_revoked"
+        "tokens_revoked",
+        "app_home_opened"
       ]
     },
     "interactivity": {
@@ -300,7 +319,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
 | Redirect URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
 | Event Subscriptions request URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
 | Interactivity request URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
-| Bot events | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked` |
+| Bot events | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 Phaseo asks Slack for exactly these bot token scopes when you install, so the app needs all of them:
 
