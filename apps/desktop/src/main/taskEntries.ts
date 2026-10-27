@@ -176,6 +176,18 @@ export class TaskEntries {
 		return activitiesForWindow(window, rows.map(row => decode(row)) as AgentActivity[], new Set(users), { next, latest: page.later === 0 });
 	}
 
+	/**
+	 * Find in chat: the messages whose text contains `needle` (lower case), in order, with how often it occurs and the
+	 * user message that opens each one's turn. One range scan of the chat's messages; activities are not searched.
+	 */
+	find(key: number, needle: string, limit: number): { id: string; turnId?: string; count: number }[] {
+		const rows = this.statement(`SELECT id, (length(t) - length(replace(t, $needle, ''))) / length($needle) AS count,
+			(SELECT turn.id FROM task_entries AS turn WHERE turn.rowid >= $from AND turn.rowid <= m.rowid AND turn.role = 'user' ORDER BY turn.rowid DESC LIMIT 1) AS turn_id
+			FROM (SELECT rowid, id, history_lower(json_extract(data, '$.text')) AS t FROM task_entries WHERE rowid >= $from AND rowid < $to) AS m
+			WHERE instr(t, $needle) > 0 ORDER BY rowid LIMIT $limit`).all({ needle, from: base(key, 0), to: base(key, 0) + kindSpan, limit }) as { id: string; count: number; turn_id: string | null }[];
+		return rows.map(row => ({ id: row.id, ...(row.turn_id ? { turnId: row.turn_id } : {}), count: Math.max(1, row.count) }));
+	}
+
 	/** The texts of a chat's Phaseo usage reports (steps and compactions), read by id from its activities alone. */
 	phaseoUsageReports(key: number): string[] { return this.phaseoUsageEntries(key).map(entry => entry.text); }
 	/** The same reports with their ids, which say which turn each belongs to. */

@@ -187,6 +187,12 @@ export function NotificationSettings() {
 			<SettingsRow title="Show chat titles" description="Alerts name the chat. What was said always stays private."
 				control={<Switch aria-label="Show task titles" checked={preferences.notificationTitles} disabled={!ready || busy} onCheckedChange={checked => void save({ ...preferences, notificationTitles: checked })} />} />
 			{supported === false && <SettingsNote role="status">Desktop notifications are unavailable on this system.</SettingsNote>}
+		</SettingsSection>
+		<SettingsSection title="In the app" label="In-app notifications">
+			<SettingsRow title="In-app notices" description="While Phaseo is open, a notice says when another chat finishes or needs you."
+				control={<Switch aria-label="In-app notices" checked={preferences.inAppNotifications} disabled={!ready || busy} onCheckedChange={checked => void save({ ...preferences, inAppNotifications: checked })} />} />
+			<SettingsRow title="Unread count on the app icon" description="The dock or taskbar icon counts chats with unread replies or a question for you."
+				control={<Switch aria-label="Unread count on the app icon" checked={preferences.notificationBadge} disabled={!ready || busy} onCheckedChange={checked => void save({ ...preferences, notificationBadge: checked })} />} />
 			{(loading || busy || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || (loading ? "Loading settings…" : "Saving…")}</SettingsNote>}
 		</SettingsSection>
 	</SettingsPageLayout>;

@@ -78,6 +78,8 @@ export type PhaseoDesktopApi = {
 	onWindowStateChange: (listener: (state: DesktopWindowState) => void) => () => void;
 	onUpdateStateChange: (listener: (state: DesktopUpdateState) => void) => () => void;
 	openExternal: (url: string) => Promise<boolean>;
+	/** The unread count on the dock or launcher icon; Windows shows `overlay`, a PNG data URL the renderer draws, on the taskbar button. */
+	setBadge: (count: number, overlay?: string) => Promise<void>;
 };
 
 export const ALLOWED_EXTERNAL_HOSTS = new Set([

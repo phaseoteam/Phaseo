@@ -2,7 +2,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -18,7 +18,9 @@ import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
 import { CodeThreadList } from "./CodeThreadList";
 import { UsageRings } from "./UsageRings";
-import { dismissUndo, runUndo, undoLabel, useThreadUndo } from "./threadUndo";
+import { deleteWithUndo, dismissUndo, offerUndo, runUndo, undoLabel, usePendingDeletes, useThreadUndo } from "./threadUndo";
+import { isUnread } from "../../shared/threadLifecycle";
+import { ArchivedChatsDialog, archivedChats, openArchivedChats } from "./ArchivedChats";
 import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
 
@@ -55,17 +57,26 @@ function SectionLabel({ children, action }: { children: ReactNode; action?: Reac
 	return <div className="flex h-8 items-center justify-between px-4 pt-2 text-xs font-bold text-sidebar-foreground/70">{children}{action}</div>;
 }
 
+/** Chat mode's row menu, with Code's undo: leaving the open chat (archive, delete, mark unread) opens a new chat. */
 function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void }) {
-	const { command } = useWorkspace();
+	const { command, selectedId, select } = useWorkspace();
+	const leave = () => { if (task.id === selectedId) select(undefined); };
+	const working = task.status === "running" || task.status === "waiting";
+	const pin = async () => { if (await command({ type: "update-task", id: task.id, pinned: !task.pinned }) && task.pinned) offerUndo("Unpinned", () => command({ type: "update-task", id: task.id, pinned: true })); };
+	const archive = async () => { leave(); if (await command({ type: "update-task", id: task.id, archived: true })) offerUndo("Archived", () => command({ type: "update-task", id: task.id, archived: false })); };
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><WandSparkles />Regenerate title</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
+			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><Copy />Copy chat ID</DropdownMenuItem>
 			<DropdownMenuSeparator />
-			<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: !task.archived })}><Archive />{task.archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
+			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ArchiveRestore />Restore</DropdownMenuItem>
+				: <DropdownMenuItem disabled={working} onClick={() => void archive()}><Archive />Archive</DropdownMenuItem>}
+			<DropdownMenuItem variant="destructive" disabled={working} onClick={() => { leave(); deleteWithUndo(task.id, () => command({ type: "delete-task", id: task.id })); }}><Trash2 />Delete</DropdownMenuItem>
 		</DropdownMenuContent>
 	</DropdownMenu>;
 }
@@ -75,6 +86,8 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 	const [renaming, setRenaming] = useState(false);
 	const selected = task.id === selectedId;
 	const busy = task.status === "running" || task.status === "waiting" || !!task.approvalsCount || !!task.answersCount;
+	// A finished turn not seen yet, as Code's rows show it.
+	const unread = !busy && isUnread(task);
 	// Dragging a chat into a composer mentions it there.
 	return <div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
 		draggable={!renaming} onDragStart={event => { event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copy"; }}
@@ -84,9 +97,10 @@ function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: Tas
 			? <input autoFocus defaultValue={task.title} maxLength={200} aria-label="Chat title" onClick={event => event.stopPropagation()} className="h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none"
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
 				onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
-			: <span className="min-w-0 flex-1 truncate">{task.title}</span>}
+			: <span className={cn("min-w-0 flex-1 truncate", unread && "font-semibold text-sidebar-foreground")}>{task.title}</span>}
 		{!renaming && <TagDots tags={task.tags} />}
 		{showModel && busy && <StatusDot task={task} />}
+		{unread && !renaming && <span role="img" aria-label="Unread" title="Unread" className="size-1.5 shrink-0 rounded-[2px] bg-primary" />}
 		{showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
 		{hint !== undefined ? <JumpHint index={hint} /> : !renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
 	</div>;
@@ -110,8 +124,10 @@ function CompareRow({ group }: { group: CompareGroup }) {
 /** Only the rows in view are mounted: a year of chats is thousands of rows, each with its own menu and tooltips. */
 function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 	const { overview, compareGroups } = useWorkspace();
+	const hidden = usePendingDeletes();
 	const grouped = useMemo(() => new Set(compareGroups.flatMap(group => group.taskIds)), [compareGroups]);
-	const all = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id));
+	const all = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id) && !hidden.has(task.id));
+	const archived = useMemo(() => archivedChats(overview.tasks.filter(task => !task.projectId), hidden).length, [overview.tasks, hidden]);
 	const tags = useMemo(() => tagsInUse(all), [all]);
 	const [filter, setFilter] = usePersistedState("phaseo.desktop.chatTagFilter", "");
 	const active = tags.find(tag => tag.toLowerCase() === filter.toLowerCase());
@@ -141,8 +157,9 @@ function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 		entries.push({ key: `label:${label}`, size: 32, node: <SectionLabel>{label}</SectionLabel> });
 		for (const item of values) entries.push(item.kind === "task" ? { key: item.task.id, size: 32, node: <ChatRow task={item.task} showModel showTime={false} hint={hint(item.task.id)} /> } : { key: item.group.id, size: 32, node: <CompareRow group={item.group} /> });
 	}
+	if (archived > 0) entries.push({ key: "archived", size: 40, node: <button type="button" onClick={() => openArchivedChats()} className="mx-2 mt-2 flex h-8 w-[calc(100%-1rem)] items-center gap-2 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"><Archive className="size-3.5" />Archived chats<span className="ml-auto text-[11px] tabular-nums">{archived}</span></button> });
 	const virtualizer = useVirtualizer({ count: entries.length, getScrollElement: () => viewport, estimateSize: index => entries[index].size, getItemKey: index => entries[index].key, overscan: 16 });
-	if (!all.length && !compareGroups.length) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
+	if (!all.length && !compareGroups.length && !archived) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
 	// The row count is published because only the rows in view exist in the page.
 	return <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }} data-chat-count={pinned.length + items.length}>
 		{virtualizer.getVirtualItems().map(item => <div key={item.key} data-index={item.index} ref={virtualizer.measureElement} className="absolute top-0 left-0 w-full" style={{ transform: `translateY(${item.start}px)` }}>{entries[item.index].node}</div>)}
@@ -278,6 +295,7 @@ export function Sidebar() {
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
 			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
 		<UndoNotice />
+		<ArchivedChatsDialog />
 		<AccountFooter />
 	</SidebarFrame>;
 }

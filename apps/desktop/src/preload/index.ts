@@ -46,8 +46,11 @@ const desktopApi: PhaseoDesktopApi = {
 		task: id => ipcRenderer.invoke("workspace:task", id),
 		taskHistory: query => ipcRenderer.invoke("workspace:task-history", query),
 		conversationPage: query => ipcRenderer.invoke("workspace:conversation-page", query),
+		conversationFind: query => ipcRenderer.invoke("workspace:conversation-find", query),
+		searchMessages: query => ipcRenderer.invoke("workspace:search-messages", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
+		cloneProject: url => ipcRenderer.invoke("workspace:clone-project", url),
 		updateProject: update => ipcRenderer.invoke("workspace:update-project", update),
 		projectFile: projectId => ipcRenderer.invoke("workspace:project-file", projectId),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
@@ -90,6 +93,7 @@ const desktopApi: PhaseoDesktopApi = {
 		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),
 		listFiles: (id, directory) => ipcRenderer.invoke("workspace:list-files", id, directory),
 		searchFiles: (id, query) => ipcRenderer.invoke("workspace:search-files", id, query),
+		searchContents: (id, query) => ipcRenderer.invoke("workspace:search-contents", id, query),
 		editors: () => ipcRenderer.invoke("workspace:editors"),
 		openProject: (id, request) => ipcRenderer.invoke("workspace:open-project", id, request),
 		readFile: (id, filename) => ipcRenderer.invoke("workspace:read-file", id, filename),
@@ -161,6 +165,7 @@ const desktopApi: PhaseoDesktopApi = {
 		return () => ipcRenderer.removeListener("desktop:update-state", subscription);
 	},
 	openExternal: (url) => ipcRenderer.invoke("desktop:open-external", url),
+	setBadge: (count, overlay) => ipcRenderer.invoke("desktop:set-badge", count, overlay),
 };
 
 contextBridge.exposeInMainWorld("phaseoDesktop", desktopApi);

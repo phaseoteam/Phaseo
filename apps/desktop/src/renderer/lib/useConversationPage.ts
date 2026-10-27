@@ -82,6 +82,8 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 		page, loading, error,
 		older: () => { if (page.entries[0]) void request({ taskId: task.id, kind, limit: 50, beforeId: page.entries[0].id }, "older"); },
 		newer: () => { if (page.entries.at(-1)) void request({ taskId: task.id, kind, limit: 50, afterId: page.entries.at(-1)!.id }, "newer"); },
+		/** Loads the window that starts at an entry (find in chat steps to a match on a page not loaded). */
+		jumpTo: (id: string) => { following.current = false; void request({ taskId: task.id, kind, limit: 50, fromId: id }, "replace"); },
 		latest: () => { if (pending.current) return; setError(""); lastRequest.current = undefined; if (error || current.current.later > 0) apply(recentPage(source.current, kind)); },
 		retry: () => { if (lastRequest.current) void request(lastRequest.current.query, lastRequest.current.mode); },
 	};

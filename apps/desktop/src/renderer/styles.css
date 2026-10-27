@@ -184,6 +184,46 @@
 .message-code-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
 .message-code-actions button { min-height: 28px; padding: 2px 8px; font-size: 12px; font-weight: 400; }
 .message-code-block pre { margin: 0; padding: 16px; overflow: auto; border: 0; border-radius: 0; background: var(--surface-muted); font: 13px/1.6 ui-monospace, monospace; }
+.message-code-buttons { display: flex; align-items: center; gap: 2px; }
+.message-code-actions .message-code-icon { justify-content: center; width: 26px; padding: 0; }
+.message-code-actions .message-code-icon[aria-pressed="true"] { background: var(--muted); color: var(--foreground); }
+.message-code-block pre[data-wrap] { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Rich replies: images, maths, diagrams, alerts, details and tables. */
+.message-image { display: inline-block; max-width: 100%; margin: 4px 0; padding: 0; border: 0; border-radius: 6px; background: none; cursor: zoom-in; vertical-align: top; }
+.message-image img { display: block; max-width: 100%; max-height: 360px; border-radius: 6px; object-fit: contain; }
+.message-image:focus-visible { outline: 2px solid var(--ring, currentColor); outline-offset: 2px; }
+.message-image-missing { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); font-size: .92em; }
+.message-math-display { display: block; margin: 0 0 16px; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.message-math-inline { display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: middle; }
+.message-math-source { white-space: pre-wrap; font: .9em/1.6 ui-monospace, monospace; }
+.message-diagram-frame { padding: 16px; background: var(--surface-muted); overflow: auto; }
+.message-diagram svg { display: block; max-width: 100%; height: auto; margin: auto; }
+.message-code-block pre.message-diagram-pending { padding: 0; background: none; white-space: pre-wrap; }
+.message-diagram-error { margin: -10px 0 16px; color: var(--text-muted); font-size: 12px; }
+.message-alert { margin: 0 0 16px; padding: 10px 14px; border: 1px solid #bae6fd; border-radius: 6px; background: #f0f9ff; color: #082f49; }
+.message-alert > :last-child { margin-bottom: 0; }
+.message-alert-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-weight: 600; }
+.message-alert[data-alert="tip"] { border-color: #a7f3d0; background: #ecfdf5; color: #022c22; }
+.message-alert[data-alert="important"] { border-color: #ddd6fe; background: #f5f3ff; color: #2e1065; }
+.message-alert[data-alert="warning"] { border-color: #fde68a; background: #fffbeb; color: #451a03; }
+.message-alert[data-alert="caution"] { border-color: #fecaca; background: #fef2f2; color: #450a0a; }
+:root.dark .message-alert { border-color: #0c4a6e; background: #0b1d2a; color: #e0f2fe; }
+:root.dark .message-alert[data-alert="tip"] { border-color: #064e3b; background: #0a1f19; color: #d1fae5; }
+:root.dark .message-alert[data-alert="important"] { border-color: #4c1d95; background: #1b1430; color: #ede9fe; }
+:root.dark .message-alert[data-alert="warning"] { border-color: #78350f; background: #241805; color: #fef3c7; }
+:root.dark .message-alert[data-alert="caution"] { border-color: #7f1d1d; background: #2a1010; color: #fee2e2; }
+.message-details { margin: 0 0 16px; }
+.message-details > summary { width: fit-content; font-weight: 600; }
+.message-details[open] > summary { margin-bottom: 8px; }
+.message-details > :not(summary) { margin-left: 20px; }
+.message-table { margin: .75em 0; }
+.message-markdown .message-table .message-table-scroll { margin-block: 0; }
+.message-table-copy { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 6px; border: 0; border-radius: 6px; background: none; color: var(--text-muted); font-size: 11.5px; cursor: pointer; opacity: .7; }
+.message-table-copy:hover, .message-table-copy[data-popup-open] { background: var(--surface-muted); color: var(--text); opacity: 1; }
+/* Find in chat draws matches with the CSS Custom Highlight API (ChatFind). */
+::highlight(chat-find) { background-color: #fde68a; color: #1c1917; }
+::highlight(chat-find-current) { background-color: #f59e0b; color: #1c1917; }
+:root.dark ::highlight(chat-find) { background-color: #713f12; color: #fefce8; }
 .code-token { color: var(--code-light, inherit); }
 :root[data-theme="dark"] .code-token { color: var(--code-dark, inherit); }
 .task-activity { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 12px 0; }
@@ -567,7 +607,7 @@ button { color: inherit; }
 .task-activity:has(.plan-steps) { position: relative; }
 .task-activity:has(.plan-steps) > summary { padding-right: 124px; }
 .task-activity:has(.plan-steps) .message-code-actions { position: absolute; top: 8px; right: 12px; padding: 0; border: 0; }
-.task-activity:has(.plan-steps) .message-code-actions > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.task-activity:has(.plan-steps) .message-code-actions > span:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .task-activity .plan-explanation { flex-shrink: 0; max-height: 120px; overflow: auto; }
 .task-activity .plan-steps { flex: 1; min-height: 0; }
 .task-activity .plan-source { flex-shrink: 0; }

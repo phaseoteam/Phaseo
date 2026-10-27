@@ -52,7 +52,7 @@ app.whenReady().then(async()=>{
  await run(`Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()`);
  await wait(`Array.from(document.querySelectorAll('nav[aria-label="Code chats"] [role=button]')).some(row=>row.textContent.includes('Improve the website')&&row.textContent.includes('Website'))`);
  await select('Improve the website');
- await wait(`document.querySelector('main [aria-live=polite] ol')?.textContent.includes('Apply the design')`);
+ await wait(`document.querySelector('main [data-conversation-viewport] ol')?.textContent.includes('Apply the design')`);
  await capture('chat-plan-checklist');
  await run(`(()=>{const input=document.querySelector('[aria-label="Message"]');window.__auditType(input,'Keep this draft')})()`);
  await panel('Browser');await wait(`Boolean(document.querySelector('.browser-surface'))`);

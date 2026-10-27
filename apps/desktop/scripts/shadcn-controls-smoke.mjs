@@ -84,7 +84,7 @@ app.whenReady().then(async () => {
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       await wait("document.querySelectorAll('main [data-conversation-id^=\"message:\"]').length===2");
-      if (!await run("(()=>{const [user,assistant]=Array.from(document.querySelectorAll('main [data-conversation-id^=\"message:\"]')).map(node=>(node.querySelector('[data-selectable]')??node).getBoundingClientRect()),composer=document.querySelector('main form').getBoundingClientRect(),history=document.querySelector('main [aria-live=polite]');return user.right<=assistant.right+1&&user.left>assistant.left&&composer.right<=innerWidth&&composer.bottom<=innerHeight&&(history.scrollHeight<=history.clientHeight||getComputedStyle(history).overflowY==='auto');})()")) throw Error("Chat alignment or conversation scrolling missing");
+      if (!await run("(()=>{const [user,assistant]=Array.from(document.querySelectorAll('main [data-conversation-id^=\"message:\"]')).map(node=>(node.querySelector('[data-selectable]')??node).getBoundingClientRect()),composer=document.querySelector('main form').getBoundingClientRect(),history=document.querySelector('main [data-conversation-viewport]');return user.right<=assistant.right+1&&user.left>assistant.left&&composer.right<=innerWidth&&composer.bottom<=innerHeight&&(history.scrollHeight<=history.clientHeight||getComputedStyle(history).overflowY==='auto');})()")) throw Error("Chat alignment or conversation scrolling missing");
       await capture("chat-design", `${width}-${theme}`);
     }
     owner.setSize(1440, 920);

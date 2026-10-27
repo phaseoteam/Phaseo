@@ -20,7 +20,7 @@ import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles, projectPullRequestFilesViewed, projectSetPullRequestFilesViewed } from "./projectPullRequestFiles";
 import { projectPullRequestThreads } from "./projectPullRequestThreads";
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
@@ -46,12 +46,14 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
-import { gitReview, listProjectFiles, readFilePreview, readProjectFile } from "./projectFiles";
+import { gitReview, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
 import { turnChanges } from "./gitCheckpoints";
 import { isTreeId } from "../shared/gitDiff";
 import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
+import { searchProjectContents } from "./projectContentSearch";
+import { cloneRepository, cloneSource } from "./projectClone";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -552,6 +554,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
 ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.search", undefined, () => searchProjectFiles(root, query as string)); });
+ipcMain.handle("workspace:search-contents", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.searchContents", undefined, () => searchProjectContents(root, query)); });
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");
@@ -624,7 +627,8 @@ ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
 ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
-ipcMain.handle("workspace:file-preview", (event, id: unknown, filename: unknown) => { const root = projectRoot(event, id); if (typeof filename !== "string") throw new Error("Invalid file request."); return readFilePreview(root, filename, extractPdfText); });
+// Replies name images by absolute path as often as by relative one; either must be inside the project.
+ipcMain.handle("workspace:file-preview", async (event, id: unknown, filename: unknown) => { const root = projectRoot(event, id); if (typeof filename !== "string") throw new Error("Invalid file request."); return readFilePreview(root, await projectRelativePath(root, filename), extractPdfText); });
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
@@ -695,6 +699,16 @@ ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.conversationPage(query);
 });
+ipcMain.handle("workspace:conversation-find", (event, query: unknown) => {
+	if (shutdownStarted) return;
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.findInConversation(query);
+});
+ipcMain.handle("workspace:search-messages", (event, query: unknown) => {
+	if (shutdownStarted) return [];
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.searchMessages(query);
+});
 ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unknown) => {
 	const window = senderWindow(event);
 	if (!window || typeof id !== "string" || (format !== "markdown" && format !== "json")) throw new Error("Invalid conversation export.");
@@ -731,6 +745,17 @@ ipcMain.handle("workspace:choose-project", async event => {
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
+});
+// T3's Clone from a remote URL: asks where to put the checkout, clones it and adds it as a project.
+ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
+	const window = senderWindow(event);
+	if (!window || shutdownStarted) throw new Error("Untrusted workspace request.");
+	cloneSource(url);
+	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here" });
+	if (result.canceled || !result.filePaths[0]) return undefined;
+	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
+	const project = workspaceRuntime.store.addProject(directory);
+	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
 });
 ipcMain.handle("workspace:project-file", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");
@@ -982,6 +1007,15 @@ ipcMain.handle("desktop:install-update", (event) => {
 	if (senderWindow(event)) autoUpdater.quitAndInstall();
 });
 
+// The dock (macOS) and launcher (Linux) count it; Windows has no count, so the taskbar button shows an overlay instead.
+ipcMain.handle("desktop:set-badge", (event, count: unknown, overlay: unknown) => {
+	const window = senderWindow(event);
+	if (!window || !Number.isSafeInteger(count) || (count as number) < 0 || (count as number) > 100_000) return;
+	app.setBadgeCount(count as number);
+	if (process.platform !== "win32") return;
+	const image = count && typeof overlay === "string" && overlay.length < 50_000 && overlay.startsWith("data:image/png;base64,") ? nativeImage.createFromDataURL(overlay) : null;
+	window.setOverlayIcon(image && !image.isEmpty() ? image : null, image ? `${count} unread` : "");
+});
 ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 	if (!senderWindow(event) || typeof url !== "string" || !isAllowedExternalUrl(url)) return false;
 	await shell.openExternal(url);

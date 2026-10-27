@@ -19,6 +19,10 @@ import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
 import { QuoteToolbar } from "./QuoteToolbar";
 import { TurnChanges } from "./TurnChanges";
+import { MessageFold } from "./MessageFold";
+import { ConversationAnnouncer } from "./ConversationAnnouncer";
+import { ChatFindBar, clearPendingFind, FindTargetContext, useFindTarget, usePendingFind } from "./ChatFind";
+import { useCommand } from "../lib/keybindings";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -44,8 +48,9 @@ function CopyButton({ text }: { text: string }) {
 
 function UserMessage({ message, projectId, onAttachment, onBranch, onRewind, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean }) {
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
+		<h3 className="sr-only">You said</h3>
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
-		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageText text={message.text} projectId={projectId} />
+		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageFold id={message.id} text={message.text}><MessageText text={message.text} projectId={projectId} /></MessageFold>
 			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
 		</div>
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
@@ -107,9 +112,11 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 }
 
 function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]; user?: Message; live: boolean; complete: boolean; task: Task }) {
-	const [open, setOpen] = useState(live);
+	const [opened, setOpen] = useState(live);
 	useEffect(() => { setOpen(live); }, [live]);
 	const steps = entries.filter(entry => entry.kind === "activity" ? entry.value.type !== "usage" : true);
+	// Find in chat opens the log around its match.
+	const found = useFindTarget(steps.map(entry => entry.value.id)), open = opened || found;
 	if (!steps.length) return null;
 	const tools = entries.filter(entry => entry.kind === "activity" && entry.value.type === "tool").length;
 	const plan = entries.find(entry => entry.kind === "activity" && entry.value.type === "plan" && entry.value.steps?.length);
@@ -124,7 +131,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
 				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
-				: <div key={entry.value.id} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
+				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
 	</div>;
@@ -132,7 +139,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 
 function AssistantHeader({ task }: { task: Task }) {
 	const model = knownModel(task.model);
-	return <div className="flex items-center gap-2 text-[13px] font-semibold">
+	return <div role="heading" aria-level={3} className="flex items-center gap-2 text-[13px] font-semibold">
 		<span className="flex size-5 items-center justify-center [&_img]:size-4.5 [&_.harness-logo]:size-4.5"><ModelLogo model={model ?? { id: task.model, name: task.model }} harness={task.harness} /></span>
 		<ModelInfoCard harness={task.harness} model={task.model}>{task.model === "default" ? harnessNames[task.harness] : model?.name ?? modelLabel(task.model)}</ModelInfoCard>
 		<span className="font-medium text-muted-foreground">{task.harness === "phaseo" ? "via Phaseo" : `in ${harnessNames[task.harness]}`}</span>
@@ -162,7 +169,8 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
 		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
-			{!compact && <AssistantHeader task={task} />}
+			{/* Messages are headings, so a screen reader's heading keys move between them. */}
+			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
@@ -192,6 +200,12 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const following = useRef(true);
 	const anchor = useRef<{ id?: string; top: number; scroll: number } | undefined>(undefined);
 	const [showLatest, setShowLatest] = useState(false);
+	// Find in chat (Mod+F), or a find the palette's message search asked for; `key` restarts the bar for a new request.
+	const [find, setFind] = useState<{ key: number; focus: number; initial?: { query: string; messageId?: string } }>();
+	const [findTarget, setFindTarget] = useState<string>();
+	const pendingFind = usePendingFind(task.id);
+	useEffect(() => { if (!pendingFind || compact) return; clearPendingFind(); setFind(current => ({ key: (current?.key ?? 0) + 1, focus: (current?.focus ?? 0) + 1, initial: { query: pendingFind.query, messageId: pendingFind.messageId } })); }, [pendingFind, compact]);
+	useCommand("chat.find", () => setFind(current => ({ key: current?.key ?? 0, focus: (current?.focus ?? 0) + 1, initial: current?.initial })), !compact);
 	// Message pages carry their turns' activities, so steps arrive with the messages they belong to.
 	const messages = useConversationPage(task, "messages", following, remember);
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
@@ -266,7 +280,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	}, []);
 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
-		<ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, "aria-live": "polite" }}>
+		<FindTargetContext value={findTarget}><ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" } }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
@@ -278,7 +292,11 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
 				{children}
 			</div>
-		</ScrollArea>
+		</ScrollArea></FindTargetContext>
+		{find && <ChatFindBar key={find.key} taskId={task.id} revision={task.revision ?? 0} host={host} page={messages.page} target={findTarget} onTarget={setFindTarget} initial={find.initial} focusSignal={find.focus} onClose={() => setFind(undefined)}
+			loaded={id => messages.page.entries.some(entry => entry.id === id)} jump={(id, turnId) => messages.jumpTo(turnId ?? id)}
+			onScrolled={() => { following.current = false; if (host.current) lastScroll.current = host.current.scrollTop; }} />}
+		<ConversationAnnouncer task={task} />
 		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
 		<QuoteToolbar root={content} />
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}

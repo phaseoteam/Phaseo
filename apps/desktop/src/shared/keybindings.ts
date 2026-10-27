@@ -14,7 +14,7 @@ export const keybindingCommands = [
 	{ command: "thread.previous", label: "Previous chat", group: "Chats", keys: ["mod+shift+["] },
 	{ command: "thread.next", label: "Next chat", group: "Chats", keys: ["mod+shift+]"] },
 	{ command: "thread.settle", label: "Settle or un-settle chat", group: "Chats", keys: ["mod+shift+s"], when: "codeMode && chatOpen" },
-	{ command: "thread.undo", label: "Undo settle, snooze, unpin or archive", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
+	{ command: "thread.undo", label: "Undo settle, snooze, unpin, archive or delete", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	// The message box's own keys (T3's composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
 	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
@@ -23,6 +23,10 @@ export const keybindingCommands = [
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
 	{ command: "composer.stash", label: "Stash the draft, or bring back the last stashed", group: "Composer", keys: ["mod+s"], when: "chatOpen && !terminalFocused" },
+	// Shares Mod+F with the Pull requests page's search: that page replaces the chat while it is open.
+	{ command: "chat.find", label: "Find in chat", group: "Chats", keys: ["mod+f"], when: "chatOpen && !terminalFocused && !browserFocused" },
+	{ command: "filePicker.toggle", label: "Go to file", group: "Chats", keys: ["mod+p"], when: "chatOpen && !terminalFocused && !browserFocused" },
+	{ command: "projectSearch.toggle", label: "Search in files", group: "Chats", keys: ["mod+shift+f"], when: "chatOpen && !terminalFocused && !browserFocused" },
 	{ command: "rightPanel.toggle", label: "Toggle right pane", group: "Panes", keys: ["mod+alt+b"] },
 	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen && !terminalFocused" },
 	{ command: "terminal.toggle", label: "Toggle terminal", group: "Panes", keys: ["mod+j"] },

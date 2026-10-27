@@ -17,6 +17,8 @@ import type { WorkspacePreferences } from "./preferences";
 import type { InstructionDocument, InstructionEdit } from "./instructions";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
+import type { ProjectContentSearch } from "./projectSearch";
+import type { ConversationFindQuery, ConversationFindResult, MessageSearchHit, MessageSearchQuery } from "./conversationSearch";
 import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
 import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
@@ -189,6 +191,10 @@ export type WorkspaceApi = {
 	turnChanges: (projectId: string, from: string, to: string) => Promise<TurnFileChange[]>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
+	/** Find in chat across every page of one chat. */
+	conversationFind: (query: ConversationFindQuery) => Promise<ConversationFindResult>;
+	/** Each chat's latest message containing the text, for the command palette. */
+	searchMessages: (query: MessageSearchQuery) => Promise<MessageSearchHit[]>;
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;
@@ -209,6 +215,8 @@ export type WorkspaceApi = {
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	chooseProject: () => Promise<WorkspaceOverview>;
+	/** Asks for a folder, clones the repository into it and adds the checkout as a project; undefined if cancelled. */
+	cloneProject: (url: string) => Promise<{ workspace: WorkspaceOverview; projectId: string } | undefined>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
 	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */
@@ -256,6 +264,8 @@ export type WorkspaceApi = {
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	/** Files and folders matching a query, best first, for `@` mentions. */
 	searchFiles: (projectId: string, query: string) => Promise<ProjectFile[]>;
+	/** Lines containing the text across the project's files Git does not ignore (Search in files). */
+	searchContents: (projectId: string, query: string) => Promise<ProjectContentSearch>;
 	editors: () => Promise<EditorInstallation[]>;
 	openProject: (projectId: string, request: ProjectOpenRequest) => Promise<void>;
 	readFile: (projectId: string, filename: string) => Promise<string>;

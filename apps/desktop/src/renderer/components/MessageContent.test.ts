@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { MessageContent } from "./MessageContent";
+import { imageSource, MessageContent } from "./MessageContent";
 import { MessageText } from "./MessageChips";
 
 const render = (text: string, projectId?: string, repairLocalLinks = false) => renderToStaticMarkup(createElement(MessageContent, { text, projectId, repairLocalLinks }));
@@ -69,5 +69,50 @@ describe("user message text", () => {
 		expect(html).toContain(">usage.ts</span></button> with <span");
 		expect(html).toContain(">Fix usage</span></span>\nat <a");
 		expect(html).toContain(">example.com</span></a> and `docs/a.md`");
+	});
+});
+
+describe("rich replies", () => {
+	it("renders GitHub alerts as callouts and leaves other quotes alone", () => {
+		const html = render("> [!WARNING]\n> Back up **first**.\n\n> Just a quote");
+		expect(html).toContain('<div role="note" class="message-alert" data-alert="warning">');
+		expect(html).toContain("Warning</p>");
+		expect(html).toContain("data-find-ignore");
+		expect(html).toContain("<p>Back up <strong>first</strong>.</p>");
+		expect(html).not.toContain("[!WARNING]");
+		expect(html).toContain("<blockquote>\n<p>Just a quote</p>\n</blockquote>");
+	});
+	it("renders details blocks with Markdown inside but keeps other raw HTML as text", () => {
+		const html = render("<details open>\n<summary>More <b>info</b></summary>\n\nHidden *text*\n\n</details>\n\n<b>bold</b>");
+		expect(html).toMatch(/<details class="message-details" open="">.*<summary>.*More info<\/summary><p>Hidden <em>text<\/em><\/p><\/details>/s);
+		expect(html).toContain("&lt;b&gt;bold&lt;/b&gt;");
+	});
+	it("typesets maths but keeps prices as text", () => {
+		const html = render("Area $\\pi r^2$ costs $5 and $10.\n\n$$\na+b\n$$");
+		expect(html).toContain('aria-label="Inline equation" data-markdown-copy="$\\pi r^2$"');
+		expect(html).toContain("costs $5 and $10.");
+		expect(html).toContain('aria-label="Equation"');
+	});
+	it("shows web images and leaves project images to load, with mermaid fences as diagrams", () => {
+		const html = render("![Chart](https://example.com/chart.png)\n\n```mermaid\ngraph TD; A-->B\n```");
+		expect(html).toContain('aria-label="Open image: Chart"><img data-message-image="" data-href="https://example.com/chart.png" src="https://example.com/chart.png"');
+		expect(html).toContain('aria-label="Show code"');
+		expect(html).toContain('<pre class="message-diagram-pending">graph TD; A--&gt;B</pre>');
+	});
+	it("offers wrapping on code blocks and copying on tables", () => {
+		const html = render("```ts\nconst a = 1;\n```\n\n| a | b |\n|---|---|\n| 1 | 2 |");
+		expect(html).toContain('aria-label="Wrap long lines"');
+		expect(html).toContain('aria-label="Copy table"');
+	});
+});
+
+describe("reply image sources", () => {
+	it("loads web and inline images directly and reads anything else from the project", () => {
+		expect(imageSource("https://example.com/a.png")).toEqual({ kind: "direct", src: "https://example.com/a.png" });
+		expect(imageSource("data:image/png;base64,AAAA")).toEqual({ kind: "direct", src: "data:image/png;base64,AAAA" });
+		expect(imageSource("out/plot%20one.png?raw=1")).toEqual({ kind: "project", path: "out/plot one.png" });
+		expect(imageSource("file:///E:/repo/out.png")).toEqual({ kind: "project", path: "E:/repo/out.png" });
+		expect(imageSource("http://example.com/a.png")).toBeUndefined();
+		expect(imageSource("javascript:alert(1)")).toBeUndefined();
 	});
 });
