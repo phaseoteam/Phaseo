@@ -1293,6 +1293,8 @@
 		"runNeedsSave": "実行するにはプリセットを保存してください。",
 		"runUnsaved": "テンプレートの変更を実行するには、先に保存してください。",
 		"runFailed": "リクエストに失敗しました（{status}）。",
+		"runNoCredits": "ワークスペースのクレジットが残っていないため、プリセットを実行できません。",
+		"runAddCredits": "クレジットを追加",
 		"replyMeta": "{model} · 入力 {input} トークン、出力 {output} トークン",
 		"replyEmpty": "モデルはテキストを返しませんでした。",
 		"issuesTitle": "結果を表示するには、次の点を修正してください"
