@@ -7064,6 +7064,51 @@
 				"skillNameTaken": "Ein anderer gespeicherter Skill hat bereits diesen Namen."
 			}
 		},
+		"pages": {
+			"title": "Geteilte Seiten",
+			"description": "Webseiten, die der Agent veröffentlicht und in seiner Antwort verlinkt, wenn ein Bericht, eine Tabelle oder ein Diagramm für eine Slack-Nachricht zu viel ist. Eine Seite kann enthalten, was in Slack gesagt wurde, und wird deshalb nur bis zu ihrem Ablauf aufbewahrt. Beim Deinstallieren werden alle gelöscht.",
+			"enable": "Agent darf Seiten veröffentlichen",
+			"enableHelp": "Ausgeschaltet veröffentlicht er keine. Bereits veröffentlichte Seiten bleiben, bis sie ablaufen oder du sie hier löschst.",
+			"externalHelp": "Personen aus anderen Unternehmen (Slack Connect) können keine Seiten veröffentlichen.",
+			"turnedOn": "Der Agent kann wieder Seiten veröffentlichen.",
+			"turnedOff": "Der Agent veröffentlicht keine Seiten mehr. Veröffentlichte Seiten bleiben, bis sie ablaufen.",
+			"saved": "Gespeichert.",
+			"loading": "Wird geladen…",
+			"unavailable": "Geteilte Seiten sind hier nicht verfügbar.",
+			"expiry": "Neue Seiten aufbewahren für",
+			"days": "{days} Tage",
+			"expiryHelp": "Seiten werden gelöscht, wenn sie ablaufen. Eine Änderung gilt für neue Seiten.",
+			"linkAccess": "Alle mit dem Link können Seiten ansehen",
+			"linkAccessHelp": "Ausgeschaltet braucht jede Seite eine Anmeldung mit Slack, auch bereits veröffentlichte.",
+			"defaultAccess": "Neue Seiten sind offen für",
+			"access": {
+				"link": "Alle mit dem Link",
+				"workspace": "Personen in diesem Slack-Workspace"
+			},
+			"workspaceHelp": "Für eine Workspace-Seite melden sich Personen mit Slack an. Gäste nur, wenn Gäste den Agenten nutzen dürfen. Der Agent nimmt diese Einstellung, außer jemand bittet um die andere.",
+			"noSignIn": "„Mit Slack anmelden“ ist für diese Slack-App nicht eingerichtet, deshalb sind Seiten für alle mit dem Link offen.",
+			"noWay": "Ohne Link-Freigabe und ohne „Mit Slack anmelden“ kann der Agent keine Seiten veröffentlichen.",
+			"listTitle": "Veröffentlichte Seiten",
+			"used": "{used} von {limit} aufbewahrt",
+			"empty": "Noch keine Seiten. In Slack kann man den Agenten um einen Bericht, eine Tabelle oder ein Diagramm als Seite bitten.",
+			"columns": {
+				"page": "Seite",
+				"access": "Wer sie sehen kann",
+				"published": "Veröffentlicht",
+				"expires": "Läuft ab",
+				"views": "Aufrufe",
+				"actions": "Aktionen"
+			},
+			"by": "von {user}",
+			"delete": "Löschen",
+			"deletePage": "Seite löschen",
+			"deleteTitle": "{title} löschen?",
+			"deleteDescription": "Der Link funktioniert sofort nicht mehr. Das lässt sich nicht rückgängig machen.",
+			"deleted": "Seite gelöscht.",
+			"errors": {
+				"pageNotFound": "Sie wurde bereits gelöscht oder ist abgelaufen. Lade die Seite neu, um den aktuellen Stand zu sehen."
+			}
+		},
 		"uninstall": {
 			"description": "Entfernt den Agenten aus Slack und löscht seinen API-Schlüssel. Frühere Abrechnungen bleiben in deinem Abrechnungsverlauf.",
 			"button": "Deinstallieren",

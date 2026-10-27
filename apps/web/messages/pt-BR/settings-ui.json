@@ -7064,6 +7064,51 @@
 				"skillNameTaken": "Outra habilidade salva já tem esse nome."
 			}
 		},
+		"pages": {
+			"title": "Páginas compartilhadas",
+			"description": "Páginas web que o agente publica e coloca como link na resposta quando um relatório, uma tabela ou um gráfico não cabe bem numa mensagem do Slack. Uma página pode incluir o que foi dito no Slack, então ela só é mantida até expirar. Desinstalar apaga todas.",
+			"enable": "Permitir que o agente publique páginas",
+			"enableHelp": "Desativado, ele não publica nenhuma. As páginas já publicadas ficam até expirar ou até você excluí-las aqui.",
+			"externalHelp": "Pessoas de outras empresas (Slack Connect) não podem publicar páginas.",
+			"turnedOn": "O agente pode publicar páginas de novo.",
+			"turnedOff": "O agente não publica mais páginas. As publicadas ficam até expirar.",
+			"saved": "Salvo.",
+			"loading": "Carregando…",
+			"unavailable": "Páginas compartilhadas não estão disponíveis aqui.",
+			"expiry": "Manter páginas novas por",
+			"days": "{days} dias",
+			"expiryHelp": "As páginas são apagadas quando expiram. Uma mudança vale para as páginas novas.",
+			"linkAccess": "Qualquer pessoa com o link pode ver as páginas",
+			"linkAccessHelp": "Desativado, toda página pede login com o Slack, inclusive as já publicadas.",
+			"defaultAccess": "Páginas novas ficam abertas para",
+			"access": {
+				"link": "Qualquer pessoa com o link",
+				"workspace": "Pessoas deste workspace do Slack"
+			},
+			"workspaceHelp": "Para ver uma página do workspace, as pessoas entram com o Slack. Convidados só podem quando convidados podem usar o agente. O agente usa esta opção, a menos que alguém peça a outra.",
+			"noSignIn": "O login com o Slack não está configurado para este app do Slack, então as páginas ficam abertas para qualquer pessoa com o link.",
+			"noWay": "Sem compartilhamento por link e sem login com o Slack configurado, o agente não consegue publicar páginas.",
+			"listTitle": "Páginas publicadas",
+			"used": "{used} de {limit} mantidas",
+			"empty": "Nenhuma página ainda. No Slack, é só pedir ao agente um relatório, uma tabela ou um gráfico como página.",
+			"columns": {
+				"page": "Página",
+				"access": "Quem pode ver",
+				"published": "Publicada",
+				"expires": "Expira",
+				"views": "Visualizações",
+				"actions": "Ações"
+			},
+			"by": "por {user}",
+			"delete": "Excluir",
+			"deletePage": "Excluir página",
+			"deleteTitle": "Excluir {title}?",
+			"deleteDescription": "O link para de funcionar na hora. Não dá para desfazer.",
+			"deleted": "Página excluída.",
+			"errors": {
+				"pageNotFound": "Ela já foi excluída ou expirou. Recarregue para ver o que sobrou."
+			}
+		},
 		"uninstall": {
 			"description": "Remove o agente do Slack e exclui a chave de API dele. As cobranças anteriores continuam no seu histórico de faturamento.",
 			"button": "Desinstalar",

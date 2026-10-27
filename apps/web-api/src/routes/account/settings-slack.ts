@@ -26,6 +26,7 @@ import {
 	AUTO_MODEL_ID,
 	nanosToUsd,
 	parseInstallSettings,
+	pageAccessUpdate,
 	parseSettingsPatch,
 	planProblem,
 	usdToNanos,
@@ -72,6 +73,7 @@ const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "team_name", "enterprise_id", "bot_user_id", "key_id", "guardrail_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"pages_enabled", "page_expiry_days", "page_default_access", "page_link_access",
 	"installed_by", "installed_at", "uninstalled_at", "updated_at",
 ].join(",");
 const CUSTOM_APP_COLUMNS = "id,slack_app_id,client_id,created_at,updated_at";
@@ -105,6 +107,10 @@ type InstallationRow = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	status: string;
+	pages_enabled: boolean;
+	page_expiry_days: number;
+	page_default_access: string;
+	page_link_access: boolean;
 	installed_by: string | null;
 	installed_at: string;
 	uninstalled_at: string | null;
@@ -291,6 +297,10 @@ function settingsView(row: InstallationRow, keyLimitNanos: number) {
 		allow_guests: row.allow_guests,
 		allow_external_users: row.allow_external_users,
 		token_monthly_limit_usd: nanosToUsd(keyLimitNanos),
+		pages_enabled: row.pages_enabled,
+		page_expiry_days: row.page_expiry_days,
+		page_default_access: row.page_default_access,
+		page_link_access: row.page_link_access,
 	};
 }
 
@@ -675,12 +685,19 @@ accountSettingsSlackRouter.patch("/slack", bodyLimit({ maxSize: 128 * 1024 }), a
 	if ("response" in access) return access.response;
 	const parsed = parseSettingsPatch(body);
 	if (parsed.ok === false) return badRequest(c, parsed.message, parsed.code);
-	const { update, keyMonthlyLimitNanos, status, changedFields } = parsed.value;
+	const { keyMonthlyLimitNanos, status } = parsed.value;
 	const { context } = access;
 	const live = await liveInstallation(context.client, context.workspaceId);
 	if (live.error) return json(c, { error: "settings_unavailable" }, 503);
 	const current = live.row;
 	if (!current) return json(c, { error: "not_installed", message: "The Slack agent is not installed in this workspace" }, 404);
+	// Turning link sharing off moves a link default for new pages to the workspace.
+	const pageAccess = pageAccessUpdate(parsed.value.update, current);
+	if (pageAccess.ok === false) return badRequest(c, pageAccess.message, pageAccess.code);
+	const update = pageAccess.value;
+	const changedFields = update.page_default_access === parsed.value.update.page_default_access
+		? parsed.value.changedFields
+		: [...parsed.value.changedFields, "page_default_access"];
 	// payment_due is cleared only by paying; pausing or resuming must not get around it.
 	if (status !== undefined && current.status === "payment_due") {
 		return json(c, { error: "payment_due", message: "Answers resume once last month's Slack agent charge is paid" }, 409);
@@ -797,6 +814,9 @@ accountSettingsSlackRouter.delete("/slack", async (c) => {
 	if (result.error) return json(c, { error: "settings_write_failed" }, 503);
 
 	if (current.key_id && current.guardrail_id) await removeAgentGuardrail(context, current.key_id, current.guardrail_id);
+	// Its shared pages go too. Should this fail, the Slack Worker deletes them the next time
+	// one is opened or within a day, once it finds the installation uninstalled.
+	c.executionCtx.waitUntil(deleteAgentPages(c.env, current.id));
 	await auditSlack(c, context, "uninstalled", { id: current.id, name: current.team_name }, {
 		team_id: current.team_id,
 		enterprise_id: current.enterprise_id,
@@ -813,6 +833,15 @@ accountSettingsSlackRouter.delete("/slack", async (c) => {
 	}));
 	return json(c, { uninstalled: true, slack_uninstalled: slackUninstalled });
 });
+
+async function deleteAgentPages(env: Env, installationId: string): Promise<void> {
+	if (!env.SLACK_AGENT) return;
+	try {
+		await env.SLACK_AGENT.deletePages(installationId);
+	} catch {
+		console.error("[slack-agent] uninstall: shared pages not deleted", { installationId });
+	}
+}
 
 /** Unlinks the agent's guardrail from its key, and deletes it unless an admin has given it to other keys or members. */
 async function removeAgentGuardrail(context: AccountWorkspaceContext, keyId: string, guardrailId: string): Promise<void> {

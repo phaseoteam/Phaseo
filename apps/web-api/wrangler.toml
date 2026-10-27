@@ -52,6 +52,15 @@ binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs"
 preview_bucket_name = "phaseo-gateway-io-logs-preview"
 
+# The Slack agent Worker's admin entrypoint (apps/slack, SlackAgentAdmin): Settings →
+# Slack lists and deletes the agent's shared pages, and uninstalling deletes them.
+# A named entrypoint is reachable only through bindings like this one. Staging has
+# none, so its settings show no pages.
+[[services]]
+binding = "SLACK_AGENT"
+service = "phaseo-slack-agent"
+entrypoint = "SlackAgentAdmin"
+
 # PR previews deploy this separately named Worker to the account's workers.dev
 # subdomain. It deliberately has no phaseo.app route, so it cannot intercept
 # production traffic.

@@ -41,7 +41,8 @@ function installationRow(overrides: Record<string, unknown> = {}) {
 		bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", model_choice_enabled: false, allowed_models: [], memory_enabled: true, instructions: null,
 		access_mode: "everyone", usage_data_mode: "dm", usage_data_channel_ids: [], plan_people: 10, over_plan: "refuse",
 		max_people: null, monthly_cap_nanos: 25_000_000_000, answers_per_person_hour: 60, allow_guests: true,
-		allow_external_users: false, status: "active", installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
+		allow_external_users: false, status: "active", pages_enabled: true, page_expiry_days: 30, page_default_access: "link", page_link_access: true,
+		installed_by: "user-a", installed_at: "2026-10-01T00:00:00Z",
 		uninstalled_at: null, updated_at: "2026-10-01T00:00:00Z", ...overrides,
 	};
 }
@@ -912,6 +913,43 @@ describe("Slack agent settings changes", () => {
 		expect((await patch({ memory_enabled: false })).status).toBe(403);
 	});
 
+	it("saves the shared page settings, and moves new pages to the workspace when link sharing goes off", async () => {
+		let requests = database({ role: "admin", installation: {} });
+		const saved = await patch({ pages_enabled: false, page_expiry_days: 90, page_default_access: "workspace" });
+		expect(saved.status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ pages_enabled: false, page_expiry_days: 90, page_default_access: "workspace" });
+		expect(((await saved.json()) as any).installation.settings).toMatchObject({ pages_enabled: false, page_expiry_days: 90, page_default_access: "workspace", page_link_access: true });
+
+		// Off, the default can only be the workspace: a link default moves with it, and the audit says so.
+		requests = database({ role: "admin", installation: {} });
+		expect((await patch({ page_link_access: false })).status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ page_link_access: false, page_default_access: "workspace" });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata.changed_fields).toEqual(["page_link_access", "page_default_access"]);
+		for (const [installation, body] of [
+			[{}, { page_link_access: false, page_default_access: "link" }],
+			[{ page_link_access: false, page_default_access: "workspace" }, { page_default_access: "link" }],
+		] as const) {
+			requests = database({ role: "admin", installation });
+			const response = await patch(body);
+			expect(response.status, JSON.stringify(body)).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "page_link_access_off" });
+			expect(find(requests, "PATCH", "/slack_installations")).toHaveLength(0);
+		}
+		// Turning it back on leaves the default where it is.
+		requests = database({ role: "admin", installation: { page_link_access: false, page_default_access: "workspace" } });
+		expect((await patch({ page_link_access: true })).status).toBe(200);
+		expect(find(requests, "PATCH", "/slack_installations")[0].body).toEqual({ page_link_access: true });
+
+		for (const [body, message] of [
+			[{ page_expiry_days: 14 }, "page_expiry_days must be one of: 7, 30, 90"],
+			[{ page_default_access: "public" }, "page_default_access must be one of: link, workspace"],
+			[{ pages_enabled: "yes" }, "pages_enabled must be true or false"],
+		] as const) {
+			database({ role: "admin", installation: {} });
+			expect(await (await patch(body)).json()).toMatchObject({ error: "bad_request", message });
+		}
+	});
+
 	it("is for admins, and 404s without an installation", async () => {
 		database({ role: "member", installation: {} });
 		expect((await patch({ status: "paused" })).status).toBe(403);
@@ -943,6 +981,21 @@ describe("Slack agent uninstall", () => {
 		// The unused agent guardrail goes too.
 		expect(find(requests, "DELETE", "/workspace_guardrails")[0].url.searchParams.get("id")).toBe(`eq.${GUARDRAIL_ID}`);
 		expect(find(requests, "POST", "/workspace_audit_events")[0].body).toMatchObject({ action: "slack_agent.uninstalled", metadata: { slack_uninstalled: true } });
+	});
+
+	it("deletes the agent's shared pages through the Slack Worker, and uninstalls even when that fails", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const deletePages = vi.fn(async () => undefined);
+		database({ role: "admin", installation: { secrets_ciphertext } });
+		const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", { SLACK_AGENT: { deletePages } });
+		expect(response.status).toBe(200);
+		await settle();
+		expect(deletePages).toHaveBeenCalledWith(INSTALLATION_ID);
+
+		database({ role: "admin", installation: { secrets_ciphertext } });
+		const failing = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", { SLACK_AGENT: { deletePages: async () => { throw new Error("binding down"); } } });
+		expect(await failing.json()).toMatchObject({ uninstalled: true });
+		await settle();
 	});
 
 	it("still uninstalls in Phaseo when Slack refuses", async () => {

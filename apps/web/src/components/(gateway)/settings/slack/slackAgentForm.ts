@@ -9,6 +9,7 @@ import { PLAN_TIERS, NANOS_PER_USD, slackAgentPlanNanos } from "@/lib/slack-agen
 export type SlackAccessMode = "everyone" | "linked";
 export type SlackUsageDataMode = "off" | "dm" | "dm_and_channels";
 export type SlackOverPlan = "refuse" | "move_up";
+export type SlackPageAccess = "link" | "workspace";
 
 export type SlackAgentSettings = {
 	plan_people: number;
@@ -29,6 +30,12 @@ export type SlackAgentSettings = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	token_monthly_limit_usd: number;
+	/** Shared pages the agent publishes (absent from an API that predates them): on or off, days a new one is kept, who may view it. */
+	pages_enabled?: boolean;
+	page_expiry_days?: number;
+	page_default_access?: SlackPageAccess;
+	/** Whether a page may be open to anyone with its link. Off, every page needs a Slack sign-in. */
+	page_link_access?: boolean;
 };
 
 export type SlackAgentInstallation = {

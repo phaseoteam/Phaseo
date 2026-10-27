@@ -76,6 +76,9 @@ describe("SlackAgentSettingsClient model spend", () => {
 		expect(html).toContain("Let the agent keep notes");
 		expect(html).toMatch(/Let the agent keep notes[\s\S]*?role="switch"[^>]*aria-checked="true"/);
 		expect(render(MONTH, [], { memory_enabled: false })).toMatch(/Let the agent keep notes[\s\S]*?role="switch"[^>]*aria-checked="false"/);
+		// So do the shared pages, with their switch as saved.
+		expect(html).toContain(">Shared pages<");
+		expect(render(MONTH, [], { pages_enabled: false })).toMatch(/Let the agent publish pages[\s\S]*?role="switch"[^>]*aria-checked="false"/);
 	});
 
 	it("adds each past month's model spend to the charges table", () => {

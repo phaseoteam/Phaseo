@@ -96,7 +96,7 @@ function notFound(c: any) {
 }
 
 /** The manager's context and the live installation, or the response that ends the request. */
-async function managedInstallation(c: any, workspaceId: unknown) {
+export async function managedInstallation(c: any, workspaceId: unknown) {
 	const access = await managerContext(c, workspaceId);
 	if (access.response) return { response: access.response } as const;
 	const live = await liveInstallation(access.context.client, access.context.workspaceId, "id,team_name");
