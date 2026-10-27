@@ -8798,6 +8798,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: Listar rótulos da predefinição
+      description: Lista os rótulos com nome, como production ou staging, e a versão publicada para a qual cada um aponta.
+      responses:
+        '200':
+          description: Lista de rótulos da predefinição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: Predefinição não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Definir um rótulo da predefinição
+      description: Aponta um rótulo para uma versão publicada, criando ou movendo o rótulo. Solicitações que fixam o rótulo, como @support-triage@production, usam a nova versão em cerca de 2 minutos. Voltar um rótulo para uma versão anterior é uma reversão.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Rótulo salvo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Rótulo inválido, ou nenhum ou ambos entre version_id e version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Só quem criou a predefinição ou um proprietário ou administrador do espaço de trabalho pode alterar os rótulos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Predefinição ou versão não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Remover um rótulo da predefinição
+      description: Remove um rótulo. Solicitações que ainda o fixam falham com preset_version_not_found.
+      responses:
+        '200':
+          description: Rótulo removido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Rótulo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Só quem criou a predefinição ou um proprietário ou administrador do espaço de trabalho pode alterar os rótulos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Predefinição ou rótulo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9288,6 +9385,14 @@ components:
       description: UUID, slug ou nome canônico da predefinição.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: Nome do rótulo, como production. De 1 a 32 letras minúsculas, números, hifens ou sublinhados, começando com uma letra; não pode parecer um rótulo de versão (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17550,6 +17655,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: Rótulos com nome, como production, que apontam para esta versão. Retornados ao listar versões.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17578,6 +17688,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Envie exatamente um entre version_id e version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: A versão publicada para a qual o rótulo vai apontar.
+        version:
+          type: string
+          maxLength: 64
+          description: Um rótulo de versão como v3, 1.2.0 ou 2026.10.27, ou outro rótulo como staging para copiar para onde ele aponta.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

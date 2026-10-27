@@ -8798,6 +8798,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: 列出预设标签
+      description: 列出 production、staging 等命名标签，以及每个标签指向的已发布版本。
+      responses:
+        '200':
+          description: 预设标签列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: 未找到预设
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: 设置预设标签
+      description: 将标签指向一个已发布的版本，必要时创建或移动该标签。固定到该标签的请求（例如 @support-triage@production）会在约 2 分钟内使用新版本。把标签移回较早的版本就是回滚。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: 标签已保存
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: 标签无效，或 version_id 和 version 都未提供或同时提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 只有预设的创建者或工作区所有者或管理员才能更改其标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到预设或版本
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: 移除预设标签
+      description: 移除一个标签。仍固定到该标签的请求会以 preset_version_not_found 失败。
+      responses:
+        '200':
+          description: 标签已移除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: 标签无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 只有预设的创建者或工作区所有者或管理员才能更改其标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到预设或标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9288,6 +9385,14 @@ components:
       description: 预设的 UUID、slug 或规范名称。
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: 标签名称，例如 production。由 1 到 32 个小写字母、数字、连字符或下划线组成，以字母开头；不能看起来像版本标签（v1、v2）。
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17550,6 +17655,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: 指向此版本的命名标签，例如 production。列出版本时返回。
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17578,6 +17688,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id 和 version 二者只能提供一个。
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: 标签要指向的已发布版本。
+        version:
+          type: string
+          maxLength: 64
+          description: 版本标签，例如 v3、1.2.0 或 2026.10.27；或另一个标签（例如 staging），以复制其指向。
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

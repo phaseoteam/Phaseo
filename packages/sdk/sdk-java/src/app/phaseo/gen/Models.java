@@ -2691,6 +2691,34 @@ public final class Models {
 		public String source_version_id;
 	}
 
+	public static class PresetLabel {
+		public String created_at;
+		public String label;
+		public String updated_at;
+		public String updated_by;
+		public String version_id;
+		public String version_label;
+		public Integer version_number;
+	}
+
+	public static class PresetLabelDeleteResponse {
+		public Boolean deleted;
+		public String label;
+	}
+
+	public static class PresetLabelListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class PresetLabelResponse {
+		public Object data;
+	}
+
+	public static class PresetLabelSetRequest {
+		public String version;
+		public String version_id;
+	}
+
 	public static class PresetListResponse {
 		public java.util.List<Object> data;
 		public Integer total_count;
@@ -2813,6 +2841,7 @@ public final class Models {
 		public String created_by;
 		public String description;
 		public String id;
+		public java.util.List<String> labels;
 		public String name;
 		public String preset_id;
 		public String release_notes;

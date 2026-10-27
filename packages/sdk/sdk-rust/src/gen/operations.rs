@@ -355,6 +355,11 @@ pub fn deletePreset<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 	client.request("DELETE", &resolved_path, body)
 }
 
+pub fn deletePresetLabel<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/presets/{}/labels/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?, path_segment(path.get("label").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
 pub fn deletePrivateModel<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/private-models/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
@@ -820,6 +825,11 @@ pub fn listOrganisations<T: Transport>(client: &Client<T>, path: &HashMap<String
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listPresetLabels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/presets/{}/labels", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn listPresets<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/presets");
 	client.request("GET", &resolved_path, body)
@@ -1098,6 +1108,11 @@ pub fn rotateWebhookEndpointSecret<T: Transport>(client: &Client<T>, path: &Hash
 pub fn rotateWorkspaceNotificationDestinationSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/notifications/destinations/{}/rotate-secret", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("POST", &resolved_path, body)
+}
+
+pub fn setPresetLabel<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/presets/{}/labels/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?, path_segment(path.get("label").map(String::as_str).unwrap_or_default())?);
+	client.request("PUT", &resolved_path, body)
 }
 
 pub fn setWorkspaceDepartmentMember<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {

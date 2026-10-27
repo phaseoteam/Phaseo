@@ -97,6 +97,8 @@ Marketplace copies remain pinned to the exact upstream version they copied. When
 
 Phaseo retains both the immediate source and the complete ancestry of every fork. Marketplace pages can therefore distinguish direct forks from all descendants, even when a preset has been copied and republished several times.
 
+Requests can pin a published version by its label, such as `@support-triage@v3`, or by a named label such as `production` that you point at a version. Moving a label back to an earlier version is a rollback. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).
+
 ## How preset merging works
 
 When a request resolves with a preset in gateway context, the preset is applied before provider routing:

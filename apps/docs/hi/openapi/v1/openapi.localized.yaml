@@ -8798,6 +8798,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: प्रीसेट लेबल सूचीबद्ध करें
+      description: production या staging जैसे नाम वाले लेबल और हर लेबल जिस प्रकाशित संस्करण पर है, उसे सूचीबद्ध करता है।
+      responses:
+        '200':
+          description: प्रीसेट लेबल की सूची
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: प्रीसेट नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: प्रीसेट लेबल सेट करें
+      description: किसी लेबल को प्रकाशित संस्करण पर लगाता है, लेबल बनाकर या उसे वहाँ ले जाकर। लेबल को pin करने वाले अनुरोध, जैसे @support-triage@production, लगभग 2 मिनट में नए संस्करण का उपयोग करते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: लेबल सहेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: अमान्य लेबल, या version_id और version में से कोई नहीं या दोनों
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या संस्करण नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: प्रीसेट लेबल हटाएँ
+      description: एक लेबल हटाता है। जो अनुरोध अब भी उसे pin करते हैं, वे preset_version_not_found के साथ विफल होते हैं।
+      responses:
+        '200':
+          description: लेबल हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: अमान्य लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या लेबल नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9288,6 +9385,14 @@ components:
       description: प्रीसेट का UUID, slug या canonical नाम।
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: लेबल का नाम, जैसे production। 1 से 32 छोटे अंग्रेज़ी अक्षर, अंक, हाइफ़न या अंडरस्कोर, अक्षर से शुरू; यह संस्करण लेबल (v1, v2) जैसा नहीं दिख सकता।
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17550,6 +17655,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: production जैसे नाम वाले लेबल जो इस संस्करण पर हैं। संस्करण सूचीबद्ध करते समय लौटाए जाते हैं।
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17578,6 +17688,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id और version में से ठीक एक भेजें।
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: वह प्रकाशित संस्करण जिस पर लेबल लगाना है।
+        version:
+          type: string
+          maxLength: 64
+          description: v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या staging जैसा कोई दूसरा लेबल जिसकी जगह कॉपी करनी है।
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object

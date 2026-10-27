@@ -2668,6 +2668,34 @@ pub struct PresetForkRequest {
 	pub source_version_id: Option<String>,
 }
 
+pub struct PresetLabel {
+	pub created_at: Option<Option<String>>,
+	pub label: String,
+	pub updated_at: Option<Option<String>>,
+	pub updated_by: Option<Option<String>>,
+	pub version_id: String,
+	pub version_label: Option<String>,
+	pub version_number: Option<i64>,
+}
+
+pub struct PresetLabelDeleteResponse {
+	pub deleted: bool,
+	pub label: String,
+}
+
+pub struct PresetLabelListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct PresetLabelResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct PresetLabelSetRequest {
+	pub version: Option<String>,
+	pub version_id: Option<String>,
+}
+
 pub struct PresetListResponse {
 	pub data: Vec<HashMap<String, String>>,
 	pub total_count: i64,
@@ -2790,6 +2818,7 @@ pub struct PresetVersion {
 	pub created_by: String,
 	pub description: Option<Option<String>>,
 	pub id: String,
+	pub labels: Option<Vec<String>>,
 	pub name: String,
 	pub preset_id: String,
 	pub release_notes: Option<Option<String>>,

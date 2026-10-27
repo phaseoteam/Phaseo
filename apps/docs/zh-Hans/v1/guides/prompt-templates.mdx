@@ -235,6 +235,54 @@ Phaseo 会在保存模板时检查它。存在语法错误、未知类型或默�
 
 保存的更改会在大约两分钟内对请求生效。
 
+## 版本和标签
+
+每次发布预设时，Phaseo 都会保存一个不可变的版本（参见[预设](./presets.mdx)）。除非请求固定了某个版本，否则请求会运行最新发布的版本。固定版本的请求会一并使用该版本的模型、参数和模板。
+
+使用 `prompt.version` 固定版本：
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` 接受 `v3`、`1.2.0` 或 `2026.10.27` 这样的版本标签，或 `production` 这样的标签。无论是否使用模板，你也可以把版本写进模型 ID：
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+公开预设使用 `@publisher/support-triage@production`。如果 `model` 和 `prompt.version` 都固定了版本，二者必须指向同一个版本。
+
+### 标签
+
+标签是 `production` 或 `staging` 这样的名称，指向一个已发布的版本。标签由 1 到 32 个小写字母、数字、连字符或下划线组成，以字母开头，且不能看起来像版本标签（`v1`、`v2`）。
+
+在**设置 -> 预设**中打开预设，在某个版本上使用**指定标签**来添加标签或把标签移到该版本。预设的创建者可以更改其标签；预设共享时，工作区所有者和管理员也可以。使用具有 `presets:write` 的[管理 API 密钥](../developers/management-api-keys.mdx)：
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+请求体接受 `version`（版本标签，或另一个标签以复制其指向）或 `version_id`。`GET /v1/presets/{id}/labels` 列出标签，`DELETE /v1/presets/{id}/labels/{label}` 移除标签。固定到已移除标签的请求会失败，直到重新添加该标签。
+
+### 回滚
+
+要回滚，请把标签移到较早的版本：在该版本上选择**将 production 移到这里**，或发送同样的请求并使用 `"version": "v2"`。固定到 `production` 的请求会重新运行 v2，你的应用无需任何更改。
+
+与其他预设更改一样，标签移动会在约两分钟内生效。
+
 ## 错误
 
 请求中的模板问题会返回 `400`，代码为 `validation_error`。`reason` 包含第一个问题的代码，`details` 列出所有问题及其路径：
@@ -268,11 +316,13 @@ Phaseo 会在保存模板时检查它。存在语法错误、未知类型或默�
 | `template_limit_exceeded` | 变量或渲染后的文本超过了下面的限制。 |
 | `template_rendered_empty` | 模板没有渲染出任何 user 或 assistant 消息，且请求也没有发送消息。 |
 | `template_endpoint_unsupported` | 预设带有模板，但从上述三个端点以外的端点调用。 |
-| `prompt_model_conflict` | `model` 指定的预设或模型与 `prompt.id` 不同。 |
-| `prompt_version_unsupported` | 请求设置了 `prompt.version`。 |
+| `prompt_model_conflict` | `model` 指定的预设或模型与 `prompt.id` 不同，或固定的版本与 `prompt.version` 不同。 |
+| `prompt_version_invalid` | `prompt.version` 为空、超过 64 个字符，或包含字母、数字、`.`、`_`、`+` 和 `-` 以外的字符。 |
 | `prompt_model_fallbacks_unsupported` | 请求设置了 `models` 回退。请改为在预设中列出回退模型。 |
 
 如果 `prompt.id` 指向的预设不在你的工作区中，会返回 `404`。
+
+固定的版本或标签不存在，或密钥无法使用时，会返回 `404`，原因为 `preset_version_not_found`。
 
 ## 限制
 
@@ -295,7 +345,6 @@ Phaseo 会在保存模板时检查它。存在语法错误、未知类型或默�
 
 ## 当前限制
 
-- 请求使用最后保存的模板。目前还不能用 `prompt.version` 固定到更早的版本。
 - `models` 回退不能与模板一起使用。请改为将回退模型添加到预设中。
 - 模板仅适用于 chat completions、Responses 和 Messages 请求。
 

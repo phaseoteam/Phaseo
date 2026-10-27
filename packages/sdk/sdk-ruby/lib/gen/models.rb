@@ -3806,6 +3806,37 @@ module Phaseo
     # @!attribute [rw] source_version_id
     #   @return [String, nil]
     PresetForkRequest = Struct.new(:source_version_id, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] label
+    #   @return [String]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] updated_by
+    #   @return [String, nil]
+    # @!attribute [rw] version_id
+    #   @return [String]
+    # @!attribute [rw] version_label
+    #   @return [String, nil]
+    # @!attribute [rw] version_number
+    #   @return [Integer, nil]
+    PresetLabel = Struct.new(:created_at, :label, :updated_at, :updated_by, :version_id, :version_label, :version_number, keyword_init: true)
+    # @!attribute [rw] deleted
+    #   @return [Boolean]
+    # @!attribute [rw] label
+    #   @return [String]
+    PresetLabelDeleteResponse = Struct.new(:deleted, :label, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    PresetLabelListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    PresetLabelResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] version
+    #   @return [String, nil]
+    # @!attribute [rw] version_id
+    #   @return [String, nil]
+    PresetLabelSetRequest = Struct.new(:version, :version_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] total_count
@@ -3963,6 +3994,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String]
+    # @!attribute [rw] labels
+    #   @return [Array<String>, nil]
     # @!attribute [rw] name
     #   @return [String]
     # @!attribute [rw] preset_id
@@ -3979,7 +4012,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] visibility
     #   @return [String]
-    PresetVersion = Struct.new(:config, :created_at, :created_by, :description, :id, :name, :preset_id, :release_notes, :slug, :version_label, :version_number, :versioning_method, :visibility, keyword_init: true)
+    PresetVersion = Struct.new(:config, :created_at, :created_by, :description, :id, :labels, :name, :preset_id, :release_notes, :slug, :version_label, :version_number, :versioning_method, :visibility, keyword_init: true)
     PresetVersioningMethod = Object
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]

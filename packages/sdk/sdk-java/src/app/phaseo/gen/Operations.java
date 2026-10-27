@@ -350,6 +350,11 @@ public final class Operations {
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Object deletePresetLabel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels/" + pathSegment(path != null && path.containsKey("label") ? path.get("label") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object deletePrivateModel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/private-models/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
@@ -815,6 +820,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listPresetLabels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listPresets(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/presets";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -1093,6 +1103,11 @@ public final class Operations {
 	public static Object rotateWorkspaceNotificationDestinationSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/notifications/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/rotate-secret";
 		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object setPresetLabel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels/" + pathSegment(path != null && path.containsKey("label") ? path.get("label") : "");
+		return client.request("PUT", resolvedPath, query, headers, body);
 	}
 
 	public static Object setWorkspaceDepartmentMember(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
