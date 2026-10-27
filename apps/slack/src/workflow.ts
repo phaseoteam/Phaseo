@@ -498,9 +498,12 @@ async function postQuestion(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 		}
 		return { status: "cancelled" };
 	}
-	// The answer is in progress for as long as the question waits: its meter place stays held.
+	// The answer is in progress for as long as the question waits: its meter place stays held,
+	// and so do the places of the turns queued behind it.
 	try {
-		await meterFor(deps.env, turn.installationId).keepPending({ eventId: turn.eventId, until: question.expiresAt ?? deps.now() });
+		const until = question.expiresAt ?? deps.now();
+		const meter = meterFor(deps.env, turn.installationId);
+		for (const eventId of [turn.eventId, ...await coordinator.queuedEventIds()]) await meter.keepPending({ eventId, until });
 	} catch {
 		console.error("[slack-agent] meter place not kept for the question", { turnId: turn.turnId, installationId: turn.installationId });
 	}

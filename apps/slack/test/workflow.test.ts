@@ -1044,6 +1044,27 @@ describe("AgentTurnWorkflow", () => {
 			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 		});
 
+		it("keeps the meter places of turns queued behind a question for as long as it waits", async () => {
+			let turn!: TurnRef;
+			step.onWait = async () => {
+				expect(meter().usage(NOW + 45 * 60_000).pending).toBe(2);
+				await click(turn, "U0PERSON01", 0);
+				return "event";
+			};
+			turn = await startTurn();
+			// Someone else asks in the same thread before the question goes out: queued behind it.
+			const coordinator = coordinatorOf(turn);
+			meter().admit({
+				settings: { id: INSTALLATION_ID, workspace_id: WORKSPACE_ID, status: "active", plan_people: 100, over_plan: "refuse", max_people: null, monthly_cap_nanos: 100_000_000_000, answers_per_person_hour: 60, allow_guests: true, allow_external_users: false },
+				slackUserId: "U0PERSON02", facts: { isBot: false, isExternal: false, isGuest: false }, eventId: "Ev0QUEUED01", now: NOW,
+			});
+			await expect(coordinator.enqueue({
+				threadKey: turn.threadKey, eventId: "Ev0QUEUED01", installationId: INSTALLATION_ID, teamId: TEAM_ID, channel: turn.channel, threadTs: turn.threadTs,
+				messageTs: "1792600000.009999", slackUserId: "U0PERSON02", kind: "mention", text: `<@${BOT_USER_ID}> me next`,
+			}, NOW)).resolves.toMatchObject({ status: "queued" });
+			await expect(runTurn(deps(askingAgent()), turn, step)).resolves.toEqual({ status: "answered" });
+		});
+
 		it("takes a reply in the thread from the person asked as their answer, and tells anyone else who writes that it's waiting", async () => {
 			let turn!: TurnRef;
 			const agent = askingAgent({ after: async (request) => JSON.stringify(request.resume?.toolOutputs[0].output) });
@@ -1051,6 +1072,8 @@ describe("AgentTurnWorkflow", () => {
 				processEvent(world.deps, hostedApp(world.env)!, eventEnvelope(mention({ user, text, ts, thread_ts: turn.threadTs, event_ts: ts }), { event_id: eventId }) as SlackEnvelope);
 			step.onWait = async () => {
 				await expect(inThread("U0PERSON02", `<@${BOT_USER_ID}> can I ask something?`, "Ev0OTHER001", "1792600050.000100")).resolves.toBe("queued");
+				// Queued behind the question: its place is kept as long as the question's, past the meter's usual 30 minutes.
+				expect(meter().usage(NOW + 45 * 60_000).pending).toBe(2);
 				await expect(inThread("U0PERSON01", `<@${BOT_USER_ID}> Germany, please`, "Ev0REPLY001", "1792600050.000200")).resolves.toBe("answered_question");
 				return "event";
 			};

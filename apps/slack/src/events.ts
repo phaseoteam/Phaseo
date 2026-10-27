@@ -339,6 +339,14 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return refuse(slack, target, "busy");
 	}
 	if (queued.status === "duplicate") return "duplicate";
+	// Queued behind a question that may wait up to an hour: the meter keeps their place for that long.
+	if (queued.status === "queued" && queued.waitingUntil) {
+		try {
+			await meter.keepPending({ eventId, until: queued.waitingUntil });
+		} catch {
+			console.error("[slack-agent] meter place not kept behind a question", { installationId: installation.id, eventId });
+		}
+	}
 	// The answer before theirs waits for someone else's reply to its question, which can take up to an hour.
 	if (queued.status === "queued" && queued.waitingFor) {
 		await replyPrivately(slack, target, `I'm waiting for <@${queued.waitingFor}> to answer my question in this thread. I'll answer you after that.`);

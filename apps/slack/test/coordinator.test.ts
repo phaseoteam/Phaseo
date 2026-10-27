@@ -368,8 +368,10 @@ describe("ThreadCoordinator", () => {
 			const wakes: Array<[number, number]> = [];
 			runner.wake = async (turn, n) => { wakes.push([turn.turnId, n]); };
 			await asking();
-			await expect(coordinator.enqueue(request("Ev0TEST0002", { slackUserId: "U0PERSON02" }), NOW)).resolves.toEqual({ status: "queued", turnId: 2, position: 1, waitingFor: "U0PERSON01" });
-			await expect(coordinator.enqueue(request("Ev0TEST0003"), NOW)).resolves.toEqual({ status: "queued", turnId: 3, position: 2 });
+			// Both say when the question expires, so the meter keeps their places that long.
+			await expect(coordinator.enqueue(request("Ev0TEST0002", { slackUserId: "U0PERSON02" }), NOW)).resolves.toEqual({ status: "queued", turnId: 2, position: 1, waitingFor: "U0PERSON01", waitingUntil: NOW + 60 * 60_000 });
+			await expect(coordinator.enqueue(request("Ev0TEST0003"), NOW)).resolves.toEqual({ status: "queued", turnId: 3, position: 2, waitingUntil: NOW + 60 * 60_000 });
+			await expect(coordinator.queuedEventIds()).resolves.toEqual(["Ev0TEST0002", "Ev0TEST0003"]);
 			await coordinator.cancel(NOW);
 			expect(wakes).toEqual([[1, 1]]);
 			// A turn that can't be woken waits out its question instead; stopping still works.

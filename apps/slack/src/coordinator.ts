@@ -46,8 +46,12 @@ export type TurnRequest = Omit<TurnRef, "turnId"> & {
 
 export type EnqueueResult =
 	| { status: "started"; turnId: number; position: number }
-	/** waitingFor: the running turn waits for this person's answer to its question. */
-	| { status: "queued"; turnId: number; position: number; waitingFor?: string }
+	/**
+	 * waitingFor: the running turn waits for this person's answer to its question.
+	 * waitingUntil: when that question expires; the meter keeps this turn's place
+	 * until then, so a long wait can't drop it from the monthly count.
+	 */
+	| { status: "queued"; turnId: number; position: number; waitingFor?: string; waitingUntil?: number }
 	| { status: "duplicate" }
 	| { status: "queue_full" };
 
@@ -266,7 +270,17 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		if (started?.status !== "queued") return { status: "started", turnId: queued.turnId, position: 0 };
 		const running = this.running();
 		const waiting = running ? this.openQuestion(running.id) : null;
-		return running && waiting && running.slack_user_id !== request.slackUserId ? { ...queued, waitingFor: running.slack_user_id } : queued;
+		if (!running || !waiting) return queued;
+		return {
+			...queued,
+			...(waiting.expiresAt ? { waitingUntil: waiting.expiresAt } : {}),
+			...(running.slack_user_id !== request.slackUserId ? { waitingFor: running.slack_user_id } : {}),
+		};
+	}
+
+	/** The event ids of the turns queued behind the running one, whose meter places a question's wait must keep. */
+	async queuedEventIds(): Promise<string[]> {
+		return this.sql.exec<{ event_id: string }>("SELECT event_id FROM turns WHERE status = 'queued' ORDER BY id").toArray().map((row) => row.event_id);
 	}
 
 	/** Starts queued turns while the thread is idle. A runner that finishes at once lets the next one start. */
