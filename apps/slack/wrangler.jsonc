@@ -61,9 +61,8 @@
       "routes": [
         { "pattern": "slack.phaseo.app", "custom_domain": true }
       ],
-      "services": [
-        { "binding": "PHASEO_API", "service": "phaseo-gateway" }
-      ],
+      // Agent turns call the gateway's public URL, not a service binding: a binding's
+      // request has no country, and providers that refuse an unknown country never answer.
       "vars": {
         "ENV": "production",
         "PHASEO_API_BASE_URL": "https://api.phaseo.app/v1",

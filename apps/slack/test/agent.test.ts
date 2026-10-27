@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayFetch, turnErrorText, type AgentTurnRequest } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest } from "../src/agent";
 
 function sse(events: unknown[]): Response {
 	return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "Content-Type": "text/event-stream" } });
@@ -91,15 +91,28 @@ describe("the SDK agent runner", () => {
 		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "max_cost:0.001" });
 	});
 
-	it("goes through the PHASEO_API service binding when there is one", async () => {
-		const binding = { fetch: vi.fn(async (_req: Request) => sse([COMPLETED])) };
-		const runner = createSdkAgentRunner({ fetchImpl: gatewayFetch({ PHASEO_API: binding as unknown as Fetcher }), baseUrl: "https://api.phaseo.app/v1" });
-		await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined });
-		const calls = binding.fetch.mock.calls.map(([req]) => `${req.method} ${req.url}`);
-		// One request: the agent client doesn't look the model up first.
-		expect(calls).toEqual(["POST https://api.phaseo.app/v1/responses"]);
-		expect(binding.fetch.mock.calls[0][0]).toBeInstanceOf(Request);
-		expect(gatewayFetch({})).toBe(fetch);
+	it("only sends the managed key to an HTTPS gateway, or plain HTTP on this machine", () => {
+		expect(gatewayBaseUrl({})).toBe("https://api.phaseo.app/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: " https://api.phaseo.app/v1/ " })).toBe("https://api.phaseo.app/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://localhost:8787/v1" })).toBe("http://localhost:8787/v1");
+		expect(gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://127.0.0.1:8787/v1" })).toBe("http://127.0.0.1:8787/v1");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "http://api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL must use https");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "ftp://api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL must use https");
+		expect(() => gatewayBaseUrl({ PHASEO_API_BASE_URL: "api.phaseo.app/v1" })).toThrow("PHASEO_API_BASE_URL is not a valid URL");
+	});
+
+	it("calls the gateway's public URL, so the request has a country providers can check", async () => {
+		const globalFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => sse([COMPLETED]));
+		vi.stubGlobal("fetch", globalFetch);
+		try {
+			const runner = createSdkAgentRunner({ fetchImpl: gatewayFetch(), baseUrl: "https://api.phaseo.app/v1" });
+			await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined });
+			// One request: the agent client doesn't look the model up first.
+			expect(globalFetch.mock.calls.map(([input, init]) => `${init?.method ?? (input as Request).method} ${String(input instanceof Request ? input.url : input)}`))
+				.toEqual(["POST https://api.phaseo.app/v1/responses"]);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("turns gateway errors into plain replies", async () => {
