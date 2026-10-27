@@ -17,9 +17,10 @@ import { normalizeGatewayBaseUrl } from "./test-config";
  * GATEWAY_API_KEY=gw_test123 GATEWAY_BASE_URL=http://localhost:8787/v1 pnpm test tests/sdk/anthropic-sdk-compat
  */
 
+// The Anthropic SDK appends /v1/messages itself, so it takes the host without /v1.
 const GATEWAY_BASE_URL = normalizeGatewayBaseUrl(
 	process.env.GATEWAY_BASE_URL,
-);
+)?.replace(/\/v1$/, "");
 const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY;
 
 // Skip tests if environment variables not set
@@ -32,7 +33,8 @@ describeIf("Anthropic SDK Compatibility", () => {
 	beforeAll(() => {
 		client = new Anthropic({
 			baseURL: GATEWAY_BASE_URL,
-			apiKey: GATEWAY_API_KEY,
+			apiKey: null,
+			authToken: GATEWAY_API_KEY,
 		});
 	});
 
@@ -319,7 +321,8 @@ describeIf("Anthropic SDK Compatibility", () => {
 		it("should handle missing API key", async () => {
 			const invalidClient = new Anthropic({
 				baseURL: GATEWAY_BASE_URL,
-				apiKey: "invalid_key_123",
+				apiKey: null,
+				authToken: "invalid_key_123",
 			});
 
 			await expect(

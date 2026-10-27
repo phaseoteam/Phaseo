@@ -1,5 +1,6 @@
 import type { ProviderExecuteArgs } from "../types";
 import { azureDeployment, azureHeaders, azureOpenAIV1Url, azureUrl, resolveAzureConfig, resolveAzureCredential, usesAzureV1 } from "../azure/config";
+import { cloudflareAccountAiBase, cloudflareByokCredential, cloudflareByokHeaders } from "../cloudflare/credentials";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../openai-compatible/config";
 
 /** Transport for endpoints sharing OpenAI's payload and response protocol. */
@@ -17,5 +18,16 @@ export function resolveOpenAITransport(args: ProviderExecuteArgs, path: string, 
         };
     }
     const keyInfo = resolveOpenAICompatKey(args);
-    return { keyInfo, deployment: undefined, url: openAICompatUrl(args.providerId, path), headers: openAICompatHeaders(args.providerId, keyInfo.key, extraHeaders) };
+    const headers = openAICompatHeaders(args.providerId, keyInfo.key, extraHeaders);
+    // A Cloudflare BYOK key runs on the customer's own account with their token.
+    const cloudflareByok = args.providerId === "cloudflare" ? cloudflareByokCredential(keyInfo) : null;
+    if (cloudflareByok) {
+        return {
+            keyInfo,
+            deployment: undefined,
+            url: `${cloudflareAccountAiBase(cloudflareByok.accountId)}/v1/${path.replace(/^\/+/, "")}`,
+            headers: cloudflareByokHeaders(cloudflareByok, headers),
+        };
+    }
+    return { keyInfo, deployment: undefined, url: openAICompatUrl(args.providerId, path), headers };
 }

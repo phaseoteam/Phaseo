@@ -1,7 +1,7 @@
 import Phaseo, { type PhaseoOptions, type ResponsesRequest, type ResponsesResponse } from "@phaseo/sdk";
 import { AgentGatewayError } from "../errors.js";
-import { normalizeAgentItems } from "../items.js";
-import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
+import { isExecutedToolCallItem, normalizeAgentItems } from "../items.js";
+import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentModelStreamEvent, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
 	client?: Phaseo;
@@ -74,10 +74,12 @@ function toResponsesInput(messages: AgentMessage[]) {
 }
 
 function toInstructions(messages: AgentMessage[], override?: string) {
+	// The runtime keeps string instructions as the run's first system message and also passes them as
+	// request.instructions, so a system message with the same text is already covered by the override.
 	const systemText = messages
 		.filter((message) => message.role === "system")
 		.map((message) => coerceTextContent(message.content))
-		.filter((value) => value.trim().length > 0)
+		.filter((value) => value.trim().length > 0 && value.trim() !== override?.trim())
 		.join("\n\n");
 
 	if (override && systemText) return `${override}\n\n${systemText}`;
@@ -127,8 +129,9 @@ function extractToolCalls(response: ResponsesResponse): AgentToolCall[] | undefi
 			? response.output
 			: [];
 
+	// Server tools the gateway already ran come back with their result and are not left for the agent to run.
 	const toolCalls = items
-		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call")
+		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call" && !isExecutedToolCallItem(item))
 		.map((item, index) => ({
 			id: item.call_id ?? `tool_call_${index}`,
 			name: item.name ?? "tool",
@@ -224,10 +227,63 @@ function buildPayload(request: AgentModelRequest<any>, options: GatewayAgentClie
 	};
 }
 
+/**
+ * A failure after the stream started. That is the gateway's `error` frame (`{ error: { message } }`,
+ * named only on its `event:` line, so untyped here unless the client adds the type), a Responses
+ * `error` event, or `response.failed`. The HTTP status was already 200, so it becomes a 502.
+ */
+function streamFailure(chunk: Record<string, unknown>, eventType: string): AgentGatewayError | null {
+	const failed = eventType === "response.failed";
+	if (!failed && eventType !== "error" && !(eventType === "" && chunk.error !== undefined)) return null;
+	const raw = failed ? (chunk.response as Record<string, unknown> | undefined)?.error : chunk.error ?? chunk;
+	const error = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+	const text = (value: unknown) => typeof value === "string" && value.trim() ? value : undefined;
+	const message = text(error.message) ?? text(chunk.message) ?? "The gateway stream failed";
+	const code = text(error.code) ?? text(chunk.code) ?? "stream_error";
+	return new AgentGatewayError({ status: 502, statusText: "Bad Gateway", body: { error: code, reason: code, message }, message });
+}
+
+async function* streamEvents(client: Phaseo, request: AgentModelRequest<any>, options: GatewayAgentClientOptions): AsyncGenerator<AgentModelStreamEvent> {
+	const payload = buildPayload(request, options, true);
+	const response: ResponsesResponse | AsyncGenerator<any> = request.signal
+		? await client.responses.create(payload, { signal: request.signal })
+		: await client.responses.create(payload);
+	if (!isAsyncIterableResponse(response as any)) {
+		yield { type: "response.completed" as const, response: toAgentModelResponse(response as ResponsesResponse) };
+		return;
+	}
+	let text = "";
+	for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
+		const eventType = String(chunk.type ?? "");
+		const failure = streamFailure(chunk, eventType);
+		if (failure) throw failure;
+		// Only text and reasoning deltas are answer text. Tool-call argument deltas are not, and
+		// `.done` events repeat what their deltas already sent. Untyped chunks keep the old fallback.
+		const delta = typeof chunk.delta === "string" ? chunk.delta : !eventType && typeof chunk.text === "string" ? chunk.text : "";
+		if (delta && eventType.includes("reasoning") && eventType.endsWith(".delta")) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
+		else if (delta && (!eventType || eventType.endsWith("output_text.delta"))) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
+		// An added item is still empty (a call has no arguments yet); its done event carries it whole.
+		if (chunk.item && eventType !== "response.output_item.added") {
+			for (const item of normalizeAgentItems(chunk.item)) {
+				yield { type: "response.item" as const, item, raw: chunk };
+			}
+		}
+		if (eventType === "response.completed") {
+			const rawResponse = (chunk.response ?? chunk) as ResponsesResponse;
+			yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
+			return;
+		}
+	}
+	yield { type: "response.completed" as const, response: { message: { role: "assistant", content: text } } };
+}
+
 export function createGatewayAgentClient(
 	options: GatewayAgentClientOptions = {},
 ): AgentModelClient {
 	const client = options.client ?? new Phaseo({
+		// The gateway refuses retired models itself, with an error that keeps its status and reason, so
+		// agent turns skip @phaseo/sdk's GET /models lookup unless clientOptions turns it back on.
+		modelLifecycleChecks: false,
 		...(options.clientOptions ?? {}),
 		headers: {
 			...(options.clientOptions?.headers ?? {}),
@@ -255,36 +311,14 @@ export function createGatewayAgentClient(
 			return toAgentModelResponse(response);
 		},
 		async *stream(request) {
-			let response: ResponsesResponse | AsyncGenerator<any>;
+			// @phaseo/sdk sends a streamed request on the first read, so its HTTP errors surface while
+			// iterating, not from create(). Wrap them there too, as generate() does.
 			try {
-				const payload = buildPayload(request, options, true);
-				response = request.signal
-					? await client.responses.create(payload, { signal: request.signal })
-					: await client.responses.create(payload);
+				yield* streamEvents(client, request, options);
+			} catch (error) {
+				if (error instanceof AgentGatewayError) throw error;
+				throw AgentGatewayError.fromUnknown(error) ?? error;
 			}
-			catch (error) { throw AgentGatewayError.fromUnknown(error) ?? error; }
-			if (!isAsyncIterableResponse(response as any)) {
-				yield { type: "response.completed" as const, response: toAgentModelResponse(response as ResponsesResponse) };
-				return;
-			}
-			let text = "";
-			for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
-				const eventType = String(chunk.type ?? "");
-				const delta = typeof chunk.delta === "string" ? chunk.delta : typeof chunk.text === "string" ? chunk.text : "";
-				if (eventType.includes("reasoning") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
-				else if ((eventType.includes("output_text.delta") || delta) && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
-				if (chunk.item) {
-					for (const item of normalizeAgentItems(chunk.item)) {
-						yield { type: "response.item" as const, item, raw: chunk };
-					}
-				}
-				if (eventType === "response.completed") {
-					const rawResponse = (chunk.response ?? chunk) as ResponsesResponse;
-					yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
-					return;
-				}
-			}
-			yield { type: "response.completed" as const, response: { message: { role: "assistant", content: text } } };
 		},
 	};
 }

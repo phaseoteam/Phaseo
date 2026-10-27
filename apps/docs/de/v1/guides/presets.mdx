@@ -67,6 +67,7 @@ response = client.generate_response({
 ## Mögliche Inhalte einer Voreinstellung
 
 - Ein System-Prompt, der jeder Anfrage vorangestellt wird.
+- Eine [Prompt-Vorlage](./prompt-templates.mdx): Nachrichten mit `{{variables}}`, die jede Anfrage ausfüllt.
 - Erlaubte Modelle oder Modellfamilien.
 - Zulassungs- und Ignorierlisten für Anbieterpräferenzen beim Routing.
 - Standardparameter wie temperature, top_p, max_tokens und ähnliche Einstellungen.
@@ -74,7 +75,7 @@ response = client.generate_response({
 
 Voreinstellungsnamen beginnen mit `@`, damit sie leicht erkennbar sind.
 
-Rufe eine Voreinstellung ausschließlich über das Feld `model` der Anfrage auf. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
+Rufe eine Voreinstellung über das Feld `model` der Anfrage auf oder, wenn die Voreinstellung eine [Prompt-Vorlage](./prompt-templates.mdx) hat, über `prompt.id`. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
 
 - Private Voreinstellungen und Workspace-Voreinstellungen verwenden `@{slug}` und werden im Workspace des API-Schlüssels aufgelöst.
 - Öffentliche Voreinstellungen verwenden `@{username}/{slug}` und können aus jedem Workspace aufgelöst werden. Beispiel: `@octavia/release-summary`.
@@ -113,6 +114,7 @@ Voreinstellungen sind damit die zentrale öffentliche Schnittstelle für wiederv
 Der Ablauf für Voreinstellungen im Dashboard ist bewusst auf eine stabile, klar definierte Teilmenge der Anfrageanpassungen beschränkt:
 
 - System-Prompt-Injektion
+- Prompt-Vorlagen mit typisierten Variablen
 - Modell-Zulassungslisten
 - Routing-Einschränkungen mit Zulassungs- oder Ignorierlisten für Anbieter
 - Standardwerte für Decoding und Generierung
@@ -133,6 +135,7 @@ Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Vor
 
 ## Zugehörige Anleitungen
 
+- [Prompt-Vorlagen](./prompt-templates.mdx)
 - [Feedback zu Voreinstellungen sammeln](./preset-feedback.mdx)
 - [Routing und Fallbacks](./routing-and-fallbacks.mdx)
 - [Inferenzparameter](./inference-parameters.mdx)

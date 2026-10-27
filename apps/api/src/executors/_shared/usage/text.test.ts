@@ -24,6 +24,17 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.serviceTier).toBe("standard");
 	});
 
+	it("keeps Claude's reported inference_geo so US-only price rows can match it", () => {
+		expect(normalizeTextUsageForPricing({ input_tokens: 10, output_tokens: 5, inference_geo: "us" })?.inference_geo).toBe("us");
+		expect(normalizeTextUsageForPricing({
+			inputTokens: 10,
+			outputTokens: 5,
+			totalTokens: 15,
+			_ext: { inferenceGeo: "global" },
+		})?.inference_geo).toBe("global");
+		expect(normalizeTextUsageForPricing({ input_tokens: 10, output_tokens: 5 })).not.toHaveProperty("inference_geo");
+	});
+
 	it("maps Google thoughtsTokenCount to reasoning_tokens", () => {
 		const usage = normalizeTextUsageForPricing({
 			promptTokenCount: 100,

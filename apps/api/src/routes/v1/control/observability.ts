@@ -17,11 +17,15 @@ import {
 	AVAILABLE_BROADCAST_DESTINATION_IDS,
 	BROADCAST_RULE_CONDITIONS,
 	BROADCAST_RULE_FIELDS,
+	broadcastDelivery,
 	broadcastDestinationEndpoint,
+	broadcastWebhookSigningSecretError,
 	isBroadcastDestinationLimitError,
 	OTLP_PROTOCOLS,
 	otlpProtocol,
 } from "@/observability/broadcast-destinations";
+import { broadcastRowsEndpoint } from "@/observability/broadcast-rows";
+import { compileSafeRegex } from "@/observability/safe-regex";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const TYPES = new Set<string>(AVAILABLE_BROADCAST_DESTINATION_IDS);
@@ -59,9 +63,10 @@ function config(value: unknown): Record<string, string> | null {
 }
 
 function validateEndpoint(type: string, values: Record<string, string>) {
-	if (type !== "webhook" && !otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
-	// Outside the try: an OTLP preset names the field it is missing.
-	const resolved = broadcastDestinationEndpoint(type, values);
+	const delivery = broadcastDelivery(type);
+	if (delivery === "otlp" && !otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
+	// Outside the try: an OTLP preset or row destination names the field it is missing.
+	const resolved = delivery === "rows" ? broadcastRowsEndpoint(type, values) : broadcastDestinationEndpoint(type, values);
 	let url: URL;
 	try { url = new URL(resolved); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination endpoint must use HTTPS without URL credentials");
@@ -70,6 +75,8 @@ function validateEndpoint(type: string, values: Record<string, string>) {
 	if (type !== "webhook") return;
 	const method = String(values.method ?? "POST").toUpperCase();
 	if (method !== "POST" && method !== "PUT") throw new Error("Webhook method must be POST or PUT");
+	const secretError = broadcastWebhookSigningSecretError(values.signing_secret);
+	if (secretError) throw new Error(secretError);
 	if (values.headers_json?.trim()) {
 		let headers: unknown;
 		try { headers = JSON.parse(values.headers_json); } catch { throw new Error("Webhook headers must be valid JSON"); }
@@ -109,6 +116,7 @@ function ruleGroups(value: unknown): RuleGroup[] | null {
 			const valueless = condition === "exists" || condition === "not_exists";
 			const valueText = valueless ? null : String(inputRule?.value ?? "").trim();
 			if (!FIELDS.has(field) || !CONDITIONS.has(condition) || (!valueless && (!valueText || valueText.length > (condition === "matches_regex" ? 128 : 2_000)))) return null;
+			if (condition === "matches_regex" && !compileSafeRegex(valueText!).ok) return null;
 			rules.push({ field, condition, value: valueText });
 		}
 		output.push({ match, rules });

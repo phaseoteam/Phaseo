@@ -4684,6 +4684,141 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listDepartmentBudgets
+      summary: List department budgets
+      description: >-
+        Lists department spend budgets with each department's spend so far in
+        the current UTC period. Spend comes from an hourly rollup, so it can lag
+        by up to an hour.
+      parameters:
+        - name: department_id
+          in: query
+          required: false
+          description: Only list budgets for this department.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Department budgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createDepartmentBudget
+      summary: Create a department budget
+      description: >-
+        Creates a daily, weekly, or monthly spend budget for one department.
+        Owners and admins get a mobile push at about 80% and at 100%. Department
+        budgets do not block requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetInput'
+      responses:
+        '201':
+          description: Department budget created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getDepartmentBudget
+      summary: Get a department budget
+      description: Returns one department budget with the department's spend so far.
+      responses:
+        '200':
+          description: Department budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateDepartmentBudget
+      summary: Update a department budget
+      description: Changes the period or USD amount of a department budget.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetUpdateInput'
+      responses:
+        '200':
+          description: Department budget updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteDepartmentBudget
+      summary: Delete a department budget
+      description: Removes a department budget and its alerts.
+      responses:
+        '200':
+          description: Department budget deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceBudgetDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -4711,9 +4846,8 @@ paths:
       summary: List rate limit policies
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -4735,10 +4869,9 @@ paths:
       summary: Create a rate limit policy
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
-        concurrent request limits. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        concurrent request limits. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4774,10 +4907,9 @@ paths:
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
       description: >-
-        Returns one rate limit policy. The gateway enforces requests_per_minute
-        and tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        Returns one rate limit policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -4800,9 +4932,9 @@ paths:
       description: >-
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
-        gateway enforces requests_per_minute and tokens_per_minute for key,
-        member, guardrail and end-user-default assignments; concurrent_requests
-        and department assignments are not enforced yet.
+        gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4830,9 +4962,8 @@ paths:
       summary: Delete a rate limit policy
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4855,10 +4986,9 @@ paths:
       summary: List rate limit assignments
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
-        target type. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        target type. The gateway enforces requests_per_minute, tokens_per_minute
+        and concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       parameters:
         - name: policy_id
           in: query
@@ -4912,10 +5042,9 @@ paths:
       description: >-
         Applies a policy to one API key, workspace member, department, or
         guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        can have one policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4952,9 +5081,8 @@ paths:
       summary: Get a rate limit assignment
       description: >-
         Returns one rate limit assignment. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -4976,9 +5104,8 @@ paths:
       summary: Change an assignment's policy
       description: >-
         Switches the policy applied to an assignment's target. The gateway
-        enforces requests_per_minute and tokens_per_minute for key, member,
-        guardrail and end-user-default assignments; concurrent_requests and
-        department assignments are not enforced yet.
+        enforces requests_per_minute, tokens_per_minute and concurrent_requests
+        for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5006,9 +5133,8 @@ paths:
       summary: Delete a rate limit assignment
       description: >-
         Removes a policy from its target. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -5539,6 +5665,38 @@ paths:
                 $ref: '#/components/schemas/WorkspaceNotificationTestResponse'
         default:
           description: Test failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotate a notification webhook signing secret
+      description: >-
+        Generates a new signing secret for a custom webhook destination and
+        returns it once. Destinations created before signing get their first
+        secret this way. Later deliveries are signed with the new secret and the
+        previous secret stops being used.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signing secret rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: Request failed
           content:
             application/json:
               schema:
@@ -10294,6 +10452,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         messages:
           type: array
           minItems: 1
@@ -10558,6 +10718,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: >-
+            An earlier audio response, sent back on an assistant message by its
+            id (message.audio.id) to continue an audio conversation. OpenAI and
+            Azure OpenAI routes take it; other providers drop it and report
+            messages.audio as a dropped parameter.
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:
@@ -10577,6 +10750,78 @@ components:
             $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: >-
+            Spoken audio on an assistant message when the request asks for audio
+            output: the audio id, base64 audio in the requested format, when the
+            audio expires (Unix seconds) and its transcript. Streamed as
+            delta.audio pieces.
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
     ChatReasoningDetail:
       type: object
       required:
@@ -11361,7 +11606,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
@@ -11465,6 +11710,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         system:
           oneOf:
             - type: string
@@ -11484,7 +11731,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11580,6 +11835,13 @@ components:
           description: >-
             End-user identifier, as on Chat Completions. Claude models receive
             it as `metadata.user_id` unless `metadata.user_id` is set.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         stop_sequences:
           type: array
           items:
@@ -11650,6 +11912,44 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: >-
+            Use `system` for an instruction that applies from this point in the
+            conversation. A system message takes a string or text blocks, must
+            come straight after a user turn (or an assistant turn ending in a
+            server tool result), and must be the last message or be followed by
+            an assistant turn.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -11758,6 +12058,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         input:
           oneOf:
             - type: string
@@ -13408,6 +13710,10 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: >-
+            Confidence in the box, from 0 to 1, or null when the model gives
+            none.
     DecisionBox:
       type: object
       required:
@@ -15775,6 +16081,7 @@ components:
         - cursor
         - cyfragovpl
         - databricks
+        - dealignai
         - decart
         - deepseek
         - dots-studio
@@ -17037,6 +17344,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: >-
@@ -17255,6 +17564,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -17299,7 +17610,31 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: >-
+        Where you keep this key, such as the hosting platform whose environment
+        variables hold it. Optional. If one of these places reports a breach,
+        you can find and revoke every key stored there. Known ids: railway,
+        vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase,
+        digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo,
+        deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud,
+        scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password,
+        bitwarden, hashicorp-vault, doppler, infisical, local-machine,
+        own-server, other.
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -17686,7 +18021,120 @@ components:
       description: >-
         Bounded gateway request defaults, including prompts, parameters,
         routing, and plugins.
+      properties:
+        prompt:
+          $ref: '#/components/schemas/PresetPromptTemplate'
       additionalProperties: true
+    PresetPromptTemplate:
+      type: object
+      description: >-
+        Messages with variable placeholders that the gateway fills in for each
+        request, and the variables they take.
+      required:
+        - messages
+      properties:
+        syntax:
+          type: string
+          enum:
+            - mustache-v1
+        messages:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PresetPromptTemplateMessage'
+        variables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PresetPromptVariable'
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          type: object
+          additionalProperties: true
+    PresetPromptTemplateMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - variable
+                  text:
+                    type: string
+                  name:
+                    type: string
+    PresetPromptVariable:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - enum
+            - array
+            - object
+            - any
+            - image
+        required:
+          type: boolean
+        default: {}
+        description:
+          type: string
+          maxLength: 500
+        enum:
+          type: array
+          items:
+            type: string
+        max_length:
+          type: integer
+          minimum: 1
+    PromptTemplateReference:
+      type: object
+      description: >-
+        Fills in the prompt template saved on a preset. Leave out model or set
+        it to the same reference, and send an empty conversation or the turns to
+        add after the template.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: >-
+            Preset reference starting with @, such as @support-triage or
+            @publisher/support-triage.
+        variables:
+          type: object
+          additionalProperties: true
+          description: >-
+            Values for the template variables. Image variables take an https
+            URL, a data URL or an image part.
     Preset:
       type: object
       required:
@@ -18618,7 +19066,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -21564,6 +22034,136 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    DepartmentBudgetInterval:
+      type: string
+      enum:
+        - daily
+        - weekly
+        - monthly
+    DepartmentBudget:
+      type: object
+      description: >-
+        A department's spend budget. A department's spend is what the API keys
+        linked to it cost, plus the keys its members created and their OAuth
+        requests when those keys are not linked to a department. A member in
+        several departments counts toward each.
+      required:
+        - id
+        - workspace_id
+        - department_id
+        - department_name
+        - interval
+        - limit
+        - limit_nanos
+        - usage
+        - usage_nanos
+        - remaining
+        - remaining_nanos
+        - exceeded
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+          nullable: true
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+        limit_nanos:
+          type: integer
+          format: int64
+        usage:
+          type: number
+          format: double
+        usage_nanos:
+          type: integer
+          format: int64
+        remaining:
+          type: number
+          format: double
+        remaining_nanos:
+          type: integer
+          format: int64
+        exceeded:
+          type: boolean
+        window_start:
+          type: string
+          format: date-time
+          nullable: true
+        reset_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    DepartmentBudgetInput:
+      type: object
+      required:
+        - department_id
+        - interval
+        - limit
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
+    DepartmentBudgetListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
     ClassifierValue:
       type: object
       required:
@@ -22212,7 +22812,8 @@ components:
       description: >-
         notify, or notify and then block once spend reaches block_at_percent of
         the base or block_at_amount. Blocking is best effort and acts minutes
-        after the threshold.
+        after the threshold. Blocking is not available yet: a rule with action
+        block is refused with a 400 until it is.
       enum:
         - notify
         - block
@@ -23327,6 +23928,22 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: >-
+            Whether deliveries are signed with x-phaseo-signature. Only custom
+            webhook destinations are signed; ones created before signing stay
+            unsigned until a secret is generated.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the current signing secret was generated.
+        signing_secret:
+          type: string
+          description: >-
+            The webhook signing secret. Returned only when a custom webhook
+            destination is created or its secret is rotated; store it securely.
         created_at:
           type: string
           format: date-time
@@ -23415,6 +24032,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
         - spend_alert
         - spend_blocked
         - spend_report
@@ -23427,6 +24045,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
         - spend_alert
         - spend_blocked
         - spend_report
@@ -23457,6 +24076,11 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
           type: array
           items:
             type: string
@@ -25382,6 +26006,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
+        - deepseek/deepseek-v4.1-flash-1017
         - deepseek/deepseek-v4.1-flash-beta
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b

@@ -351,9 +351,17 @@ function isModelLifecycleObject(schema: IRSchema): boolean {
 	return expected.every((value, index) => keys[index] === value);
 }
 
+const JAVA_RESERVED_WORDS = new Set([
+	"abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const",
+	"continue", "default", "do", "double", "else", "enum", "extends", "false", "final", "finally",
+	"float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long",
+	"native", "new", "null", "package", "private", "protected", "public", "return", "short", "static",
+	"strictfp", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try",
+	"void", "volatile", "while", "_"
+]);
+
 function sanitizeIdentifier(name: string): string {
-	if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-		return name;
-	}
-	return name.replace(/[^a-zA-Z0-9_]/g, "_");
+	const identifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name) ? name : name.replace(/[^a-zA-Z0-9_]/g, "_");
+	// Fields such as `default` and `enum` would not compile.
+	return JAVA_RESERVED_WORDS.has(identifier) ? `${identifier}_` : identifier;
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
-import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -171,6 +171,10 @@ const SHARED_STEPS = {
 		title: "Point the base URL to Phaseo",
 		description: `Set the base URL to ${BASE_URL}.`,
 	},
+	anthropicBaseUrl: {
+		title: "Point the base URL to Phaseo",
+		description: `Set the base URL to ${ANTHROPIC_SDK_BASE_URL}.`,
+	},
 	payload: {
 		title: "Keep your payloads the same",
 		description:
@@ -224,8 +228,9 @@ print(response)`,
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -243,8 +248,8 @@ console.log(response);`,
 import os
 
 client = Anthropic(
-    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 response = client.messages.create(
@@ -577,8 +582,9 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 
  const client = new Anthropic({
 -  apiKey: process.env.ANTHROPIC_API_KEY ?? "YOUR_ANTHROPIC_KEY",
-+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
-+  baseURL: "${BASE_URL}",
++  apiKey: null,
++  authToken: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
++  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
  });
 
  const response = await client.messages.create({
@@ -599,8 +605,8 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 -    api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"),
 -)
 +client = Anthropic(
-+    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
-+    base_url="${BASE_URL}",
++    auth_token=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
++    base_url="${ANTHROPIC_SDK_BASE_URL}",
 +)
 
  response = client.messages.create(
@@ -881,7 +887,7 @@ const CHANGE_NOTES: Record<PathId, ChangeNote[]> = {
 		},
 		{
 			title: "Route requests through Phaseo",
-			description: `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`,
+			description: `Set baseURL to ${ANTHROPIC_SDK_BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
@@ -897,7 +903,7 @@ const CHANGE_NOTES: Record<PathId, ChangeNote[]> = {
 		},
 		{
 			title: "Route requests through Phaseo",
-			description: `Set base_url to ${BASE_URL} so traffic goes through the Gateway.`,
+			description: `Set base_url to ${ANTHROPIC_SDK_BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
@@ -997,14 +1003,14 @@ const FLOWS: Record<SourceId, Flow> = {
 				id: "ts-anthropic",
 				label: "TypeScript / Node",
 				description: "Keep the Anthropic client and swap the base URL.",
-				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				steps: [SHARED_STEPS.key, SHARED_STEPS.anthropicBaseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["ts-anthropic"],
 			},
 			{
 				id: "py-anthropic",
 				label: "Python",
 				description: "Point the Python SDK to Phaseo.",
-				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
+				steps: [SHARED_STEPS.key, SHARED_STEPS.anthropicBaseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-anthropic"],
 			},
 			{
@@ -1316,8 +1322,8 @@ console.log(response.output_text);`,
 import os
 
 client = Anthropic(
-    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 response = client.messages.create(
@@ -1334,7 +1340,7 @@ print(response)`,
 		return {
 			label: "Anthropic Messages (cURL)",
 			lang: "bash",
-			code: `curl -s "${BASE_URL}/anthropic/messages" \\
+			code: `curl -s "${BASE_URL}/messages" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -1353,8 +1359,9 @@ print(response)`,
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -1426,14 +1433,16 @@ export function MigrationGuide() {
 		}
 		const key = MIGRATION_COPY_KEYS[value];
 		if (key) return tAssistant(key as never);
-		if (value === `Set the base URL to ${BASE_URL}.`) {
-			return tAssistant("steps.setBaseUrlDescription", { baseUrl: BASE_URL });
-		}
-		if (value === `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`) {
-			return tAssistant("changes.routeBaseUrl", { baseUrl: BASE_URL });
-		}
-		if (value === `Set base_url to ${BASE_URL} so traffic goes through the Gateway.`) {
-			return tAssistant("changes.routeBaseUrlPython", { baseUrl: BASE_URL });
+		for (const baseUrl of [BASE_URL, ANTHROPIC_SDK_BASE_URL]) {
+			if (value === `Set the base URL to ${baseUrl}.`) {
+				return tAssistant("steps.setBaseUrlDescription", { baseUrl });
+			}
+			if (value === `Set baseURL to ${baseUrl} so traffic goes through the Gateway.`) {
+				return tAssistant("changes.routeBaseUrl", { baseUrl });
+			}
+			if (value === `Set base_url to ${baseUrl} so traffic goes through the Gateway.`) {
+				return tAssistant("changes.routeBaseUrlPython", { baseUrl });
+			}
 		}
 		if (value === `Send requests to ${BASE_URL}/chat/completions.`) {
 			return tAssistant("changes.routeRest", { endpoint: `${BASE_URL}/chat/completions` });

@@ -63,9 +63,10 @@ describe("Moonshot quirks", () => {
 		expect(request.tool_choice).toBe("auto");
 	});
 
-	it("normalizes K3 reasoning, output limit, video, and fixed parameters", () => {
+	it.each(["kimi-k3", "kimi-k3.1-pro", "kimi-k3.1-pro-highspeed"])("normalizes %s reasoning, output limit, video, and fixed parameters", (model) => {
 		const request: Record<string, any> = {
-			model: "kimi-k3",
+			model,
+			service_tier: "priority",
 			messages: [{
 				role: "user",
 				content: [{
@@ -95,6 +96,7 @@ describe("Moonshot quirks", () => {
 		});
 
 		expect(request.reasoning_effort).toBe("low");
+		if (model !== "kimi-k3") expect(request.service_tier).toBeUndefined();
 		expect(request.thinking).toBeUndefined();
 		expect(request.max_completion_tokens).toBe(131072);
 		expect(request.max_tokens).toBeUndefined();

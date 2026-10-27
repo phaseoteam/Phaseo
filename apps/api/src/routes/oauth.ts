@@ -8,21 +8,25 @@ import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
 	CLI_DEFAULT_SCOPES,
+	DESKTOP_CLIENT_ID,
 	assertRedirectAllowed,
 	authorizationConsentUrl,
 	bearerToken,
 	createOpaqueCode,
 	createUserCode,
+	desktopKeyWorkspace,
 	defaultDeviceIntervalSeconds,
 	deviceExpiresInSeconds,
 	filterAllowedScopes,
 	getApiBaseUrl,
+	getGatewayOAuthResource,
 	getIssuer,
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
+	issueDesktopSessionKey,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
@@ -37,6 +41,7 @@ import {
 	normalizeScopes,
 	normalizeUserCode,
 	parseTokenRequestBody,
+	renewDesktopKey,
 	revokeToken,
 	rotateRefreshToken,
 	verificationUriFor,
@@ -1067,6 +1072,63 @@ oauthRouter.post(
 	}),
 );
 
+// The desktop app's key for model calls, for the person signed in to it with their Phaseo login (a Supabase session,
+// like the website's and the mobile app's); see issueDesktopSessionKey. An account with two-factor sign-in must have
+// used it in this session, as the website's API requires.
+oauthRouter.post(
+	"/desktop/key",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("invalid_token", "A Phaseo login is required", 401);
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("insufficient_user_authentication", "Finish two-factor sign-in first", 401);
+		}
+		if (!(await checkOAuthRateLimit(req, "token", `desktop-key:${actor.userId}`))) return rateLimitError();
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const requested = typeof body.workspace_id === "string" ? body.workspace_id.trim() : "";
+		if ((body.workspace_id !== undefined && body.workspace_id !== null && typeof body.workspace_id !== "string") || (requested && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested))) {
+			return oauthError("invalid_request", "workspace_id must be a workspace id");
+		}
+		const workspaceId = await desktopKeyWorkspace(actor.userId, requested || null);
+		const issued = workspaceId ? await issueDesktopSessionKey({ userId: actor.userId, workspaceId }) : null;
+		if (!workspaceId || !issued) return oauthError("access_denied", "You aren't a member of that workspace", 403);
+		return json({
+			access_token: issued.key,
+			token_type: "Bearer",
+			workspace_id: workspaceId,
+			scope: issued.scopes.join(" "),
+			resource: getGatewayOAuthResource(),
+			expires_at: issued.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(issued.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// The desktop app renews its own delegated key while it is used (see renewDesktopKey), authenticated by that key. A
+// session token or another app's key can't: those have their own lifetimes.
+oauthRouter.post(
+	"/desktop/renew",
+	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "desktop-renew"))) return rateLimitError();
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || auth.oauthClientId !== DESKTOP_CLIENT_ID || !auth.apiKeyRef?.startsWith("kid_") || !auth.apiKeyId) {
+			return oauthError("invalid_token", "A Phaseo desktop key is required", 401);
+		}
+		const renewed = await renewDesktopKey(auth.apiKeyId);
+		if (!renewed) return oauthError("invalid_token", "This key can no longer be renewed; sign in again", 401);
+		return json({
+			expires_at: renewed.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(renewed.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
 oauthRouter.post(
 	"/revoke",
 	withRuntime(async (req) => {
@@ -1097,20 +1159,36 @@ oauthRouter.get(
 		if (!scopes.includes("openid")) {
 			return oauthError("insufficient_scope", "Token requires openid", 403);
 		}
-		const { data } = await getSupabaseAdmin().auth.admin.getUserById(auth.userId);
+		const profile = scopes.includes("profile");
+		const supabase = getSupabaseAdmin();
+		const [{ data }, account] = await Promise.all([
+			supabase.auth.admin.getUserById(auth.userId),
+			// The name set on the profile page wins over the sign-in provider's, as in the site's header.
+			profile
+				? supabase.from("users").select("display_name").eq("user_id", auth.userId).maybeSingle()
+				: Promise.resolve({ data: null }),
+		]);
 		const user = data?.user;
 		const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
-		const name =
-			typeof metadata.full_name === "string"
-				? metadata.full_name
-				: typeof metadata.name === "string"
-					? metadata.name
-					: null;
+		const metadataString = (keys: string[]) => {
+			for (const key of keys) {
+				const value = metadata[key];
+				if (typeof value === "string" && value.trim()) return value.trim();
+			}
+			return null;
+		};
+		const displayName = typeof account.data?.display_name === "string" ? account.data.display_name.trim() : "";
+		const name = displayName || metadataString(["full_name", "name"]);
+		// A first name for greetings: the display name's first word, as the profile's name is its owner's choice.
+		const givenName = (displayName ? null : metadataString(["given_name", "first_name"])) ?? name?.split(/\s+/)[0] ?? null;
+		const picture = metadataString(["avatar_url", "picture", "picture_url"]);
 		return json(
 			{
 				sub: auth.userId,
 				email: scopes.includes("email") ? user?.email ?? null : undefined,
-				name: scopes.includes("profile") ? name : undefined,
+				name: profile ? name : undefined,
+				given_name: profile ? givenName : undefined,
+				picture: profile ? picture : undefined,
 				workspace_id: auth.workspaceId,
 				client_id: auth.oauthClientId,
 				resource: auth.oauthResource ?? undefined,

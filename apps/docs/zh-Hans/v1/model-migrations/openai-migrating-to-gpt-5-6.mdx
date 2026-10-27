@@ -126,7 +126,7 @@ Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-lat
 }
 ```
 
-`prompt_cache_breakpoint` 会缓存到其所在块为止（含该块）的全部内容。块级 `cache_control`（例如 `{"type": "ephemeral"}`）同样有效，Phaseo 会以 `prompt_cache_breakpoint` 的形式将其发送给 GPT-5.6。两种标记都会作为缓存断点发送到 Claude，因此回退到 Claude 时也能使用缓存。在 `explicit` 模式下，OpenAI 只缓存你放置的断点，并且只接受 `30m` 这一个 `ttl`。Phaseo 不会把 `prompt_cache_retention` 发送给 GPT-5.6。请参阅[提示缓存](../guides/prompt-caching.mdx#openai-retention-and-options)。
+`prompt_cache_breakpoint` 会缓存到其所在块为止（含该块）的全部内容。块级 `cache_control`（例如 `{"type": "ephemeral"}`）同样有效，Phaseo 会以 `prompt_cache_breakpoint` 的形式将其发送给 GPT-5.6。两种标记都会作为缓存断点发送到 Claude，因此回退到 Claude 时也能使用缓存。在 `explicit` 模式下，OpenAI 只缓存你放置的断点。`ttl` 为 `30m`（默认）或 `12h`，OpenAI 只在其 Responses API 上接受 `12h`；请参阅 [OpenAI 的 12 小时缓存](../guides/prompt-caching.mdx#12-hour-cache-on-openai)。Phaseo 不会把 `prompt_cache_retention` 发送给 GPT-5.6。请参阅[提示缓存](../guides/prompt-caching.mdx#openai-retention-and-options)。
 
 ## 测试内容
 

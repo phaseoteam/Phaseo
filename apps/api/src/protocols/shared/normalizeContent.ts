@@ -173,6 +173,81 @@ export function normalizeToolResultContent(content: unknown): { content: string;
 	return { content: JSON.stringify(content) };
 }
 
+const IMAGE_DETAILS = new Set(["auto", "low", "high", "original"]);
+
+function imageDetail(value: unknown): "auto" | "low" | "high" | "original" | undefined {
+	return typeof value === "string" && IMAGE_DETAILS.has(value) ? value as "auto" | "low" | "high" | "original" : undefined;
+}
+
+const AUDIO_FORMAT_BY_MIME: Record<string, "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16"> = {
+	"audio/wav": "wav",
+	"audio/x-wav": "wav",
+	"audio/wave": "wav",
+	"audio/mpeg": "mp3",
+	"audio/mp3": "mp3",
+	"audio/flac": "flac",
+	"audio/x-flac": "flac",
+	"audio/mp4": "m4a",
+	"audio/m4a": "m4a",
+	"audio/x-m4a": "m4a",
+	"audio/aac": "m4a",
+	"audio/ogg": "ogg",
+	"audio/l16": "pcm16",
+};
+
+function isGeminiFileUri(value: string): boolean {
+	return /^files\/[^/]+$/.test(value) || /^https:\/\/generativelanguage\.googleapis\.com\//i.test(value);
+}
+
+/**
+ * A Gemini-shaped part (`inlineData` / `inline_data`, `fileData` / `file_data`
+ * or a bare `{ text }`), as Google's SDKs build them. Without this it would
+ * reach the model as the text "[object Object]".
+ * https://ai.google.dev/api/caching#Part
+ */
+function normalizeGeminiPart(part: any): IRContentPart | null {
+	if (!part || typeof part !== "object" || Array.isArray(part) || part.type !== undefined) return null;
+	if (typeof part.text === "string" && Object.keys(part).every((key) => key === "text")) {
+		return { type: "text", text: part.text };
+	}
+	const inline = part.inlineData ?? part.inline_data;
+	if (inline && typeof inline === "object" && typeof inline.data === "string" && inline.data) {
+		const mimeType = nonEmptyString(inline.mimeType ?? inline.mime_type)?.toLowerCase() ?? "application/octet-stream";
+		if (mimeType.startsWith("image/")) return { type: "image", source: "data", data: inline.data, mimeType };
+		if (mimeType.startsWith("audio/")) {
+			const format = AUDIO_FORMAT_BY_MIME[mimeType.split(";")[0]!.trim()];
+			return { type: "audio", source: "data", data: inline.data, ...(format ? { format } : {}) };
+		}
+		// The IR keeps video as a URL; a data URL carries inline bytes.
+		if (mimeType.startsWith("video/")) return { type: "video", source: "url", url: `data:${mimeType};base64,${inline.data}` };
+		return { type: "file", source: "data", data: inline.data, mimeType };
+	}
+	const file = part.fileData ?? part.file_data;
+	const fileUri = file && typeof file === "object" ? nonEmptyString(file.fileUri ?? file.file_uri) : undefined;
+	if (fileUri) {
+		const mimeType = nonEmptyString(file.mimeType ?? file.mime_type)?.toLowerCase();
+		const geminiFile = isGeminiFileUri(fileUri);
+		if (mimeType?.startsWith("image/")) {
+			return { type: "image", source: geminiFile ? "id" : "url", data: fileUri, mimeType };
+		}
+		// A Files API upload belongs to the Gemini API project that made it, so
+		// audio and video uploads stay file references that only Google AI
+		// Studio is sent, not URLs another provider would try to fetch.
+		if (geminiFile && (mimeType?.startsWith("audio/") || mimeType?.startsWith("video/"))) {
+			return { type: "file", source: "id", data: fileUri, mimeType };
+		}
+		if (mimeType?.startsWith("audio/")) {
+			const format = AUDIO_FORMAT_BY_MIME[mimeType];
+			return { type: "audio", source: "url", data: fileUri, ...(format ? { format } : {}) };
+		}
+		if (mimeType?.startsWith("video/") || /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(fileUri)) {
+			return { type: "video", source: "url", url: fileUri };
+		}
+		return { type: "file", source: geminiFile ? "id" : "url", data: fileUri, ...(mimeType ? { mimeType } : {}) };
+	}
+	return null;
+}
+
 function normalizeImageUrl(
 	url: unknown,
 ): { source: "data" | "url"; data: string; detail?: string; mimeType?: string } | null {
@@ -234,17 +309,34 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 			part?.type === "output_image" ||
 			part?.type === "image"
 		) {
+			// Responses `input_image` carries `detail` and `file_id` on the part
+			// itself, next to a string `image_url`.
+			// https://platform.openai.com/docs/api-reference/responses/create
+			const partDetail = imageDetail(part.detail);
+			const fileId = nonEmptyString(part.file_id);
+			if (fileId && part.image_url == null && part.url == null) {
+				return {
+					type: "image",
+					source: "id",
+					data: fileId,
+					...(partDetail ? { detail: partDetail } : {}),
+					cacheControl: normalizePartCacheControl(part),
+				} as IRContentPart;
+			}
 			const normalized = normalizeImageUrl(part.image_url ?? part.url ?? part);
 			if (!normalized) return { type: "text", text: asString(part) };
 			return {
 				type: "image",
 				source: normalized.source,
 				data: normalized.data,
-				detail: normalized.detail,
+				detail: imageDetail(normalized.detail) ?? partDetail,
 				mimeType: normalized.mimeType,
 				cacheControl: normalizePartCacheControl(part),
 			} as IRContentPart;
 		}
+
+		const geminiPart = normalizeGeminiPart(part);
+		if (geminiPart) return geminiPart;
 
 		if (
 			part?.type === "input_audio" ||

@@ -1,0 +1,307 @@
+---
+title: "प्रॉम्प्ट टेम्पलेट"
+description: "प्रॉम्प्ट को प्रीसेट में रखें और हर अनुरोध के साथ केवल बदलने वाले मान भेजें।"
+icon: "braces"
+---
+
+प्रॉम्प्ट टेम्पलेट `{{variables}}` वाले संदेशों की एक सूची है, जो किसी [प्रीसेट](./presets.mdx) में सेव होती है। आपका एप्लिकेशन प्रीसेट का संदर्भ और वेरिएबल के मान भेजता है। Phaseo मानों की जाँच करता है, उन्हें संदेशों में भरता है और अनुरोध प्रीसेट के मॉडल को भेजता है।
+
+इससे प्रॉम्प्ट का टेक्स्ट एप्लिकेशन कोड से बाहर रहता है। आप बिना deploy किए डैशबोर्ड में प्रॉम्प्ट बदल सकते हैं, और हर caller एक जैसे शब्द, टूल और प्रतिक्रिया फ़ॉर्मैट उपयोग करता है।
+
+टेम्पलेट `POST /v1/chat/completions`, `POST /v1/responses` और `POST /v1/messages` पर काम करते हैं।
+
+## क्विकस्टार्ट
+
+<Steps>
+<Step title="टेम्पलेट लिखें">
+
+**सेटिंग -> प्रीसेट** खोलें, कोई प्रीसेट बनाएँ या खोलें, उसका मॉडल चुनें और **प्रॉम्प्ट टेम्पलेट** टैब खोलें। संदेश जोड़ें और वेरिएबल दोहरे ब्रेसेस में लिखें:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+एडिटर उसे मिलने वाले हर वेरिएबल की सूची दिखाता है। हर वेरिएबल का प्रकार, वह आवश्यक है या नहीं, डिफ़ॉल्ट मान और विवरण सेट करें। **आज़माएं** पैनल में मान भरकर देखें कि Gateway ठीक कौन से संदेश भेजेगा, फिर सेव करें।
+
+प्रीसेट सेव होने के बाद, **सेव किया गया प्रीसेट चलाएँ** आपके टेस्ट मानों के साथ एक असली अनुरोध भेजता है और जवाब, मॉडल और टोकन की संख्या दिखाता है। इसमें आपके वर्कस्पेस के क्रेडिट लगते हैं। उसी पैनल में अनुरोध के लिए cURL, TypeScript और Python कोड भी है, जिसमें आपके टेस्ट मान भरे होते हैं।
+
+</Step>
+
+<Step title="वेरिएबल भेजें">
+
+`prompt.id` में प्रीसेट का संदर्भ दें और मान `prompt.variables` में रखें। `model` छोड़ दें, या उसे इसी संदर्भ पर सेट करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="अनुरोध जाँचें">
+
+**Gateway -> लॉग** खोलकर अनुरोध, उसे पूरा करने वाला मॉडल और उसकी लागत देखें। अनुरोध के metadata में प्रीसेट, वेरिएबल के नाम और रेंडर हुए संदेशों की संख्या दर्ज होती है, लेकिन वेरिएबल के मान नहीं।
+
+</Step>
+</Steps>
+
+## हर endpoint से टेम्पलेट उपयोग करें
+
+एक ही `prompt` ऑब्जेक्ट तीनों endpoints पर काम करता है। टेम्पलेट के system और developer संदेश endpoint के सिस्टम निर्देश बन जाते हैं, और उसके बाकी संदेश आपके अनुरोध में भेजी गई बातचीत से पहले आते हैं।
+
+| Endpoint | टेम्पलेट के system संदेश कहाँ जाते हैं | टेम्पलेट की बातचीत किससे पहले आती है |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (system संदेशों के रूप में) | आपके `messages` |
+| `/v1/responses` | `instructions` | आपका `input` |
+| `/v1/messages` | `system` | आपके `messages` |
+
+आप टेम्पलेट के साथ बातचीत भी भेज सकते हैं। उदाहरण के लिए, chat अनुरोध टेम्पलेट के संदेशों के बाद उपयोगकर्ता के आगे के turns जोड़ सकता है:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## टेम्पलेट सिंटैक्स
+
+टेम्पलेट Mustache का एक छोटा, logic-free उपसमूह उपयोग करते हैं। टेम्पलेट की कोई भी चीज़ कभी कोड के रूप में नहीं चलती।
+
+| सिंटैक्स | यह क्या करता है |
+| --- | --- |
+| `{{name}}` | एक मान डालता है। टेक्स्ट जैसे का तैसा, संख्याएँ और boolean टेक्स्ट के रूप में, और सूचियाँ व ऑब्जेक्ट JSON के रूप में डाले जाते हैं। अनुपस्थित वैकल्पिक मान कुछ नहीं डालता। |
+| `{{customer.name}}` | ऑब्जेक्ट वेरिएबल का एक फ़ील्ड डालता है। |
+| `{{#name}}...{{/name}}` | मान सेट हो और `false` न हो तो ब्लॉक को एक बार रेंडर करता है, या सूची के हर आइटम के लिए एक बार। ब्लॉक के अंदर `{{.}}` मौजूदा आइटम है, और उसके फ़ील्ड नाम से उपयोग किए जा सकते हैं। |
+| `{{^name}}...{{/name}}` | मान अनुपस्थित, `false`, खाली टेक्स्ट या खाली सूची हो तो ब्लॉक रेंडर करता है। |
+| `{{! note }}` | एक टिप्पणी। इसे हटा दिया जाता है। |
+| `\{{` | शाब्दिक `{{`। |
+
+मान बिना HTML escaping के सादे टेक्स्ट के रूप में डाले जाते हैं। कोई मान संदेश का टेक्स्ट बदल सकता है, लेकिन अनुरोध की संरचना कभी नहीं।
+
+अगर कोई संदेश रेंडर होने के बाद केवल whitespace रह जाए, तो उसे हटा दिया जाता है। पूरे संदेश को वैकल्पिक बनाने के लिए इसका उपयोग करें:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+किसी सूची के हर आइटम के लिए टेक्स्ट दोहराने के लिए, सूची पर एक सेक्शन खोलें और मौजूदा आइटम के लिए `{{.}}` का उपयोग करें:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+Partials (`{{> name}}`), unescaped tags (`{{{name}}}` और `{{& name}}`), delimiter बदलना और lambdas समर्थित नहीं हैं। एडिटर और API इन्हें उपयोग करने वाले टेम्पलेट अस्वीकार करते हैं।
+
+## वेरिएबल
+
+हर वेरिएबल का एक प्रकार होता है। वेरिएबल घोषित करना तभी ज़रूरी है जब आपको उसके डिफ़ॉल्ट बदलने हों; संदेशों में उपयोग हुए लेकिन घोषित न किए गए वेरिएबल आवश्यक टेक्स्ट होते हैं।
+
+| प्रकार | क्या स्वीकार करता है |
+| --- | --- |
+| `string` | टेक्स्ट। लंबाई सीमित करने के लिए `max_length` सेट करें। |
+| `number` | एक संख्या। |
+| `boolean` | `true` या `false`। |
+| `enum` | `enum` में दी गई strings में से एक। |
+| `array` | एक सूची। |
+| `object` | एक JSON ऑब्जेक्ट। |
+| `any` | कोई भी JSON मान। |
+| `image` | user संदेश के लिए एक इमेज। नीचे "इमेज वेरिएबल" सेक्शन देखें। |
+
+हर वेरिएबल में ये भी हो सकते हैं:
+
+- `required`: मान अनुपस्थित होने पर अनुरोध विफल होता है। आवश्यक वेरिएबल का डिफ़ॉल्ट नहीं हो सकता।
+- `default`: अनुरोध में मान न होने पर उपयोग होता है। यह प्रकार से मेल खाना चाहिए।
+- `description`: एडिटर और त्रुटि संदेशों में दिखता है, अधिकतम 500 अक्षर।
+
+जो नाम केवल किसी सेक्शन को खोलने के लिए उपयोग होता है, जैसे ऊपर `notes` और `examples`, वह वैकल्पिक है और कोई भी मान स्वीकार करता है।
+
+अनुरोधों की जाँच सख्ती से होती है। आवश्यक मान अनुपस्थित हो, मान का प्रकार गलत हो या कोई ऐसा नाम हो जो टेम्पलेट में नहीं है, तो `400` लौटता है जिसमें सारी समस्याएँ एक साथ सूचीबद्ध होती हैं। इसलिए किसी typo से प्रॉम्प्ट का कोई हिस्सा चुपचाप नहीं छूटता।
+
+## इमेज वेरिएबल
+
+इमेज वेरिएबल user संदेश के एक पूरे content part को भरता है, इसलिए इमेज कहाँ जाएगी यह टेम्पलेट तय करता है। एडिटर में user संदेश के अंदर **इमेज जोड़ें** चुनें। API में `variable` part उपयोग करें:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+अनुरोध हर इमेज को `https` URL, `data:image/...` URL, या chat completions, Responses या Messages के आकार वाले image part के रूप में भेज सकता है। Phaseo उसे उस endpoint के फ़ॉर्मैट में बदल देता है जिसे आपने कॉल किया। चुने गए मॉडल को इमेज इनपुट स्वीकार करना चाहिए।
+
+## टूल और प्रतिक्रिया फ़ॉर्मैट
+
+टेम्पलेट में chat completions के आकार में लिखे `tools`, `tool_choice` और `response_format` हो सकते हैं। Phaseo इन्हें Responses और Messages endpoints के लिए बदल देता है।
+
+जब दोनों एक ही चीज़ सेट करें, तो हमेशा अनुरोध की बात मानी जाती है:
+
+- टूल function नाम से जोड़े जाते हैं। अगर अनुरोध उसी नाम का टूल परिभाषित करता है, तो अनुरोध की परिभाषा उपयोग होती है।
+- अनुरोध का `tool_choice` और प्रतिक्रिया फ़ॉर्मैट (`response_format`, `text.format` या `output_config.format`) टेम्पलेट वाले की जगह ले लेते हैं।
+
+`temperature` और `max_tokens` जैसे अनुरोध पैरामीटर सामान्य रूप से काम करते हैं। प्रीसेट के अपने डिफ़ॉल्ट केवल वे फ़ील्ड भरते हैं जो अनुरोध में नहीं हैं।
+
+## API से टेम्पलेट बनाएँ
+
+टेम्पलेट प्रीसेट के `config.prompt` में सेव होते हैं। `presets:write` वाली [मैनेजमेंट API कुंजी](../developers/management-api-keys.mdx) से प्रीसेट बनाएँ या अपडेट करें:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo सेव करते समय टेम्पलेट की जाँच करता है। सिंटैक्स त्रुटि, अज्ञात प्रकार या अपने प्रकार से मेल न खाने वाले डिफ़ॉल्ट वाला टेम्पलेट `400 invalid_prompt_template` और हर समस्या के स्थान के साथ अस्वीकार किया जाता है, यहाँ भी और एडिटर में भी।
+
+सेव किए गए बदलाव लगभग दो मिनट में अनुरोधों तक पहुँच जाते हैं।
+
+## त्रुटियाँ
+
+अनुरोध में टेम्पलेट की समस्याएँ कोड `validation_error` के साथ `400` लौटाती हैं। `reason` में पहली समस्या का कोड होता है और `details` सभी समस्याओं को उनके path के साथ सूचीबद्ध करता है:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Reason | कारण |
+| --- | --- |
+| `template_variable_required` | कोई आवश्यक वेरिएबल अनुपस्थित है। |
+| `template_variable_type` | कोई मान अपने प्रकार, enum सूची या `max_length` से मेल नहीं खाता। |
+| `template_variable_unknown` | अनुरोध ने ऐसा वेरिएबल भेजा जो टेम्पलेट में नहीं है, या प्रीसेट में कोई टेम्पलेट नहीं है। |
+| `template_variables_invalid` | `prompt.variables` ऑब्जेक्ट नहीं है। |
+| `template_limit_exceeded` | वेरिएबल या रेंडर हुआ टेक्स्ट नीचे दी गई सीमाओं से बड़ा है। |
+| `template_rendered_empty` | टेम्पलेट ने कोई user या assistant संदेश रेंडर नहीं किया और अनुरोध ने भी कोई संदेश नहीं भेजा। |
+| `template_endpoint_unsupported` | प्रीसेट में टेम्पलेट है और उसे ऊपर के तीन endpoints के अलावा किसी endpoint से कॉल किया गया। |
+| `prompt_model_conflict` | `model` में `prompt.id` से अलग कोई प्रीसेट या मॉडल है। |
+| `prompt_version_unsupported` | अनुरोध ने `prompt.version` सेट किया। |
+| `prompt_model_fallbacks_unsupported` | अनुरोध ने `models` fallbacks सेट किए। इसके बजाय fallback मॉडल प्रीसेट में सूचीबद्ध करें। |
+
+अगर `prompt.id` आपके वर्कस्पेस के किसी प्रीसेट का नाम नहीं है, तो `404` लौटता है।
+
+## सीमाएँ
+
+| सीमा | मान |
+| --- | --- |
+| हर टेम्पलेट में संदेश | 64 |
+| हर टेम्पलेट में वेरिएबल | 64 |
+| सभी संदेशों में टेम्पलेट टेक्स्ट | 48,000 अक्षर |
+| सेक्शन nesting की गहराई | 8 |
+| हर अनुरोध में सेक्शन की पुनरावृत्ति | 1,000 |
+| हर अनुरोध में रेंडर हुआ टेक्स्ट | 1,000,000 अक्षर |
+| `prompt.variables` का आकार | 256 KB |
+| हर `enum` में मान | 100 |
+
+## गार्डरेल और लॉग
+
+[गार्डरेल](../cookbook/guardrails-for-api-keys.mdx) वेरिएबल के मानों को उपयोगकर्ता content के रूप में जाँचते हैं, भले ही टेम्पलेट उन्हें system संदेश में रखे। किसी मान को redact करने वाला गार्डरेल उसे हर उस जगह redact करता है जहाँ टेम्पलेट ने उसे डाला, और किसी मान को block करने वाला गार्डरेल पूरे अनुरोध को block करता है।
+
+अनुरोध के metadata में प्रीसेट, वेरिएबल के नाम और रेंडर हुए संदेशों की संख्या दर्ज होती है। मान स्वयं केवल वहीं रखे जाते हैं जहाँ अनुरोध की body रखी जाती है, आपके वर्कस्पेस की सामान्य लॉगिंग सेटिंग के अनुसार।
+
+## मौजूदा सीमाएँ
+
+- अनुरोध अंतिम बार सेव किए गए टेम्पलेट का उपयोग करते हैं। `prompt.version` से अभी किसी पुराने संस्करण को pin नहीं किया जा सकता।
+- `models` fallbacks को टेम्पलेट के साथ नहीं जोड़ा जा सकता। इसके बजाय fallback मॉडल प्रीसेट में जोड़ें।
+- टेम्पलेट केवल chat completions, Responses और Messages अनुरोधों पर लागू होते हैं।
+
+## संबंधित गाइड
+
+- [प्रीसेट](./presets.mdx)
+- [संरचित आउटपुट](./structured-outputs.mdx)
+- [टूल कॉलिंग](./tool-calling.mdx)
+- [मल्टीमॉडलिटी](./multimodality.mdx)

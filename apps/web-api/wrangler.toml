@@ -26,6 +26,9 @@ SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 PROFILE_AVATARS_PUBLIC_BASE_URL = "https://avatars.phaseo.app"
 # Recipient ID is not a credential. The channel webhook belongs in Worker secrets.
 PROVIDER_MODEL_REVIEW_SLACK_USER_ID = "U0AGDKDBLP6"
+# PostHog project 81404's public write-only key, the same one the website ships to
+# browsers. Feedback answers are sent to its survey with it. Not a credential.
+POSTHOG_PROJECT_API_KEY = "phc_nnjuRkJpsqSm4SDVhT6jVjNysvbMedzoj4u5taUQaJ3"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 

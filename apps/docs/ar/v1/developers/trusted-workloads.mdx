@@ -1,0 +1,186 @@
+---
+title: "أحمال العمل الموثوقة"
+description: "اسمح لعمليات النشر على Vercel ومهام GitHub Actions باستدعاء Phaseo باستخدام رمز OIDC قصير الأجل بدلًا من مفتاح API."
+icon: "fingerprint-pattern"
+---
+
+<Note>
+ميزة أحمال العمل الموثوقة في المرحلة التجريبية، ويجري إتاحتها لمساحات العمل تدريجيًا. إذا لم يظهر **الإعدادات ← أحمال العمل الموثوقة** في لوحة التحكم لديك، فهذا يعني أن مساحة عملك لم تحصل عليها بعد.
+</Note>
+
+تمنح Vercel وGitHub Actions كل عملية نشر أو مهمة رمزًا موقّعًا يحدد هويتها، مثل "هذه عملية النشر الإنتاجية لمشروع `website`" أو "هذا سير عمل في `acme/app`". تنتهي صلاحية الرمز خلال ساعات. باستخدام أحمال العمل الموثوقة، تحدد لـ Phaseo أحمال العمل التي يثق بها، فترسل هذا الرمز بدلًا من مفتاح API. لا تحتاج إلى تخزين أي بيانات اعتماد طويلة الأجل في إعدادات مشروعك أو في أسرار CI.
+
+تظل مفاتيح API تعمل كما هي. استخدم أحمال العمل الموثوقة للتعليمات البرمجية التي تعمل على Vercel أو في GitHub Actions، واحتفظ بمفاتيح API لكل ما عدا ذلك، مثل الخوادم في أماكن أخرى والبرامج النصية المحلية وتطبيقات الجوال.
+
+---
+
+## طريقة العمل
+
+1. ينشئ مالك مساحة العمل أو أحد مسؤوليها **سياسة ثقة** في **الإعدادات ← أحمال العمل الموثوقة**. تحدد السياسة المنصة، وفريقك على Vercel أو مالكك على GitHub، وشروطًا اختيارية مثل مشروع أو مستودع أو فرع أو بيئة.
+2. تطلب تعليماتك البرمجية من المنصة رمزًا للجمهور `https://api.phaseo.app` وترسله بالشكل `Authorization: Bearer <token>`.
+3. يتحقق Phaseo من توقيع الرمز وصلاحيته، ثم يبحث عن سياسة نشطة واحدة فقط تطابقه.
+4. يُنفَّذ الطلب باستخدام مفتاح تلك السياسة، ويخضع لحدود المعدل والميزانيات والسجلات والفوترة نفسها التي يخضع لها الطلب المرسل بمفتاح API.
+
+### لماذا يهم الجمهور
+
+يجب أن تكون الرموز صادرة للجمهور `https://api.phaseo.app`. افتراضيًا، تصدر Vercel وGitHub Actions رموزًا لجمهور تشترك فيه كل الخدمات التي يستدعيها حمل العمل. لو قبلها Phaseo، لأمكن إعادة استخدام رمز أرسلته إلى خدمة أخرى لاستدعاء Phaseo. لذلك يرفض Phaseo الرموز ذات أي جمهور آخر.
+
+---
+
+## إنشاء سياسة ثقة
+
+<Steps>
+<Step title="افتح أحمال العمل الموثوقة">
+انتقل إلى **الإعدادات ← أحمال العمل الموثوقة** واختر **سياسة جديدة**. يمكن لمالكي مساحة العمل ومسؤوليها فقط إدارة السياسات.
+</Step>
+<Step title="اختر المنصة وأدخل المعرّفات">
+<Tabs>
+<Tab title="Vercel">
+- **الاسم المختصر للفريق**: الاسم المختصر (slug) للفريق كما في `vercel.com/<team-slug>`. اتركه فارغًا إذا كان مشروعك يستخدم وضع المُصدِر العام في Vercel (المُصدِر `https://oidc.vercel.com` بدلًا من `https://oidc.vercel.com/<team-slug>`).
+- **معرّف الفريق**: يبدأ بـ `team_`. تجده في إعدادات الفريق على Vercel.
+- **معرّف المشروع** (موصى به): يبدأ بـ `prj_`. تجده في إعدادات المشروع على Vercel. بدونه، يُوثق بكل مشاريع الفريق.
+- **البيئة**: الإنتاج أو المعاينة أو التطوير. اترك كل الخيارات غير محددة لقبول أي بيئة.
+</Tab>
+<Tab title="GitHub Actions">
+- **معرّف المالك**: المعرّف الرقمي للمستخدم أو المؤسسة التي تملك المستودع.
+- **معرّف المستودع** (موصى به): المعرّف الرقمي للمستودع. بدونه، يُوثق بكل مستودعات المالك.
+- **الفرع أو الوسم** و**البيئة** (اختياريان): مثل `refs/heads/main` أو `production`.
+
+احصل على المعرّفين باستخدام GitHub CLI:
+
+```bash
+gh api repos/OWNER/REPO --jq '.id, .owner.id'
+```
+
+يستخدم Phaseo المعرّفات الرقمية لأن الأسماء يمكن تغييرها أو أن يستحوذ عليها شخص آخر.
+</Tab>
+</Tabs>
+</Step>
+<Step title="حدّد أطول رمز مقبول">
+في **أطول رمز مقبول (بالساعات)**، حدّد أطول مدة صلاحية تقبلها. تُرفض الرموز الصادرة بصلاحية أطول. الحد الأقصى 12 ساعة، وهو ما يغطي رموز التطوير في Vercel.
+</Step>
+</Steps>
+
+تسري السياسات خلال دقيقة تقريبًا. وعند إيقاف سياسة أو حذفها، تتوقف رموزها عن العمل خلال المدة نفسها.
+
+---
+
+## استدعاء Phaseo برمز
+
+<Tabs>
+<Tab title="Vercel">
+استخدم `getVercelOidcToken` من مدخل الخادم في `@vercel/oidc` 4.x. عند تمرير `audience`، يُستبدل رمز عملية النشر برمز صادر لـ Phaseo.
+
+مع [حزمة TypeScript SDK](../sdk-reference/typescript/overview.mdx)، مرّر دالة بوصفها `apiKey`. تستدعيها حزمة SDK قبل كل طلب، لذلك يستخدم كل طلب رمزًا حاليًا:
+
+```ts
+import Phaseo from "@phaseo/sdk";
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+	apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-mini",
+	input: "Hello from a trusted workload",
+});
+```
+
+يتطلب تمرير دالة كقيمة `apiKey` إصدارًا من `@phaseo/sdk` أحدث من 3.0.0.
+
+مع أي عميل HTTP، اطلب رمزًا لكل طلب وأرسله بوصفه رمز bearer:
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const token = await getVercelOidcToken({ audience: "https://api.phaseo.app" });
+
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${token}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "openai/gpt-5-mini",
+		messages: [{ role: "user", content: "Hello from a trusted workload" }],
+	}),
+});
+```
+
+لا تخزّن الرمز في متغير على مستوى الوحدة: قد تغيّره Vercel بين الطلبات.
+</Tab>
+<Tab title="GitHub Actions">
+تحتاج المهمة إلى الإذن `id-token: write` لطلب رمز.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken("https://api.phaseo.app");
+            const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-5-mini",
+                messages: [{ role: "user", content: "Hello from GitHub Actions" }],
+              }),
+            });
+            core.info(String(response.status));
+```
+
+من خطوة shell، اطلب الرمز باستخدام `curl`:
+
+```bash
+TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+  "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.phaseo.app" | jq -r .value)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+رموز GitHub Actions قصيرة الأجل، لذا اطلب رمزًا جديدًا في المهام الطويلة.
+</Tab>
+</Tabs>
+
+---
+
+## السلوك والحدود
+
+- **الضوابط نفسها التي تنطبق على المفتاح.** تُنفَّذ الطلبات باستخدام مفتاح السياسة، لذلك تنطبق حدود معدل المفتاح والميزانيات وروابط الأقسام وقوائم عناوين IP المسموح بها وإعدادات التسجيل والفوترة كالمعتاد.
+- **استدعاءات النماذج فقط.** تعمل رموز أحمال العمل حيث يعمل مفتاح API الخاص بالبوابة. وترفضها واجهات API الخاصة بالإدارة.
+- **سياسة مطابقة واحدة فقط.** إذا كانت مساحتا عمل تثقان بحمل العمل نفسه، فلن يتمكن Phaseo من معرفة أيهما تقصد وسيرفض الطلب. أرسل معرّف مساحة العمل في الترويسة `x-phaseo-workspace` لاختيار إحداهما.
+- **مدة صلاحية الرمز.** تُرفض الرموز الصادرة بصلاحية أطول من **أطول رمز مقبول** في السياسة.
+- **لا تتأثر مفاتيح API.** تضيف أحمال العمل الموثوقة طريقة ثانية للمصادقة، ولا تغيّر مفاتيح API أو تعطّلها.
+
+---
+
+## استكشاف الأخطاء وإصلاحها
+
+يُرجع الرمز المرفوض الحالة `401` مع إحدى هذه الرسائل:
+
+| الرسالة | معناها | ما الذي تفعله |
+| --- | --- | --- |
+| `workload_token_wrong_audience` | لم يصدر الرمز للجمهور `https://api.phaseo.app`. | اطلب الرمز بهذا الجمهور. |
+| `workload_issuer_not_trusted` | لا توجد سياسة نشطة تستخدم مُصدِر هذا الرمز. | تحقق من الاسم المختصر لفريق Vercel أو وضع المُصدِر، ومن أن السياسة مفعّلة. |
+| `workload_identity_no_matching_policy` | الرمز صالح، لكن لا توجد سياسة نشطة تطابقه. | تحقق من معرّفات الفريق أو المالك أو المشروع أو المستودع، ومن شروط البيئة أو الفرع أو الوسم، ومن أن صلاحية الرمز لا تتجاوز **أطول رمز مقبول** في السياسة. |
+| `workload_identity_ambiguous` | تثق أكثر من مساحة عمل بحمل العمل هذا. | أرسل `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_not_enabled` | أحمال العمل الموثوقة غير متاحة لمساحة العمل هذه بعد. | استخدم مفتاح API في الوقت الحالي. |
+| `workload_token_expired` | انتهت صلاحية الرمز. | اطلب رمزًا جديدًا لكل طلب أو خطوة في المهمة. |
+| `workload_token_lifetime_too_long` | صدر الرمز بصلاحية تزيد على 12 ساعة، وهي أقصى مدة يقبلها Phaseo. | اطلب رمزًا أقصر أجلًا. |
+| `workload_token_invalid_signature` | لا يطابق توقيع الرمز مفاتيح المنصة. | أرسل الرمز دون تعديل، تمامًا كما أصدرته المنصة. |
+| `workload_jwks_unavailable` | تعذّر على Phaseo جلب مفاتيح التوقيع الخاصة بالمنصة. | أعد المحاولة بعد انتظار قصير. |

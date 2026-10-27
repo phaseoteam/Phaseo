@@ -60,7 +60,7 @@ import {
 import { normalizeMediaGenerationStatus } from "@/lib/chat/mediaGenerationStatus";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
-import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
@@ -1234,8 +1234,9 @@ public class Main {
 			code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -1255,8 +1256,9 @@ console.log(response);`,
 			code: `const Anthropic = require("@anthropic-ai/sdk");
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -1277,8 +1279,8 @@ console.log(response);`,
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("PHASEO_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.environ.get("PHASEO_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 response = client.messages.create(

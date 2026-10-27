@@ -71,6 +71,22 @@ describe("notification provider payloads", () => {
 		expect(eventContent({ ...spend, kind: "spend_blocked", payload: { state: "lifted" } }).title).toBe("Spend block lifted");
 		expect(eventContent({ ...spend, kind: "spend_report", payload: {} }).title).toBe("Spend report");
 	});
+	it("formats Broadcast destination failing content", () => {
+		const content = eventContent({ ...event, kind: "broadcast_destination_failing", payload: {
+			failing_destinations: 2,
+			destinations: [
+				{ name: "Langfuse prod", consecutive_failures: 12, last_error: "OTLP endpoint returned 401" },
+				{ name: "<!channel> Datadog", consecutive_failures: 1, last_error: null },
+			],
+		} });
+		expect(content.title).toBe("Broadcast destination failing");
+		expect(content.settingsUrl).toBe("https://phaseo.app/settings/broadcast");
+		expect(content.message).toBe("Broadcast could not deliver traces to 2 destinations. Langfuse prod: 12 requests failed in a row (OTLP endpoint returned 401). !channel Datadog: 1 request failed in a row.");
+		const seven = Array.from({ length: 5 }, (_, index) => ({ name: `Destination ${index + 1}`, consecutive_failures: 5, last_error: "x".repeat(300) }));
+		const long = eventContent({ ...event, kind: "broadcast_destination_failing", payload: { failing_destinations: 7, destinations: seven } }).message;
+		expect(long).toContain("x".repeat(199) + "…)");
+		expect(long.endsWith(" 2 more failing.")).toBe(true);
+	});
 	it("notifies as soon as a model is marked deprecated or retiring", () => {
 		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-12-01T00:00:00.000Z" })).toBe(true);
 		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: null, retired_at: "2026-12-01T00:00:00.000Z" })).toBe(true);

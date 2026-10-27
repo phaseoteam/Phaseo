@@ -47,7 +47,7 @@ jobs:
       version: ${{ steps.registry.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"
       - name: Check PyPI release status
@@ -114,7 +114,7 @@ jobs:
           name: python-agent-sdk-${{ needs.build-python.outputs.version }}
           path: dist/python-agent
       - name: Publish to PyPI with trusted publishing
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: dist/python-agent
           skip-existing: true
@@ -309,9 +309,9 @@ jobs:
       version: ${{ steps.registry.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
+      - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
-          ruby-version: "3.2"
+          ruby-version: "4.0"
       - name: Check RubyGems release status
         id: registry
         shell: bash
@@ -364,9 +364,9 @@ jobs:
         with:
           name: ruby-agent-sdk-${{ needs.build-ruby.outputs.version }}
           path: dist/ruby-agent
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
+      - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
-          ruby-version: "3.2"
+          ruby-version: "4.0"
       - name: Configure RubyGems trusted publishing credentials
         uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Publish to RubyGems

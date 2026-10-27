@@ -1,0 +1,307 @@
+---
+title: "Plantillas de prompt"
+description: "Guarda los prompts en un preajuste y envía solo los valores que cambian en cada solicitud."
+icon: "braces"
+---
+
+Una plantilla de prompt es una lista de mensajes con `{{variables}}`, guardada en un [preajuste](./presets.mdx). Tu aplicación envía la referencia al preajuste y los valores de las variables. Phaseo comprueba los valores, completa los mensajes y envía la solicitud al modelo del preajuste.
+
+Así, el texto del prompt queda fuera del código de la aplicación. Puedes cambiar el prompt en el panel sin desplegar nada, y todos los que llaman usan la misma redacción, las mismas herramientas y el mismo formato de respuesta.
+
+Las plantillas funcionan en `POST /v1/chat/completions`, `POST /v1/responses` y `POST /v1/messages`.
+
+## Inicio rápido
+
+<Steps>
+<Step title="Escribe la plantilla">
+
+Abre **Ajustes -> Preajustes**, crea o abre un preajuste, elige su modelo y abre la pestaña **Plantilla de prompt**. Añade mensajes y escribe las variables entre llaves dobles:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+El editor muestra cada variable que encuentra. Define su tipo, si es obligatoria, un valor predeterminado y una descripción. Rellena el panel **Pruébalo** para ver los mensajes exactos que enviará el gateway y, después, guarda.
+
+Una vez guardado el preajuste, **Ejecutar el preajuste guardado** envía una solicitud real con tus valores de prueba y muestra la respuesta, el modelo y el recuento de tokens. Usa los créditos de tu espacio de trabajo. El mismo panel incluye código cURL, TypeScript y Python para la solicitud, completado con tus valores de prueba.
+
+</Step>
+
+<Step title="Envía las variables">
+
+Indica el preajuste en `prompt.id` y pon los valores en `prompt.variables`. Omite `model` o asígnale la misma referencia.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Revisa la solicitud">
+
+Abre **Gateway -> Registros** para ver la solicitud, el modelo que la atendió y su coste. Los metadatos de la solicitud registran el preajuste, los nombres de las variables y el número de mensajes generados, pero no los valores de las variables.
+
+</Step>
+</Steps>
+
+## Usar plantillas desde cada endpoint
+
+El mismo objeto `prompt` funciona en los tres endpoints. Los mensajes de sistema y de desarrollador de la plantilla se convierten en las instrucciones de sistema del endpoint, y sus demás mensajes van antes de cualquier conversación que envíe tu solicitud.
+
+| Endpoint | Los mensajes de sistema de la plantilla van a | La conversación de la plantilla va antes de |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (se mantienen como mensajes de sistema) | tus `messages` |
+| `/v1/responses` | `instructions` | tu `input` |
+| `/v1/messages` | `system` | tus `messages` |
+
+Puedes enviar una conversación junto con la plantilla. Por ejemplo, una solicitud de chat puede añadir los turnos de seguimiento del usuario después de los mensajes de la plantilla:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## Sintaxis de las plantillas
+
+Las plantillas usan un subconjunto pequeño y sin lógica de Mustache. Nada de una plantilla se ejecuta nunca como código.
+
+| Sintaxis | Qué hace |
+| --- | --- |
+| `{{name}}` | Inserta un valor. El texto se inserta tal cual, los números y booleanos como texto, y las listas y objetos como JSON. Un valor opcional que falta no inserta nada. |
+| `{{customer.name}}` | Inserta un campo de una variable de tipo objeto. |
+| `{{#name}}...{{/name}}` | Genera el bloque una vez cuando el valor está definido y no es `false`, o una vez por cada elemento de una lista. Dentro, `{{.}}` es el elemento actual y sus campos se pueden usar por nombre. |
+| `{{^name}}...{{/name}}` | Genera el bloque cuando el valor falta, es `false`, es texto vacío o es una lista vacía. |
+| `{{! note }}` | Un comentario. Se elimina. |
+| `\{{` | Un `{{` literal. |
+
+Los valores se insertan como texto sin formato, sin escape HTML. Un valor puede cambiar el texto de un mensaje, pero nunca la estructura de la solicitud.
+
+Si un mensaje queda solo con espacios en blanco, se descarta. Úsalo para que un mensaje entero sea opcional:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Para repetir texto por cada elemento de una lista, abre una sección sobre la lista y usa `{{.}}` para el elemento actual:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+No se admiten parciales (`{{> name}}`), etiquetas sin escape (`{{{name}}}` y `{{& name}}`), cambios de delimitador ni lambdas; el editor y la API rechazan las plantillas que los usan.
+
+## Variables
+
+Cada variable tiene un tipo. Solo necesitas declarar una variable para cambiar sus valores predeterminados; las variables que se usan en los mensajes pero no se declaran son texto obligatorio.
+
+| Tipo | Acepta |
+| --- | --- |
+| `string` | Texto. Define `max_length` para limitar su longitud. |
+| `number` | Un número. |
+| `boolean` | `true` o `false`. |
+| `enum` | Una de las cadenas indicadas en `enum`. |
+| `array` | Una lista. |
+| `object` | Un objeto JSON. |
+| `any` | Cualquier valor JSON. |
+| `image` | Una imagen para un mensaje de usuario. Consulta [Variables de imagen](#variables-de-imagen). |
+
+Cada variable también puede tener:
+
+- `required`: la solicitud falla si falta el valor. Una variable obligatoria no puede tener valor predeterminado.
+- `default`: se usa cuando la solicitud omite el valor. Debe coincidir con el tipo.
+- `description`: se muestra en el editor y en los mensajes de error, con un máximo de 500 caracteres.
+
+Un nombre que solo se usa para abrir secciones, como `notes` y `examples` arriba, es opcional y acepta cualquier valor.
+
+Las solicitudes se comprueban de forma estricta. Un valor obligatorio que falta, un valor del tipo incorrecto o un nombre que la plantilla no tiene devuelve un `400` que enumera todos los problemas a la vez, para que una errata no elimine en silencio parte de un prompt.
+
+## Variables de imagen
+
+Una variable de imagen ocupa una parte de contenido completa de un mensaje de usuario, de modo que la plantilla decide dónde va la imagen. En el editor, elige **Añadir imagen** dentro de un mensaje de usuario. En la API, usa una parte `variable`:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+La solicitud puede enviar cada imagen como una URL `https`, una URL `data:image/...` o una parte de imagen con el formato de chat completions, Responses o Messages. Phaseo la convierte al formato del endpoint al que llamaste. El modelo seleccionado debe aceptar imágenes como entrada.
+
+## Herramientas y formato de respuesta
+
+Una plantilla puede incluir `tools`, `tool_choice` y `response_format`, escritos con el formato de chat completions. Phaseo los convierte para los endpoints Responses y Messages.
+
+Cuando ambos definen lo mismo, siempre prevalece la solicitud:
+
+- Las herramientas se combinan por nombre de función. Si la solicitud define una herramienta con el mismo nombre, se usa la definición de la solicitud.
+- El `tool_choice` y el formato de respuesta de la solicitud (`response_format`, `text.format` u `output_config.format`) sustituyen a los de la plantilla.
+
+Los parámetros de la solicitud, como `temperature` y `max_tokens`, funcionan como siempre. Los valores predeterminados del propio preajuste solo completan los campos que la solicitud omite.
+
+## Crear una plantilla con la API
+
+Las plantillas se guardan en `config.prompt` del preajuste. Crea o actualiza el preajuste con una [clave de API de administración](../developers/management-api-keys.mdx) que tenga `presets:write`:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo comprueba la plantilla al guardarla. Una plantilla con un error de sintaxis, un tipo desconocido o un valor predeterminado que no coincide con su tipo se rechaza con `400 invalid_prompt_template` y la ubicación de cada problema, tanto aquí como en el editor.
+
+Los cambios guardados llegan a las solicitudes en unos dos minutos.
+
+## Errores
+
+Los problemas de plantilla en una solicitud devuelven `400` con el código `validation_error`. `reason` contiene el código del primer problema y `details` los enumera todos con su ruta:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Motivo | Causa |
+| --- | --- |
+| `template_variable_required` | Falta una variable obligatoria. |
+| `template_variable_type` | Un valor no coincide con su tipo, su lista de `enum` o su `max_length`. |
+| `template_variable_unknown` | La solicitud envió una variable que la plantilla no tiene, o el preajuste no tiene plantilla. |
+| `template_variables_invalid` | `prompt.variables` no es un objeto. |
+| `template_limit_exceeded` | Las variables o el texto generado superan los límites indicados abajo. |
+| `template_rendered_empty` | La plantilla no generó ningún mensaje de usuario ni de asistente y la solicitud no envió ninguno. |
+| `template_endpoint_unsupported` | El preajuste tiene una plantilla y se llamó desde un endpoint distinto de los tres anteriores. |
+| `prompt_model_conflict` | `model` indica un preajuste o modelo distinto de `prompt.id`. |
+| `prompt_version_unsupported` | La solicitud definió `prompt.version`. |
+| `prompt_model_fallbacks_unsupported` | La solicitud definió alternativas en `models`. Indica los modelos alternativos en el preajuste. |
+
+Un `prompt.id` que no corresponde a ningún preajuste de tu espacio de trabajo devuelve `404`.
+
+## Límites
+
+| Límite | Valor |
+| --- | --- |
+| Mensajes por plantilla | 64 |
+| Variables por plantilla | 64 |
+| Texto de la plantilla en todos los mensajes | 48.000 caracteres |
+| Profundidad de anidamiento de secciones | 8 |
+| Repeticiones de secciones por solicitud | 1.000 |
+| Texto generado por solicitud | 1.000.000 caracteres |
+| Tamaño de `prompt.variables` | 256 KB |
+| Valores por `enum` | 100 |
+
+## Guardrails y registros
+
+Los [guardrails](../cookbook/guardrails-for-api-keys.mdx) comprueban los valores de las variables como contenido del usuario, incluso cuando la plantilla los coloca en un mensaje de sistema. Un guardrail que redacta un valor lo redacta en todos los lugares donde la plantilla lo insertó, y uno que bloquea un valor bloquea la solicitud.
+
+Los metadatos de la solicitud registran el preajuste, los nombres de las variables y el número de mensajes generados. Los valores solo se conservan donde se conserva el cuerpo de la solicitud, según la configuración de registro habitual de tu espacio de trabajo.
+
+## Limitaciones actuales
+
+- Las solicitudes usan la plantilla tal como se guardó por última vez. Todavía no se puede fijar una versión anterior con `prompt.version`.
+- Las alternativas de `models` no se pueden combinar con una plantilla. Añade los modelos alternativos al preajuste.
+- Las plantillas solo se aplican a solicitudes de chat completions, Responses y Messages.
+
+## Guías relacionadas
+
+- [Preajustes](./presets.mdx)
+- [Salidas estructuradas](./structured-outputs.mdx)
+- [Llamadas a herramientas](./tool-calling.mdx)
+- [Multimodalidad](./multimodality.mdx)

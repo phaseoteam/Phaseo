@@ -1,7 +1,9 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
 import type { SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
 
@@ -39,6 +41,7 @@ export type PrivacyGlobalSettings = {
 	io_logging_enabled?: boolean | null;
 	io_logging_retention_days?: number | null;
 	io_logging_include_provider_payloads?: boolean | null;
+	io_logging_contents_access?: "members" | "admins" | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
@@ -154,6 +157,7 @@ export type SettingsBroadcastInitialData = {
 		name: string;
 		samplingRate: number;
 		updatedAt: string | null;
+		health: BroadcastDestinationHealth | null;
 	}>;
 	teamName: string | null;
 	workspaceId: string | null;
@@ -446,9 +450,12 @@ export type NotificationDestination = {
 	targetPreview: string;
 	status: string;
 	createdAt: string | null;
+	/** Custom webhooks only: deliveries carry x-phaseo-signature. Older destinations stay unsigned until a secret is generated. */
+	hasSigningSecret?: boolean;
+	signingSecretRotatedAt?: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "spend_alert" | "spend_blocked" | "spend_report";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing" | "spend_alert" | "spend_blocked" | "spend_report";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;
@@ -609,6 +616,122 @@ export type SettingsClassifiersInitialData = {
 	apps: Array<{ id: string; title: string }>;
 };
 
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+
+export type SettingsRateLimitPolicy = {
+	id: string;
+	name: string;
+	description: string | null;
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	/** Requests in progress at once. */
+	concurrentRequests: number | null;
+	/** Strict mode: limits are checked before sending, and requests are rejected when they can't be. */
+	failClosed: boolean;
+	updatedAt: string;
+};
+
+export type SettingsRateLimitsInitialData = {
+	workspaceId: string | null;
+	canManageRateLimits: boolean;
+	policies: SettingsRateLimitPolicy[];
+	assignments: Array<{ id: string; policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }>;
+	targets: {
+		keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+		members: Array<{ id: string; name: string | null; role: string }>;
+		departments: Array<{ id: string; name: string }>;
+		guardrails: Array<{ id: string; name: string }>;
+	};
+	/** Requests each policy rejected in the last throttleWindowHours. */
+	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
+	throttleWindowHours: number;
+	/** The workspace's trust-ladder tier from the gateway; null when unavailable, absent from older responses. */
+	tier?: SettingsRateLimitTier | null;
+};
+
+export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+
+/** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
+export type SettingsWorkloadIdentityPolicy = {
+	id: string;
+	name: string;
+	provider: SettingsWorkloadIdentityProvider;
+	issuer: string;
+	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	ownerId: string;
+	/** Exact-match conditions on other token claims, such as project_id or environment. */
+	claimConditions: Record<string, string[]>;
+	maxTokenLifetimeSeconds: number;
+	status: "active" | "disabled";
+	lastUsedAt: string | null;
+	createdAt: string | null;
+	updatedAt: string | null;
+};
+
+export type SettingsWorkloadIdentityInitialData = {
+	workspaceId: string | null;
+	/** False when the workspace is outside the rollout. */
+	available: boolean;
+	/** Owners and admins only. */
+	canManage: boolean;
+	/** The audience every token must be issued for. */
+	audience: string;
+	policies: SettingsWorkloadIdentityPolicy[];
+};
+
+export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
+/** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
+export type SettingsRateLimitTier = {
+	tier: SettingsRateLimitTierName;
+	requestsPerMinute: number;
+	target: SettingsRateLimitTierName | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	refusal: "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown" | null;
+	/** Epoch ms. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+	/** The signed-in user is the owner and the workspace is eligible. */
+	canRaise: boolean;
+};
+
+/** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */
+export type SettingsWorkspaceBudget = {
+	id: string;
+	interval: WorkspaceBudgetInterval;
+	limit_usd: number;
+	limit_nanos: number;
+	usage_usd: number;
+	usage_nanos: number;
+	remaining_nanos: number;
+	percent_used: number;
+	exceeded: boolean;
+	window_start: string | null;
+	/** Null for lifetime budgets, which never reset. */
+	reset_at: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+};
+/** A department budget: alerts at about 80% and 100%, never blocks (web-api settings-budgets). */
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
+	department_id: string;
+	department_name: string | null;
+};
+export type SettingsBudgetsInitialData = {
+	workspaceId: string | null;
+	canManageBudgets: boolean;
+	/** Database time the usage was read, so projections match between render and hydration. */
+	observedAt: string;
+	budgets: SettingsWorkspaceBudget[];
+	/** Null when department budgets couldn't be read; absent from older web-api responses. */
+	departmentBudgets?: SettingsDepartmentBudget[] | null;
+	departments?: Array<{ id: string; name: string }>;
+};
+
 /** GET /api/account/settings/spend-rules: rules in the control API shape (snake_case, nanos and *_usd). */
 export type SettingsSpendRulesInitialData = {
 	workspaceId: string;
@@ -727,3 +850,60 @@ export type UsageUpstreamRequestRow = {
 type UsageUpstreamPayload = { availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; upstreamRequests: UsageUpstreamRequestRow[] };
 export type SettingsUsageLogsLoadState = "ready" | "unauthorized" | "no_workspace" | "forbidden" | "failed";
 export type SettingsUsageLogsInitialData = { signedIn: boolean; workspaceId: string | null; loadState?: SettingsUsageLogsLoadState } & ({ view: "logs"; data: UsageLogsPayload | null } | { view: "upstream"; data: UsageUpstreamPayload | null } | { view: "jobs"; data: UsageJobsPayload | null } | { view: "sessions"; data: UsageSessionsPayload | null });
+
+export type KeySecurityKey = {
+	id: string;
+	name: string;
+	prefix: string;
+	status: "active" | "paused";
+	created_by: string | null;
+	owner_name: string | null;
+	/** Owners and admins only. */
+	owner_email: string | null;
+	created_at: string;
+	/** Null when the key has never been used for a request. */
+	last_used_at: string | null;
+	expires_at: string | null;
+	storage_locations: string[];
+	has_spend_limit: boolean;
+	has_ip_allowlist: boolean;
+	never_used: boolean;
+	idle: boolean;
+	safe_to_remove: boolean;
+	risk: number;
+};
+
+export type KeySecuritySummary = {
+	total: number;
+	paused: number;
+	no_spend_limit: number;
+	never_expires: number;
+	idle: number;
+	safe_to_remove: number;
+	no_ip_allowlist: number;
+	no_storage_location: number;
+	locations: Array<{ id: string; keys: number }>;
+};
+
+export type KeyStorageIncidentNotice = {
+	id: string;
+	location_id: string;
+	action: "revoke" | "pause";
+	title: string;
+	customer_message: string;
+	source_url: string | null;
+	applied_at: string;
+	keys: number;
+	key_ids: string[];
+};
+
+export type SettingsKeySecurityInitialData = {
+	workspaceId: string;
+	canManage: boolean;
+	maxBulkKeys: number;
+	observedAt: number;
+	summary: KeySecuritySummary;
+	keys: KeySecurityKey[];
+	/** Platform breaches in the last 90 days where Phaseo revoked or paused this workspace's keys. */
+	incidents: KeyStorageIncidentNotice[];
+};

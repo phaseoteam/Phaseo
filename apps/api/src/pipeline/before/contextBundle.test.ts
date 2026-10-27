@@ -1,4 +1,13 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { selectCatalogSnapshot } from "./contextBundle";
+
+it("does not serve managed privacy snapshots stale past the revocation boundary", () => {
+    const current = snapshot({ at: Date.now() - 300_001 });
+    for (const variant of current.variants) for (const row of variant.providers) {
+        row.capability_params = { data_policy: { catalogManaged: true } } as never;
+    }
+    expect(selectCatalogSnapshot({ current, next: null } as never)).toBeNull();
+});
 
 const state = vi.hoisted(() => ({
     rpc: vi.fn(), from: vi.fn(), store: new Map<string, string>(), get: vi.fn(), put: vi.fn(),

@@ -1,4 +1,41 @@
 import { getBindings } from "@/runtime/env";
+import { encryptWebhookSecret, generateWebhookSigningSecret } from "@/core/webhook-endpoints";
+
+/** Destination types whose deliveries are signed with a per-destination secret. */
+export function isSignedNotificationDestinationType(type: string): boolean { return type === "custom_webhook"; }
+
+/**
+ * A new signing secret for a notification destination: the plaintext (shown once)
+ * and the encrypted columns to store, encrypted like webhook endpoint secrets.
+ */
+export async function issueNotificationSigningSecret(now: Date = new Date()) {
+	const secret = generateWebhookSigningSecret();
+	const encrypted = await encryptWebhookSecret(secret);
+	return {
+		secret,
+		columns: {
+			signing_secret_ciphertext: encrypted.secretCiphertext,
+			signing_secret_iv: encrypted.secretIv,
+			signing_secret_key_version: encrypted.secretKeyVersion,
+			signing_secret_rotated_at: now.toISOString(),
+		},
+	};
+}
+
+/** Public destination fields, without the encrypted target or secret. */
+export function toPublicNotificationDestination(row: Record<string, unknown>) {
+	return {
+		id: row.id,
+		name: row.name,
+		type: row.type,
+		status: row.status,
+		target_preview: row.target_preview,
+		has_signing_secret: Boolean(row.signing_secret_ciphertext),
+		signing_secret_rotated_at: row.signing_secret_rotated_at ?? null,
+		created_at: row.created_at ?? null,
+		updated_at: row.updated_at ?? null,
+	};
+}
 
 export const NOTIFICATION_DESTINATION_TYPES = ["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"] as const;
 export type NotificationDestinationType = typeof NOTIFICATION_DESTINATION_TYPES[number];

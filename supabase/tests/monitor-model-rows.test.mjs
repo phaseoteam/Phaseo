@@ -190,6 +190,21 @@ try {
   const refreshed = await db.query(`select weekly_tokens_model from public.get_monitor_model_rows(false)
     where provider_api_model_id = 'route-a' and capability_id = 'text.generate'`);
   assert.equal(Number(refreshed.rows[0].weekly_tokens_model), snapshotTokens + 1000);
+
+  // The compat view aggregates numeric meter quantities, so usage arrives as "406.000000000000".
+  const totals = await db.query(`select
+    public.gateway_usage_total_tokens(jsonb_build_object('input_tokens', 406.000000000000::numeric, 'output_tokens', 94.000000000000::numeric)) as decimals,
+    public.gateway_usage_total_tokens('{"input_tokens":"406.000000000000","reasoning_tokens":"10.000000000000"}') as decimal_strings,
+    public.gateway_usage_total_tokens('{"total_tokens":"12"}') as integer_string,
+    public.gateway_usage_total_tokens('{"total_tokens":"-5","input_tokens":"1e3","output_tokens":"abc"}') as invalid`);
+  assert.deepEqual(totals.rows, [{ decimals: 500, decimal_strings: 416, integer_string: 12, invalid: 0 }]);
+  await db.exec(`insert into private.v2_rpc_gateway_requests_compat (canonical_model_id,model_id,provider,usage)
+    select 'model-a','model-a','provider-a', jsonb_object_agg(meter, quantity)
+    from (values ('input_tokens', 406.000000000000::numeric), ('output_tokens', 94.000000000000::numeric)) usage(meter, quantity)`);
+  await db.exec('select public.refresh_public_monitor_weekly_usage()');
+  const decimalRefresh = await db.query(`select weekly_tokens_model from public.get_monitor_model_rows(false)
+    where provider_api_model_id = 'route-a' and capability_id = 'text.generate'`);
+  assert.equal(Number(decimalRefresh.rows[0].weekly_tokens_model), snapshotTokens + 1500, 'Decimal meter quantities count towards weekly tokens');
   console.log(JSON.stringify({
     cases: 'All columns equivalent; aliases, providers, visibility, pricing, weighted averages, NULLs, zero totals, 7-day boundary, snapshot refresh and grants passed',
     resolverCallsBefore: before.calls, resolverCallsAfter: after.calls,

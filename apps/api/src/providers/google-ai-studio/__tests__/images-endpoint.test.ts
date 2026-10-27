@@ -214,3 +214,67 @@ describe("google-ai-studio images endpoint", () => {
 		expect(result.normalized?.data?.[0]?.b64_json).toBe("xyz789");
 	});
 });
+
+describe("google-ai-studio images endpoint billing (Gemini 3 Pro Image)", () => {
+	// Production rows: input unconditional, output_image_tokens only where
+	// image_params.resolution is 1K or 2K, at $120 per 1M tokens.
+	const tokenRule = (meter: string, price: string, match: unknown[] = []) => ({
+		meter, unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD",
+		pricing_plan: "standard", note: null, match, priority: 100,
+	});
+	const card = {
+		provider: "google-ai-studio", model: "google/gemini-3-pro-image", endpoint: "image.generate",
+		effective_from: null, effective_to: null, currency: "USD", version: null,
+		rules: [
+			tokenRule("input_text_tokens", "2"),
+			tokenRule("output_image_tokens", "120", [
+				{ path: "image_params.resolution", op: "in", value: ["1K", "2K"], or_group: 1, and_index: 1 },
+			]),
+		],
+	} as any;
+
+	const run = async (body: Record<string, unknown>, imageTokens: number) => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("gemini-3-pro-image-preview:generateContent"),
+			response: jsonResponse({
+				candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: "img" } }] } }],
+				usageMetadata: {
+					promptTokenCount: 10,
+					candidatesTokenCount: imageTokens,
+					totalTokenCount: 10 + imageTokens,
+					promptTokensDetails: [{ modality: "TEXT", tokenCount: 10 }],
+					candidatesTokensDetails: [{ modality: "IMAGE", tokenCount: imageTokens }],
+				},
+			}),
+		}]);
+		try {
+			return await execImages({
+				endpoint: "images.generations",
+				model: "google/gemini-3-pro-image",
+				providerModelSlug: "gemini-3-pro-image-preview",
+				body: { model: "google/gemini-3-pro-image", prompt: "a lighthouse", ...body },
+				meta: REQUEST_META,
+				workspaceId: "team_test",
+				providerId: "google-ai-studio",
+				byokMeta: [],
+				pricingCard: card,
+				stream: false,
+			} as any);
+		} finally {
+			mock.restore();
+		}
+	};
+
+	it.each([
+		["no quality (Google's 1K default)", {}, 1120, 134_420_000, undefined],
+		["quality 2K", { quality: "2K" }, 1120, 134_420_000, undefined],
+		["quality 4K (no 4K row: base rate)", { quality: "4K" }, 2000, 240_020_000, "base_rate"],
+	])("prices %s without throwing after Google has charged", async (_label, body, imageTokens, expectedNanos, fallback) => {
+		// Before: pricing_rule_missing:output_image_tokens thrown from the adapter, then a
+		// second paid image on another provider.
+		const result = await run(body, imageTokens);
+		expect(result.bill.usage.pricing.total_nanos).toBe(expectedNanos);
+		const outputLine = result.bill.usage.pricing.lines.find((line: any) => line.dimension === "output_image_tokens");
+		expect(outputLine?.pricing_fallback).toBe(fallback);
+	});
+});

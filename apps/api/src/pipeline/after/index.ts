@@ -12,6 +12,7 @@ import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSpeechStreamResponse } from "./speech-stream";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
@@ -60,6 +61,31 @@ export function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
 		return false;
 	}
 	return true;
+}
+
+const PLAIN_TRANSCRIPT_FORMATS = new Set(["text", "srt", "vtt"]);
+
+// OpenAI returns `response_format` text, srt and vtt transcripts and translations
+// as the bare body rather than JSON. Usage is priced before this point, so only
+// the client body changes.
+export function resolvePlainTranscriptBody(
+	ctx: PipelineContext,
+	upstream: Response | undefined,
+	payload: any,
+): { body: string; contentType: string } | null {
+	if (ctx.endpoint !== "audio.transcription" && ctx.endpoint !== "audio.translations") return null;
+	const format = String((ctx.body as any)?.response_format ?? "").trim().toLowerCase();
+	if (!PLAIN_TRANSCRIPT_FORMATS.has(format)) return null;
+	if (typeof payload?.text !== "string") return null;
+	const upstreamType = String(upstream?.headers.get("content-type") ?? "").trim();
+	const upstreamIsJson = upstreamType.toLowerCase().includes("json");
+	// A provider that answered a subtitle request with JSON gave us no subtitle
+	// body to return, so keep the JSON rather than mislabel plain text as srt/vtt.
+	if (upstreamIsJson && format !== "text") return null;
+	return {
+		body: payload.text,
+		contentType: !upstreamIsJson && upstreamType ? upstreamType : "text/plain; charset=utf-8",
+	};
 }
 
 export async function settleNonBillableFailure(
@@ -500,6 +526,7 @@ async function handleNonStreamResponse(
         tier,
         ctx.meta
     ));
+    alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
         workspaceId: ctx.workspaceId,
@@ -644,6 +671,16 @@ async function handleNonStreamResponse(
                 headers,
             });
         }
+    }
+
+    const plainTranscript = resolvePlainTranscriptBody(ctx, result.upstream, payload);
+    if (plainTranscript) {
+        const headers = makeHeaders(timingHeader);
+        headers.set("Content-Type", plainTranscript.contentType);
+        return new Response(plainTranscript.body, {
+            status: result.upstream.status,
+            headers,
+        });
     }
 
     if (ctx.meta?.debug?.enabled) {

@@ -921,11 +921,7 @@
   ],
   "[\"Catalogue\",\"Common.ui.subscriptionCatalog\",\"Product.chatRooms.aiElements\"]": [
     "Catalogue.compare",
-    "Common.ui.subscriptionCatalog.first_billing_cycle",
-    "Common.ui.subscriptionCatalog.introductory",
-    "Common.ui.subscriptionCatalog.number_of_cycles",
-    "Common.ui.subscriptionCatalog.seat",
-    "Common.ui.subscriptionCatalog.starting_at",
+    "Catalogue.compareView",
     "Product.chatRooms.aiElements.close",
     "Product.chatRooms.aiElements.modelSelector",
     "Product.chatRooms.aiElements.providerLogo"

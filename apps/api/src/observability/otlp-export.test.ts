@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
+import { deliverGatewayOtlpPayload, deliverGatewayRowsPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, renderBroadcastPayload, selected } from "./otlp-export";
 import { encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { OTLP_PRESETS } from "./broadcast-destinations";
 
@@ -22,14 +22,20 @@ vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 const supabase = vi.hoisted(() => ({
 	claimed: [] as Array<{ id: string; destination_id: string; payload: unknown; attempts: number }>,
 	updates: [] as Array<{ id: string; patch: Record<string, unknown> }>,
+	health: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/runtime/env", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/runtime/env")>();
 	return {
 		...actual,
+		getBindings: () => ({}),
 		getSupabaseAdmin: () => ({
-			rpc: async () => ({ data: supabase.claimed, error: null }),
+			rpc: async (name: string, args: { p_results?: Array<Record<string, unknown>> }) => {
+				if (name !== "record_broadcast_destination_health") return { data: supabase.claimed, error: null };
+				supabase.health.push(...args.p_results!);
+				return { data: args.p_results!.length, error: null };
+			},
 			from: (table: string) => table === "workspace_broadcast_destinations"
 				? {
 					select: () => ({
@@ -58,6 +64,12 @@ vi.mock("@/runtime/env", async (importOriginal) => {
 	};
 });
 
+async function expectedSignature(secret: string, timestamp: string, body: string) {
+	const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+	const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+	return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 describe("deliverGatewayWebhookPayload", () => {
 	it("delivers OTLP JSON with configured headers and method", async () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
@@ -73,6 +85,34 @@ describe("deliverGatewayWebhookPayload", () => {
 		expect(url.toString()).toBe("https://hooks.example.com/traces");
 		expect(init).toMatchObject({ method: "PUT", body: JSON.stringify(payload), redirect: "manual" });
 		expect(new Headers(init.headers).get("authorization")).toBe("Bearer secret");
+	});
+
+	it("signs the body when the webhook has a signing secret", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const payload = { resourceSpans: [{ scopeSpans: [] }] };
+		const secret = "whsec_test_0123456789";
+		await deliverGatewayWebhookPayload(payload, {
+			url: "https://hooks.example.com/traces",
+			// A user header cannot replace the signature.
+			headers_json: JSON.stringify({ "x-phaseo-signature": "forged" }),
+			signing_secret: secret,
+		});
+		const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		const sent = new Headers(init.headers);
+		const timestamp = sent.get("x-phaseo-timestamp")!;
+		expect(Math.abs(Number(timestamp) - Date.now() / 1000)).toBeLessThan(5);
+		expect(sent.get("x-phaseo-signature")).toBe(await expectedSignature(secret, timestamp, init.body as string));
+		expect(init.body).toBe(JSON.stringify(payload));
+	});
+
+	it("sends no signature headers without a signing secret", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal("fetch", fetchMock);
+		await deliverGatewayWebhookPayload({ resourceSpans: [] }, { url: "https://hooks.example.com/traces" });
+		const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(new Headers(init.headers).has("x-phaseo-signature")).toBe(false);
+		expect(new Headers(init.headers).has("x-phaseo-timestamp")).toBe(false);
 	});
 
 	it("retries transient webhook failures", async () => {
@@ -116,6 +156,32 @@ describe("Broadcast destination selection and metadata", () => {
 		] }, telemetry, "event_1")).toBe(true);
 	});
 
+	it("matches regex rules in linear time and never matches a pattern it can't run", () => {
+		const withRule = (value: string) => ({
+			...destination,
+			broadcast_destination_rule_groups: [{ match_operator: "and", broadcast_destination_rules: [{ field: "input", condition: "matches_regex", value }] }],
+		});
+		const long = { ...telemetry, requestPayload: { prompt: "a".repeat(1_500) } };
+		const started = performance.now();
+		expect(selected(withRule("(a+)+b"), long, "event_1")).toBe(false);
+		expect(performance.now() - started).toBeLessThan(1_000);
+		expect(selected(withRule("(a+)+\""), long, "event_1")).toBe(true);
+		// Saved before validation existed: lookahead is rejected, so the rule fails closed.
+		expect(selected(withRule("prompt(?=)"), long, "event_1")).toBe(false);
+	});
+
+	it("caps the regex work one destination can spend on an event", () => {
+		const heavy = Array.from({ length: 200 }, (_, index) => ({ field: "input", condition: "matches_regex", value: `(a?){900}b${index}` }));
+		const manyRules = {
+			...destination,
+			broadcast_destination_rule_groups: [{ match_operator: "or", broadcast_destination_rules: heavy }],
+		};
+		const long = { ...telemetry, requestPayload: { prompt: "a".repeat(1_900) } };
+		const started = performance.now();
+		expect(selected(manyRules, long, "event_1")).toBe(false);
+		expect(performance.now() - started).toBeLessThan(2_000);
+	});
+
 	it("removes disabled metadata families from OTLP attributes", () => {
 		const payload = { resourceSpans: [{ attributes: [
 			{ key: "gen_ai.request.model", value: { stringValue: "gpt-5" } },
@@ -132,6 +198,40 @@ describe("Broadcast destination selection and metadata", () => {
 			include_request_context: false,
 		}) as any;
 		expect(filtered.resourceSpans[0].attributes.map((attribute: any) => attribute.key)).toEqual(["service.name"]);
+	});
+
+	it("drops request metadata and its span names when request context is off", () => {
+		const event = { kind: "gateway" as const, args: { ...telemetry, metadata: { trace_name: "checkout", team: "growth" } } };
+		const keys = (payload: any) => payload.resourceSpans[0].scopeSpans[0].spans[0].attributes.map((attribute: any) => attribute.key);
+		const names = (payload: any) => payload.resourceSpans[0].scopeSpans[0].spans.map((span: any) => span.name);
+
+		const withContext = renderBroadcastPayload(event, destination) as any;
+		expect(keys(withContext)).toContain("phaseo.metadata.team");
+		expect(names(withContext)[0]).toBe("checkout");
+
+		const withoutContext = renderBroadcastPayload(event, { ...destination, include_request_context: false }) as any;
+		expect(keys(withoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
+		expect(names(withoutContext)[0]).toBe("POST /v1/chat/completions");
+
+		const batch = {
+			kind: "async" as const,
+			args: {
+				requestId: "req_batch",
+				workspaceId: "ws_1",
+				operation: "batch" as const,
+				phase: "submit" as const,
+				endpoint: "batch" as const,
+				model: "openai/gpt-5",
+				startedAtMs: 1,
+				completedAtMs: 2,
+				success: true,
+				metadata: { span_name: "nightly evals", team: "growth" },
+			},
+		};
+		expect(names(renderBroadcastPayload(batch, destination))[0]).toBe("nightly evals");
+		const batchWithoutContext = renderBroadcastPayload(batch, { ...destination, include_request_context: false }) as any;
+		expect(keys(batchWithoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
+		expect(names(batchWithoutContext)[0]).toBe("batch.submit openai/gpt-5");
 	});
 });
 
@@ -245,6 +345,29 @@ describe("deliverGatewayOtlpPayload", () => {
 	});
 });
 
+describe("deliverGatewayRowsPayload", () => {
+	const config = { bucket: "traces", access_key_id: "AKIA", secret_access_key: "secret" };
+
+	it("rejects storage endpoints that resolve to private addresses", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayRowsPayload([], { ...config, endpoint: "https://private-dns.example.com" }, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "Invalid destination endpoint: webhook_url_private_network_not_allowed" });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("does not retry a config the destination can never accept", async () => {
+		const result = await deliverGatewayRowsPayload([], { ...config, bucket: "Bad_Bucket" }, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: expect.stringContaining("bucket must be") });
+	});
+
+	it("retries network failures", async () => {
+		vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Network connection lost")));
+		const result = await deliverGatewayRowsPayload([], config, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: true, error: "Network connection lost" });
+	});
+});
+
 describe("drainGatewayOtlpOutbox", () => {
 	it("drops payloads from rows that will not be sent again", async () => {
 		const payload = { resourceSpans: [{ prompt: "secret prompt" }] };
@@ -254,6 +377,7 @@ describe("drainGatewayOtlpOutbox", () => {
 			{ id: "rejected", destination_id: "destination-1", payload, attempts: 1 },
 		];
 		supabase.updates = [];
+		supabase.health = [];
 		vi.stubGlobal("fetch", vi.fn()
 			.mockResolvedValueOnce(new Response(null, { status: 200 }))
 			.mockResolvedValueOnce(new Response(null, { status: 503 }))
@@ -267,6 +391,15 @@ describe("drainGatewayOtlpOutbox", () => {
 		expect(patches.rejected).toMatchObject({ status: "failed", payload: {} });
 		expect(patches.retry).toMatchObject({ status: "pending" });
 		expect(patches.retry).not.toHaveProperty("payload");
+		// The retried row's 503 counts toward the failure streak but is not a failed event yet.
+		expect(supabase.health).toEqual([expect.objectContaining({
+			destination_id: "destination-1",
+			delivered: 1,
+			failed: 1,
+			failures: 2,
+			last_http_status: 400,
+			last_error: "OTLP endpoint returned 400",
+		})]);
 	});
 });
 
@@ -310,11 +443,11 @@ describe("deliverGatewayOtlpPayload over protobuf", () => {
 
 describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 	afterEach(() => {
-		delete OTLP_PRESETS.langfuse;
+		delete OTLP_PRESETS.s3;
 	});
 
 	it("sends a gzipped request to the vendor's endpoint with its credentials and attributes", async () => {
-		OTLP_PRESETS.langfuse = {
+		OTLP_PRESETS.s3 = {
 			endpoint: "{base_url}/api/public/otel/v1/traces",
 			defaults: { base_url: "https://cloud.example.com" },
 			headers: { Authorization: "{basic:public_key:secret_key}" },
@@ -325,7 +458,7 @@ describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const payload = { resourceSpans: [{ scopeSpans: [{ spans: [{ name: "chat" }] }] }] };
 
-		const result = await deliverGatewayOtlpPayload(payload, { public_key: "pk", secret_key: "sk", environment: "prod" }, 1, "langfuse");
+		const result = await deliverGatewayOtlpPayload(payload, { public_key: "pk", secret_key: "sk", environment: "prod" }, 1, "s3");
 
 		expect(result).toMatchObject({ delivered: true });
 		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
@@ -339,10 +472,10 @@ describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 	});
 
 	it("fails without sending when a required field is missing", async () => {
-		OTLP_PRESETS.langfuse = { endpoint: "{base_url}/v1/traces", headers: { Authorization: "{basic:public_key:secret_key}" } };
+		OTLP_PRESETS.s3 = { endpoint: "{base_url}/v1/traces", headers: { Authorization: "{basic:public_key:secret_key}" } };
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
-		const result = await deliverGatewayOtlpPayload({ resourceSpans: [] }, { base_url: "https://cloud.example.com", public_key: "pk" }, 1, "langfuse");
+		const result = await deliverGatewayOtlpPayload({ resourceSpans: [] }, { base_url: "https://cloud.example.com", public_key: "pk" }, 1, "s3");
 		expect(result).toMatchObject({ delivered: false, retryable: false, error: "secret_key is required" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
