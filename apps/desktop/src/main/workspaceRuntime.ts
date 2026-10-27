@@ -11,7 +11,7 @@ import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn,
 import type { AgentForm } from "../shared/agentForms";
 import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
 import { runProjectCommand } from "./runProjectCommand";
-import { mkdirSync, realpathSync } from "node:fs";
+import { mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
 import { optionValue, questionAnswerError, questionOptions } from "../shared/agentQuestions";
@@ -51,6 +51,13 @@ import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 import { captureCheckpoint, checkpointChanges, restoreCheckpoint } from "./gitCheckpoints";
+import { gitBranches, withGitLock } from "./gitOperations";
+import { runWorktreeSetup } from "./worktreeChat";
+import { planWorktreeCleanup } from "./worktreeCleanup";
+import type { WorktreeCleanupReport } from "../shared/worktreeCleanup";
+import { usageLimitError } from "../shared/usageLimitRecovery";
+import { secretLifetimeMs, secretRef, secretRefPattern, type SecretRequest, type SecretRequestInput, type SecretRequestResult } from "../shared/secretRequests";
+import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
@@ -93,7 +100,7 @@ export class WorkspaceRuntime {
 	private readonly maintainingHarnesses = new Set<Harness>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	/** Lent to Phaseo turns: model facts for context limits, and the long-running commands chats start. */
-	phaseo: PhaseoExtras = {};
+	phaseo: PhaseoExtras = { secrets: (taskId, refs) => this.resolveSecrets(taskId, refs) };
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly modelDiscoveries = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
@@ -120,6 +127,16 @@ export class WorkspaceRuntime {
 	closeIdleTerminals?: (taskId: string) => Promise<unknown>;
 	/** Starts a project script in a terminal of its own (TerminalService.runScript). */
 	runProjectScript?: (projectId: string, script: ProjectScript) => void;
+	/** Runs a setup action to completion in a terminal of the chat (TerminalService.runSetup). */
+	runSetupScript?: (projectId: string, script: ProjectScript, taskId: string) => { terminalId: string; exited: Promise<number | undefined> };
+	/** When a Claude or Codex account's exhausted plan limit resets (ms), from the limits Settings → Usage reads. */
+	usageLimitReset?: (harness: "claude" | "codex", accountId?: string) => Promise<number | undefined>;
+	/** Secret requests waiting for the person, by request. */
+	private readonly secretWaits = new Map<string, { taskId: string; resolve: (status: SecretRequest["status"]) => void }>();
+	/** Scheduled resumes of limited chats, by chat. */
+	private readonly limitTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	/** New worktree chats whose first turn waits for their setup (shared/worktreeChat.ts). */
+	private readonly worktreeSetups = new Map<string, Promise<void>>();
 	/** Settle cleanups in progress, and the settle each chat's scripts last ran for, so a repeat settle does not run them twice. */
 	private readonly settleCleanups = new Set<Promise<unknown>>();
 	private readonly settleScriptRuns = new Map<string, string>();
@@ -146,6 +163,9 @@ export class WorkspaceRuntime {
 		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 		this.backfillUsageTotals();
+		this.removeOldSecretFiles();
+		// Resumes scheduled before the app last quit, once the host has wired its hooks.
+		setTimeout(() => this.armLimitResumes(), 5000).unref?.();
 		// The Usage page looks back 90 days, so the ledger is filled once from recent chats and kept that long.
 		// It reads each recent chat once, so it waits until startup has settled.
 		setTimeout(() => { if (this.closing) return; try { this.store.pruneUsageLedger(); this.store.backfillUsageLedger(); } catch { /* The Usage page starts from now instead. */ } }, 2000).unref?.();
@@ -524,11 +544,11 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
-	threadTools(parentId: string): ThreadTools { const tools = this.threads.forThread(parentId); return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
-	async createWorktree(projectId: string, branch: string, base: string) {
+	threadTools(parentId: string): ThreadTools { const tools = { ...this.threads.forThread(parentId), requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) }; return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
-		const operation = this.performCreateWorktree(projectId, branch, base); this.worktreeOperations.add(operation);
+		const operation = this.performCreateWorktree(projectId, branch, base, runScripts); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.worktreeOperations.delete(operation); const count = this.worktreeSources.get(projectId)! - 1; if (count) this.worktreeSources.set(projectId, count); else this.worktreeSources.delete(projectId); }
 	}
 	assertProjectAvailable(projectId: string) {
@@ -575,16 +595,205 @@ export class WorkspaceRuntime {
 		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.getOverview(); })(); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.removingWorktrees.delete(projectId); this.worktreeOperations.delete(operation); }
 	}
-	private async performCreateWorktree(projectId: string, branch: string, base: string) {
+	private async performCreateWorktree(projectId: string, branch: string, base: string, runScripts: boolean) {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
-		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
+	}
+	/** Reads the reset time from the account's limits; the limits data is more exact than an error's text. */
+	private async readLimitReset(id: string) {
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		if (task.harness !== "claude" && task.harness !== "codex") return;
+		const resetsAt = await this.usageLimitReset?.(task.harness, task.accountId).catch(() => undefined);
+		if (!resetsAt || this.closing) return;
+		try { task = this.store.getTask(id); } catch { return; }
+		if (task.status !== "limited" || !task.usageLimit) return;
+		task.usageLimit.resetsAt = new Date(resetsAt).toISOString(); this.store.saveTask(task, true); this.broadcast();
+	}
+	/** T3's Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
+	private async resumeAtReset(id: string, cancel: boolean) {
+		const task = this.store.getTask(id);
+		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = undefined; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
+		if (task.status !== "limited" || !task.usageLimit) throw new Error("This chat is not paused on a usage limit.");
+		if (!task.usageLimit.resetsAt || Date.parse(task.usageLimit.resetsAt) <= Date.now()) await this.readLimitReset(id);
+		const latest = this.store.getTask(id), resetsAt = latest.usageLimit?.resetsAt;
+		if (!latest.usageLimit || !resetsAt) throw new Error("The reset time is not known yet. Check Settings → Usage, or use Continue now.");
+		latest.usageLimit.resumeAt = new Date(Math.max(Date.parse(resetsAt), Date.now()) + 60_000).toISOString();
+		this.store.saveTask(latest, true); this.broadcast(); this.armLimitResume(id, latest.usageLimit.resumeAt);
+		return this.store.getOverview();
+	}
+	private armLimitResume(id: string, resumeAt: string) {
+		clearTimeout(this.limitTimers.get(id));
+		// Timers longer than about 24 days overflow, so long waits check again in a day.
+		const wait = Math.min(Math.max(0, Date.parse(resumeAt) - Date.now()), 86_400_000);
+		const timer = setTimeout(() => {
+			this.limitTimers.delete(id);
+			if (this.closing) return;
+			let task; try { task = this.store.getTask(id); } catch { return; }
+			if (task.status !== "limited" || task.usageLimit?.resumeAt !== resumeAt) return;
+			if (Date.parse(resumeAt) > Date.now()) { this.armLimitResume(id, resumeAt); return; }
+			void this.command({ type: "resume", id }).catch(() => {});
+		}, wait);
+		timer.unref?.(); this.limitTimers.set(id, timer);
+	}
+	private armLimitResumes() {
+		if (this.closing) return;
+		for (const overview of this.store.getOverview().tasks) {
+			if (overview.status !== "limited") continue;
+			try { const resumeAt = this.store.getTask(overview.id).usageLimit?.resumeAt; if (resumeAt) this.armLimitResume(overview.id, resumeAt); } catch { /* Deleted meanwhile. */ }
+		}
+	}
+	/**
+	 * T3's request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
+	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
+	 */
+	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
+		if (!this.vault?.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
+		const task = this.store.getTask(taskId);
+		if (task.archived) throw new Error("This chat is archived.");
+		const delivery = input.delivery ?? (task.harness === "phaseo" ? "secretRef" : "file");
+		const request: SecretRequest = { id: randomUUID().replaceAll("-", ""), label: input.label, reason: input.reason, ...input.placeholder ? { placeholder: input.placeholder } : {}, delivery, status: "pending", createdAt: new Date().toISOString() };
+		task.secretRequests = [...(task.secretRequests ?? []).slice(-19), request];
+		if (task.status === "running") task.status = "waiting";
+		this.store.saveTask(task); this.broadcast();
+		const status = await new Promise<SecretRequest["status"]>(resolve => {
+			const finish = (value: SecretRequest["status"]) => { clearTimeout(timer); signal?.removeEventListener("abort", abort); this.secretWaits.delete(request.id); resolve(value); };
+			const timer = setTimeout(() => finish("timed_out"), input.timeoutMs), abort = () => finish("cancelled");
+			this.secretWaits.set(request.id, { taskId, resolve: finish });
+			signal?.addEventListener("abort", abort, { once: true }); if (signal?.aborted) abort();
+		});
+		if (status !== "saved" && status !== "declined") this.settleSecretRequest(taskId, request.id, status);
+		if (status !== "saved") return { status: status === "pending" ? "cancelled" : status };
+		const expiresAt = new Date(Date.now() + secretLifetimeMs).toISOString();
+		if (delivery === "secretRef") return { status: "saved", secretRef: secretRef(request.id), expiresAt };
+		const directory = path.join(this.directory, "secrets"); mkdirSync(directory, { recursive: true, mode: 0o700 });
+		const file = path.join(directory, request.id);
+		writeFileSync(file, (JSON.parse(await this.vault.get(`secret-request-${request.id}`)) as { value: string }).value, { mode: 0o600 });
+		setTimeout(() => rmSync(file, { force: true }), secretLifetimeMs).unref?.();
+		return { status: "saved", file, expiresAt };
+	}
+	/** The person's answer to a secret request: the value goes to the vault, the chat records only "saved" or "declined". */
+	async answerSecret(taskId: string, requestId: string, value: string | null) {
+		const wait = this.secretWaits.get(requestId), request = this.store.getTask(taskId).secretRequests?.find(item => item.id === requestId);
+		if (!wait || wait.taskId !== taskId || request?.status !== "pending") throw new Error("This request is no longer waiting for an answer.");
+		if (value !== null) {
+			await this.vault!.set(`secret-request-${requestId}`, JSON.stringify({ taskId, value, savedAt: Date.now() }));
+			setTimeout(() => this.vault?.remove(`secret-request-${requestId}`), secretLifetimeMs).unref?.();
+		}
+		this.settleSecretRequest(taskId, requestId, value === null ? "declined" : "saved");
+		wait.resolve(value === null ? "declined" : "saved");
+		return this.store.getOverview();
+	}
+	private settleSecretRequest(taskId: string, requestId: string, status: SecretRequest["status"]) {
+		let task; try { task = this.store.getTask(taskId); } catch { return; }
+		const request = task.secretRequests?.find(item => item.id === requestId);
+		if (!request || request.status !== "pending") return;
+		request.status = status; request.answeredAt = new Date().toISOString();
+		if (task.status === "waiting" && !task.secretRequests!.some(item => item.status === "pending")) task.status = hasRequests(task) ? "waiting" : "running";
+		this.store.saveTask(task); this.broadcast();
+	}
+	/** run_command's secrets: each secretRef must be this chat's and under a day old. */
+	async resolveSecrets(taskId: string, refs: Record<string, string>) {
+		if (!this.vault) throw new Error("Secure credential storage is unavailable.");
+		const values: Record<string, string> = {};
+		for (const [name, ref] of Object.entries(refs)) {
+			const id = secretRefPattern.exec(ref)?.[1];
+			let stored: { taskId?: unknown; value?: unknown; savedAt?: unknown } | undefined;
+			try { stored = id ? JSON.parse(await this.vault.get(`secret-request-${id}`)) : undefined; } catch { stored = undefined; }
+			if (!stored || stored.taskId !== taskId || typeof stored.value !== "string" || typeof stored.savedAt !== "number" || Date.now() - stored.savedAt > secretLifetimeMs) throw new Error(`${name}: this secretRef has expired or belongs to another chat. Ask again with request_secret.`);
+			values[name] = stored.value;
+		}
+		return values;
+	}
+	/** Secret files outlive their timers when the app quits; they go at the next start once a day old. */
+	private removeOldSecretFiles() {
+		const directory = path.join(this.directory, "secrets");
+		try { for (const name of readdirSync(directory)) { const file = path.join(directory, name); if (Date.now() - statSync(file).mtimeMs > secretLifetimeMs) rmSync(file, { force: true }); } } catch { /* No secret files yet. */ }
+	}
+	/** Top-level chats the last quit interrupted that have not run since, for the offer to continue them. */
+	quitInterrupted() {
+		return this.store.getOverview().tasks.filter(task => task.status === "interrupted" && !task.archived && !task.delegation).flatMap(task => { try { return this.store.getTask(task.id).interruptedByQuit ? [task.id] : []; } catch { return []; } });
+	}
+	/** The last worktree cleanup, for Settings; kept until the app quits. */
+	lastWorktreeCleanup?: WorktreeCleanupReport;
+	private worktreeCleanupRun?: Promise<WorktreeCleanupReport>;
+	/**
+	 * T3's worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
+	 * still pick when checked again; "auto" removes everything they pick (the setting, off by default).
+	 */
+	async cleanWorktrees(mode: "plan" | "auto" | { remove: string[] }): Promise<WorktreeCleanupReport> {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (this.worktreeCleanupRun) { if (mode === "auto") return this.worktreeCleanupRun; throw new Error("A worktree cleanup is already running."); }
+		const run = (async () => {
+			const rules = this.store.getPreferences().worktreeCleanup, workspace = this.store.getOverview();
+			const sameDirectory = (a: string, b: string) => { try { return !path.relative(realpathSync(a), realpathSync(b)); } catch { return false; } };
+			const entries = await planWorktreeCleanup({ projects: workspace.projects, tasks: workspace.tasks, rules, now: Date.now(), only: typeof mode === "object" ? new Set(mode.remove) : undefined,
+				blocked: project => this.removingWorktrees.has(project.id) || [...this.projectMutations.values()].includes(project.id) ? "A Git action is using it"
+					: workspace.tasks.some(task => task.projectId === project.id && this.executions.has(task.id)) ? "A chat is running in it"
+					: this.getTerminals?.().some(value => value.status === "running" && sameDirectory(value.cwd, project.directory)) ? "A terminal is open in it"
+					: workspace.projects.some(other => other.worktree && !other.worktree.removedAt && other.worktree.sourceProjectId === project.id) ? "Other worktrees start from it" : undefined });
+			if (mode !== "plan") for (const entry of entries) {
+				if (entry.outcome !== "remove" || this.closing) continue;
+				// removeWorktree checks again that nothing runs there and that the checkout is clean.
+				try { await this.removeWorktree(entry.projectId); entry.outcome = "removed"; } catch (error) { entry.outcome = "keep"; entry.reason = error instanceof Error ? error.message : "It could not be removed"; }
+			}
+			const report: WorktreeCleanupReport = { checkedAt: new Date().toISOString(), entries, ...mode === "auto" ? { automatic: true } : {} };
+			if (mode !== "plan") this.lastWorktreeCleanup = report;
+			return report;
+		})();
+		this.worktreeCleanupRun = run;
+		try { return await run; } finally { this.worktreeCleanupRun = undefined; }
 	}
 	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
 	private startWorktreeScripts(projectId: string) {
 		for (const script of worktreeCreateScripts(this.store.getProjects(), projectId)) try { this.runProjectScript?.(projectId, script); } catch { /* Terminal limits reached; the person can run it from the chat header. */ }
+	}
+	/**
+	 * T3's New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
+	 * renamed from the first message and the setup actions run; the chat's first turn waits for both.
+	 */
+	async startWorktreeChat(request: WorktreeChatRequest, create: Extract<WorkspaceCommand, { type: "create-task" }>) {
+		const temporary = temporaryWorktreeBranch(randomUUID().replaceAll("-", ""));
+		const { projectId } = await this.createWorktree(request.projectId, temporary, request.base, false);
+		const known = new Set(this.store.getOverview().tasks.map(task => task.id));
+		const id = (await this.command({ ...create, projectId })).tasks.find(task => !known.has(task.id))?.id;
+		if (!id) throw new Error(`The worktree was created as project ${projectId}, but the chat could not be created.`);
+		const task = this.store.getTask(id);
+		task.worktreeSetup = { base: request.base, branch: temporary, startedAt: new Date().toISOString(), stages: [{ id: "checkout", status: "done", detail: `From ${request.base}` }, { id: "branch", status: "pending" }, { id: "setup", status: "pending" }] };
+		this.store.saveTask(task); this.broadcast();
+		const project = () => { const value = this.store.getProjects().find(item => item.id === projectId); if (!value) throw new Error("The worktree project no longer exists."); return value; };
+		const cancelled = () => { if (this.closing) return true; try { const current = this.store.getTask(id); return current.status === "interrupted" || current.archived; } catch { return true; } };
+		const setup = runWorktreeSetup({
+			branches: () => gitBranches(project().directory),
+			renameBranch: async (from, to) => {
+				const directory = project().directory;
+				await withGitLock(directory, async () => { await git(directory, ["check-ref-format", "--branch", to]); await git(directory, ["branch", "-m", from, to]); });
+				const current = project(), source = this.store.getProjects().find(value => value.id === current.worktree?.sourceProjectId);
+				current.worktree = { ...current.worktree!, branch: to }; current.name = `${source?.name ?? current.name.split(" · ")[0]} · ${to}`; this.store.saveProject(current); this.broadcast();
+			},
+			nameBranch: async text => {
+				const access = this.titleModelAccount();
+				if ("missing" in access) return undefined;
+				const prompt = branchNamePrompt(mentionPlainText(text));
+				return (await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...prompt, maxTokens: 24, timeoutMs: 20_000 }))?.split("\n").map(line => line.trim()).find(Boolean);
+			},
+			setupScripts: () => worktreeCreateScripts(this.store.getProjects(), projectId),
+			runScript: script => { if (!this.runSetupScript) throw new Error("Terminals are unavailable."); return this.runSetupScript(projectId, script, id); },
+			update: mutate => { if (this.closing) return; try { const current = this.store.getTask(id); if (!current.worktreeSetup) return; mutate(current.worktreeSetup); this.store.saveTask(current, true); this.broadcast(); } catch { /* The chat was deleted during setup. */ } },
+			cancelled,
+		}, temporary, request.text);
+		const hold = setup.catch(() => false).then(ready => {
+			this.worktreeSetups.delete(id);
+			if (this.closing) return;
+			let current; try { current = this.store.getTask(id); } catch { return; }
+			// A failed setup or a stop leaves the first message queued; Resume starts it.
+			if (!ready) { current.status = current.status === "interrupted" ? "interrupted" : "failed"; current.error = current.worktreeSetup?.error ?? "The chat was stopped before the agent started."; this.store.saveTask(current); this.broadcast(); return; }
+			if (current.queue.length) this.start(id);
+		});
+		this.worktreeSetups.set(id, hold);
+		return { workspace: this.store.getOverview(), taskId: id };
 	}
 	assertAccountIdle(accountId: string) {
 		if (this.store.getOverview().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
@@ -681,6 +890,7 @@ export class WorkspaceRuntime {
 		if (command.type === "delete-task") return this.deleteTask(command.id);
 		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
+		if (command.type === "resume-at-reset") return this.resumeAtReset(command.id, command.cancel === true);
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
@@ -903,7 +1113,8 @@ export class WorkspaceRuntime {
 		this.broadcast(); return this.store.getOverview();
 	}
 	private start(id: string) {
-		if (this.closing || this.executions.has(id)) return;
+		// A new worktree chat starts once its setup finishes.
+		if (this.closing || this.executions.has(id) || this.worktreeSetups.has(id)) return;
 		// The turn's span is the parent of everything it starts; a drain with nothing to run leaves no record.
 		const turn = startSpan("turn.run");
 		const execution = turn.within(() => this.drain(id, turn)).then(() => turn.discard(), error => { turn.end(error); throw error; }).finally(() => {
@@ -1123,8 +1334,13 @@ export class WorkspaceRuntime {
 			flush(); ended = true;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
-			if (error instanceof AgentInputRejectedError && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
+			// T3's usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
+			const limit = (current.harness === "claude" || current.harness === "codex") && current.status === "failed" ? usageLimitError(current.error) : undefined;
+			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
+			// A message the agent never answered goes back to the queue, so Resume sends it again.
+			if ((error instanceof AgentInputRejectedError || limit) && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
+			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true;
@@ -1137,15 +1353,20 @@ export class WorkspaceRuntime {
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
 			for (const [requestId, pending] of this.questions) if (pending.taskId === id) { pending.resolve({}); this.questions.delete(requestId); }
 			for (const [requestId, pending] of this.forms) if (pending.taskId === id) { pending.resolve(null); this.forms.delete(requestId); }
+			// A secret request cannot outlive the turn that asked: only that call can hand the agent its reference.
+			for (const wait of [...this.secretWaits.values()]) if (wait.taskId === id) wait.resolve("cancelled");
 			this.broadcast();
 		}
 	}
 	async close() {
 		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
-		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
+		for (const timer of this.limitTimers.values()) clearTimeout(timer); this.limitTimers.clear();
+		// Chats cut off by quitting are offered to continue at the next start.
+		for (const id of this.running.keys()) { const task = this.store.apply({ type: "cancel", id }); task.interruptedByQuit = true; task.error = "Phaseo quit during this turn. Resume to continue."; this.store.saveTask(task); }
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
 		for (const pending of this.forms.values()) pending.resolve(null);
+		for (const wait of [...this.secretWaits.values()]) wait.resolve("cancelled");
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);

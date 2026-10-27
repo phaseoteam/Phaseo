@@ -10,7 +10,7 @@ import { settingsProject, type ProjectScript } from "../shared/projectSettings";
 import { readProcessTable, shellIsBusy, type ProcessRow } from "./terminalProcesses";
 
 /** `activity` counts output and input, so a close check notices a command typed while it ran. */
-type Entry = { pty: IPty; session: TerminalSession; pending: string; activity: number; timer?: ReturnType<typeof setTimeout>; settle?: (error?: Error) => void };
+type Entry = { pty: IPty; session: TerminalSession; pending: string; activity: number; timer?: ReturnType<typeof setTimeout>; settle?: (error?: Error) => void; /** A setup action's exit code, or undefined when the app closed it. */ exited?: (exitCode?: number) => void };
 
 export class TerminalService {
 	private readonly running = new Map<string, Entry>();
@@ -47,21 +47,31 @@ export class TerminalService {
 			this.flush(session.id); session.status = "exited"; session.exitCode = exitCode;
 			if (!session.ephemeral) this.store.saveTerminal(session); else session.output = "";
 			if (this.discarding.delete(session.id)) this.store.deleteTerminal(session.id);
-			this.running.delete(session.id); this.onEvent({ sessionId: session.id, session }); entry.settle?.(exitCode === 0 ? undefined : new Error("Native sign-in ended without completing."));
+			this.running.delete(session.id); this.onEvent({ sessionId: session.id, session }); entry.settle?.(exitCode === 0 ? undefined : new Error("Native sign-in ended without completing.")); entry.exited?.(exitCode);
 		});
 		return entry;
 	}
 	/** A shell in a project (and chat), running a project script when one is given, as T3's script terminals do. */
-	private open(projectId: string | undefined, taskId: string | undefined, script?: ProjectScript) {
+	private open(projectId: string | undefined, taskId: string | undefined, script?: ProjectScript, asProcess = false) {
 		if (this.running.size >= 10 || this.store.getTerminals().length >= 50) throw new Error("Close a terminal or delete an old transcript first.");
 		const project = projectId ? this.store.getProjects().find(project => project.id === projectId) : undefined;
 		if (projectId && !project) throw new Error("Project no longer exists.");
 		if (taskId) { const task = this.store.getTask(taskId); if ((task.projectId ?? undefined) !== project?.id) throw new Error("This chat belongs to another project."); }
 		const id = randomUUID(); const cwd = project?.directory ?? path.join(this.directory, id); mkdirSync(cwd, { recursive: true });
 		const session: TerminalSession = { id, projectId: project?.id, ...(taskId ? { taskId } : {}), ...(script ? { scriptId: script.id } : {}), title: script?.name.slice(0, 200) ?? this.nextTitle(project?.id, taskId), cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-		const entry = this.start(session, process.platform === "win32" ? "powershell.exe" : process.env.SHELL ?? "/bin/bash", process.platform === "win32" ? ["-NoLogo"] : [], process.env);
-		if (script) entry.pty.write(`${script.command}\r`);
+		const shell = process.platform === "win32" ? "powershell.exe" : process.env.SHELL ?? "/bin/bash";
+		// A setup action is the shell's only command, so the terminal ends with its exit code.
+		const run = asProcess && script ? (process.platform === "win32" ? ["-Command", script.command] : ["-lc", script.command]) : [];
+		const entry = this.start(session, shell, [...process.platform === "win32" ? ["-NoLogo"] : [], ...run], process.env);
+		if (script && !asProcess) entry.pty.write(`${script.command}\r`);
 		return session;
+	}
+	/** T3's setup script terminal: runs a worktree's setup action to completion in a terminal of the chat. */
+	runSetup(projectId: string, script: ProjectScript, taskId: string): { terminalId: string; exited: Promise<number | undefined> } {
+		if (this.closed) throw new Error("Terminals are shutting down.");
+		const session = this.open(projectId, taskId, script, true), entry = this.running.get(session.id);
+		if (!entry) return { terminalId: session.id, exited: Promise.resolve(session.exitCode) };
+		return { terminalId: session.id, exited: new Promise(resolve => { entry.exited = resolve; }) };
 	}
 	/** Starts a project script in its own terminal, such as one that runs when a worktree is created. */
 	runScript(projectId: string, script: ProjectScript, taskId?: string) {
@@ -127,7 +137,7 @@ export class TerminalService {
 	}
 	close() {
 		this.closed = true;
-		for (const [id, entry] of this.running) { this.flush(id); entry.session.status = "interrupted"; if (!entry.session.ephemeral) this.store.saveTerminal(entry.session); else entry.session.output = ""; entry.settle?.(new Error("Native sign-in cancelled.")); try { entry.pty.kill(); } catch { /* The process may already have exited. */ } }
+		for (const [id, entry] of this.running) { this.flush(id); entry.session.status = "interrupted"; if (!entry.session.ephemeral) this.store.saveTerminal(entry.session); else entry.session.output = ""; entry.settle?.(new Error("Native sign-in cancelled.")); entry.exited?.(undefined); try { entry.pty.kill(); } catch { /* The process may already have exited. */ } }
 		this.running.clear();
 	}
 }

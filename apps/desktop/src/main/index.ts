@@ -33,6 +33,12 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
+import { validateWorktreeChatRequest } from "../shared/worktreeChat";
+import { validatePublishRepository } from "../shared/gitWorkflow";
+import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
+import { limitResetAt } from "../shared/usageLimitRecovery";
+import { validateSecretAnswer } from "../shared/secretRequests";
+import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
@@ -67,7 +73,7 @@ import { TerminalService } from "./terminalService";
 import { backgroundCommands, closeBackgroundCommands } from "./backgroundCommands";
 import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
-import { gitBranches, gitCommand } from "./gitOperations";
+import { gitBranches, gitCommand, gitPush, withGitLock } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
 import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
@@ -127,6 +133,9 @@ let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
+let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
+/** T3's automatic worktree cleanup, when turned on in Settings → General. */
+const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
@@ -417,6 +426,7 @@ app.on("before-quit", event => {
 	diagnostics.close();
 	missionService?.close();
 	if (settleTimer) clearInterval(settleTimer);
+	if (worktreeCleanupTimer) clearInterval(worktreeCleanupTimer);
 	if (phaseoSignInTimer) clearInterval(phaseoSignInTimer);
 	void pullRequestWatcher?.close();
 	taskNotifications?.dismiss();
@@ -623,6 +633,14 @@ ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unkn
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
 ipcMain.handle("workspace:turn-changes", (event, id: unknown, from: unknown, to: unknown) => { const root = projectRoot(event, id); if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot."); return turnChanges(root, from, to); });
+ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input))); });
+ipcMain.handle("workspace:git-init", (event, id: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitInit(root)); });
+ipcMain.handle("workspace:publish-owners", (event, id: unknown) => publishOwners(projectRoot(event, id)));
+ipcMain.handle("workspace:publish-repository", async (event, id: unknown, request: unknown) => {
+	const root = projectRoot(event, id), input = validatePublishRepository(request);
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	return workspaceRuntime.mutateProject(id as string, async () => withGitLock(root, async () => ({ ...await publishRepository(root, input, gitPush), review: await gitReview(root) })));
+});
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
@@ -653,6 +671,24 @@ ipcMain.handle("workspace:pull-request-checkout-here", async (event, id: unknown
 	const view = await projectPullRequestView(root, number);
 	const result = await workspaceRuntime.mutateProject(id, () => checkoutPullRequestHere(root, view));
 	return { workspace: workspaceRuntime.store.getOverview(), projectId: id, branch: result.branch };
+});
+ipcMain.handle("workspace:start-worktree-chat", (event, value: unknown) => {
+	const { create, ...rest } = value && typeof value === "object" ? value as Record<string, unknown> : {};
+	const request = validateWorktreeChatRequest(rest); projectRoot(event, request.projectId);
+	const command = validateCommand(create);
+	if (command.type !== "create-task" || shutdownStarted) throw new Error("Invalid worktree chat request.");
+	return workspaceRuntime.startWorktreeChat(request, command);
+});
+ipcMain.handle("workspace:answer-secret", (event, taskId: unknown, requestId: unknown, value: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof requestId !== "string" || !/^[0-9a-f]{32}$/.test(requestId)) throw new Error("Invalid secret answer.");
+	return workspaceRuntime.answerSecret(taskId, requestId, validateSecretAnswer(value));
+});
+ipcMain.handle("workspace:quit-interrupted", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return workspaceRuntime.quitInterrupted(); });
+ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid worktree cleanup request.");
+	const request = validateWorktreeCleanupRequest(value);
+	const report = await workspaceRuntime.cleanWorktrees(request.type === "plan" ? "plan" : { remove: request.projectIds });
+	return { report, last: workspaceRuntime.lastWorktreeCleanup, workspace: workspaceRuntime.store.getOverview() };
 });
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
@@ -1097,6 +1133,13 @@ app.whenReady().then(() => {
 	workspaceRuntime.getTerminals = () => terminalService.get();
 	workspaceRuntime.closeIdleTerminals = taskId => terminalService.closeIdle(taskId);
 	workspaceRuntime.runProjectScript = (projectId, script) => { terminalService.runScript(projectId, script); };
+	workspaceRuntime.runSetupScript = (projectId, script, taskId) => terminalService.runSetup(projectId, script, taskId);
+	// Usage-limit recovery reads the reset time from the same limits Settings → Usage shows, unless a check is running.
+	workspaceRuntime.usageLimitReset = async (harness, accountId) => {
+		const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.kind === "native") : undefined;
+		if (accountChecks.has(accountId ?? harness) || shutdownStarted) return undefined;
+		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
+	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
@@ -1113,6 +1156,8 @@ app.whenReady().then(() => {
 	phaseoSignInTimer = setInterval(() => void refreshPhaseoSignIns(), 6 * 3_600_000); phaseoSignInTimer.unref();
 	workspaceRuntime.settleIdleThreads();
 	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
+	// Worktree cleanup waits for startup to settle, then runs every six hours.
+	setTimeout(autoCleanWorktrees, 120_000).unref(); worktreeCleanupTimer = setInterval(autoCleanWorktrees, 6 * 3_600_000); worktreeCleanupTimer.unref();
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
 	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
 	pullRequestWatcher.start();

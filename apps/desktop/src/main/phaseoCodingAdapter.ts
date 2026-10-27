@@ -49,7 +49,8 @@ export function phaseoGatewayClientOptions(account: Account, key: string, task: 
 }
 
 /** What the runtime lends Phaseo turns: model facts for context limits and the long-running command manager. */
-export type PhaseoExtras = { facts?: (account: Account, model: string) => Promise<ModelFacts | undefined>; background?: BackgroundCommands };
+/** `secrets` resolves a chat's request_secret references (name to secretRef) into values for one command. */
+export type PhaseoExtras = { facts?: (account: Account, model: string) => Promise<ModelFacts | undefined>; background?: BackgroundCommands; secrets?: (taskId: string, refs: Record<string, string>) => Promise<Record<string, string>> };
 
 const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const details = (input: unknown) => JSON.stringify(input, null, 2);
@@ -126,7 +127,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 			// Plan mode registers the editing tools but keeps them hidden and refused until the person approves a plan.
 			const live = { writable: task.mode === "code" };
 			const gate = instructionGate(instructions);
-			const editing = [...phaseoFileTools(cwd, { writable: true, instructions }), ...phaseoCommandTools(cwd, { taskId: task.id, background: this.extras.background, gate })];
+			const editing = [...phaseoFileTools(cwd, { writable: true, instructions }), ...phaseoCommandTools(cwd, { taskId: task.id, background: this.extras.background, gate, ...this.extras.secrets ? { secrets: refs => this.extras.secrets!(task.id, refs) } : {} })];
 			const writeIds = new Set(editing.map(tool => tool.id).filter(id => fileWrites.has(id) || commandWrites.has(id)));
 			const images = !facts?.input || facts.input.includes("image");
 			const tools: AgentTool[] = [...callbacks.threads ? threadTools(callbacks.threads, { images: false }) : [], ...phaseoPlanTools(), ...phaseoQuestionTools(), ...editing, ...images ? [viewImageTool(cwd, this.steering)] : [], ...task.mode === "plan" ? [proposePlanTool(callbacks, live)] : [], ...skillTools?.tools() ?? [], ...mcp.tools];

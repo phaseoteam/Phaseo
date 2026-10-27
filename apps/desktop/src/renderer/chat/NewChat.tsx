@@ -23,6 +23,7 @@ import { startChat } from "./startChat";
 import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
+import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -77,6 +78,7 @@ export function NewChat() {
 	const code = mode === "code";
 	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
 	const project = projects.find(value => value.id === newChatProjectId);
+	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
 
 	useEffect(() => {
 		if (selections.length || !phaseoAccount || !phaseoModels.length) return;
@@ -138,7 +140,7 @@ export function NewChat() {
 					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
 				}
 			} else {
-				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
+				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, create: code ? worktree.create : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
 				if (id) { setDraft(""); setImages({}); setAutopilot(undefined); select(id); }
 			}
 		} catch (reason) { setError(errorText(reason)); }
@@ -188,6 +190,7 @@ export function NewChat() {
 					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
+					{code && project && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />

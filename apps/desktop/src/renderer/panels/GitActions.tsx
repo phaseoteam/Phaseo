@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowUp, Check, ChevronDown, FolderPlus, GitBranch, GitPullRequestArrow, Minus, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, GitBranch, GitPullRequestArrow, LoaderCircle, Minus, Plus, Trash2, WandSparkles } from "lucide-react";
 import type { GitCommand, GitFile, GitReview } from "../../shared/workspace";
 import type { BranchPullRequest } from "../../shared/pullRequests";
 import { toastManager } from "../components/ui/toast";
@@ -12,6 +12,7 @@ import { cn } from "../lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { announceProjectChange, onProjectChange, openProjectFile } from "./events";
 import { ipcError, ToolbarButton } from "./surfaceChrome";
+import { PublishRepositoryForm } from "./PublishRepository";
 
 const statusTone: Record<string, string> = { M: "text-warning", A: "text-success", "?": "text-success", D: "text-destructive", R: "text-info", U: "text-destructive" };
 const statusLabel = (file: GitFile) => (file.indexStatus === "?" ? "U" : [file.indexStatus, file.worktreeStatus].find(value => value.trim()) ?? "M");
@@ -49,6 +50,8 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const [repository, setRepository] = useState(true);
 	const [branchPull, setBranchPull] = useState<BranchPullRequest>();
 	const [checkoutOpen, setCheckoutOpen] = useState(false);
+	const [publishing, setPublishing] = useState(false);
+	const [generating, setGenerating] = useState(false);
 	// Agents finishing in this project change its files, so their completion refreshes the list.
 	const activity = overview.tasks.filter(task => task.projectId === projectId).map(task => `${task.id}:${task.status}:${task.lastCompletedAt ?? ""}`).join("|");
 
@@ -70,6 +73,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const git = (command: GitCommand) => run(async () => {
 		setReview(await api!.gitCommand(projectId, command)); setBranches(await api!.gitBranches(projectId));
 		if (command.type === "commit") setMessage("");
+		if (command.type === "pull") toastManager.add({ type: "success", title: "Pulled the latest commits", timeout: 4000 });
 		if (command.type === "create-branch") setNewBranch(undefined);
 		announceProjectChange(projectId);
 	});
@@ -89,6 +93,19 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: taskId ? "Linked to this chat." : undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
 		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
 	});
+	/** T3: the title model writes the message from the changes; an empty message is written this way on commit. */
+	const generateMessage = async () => {
+		setGenerating(true);
+		try { return await api!.gitCommitMessage(projectId); } finally { setGenerating(false); }
+	};
+	const commit = (push: boolean) => run(async () => {
+		const text = message.trim() ? message : await generateMessage();
+		setMessage(text);
+		setReview(await api!.gitCommand(projectId, { type: "commit", message: text, all: !staged.length, push })); setBranches(await api!.gitBranches(projectId));
+		setMessage(""); announceProjectChange(projectId);
+		if (push) toastManager.add({ type: "success", title: "Committed and pushed", timeout: 4000 });
+	});
+	const initialise = () => run(async () => { setReview(await api!.gitInit(projectId)); setRepository(true); setRefresh(value => value + 1); announceProjectChange(projectId); });
 	const stageAll = (files: GitFile[], type: "stage" | "unstage") => run(async () => {
 		for (const file of files) await api!.gitCommand(projectId, { type, filename: file.path });
 		setRefresh(value => value + 1); announceProjectChange(projectId);
@@ -108,7 +125,17 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		<ToolbarButton size="sm" label={action.label} disabled={busy} onClick={() => void stageAll(action.files, action.type)}>{action.icon}</ToolbarButton>
 	</div>;
 
-	if (!repository) return <section className="git-actions text-xs text-muted-foreground/70" aria-label="Git">This project is not a Git repository.</section>;
+	if (!repository) return <section className="git-actions flex flex-wrap items-center gap-2 text-xs text-muted-foreground/70" aria-label="Git" aria-busy={busy}>
+		This project is not a Git repository.
+		<button type="button" disabled={busy} onClick={() => void initialise()} className="ml-auto h-7 shrink-0 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50">Initialise Git</button>
+		{error && <p role="alert" className="w-full text-destructive">{error}</p>}
+	</section>;
+	// T3 offers Publish repository when nothing tells the branch where to go.
+	const canPublish = Boolean(review) && !review?.hasRemote && !review?.upstream;
+	const canCommitPush = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream);
+	const commitCount = staged.length || changed.length;
+	const commitLabel = staged.length ? `Commit ${staged.length} ${staged.length === 1 ? "file" : "files"}` : `Commit all ${commitCount} ${commitCount === 1 ? "file" : "files"}`;
+	const folder = (project?.worktree ? overview.projects.find(value => value.id === project.worktree?.sourceProjectId) ?? project : project)?.directory.split(/[\\/]/).filter(Boolean).at(-1) ?? "project";
 	return <section className="git-actions flex min-w-0 flex-col gap-1 text-xs" aria-label="Git" aria-busy={busy}>
 		<div className="flex items-center gap-1">
 			<DropdownMenu>
@@ -126,7 +153,10 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 					</DropdownMenuItem>)}
 				</DropdownMenuContent>
 			</DropdownMenu>
-			{review?.upstream && review.upstream.behind > 0 && <span className="text-[11px] text-muted-foreground" title={`${review.upstream.name} has ${review.upstream.behind} newer ${review.upstream.behind === 1 ? "commit" : "commits"}`}>{review.upstream.behind} behind</span>}
+			{review?.upstream && review.upstream.behind > 0 && <Tip label={review.upstream.ahead > 0 ? `${review.upstream.name} and this branch have diverged; rebase or merge in a terminal` : `Fast-forward from ${review.upstream.name}, which has ${review.upstream.behind} newer ${review.upstream.behind === 1 ? "commit" : "commits"}`}>
+				<button type="button" disabled={busy || review.upstream.ahead > 0} onClick={() => void git({ type: "pull" })} className="flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowDown />Pull {review.upstream.behind}</button>
+			</Tip>}
+			{canPublish && !publishing && <button type="button" disabled={busy} onClick={() => setPublishing(true)} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><CloudUpload />Publish repository</button>}
 			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><GitPullRequestArrow />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
 			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={() => void git({ type: "push" })} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
 		</div>
@@ -138,6 +168,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				className="h-7 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 font-mono text-xs outline-none focus:border-ring" />
 			<button type="submit" disabled={busy || !newBranch.trim()} className="h-7 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">Create</button>
 		</form>}
+		{publishing && <PublishRepositoryForm projectId={projectId} folder={folder} onCancel={() => setPublishing(false)} onDone={value => { setReview(value); setPublishing(false); setRefresh(current => current + 1); announceProjectChange(projectId); }} />}
 		{error && <p role="alert" className="px-1.5 text-xs text-destructive">{error}</p>}
 		<CheckoutPullRequestDialog projectId={projectId} open={checkoutOpen} onOpenChange={setCheckoutOpen} />
 		{review && !review.files.length && <p className="px-1.5 py-1 text-xs text-muted-foreground/70">No changes. The working tree is clean.</p>}
@@ -149,11 +180,17 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			{heading("Changes", changed.length, { label: "Stage all", icon: <Plus />, files: changed, type: "stage" })}
 			{changed.map(file => <FileRow key={`changed:${file.path}`} file={{ ...file, indexStatus: file.indexStatus === "?" ? "?" : " " }} busy={busy} onOpen={() => openProjectFile({ projectId, path: file.path })} onCommand={command => void git(command)} />)}
 		</div>}
-		{review && review.files.length > 0 && <form className="pt-1" onSubmit={event => { event.preventDefault(); if (message.trim()) void git({ type: "commit", message }); }}>
-			<textarea aria-label="Commit message" rows={2} placeholder={staged.length ? "Commit message" : "Stage changes to commit"} value={message} onChange={event => setMessage(event.target.value)}
-				onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
-				className="block w-full resize-none rounded-md border border-input bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground focus:border-ring" />
-			<button type="submit" disabled={busy || !message.trim() || !staged.length} className="mt-1.5 h-7 w-full rounded-md bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">Commit {staged.length ? `${staged.length} ${staged.length === 1 ? "file" : "files"}` : ""}</button>
+		{review && review.files.length > 0 && <form className="pt-1" onSubmit={event => { event.preventDefault(); void commit(false); }}>
+			<div className="relative">
+				<textarea aria-label="Commit message" rows={2} placeholder={generating ? "Writing a commit message…" : "Commit message, or leave empty to generate one"} value={message} onChange={event => setMessage(event.target.value)} readOnly={generating}
+					onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
+					className="block w-full resize-none rounded-md border border-input bg-transparent py-1.5 pr-8 pl-2.5 text-xs outline-none placeholder:text-muted-foreground focus:border-ring" />
+				<span className="absolute top-1 right-1"><ToolbarButton size="sm" label="Generate a commit message" disabled={busy || generating} onClick={() => void run(async () => setMessage(await generateMessage()))}>{generating ? <LoaderCircle className="animate-spin" /> : <WandSparkles />}</ToolbarButton></span>
+			</div>
+			<div className="mt-1.5 flex gap-1.5">
+				<button type="submit" disabled={busy || generating} className="h-7 min-w-0 flex-1 truncate rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">{commitLabel}</button>
+				{canCommitPush && <button type="button" disabled={busy || generating} onClick={() => void commit(true)} className="h-7 shrink-0 rounded-md px-2.5 text-xs font-semibold text-foreground hover:bg-accent/60 disabled:opacity-50">Commit & push</button>}
+			</div>
 		</form>}
 	</section>;
 }

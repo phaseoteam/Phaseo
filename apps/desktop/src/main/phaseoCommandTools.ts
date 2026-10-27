@@ -3,6 +3,7 @@ import type { BackgroundCommands, BackgroundRead, BackgroundSummary } from "./ba
 import { commandEnvironment } from "./commandEnvironment";
 import { COMMAND_TIMEOUT_MS, commandShell, formatBytes, MAX_COMMAND_TIMEOUT_MS, runProjectCommand, type CommandResult, type ShellName } from "./runProjectCommand";
 import { refreshProjectIndex } from "./projectFileSearch";
+import { environmentNamePattern, redactSecrets, secretRefPattern } from "../shared/secretRequests";
 
 /** Command output a model sees from one call: a quarter from the start, the rest from the end. */
 const MODEL_OUTPUT_LIMIT = 64 * 1024;
@@ -96,11 +97,19 @@ export function commandWarnings(command: string) {
 	return warnings;
 }
 
+/** run_command's `secrets`: environment variable names mapped to secretRefs from request_secret. */
+function secretEnvironment(value: unknown) {
+	if (value === undefined) return undefined;
+	if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 20) throw new Error("secrets maps up to 20 environment variable names to secretRefs.");
+	for (const [name, ref] of Object.entries(value)) if (!environmentNamePattern.test(name) || typeof ref !== "string" || !secretRefPattern.test(ref)) throw new Error(`secrets.${name} must be a secretRef from request_secret, under a valid environment variable name.`);
+	return value as Record<string, string>;
+}
+
 /**
  * Shell tools for the Phaseo harness: `run_command`, plus background commands when `background` is given. `gate`
  * runs first with the command's directory; a string it returns becomes the tool result instead of running anything.
  */
-export function phaseoCommandTools(root: string, options: { taskId: string; background?: BackgroundCommands; gate?: (path: string, kind: "file" | "directory") => Promise<string | undefined> }): AgentTool[] {
+export function phaseoCommandTools(root: string, options: { taskId: string; background?: BackgroundCommands; gate?: (path: string, kind: "file" | "directory") => Promise<string | undefined>; /** Resolves request_secret references (name to secretRef) into values for one command. */ secrets?: (refs: Record<string, string>) => Promise<Record<string, string>> }): AgentTool[] {
 	const shell = commandShell(commandEnvironment()).name, label = SHELL_LABELS[shell];
 	const run = defineTool({
 		id: "run_command", requireApproval: true, onError: "return-to-model", timeoutMs: MAX_COMMAND_TIMEOUT_MS + 30_000,
@@ -109,18 +118,24 @@ export function phaseoCommandTools(root: string, options: { taskId: string; back
 			`The default timeout is ${COMMAND_TIMEOUT_MS / 1000} s; set timeoutSeconds up to ${MAX_COMMAND_TIMEOUT_MS / 1000} for long installs, builds or test suites. Processes the command starts are stopped when it finishes, so use start_background_command for dev servers, watchers and anything else that keeps running.`,
 			SHELL_GUIDANCE[shell],
 			"For searching, prefer rg or git grep when available. Long output keeps its start and end. Environment variables that look like credentials are not passed to commands.",
+			...options.secrets ? ["To use a secret the user gave through request_secret, pass secrets: { NAME: secretRef } and read $NAME (or $env:NAME in PowerShell) in the command; never print it."] : [],
 		].join(" "),
 		parameters: { type: "object", properties: {
 			command: { type: "string", description: `The command, in ${label} syntax.` },
 			directory: { type: "string", description: "Folder to run in, relative to the project root. Defaults to the root." },
 			timeoutSeconds: { type: "number", minimum: 1, maximum: MAX_COMMAND_TIMEOUT_MS / 1000, description: `Defaults to ${COMMAND_TIMEOUT_MS / 1000}.` },
+			...options.secrets ? { secrets: { type: "object", additionalProperties: { type: "string" }, description: "Environment variables for this command only, each set from a secretRef that request_secret returned." } } : {},
 		}, required: ["command"], additionalProperties: false },
 		async execute(raw: unknown, context) {
 			const input = inputObject(raw), command = requiredText(input, "command"), directory = optionalText(input, "directory") ?? ".";
 			const timeout = optionalNumber(input, "timeoutSeconds", 1, MAX_COMMAND_TIMEOUT_MS / 1000, "Use start_background_command for anything that runs longer, such as servers and watchers.");
+			const refs = secretEnvironment(input.secrets);
+			if (refs && !options.secrets) throw new Error("Secrets are unavailable here.");
 			const blocked = await options.gate?.(directory, "directory"); if (blocked) return blocked;
-			// A command can create or delete files, so file search starts from a fresh index afterwards.
-			try { return formatCommandResult(await runProjectCommand(root, command, directory, { signal: context.signal, timeoutMs: timeout === undefined ? undefined : timeout * 1000, outputLimit: MODEL_OUTPUT_LIMIT })); }
+			const values = refs ? await options.secrets!(refs) : undefined;
+			// A command can create or delete files, so file search starts from a fresh index afterwards. A stray echo of a
+			// secret is replaced before the output reaches the model.
+			try { return redactSecrets(formatCommandResult(await runProjectCommand(root, command, directory, { signal: context.signal, timeoutMs: timeout === undefined ? undefined : timeout * 1000, outputLimit: MODEL_OUTPUT_LIMIT, ...values ? { env: { ...commandEnvironment(), ...values } } : {} })), Object.values(values ?? {})); }
 			finally { refreshProjectIndex(root); }
 		},
 	});

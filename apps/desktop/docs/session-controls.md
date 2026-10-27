@@ -46,6 +46,12 @@ A successful command without a boundary is shown as Compaction result. The adapt
 
 Reference: [Claude SDK command contract](https://code.claude.com/docs/en/agent-sdk/slash-commands#compact-history-with-compact), installed SDK 0.3.276 declarations and the pinned [T3 Claude adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts).
 
+## Usage limits and restarts
+
+After T3 Code's usage-limit recovery: when a Claude or Codex turn stops because the plan's limit was reached (the error says a usage or rate limit was hit), the chat becomes **Limited** instead of Failed, and a message the agent had not answered goes back to the queue. The app reads when the limit resets from the same account limits Settings → Usage shows (the latest reset among the exhausted windows), falling back to a time in the error text (Claude's `|<epoch>` suffix, Codex's "try again in 2 hours 13 minutes"). Under the chat, **Resume when the limit resets** schedules the chat to resume a minute after that time (shown with **Cancel**), and **Continue now** resumes it straight away. A scheduled resume survives restarts; sending a message, Resume or Stop ends the pause.
+
+When Phaseo quits during a turn, the chat stops with "Phaseo quit during this turn. Resume to continue." At the next start, a notice offers to continue those chats (**Continue** or **Continue all**); each chat also keeps its own **Resume**. Agents started by other chats are left to their parents.
+
 ## Verification and remaining work
 
 OpenCode has nine deterministic protocol/runtime cases. OpenAI adds thirteen cases covering request/event ordering, manual/automatic dispatch, turn matching, duplicates, admission rejection, native failure, Stop/disconnection, steering, unchanged prompts and SQLite reopening/export history. Source and Windows-archive UI fixtures verify exact OpenCode summary copying and OpenAI status-only layout, delivered menu commands and retained drafts across themes/window sizes.

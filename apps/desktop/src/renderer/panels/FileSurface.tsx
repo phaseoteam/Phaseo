@@ -15,6 +15,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { FileBrowserSurface } from "./FileBrowserSurface";
+import { useRevealLine } from "./revealLine";
 import { announceProjectChange, onProjectChange, openProjectFile } from "./events";
 import { ipcError, SurfaceError, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
 
@@ -104,7 +105,7 @@ function PlainSource({ text, wrap }: { text: string; wrap: boolean }) {
 
 type SaveState = { dirty: boolean; error?: string };
 /** The highlighted editor. Edits save 500 ms after typing stops, checked against the hash the file was read with. */
-function EditableSource({ projectId, path, text, hash, wrap, theme, hashRef, onSaveState }: { projectId: string; path: string; text: string; hash: string; wrap: boolean; theme: "light" | "dark"; hashRef: { current: string }; onSaveState: (state: SaveState) => void }) {
+function EditableSource({ projectId, path, text, hash, wrap, theme, hashRef, onSaveState, line }: { projectId: string; path: string; text: string; hash: string; wrap: boolean; theme: "light" | "dark"; hashRef: { current: string }; onSaveState: (state: SaveState) => void; line?: number }) {
 	const api = window.phaseoDesktop?.workspace;
 	const [file] = useState<FileContents>(() => ({ name: path, contents: text, cacheKey: `file:${projectId}:${path}:${hash}` }));
 	const report = useRef(onSaveState); report.current = onSaveState;
@@ -123,15 +124,15 @@ function EditableSource({ projectId, path, text, hash, wrap, theme, hashRef, onS
 	const options = useMemo(() => ({ disableFileHeader: true, overflow: wrap ? "wrap" as const : "scroll" as const, theme: { light: "github-light", dark: "github-dark" }, themeType: theme, preferredHighlighter: "shiki-js" as const, unsafeCSS: FILE_VIEW_CSS }), [wrap, theme]);
 	return <EditProvider createEditor={createEditor}>
 		<Virtualizer className="file-surface-editor min-h-0 flex-1 overflow-auto" config={{ overscrollSize: 600, intersectionObserverMargin: 1200 }}>
-			<PierreFile file={file} edit options={options} className="min-h-full" onEditChange={event => { report.current({ dirty: true }); saves.schedule(event.file.contents); }} />
+			<PierreFile file={file} edit options={options} selectedLines={line ? { start: line, end: line } : null} className="min-h-full" onEditChange={event => { report.current({ dirty: true }); saves.schedule(event.file.contents); }} />
 		</Virtualizer>
 	</EditProvider>;
 }
 
-function ReadOnlySource({ path, text, wrap, theme }: { path: string; text: string; wrap: boolean; theme: "light" | "dark" }) {
+function ReadOnlySource({ path, text, wrap, theme, line }: { path: string; text: string; wrap: boolean; theme: "light" | "dark"; line?: number }) {
 	const file = useMemo<FileContents>(() => ({ name: path, contents: text }), [path, text]);
 	const options = useMemo(() => ({ disableFileHeader: true, overflow: wrap ? "wrap" as const : "scroll" as const, theme: { light: "github-light", dark: "github-dark" }, themeType: theme, preferredHighlighter: "shiki-js" as const, unsafeCSS: FILE_VIEW_CSS }), [wrap, theme]);
-	return <Virtualizer className="min-h-0 flex-1 overflow-auto" config={{ overscrollSize: 600, intersectionObserverMargin: 1200 }}><PierreFile file={file} options={options} className="min-h-full" /></Virtualizer>;
+	return <Virtualizer className="min-h-0 flex-1 overflow-auto" config={{ overscrollSize: 600, intersectionObserverMargin: 1200 }}><PierreFile file={file} options={options} selectedLines={line ? { start: line, end: line } : null} className="min-h-full" /></Virtualizer>;
 }
 
 /**
@@ -152,6 +153,8 @@ export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { pr
 	const [explorerOpen, setExplorerOpen] = usePersistedState("phaseo.desktop.fileExplorerOpen", true);
 	const [save, setSave] = useState<SaveState>({ dirty: false });
 	const hashRef = useRef("");
+	const bodyRef = useRef<HTMLDivElement>(null);
+	const line = useRevealLine(projectId, path, bodyRef, preview?.kind === "text");
 	const dirtyRef = useRef(false); dirtyRef.current = save.dirty;
 	const notify = useRef(onDirtyChange); notify.current = onDirtyChange;
 	useEffect(() => { notify.current?.(save.dirty); }, [save.dirty]);
@@ -212,8 +215,8 @@ export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { pr
 	// Scripts, forms and plugins stay off: the page is shown, never run.
 	else if (showRendered && mode === "html") body = <iframe title={path} sandbox="" srcDoc={preview.text} referrerPolicy="no-referrer" className="min-h-0 w-full flex-1 border-0 bg-white" />;
 	else body = <SourceBoundary key={`${path}:${version}`} fallback={<PlainSource text={preview.text} wrap={wrap} />}>
-		{editable && preview.hash ? <EditableSource key={`${path}:${version}`} projectId={projectId} path={path} text={preview.text} hash={preview.hash} wrap={wrap} theme={theme} hashRef={hashRef} onSaveState={setSave} />
-			: <ReadOnlySource path={path} text={preview.text} wrap={wrap} theme={theme} />}
+		{editable && preview.hash ? <EditableSource key={`${path}:${version}`} projectId={projectId} path={path} text={preview.text} hash={preview.hash} wrap={wrap} theme={theme} hashRef={hashRef} onSaveState={setSave} line={line} />
+			: <ReadOnlySource path={path} text={preview.text} wrap={wrap} theme={theme} line={line} />}
 	</SourceBoundary>;
 
 	return <div className="file-surface flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background" data-file-path={path}>
@@ -224,7 +227,7 @@ export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { pr
 			<button type="button" onClick={discard} className="shrink-0 rounded px-1.5 py-0.5 font-medium hover:bg-destructive/15">Reload from disk</button>
 		</div>}
 		<div className="flex min-h-0 flex-1 overflow-hidden">
-			<div className="flex min-w-0 flex-1 flex-col overflow-hidden">{body}</div>
+			<div ref={bodyRef} className="flex min-w-0 flex-1 flex-col overflow-hidden">{body}</div>
 			{explorerOpen && <aside className="flex min-h-0 w-[min(22rem,46%)] min-w-64 shrink-0 border-l border-border/60 bg-background"><FileBrowserSurface projectId={projectId} selectedPath={path} onOpenFile={open} /></aside>}
 		</div>
 	</div>;

@@ -44,6 +44,7 @@ import { QueuePanel, ownQueue, steerBlocker } from "./QueuePanel";
 import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
+import { ChatNotices } from "./ChatNotices";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -340,6 +341,7 @@ export function ChatView({ id }: { id: string }) {
 		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
 				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
 			{snapshot && <ThreadStatusLine task={snapshot} />}
+			<ChatNotices task={task} />
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>

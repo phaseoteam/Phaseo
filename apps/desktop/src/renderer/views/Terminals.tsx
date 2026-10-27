@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { Globe, Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, Trash2, X } from "lucide-react";
+import { ArrowDown, ClipboardPaste, Copy, Eraser, Globe, MessageSquarePlus, Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, TextSelect, Trash2, X } from "lucide-react";
+import { ContextMenu } from "@base-ui/react/context-menu";
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
+import { useOptionalWorkspace } from "../app/workspace";
+import { attachToComposer } from "./BrowserSurface";
+import { openProjectFile } from "../panels/events";
+import { showToast } from "../components/ui/toast";
+import { extractTerminalLinks, projectPath, splitPosition, terminalContext } from "../lib/terminalLinks";
 import { localUrlsIn } from "../../shared/browser";
 import { openInChatBrowser } from "../lib/actionPreview";
 import { Tip } from "../components/ui/tooltip";
@@ -33,6 +40,18 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 	const terminalRef = useRef<Terminal | undefined>(undefined);
 	const current = useRef(session); current.current = session;
 	const report = useRef(onError); report.current = onError;
+	const projects = useOptionalWorkspace()?.overview.projects;
+	const projectDirectory = useRef<string | undefined>(undefined);
+	projectDirectory.current = projects?.find(project => project.id === session.projectId)?.directory;
+	const [selection, setSelection] = useState("");
+	const [scrolledUp, setScrolledUp] = useState(false);
+	/** A file path in the output opens in the Files pane at its line; paths outside the project are not links. */
+	const fileLink = (text: string) => {
+		const directory = projectDirectory.current, projectId = current.current.projectId;
+		if (!directory || !projectId) return undefined;
+		const { path, line } = splitPosition(text), relative = projectPath(path, current.current.cwd, directory, window.phaseoDesktop?.platform === "win32");
+		return relative ? () => openProjectFile({ projectId, path: relative, ...line ? { line } : {} }) : undefined;
+	};
 	const openLink = (url: string, external: boolean) => {
 		const taskId = current.current.taskId;
 		if (!taskId || external) { void window.phaseoDesktop?.openExternal(url).catch(reason => report.current(String(reason))); return; }
@@ -59,15 +78,22 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		// The app's terminal shortcuts reach the app, not the shell.
 		terminal.attachCustomKeyEventHandler(event => !(event.type === "keydown" && isCommandKey(event, terminalKeys)));
 		const input = terminal.onData(data => { if (current.current.status === "running") void api.terminal({ type: "write", id: current.current.id, data }).catch(reason => report.current(String(reason))); });
-		// T3's terminal links: a web address opens in the chat's browser; Ctrl or Cmd-click opens the system browser.
+		// T3's terminal links: a web address opens in the chat's browser (Ctrl or Cmd-click: the system browser); a
+		// project file path, with its line, opens in the Files pane.
 		const links = terminal.registerLinkProvider({ provideLinks(line, callback) {
 			const text = terminal.buffer.active.getLine(line - 1)?.translateToString(true) ?? "";
-			const found = [...text.matchAll(/https?:\/\/[^\s"'<>`|]+/g)].map(match => {
-				const url = match[0].replace(/[.,;:!?)\]}]+$/, ""), start = match.index ?? 0;
-				return { text: url, range: { start: { x: start + 1, y: line }, end: { x: start + url.length, y: line } }, activate: (event: MouseEvent, target: string) => openLink(target, event.ctrlKey || event.metaKey) };
+			const found = extractTerminalLinks(text).flatMap(link => {
+				const range = { start: { x: link.start + 1, y: line }, end: { x: link.end, y: line } };
+				if (link.kind === "url") return [{ text: link.text, range, activate: (event: MouseEvent, target: string) => openLink(target, event.ctrlKey || event.metaKey) }];
+				const open = fileLink(link.text);
+				return open ? [{ text: link.text, range, activate: () => open() }] : [];
 			});
 			callback(found.length ? found : undefined);
 		} });
+		const selected = terminal.onSelectionChange(() => setSelection(terminal.getSelection()));
+		// T3's Jump to latest: offered while the reader has scrolled up from the newest output.
+		const position = () => { const buffer = terminal.buffer.active; setScrolledUp(buffer.viewportY < buffer.baseY); };
+		const scrolled = terminal.onScroll(position), written = terminal.onWriteParsed(position);
 		const unsubscribe = api.onTerminalEvent(event => { if (event.sessionId === current.current.id && event.data) { terminal.write(event.data); scan.current(event.data); } });
 		let frame = 0;
 		const resize = new ResizeObserver(() => {
@@ -80,13 +106,29 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		});
 		resize.observe(host.current);
 		const theme = new MutationObserver(() => { terminal.options.theme = readColours(); }); theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-		return () => { cancelAnimationFrame(frame); input.dispose(); links.dispose(); unsubscribe(); resize.disconnect(); theme.disconnect(); terminal.dispose(); terminalRef.current = undefined; };
+		return () => { cancelAnimationFrame(frame); input.dispose(); links.dispose(); selected.dispose(); scrolled.dispose(); written.dispose(); unsubscribe(); resize.disconnect(); theme.disconnect(); terminal.dispose(); terminalRef.current = undefined; };
 		// One xterm for the life of the session.
 	}, [api, session.id]);
 	useEffect(() => { if (focus) terminalRef.current?.focus(); }, [focus]);
 	const offer = localUrl && localUrl !== dismissed && session.status === "running" ? localUrl : undefined;
+	const copy = () => { const text = terminalRef.current?.getSelection(); if (text) void navigator.clipboard.writeText(text).catch(() => report.current("The clipboard refused the copy.")); };
+	const paste = () => void navigator.clipboard.readText().then(text => { if (text && current.current.status === "running") terminalRef.current?.paste(text); terminalRef.current?.focus(); }, () => report.current("The clipboard could not be read. Press Ctrl+V instead."));
+	// T3's Add to chat: the selected output goes into the open composer as a quoted block.
+	const addToChat = () => { const text = terminalRef.current?.getSelection(); if (!text?.trim()) return; if (!attachToComposer({ text: terminalContext(terminalTitle(current.current), text) })) showToast("info", "Open a chat to add terminal output to it."); };
 	return <div className="terminal-view relative h-full w-full overflow-hidden bg-background p-1" onPointerDown={onFocus} onFocusCapture={onFocus}>
-		<div ref={host} className="h-full w-full" />
+		<ContextMenu.Root>
+			<ContextMenu.Trigger render={<div ref={host} className="h-full w-full" />} />
+			<DropdownMenuContent className="w-48">
+				<DropdownMenuItem disabled={!selection} onClick={copy}><Copy />Copy</DropdownMenuItem>
+				<DropdownMenuItem disabled={session.status !== "running"} onClick={paste}><ClipboardPaste />Paste</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => terminalRef.current?.selectAll()}><TextSelect />Select all</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => { terminalRef.current?.clear(); setScrolledUp(false); }}><Eraser />Clear</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem disabled={!selection.trim()} onClick={addToChat}><MessageSquarePlus />Add to chat</DropdownMenuItem>
+			</DropdownMenuContent>
+		</ContextMenu.Root>
+		{scrolledUp && <button type="button" onClick={() => { terminalRef.current?.scrollToBottom(); setScrolledUp(false); terminalRef.current?.focus(); }}
+			className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent/60"><ArrowDown className="size-3.5" />Jump to latest</button>}
 		{offer && <div role="status" aria-label="Local server" className="absolute right-2 bottom-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-border/60 bg-background py-0.5 pr-0.5 pl-2 text-xs">
 			<Globe className="size-3.5 shrink-0 text-muted-foreground" />
 			<span className="min-w-0 truncate font-mono text-muted-foreground">{offer.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
