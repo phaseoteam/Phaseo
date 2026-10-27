@@ -129,6 +129,18 @@ describe("GPT Live API sessions", () => {
 		expect((priceLiveUsage(settled.usage, config).pricing as any).total_nanos).toBe(1_812_000);
 	});
 
+	it("measure the 64 KB tool output limit in bytes", async () => {
+		const object = relay();
+		await play(object, recording.events);
+		const callId = "call_63hZ5USZAvkMvXYxqNFqbqsM";
+		// 30,000 CJK characters are about 90 KB of UTF-8.
+		await client(object, { type: "response.item.create", item: { type: "function_call_output", call_id: callId, output: "界".repeat(30_000) } });
+		expect(sentOfType(object, "relay.client_event_rejected").at(-1).reason).toBe("live_function_output_invalid");
+		expect(object.sendUpstream).not.toHaveBeenCalled();
+		await client(object, { type: "response.item.create", item: { type: "function_call_output", call_id: callId, output: "界".repeat(20_000) } });
+		expect(object.sendUpstream).toHaveBeenCalledOnce();
+	});
+
 	it("end a session GPT Live expired for lack of audio with a clear reason", async () => {
 		const object = relay();
 		await play(object, recording.events.slice(0, 1));

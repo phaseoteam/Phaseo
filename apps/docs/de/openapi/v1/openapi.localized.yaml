@@ -1194,8 +1194,8 @@ paths:
       tags:
         - Gateway
       operationId: createLiveSession
-      summary: Create GPT Live session
-      description: 'Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.'
+      summary: 'GPT-Live-Sitzung erstellen'
+      description: 'Erstellt eine GPT-Live-Sprachsitzung mit Nutzungsabrechnung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert, und gibt die Verbindungsdaten des Relays zurück. Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an.'
       requestBody:
         required: true
         content:
@@ -1308,7 +1308,7 @@ paths:
                     tools:
                       type: array
                       maxItems: 32
-                      description: Client-executed function tools, with unique names.
+                      description: 'Funktionstools, die der Client ausführt, mit eindeutigen Namen.'
                       items:
                         type: object
                         additionalProperties: false
@@ -1343,7 +1343,7 @@ paths:
                       default: true
       responses:
         '201':
-          description: GPT Live session created
+          description: 'GPT-Live-Sitzung erstellt'
           content:
             application/json:
               schema:

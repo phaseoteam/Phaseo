@@ -1194,8 +1194,8 @@ paths:
       tags:
         - Gateway
       operationId: createLiveSession
-      summary: Create GPT Live session
-      description: 'Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.'
+      summary: '创建 GPT Live 会话'
+      description: '创建计量的 GPT Live 语音会话，将推理委托给 Responses 后端模型，并返回中继连接信息。函数工具在你的客户端运行：中继转发每个 `function_call`，并接受其 `function_call_output`，随后接受 `response.create`。'
       requestBody:
         required: true
         content:
@@ -1308,7 +1308,7 @@ paths:
                     tools:
                       type: array
                       maxItems: 32
-                      description: Client-executed function tools, with unique names.
+                      description: '由客户端执行的函数工具，名称须唯一。'
                       items:
                         type: object
                         additionalProperties: false
@@ -1343,7 +1343,7 @@ paths:
                       default: true
       responses:
         '201':
-          description: GPT Live session created
+          description: '已创建 GPT Live 会话'
           content:
             application/json:
               schema:

@@ -53,7 +53,13 @@ curl https://api.phaseo.app/v1/live/sessions \
 
 `voice` is one of `alloy`, `ash`, `ballad`, `beacon`, `bossa`, `cedar`, `cinder`, `coral`, `delta`, `echo`, `gleam`, `marin`, `meridian`, `quartz`, `ripple`, `sage`, `shimmer`, `stone`, `tempo`, `verse`, `vesper` or `willow`. `backend_model` is `openai/gpt-5.6-luna` (default) or `openai/gpt-5.6-terra`. Connect and stream 24 kHz audio the same way as other sessions.
 
-Function tools run on your client. The backend's call arrives as a `response.event` whose `event.item.type` is `function_call`. Run the tool, then send the result and ask for the follow-up reply:
+Function tools run on your client. The backend's call arrives as a `response.event` whose `event.item.type` is `function_call`. Its name and `arguments` come from the model, and what the caller says can steer them, so treat them as untrusted input:
+
+1. Run only tools you declared, looked up by `name`, and refuse any other name.
+2. Parse `arguments` as JSON and validate it against the tool's `parameters` schema before using it.
+3. Check that the signed-in user is allowed to do what the call asks, and confirm with them before anything that changes data, spends money or contacts someone.
+
+Then run the tool, send the result and ask for the follow-up reply. If a call fails these checks, send an `output` that says why instead of running it:
 
 ```json
 { "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }

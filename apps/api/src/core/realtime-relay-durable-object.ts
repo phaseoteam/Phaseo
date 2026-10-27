@@ -82,7 +82,7 @@ const GOOGLE_RESUME_MAX_ATTEMPTS = 2;
 // Anything beyond this is dropped, never billed.
 const GOOGLE_RESUME_AUDIO_BUFFER_MS = 5_000;
 // A GPT Live function result returned by the client (fits the 96 KB message cap).
-const LIVE_MAX_FUNCTION_OUTPUT_CHARS = 64 * 1024;
+const LIVE_MAX_FUNCTION_OUTPUT_BYTES = 64 * 1024;
 // Server VAD keeps this much audio before detected speech in the committed buffer.
 const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
@@ -1014,7 +1014,7 @@ export class RealtimeRelayDurableObject {
 				return;
 			}
 			const output = item.output;
-			if (typeof output !== "string" || output.length > LIVE_MAX_FUNCTION_OUTPUT_CHARS) {
+			if (typeof output !== "string" || new TextEncoder().encode(output).byteLength > LIVE_MAX_FUNCTION_OUTPUT_BYTES) {
 				reject("live_function_output_invalid");
 				return;
 			}
