@@ -1,6 +1,6 @@
 import { html as spec, parse, type DefaultTreeAdapterTypes } from "parse5";
 import { describe, expect, it } from "vitest";
-import { cleanPageHtml, cssIsStatic, MAX_PAGE_DEPTH } from "../src/page-html";
+import { cleanPageHtml, cssIsStatic, MAX_ATTRIBUTES_PER_ELEMENT, MAX_PAGE_DEPTH } from "../src/page-html";
 
 type Node = DefaultTreeAdapterTypes.Node;
 type Element = DefaultTreeAdapterTypes.Element;
@@ -153,6 +153,24 @@ th, td { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; text-align: right; 
 		expect(cleanPageHtml(`${"<div>".repeat(MAX_PAGE_DEPTH + 5)}too deep`)).toEqual({ status: "too_deep" });
 		// Elements the browser itself caps (an image is enough to show) are fine.
 		expect(cleanPageHtml('<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">')).toMatchObject({ status: "ok" });
+	});
+
+	it("keeps at most 64 attributes per element, so a stored page stays cheap to clean again", () => {
+		const attributes = Array.from({ length: 2_000 }, (_, index) => `data-a${index}="x"`).join(" ");
+		const page = cleaned(`<p ${attributes}>Spend</p>`);
+		const element = parse(page.html, { scriptingEnabled: false }).childNodes[1] as Element;
+		const p = (element.childNodes[1] as Element).childNodes[0] as Element;
+		expect(p.attrs).toHaveLength(MAX_ATTRIBUTES_PER_ELEMENT);
+		expect(page.removed).toContain(`attributes past the first ${MAX_ATTRIBUTES_PER_ELEMENT}`);
+	});
+
+	it("doesn't take a comment opener inside a CSS string for a comment", () => {
+		expect(cssIsStatic('font-family:"/*";background:url(https://evil.example/a);--x:"*/"')).toBe(false);
+		expectInert(cleaned('<p style=\'font-family:"/*";background:url(https://evil.example/a);--x:"*/"\'>Spend</p>').html);
+	});
+
+	it("unwraps elements named like built-in object properties", () => {
+		expect(cleaned('<constructor data-x="x">text</constructor><tostring>more</tostring>').html).toContain("textmore");
 	});
 
 	it("reads CSS as the browser does: escapes, comments, case and whitespace", () => {

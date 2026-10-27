@@ -43,6 +43,8 @@ const NS = spec.NS;
 const MAX_PASSES = 3;
 /** Deeper than any report needs, and well within the call stack. */
 export const MAX_PAGE_DEPTH = 200;
+/** Attributes kept per element: re-cleaning a stored page on every view stays cheap (the parser checks duplicate attributes pairwise). */
+export const MAX_ATTRIBUTES_PER_ELEMENT = 64;
 const MAX_REMOVED_LISTED = 20;
 
 const words = (list: string) => new Set(list.split(/\s+/).filter(Boolean));
@@ -112,10 +114,14 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|gif|webp)[;,]/i;
 /** What a URL parser trims from both ends of a URL: C0 controls and spaces. */
 const URL_TRIM = /^[\x00-\x20]+|[\x00-\x20]+$/g;
 
-/** CSS as the browser reads it, for the checks: escapes decoded, comments removed (which can only join tokens), lowercase, no whitespace. */
-function plainCss(css: string): string {
-	return css
-		.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, "")
+/**
+ * CSS as the browser reads it, for the checks: escapes decoded, lowercase, no
+ * whitespace, and with comments removed (which can only join tokens) unless
+ * keepComments. A comment's opener inside a quoted string isn't a comment, so
+ * the checks read the CSS both ways.
+ */
+function plainCss(css: string, keepComments = false): string {
+	return (keepComments ? css : css.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ""))
 		.replace(/\\(?:([0-9a-fA-F]{1,6})[ \t\n\r\f]?|([^\n\r\f0-9a-fA-F])|[\n\r\f])/g, (_, hex: string | undefined, char: string | undefined) => {
 			if (!hex) return char ?? "";
 			const code = Number.parseInt(hex, 16);
@@ -128,15 +134,16 @@ function plainCss(css: string): string {
 /** Functions and rules that load something, or ran script in old browsers. url() is checked on its own. */
 const CSS_BLOCKED = /@import|expression\(|-moz-binding|behaviou?r:|javascript:|image-set\(|cross-fade\(|element\(|(?:^|[^a-z0-9_-])(?:image|src)\(/;
 
-/** Whether CSS can't load anything: every url() is a data: image or a #fragment of the page, and nothing in CSS_BLOCKED. */
+/** Whether CSS can't load anything: every url() is a data: image or a #fragment of the page, and nothing in CSS_BLOCKED, read with and without its comments. */
 export function cssIsStatic(css: string): boolean {
-	const plain = plainCss(css);
-	if (CSS_BLOCKED.test(plain)) return false;
-	for (const match of plain.matchAll(/url\(/g)) {
-		const target = plain.slice(match.index + 4, match.index + 40).replace(/^["']/, "");
-		if (!target.startsWith("#") && !DATA_IMAGE.test(target)) return false;
-	}
-	return true;
+	return [plainCss(css), plainCss(css, true)].every((plain) => {
+		if (CSS_BLOCKED.test(plain)) return false;
+		for (const match of plain.matchAll(/url\(/g)) {
+			const target = plain.slice(match.index + 4, match.index + 40).replace(/^["']/, "");
+			if (!target.startsWith("#") && !DATA_IMAGE.test(target)) return false;
+		}
+		return true;
+	});
 }
 
 /** Whitespace, comments and @import rules at the start of a stylesheet. */
@@ -171,6 +178,10 @@ function cleanAttributes(element: Element, allowed: (name: string) => boolean, i
 		if (!keep) removed.add(name);
 		return keep;
 	});
+	if (element.attrs.length > MAX_ATTRIBUTES_PER_ELEMENT) {
+		element.attrs = element.attrs.slice(0, MAX_ATTRIBUTES_PER_ELEMENT);
+		removed.add(`attributes past the first ${MAX_ATTRIBUTES_PER_ELEMENT}`);
+	}
 }
 
 /** Gives a kept <style> its checked CSS, or says it must go. */
@@ -192,7 +203,7 @@ function cleanHtml(element: Element, depth: number, removed: Set<string>): Child
 		return [];
 	}
 	cleanChildren(element, depth + 1, removed, name === "title" || name === "style");
-	const attributes = HTML_ELEMENTS[name];
+	const attributes = Object.hasOwn(HTML_ELEMENTS, name) ? HTML_ELEMENTS[name] : undefined;
 	if (!attributes) return element.childNodes;
 	cleanAttributes(element, (attribute) => HTML_GLOBAL_ATTRIBUTES.has(attribute) || attributes.has(attribute) || DATA_OR_ARIA.test(attribute), (attribute) => attribute === "style", removed);
 	if (name === "img" && !element.attrs.some((attribute) => attribute.name === "src")) {
