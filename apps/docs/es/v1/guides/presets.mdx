@@ -98,6 +98,8 @@ Las copias del marketplace quedan fijadas en la versión exacta del original que
 
 Phaseo conserva tanto el origen inmediato como todo el historial de cada bifurcación. Así, las páginas del marketplace pueden distinguir las copias directas de todos sus descendientes, incluso si un preajuste se ha copiado y vuelto a publicar varias veces.
 
+Las solicitudes pueden fijar una versión publicada por su etiqueta, como `@support-triage@v3`, o por una etiqueta con nombre como `production` que apuntas a una versión. Devolver una etiqueta a una versión anterior es una reversión. Consulta [Plantillas de prompt](./prompt-templates.mdx).
+
 ## Cómo se combinan los preajustes
 
 Cuando el contexto de Gateway resuelve una solicitud con un preajuste, este se aplica antes del enrutamiento al proveedor:

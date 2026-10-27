@@ -9583,6 +9583,196 @@
 			"ja": "現在のバージョンではなく、プリセットのこの公開済みバージョン（モデル、パラメーター、テンプレート）を実行します。v3、1.2.0、2026.10.27 などのバージョンラベル、または production などのラベルを指定します。model を @support-triage@production にするのと同じです。",
 			"zh-Hans": "运行预设的这个已发布版本而不是当前版本：包括其模型、参数和模板。使用 v3、1.2.0 或 2026.10.27 这样的版本标签，或 production 这样的标签。等同于将 model 设为 @support-triage@production。",
 			"ar": "يشغّل هذا الإصدار المنشور من الإعداد المسبق بدلًا من الإصدار الحالي: نماذجه ومعاملاته وقالبه. استخدم تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية مثل production. يعادل تعيين model إلى @support-triage@production."
+		},
+		"List preset labels": {
+			"es": "Listar etiquetas del preajuste",
+			"fr": "Lister les libellés du préréglage",
+			"de": "Labels der Voreinstellung auflisten",
+			"pt-BR": "Listar rótulos da predefinição",
+			"hi": "प्रीसेट लेबल सूचीबद्ध करें",
+			"ja": "プリセットのラベルを一覧表示",
+			"zh-Hans": "列出预设标签",
+			"ar": "سرد تسميات الإعداد المسبق"
+		},
+		"Lists the named labels, such as production or staging, and the published version each one points at.": {
+			"es": "Lista las etiquetas con nombre, como production o staging, y la versión publicada a la que apunta cada una.",
+			"fr": "Liste les libellés nommés, comme production ou staging, et la version publiée vers laquelle pointe chacun.",
+			"de": "Listet die benannten Labels wie production oder staging und die veröffentlichte Version auf, auf die jedes zeigt.",
+			"pt-BR": "Lista os rótulos com nome, como production ou staging, e a versão publicada para a qual cada um aponta.",
+			"hi": "production या staging जैसे नाम वाले लेबल और हर लेबल जिस प्रकाशित संस्करण पर है, उसे सूचीबद्ध करता है।",
+			"ja": "production や staging などの名前付きラベルと、それぞれが指す公開バージョンを一覧表示します。",
+			"zh-Hans": "列出 production、staging 等命名标签，以及每个标签指向的已发布版本。",
+			"ar": "يسرد التسميات المسمّاة، مثل production أو staging، والإصدار المنشور الذي تشير إليه كل منها."
+		},
+		"Preset label list": {
+			"es": "Lista de etiquetas del preajuste",
+			"fr": "Liste des libellés du préréglage",
+			"de": "Liste der Labels der Voreinstellung",
+			"pt-BR": "Lista de rótulos da predefinição",
+			"hi": "प्रीसेट लेबल की सूची",
+			"ja": "プリセットのラベル一覧",
+			"zh-Hans": "预设标签列表",
+			"ar": "قائمة تسميات الإعداد المسبق"
+		},
+		"Set a preset label": {
+			"es": "Definir una etiqueta del preajuste",
+			"fr": "Définir un libellé du préréglage",
+			"de": "Label der Voreinstellung setzen",
+			"pt-BR": "Definir um rótulo da predefinição",
+			"hi": "प्रीसेट लेबल सेट करें",
+			"ja": "プリセットのラベルを設定",
+			"zh-Hans": "设置预设标签",
+			"ar": "تعيين تسمية للإعداد المسبق"
+		},
+		"Points a label at a published version, creating the label or moving it. Requests that pin the label, such as @support-triage@production, use the new version within about 2 minutes. Moving a label back to an earlier version is a rollback.": {
+			"es": "Apunta una etiqueta a una versión publicada, creándola o moviéndola. Las solicitudes que fijan la etiqueta, como @support-triage@production, usan la nueva versión en unos 2 minutos. Devolver una etiqueta a una versión anterior es una reversión.",
+			"fr": "Fait pointer un libellé vers une version publiée, en le créant ou en le déplaçant. Les requêtes qui épinglent le libellé, comme @support-triage@production, utilisent la nouvelle version en 2 minutes environ. Ramener un libellé sur une version antérieure est un retour arrière.",
+			"de": "Richtet ein Label auf eine veröffentlichte Version aus und erstellt oder verschiebt es dabei. Anfragen, die das Label pinnen, etwa @support-triage@production, nutzen die neue Version innerhalb von etwa 2 Minuten. Ein Label auf eine frühere Version zurückzuschieben ist ein Rollback.",
+			"pt-BR": "Aponta um rótulo para uma versão publicada, criando ou movendo o rótulo. Solicitações que fixam o rótulo, como @support-triage@production, usam a nova versão em cerca de 2 minutos. Voltar um rótulo para uma versão anterior é uma reversão.",
+			"hi": "किसी लेबल को प्रकाशित संस्करण पर लगाता है, लेबल बनाकर या उसे वहाँ ले जाकर। लेबल को pin करने वाले अनुरोध, जैसे @support-triage@production, लगभग 2 मिनट में नए संस्करण का उपयोग करते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है।",
+			"ja": "ラベルを公開バージョンに割り当てます。ラベルがなければ作成し、あれば移動します。@support-triage@production のようにラベルを固定したリクエストは、約 2 分以内に新しいバージョンを使います。ラベルを以前のバージョンに戻すことがロールバックになります。",
+			"zh-Hans": "将标签指向一个已发布的版本，必要时创建或移动该标签。固定到该标签的请求（例如 @support-triage@production）会在约 2 分钟内使用新版本。把标签移回较早的版本就是回滚。",
+			"ar": "يوجّه تسمية إلى إصدار منشور، مع إنشاء التسمية أو نقلها. تستخدم الطلبات التي تثبّت التسمية، مثل @support-triage@production، الإصدار الجديد خلال دقيقتين تقريبًا. إعادة التسمية إلى إصدار سابق هي تراجع."
+		},
+		"Label saved": {
+			"es": "Etiqueta guardada",
+			"fr": "Libellé enregistré",
+			"de": "Label gespeichert",
+			"pt-BR": "Rótulo salvo",
+			"hi": "लेबल सहेजा गया",
+			"ja": "ラベルを保存しました",
+			"zh-Hans": "标签已保存",
+			"ar": "تم حفظ التسمية"
+		},
+		"Invalid label, or neither or both of version_id and version": {
+			"es": "Etiqueta no válida, o no se envió ninguno o se enviaron ambos de version_id y version",
+			"fr": "Libellé non valide, ou ni version_id ni version, ou les deux",
+			"de": "Ungültiges Label oder weder bzw. sowohl version_id als auch version",
+			"pt-BR": "Rótulo inválido, ou nenhum ou ambos entre version_id e version",
+			"hi": "अमान्य लेबल, या version_id और version में से कोई नहीं या दोनों",
+			"ja": "ラベルが無効か、version_id と version のどちらも指定されていないか両方指定されています",
+			"zh-Hans": "标签无效，或 version_id 和 version 都未提供或同时提供",
+			"ar": "تسمية غير صالحة، أو لم يُرسل أي من version_id وversion أو أُرسلا معًا"
+		},
+		"Only the preset's creator or a workspace owner or admin can change its labels": {
+			"es": "Solo quien creó el preajuste o un propietario o administrador del espacio de trabajo puede cambiar sus etiquetas",
+			"fr": "Seul le créateur du préréglage ou un propriétaire ou administrateur de l’espace de travail peut modifier ses libellés",
+			"de": "Nur die Person, die die Voreinstellung erstellt hat, oder ein Workspace-Owner oder -Admin kann ihre Labels ändern",
+			"pt-BR": "Só quem criou a predefinição ou um proprietário ou administrador do espaço de trabalho pode alterar os rótulos",
+			"hi": "केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है",
+			"ja": "ラベルを変更できるのは、プリセットの作成者またはワークスペースのオーナーか管理者だけです",
+			"zh-Hans": "只有预设的创建者或工作区所有者或管理员才能更改其标签",
+			"ar": "لا يمكن تغيير التسميات إلا لمنشئ الإعداد المسبق أو لمالك مساحة العمل أو مسؤولها"
+		},
+		"Preset or version not found": {
+			"es": "No se encontró el preajuste o la versión",
+			"fr": "Préréglage ou version introuvable",
+			"de": "Voreinstellung oder Version nicht gefunden",
+			"pt-BR": "Predefinição ou versão não encontrada",
+			"hi": "प्रीसेट या संस्करण नहीं मिला",
+			"ja": "プリセットまたはバージョンが見つかりません",
+			"zh-Hans": "未找到预设或版本",
+			"ar": "لم يُعثر على الإعداد المسبق أو الإصدار"
+		},
+		"Remove a preset label": {
+			"es": "Quitar una etiqueta del preajuste",
+			"fr": "Supprimer un libellé du préréglage",
+			"de": "Label der Voreinstellung entfernen",
+			"pt-BR": "Remover um rótulo da predefinição",
+			"hi": "प्रीसेट लेबल हटाएँ",
+			"ja": "プリセットのラベルを削除",
+			"zh-Hans": "移除预设标签",
+			"ar": "إزالة تسمية من الإعداد المسبق"
+		},
+		"Removes a label. Requests that still pin it fail with preset_version_not_found.": {
+			"es": "Quita una etiqueta. Las solicitudes que aún la fijan fallan con preset_version_not_found.",
+			"fr": "Supprime un libellé. Les requêtes qui l’épinglent encore échouent avec preset_version_not_found.",
+			"de": "Entfernt ein Label. Anfragen, die es noch pinnen, schlagen mit preset_version_not_found fehl.",
+			"pt-BR": "Remove um rótulo. Solicitações que ainda o fixam falham com preset_version_not_found.",
+			"hi": "एक लेबल हटाता है। जो अनुरोध अब भी उसे pin करते हैं, वे preset_version_not_found के साथ विफल होते हैं।",
+			"ja": "ラベルを削除します。まだそのラベルを固定しているリクエストは preset_version_not_found で失敗します。",
+			"zh-Hans": "移除一个标签。仍固定到该标签的请求会以 preset_version_not_found 失败。",
+			"ar": "يزيل تسمية. تفشل الطلبات التي ما زالت تثبّتها بالخطأ preset_version_not_found."
+		},
+		"Label removed": {
+			"es": "Etiqueta quitada",
+			"fr": "Libellé supprimé",
+			"de": "Label entfernt",
+			"pt-BR": "Rótulo removido",
+			"hi": "लेबल हटाया गया",
+			"ja": "ラベルを削除しました",
+			"zh-Hans": "标签已移除",
+			"ar": "أُزيلت التسمية"
+		},
+		"Invalid label": {
+			"es": "Etiqueta no válida",
+			"fr": "Libellé non valide",
+			"de": "Ungültiges Label",
+			"pt-BR": "Rótulo inválido",
+			"hi": "अमान्य लेबल",
+			"ja": "ラベルが無効です",
+			"zh-Hans": "标签无效",
+			"ar": "تسمية غير صالحة"
+		},
+		"Preset or label not found": {
+			"es": "No se encontró el preajuste o la etiqueta",
+			"fr": "Préréglage ou libellé introuvable",
+			"de": "Voreinstellung oder Label nicht gefunden",
+			"pt-BR": "Predefinição ou rótulo não encontrado",
+			"hi": "प्रीसेट या लेबल नहीं मिला",
+			"ja": "プリセットまたはラベルが見つかりません",
+			"zh-Hans": "未找到预设或标签",
+			"ar": "لم يُعثر على الإعداد المسبق أو التسمية"
+		},
+		"Label name, such as production. 1 to 32 lowercase letters, numbers, hyphens or underscores, starting with a letter; it cannot look like a version label (v1, v2).": {
+			"es": "Nombre de la etiqueta, como production. De 1 a 32 letras minúsculas, números, guiones o guiones bajos, empezando por una letra; no puede parecer una etiqueta de versión (v1, v2).",
+			"fr": "Nom du libellé, comme production. De 1 à 32 lettres minuscules, chiffres, tirets ou tirets bas, en commençant par une lettre ; il ne peut pas ressembler à un libellé de version (v1, v2).",
+			"de": "Name des Labels, etwa production. 1 bis 32 Kleinbuchstaben, Ziffern, Bindestriche oder Unterstriche, beginnend mit einem Buchstaben; darf nicht wie ein Versionslabel aussehen (v1, v2).",
+			"pt-BR": "Nome do rótulo, como production. De 1 a 32 letras minúsculas, números, hifens ou sublinhados, começando com uma letra; não pode parecer um rótulo de versão (v1, v2).",
+			"hi": "लेबल का नाम, जैसे production। 1 से 32 छोटे अंग्रेज़ी अक्षर, अंक, हाइफ़न या अंडरस्कोर, अक्षर से शुरू; यह संस्करण लेबल (v1, v2) जैसा नहीं दिख सकता।",
+			"ja": "production などのラベル名。英字で始まる 1〜32 文字の英小文字、数字、ハイフン、アンダースコアで、バージョンラベル（v1、v2）のような形にはできません。",
+			"zh-Hans": "标签名称，例如 production。由 1 到 32 个小写字母、数字、连字符或下划线组成，以字母开头；不能看起来像版本标签（v1、v2）。",
+			"ar": "اسم التسمية، مثل production. من 1 إلى 32 حرفًا لاتينيًا صغيرًا أو رقمًا أو شرطة أو شرطة سفلية، تبدأ بحرف؛ ولا يمكن أن تشبه تسمية إصدار (v1، v2)."
+		},
+		"Send exactly one of version_id and version.": {
+			"es": "Envía solo uno de version_id y version.",
+			"fr": "Envoyez exactement un seul de version_id et version.",
+			"de": "Sende genau eines von version_id und version.",
+			"pt-BR": "Envie exatamente um entre version_id e version.",
+			"hi": "version_id और version में से ठीक एक भेजें।",
+			"ja": "version_id と version のどちらか一方だけを送信します。",
+			"zh-Hans": "version_id 和 version 二者只能提供一个。",
+			"ar": "أرسل واحدًا فقط من version_id وversion."
+		},
+		"The published version to point the label at.": {
+			"es": "La versión publicada a la que apuntará la etiqueta.",
+			"fr": "La version publiée vers laquelle faire pointer le libellé.",
+			"de": "Die veröffentlichte Version, auf die das Label zeigen soll.",
+			"pt-BR": "A versão publicada para a qual o rótulo vai apontar.",
+			"hi": "वह प्रकाशित संस्करण जिस पर लेबल लगाना है।",
+			"ja": "ラベルを割り当てる公開バージョン。",
+			"zh-Hans": "标签要指向的已发布版本。",
+			"ar": "الإصدار المنشور الذي ستشير إليه التسمية."
+		},
+		"A version label such as v3, 1.2.0 or 2026.10.27, or another label such as staging to copy where it points.": {
+			"es": "Una etiqueta de versión como v3, 1.2.0 o 2026.10.27, u otra etiqueta como staging para copiar a dónde apunta.",
+			"fr": "Un libellé de version comme v3, 1.2.0 ou 2026.10.27, ou un autre libellé comme staging pour reprendre la version vers laquelle il pointe.",
+			"de": "Ein Versionslabel wie v3, 1.2.0 oder 2026.10.27 oder ein anderes Label wie staging, dessen Ziel übernommen wird.",
+			"pt-BR": "Um rótulo de versão como v3, 1.2.0 ou 2026.10.27, ou outro rótulo como staging para copiar para onde ele aponta.",
+			"hi": "v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या staging जैसा कोई दूसरा लेबल जिसकी जगह कॉपी करनी है।",
+			"ja": "v3、1.2.0、2026.10.27 などのバージョンラベル、または指し先をコピーする staging などの別のラベル。",
+			"zh-Hans": "版本标签，例如 v3、1.2.0 或 2026.10.27；或另一个标签（例如 staging），以复制其指向。",
+			"ar": "تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية أخرى مثل staging لنسخ الإصدار الذي تشير إليه."
+		},
+		"Named labels, such as production, that point at this version. Returned when listing versions.": {
+			"es": "Etiquetas con nombre, como production, que apuntan a esta versión. Se devuelven al listar versiones.",
+			"fr": "Libellés nommés, comme production, qui pointent vers cette version. Renvoyés lors de la liste des versions.",
+			"de": "Benannte Labels wie production, die auf diese Version zeigen. Werden beim Auflisten der Versionen zurückgegeben.",
+			"pt-BR": "Rótulos com nome, como production, que apontam para esta versão. Retornados ao listar versões.",
+			"hi": "production जैसे नाम वाले लेबल जो इस संस्करण पर हैं। संस्करण सूचीबद्ध करते समय लौटाए जाते हैं।",
+			"ja": "このバージョンを指す production などの名前付きラベル。バージョン一覧の取得時に返されます。",
+			"zh-Hans": "指向此版本的命名标签，例如 production。列出版本时返回。",
+			"ar": "التسميات المسمّاة، مثل production، التي تشير إلى هذا الإصدار. تُعاد عند سرد الإصدارات."
 		}
 	},
 	"GET /apps": {

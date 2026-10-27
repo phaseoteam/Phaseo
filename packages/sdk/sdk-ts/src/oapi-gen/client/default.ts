@@ -8748,6 +8748,44 @@ export async function deletePreset(
   });
 }
 
+export type DeletePresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a label. Requests that still pin it fail with preset_version_not_found.
+ */
+export async function deletePresetLabel(
+  client: Client,
+  args: DeletePresetLabelParams,
+): Promise<{
+  deleted: boolean;
+  label: string;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    deleted: boolean;
+    label: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeletePrivateModelParams = {
   path: {
     id: string;
@@ -17392,6 +17430,55 @@ export async function listOrganisations(
   });
 }
 
+export type ListPresetLabelsParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the named labels, such as production or staging, and the published version each one points at.
+ */
+export async function listPresetLabels(
+  client: Client,
+  args: ListPresetLabelsParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListPresetsParams = {
   path?: Record<string, never>;
   query?: {
@@ -17674,6 +17761,7 @@ export async function listPresetVersions(
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -17735,6 +17823,7 @@ export async function listPresetVersions(
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -21288,6 +21377,7 @@ export async function publishPresetVersion(
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -21349,6 +21439,7 @@ export async function publishPresetVersion(
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -22772,6 +22863,61 @@ export async function rotateWorkspaceNotificationDestinationSecret(
     };
   }>({
     method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type SetPresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    version?: string;
+    version_id?: string;
+  };
+};
+
+/**
+ * Points a label at a published version, creating the label or moving it. Requests that pin the label, such as @support-triage@production, use the new version within about 2 minutes. Moving a label back to an earlier version is a rollback.
+ */
+export async function setPresetLabel(
+  client: Client,
+  args: SetPresetLabelParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    };
+  }>({
+    method: "PUT",
     path: resolvedPath,
     query,
     headers,

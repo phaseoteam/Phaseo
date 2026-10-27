@@ -434,6 +434,14 @@ module Phaseo
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.deletePresetLabel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["label"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels/#{URI.encode_uri_component(path["label"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.deletePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -1048,6 +1056,13 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listPresetLabels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listPresets(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/presets"
@@ -1412,6 +1427,14 @@ module Phaseo
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}/rotate-secret"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.setPresetLabel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["label"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels/#{URI.encode_uri_component(path["label"].to_s)}"
+        client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.setWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)

@@ -235,6 +235,54 @@ Phaseo prüft die Vorlage beim Speichern. Eine Vorlage mit einem Syntaxfehler, e
 
 Gespeicherte Änderungen wirken sich nach etwa zwei Minuten auf Anfragen aus.
 
+## Versionen und Labels
+
+Jedes Mal, wenn du eine Voreinstellung veröffentlichst, speichert Phaseo eine unveränderliche Version (siehe [Voreinstellungen](./presets.mdx)). Anfragen führen die zuletzt veröffentlichte Version aus, sofern sie keine Version pinnen. Eine gepinnte Anfrage nutzt Modelle, Parameter und Vorlage dieser Version gemeinsam.
+
+Pinne eine Version mit `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` akzeptiert ein Versionslabel wie `v3`, `1.2.0` oder `2026.10.27` oder ein Label wie `production`. Du kannst die Version auch in die Modell-ID schreiben, mit oder ohne Vorlage:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Öffentliche Voreinstellungen verwenden `@publisher/support-triage@production`. Wenn `model` und `prompt.version` beide eine Version pinnen, müssen sie dieselbe nennen.
+
+### Labels
+
+Ein Label ist ein Name wie `production` oder `staging`, der auf eine veröffentlichte Version zeigt. Labels bestehen aus 1 bis 32 Kleinbuchstaben, Ziffern, Bindestrichen oder Unterstrichen, beginnen mit einem Buchstaben und dürfen nicht wie ein Versionslabel aussehen (`v1`, `v2`).
+
+Öffne in **Einstellungen -> Voreinstellungen** die Voreinstellung und nutze **Label setzen** an einer Version, um ein Label hinzuzufügen oder dorthin zu verschieben. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins. Mit einem [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+Der Body akzeptiert `version` (ein Versionslabel oder ein anderes Label, dessen Ziel übernommen wird) oder `version_id`. `GET /v1/presets/{id}/labels` listet die Labels auf, `DELETE /v1/presets/{id}/labels/{label}` entfernt eines. Anfragen, die ein entferntes Label pinnen, schlagen fehl, bis es wieder hinzugefügt wird.
+
+### Zurückrollen
+
+Zum Zurückrollen verschiebst du das Label auf die frühere Version: Wähle **production hierher verschieben** an dieser Version oder sende dieselbe Anfrage mit `"version": "v2"`. Anfragen, die `production` pinnen, führen wieder v2 aus, ohne dass sich an deiner Anwendung etwas ändert.
+
+Label-Änderungen erreichen Anfragen innerhalb von etwa zwei Minuten, wie andere Änderungen an der Voreinstellung.
+
 ## Fehler
 
 Vorlagenprobleme in einer Anfrage liefern `400` mit dem Code `validation_error`. `reason` enthält den Code des ersten Problems, und `details` listet alle Probleme mit ihrem Pfad auf:
@@ -268,11 +316,13 @@ Vorlagenprobleme in einer Anfrage liefern `400` mit dem Code `validation_error`.
 | `template_limit_exceeded` | Die Variablen oder der erzeugte Text überschreiten die unten genannten Limits. |
 | `template_rendered_empty` | Die Vorlage hat keine Nutzer- oder Assistentennachricht erzeugt, und die Anfrage hat keine gesendet. |
 | `template_endpoint_unsupported` | Die Voreinstellung hat eine Vorlage und wurde über einen anderen als die drei oben genannten Endpunkte aufgerufen. |
-| `prompt_model_conflict` | `model` nennt eine andere Voreinstellung oder ein anderes Modell als `prompt.id`. |
-| `prompt_version_unsupported` | Die Anfrage hat `prompt.version` gesetzt. |
+| `prompt_model_conflict` | `model` nennt eine andere Voreinstellung oder ein anderes Modell als `prompt.id` oder pinnt eine andere Version als `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` ist leer, länger als 64 Zeichen oder enthält andere Zeichen als Buchstaben, Ziffern, `.`, `_`, `+` und `-`. |
 | `prompt_model_fallbacks_unsupported` | Die Anfrage hat Fallbacks in `models` gesetzt. Führe Fallback-Modelle stattdessen in der Voreinstellung auf. |
 
 Eine `prompt.id`, die keiner Voreinstellung in deinem Workspace entspricht, liefert `404`.
+
+Eine gepinnte Version oder ein gepinntes Label, das nicht existiert oder das der Schlüssel nicht nutzen darf, liefert `404` mit dem Grund `preset_version_not_found`.
 
 ## Limits
 
@@ -295,7 +345,6 @@ Die Metadaten der Anfrage enthalten die Voreinstellung, die Namen der Variablen 
 
 ## Aktuelle Einschränkungen
 
-- Anfragen verwenden die zuletzt gespeicherte Fassung der Vorlage. Mit `prompt.version` lässt sich noch keine frühere Version festlegen.
 - Fallbacks in `models` lassen sich nicht mit einer Vorlage kombinieren. Füge Fallback-Modelle stattdessen der Voreinstellung hinzu.
 - Vorlagen gelten nur für Anfragen an Chat Completions, Responses und Messages.
 

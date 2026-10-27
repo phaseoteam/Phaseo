@@ -2667,6 +2667,34 @@ struct PresetForkRequest {
 	std::string source_version_id;
 };
 
+struct PresetLabel {
+	std::optional<std::string> created_at;
+	std::string label;
+	std::optional<std::string> updated_at;
+	std::optional<std::string> updated_by;
+	std::string version_id;
+	std::optional<std::string> version_label;
+	std::optional<int> version_number;
+};
+
+struct PresetLabelDeleteResponse {
+	bool deleted;
+	std::string label;
+};
+
+struct PresetLabelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PresetLabelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PresetLabelSetRequest {
+	std::string version;
+	std::string version_id;
+};
+
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
@@ -2789,6 +2817,7 @@ struct PresetVersion {
 	std::string created_by;
 	std::optional<std::string> description;
 	std::string id;
+	std::vector<std::string> labels;
 	std::string name;
 	std::string preset_id;
 	std::optional<std::string> release_notes;

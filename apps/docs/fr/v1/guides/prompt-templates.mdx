@@ -235,6 +235,54 @@ Phaseo vérifie le modèle lors de l’enregistrement. Un modèle contenant une 
 
 Les modifications enregistrées s’appliquent aux requêtes en deux minutes environ.
 
+## Versions et libellés
+
+Chaque fois que vous publiez un préréglage, Phaseo enregistre une version immuable (voir [Préréglages](./presets.mdx)). Les requêtes exécutent la dernière version publiée, sauf si elles en épinglent une. Une requête épinglée utilise ensemble les modèles, les paramètres et le modèle de prompt de cette version.
+
+Épinglez une version avec `prompt.version` :
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` accepte un libellé de version comme `v3`, `1.2.0` ou `2026.10.27`, ou un libellé comme `production`. Vous pouvez aussi mettre la version dans l’ID du modèle, avec ou sans modèle de prompt :
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Les préréglages publics utilisent `@publisher/support-triage@production`. Si `model` et `prompt.version` épinglent tous deux une version, ils doivent désigner la même.
+
+### Libellés
+
+Un libellé est un nom, comme `production` ou `staging`, qui pointe vers une version publiée. Les libellés comptent de 1 à 32 lettres minuscules, chiffres, tirets ou tirets bas, commencent par une lettre et ne peuvent pas ressembler à un libellé de version (`v1`, `v2`).
+
+Dans **Paramètres -> Préréglages**, ouvrez le préréglage et utilisez **Pointer un libellé** sur une version pour ajouter un libellé ou l’y déplacer. Le créateur du préréglage peut modifier ses libellés, ainsi que les propriétaires et administrateurs de l’espace de travail lorsque le préréglage est partagé. Avec une [clé d’API de gestion](../developers/management-api-keys.mdx) disposant de `presets:write` :
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+Le corps accepte `version` (un libellé de version, ou un autre libellé pour reprendre la version vers laquelle il pointe) ou `version_id`. `GET /v1/presets/{id}/labels` liste les libellés et `DELETE /v1/presets/{id}/labels/{label}` en supprime un. Les requêtes qui épinglent un libellé supprimé échouent jusqu’à ce qu’il soit ajouté de nouveau.
+
+### Revenir en arrière
+
+Pour revenir en arrière, déplacez le libellé vers la version antérieure : choisissez **Déplacer production ici** sur cette version, ou envoyez la même requête avec `"version": "v2"`. Les requêtes qui épinglent `production` exécutent de nouveau v2, sans aucun changement dans votre application.
+
+Les déplacements de libellés atteignent les requêtes en deux minutes environ, comme les autres modifications du préréglage.
+
 ## Erreurs
 
 Les problèmes de modèle dans une requête renvoient `400` avec le code `validation_error`. `reason` contient le code du premier problème et `details` les liste tous avec leur chemin :
@@ -268,11 +316,13 @@ Les problèmes de modèle dans une requête renvoient `400` avec le code `valida
 | `template_limit_exceeded` | Les variables ou le texte généré dépassent les limites ci-dessous. |
 | `template_rendered_empty` | Le modèle n’a généré aucun message utilisateur ou assistant, et la requête n’en a envoyé aucun. |
 | `template_endpoint_unsupported` | Le préréglage a un modèle et a été appelé depuis un endpoint autre que les trois ci-dessus. |
-| `prompt_model_conflict` | `model` désigne un préréglage ou un modèle différent de `prompt.id`. |
-| `prompt_version_unsupported` | La requête a défini `prompt.version`. |
+| `prompt_model_conflict` | `model` désigne un préréglage ou un modèle différent de `prompt.id`, ou épingle une autre version que `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` est vide, dépasse 64 caractères ou contient des caractères autres que des lettres, des chiffres, `.`, `_`, `+` et `-`. |
 | `prompt_model_fallbacks_unsupported` | La requête a défini des modèles de repli dans `models`. Indiquez plutôt les modèles de repli dans le préréglage. |
 
 Un `prompt.id` qui ne désigne aucun préréglage de votre espace de travail renvoie `404`.
+
+Une version ou un libellé épinglé qui n’existe pas, ou que la clé ne peut pas utiliser, renvoie `404` avec le motif `preset_version_not_found`.
 
 ## Limites
 
@@ -295,7 +345,6 @@ Les métadonnées de la requête enregistrent le préréglage, les noms des vari
 
 ## Limitations actuelles
 
-- Les requêtes utilisent le modèle dans sa dernière version enregistrée. `prompt.version` ne permet pas encore de figer une version antérieure.
 - Les modèles de repli `models` ne peuvent pas être combinés avec un modèle de prompt. Ajoutez plutôt les modèles de repli au préréglage.
 - Les modèles de prompt s’appliquent uniquement aux requêtes chat completions, Responses et Messages.
 
