@@ -293,7 +293,7 @@ const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
 
 ## Realtime voice (beta)
 
-`client.realtime.connect()` creates a realtime session and opens the relay WebSocket (global `WebSocket` in browsers and Node.js 22+, or the `ws` package). Provider events pass through unchanged.
+`client.realtime.connect()` creates a realtime session and opens the relay WebSocket (global `WebSocket` in Node.js 22+, or the `ws` package). It sends your API key, so run it on your server. For browser calls, create the session on your server with `client.realtime.createSession()` and join it in the browser with `connectRealtimeSession(info)`, which needs only the session's `client_secret`. Provider events pass through unchanged.
 
 ```ts
 const session = await client.realtime.connect({ model: "openai/gpt-realtime-2", voice: "marin" });

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { Phaseo, RealtimeSessionClosedError, type RealtimeEvent } from "../src/index.js";
+import { Phaseo, RealtimeSessionClosedError, connectRealtimeSession, type RealtimeEvent } from "../src/index.js";
 
 type Listener = (event: any) => void;
 
@@ -161,6 +161,25 @@ describe("realtime voice client", () => {
     expect(error).toBeInstanceOf(RealtimeSessionClosedError);
     expect((error as Error).message).toContain("timed out after 5 ms");
     expect(socket.closed).toEqual({ code: 1000, reason: "client_end_timeout" });
+  });
+
+  test("a server creates the session and a browser joins it with only the client secret", async () => {
+    let body: any;
+    const info = await client((value) => { body = value; }).realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+    expect(body).toEqual({ model: "openai/gpt-realtime-2", voice: "marin" });
+    expect(info.client_secret).toBe("rtsec_secret");
+    FakeRelaySocket.instances = [];
+    const session = await connectRealtimeSession(info, { baseUrl: "https://api.example.test/v1", webSocket: FakeRelaySocket });
+    const socket = FakeRelaySocket.instances[0]!;
+    expect(socket.url).toBe("wss://api.example.test/v1/realtime/sessions/rt_test/relay");
+    expect(socket.protocols).toEqual(["statsync-realtime", "rtsec.rtsec_secret"]);
+    expect(session.info).not.toHaveProperty("client_secret");
+  });
+
+  test("connectRealtimeSession() defaults to the public API host", async () => {
+    FakeRelaySocket.instances = [];
+    await connectRealtimeSession({ session_id: "rt_test", client_secret: "rtsec_secret", connect: { url: "/v1/realtime/sessions/rt_test/relay" } }, { webSocket: FakeRelaySocket });
+    expect(FakeRelaySocket.instances[0]!.url).toBe("wss://api.phaseo.app/v1/realtime/sessions/rt_test/relay");
   });
 
   test("connect() rejects when the relay ends the session before it connects", async () => {

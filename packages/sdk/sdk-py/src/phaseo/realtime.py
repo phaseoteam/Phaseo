@@ -255,6 +255,11 @@ class AsyncRealtime:
         off = session.on("relay.connected", on_connected)
         try:
             done, _ = await asyncio.wait({connected, session.ended}, timeout=connect_timeout, return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            # Cancelled (or interrupted) while waiting: the caller never gets the session, so close the socket
+            # here or the metered call keeps running with nobody holding it.
+            await asyncio.shield(session.close())
+            raise
         finally:
             off()
         if connected in done:

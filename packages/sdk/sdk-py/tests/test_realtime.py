@@ -186,6 +186,54 @@ def test_provider_ended_session_resolves_ended_and_stops_iteration():
     asyncio.run(run())
 
 
+def test_cancelling_connect_before_relay_connected_closes_the_socket():
+    class SilentSocket:
+        """Opens but never sends relay.connected; records close()."""
+
+        def __init__(self) -> None:
+            self.closed: tuple[int, str] | None = None
+            self.close_code: int | None = None
+            self.close_reason = ""
+            self._stop = asyncio.Event()
+
+        async def send(self, data: str) -> None:
+            pass
+
+        async def close(self, code: int = 1000, reason: str = "") -> None:
+            self.closed = (code, reason)
+            self.close_code = code
+            self._stop.set()
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            await self._stop.wait()
+            raise StopAsyncIteration
+
+    async def run():
+        socket = SilentSocket()
+        opened = asyncio.Event()
+
+        async def opener(url: str, protocols: list[str]):
+            opened.set()
+            return socket
+
+        client = make_client(1, [])
+        try:
+            task = asyncio.ensure_future(client.realtime.connect("openai/gpt-realtime-2", websocket_connect=opener))
+            await opened.wait()
+            await asyncio.sleep(0.01)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        finally:
+            await client.close()
+        assert socket.closed == (1000, "client_closed")
+
+    asyncio.run(run())
+
+
 def test_connect_without_websockets_explains_the_extra(monkeypatch):
     monkeypatch.setitem(sys.modules, "websockets", None)
     monkeypatch.setitem(sys.modules, "websockets.asyncio", None)

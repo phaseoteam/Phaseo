@@ -69,11 +69,13 @@ export { SDK_VERSION } from "./version.js";
 export {
   RealtimeSession,
   RealtimeSessionClosedError,
+  connectRealtimeSession,
   realtimeFinalBill,
   type RealtimeConnectOptions,
   type RealtimeEndOptions,
   type RealtimeEvent,
   type RealtimeFinalBill,
+  type RealtimeSessionConnectOptions,
   type RealtimeSessionEndedEvent,
   type RealtimeSessionInfo,
   type RealtimeSessionWarningEvent,
@@ -655,7 +657,13 @@ export class Phaseo {
 
   /** Realtime voice sessions (beta): create a session and talk to it over the relay WebSocket. */
   readonly realtime = {
-    /** Creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
+    /**
+     * Server only: creates a session and returns it with its single-session `client_secret`, without opening the socket.
+     * Hand the result to a browser, which joins with `connectRealtimeSession(info)` and never sees your API key.
+     */
+    createSession: (options: Omit<RealtimeConnectOptions, "webSocket" | "connectTimeoutMs">): Promise<RealtimeSessionInfo> =>
+      ops.createRealtimeSession(this.client, { body: options }),
+    /** Server only (it sends your API key): creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
     connect: async (options: RealtimeConnectOptions): Promise<RealtimeSession> => {
       const { webSocket, connectTimeoutMs, ...body } = options;
       const info: RealtimeSessionInfo = await ops.createRealtimeSession(this.client, { body });

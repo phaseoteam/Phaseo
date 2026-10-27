@@ -303,6 +303,20 @@ export class RealtimeSession implements AsyncIterable<RealtimeEvent> {
   }
 }
 
+export type RealtimeSessionConnectOptions = Pick<RealtimeConnectOptions, "webSocket" | "connectTimeoutMs"> & {
+  /** API base URL the relay path is resolved against. Default `https://api.phaseo.app/v1`. */
+  baseUrl?: string;
+};
+
+/**
+ * Browser entry: opens the relay socket for a session your server created, without an API key.
+ * Pass the create-session response (with its single-session `client_secret`); resolves once the relay sends `relay.connected`.
+ */
+export function connectRealtimeSession(info: RealtimeSessionInfo, options: RealtimeSessionConnectOptions = {}): Promise<RealtimeSession> {
+  const { baseUrl = "https://api.phaseo.app/v1", ...rest } = options;
+  return openRealtimeSession(baseUrl, info, rest);
+}
+
 /** @internal Opens the relay socket for a created session and waits for `relay.connected`. */
 export async function openRealtimeSession(
   baseUrl: string,

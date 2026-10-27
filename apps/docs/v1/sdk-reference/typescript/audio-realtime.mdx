@@ -9,7 +9,9 @@ description: "Run a realtime voice call through the Phaseo relay with the TypeSc
 Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
 </Note>
 
-**Method**: `client.realtime.connect()` creates the session (`POST /v1/audio/realtime/sessions`), opens the relay WebSocket and resolves once the relay sends `relay.connected`. It works in browsers and in Node.js 22 or later, which have a global `WebSocket`. On older runtimes, install the `ws` package or pass your own constructor as `webSocket`.
+**Method**: `client.realtime.connect()` creates the session (`POST /v1/audio/realtime/sessions`), opens the relay WebSocket and resolves once the relay sends `relay.connected`. It sends your API key, so call it on your server only. Node.js 22 or later has a global `WebSocket`; on older runtimes, install the `ws` package or pass your own constructor as `webSocket`.
+
+For a call that runs in the browser, create the session on your server and open the socket in the browser with `connectRealtimeSession()`. It takes the session your server created, including its `client_secret`, which works only for that one session, and never needs the API key. [Browser calls](#browser-calls) shows both halves.
 
 The relay protocol, warnings and reason codes are described in [Realtime voice sessions](/v1/guides/realtime-voice).
 
@@ -52,6 +54,28 @@ for await (const event of session) {
   if (event.type === "session.ended") console.log("bill", event.cost);
 }
 ```
+
+### Browser calls
+
+Never put a Phaseo API key in browser code. On your server, create the session with `client.realtime.createSession()`, which takes the same `model`, `voice`, `instructions`, `provider` and `metadata` options as `connect()`, and return the response to your page:
+
+```typescript
+// Server route, for example POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+In the browser, join the session with `connectRealtimeSession()`. It opens the relay with the session's `client_secret` and returns the same session object as `connect()`:
+
+```typescript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` accepts `webSocket` and `connectTimeoutMs` like `connect()`, plus `baseUrl` (default `https://api.phaseo.app/v1`) if you use a regional endpoint.
 
 ### Connect options
 
