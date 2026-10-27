@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, PausedRun } from "../src/agent";
+import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, AskOutput, AskRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
 import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { processEvent, type SlackEnvelope } from "../src/events";
@@ -48,13 +48,19 @@ class FakeStep implements StepRunner {
 }
 
 type Script = (request: AgentTurnRequest, hooks: AgentTurnHooks, call: number) => Promise<AgentTurnOutput>;
+type AskScript = (request: AskRequest, call: number) => Promise<AskOutput>;
 
 class ScriptedAgent implements AgentRunner {
 	requests: AgentTurnRequest[] = [];
-	constructor(private readonly script: Script) {}
+	asks: AskRequest[] = [];
+	constructor(private readonly script: Script, private readonly askScript: AskScript = async () => { throw new Error("unexpected ask"); }) {}
 	async run(request: AgentTurnRequest, hooks: AgentTurnHooks) {
 		this.requests.push(request);
 		return this.script(request, hooks, this.requests.length);
+	}
+	async ask(request: AskRequest) {
+		this.asks.push(request);
+		return this.askScript(request, this.asks.length);
 	}
 }
 
@@ -168,7 +174,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "reply", "finish"]);
 		const stored = JSON.stringify(step.outputs);
 		for (const secretOrText of ["spent", "what did we", GATEWAY_KEY, BOT_TOKEN]) expect(stored).not.toContain(secretOrText);
-		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null, consulted: [], consultCount: 0 });
 		expect(step.outputs.find((entry) => entry.name === "reply")?.output).toEqual({ shown: true, stopped: true });
 
 		const [request] = agent.requests;
@@ -855,6 +861,191 @@ describe("AgentTurnWorkflow", () => {
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 	});
 
+	describe("asking another model", () => {
+		const CLAUDE_PAGE = "https://phaseo.app/models/anthropic/claude-test";
+		type Execute = (input: unknown, context: unknown) => Promise<Record<string, unknown>>;
+		const askTool = (request: AgentTurnRequest) => request.tools.find((tool) => tool.id === "ask_model");
+
+		it("asks another allowed model mid-answer: same key, labels, user and session, its cost in the limit, and every model in the footer", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			const results: unknown[] = [];
+			const agent = new ScriptedAgent(async (request, hooks) => {
+				// The runner reports its own spend before the tool runs, as the real one does.
+				hooks.onCost?.(0.01);
+				results.push(await (askTool(request)!.execute as Execute)({ model: "anthropic/claude-test", prompt: "Is $12.50 right for 5 seats at $2.50?" }, {}));
+				await hooks.onText("Yes. Claude Test agrees: 5 × $2.50 = $12.50.");
+				await hooks.onStep({ costUsd: 0.01 + request.otherCostUsd!() });
+				return answer("openai/gpt-test", 0.01 + request.otherCostUsd!());
+			}, async () => ({ text: "Yes, that's right.", costUsd: 0.02 }));
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+			expect(agent.asks).toEqual([{
+				gatewayKey: GATEWAY_KEY,
+				endUser: `slack:${TEAM_ID}:U0PERSON01`,
+				sessionId: `slack-${turn.eventId}`,
+				labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
+				model: "anthropic/claude-test",
+				instructions: expect.stringContaining("Phaseo agent in Slack"),
+				prompt: "Is $12.50 right for 5 seats at $2.50?",
+				maxOutputTokens: 4_000,
+				webTools: false,
+				signal: agent.requests[0].signal,
+			}]);
+			expect(results).toEqual([{ model: "anthropic/claude-test", name: "Claude Test", answer: "Yes, that's right.", cost_usd: 0.02, asks_left: 2, budget_left_usd: 0.47 }]);
+			// Both models, each linked to its page, and the total with the consult.
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0300", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 30_000_000, consulted: ["anthropic/claude-test"] });
+			// Working memory notes the model asked, never what was asked.
+			expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["ask_model anthropic/claude-test", "Yes. Claude Test agrees: 5 × $2.50 = $12.50."]);
+			expect(JSON.stringify(step.outputs)).not.toContain("seats");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("is offered only with model choice on and another allowed model than the one answering", async () => {
+			const agent = new ScriptedAgent(async () => answer());
+			const offered = () => agent.requests.at(-1)!.tools.some((tool) => tool.id === "ask_model");
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test"] });
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+			// The person chose Claude Test for this message: GPT Test is the other model.
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			await runTurn(deps(agent), await startTurn({ model: "anthropic/claude-test" }), step);
+			expect((askTool(agent.requests.at(-1)!)!.parameters as { properties: { model: { enum: string[] } } }).properties.model.enum).toEqual(["openai/gpt-test"]);
+			await install({ model: "openai/gpt-test", model_choice_enabled: false, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+		});
+
+		it("counts a consult's cost when the run fails after it, and a retry's limit includes it", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			const agent = new ScriptedAgent(async (request, hooks, call) => {
+				if (call === 1) {
+					hooks.onCost?.(0.05);
+					await (askTool(request)!.execute as Execute)({ model: "anthropic/claude-test", prompt: "a" }, {});
+					throw new Error("network");
+				}
+				return answer("openai/gpt-test", 0.01);
+			}, async () => ({ text: "ok", costUsd: 0.2 }));
+			const turn = await startTurn();
+			await runTurn(deps(agent), turn, step);
+			// The first attempt failed with $0.25 spent: the model's own $0.05 and the $0.20 consult.
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", costNanos: 250_000_000, consulted: ["anthropic/claude-test"] });
+		});
+	});
+
+	describe("Compare", () => {
+		const CLAUDE_PAGE = "https://phaseo.app/models/anthropic/claude-test";
+		const compareInstall = () => install({ model: "phaseo/auto", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+
+		it("asks each model at once and posts one reply with a section per model and the total, counted as one answer", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => { throw new Error("the agent doesn't run for a Compare"); }, async (request) => (
+				request.model === "openai/gpt-test" ? { text: "GPT says A.", costUsd: 0.0123 } : { text: "Claude says B.", costUsd: 0.0201 }
+			));
+			// events.ts queued it with the models, and the question without `compare …:`.
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: `<@${BOT_USER_ID}> which is faster?` });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests).toEqual([]);
+			expect(agent.asks.map((request) => [request.model, request.prompt, request.webTools, request.sessionId])).toEqual([
+				["openai/gpt-test", "which is faster?", true, `slack-${turn.eventId}`],
+				["anthropic/claude-test", "which is faster?", true, `slack-${turn.eventId}`],
+			]);
+			expect(agent.asks[0].instructions).toContain("shown next to other models' answers");
+			const sections = [
+				`**[GPT Test](${GPT_PAGE})** · $0.0123`, "", "GPT says A.", "",
+				`**[Claude Test](${CLAUDE_PAGE})** · $0.0201`, "", "Claude says B.",
+			].join("\n");
+			expect(world.slack.calls.map((call) => [call.method, call.args])).toEqual([
+				["agents.sessions.setStatus", { channel_id: "C0CHANNEL1", thread_ts: turn.threadTs, status: "processing" }],
+				["chat.startStream", { channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: sections, recipient_user_id: "U0PERSON01", recipient_team_id: TEAM_ID }],
+				["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0324", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }] }],
+			]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({
+				status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 32_400_000,
+				requestedModel: "openai/gpt-test", model: null, error: null, consulted: ["anthropic/claude-test"],
+			});
+			expect(JSON.stringify(step.outputs)).not.toMatch(/faster|says/);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+			expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: sections, at: world.clock.now, ts: "1792600100.000001" }]);
+		});
+
+		it("doesn't ask the models when what earlier attempts left of the limit is too small to share", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => ({ text: "ok", costUsd: 0.01 }));
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			// An earlier attempt spent $0.47: $0.015 each is left.
+			coordinatorOf(turn).stageTurnOutput(turn.turnId, { attempt: 0, costNanos: 470_000_000, reply: "", tools: [] });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(agent.asks).toEqual([]);
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe([
+				`**[GPT Test](${GPT_PAGE})**`, "", "_Not asked: this answer's $0.50 limit was already used._", "",
+				`**[Claude Test](${CLAUDE_PAGE})**`, "", "_Not asked: this answer's $0.50 limit was already used._",
+			].join("\n"));
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", costNanos: 470_000_000, error: null });
+		});
+
+		it("shows a failed model's error in its section and keeps the others", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async (request) => {
+				if (request.model === "anthropic/claude-test") throw new AgentGatewayError({ status: 404, statusText: "Not Found", body: { error: { code: "model_not_found" } } });
+				return { text: "GPT says A.", costUsd: 0.0123 };
+			});
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe([
+				`**[GPT Test](${GPT_PAGE})** · $0.0123`, "", "GPT says A.", "",
+				`**[Claude Test](${CLAUDE_PAGE})**`, "", "_This model isn't available right now. Please try again in a few minutes._",
+			].join("\n"));
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0123", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("isn't counted when every model fails, and has no footer", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => { throw new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }); });
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain("_This Phaseo workspace is out of credits. An admin can add credits in Phaseo billing._");
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toBeUndefined();
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "no_credits" });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("isn't counted when every model runs out of output without an answer, but keeps what they cost", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => ({ text: "", costUsd: 0.02 }));
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain("_No answer: this model used its whole output allowance before writing one._");
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "failed", costNanos: 40_000_000 });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("stops when the thread is cancelled while the models answer, and isn't counted", async () => {
+			await compareInstall();
+			let turn!: TurnRef;
+			const agent = new ScriptedAgent(async () => answer(), async () => {
+				await coordinatorOf(turn).cancel(NOW);
+				return { text: "too late", costUsd: 0.01 };
+			});
+			turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe("_Stopped._");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("answers as usual when an admin no longer allows two of the models", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test"] });
+			const agent = new ScriptedAgent(async () => answer());
+			await expect(runTurn(deps(agent), await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" }), step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests.map((request) => request.model)).toEqual(["openai/gpt-test"]);
+			expect(agent.asks).toEqual([]);
+		});
+	});
+
 	it("notes when a limit stopped the answer early", async () => {
 		const agent = new ScriptedAgent(async (_request, hooks) => {
 			await hooks.onText("Partial answer");
@@ -987,10 +1178,43 @@ describe("AgentTurnWorkflow", () => {
 
 			expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "ask-1", "close-1", "resume-1", "reply", "finish"]);
 			expect(step.waits).toEqual([{ name: "answer-1", type: "answer-1", timeout: "1 hour" }]);
-			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null, consulted: [], consultCount: 0 });
 			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ status: "answered", costNanos: 150_000_000 });
 			const stored = JSON.stringify(step.outputs);
 			for (const text of ["Which region", "One thing", "Using EU", "\"EU\""]) expect(stored).not.toContain(text);
+		});
+
+		it("counts consults before a question toward the answer's three, and names every model asked in the footer", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			let turn!: TurnRef;
+			const consult = (request: AgentTurnRequest) => (request.tools.find((tool) => tool.id === "ask_model")!.execute as (input: unknown, context: unknown) => Promise<Record<string, unknown>>)({ model: "anthropic/claude-test", prompt: "check" }, {});
+			const results: unknown[] = [];
+			const agent = new ScriptedAgent(async (request, hooks) => {
+				if (!request.resume) {
+					await consult(request);
+					await consult(request);
+					await hooks.onStep({ costUsd: 0.01 + request.otherCostUsd!() });
+					await request.tools.find((tool) => tool.id === "ask_question")!.onToolCalled!({ question: "Which region?", options: ["EU", "US"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+					return { costUsd: 0.01 + request.otherCostUsd!(), model: "openai/gpt-test", stopReason: null, paused: PAUSED };
+				}
+				results.push(await consult(request));
+				results.push(await consult(request).catch((error: Error) => error.message));
+				await hooks.onText("Using EU.");
+				return answer("openai/gpt-test", 0.01 + request.otherCostUsd!());
+			}, async () => ({ text: "ok", costUsd: 0.01 }));
+			step.onWait = async () => {
+				await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("answered");
+				return "event";
+			};
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			// Two before the question, one after; the fourth is refused.
+			expect(agent.asks).toHaveLength(3);
+			expect(results).toEqual([expect.objectContaining({ asks_left: 0 }), expect.stringContaining("already asked other models 3 times")]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "waiting", costNanos: 30_000_000, consulted: ["anthropic/claude-test"], consultCount: 2 });
+			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ costNanos: 50_000_000, consulted: ["anthropic/claude-test"], consultCount: 3 });
+			// The whole answer's footer: both runs' cost, and the model asked.
+			expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0500", `<${GPT_PAGE}|GPT Test> + <https://phaseo.app/models/anthropic/claude-test|Claude Test>`) }] }]);
 		});
 
 		it("lets only the person asked answer, tells anyone else privately, and takes one answer however often they click", async () => {

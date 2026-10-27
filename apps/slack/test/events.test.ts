@@ -310,6 +310,53 @@ describe("events: choosing a model per message", () => {
 		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> with claude: hi" });
 		expect(world.slack.ephemerals()).toEqual([]);
 	});
+
+	it("queues a Compare with its models, and the question without the list", async () => {
+		await expect(run(mention({ text: "<@U0BOT00001> compare claude opus, Claude Sonnet 5.5, auto: which is faster?" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => entry.params)).toEqual([expect.objectContaining({ compare: ["anthropic/claude-opus-5-5", "anthropic/claude-sonnet-5-5", "phaseo/auto"] })]);
+		expect((world.turns.created[0].params as { model?: string }).model).toBeUndefined();
+		expect(thread().turnInput(1)).toMatchObject({ text: "which is faster?" });
+		// One answer held for the person, whatever the number of models.
+		expect(meter().usage(NOW)).toMatchObject({ people: 1, pending: 1 });
+		expect(world.slack.ephemerals()).toEqual([]);
+	});
+
+	it("refuses a Compare it can't answer, privately and before the meter counts anyone", async () => {
+		const refused = [
+			"compare gpt-6 luna, claude opus: hi",
+			"compare claude, auto: hi",
+			"compare claude opus: hi",
+			"compare claude opus, claude opus 5.5: hi",
+			"compare claude opus, auto:",
+		];
+		for (const text of refused) await expect(run(mention({ text: `<@U0BOT00001> ${text}`, thread_ts: "1792600000.000050" })), text).resolves.toBe("model_refused");
+		const replies = world.slack.ephemerals().map((call) => String(call.args.text));
+		expect(replies[0]).toBe([
+			"“gpt-6 luna” isn't one of the models you can choose here, so I didn't compare them.",
+			"",
+			"Start your message with `compare &lt;model&gt;, &lt;model&gt;:` and 2 or 3 of these, for example `compare Claude Opus 5.5, Claude Sonnet 5.5: …`:",
+			"• Claude Opus 5.5 (`anthropic/claude-opus-5-5`)",
+			"• Claude Sonnet 5.5 (`anthropic/claude-sonnet-5-5`)",
+			"• Auto (`phaseo/auto`)",
+		].join("\n"));
+		expect(replies.slice(1).map((reply) => reply.split("\n")[0])).toEqual([
+			"“claude” could be more than one of the models you can choose (Claude Opus 5.5, Claude Sonnet 5.5), so I didn't compare them. Name one of them.",
+			"Name 2 or 3 different models to compare, separated by commas, so I didn't answer.",
+			"Name 2 or 3 different models to compare, separated by commas, so I didn't answer.",
+			"Add your question after the colon, so I didn't answer.",
+		]);
+		expect(world.turns.created).toEqual([]);
+		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
+	});
+
+	it("answers ordinary text that starts with \"Compare …:\" as written, and every Compare when model choice is off", async () => {
+		await expect(run(mention({ text: "<@U0BOT00001> Compare the two plans, then pick one: which is cheaper?" }))).resolves.toBe("started");
+		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> Compare the two plans, then pick one: which is cheaper?" });
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: false, allowed_models: ["anthropic/claude-opus-5-5", "phaseo/auto"] });
+		await expect(run(mention({ text: "<@U0BOT00001> compare claude opus, auto: hi", ts: "1792600000.000200" }))).resolves.toBe("started");
+		expect(world.turns.created.map((entry) => (entry.params as { compare?: string[] }).compare)).toEqual([undefined, undefined]);
+		expect(world.slack.ephemerals()).toEqual([]);
+	});
 });
 
 describe("events: linked accounts", () => {

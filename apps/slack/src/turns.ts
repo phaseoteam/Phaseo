@@ -21,6 +21,8 @@ export type TurnRef = {
 	model?: string | null;
 	/** The person is from another organisation (Slack Connect): the turn sees and saves only this conversation's notes. */
 	external?: boolean;
+	/** The 2 or 3 allowed models a `compare <model>, <model>:` message asks, in its order. */
+	compare?: string[] | null;
 };
 
 export type TurnOutcome = {

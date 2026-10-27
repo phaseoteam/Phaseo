@@ -12,7 +12,7 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
+import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
@@ -289,8 +289,21 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	// A model chosen for this message. One that can't be used is refused here, before
 	// the meter counts the person or holds an answer for them.
 	let model: string | null = null;
+	let compare: string[] | null = null;
 	const message = withoutMention(text, installation.bot_user_id);
-	if (modelChoiceOn(installation) && namesModel(message)) {
+	if (modelChoiceOn(installation) && namesComparison(message)) {
+		// `compare <model>, <model>: …`, checked and refused like `with <model>:`.
+		const decided = await decideComparison(deps.db, installation, message);
+		if (decided.kind === "refused") {
+			console.log("[slack-agent] comparison refused", { installationId: installation.id, eventId, reason: decided.reason });
+			await replyPrivately(slack, target, decided.text);
+			return "model_refused";
+		}
+		if (decided.kind === "chosen") {
+			compare = decided.models;
+			text = decided.prompt;
+		}
+	} else if (modelChoiceOn(installation) && namesModel(message)) {
 		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
 		const allowed = allowedModels(installation, names);
 		let choice = chooseModel(message, allowed);
@@ -333,6 +346,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		kind,
 		...(model ? { model } : {}),
 		...(facts.isExternal ? { external: true } : {}),
+		...(compare ? { compare } : {}),
 		text,
 	}, now);
 	if (queued.status === "queue_full") {

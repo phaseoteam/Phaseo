@@ -60,6 +60,9 @@ export function homeView(facts: HomeFacts) {
 			...(facts.choices?.length
 				? [`• *Choose a model:* start a message with \`with &lt;model&gt;:\` and one of ${facts.choices.map(escapeText).join(", ")}, for example \`with ${escapeText(facts.choices[0])}: …\`.`]
 				: []),
+			...(facts.choices && facts.choices.length >= 2
+				? [`• *Compare models:* start a message with \`compare &lt;model&gt;, &lt;model&gt;:\` and 2 or 3 of them, for example \`compare ${escapeText(facts.choices[0])}, ${escapeText(facts.choices[1])}: …\`. Each answers your question, in one reply.`]
+				: []),
 			"• *Stop:* Slack's stop button stops the answer it's working on.",
 		].join("\n")),
 		{

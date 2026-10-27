@@ -175,4 +175,14 @@ describe("finishing a reply", () => {
 		// markdown_text, where the footer is in italics: markup in names is escaped, and parentheses in URLs.
 		expect(footerText(footer, "markdown")).toBe("Auto → [GPT\\_Test \\[beta\\] & co](https://phaseo.app/models/openai/gpt-test%28beta%29) · [$0.0123](https://phaseo.app/settings/usage/logs/requests?session=slack-Ev0TEST0001)");
 	});
+
+	it("names every other model the answer used after a +, each once and linked", () => {
+		const luna = { name: "GPT-6 Luna", url: "https://phaseo.app/models/openai/gpt-6-luna" };
+		const sonnet = { name: "Claude Sonnet 5.5", url: "https://phaseo.app/models/anthropic/claude-sonnet-5-5" };
+		expect(footerText({ ...FOOTER, model: luna, others: [sonnet] })).toBe("<https://phaseo.app/models/openai/gpt-6-luna|GPT-6 Luna> + <https://phaseo.app/models/anthropic/claude-sonnet-5-5|Claude Sonnet 5.5> · $0.0123");
+		expect(footerText({ ...FOOTER, model: luna, others: [sonnet] }, "markdown")).toBe("[GPT-6 Luna](https://phaseo.app/models/openai/gpt-6-luna) + [Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5-5) · $0.0123");
+		// With Auto, after the model it picked; a model already named, or named twice, is shown once.
+		expect(footerText({ ...FOOTER, answeredBy: { ...luna, url: null }, others: [{ ...luna, url: null }, { ...sonnet, url: null }, { ...sonnet, url: null }, { name: "Auto", url: null }] }))
+			.toBe("Auto → GPT-6 Luna + Claude Sonnet 5.5 · $0.0123");
+	});
 });

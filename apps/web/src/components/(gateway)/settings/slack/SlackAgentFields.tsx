@@ -164,8 +164,9 @@ export function ModelField({ value, autoAvailable, disabled, problem, onChange }
 	);
 }
 
-/** How a message chooses its model; not translated, since people type it as is. */
+/** How a message chooses its model, and how it compares models; not translated, since people type them as is. */
 const MODEL_PREFIX = "with <model>:";
+const COMPARE_PREFIX = "compare <model>, <model>:";
 
 /**
  * Model choice: whether people may start a message with `with <model>:`, and the
@@ -237,6 +238,7 @@ export function ModelChoiceFields({ enabled, models, autoAvailable, disabled, pr
 					{/* Allowed before Auto Routing was checked here: asking with Auto fails until it is removed. */}
 					{auto && !autoAvailable ? <Notice tone="warning" role="status">{t("autoUnavailable")}</Notice> : null}
 					<FieldProblem id="slack-allowed-models-help" problem={problem} field="allowedModels" help={t("help", { cost: formatUsd(TURN_COST_LIMIT_USD), steps: TURN_STEP_LIMIT })} />
+					<p className="text-xs text-muted-foreground">{t("askAndCompare", { prefix: COMPARE_PREFIX, cost: formatUsd(TURN_COST_LIMIT_USD) })}</p>
 				</div>
 			) : null}
 		</div>

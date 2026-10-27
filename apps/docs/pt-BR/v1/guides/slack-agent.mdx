@@ -62,7 +62,7 @@ Enquanto responde:
   - Quando o Slack não deixa que ele leia a thread naquele momento, ele trabalha com as próprias respostas anteriores na thread.
 - Ele responde uma mensagem por vez em cada thread. Até 5 mensagens a mais esperam a vez; depois disso, ele pede que você aguarde as respostas anteriores.
 - O botão de parar do Slack interrompe a resposta em andamento.
-- Cada resposta termina com o modelo e quanto a resposta custou em tokens de modelo, como `Auto → GPT-6 Luna · $0.0031`. Com **Automático**, o modelo escolhido aparece depois de uma seta. O nome de um modelo leva à página dele na Phaseo, e o custo leva às requisições dessa resposta em **Registros**, que os membros do workspace da Phaseo podem abrir.
+- Cada resposta termina com o modelo e quanto a resposta custou em tokens de modelo, como `Auto → GPT-6 Luna · $0.0031`. Com **Automático**, o modelo escolhido aparece depois de uma seta, e os outros modelos que a resposta usou aparecem depois de um +. O nome de um modelo leva à página dele na Phaseo, e o custo leva às requisições dessa resposta em **Registros**, que os membros do workspace da Phaseo podem abrir.
 
 ## Escolher um modelo por mensagem
 
@@ -80,6 +80,34 @@ with openai/gpt-6-luna: draft a reply to this customer
 - Se você nomear um modelo do catálogo que não está na lista, ou se o nome servir para mais de um, o agente responde em particular com os modelos que você pode escolher e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que começa com "With …:" mas não nomeia nenhum modelo, como "With regards to the invoice: …", é respondida normalmente.
 - Cada resposta mantém os mesmos limites ($0.50 e 12 etapas, veja “Limites de cada resposta” abaixo), seja qual for o modelo que responder. Os tokens do modelo são cobrados pelo preço dele.
 - O guardrail **Slack agent** continua valendo. Se nenhum provedor do modelo escolhido o atender, o agente avisa em vez de responder.
+
+### Perguntar a outro modelo
+
+Enquanto a escolha de modelo estiver ativada, o agente também pode pedir uma segunda opinião a um dos modelos permitidos enquanto responde, por exemplo quando você pergunta o que outro modelo acha:
+
+```text
+@Phaseo draft a reply to this customer, then ask Claude Opus 5.5 to check it
+```
+
+- O outro modelo só vê o que o agente envia para ele. Ele não vê a thread do Slack e não pode pesquisar na web nem usar ferramentas.
+- O agente pode perguntar a outros modelos até 3 vezes em uma resposta. O custo deles conta para o mesmo limite de $0.50 (veja “Limites de cada resposta” abaixo), e o agente para de perguntar quando sobra pouco demais para terminar a resposta.
+- O rodapé mostra todos os modelos usados, como `GPT-6 Luna + Claude Opus 5.5 · $0.0123`, e o custo inclui todos eles.
+- Se um modelo não puder ser usado, por exemplo porque nenhum dos provedores dele atende ao guardrail **Slack agent**, o agente fica sabendo o motivo e responde sem ele.
+
+### Comparar modelos
+
+Para ver como 2 ou 3 modelos permitidos respondem à mesma pergunta, comece a mensagem com `compare`, os modelos separados por vírgulas e dois-pontos:
+
+```text
+@Phaseo compare GPT-6 Luna, Claude Opus 5.5: what are the risks of moving our database to another region?
+compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
+```
+
+- Os modelos são reconhecidos como em `with <model>:`, só entre os permitidos. Se um modelo não estiver na lista, se um nome servir para mais de um modelo, se você citar menos de 2 ou mais de 3, ou se não houver pergunta depois dos dois-pontos, o agente responde em particular e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que não nomeia nenhum modelo, como `compare the two plans, then pick one: …`, é texto comum e o agente responde normalmente.
+- Cada modelo recebe a sua pergunta, não o resto da thread, e pode pesquisar na web e ler páginas. Eles respondem ao mesmo tempo.
+- A resposta tem uma seção para cada modelo: o nome dele, com link para a página dele na Phaseo, quanto custou e a resposta. Cada modelo é instruído a responder de forma curta, e respostas longas são cortadas para que todas caibam em uma mensagem do Slack.
+- Se um modelo falhar, a seção dele explica o motivo, e as outras respostas continuam aparecendo.
+- Uma comparação conta como uma resposta. O limite de $0.50 (veja “Limites de cada resposta” abaixo) é dividido igualmente entre os modelos, e o rodapé mostra todos eles e o total. A divisão só decide se um modelo é consultado: ele não é consultado quando sua parte é menor que $0.02. Uma resposta não é interrompida ao atingir sua parte, então pode custar mais; em vez disso, o tamanho da resposta de cada modelo é limitado.
 
 ### Perguntas com botões
 
@@ -199,7 +227,7 @@ A seção **Agente** define o modelo e as **Instruções**: orientações extras
 
 ### Limites de cada resposta
 
-Cada resposta para depois de 12 etapas ou $0.50 de gasto com modelos, o que acontecer primeiro. Uma etapa é uma chamada ao modelo e as ferramentas que ela executa, como uma pesquisa na web. Quando um limite interrompe uma resposta, o agente avisa, e você pode pedir que ele continue. Esses limites são os mesmos para todos os espaços de trabalho.
+Cada resposta para depois de 12 etapas ou $0.50 de gasto com modelos, o que acontecer primeiro. Uma etapa é uma chamada ao modelo e as ferramentas que ela executa, como uma pesquisa na web. Os outros modelos que o agente consulta e os modelos de uma comparação contam para os mesmos $0.50. Quando um limite interrompe uma resposta, o agente avisa, e você pode pedir que ele continue. Esses limites são os mesmos para todos os espaços de trabalho.
 
 ## Preços
 
@@ -402,6 +430,7 @@ Quando o agente não consegue responder a alguém, ele responde em particular no
 | "The model chosen for this agent isn't available to the Slack agent." | O gateway não consegue usar o modelo do agente com a chave dele: **Automático** sem Roteamento Automático, ou nenhum provedor do modelo atende ao guardrail **Slack agent**. | Escolha outro modelo em **Configurações → Slack**. |
 | "…isn't one of the models you can choose here, so I didn't answer." | A mensagem começou com `with …:` e indicou um modelo que não está em **Escolha de modelo**, ou um nome que serve para vários modelos permitidos. | Use um modelo da lista da resposta, ou tire o `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | O gateway não consegue usar o modelo escolhido com a chave do agente, como acima. | Pergunte sem `with …:`, ou troque o modelo em **Escolha de modelo**. |
+| "…so I didn't compare them." ou "Name 2 or 3 different models to compare…" | A mensagem começou com `compare …:`, e um modelo não está em **Escolha de modelo**, um nome serve para mais de um modelo permitido, ou ela citou menos de 2 ou mais de 3 modelos diferentes. | Use 2 ou 3 modelos da lista da resposta. |
 
 Se o agente não responder nada:
 
