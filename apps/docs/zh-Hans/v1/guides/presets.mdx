@@ -4,14 +4,14 @@ description: "为团队保存可复用的 Gateway 配置。"
 icon: "sliders-horizontal"
 ---
 
-预设是可复用的配置，可帮助团队统一提示、模型偏好和路由默认值。预设在 Phaseo 控制台中管理，并可与团队共享。
+预设是可复用的配置，可帮助团队统一提示、模型偏好和路由默认值。预设在 Phaseo 控制台中管理，并可与团队共享。也可以使用 CLI 的 `phaseo presets` 命令或 `/v1/presets` API 管理预设。
 
 ## 快速入门
 
 <Steps>
 <Step title="创建预设">
 
-打开**控制台 -> 设置 -> 预设**，创建一个易于识别的标识符，例如 `release-summary`。只添加应在调用方之间共享的默认值。
+打开**控制台 -> 设置 -> 预设**，创建一个易于识别的标识符，例如 `release-summary`。只添加应在调用方之间共享的默认值。在 CLI 中运行 `phaseo presets create --name @release-summary --model <model-id>`。
 
 </Step>
 
@@ -126,7 +126,7 @@ Phaseo 会保留每个分支的直接来源和完整祖先链。因此，即使�
 
 ## 管理预设
 
-在**控制台 -> 设置 -> 预设**中创建和管理预设。如果工作流在提示、路由或缓存行为方面差异明显，请使用不同的标识符。
+在**控制台 -> 设置 -> 预设**中创建和管理预设。如果工作流在提示、路由或缓存行为方面差异明显，请使用不同的标识符。在 CLI 中使用 `phaseo presets create|update`、`phaseo presets versions create` 和 `phaseo presets labels set`（`/v1/presets` API）。
 
 ## 何时使用预设
 

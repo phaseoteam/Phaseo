@@ -1,0 +1,131 @@
+---
+title: "通过代理管理 Phaseo"
+description: "列出每项 Phaseo 账户任务对应的 CLI 命令、管理 API 路由和 MCP 工具，让代理无需使用控制台。"
+icon: "bot"
+---
+
+无需打开控制台，你就可以通过 `phaseo` CLI、`/v1` 管理 API 或 Phaseo MCP 服务器管理 Phaseo 账户。可在本页查找每项任务对应的命令、路由或工具。
+
+只有三个步骤需要由人在浏览器中完成：
+
+- **注册** Phaseo 账户。
+- **批准首次登录**：即 `phaseo login` 打开的浏览器页面，或 `phaseo login --device-code` 显示的代码。
+- 首次购买额度时**输入银行卡**。之后的充值使用已保存的银行卡，每次都由工作区所有者或管理员通过邮件中的链接批准。
+
+<Visibility for="agents">
+管理 Phaseo 的代理应遵守以下规则：
+
+- 不要为了下表中的任务把用户引导到控制台。请运行 CLI 命令、调用路由或使用 MCP 工具。
+- 不要生成或猜测 API 密钥。使用 `phaseo keys create --name <name> --json` 创建，并在服务端仅保存一次密钥。
+- 每个 CLI 命令都使用 `--json`。只有当用户明确要求该项更改时，才为破坏性命令传入 `--yes`。
+- 只发起用户要求的充值。绝不要自行完成支付链接，也不要重试已被拒绝、已过期或已失败的充值。
+</Visibility>
+
+## 一次性设置
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # opens a browser; a person approves it
+phaseo login --device-code   # SSH, CI and agent sandboxes: a person enters the code
+phaseo whoami --json
+```
+
+然后为应用创建推理密钥；如果工作区没有额度，再进行充值：
+
+```bash
+phaseo keys create --name "Production app" --json
+phaseo credits get --json
+phaseo login --scopes billing:write   # one-time opt-in before the first top-up
+phaseo credits add --amount 20 --json
+```
+
+`phaseo credits add` 不会自行扣款。如果有已保存的银行卡，Phaseo 会向工作区的每位所有者和管理员发送确认扣款的邮件链接，命令会等待结果。如果没有已保存的银行卡，则返回一个链接，由所有者或管理员在其中输入银行卡。路由请参阅[额度](../api-reference/endpoint/credits)。
+
+## 选择接口
+
+| 接口 | 适用场景 | 登录方式 |
+| --- | --- | --- |
+| [`phaseo` CLI](../guides/integrations/phaseo-cli) | 代理可以运行 shell 命令 | `phaseo login` 或 `phaseo login --device-code` |
+| [管理 API](../api-reference/introduction) | 服务端代码、CI 或没有 CLI 的语言 | [管理密钥](./management-api-keys)（`phaseo_v1_mk_...`）或 OAuth 令牌 |
+| [Phaseo MCP](./cli-and-mcp#phaseo-mcp) | 代理运行在 MCP 客户端中 | 连接 `https://mcp.phaseo.app/mcp?access=manage` 并批准所需权限 |
+
+运行 `phaseo <group> --help` 可查看已安装 CLI 支持的选项。没有专用命令的任务，可用 `phaseo api get|post|patch|put|delete /v1/<path>` 通过你的会话调用路由。
+
+## 任务对照表
+
+### 密钥与访问
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 创建 API 密钥 | `phaseo keys create --name <name>` | `POST /v1/keys` | `api_key_create` |
+| 列出、更新或删除密钥 | `phaseo keys list`, `keys update <id>`, `keys delete <id>` | `GET`, `PATCH`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| 轮换密钥 | `phaseo keys rotate <id>` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| 将密钥限制为特定 IP 地址 | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
+| 创建管理密钥 | `phaseo management-keys create --name <name>` | `POST /v1/management-keys` | — |
+| 查看或撤销你授权的应用 | `phaseo authorized-apps list`, `authorized-apps revoke <id>` | `GET`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| 更新个人资料 | `phaseo profile update` | `PATCH /v1/me/profile` | — |
+
+### 额度、预算与限制
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 查看余额 | `phaseo credits get` | `GET /v1/credits` | 只读工具 |
+| 充值（由人确认） | `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| 开启自动充值或余额不足邮件 | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
+| 设置工作区预算 | `phaseo budgets create`, `budgets update <id>` | `/v1/budgets` | `budget_create`, `budget_update` |
+| 设置部门预算 | `phaseo department-budgets create` | `/v1/department-budgets` | — |
+| 对支出发出提醒或进行拦截 | `phaseo spend-rules create`, `spend-blocks lift <id>` | `/v1/spend-rules`, `/v1/spend-blocks` | `spend_rule_create`, `spend_rule_update` |
+| 速率限制策略 | `phaseo rate-limits policies create`, `rate-limits assignments create` | `/v1/rate-limits/policies`, `/v1/rate-limits/assignments` | — |
+| 查看或提升工作区的速率限制等级 | `phaseo rate-limits tier get`, `rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+
+### 路由与提供商
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 设置路由模式、隐私、ZDR 或 BYOK 回退 | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| 添加你自己的提供商密钥（BYOK） | `phaseo byok create --provider <id> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| 配置 Auto Routing | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
+| 创建并部署动态路由 | `phaseo routing dynamic-routes create`, `dynamic-routes deploy <id> <version>` | `/v1/routing/dynamic-routes` | — |
+| 为已退役模型选择替代模型 | `phaseo routing successors set --model <id>` | `PUT /v1/routing/successor/replacements` | — |
+| 添加私有模型 | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
+
+### 预设、护栏与分类器
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 创建或更新预设 | `phaseo presets create`, `presets update <preset>` | `/v1/presets` | `preset_create`, `preset_update` |
+| 发布预设版本或移动标签 | `phaseo presets versions create <preset>`, `presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| 创建护栏并关联密钥 | `phaseo guardrails create`, `guardrails set-keys <id>` | `/v1/guardrails` | `guardrail_create`, `guardrail_keys_set` |
+| 管理请求分类器 | `phaseo classifiers create`, `classifiers test` | `/v1/classifiers`, `POST /v1/classifiers/test` | — |
+
+### 工作区与身份
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 创建工作区并添加成员 | `phaseo workspaces create`, `workspaces add-members <workspace>` | `/v1/workspaces` | — |
+| 邀请成员 | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
+| 接受邀请 | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
+| SSO、SCIM、部门与目录 | `phaseo identity sso`, `identity scim`, `identity departments` | `/v1/identity` | — |
+| 受信任的工作负载（OIDC） | `phaseo workload-identity policies create` | `/v1/workload-identity/policies` | — |
+| 查看活动日志 | `phaseo audit-events list` | `GET /v1/audit-events` | — |
+
+### 用量、日志与通知
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 查看请求日志 | `phaseo logs list --since 1h` | `GET /v1/logs` | 只读工具 |
+| 将用量导出为 CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
+| 将追踪数据发送到可观测性工具 | `phaseo observability destinations create`, `destinations test <id>` | `/v1/observability/destinations` | `observability_destination_create` |
+| 邮件、Slack 或 Webhook 告警目标 | `phaseo notifications destinations create`, `notifications routes set` | `/v1/notifications` | — |
+| 异步任务的 Webhook | `phaseo webhooks create --url <https-url>` | `/v1/webhook-endpoints` | `webhook_create` |
+
+## 权限
+
+CLI 会话、管理密钥或 MCP 连接只能执行其作用域和你在工作区中的角色所允许的操作。仅限所有者和管理员的更改仍需由所有者或管理员执行。如果命令返回 `403`，请用 `phaseo whoami --json` 查看已授予的作用域；缺少作用域时，用 `phaseo login --scopes <scope,...>` 重新登录。`billing:write` 永远不会默认授予。
+
+## 相关页面
+
+- [Phaseo CLI](../guides/integrations/phaseo-cli)
+- [CLI 与 MCP](./cli-and-mcp)
+- [管理 API 密钥](./management-api-keys)
+- [API 参考](../api-reference/introduction)

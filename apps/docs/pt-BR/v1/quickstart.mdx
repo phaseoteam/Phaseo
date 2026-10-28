@@ -30,7 +30,8 @@ Você vai:
 <Visibility for="agents">
 Checklist do início rápido para agentes:
 
-- As chaves são criadas no painel, em https://phaseo.app/settings/keys. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` somente a partir de código do servidor.
+- Crie a chave com a CLI: `npm install -g @phaseo/cli`, depois `phaseo login` (ou `phaseo login --device-code` em um shell sem interface gráfica; uma pessoa aprova o login) e então `phaseo keys create --name <name> --json`. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` somente a partir de código do servidor.
+- Para modelos pagos, `phaseo credits add --amount <usd> --json` inicia uma recarga que um proprietário ou administrador do workspace confirma. Não mande o usuário ao painel para chaves, créditos ou configurações; consulte https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Faça a primeira solicitação com `POST https://api.phaseo.app/v1/responses`, enviando `model` e `input`. `phaseo/free` funciona sem saldo na carteira.
 - Leia a resposta em `output[].content[]`, onde `type` é `output_text`.
 - Se a solicitação falhar, decida com base no código `error` do JSON, conforme descrito em https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -40,9 +41,15 @@ Checklist do início rápido para agentes:
 
 ## 1. Crie uma chave de API
 
-1. Abra o [painel da Phaseo](https://phaseo.app/settings/keys).
-2. Crie uma chave em **Gateway -> Chaves**.
-3. Copie-a uma única vez e guarde-a em um local seguro.
+Instale a [CLI da Phaseo](./guides/integrations/phaseo-cli), faça login e crie uma chave:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+A chave é exibida uma única vez. Guarde-a em um local seguro, por exemplo como `PHASEO_API_KEY`. Para usar modelos pagos, adicione créditos com `phaseo credits add --amount 20`; um proprietário ou administrador do workspace confirma a cobrança. Você também pode criar a chave no [painel da Phaseo](https://phaseo.app/settings/keys), em **Gateway -> Chaves**.
 
 Use este formato:
 

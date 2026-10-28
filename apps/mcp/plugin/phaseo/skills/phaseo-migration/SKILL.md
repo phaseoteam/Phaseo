@@ -36,7 +36,7 @@ Read only the reference for the platform you found.
    | Anthropic SDK | `https://api.phaseo.app` (the SDK appends `/v1/messages`) | `PHASEO_API_KEY` passed as `authToken` / `auth_token` |
    | Vercel AI SDK | `@phaseo/ai-sdk-provider` (defaults to `https://api.phaseo.app/v1`) | reads `PHASEO_API_KEY` |
 
-   Keep the key server-side. Do not add a secret value to source control, logs or client bundles.
+   Keep the key server-side. Do not add a secret value to source control, logs or client bundles. If there is no Phaseo key yet, create one with the CLI (`phaseo login`, then `phaseo keys create --name <name> --json`) instead of sending the user to the dashboard; never guess a key. BYOK, budgets, routing settings and credits have CLI commands too: see [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent).
 3. **Map model IDs.** Call `GET /v1/models` and check every production model ID against `data[].id`. Phaseo IDs are `<org>/<model>` (for example `openai/gpt-4.1-mini`). Do not assume an ID carries over or guess a replacement; if callers use old names, translate them in one mapping function at the client boundary. The default list contains only models routable now; `?availability=all` also shows inactive or coming-soon ones.
 4. **Map platform features.** Use the reference file's mapping table. Shared Phaseo equivalents:
 
@@ -53,7 +53,7 @@ Read only the reference for the platform you found.
    | End-user ID | `user` body field or `X-Phaseo-User-Id` header |
    | Session grouping and cache affinity | `session_id` body field |
    | Rate limits, budgets, key restrictions | Rate limit policies, key limits and budgets (see `phaseo-guardrails`) |
-   | Request logs, telemetry export | Dashboard request logs, `GET /v1/generations?id=<request_id>`, observability destinations (webhook or OpenTelemetry), or keep client-side tracing |
+   | Request logs, telemetry export | `phaseo logs list` or `GET /v1/logs`, `GET /v1/generations?id=<request_id>`, observability destinations (webhook or OpenTelemetry), or keep client-side tracing |
 
    If something has no equivalent, say so in the report and keep it in one adapter rather than at every call site. Remove headers that only the old platform understood.
 5. **Smoke test with `phaseo/free`** (it works without a wallet balance), then repeat the non-streaming call with each mapped production model ID:

@@ -17,7 +17,7 @@ Commencez par `balanced`, sauf si une exigence de production est nettement plus 
 | `latency` | Le démarrage rapide de la réponse est votre priorité. |
 | `throughput` | La vitesse de génération soutenue des tokens est votre priorité. |
 
-Configurez la valeur par défaut de l’espace de travail dans **Tableau de bord -> Paramètres -> Routage**. Utilisez des préréglages lorsqu’un flux de travail nécessite une politique de fournisseur ou de modèle plus restrictive que celle de l’espace de travail.
+Configurez la valeur par défaut de l’espace de travail dans **Tableau de bord -> Paramètres -> Routage**. Utilisez des préréglages lorsqu’un flux de travail nécessite une politique de fournisseur ou de modèle plus restrictive que celle de l’espace de travail. Vous pouvez aussi le définir avec `phaseo settings update --routing-mode <mode>` ou en envoyant `routing_mode` à `PATCH /v1/settings`.
 
 ### Suffixes de routage des modèles
 
@@ -51,6 +51,8 @@ Utilisez `phaseo/auto` lorsque le modèle doit s’adapter à la charge de trava
 4. Vous pouvez limiter les modèles éligibles avec des motifs comme `anthropic/*`, `openai/gpt-5.*` ou un identifiant de modèle exact.
 5. Choisissez si Phaseo peut essayer les autres modèles classés après un échec pouvant faire l’objet d’une nouvelle tentative.
 6. Enregistrez la configuration.
+
+Pour définir les mêmes options sans le tableau de bord, lancez `phaseo routing auto update` avec `--objective`, `--spend-profile`, `--allowed-patterns` et `--allow-fallbacks`, ou appelez `PATCH /v1/routing/auto`. `phaseo routing auto get` affiche la configuration actuelle.
 
 Les applications peuvent alors activer le routeur sans recopier la politique de routage de l’espace de travail dans chaque requête :
 
@@ -186,15 +188,17 @@ Dans **Tableau de bord -> Paramètres -> Routage**, les espaces de travail peuve
 - `latency`
 - `throughput`
 
+Depuis la CLI, lancez `phaseo settings update --routing-mode <mode>`.
+
 La même page propose aussi des options pour les canaux bêta et alpha. Vous pouvez ainsi introduire volontairement le trafic de préversion au lieu de le laisser apparaître comme un effet de routage non suivi.
 
 ### Le repli BYOK est explicite
 
-Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête <Tooltip tip="Apportez votre propre clé : Phaseo route la requête avec votre clé API du fournisseur, et le fournisseur vous facture directement l’utilisation du modèle.">BYOK</Tooltip> qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
+Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête <Tooltip tip="Apportez votre propre clé : Phaseo route la requête avec votre clé API du fournisseur, et le fournisseur vous facture directement l’utilisation du modèle.">BYOK</Tooltip> qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ». Les agents peuvent le définir avec `byok_fallback_enabled` sur `PATCH /v1/settings`, par exemple `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, et ajouter des clés de fournisseur avec `phaseo byok create --provider <id> --name <name> --key-stdin`.
 
 ### Les routes dynamiques associent une politique aux clés d’API
 
-Dans **Tableau de bord -> Paramètres -> Routage**, créez une route dynamique lorsque différentes clés d’API ou catégories de requêtes nécessitent un comportement fournisseur distinct. Une route peut :
+Dans **Tableau de bord -> Paramètres -> Routage**, créez une route dynamique lorsque différentes clés d’API ou catégories de requêtes nécessitent un comportement fournisseur distinct. Depuis la CLI, utilisez `phaseo routing dynamic-routes create`, `set-keys` et `deploy`, ou l’API `/v1/routing/dynamic-routes`. Une route peut :
 
 - créer des branches selon des champs imbriqués du corps, des en-têtes, des métadonnées personnalisées, du point de terminaison, du modèle ou de l’identifiant de session
 - répartir le trafic par pourcentage pour les tests A/B et les déploiements progressifs

@@ -117,7 +117,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Définir vos propres remplaçants
 
-Sous **Vos propres remplaçants**, dans la même section des paramètres, les propriétaires et les administrateurs peuvent choisir le remplaçant d’un modèle précis, ou choisir **Ne jamais rediriger** pour que les requêtes de ce modèle continuent d’échouer. Votre propre remplaçant est utilisé quel que soit son prix, mais un modèle gratuit n’est toujours jamais remplacé par un modèle payant. Vos propres remplaçants se définissent uniquement dans le tableau de bord.
+Sous **Vos propres remplaçants**, dans la même section des paramètres, les propriétaires et les administrateurs peuvent choisir le remplaçant d’un modèle précis, ou choisir **Ne jamais rediriger** pour que les requêtes de ce modèle continuent d’échouer. Votre propre remplaçant est utilisé quel que soit son prix, mais un modèle gratuit n’est toujours jamais remplacé par un modèle payant. Vos propres remplaçants peuvent aussi se définir depuis la CLI avec `phaseo routing successors set --model <id> --successor <id>` (ou `--never`), ou avec `PUT /v1/routing/successor/replacements`.
 
 Les modifications de ces paramètres prennent effet en une minute environ.
 

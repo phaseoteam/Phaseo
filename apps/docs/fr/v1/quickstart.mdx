@@ -30,7 +30,8 @@ Vous allez :
 <Visibility for="agents">
 Liste de contrôle du démarrage rapide pour les agents :
 
-- Les clés se créent dans le tableau de bord, sur https://phaseo.app/settings/keys. N’en générez ni n’en devinez jamais. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code serveur.
+- Créez la clé avec la CLI : `npm install -g @phaseo/cli`, puis `phaseo login` (ou `phaseo login --device-code` dans un shell sans interface ; une personne approuve la connexion), puis `phaseo keys create --name <name> --json`. N’en générez ni n’en devinez jamais. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code serveur.
+- Pour les modèles payants, `phaseo credits add --amount <usd> --json` lance une recharge qu’un propriétaire ou un administrateur de l’espace de travail confirme. N’envoyez pas l’utilisateur vers le tableau de bord pour les clés, les crédits ou les paramètres ; consultez https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Faites la première requête avec `POST https://api.phaseo.app/v1/responses`, en envoyant `model` et `input`. `phaseo/free` fonctionne sans solde dans le portefeuille.
 - Lisez la réponse dans `output[].content[]`, là où `type` vaut `output_text`.
 - Si la requête échoue, décidez selon le code `error` du JSON, comme décrit dans https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -40,9 +41,15 @@ Liste de contrôle du démarrage rapide pour les agents :
 
 ## 1. Créer une clé API
 
-1. Ouvrez le [tableau de bord Phaseo](https://phaseo.app/settings/keys).
-2. Créez une clé dans **Gateway -> Clés**.
-3. Copiez-la une seule fois et conservez-la en lieu sûr.
+Installez la [CLI Phaseo](./guides/integrations/phaseo-cli), connectez-vous et créez une clé :
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+La clé ne s’affiche qu’une seule fois. Conservez-la en lieu sûr, par exemple dans `PHASEO_API_KEY`. Pour utiliser des modèles payants, ajoutez des crédits avec `phaseo credits add --amount 20` ; un propriétaire ou un administrateur de l’espace de travail confirme le paiement. Vous pouvez aussi créer la clé dans le [tableau de bord Phaseo](https://phaseo.app/settings/keys), sous **Gateway -> Clés**.
 
 Utilisez ce format :
 

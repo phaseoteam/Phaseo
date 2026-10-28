@@ -15,6 +15,8 @@ icon: "bell-ring"
 5. 設定した各チャンネルで**テストを送信**します。
 6. すべてのテストが成功したら通知先を作成します。
 
+CLI からは `phaseo notifications destinations create` で送信先を作成し、`phaseo notifications destinations test <id>` でテストしてから、`phaseo notifications routes set <event-kind> --destination-ids <id>` で受け取るアラートを選びます。
+
 カスタム Webhook には作成時に署名シークレットが発行されます。表示されるダイアログからコピーしてください。表示されるのは一度だけです。
 
 Phaseoで利用できる通知先:

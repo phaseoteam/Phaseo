@@ -15,6 +15,8 @@ icon: "bell-ring"
 5. हर कॉन्फ़िगर किए गए चैनल के लिए **टेस्ट भेजें** चुनें।
 6. सभी परीक्षण सफल होने के बाद गंतव्य बनाएँ।
 
+CLI से `phaseo notifications destinations create` चलाएँ, `phaseo notifications destinations test <id>` से उसकी जाँच करें, फिर `phaseo notifications routes set <event-kind> --destination-ids <id>` से चुनें कि उसे कौन-से अलर्ट मिलें।
+
 कस्टम वेबहुक बनाते समय उन्हें एक साइनिंग सीक्रेट मिलता है। खुलने वाले डायलॉग से इसे कॉपी करें; यह केवल एक बार दिखाया जाता है।
 
 Phaseo इन विकल्पों का समर्थन करता है:

@@ -66,6 +66,7 @@
                   "v1/developers/authentication",
                   "v1/developers/integrating-with-the-gateway",
                   "v1/developers/cli-and-mcp",
+                  "v1/developers/manage-from-an-agent",
                   "v1/community/faq"
                 ]
               },
@@ -1754,6 +1755,7 @@
                   "es/v1/developers/authentication",
                   "es/v1/developers/integrating-with-the-gateway",
                   "es/v1/developers/cli-and-mcp",
+                  "es/v1/developers/manage-from-an-agent",
                   "es/v1/community/faq"
                 ]
               },
@@ -3476,6 +3478,7 @@
                   "fr/v1/developers/authentication",
                   "fr/v1/developers/integrating-with-the-gateway",
                   "fr/v1/developers/cli-and-mcp",
+                  "fr/v1/developers/manage-from-an-agent",
                   "fr/v1/community/faq"
                 ]
               },
@@ -5198,6 +5201,7 @@
                   "de/v1/developers/authentication",
                   "de/v1/developers/integrating-with-the-gateway",
                   "de/v1/developers/cli-and-mcp",
+                  "de/v1/developers/manage-from-an-agent",
                   "de/v1/community/faq"
                 ]
               },
@@ -6920,6 +6924,7 @@
                   "pt-BR/v1/developers/authentication",
                   "pt-BR/v1/developers/integrating-with-the-gateway",
                   "pt-BR/v1/developers/cli-and-mcp",
+                  "pt-BR/v1/developers/manage-from-an-agent",
                   "pt-BR/v1/community/faq"
                 ]
               },
@@ -8642,6 +8647,7 @@
                   "ja/v1/developers/authentication",
                   "ja/v1/developers/integrating-with-the-gateway",
                   "ja/v1/developers/cli-and-mcp",
+                  "ja/v1/developers/manage-from-an-agent",
                   "ja/v1/community/faq"
                 ]
               },
@@ -10364,6 +10370,7 @@
                   "zh-Hans/v1/developers/authentication",
                   "zh-Hans/v1/developers/integrating-with-the-gateway",
                   "zh-Hans/v1/developers/cli-and-mcp",
+                  "zh-Hans/v1/developers/manage-from-an-agent",
                   "zh-Hans/v1/community/faq"
                 ]
               },
@@ -12086,6 +12093,7 @@
                   "hi/v1/developers/authentication",
                   "hi/v1/developers/integrating-with-the-gateway",
                   "hi/v1/developers/cli-and-mcp",
+                  "hi/v1/developers/manage-from-an-agent",
                   "hi/v1/community/faq"
                 ]
               },
@@ -13808,6 +13816,7 @@
                   "ar/v1/developers/authentication",
                   "ar/v1/developers/integrating-with-the-gateway",
                   "ar/v1/developers/cli-and-mcp",
+                  "ar/v1/developers/manage-from-an-agent",
                   "ar/v1/community/faq"
                 ]
               },
@@ -16637,7 +16646,8 @@
       "Model IDs look like `provider/model`, for example `openai/gpt-6-astra`. Do not guess IDs: list them with `GET /v1/models` or check https://phaseo.app/models. `phaseo/free` routes to an available free model and needs no wallet balance.",
       "For new text integrations prefer `POST /v1/responses`. `POST /v1/chat/completions` (OpenAI format) and `POST /v1/messages` (Anthropic format) suit existing code.",
       "The full API contract is https://phaseo.app/docs/openapi/v1/openapi.yaml. Official SDKs: `@phaseo/sdk` (TypeScript) and `phaseo` (Python), plus Go, C#, PHP, Ruby and Rust.",
-      "Search these docs over MCP at https://phaseo.app/docs/mcp, and install Phaseo skills with `npx skills add https://phaseo.app/docs`. If a page is wrong or out of date, report it with the MCP `submit_feedback` tool."
+      "Search these docs over MCP at https://phaseo.app/docs/mcp, and install Phaseo skills with `npx skills add https://phaseo.app/docs`. If a page is wrong or out of date, report it with the MCP `submit_feedback` tool.",
+      "Manage Phaseo accounts with the `phaseo` CLI (`npm install -g @phaseo/cli`, then `phaseo login` or `phaseo login --device-code`), the `/v1` Management API or the MCP server at `https://mcp.phaseo.app/mcp?access=manage`. Do not send users to the dashboard: only sign-up, approving the first sign-in and entering a first card need a browser. Create API keys with `phaseo keys create --json`; never guess one. Task map: https://phaseo.app/docs/v1/developers/manage-from-an-agent.md."
     ]
   },
   "footer": {

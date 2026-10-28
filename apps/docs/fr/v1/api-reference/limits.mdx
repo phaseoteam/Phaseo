@@ -31,11 +31,11 @@ Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en 
 
 Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d’une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l’espace de travail, sont atteintes, la réponse est `429` avec le code d’erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d’elle-même, comme un budget à vie ou une clé temporairement bloquée ; au lieu de réessayer, augmentez alors le budget de l’espace de travail ou, pour une limite de clé, augmentez la limite de la clé ou utilisez une autre clé.
 
-Les propriétaires et administrateurs de l’espace de travail peuvent aussi définir, modifier et supprimer des budgets dans le tableau de bord, sous [Paramètres → Budgets](https://phaseo.app/settings/budgets). La page indique pour chaque budget les dépenses à ce jour, la part utilisée, une projection pour la période et l’heure de réinitialisation. Les budgets quotidiens, hebdomadaires et mensuels sont réinitialisés sur des limites UTC : à minuit, le lundi à 00:00 et le 1er du mois.
+Les propriétaires et administrateurs de l’espace de travail peuvent aussi définir, modifier et supprimer des budgets dans le tableau de bord, sous [Paramètres → Budgets](https://phaseo.app/settings/budgets). La page indique pour chaque budget les dépenses à ce jour, la part utilisée, une projection pour la période et l’heure de réinitialisation. Les budgets quotidiens, hebdomadaires et mensuels sont réinitialisés sur des limites UTC : à minuit, le lundi à 00:00 et le 1er du mois. Depuis la CLI, utilisez `phaseo budgets create|update|delete`.
 
 Les budgets de service, gérés avec l’API `/v1/department-budgets`, ne rejettent aucune requête. Les dépenses d’un service comptent les mêmes clés et requêtes OAuth que les limites de débit de service, décrites plus bas. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 %, puis à 100 % d’un budget quotidien, hebdomadaire ou mensuel. Les dépenses proviennent de données d’utilisation qui peuvent avoir jusqu’à une heure de retard.
 
-Les propriétaires et les administrateurs peuvent aussi gérer les budgets des départements dans [Paramètres → Budgets](https://phaseo.app/settings/budgets), ou avec la ressource `phaseo_department_budget` du fournisseur Terraform.
+Les propriétaires et les administrateurs peuvent aussi gérer les budgets des départements dans [Paramètres → Budgets](https://phaseo.app/settings/budgets), ou avec la ressource `phaseo_department_budget` du fournisseur Terraform. Depuis la CLI, utilisez `phaseo department-budgets`.
 
 ## Politiques de limite de débit
 
@@ -47,7 +47,7 @@ Les administrateurs de l’espace de travail peuvent créer des politiques de li
 - **Garde-fou :** un quota distinct pour chaque clé (ou utilisateur OAuth) couverte par le garde-fou.
 - **Valeur par défaut par utilisateur final :** un quota distinct pour chaque utilisateur final, identifié par le champ `user` de la requête ou l’en-tête `X-Phaseo-User-Id`. Les requêtes sans identifiant d’utilisateur final ne sont pas limitées par cette valeur.
 
-Les propriétaires et les administrateurs peuvent aussi gérer les politiques et leurs affectations dans [Paramètres → Limites de débit](https://phaseo.app/settings/rate-limits), ou avec les ressources `phaseo_rate_limit_policy` et `phaseo_rate_limit_assignment` du fournisseur Terraform.
+Les propriétaires et les administrateurs peuvent aussi gérer les politiques et leurs affectations dans [Paramètres → Limites de débit](https://phaseo.app/settings/rate-limits), ou avec les ressources `phaseo_rate_limit_policy` et `phaseo_rate_limit_assignment` du fournisseur Terraform. Depuis la CLI, utilisez `phaseo rate-limits policies` et `phaseo rate-limits assignments`.
 
 Lorsque plusieurs politiques s’appliquent, chacune est comptée et la première épuisée rejette la requête. Les limites des politiques s’ajoutent aux limites du gateway ci-dessus. Les modifications des politiques prennent effet en une minute environ. Les changements d’appartenance aux services effectués dans le tableau de bord ou via SCIM peuvent prendre jusqu’à cinq minutes environ.
 

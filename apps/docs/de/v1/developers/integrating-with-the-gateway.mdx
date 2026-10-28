@@ -20,7 +20,7 @@ Danach hast du:
 Stelle sicher, dass Folgendes vorhanden ist:
 
 - Ein Phaseo-Konto mit Gateway-Zugriff.
-- Einen API-Schlüssel aus dem [Dashboard](https://phaseo.app/settings/keys).
+- Einen API-Schlüssel von `phaseo keys create` in der [Phaseo CLI](../guides/integrations/phaseo-cli) oder aus dem [Dashboard](https://phaseo.app/settings/keys).
 - Einen HTTP-Client, ein OpenAI-kompatibles SDK oder das Phaseo-SDK.
 - Eine unterstützte Modell-ID, zum Beispiel `google/gemma-3-27b:free` für den Start ohne Guthaben.
 
@@ -28,8 +28,8 @@ Stelle sicher, dass Folgendes vorhanden ist:
 
 ## 1. API-Schlüssel speichern
 
-1. Öffne **Gateway → API-Schlüssel** im Phaseo-Dashboard.
-2. Erstelle einen Schlüssel, dessen Name App und Umgebung erkennen lässt.
+1. Führe `phaseo keys create --name <app-and-environment> --json` aus oder öffne **Gateway → API-Schlüssel** im Phaseo-Dashboard.
+2. Gib dem Schlüssel einen Namen, der App und Umgebung erkennen lässt.
 3. Speichere den Wert in einem Secrets-Manager oder einer lokalen Umgebungsdatei:
 
 ```bash

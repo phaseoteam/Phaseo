@@ -31,7 +31,8 @@ You will:
 <Visibility for="agents">
 Quickstart checklist for agents:
 
-- Keys are created in the dashboard at https://phaseo.app/settings/keys. Never generate or guess one. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
+- Create the key with the CLI: `npm install -g @phaseo/cli`, then `phaseo login` (or `phaseo login --device-code` in a headless shell; a person approves the sign-in), then `phaseo keys create --name <name> --json`. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
+- For paid models, `phaseo credits add --amount <usd> --json` starts a top-up that a workspace owner or admin confirms. Do not send the user to the dashboard for keys, credits or settings; see https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. `phaseo/free` works without a wallet balance.
 - Read the reply from `output[].content[]` where `type` is `output_text`.
 - If the request fails, branch on the JSON `error` code as described in https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -41,9 +42,15 @@ Quickstart checklist for agents:
 
 ## 1. Create an API key
 
-1. Open the [Phaseo Dashboard](https://phaseo.app/settings/keys).
-2. Create a key under **Gateway -> Keys**.
-3. Copy it once and store it securely.
+Install the [Phaseo CLI](./guides/integrations/phaseo-cli), sign in and create a key:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+The key is shown once. Store it securely, for example as `PHASEO_API_KEY`. To use paid models, add credits with `phaseo credits add --amount 20`; a workspace owner or admin confirms the charge. You can also create the key in the [Phaseo Dashboard](https://phaseo.app/settings/keys) under **Gateway -> Keys**.
 
 Use this format:
 

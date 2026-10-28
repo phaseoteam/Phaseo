@@ -4,14 +4,14 @@ description: "Speichere wiederverwendbare Gateway-Konfigurationen für dein Team
 icon: "sliders-horizontal"
 ---
 
-Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden.
+Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden. Du kannst sie auch mit den CLI-Befehlen `phaseo presets` oder der API `/v1/presets` verwalten.
 
 ## Schnellstart
 
 <Steps>
 <Step title="Voreinstellung erstellen">
 
-Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen.
+Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen. Über die CLI: `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -126,7 +126,7 @@ Wenn du komplexere Transformationen pro Aufrufer benötigst, bündle sie in eine
 
 ## Voreinstellungen verwalten
 
-Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen.
+Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen. Über die CLI verwendest du `phaseo presets create|update`, `phaseo presets versions create` und `phaseo presets labels set` (die API `/v1/presets`).
 
 ## Wann Voreinstellungen sinnvoll sind
 

@@ -15,6 +15,8 @@ Nutze Benachrichtigungsziele, um aktivierte Workspace-Alarme an die Tools zu sen
 5. Wähle für jeden eingerichteten Kanal **Test senden** aus.
 6. Erstelle die Ziele, sobald alle Tests erfolgreich waren.
 
+Über die CLI erstellst du ein Ziel mit `phaseo notifications destinations create`, testest es mit `phaseo notifications destinations test <id>` und legst mit `phaseo notifications routes set <event-kind> --destination-ids <id>` fest, welche Warnungen es erhält.
+
 Eigene Webhooks erhalten beim Anlegen ein Signaturgeheimnis. Kopiere es aus dem Dialog, der sich öffnet; es wird nur einmal angezeigt.
 
 Phaseo unterstützt:

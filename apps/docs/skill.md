@@ -52,6 +52,19 @@ Most integrations start with:
 }
 ```
 
+## Get a key and manage the account
+
+Do not send the user to the dashboard. Use the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server (`https://mcp.phaseo.app/mcp?access=manage`):
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                          # or --device-code; a person approves the sign-in
+phaseo keys create --name <name> --json
+phaseo credits add --amount 20 --json  # a workspace owner or admin confirms the charge
+```
+
+Never generate or guess a key. Only sign-up, approving the first sign-in and entering a first card need a browser. For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
+
 ## Endpoint selection
 
 Pick the endpoint that matches the client or workflow you already have:
@@ -122,6 +135,12 @@ Phaseo supports agentic workflows through:
 - `v1/quickstart`
 - `v1/api-reference/introduction`
 - `v1/api-reference/endpoint/responses`
+
+### Account management
+
+- `v1/developers/manage-from-an-agent`
+- `v1/guides/integrations/phaseo-cli`
+- `v1/developers/management-api-keys`
 
 ### Routing and provider control
 

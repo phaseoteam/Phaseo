@@ -117,7 +117,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Eigene Ersatzmodelle festlegen
 
-Unter **Eigene Ersatzmodelle** im selben Einstellungsbereich können Inhaber und Admins das Ersatzmodell für ein bestimmtes Modell auswählen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Dein eigenes Ersatzmodell wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Eigene Ersatzmodelle lassen sich nur im Dashboard festlegen.
+Unter **Eigene Ersatzmodelle** im selben Einstellungsbereich können Inhaber und Admins das Ersatzmodell für ein bestimmtes Modell auswählen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Dein eigenes Ersatzmodell wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Eigene Ersatzmodelle lassen sich auch über die CLI mit `phaseo routing successors set --model <id> --successor <id>` (oder `--never`) oder mit `PUT /v1/routing/successor/replacements` festlegen.
 
 Änderungen an diesen Einstellungen werden in etwa einer Minute wirksam.
 

@@ -1,0 +1,131 @@
+---
+title: "エージェントから Phaseo を管理する"
+description: "Phaseo アカウントの各作業に対応する CLI コマンド、管理 API のルート、MCP ツールをまとめ、エージェントがダッシュボードを使わずに済むようにします。"
+icon: "bot"
+---
+
+Phaseo アカウントは、ダッシュボードを開かずに `phaseo` CLI、`/v1` 管理 API、または Phaseo MCP サーバーから管理できます。このページで各作業のコマンド、ルート、ツールを確認してください。
+
+ブラウザーで人が操作する必要があるのは次の 3 つだけです。
+
+- Phaseo アカウントへの**登録**。
+- **最初のサインインの承認**。`phaseo login` が開くブラウザーのページ、または `phaseo login --device-code` が表示するコードです。
+- クレジットを初めて購入するときの**カードの入力**。以降のチャージには保存済みのカードが使われ、ワークスペースのオーナーまたは管理者がメールのリンクから毎回承認します。
+
+<Visibility for="agents">
+Phaseo を管理するエージェント向けのルール:
+
+- 下の表にある作業のために、ユーザーをダッシュボードへ案内しないでください。CLI コマンドを実行するか、ルートを呼び出すか、MCP ツールを使ってください。
+- API キーを生成したり推測したりしないでください。`phaseo keys create --name <name> --json` で作成し、シークレットはサーバー側に一度だけ保存します。
+- すべての CLI コマンドで `--json` を使います。破壊的なコマンドに `--yes` を付けるのは、ユーザーがその変更を明示的に求めたときだけです。
+- クレジットのチャージは、ユーザーが求めたものだけを開始します。支払いリンクを自分で完了させず、拒否、期限切れ、失敗で終わったチャージは再試行しないでください。
+</Visibility>
+
+## 初回のセットアップ
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # opens a browser; a person approves it
+phaseo login --device-code   # SSH, CI and agent sandboxes: a person enters the code
+phaseo whoami --json
+```
+
+次に、アプリケーション用の推論キーを作成し、ワークスペースにクレジットがなければ追加します。
+
+```bash
+phaseo keys create --name "Production app" --json
+phaseo credits get --json
+phaseo login --scopes billing:write   # one-time opt-in before the first top-up
+phaseo credits add --amount 20 --json
+```
+
+`phaseo credits add` が単独で請求することはありません。保存済みのカードがある場合、Phaseo はワークスペースのすべてのオーナーと管理者に請求を確認するリンクをメールで送り、コマンドは結果を待ちます。保存済みのカードがない場合は、オーナーまたは管理者がカードを入力するリンクを返します。ルートは[クレジット](../api-reference/endpoint/credits)を参照してください。
+
+## インターフェースを選ぶ
+
+| インターフェース | 使う場面 | サインイン |
+| --- | --- | --- |
+| [`phaseo` CLI](../guides/integrations/phaseo-cli) | エージェントがシェルコマンドを実行できる | `phaseo login` または `phaseo login --device-code` |
+| [管理 API](../api-reference/introduction) | サーバーのコード、CI、または CLI がない言語 | [管理キー](./management-api-keys)（`phaseo_v1_mk_...`）または OAuth トークン |
+| [Phaseo MCP](./cli-and-mcp#phaseo-mcp) | エージェントが MCP クライアントで動作する | `https://mcp.phaseo.app/mcp?access=manage` に接続し、必要な権限を承認する |
+
+インストール済みの CLI が受け付けるオプションは `phaseo <group> --help` で確認できます。専用のコマンドがない作業は、`phaseo api get|post|patch|put|delete /v1/<path>` でセッションを使ってルートを呼び出せます。
+
+## 作業一覧
+
+### キーとアクセス
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| API キーを作成する | `phaseo keys create --name <name>` | `POST /v1/keys` | `api_key_create` |
+| キーを一覧表示、更新、削除する | `phaseo keys list`, `keys update <id>`, `keys delete <id>` | `GET`, `PATCH`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| キーをローテーションする | `phaseo keys rotate <id>` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| キーを IP アドレスに制限する | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
+| 管理キーを作成する | `phaseo management-keys create --name <name>` | `POST /v1/management-keys` | — |
+| 承認したアプリを確認または取り消す | `phaseo authorized-apps list`, `authorized-apps revoke <id>` | `GET`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| プロフィールを更新する | `phaseo profile update` | `PATCH /v1/me/profile` | — |
+
+### クレジット、予算、制限
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| 残高を確認する | `phaseo credits get` | `GET /v1/credits` | 読み取り専用ツール |
+| クレジットを追加する（人が確認） | `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| 自動チャージや残高不足メールを有効にする | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
+| ワークスペースの予算を設定する | `phaseo budgets create`, `budgets update <id>` | `/v1/budgets` | `budget_create`, `budget_update` |
+| 部門の予算を設定する | `phaseo department-budgets create` | `/v1/department-budgets` | — |
+| 支出を通知またはブロックする | `phaseo spend-rules create`, `spend-blocks lift <id>` | `/v1/spend-rules`, `/v1/spend-blocks` | `spend_rule_create`, `spend_rule_update` |
+| レート制限ポリシー | `phaseo rate-limits policies create`, `rate-limits assignments create` | `/v1/rate-limits/policies`, `/v1/rate-limits/assignments` | — |
+| ワークスペースのレート制限ティアを確認または引き上げる | `phaseo rate-limits tier get`, `rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+
+### ルーティングとプロバイダー
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| ルーティングモード、プライバシー、ZDR、BYOK フォールバックを設定する | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| 独自のプロバイダーキーを追加する（BYOK） | `phaseo byok create --provider <id> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| Auto Routing を設定する | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
+| 動的ルートを作成してデプロイする | `phaseo routing dynamic-routes create`, `dynamic-routes deploy <id> <version>` | `/v1/routing/dynamic-routes` | — |
+| 提供終了モデルの代替モデルを選ぶ | `phaseo routing successors set --model <id>` | `PUT /v1/routing/successor/replacements` | — |
+| プライベートモデルを追加する | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
+
+### プリセット、ガードレール、分類器
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| プリセットを作成または更新する | `phaseo presets create`, `presets update <preset>` | `/v1/presets` | `preset_create`, `preset_update` |
+| プリセットのバージョンを公開する、またはラベルを移動する | `phaseo presets versions create <preset>`, `presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| ガードレールを作成してキーを割り当てる | `phaseo guardrails create`, `guardrails set-keys <id>` | `/v1/guardrails` | `guardrail_create`, `guardrail_keys_set` |
+| リクエスト分類器を管理する | `phaseo classifiers create`, `classifiers test` | `/v1/classifiers`, `POST /v1/classifiers/test` | — |
+
+### ワークスペースと ID
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| ワークスペースを作成してメンバーを追加する | `phaseo workspaces create`, `workspaces add-members <workspace>` | `/v1/workspaces` | — |
+| ユーザーを招待する | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
+| 招待を承諾する | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
+| SSO、SCIM、部門、ディレクトリ | `phaseo identity sso`, `identity scim`, `identity departments` | `/v1/identity` | — |
+| 信頼済みワークロード（OIDC） | `phaseo workload-identity policies create` | `/v1/workload-identity/policies` | — |
+| アクティビティログを読む | `phaseo audit-events list` | `GET /v1/audit-events` | — |
+
+### 使用量、ログ、通知
+
+| 作業 | CLI | API ルート | MCP ツール |
+| --- | --- | --- | --- |
+| リクエストログを読む | `phaseo logs list --since 1h` | `GET /v1/logs` | 読み取り専用ツール |
+| 使用量を CSV でエクスポートする | `phaseo analytics export` | `GET /v1/analytics/export` | — |
+| トレースをオブザーバビリティツールに送る | `phaseo observability destinations create`, `destinations test <id>` | `/v1/observability/destinations` | `observability_destination_create` |
+| メール、Slack、Webhook のアラート送信先 | `phaseo notifications destinations create`, `notifications routes set` | `/v1/notifications` | — |
+| 非同期ジョブ用の Webhook | `phaseo webhooks create --url <https-url>` | `/v1/webhook-endpoints` | `webhook_create` |
+
+## 権限
+
+CLI セッション、管理キー、MCP 接続ができることは、そのスコープとワークスペースでのあなたのロールが許す範囲に限られます。オーナーと管理者だけが行える変更には、引き続きオーナーまたは管理者が必要です。コマンドが `403` を返した場合は、`phaseo whoami --json` で付与済みのスコープを確認し、不足しているスコープがあれば `phaseo login --scopes <scope,...>` で再度サインインしてください。`billing:write` が既定で付与されることはありません。
+
+## 関連ページ
+
+- [Phaseo CLI](../guides/integrations/phaseo-cli)
+- [CLI と MCP](./cli-and-mcp)
+- [管理 API キー](./management-api-keys)
+- [API リファレンス](../api-reference/introduction)
