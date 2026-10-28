@@ -38,10 +38,10 @@ import { ToolInputError } from "./usage-tools";
 // by default, because everyone in a channel reads the answer, including guests
 // who can't open the channels it found), the person isn't from another
 // organisation or a guest, the message carried an action token, and the model
-// answering has a provider that keeps no data and that the agent's guardrail
-// allows (zeroRetentionModels; never Auto, which picks a model per request
-// without regard to that). Scheduled runs have no message, so no token, and
-// never search.
+// answering has a route that keeps no data, that the agent's guardrail allows
+// and that its key can use (zeroRetentionModels; never Auto, which picks a
+// model per request without regard to that). Scheduled runs have no message,
+// so no token, and never search.
 //
 // Slack only lets apps published in its directory, and a company's own
 // (internal) apps, use this API. Phaseo's hosted app can't until its Slack
@@ -120,24 +120,68 @@ export function searchTokenFor(
 	return actionTokenOf(event);
 }
 
-type CatalogueRoute = { model_slug: string; provider_slug: string; effective_from: string | null; effective_to: string | null };
+type CatalogueRoute = {
+	model_slug: string;
+	provider_slug: string;
+	provider_model_id: string | null;
+	credential_mode: string | null;
+	effective_from: string | null;
+	effective_to: string | null;
+};
 type CatalogueProvider = {
 	provider_slug: string;
 	status: string | null;
 	routing_enabled: boolean | null;
+	credential_mode: string | null;
+	zero_data_retention: boolean | null;
 	data_policy_tier: string | null;
 	data_policy_confidence: string | null;
 	prompt_training_policy: string | null;
 };
+type CatalogueCapability = { provider_model_id: string; capability_id: string; params: unknown };
 
-/** The gateway's reading of a provider's data policy (its explicit tier, else its training policy). */
-function dataPolicyTier(provider: CatalogueProvider): "private" | "logs" | "trains" | "unknown" {
-	const tier = provider.data_policy_tier?.trim().toLowerCase();
-	if (tier === "private" || tier === "logs" || tier === "trains") return tier;
+/** The capabilities whose policy the gateway reads for a Responses request, text.generate first (its context loader). */
+const TEXT_CAPABILITIES = ["text.generate", "responses"];
+/** Capability statuses the gateway routes to. */
+const ROUTABLE_CAPABILITY_STATUSES = ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"];
+
+/** A route's data policy: its tier and confidence (unset where a capability's declaration leaves them out), and whether it keeps no data. */
+type RoutePolicy = { tier: string | null | undefined; confidence: string | null | undefined; zeroDataRetention: boolean };
+
+/**
+ * A route's data policy as the gateway resolves it (resolveEffectiveDataPolicy,
+ * apps/api/src/pipeline/before/dataPolicy.ts): its provider's, unless the
+ * route's capability declares its own (params.data_policy, as
+ * v2_effective_route_capabilities gives it), which can promise zero data
+ * retention where the provider doesn't, or withdraw it. A declaration the
+ * catalogue manages counts as unknown past its validUntil, and fields a
+ * declaration leaves out are unset, not the provider's, as the gateway reads them.
+ */
+function routePolicy(provider: CatalogueProvider, params: unknown, now: number): RoutePolicy {
+	const declared = params && typeof params === "object" ? (params as { data_policy?: unknown }).data_policy : undefined;
+	const zeroDataRetention = provider.zero_data_retention === true;
+	if (!declared || typeof declared !== "object" || Array.isArray(declared)) {
+		return { tier: provider.data_policy_tier, confidence: provider.data_policy_confidence, zeroDataRetention };
+	}
+	const policy = declared as Record<string, unknown>;
+	if (policy.catalogManaged === true && !(typeof policy.validUntil === "string" && Date.parse(policy.validUntil) > now)) {
+		return { tier: "unknown", confidence: "unknown", zeroDataRetention: false };
+	}
+	return {
+		tier: typeof policy.tier === "string" && ["unknown", "private", "logs", "trains"].includes(policy.tier) ? policy.tier : undefined,
+		confidence: typeof policy.confidence === "string" && ["unknown", "confirmed", "maybe"].includes(policy.confidence) ? policy.confidence : undefined,
+		zeroDataRetention: policy.zdrEligibility === "ineligible" || policy.zeroDataRetention === false ? false : policy.zeroDataRetention === true ? true : zeroDataRetention,
+	};
+}
+
+/** Whether the Slack agent's guardrail allows a route: a confirmed policy, read the gateway's way (its tier, else its provider's training policy), of not training on prompts. */
+function guardrailAllows(policy: RoutePolicy, provider: CatalogueProvider): boolean {
+	if (policy.confidence?.trim().toLowerCase() !== "confirmed") return false;
+	const tier = policy.tier?.trim().toLowerCase();
+	if (tier === "private" || tier === "logs") return true;
+	if (tier === "trains") return false;
 	const training = provider.prompt_training_policy?.trim().toLowerCase();
-	if (training === "may_train" || training === "opt_out_available") return "trains";
-	if (training === "no_train" || training === "enterprise_no_train") return "private";
-	return "unknown";
+	return training === "no_train" || training === "enterprise_no_train";
 }
 
 function inEffect(route: CatalogueRoute, now: number): boolean {
@@ -148,37 +192,72 @@ function inEffect(route: CatalogueRoute, now: number): boolean {
 
 /**
  * Which of `models` can answer after a Slack search: those with a route the
- * gateway routes to (enabled, active or degraded, in effect) whose provider
- * keeps no data (zero_data_retention) and passes the Slack agent's guardrail,
- * which allows only providers with a confirmed policy of not training on
- * prompts. Read from the catalogue the gateway routes from, so it is the
- * gateway's own answer in all but a model's per-route exceptions, which the
- * gateway's refusal covers (search_needs_zdr). Auto never can: the gateway's
- * auto router chooses a model without regard to require_zero_data_retention.
- * A catalogue that can't be read leaves none, so no search is offered.
+ * gateway routes to (enabled, active or degraded, in effect, from an active
+ * provider) that keeps no data and passes the Slack agent's guardrail, with
+ * the policy the gateway gives the route (routePolicy: its provider's, or its
+ * capability's own), and that the agent's key can use: with Phaseo's
+ * credentials, or, for a route that takes only the workspace's own provider
+ * key (credential_mode byok_only, on the provider or the route), with an
+ * enabled key in `workspaceId` for its provider.
+ *
+ * It decides only whether search is offered: the gateway enforces zero data
+ * retention on each request (require_zero_data_retention), and refuses one
+ * that no route meets (search_needs_zdr). So where it can't tell, it errs
+ * towards offering: a capability policy that can't be read leaves the
+ * provider's, and keys that can't be read leave the routes Phaseo's
+ * credentials serve. Auto never can: the gateway's auto router chooses a
+ * model, with a request of its own, without regard to
+ * require_zero_data_retention. Routes that can't be read leave none, so no
+ * search is offered.
  */
-export async function zeroRetentionModels(db: Db, models: string[], now: number): Promise<Set<string>> {
+export async function zeroRetentionModels(db: Db, models: string[], now: number, workspaceId: string): Promise<Set<string>> {
 	const wanted = [...new Set(models)].filter((model) => model && !isAutoModel(model));
 	if (!wanted.length) return new Set();
 	try {
 		const routes = (await db.select<CatalogueRoute>("v2_model_provider_routes", {
-			select: "model_slug,provider_slug,effective_from,effective_to",
+			select: "model_slug,provider_slug,provider_model_id,credential_mode,effective_from,effective_to",
 			model_slug: inList(wanted),
 			routing_enabled: "eq.true",
 			status: inList(["active", "degraded"]),
 		})).filter((route) => inEffect(route, now));
 		const slugs = [...new Set(routes.map((route) => route.provider_slug))];
 		if (!slugs.length) return new Set();
-		const providers = await db.select<CatalogueProvider>("v2_providers", {
-			select: "provider_slug,status,routing_enabled,data_policy_tier,data_policy_confidence,prompt_training_policy",
-			provider_slug: inList(slugs),
-			zero_data_retention: "eq.true",
-		});
-		const kept = new Set(providers
-			.filter((provider) => provider.status === "active" && provider.routing_enabled !== false
-				&& provider.data_policy_confidence === "confirmed" && ["private", "logs"].includes(dataPolicyTier(provider)))
-			.map((provider) => provider.provider_slug));
-		return new Set(routes.filter((route) => kept.has(route.provider_slug)).map((route) => route.model_slug));
+		const routeIds = [...new Set(routes.map((route) => route.provider_model_id).filter((id): id is string => typeof id === "string" && id !== ""))];
+		const [providers, capabilities, keys] = await Promise.all([
+			db.select<CatalogueProvider>("v2_providers", {
+				select: "provider_slug,status,routing_enabled,credential_mode,zero_data_retention,data_policy_tier,data_policy_confidence,prompt_training_policy",
+				provider_slug: inList(slugs),
+			}),
+			(routeIds.length
+				? db.select<CatalogueCapability>("v2_effective_route_capabilities", {
+					select: "provider_model_id,capability_id,params",
+					provider_model_id: inList(routeIds),
+					capability_id: inList(TEXT_CAPABILITIES),
+					status: inList(ROUTABLE_CAPABILITY_STATUSES),
+				})
+				: Promise.resolve([])).catch(() => {
+				console.warn("[slack-agent] route data policies not read");
+				return [];
+			}),
+			db.select<{ provider_id: string }>("byok_keys", { select: "provider_id", workspace_id: `eq.${workspaceId}`, provider_id: inList(slugs), enabled: "eq.true" }).catch(() => {
+				console.warn("[slack-agent] provider keys not read");
+				return [];
+			}),
+		]);
+		const byProvider = new Map(providers.filter((provider) => provider.status === "active" && provider.routing_enabled !== false).map((provider) => [provider.provider_slug, provider]));
+		// text.generate's declaration, else responses', as the gateway prefers them.
+		const params = new Map<string, unknown>();
+		for (const capability of capabilities) {
+			if (capability.capability_id === TEXT_CAPABILITIES[0] || !params.has(capability.provider_model_id)) params.set(capability.provider_model_id, capability.params);
+		}
+		const withKey = new Set(keys.map((key) => key.provider_id));
+		return new Set(routes.filter((route) => {
+			const provider = byProvider.get(route.provider_slug);
+			if (!provider) return false;
+			const policy = routePolicy(provider, route.provider_model_id ? params.get(route.provider_model_id) : undefined, now);
+			const keyNeeded = provider.credential_mode === "byok_only" || route.credential_mode === "byok_only";
+			return policy.zeroDataRetention && guardrailAllows(policy, provider) && (!keyNeeded || withKey.has(route.provider_slug));
+		}).map((route) => route.model_slug));
 	} catch {
 		console.warn("[slack-agent] zero data retention routes not read");
 		return new Set();

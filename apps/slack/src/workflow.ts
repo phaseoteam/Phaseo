@@ -586,7 +586,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let zdr: ZeroRetentionNote | undefined;
 	if (searchOn === "on") {
 		const others = modelChoiceOn(installation) ? installation.allowed_models.filter((id) => id !== model) : [];
-		const capable = await zeroRetentionModels(deps.db, [model, ...others], deps.now());
+		const capable = await zeroRetentionModels(deps.db, [model, ...others], deps.now(), installation.workspace_id);
 		if (!capable.has(model)) {
 			searchOn = "needs_zdr";
 			const choices = others.filter((id) => capable.has(id));

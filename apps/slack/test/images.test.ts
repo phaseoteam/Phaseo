@@ -1,7 +1,8 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { ImageNotReadError, type GeneratedImage, type ImageSize } from "../src/agent";
-import { generateImageTool, IMAGE_COST_RESERVE_USD, MAX_IMAGES_PER_ANSWER } from "../src/images";
+import { DEFAULT_IMAGE_MODEL, generateImageTool, IMAGE_COST_RESERVE_USD, MAX_IMAGES_PER_ANSWER } from "../src/images";
+import { noRouteInCountry, noZeroDataRetentionRoute } from "./fakes";
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -69,11 +70,12 @@ describe("the generate_image tool", () => {
 	});
 
 	it("says no image can be made after a Slack search when the image model has no provider that keeps no data", async () => {
-		const noZdrRoute = { error: { code: "model_region_unavailable" }, code: "model_region_unavailable" };
-		const refused = (searched: boolean) => setup(0.5, { searched: async () => searched, generate: async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body: noZdrRoute }); } });
+		const refused = (searched: boolean, body = noZeroDataRetentionRoute(DEFAULT_IMAGE_MODEL)) => setup(0.5, { searched: async () => searched, generate: async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body }); } });
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		await expect(refused(true).execute({ prompt: "A fox" })).resolves.toEqual({ posted: false, error: "No image can be made after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and the image model has none. Say so." });
 		await expect(refused(false).execute({ prompt: "A fox" })).resolves.toMatchObject({ posted: false, error: expect.stringContaining("couldn't be made just now") });
+		// The same code for a request from a country the image model isn't served in isn't about zero data retention.
+		await expect(refused(true, noRouteInCountry(DEFAULT_IMAGE_MODEL)).execute({ prompt: "A fox" })).resolves.toMatchObject({ posted: false, error: expect.stringContaining("couldn't be made just now") });
 		vi.restoreAllMocks();
 	});
 

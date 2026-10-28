@@ -1,5 +1,5 @@
 import type { AgentTool } from "@phaseo/agent-sdk";
-import { classifyTurnError, TURN_MAX_COST_USD, type AskOutput, type TurnErrorKind } from "./agent";
+import { classifyTurnError, isAutoModel, TURN_MAX_COST_USD, type AskOutput, type TurnErrorKind } from "./agent";
 import type { Installation } from "./installations";
 import { allowedModels, modelChoiceOn, modelNames, type AllowedModel } from "./model-choice";
 import type { Db } from "./supabase";
@@ -17,7 +17,9 @@ import { ToolInputError } from "./usage-tools";
 // spend, so the agent stops being able to ask once too little is left to finish
 // its answer. Consults run one at a time, so each sees what the last one cost.
 // Once the answer has searched Slack, a consult goes only to providers that keep
-// no data (agent.ts), and a model without one can't be asked.
+// no data (agent.ts), and a model without one can't be asked. Nor can Auto: the
+// gateway's auto router sends the prompt to a model of its own, without that
+// promise, to choose one, so the consult is refused before it is sent.
 
 export const ASK_MODEL_TOOL_ID = "ask_model";
 /** Consults an answer may make, including ones that failed. */
@@ -44,7 +46,8 @@ export type AskModelOptions = {
 	/**
 	 * Whether the answer has searched Slack (searchedThisAnswer). Asked as each
 	 * consult is sent: from the first search on, it goes only to providers that
-	 * keep no data, and a model none of whose providers do can't be asked.
+	 * keep no data, and a model none of whose providers do can't be asked. Auto
+	 * isn't asked at all (autoAfterSearchText).
 	 */
 	searched?: () => Promise<boolean>;
 	/** What the answer may still spend: its limit less the agent's own spend and the consults so far. */
@@ -76,6 +79,11 @@ export function consultErrorText(kind: TurnErrorKind, name: string): string {
 		case "failed":
 			return `Asking ${name} failed.`;
 	}
+}
+
+/** Why Auto can't be asked once the answer has searched Slack, for the agent to pass on. */
+export function autoAfterSearchText(name: string): string {
+	return `${name} can't be asked after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and ${name} picks a model for each request and can't promise one. Answer without it, or ask another model, and say so if they asked for it.`;
 }
 
 function usd(value: number): number {
@@ -120,6 +128,8 @@ export function askModelTool(options: AskModelOptions): AgentTool<any, any> {
 			const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
 			if (!prompt) throw new ToolInputError("prompt must not be empty");
 			if (prompt.length > MAX_PROMPT_CHARS) throw new ToolInputError(`prompt must be at most ${MAX_PROMPT_CHARS.toLocaleString("en-US")} characters`);
+			// Never sent, so not a consult. If it can't be told whether the answer has searched, it is refused all the same.
+			if (isAutoModel(model.id) && options.searched && await options.searched().catch(() => true)) throw new Error(autoAfterSearchText(model.name));
 			if (started >= MAX_CONSULTS) throw new Error(`You have already asked other models ${MAX_CONSULTS} times for this answer, the most allowed. Answer with what you have.`);
 			started += 1;
 			// One at a time: the budget check below sees what the consult before it cost.

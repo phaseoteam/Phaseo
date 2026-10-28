@@ -12,7 +12,7 @@ import { MEMORY_TOOL_IDS, SKILL_TOOL_IDS } from "../src/memory";
 import { SCHEDULE_TOOL_IDS } from "../src/schedules";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
-	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
+	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, noZeroDataRetentionRoute, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
 	type SlackCall, type TestWorld,
 } from "./fakes";
 
@@ -1867,7 +1867,7 @@ describe("Slack search", () => {
 	it("sends every model request from the first search on only to providers that keep no data: its own and the models it asks", async () => {
 		await install({ model: ZDR_MODEL, bot_scopes: SEARCH_SCOPES, model_choice_enabled: true, allowed_models: [ZDR_MODEL, "anthropic/claude-test"] });
 		world.slack.searchResponse = RESPONSE;
-		const noZdrRoute = { error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention." }, code: "model_region_unavailable" };
+		const noZdrRoute = noZeroDataRetentionRoute("anthropic/claude-test");
 		const flags: Array<[string, boolean]> = [];
 		const consults: unknown[] = [];
 		const agent = new ScriptedAgent(async (request, hooks) => {
@@ -1899,7 +1899,7 @@ describe("Slack search", () => {
 	it("ends the answer saying why, and counts what it cost, when no provider that keeps no data can answer after a search", async () => {
 		await install({ model: ZDR_MODEL, bot_scopes: SEARCH_SCOPES });
 		world.slack.searchResponse = RESPONSE;
-		const body = { error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention.", type: "permission_error" }, code: "model_region_unavailable" };
+		const body = noZeroDataRetentionRoute(ZDR_MODEL);
 		const agent = new ScriptedAgent(async (request, hooks) => {
 			hooks.onCost?.(0.004);
 			await callTool(request, "search_slack", { query: "launch plan" });
@@ -1918,6 +1918,32 @@ describe("Slack search", () => {
 		expect(written).toContain("I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model.");
 		expect(written).not.toContain("Sorry, something went wrong");
 		expect(stored(turn)).not.toContain(SNIPPET);
+	});
+
+	it("never asks Auto after a search, and offers search with a route that takes the workspace's own provider key when it has one", async () => {
+		// The only route of this model keeps no data but takes only the workspace's own key for its provider.
+		catalogueRoute("acme/byok-zdr", "byok-cloud", { credential_mode: "byok_only" });
+		await install({ model: "acme/byok-zdr", bot_scopes: SEARCH_SCOPES, model_choice_enabled: true, allowed_models: ["acme/byok-zdr", "phaseo/auto"] });
+		world.slack.searchResponse = RESPONSE;
+		const consults: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (request.tools.some((tool) => tool.id === "search_slack")) {
+				await callTool(request, "search_slack", { query: "launch plan" });
+				consults.push(await Promise.resolve(callTool(request, "ask_model", { model: "phaseo/auto", prompt: "Summarise the launch plan." })).catch((caught: Error) => caught.message));
+			}
+			await hooks.onText("It ships on Friday.");
+			return answer("acme/byok-zdr");
+		}, async () => ({ text: "Yes.", costUsd: 0.01 }));
+		await runTurn(deps(agent), await startTurn({ ...DIRECT, actionToken: TOKEN }), step);
+		expect(agent.requests.at(-1)!.tools.map((tool) => tool.id)).not.toContain("search_slack");
+		expect(agent.requests.at(-1)!.instructions).toContain("You can't search Slack messages with");
+
+		(world.db.tables.byok_keys ??= []).push({ id: "byok_1", workspace_id: WORKSPACE_ID, provider_id: "byok-cloud", enabled: true });
+		await expect(runTurn(deps(agent), await startTurn({ ...DIRECT, actionToken: TOKEN }), step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests.at(-1)!.tools.map((tool) => tool.id)).toContain("search_slack");
+		expect(consults).toEqual([expect.stringMatching(/^Auto can't be asked after a Slack search: .* Auto picks a model for each request and can't promise one\./)]);
+		// It never reached the gateway.
+		expect(agent.asks).toEqual([]);
 	});
 
 	it("searches as the person and keeps nothing it found: not in step outputs, working memory, the coordinator or the Workflow's payload", async () => {

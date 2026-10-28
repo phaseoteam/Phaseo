@@ -1,10 +1,11 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
 import {
-	classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
+	AutoAfterSearchError, classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
 	type AgentTurnRequest, type AskRequest, type PausedRun,
 } from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
+import { noRouteInCountry, noZeroDataRetentionRoute } from "./fakes";
 
 function sse(events: unknown[]): Response {
 	return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "Content-Type": "text/event-stream" } });
@@ -430,11 +431,7 @@ describe("files and images", () => {
 });
 
 describe("after a Slack search", () => {
-	/** The 403 the gateway sends when no route of the model meets require_zero_data_retention (pipeline/execute/guards.ts). */
-	const NO_ZDR_ROUTE = {
-		error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention.", type: "permission_error", param: null },
-		code: "model_region_unavailable", error_type: "user", error_origin: "user", description: "This model has no provider that offers zero data retention.",
-	};
+	const NO_ZDR_ROUTE = noZeroDataRetentionRoute();
 
 	it("sends every request from the first search on only to providers that keep no data, and none before it", async () => {
 		const bodies: Array<Record<string, any>> = [];
@@ -447,7 +444,8 @@ describe("after a Slack search", () => {
 			return sse([COMPLETED]);
 		});
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
-		await runner.run(request({ tools: [search], zeroDataRetention: async () => { asked.push(searched); return searched; } }), { onText: async () => undefined, onStep: async () => undefined });
+		// Search is never offered with Auto (zeroRetentionModels).
+		await runner.run(request({ model: "openai/gpt-test", tools: [search], zeroDataRetention: async () => { asked.push(searched); return searched; } }), { onText: async () => undefined, onStep: async () => undefined });
 		expect(bodies).toHaveLength(2);
 		// The first request went before the search; the one that carries its results, and any after, keep no data.
 		expect(bodies[0]).not.toHaveProperty("provider");
@@ -507,8 +505,55 @@ describe("after a Slack search", () => {
 		expect(classifyTurnError(refusal, "openai/gpt-test")).toBe("failed");
 		// Other refusals after a search are what they always were.
 		expect(classifyTurnError(new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }), "openai/gpt-test", true)).toBe("no_credits");
+		// The gateway's own field for it, which its public error body doesn't carry today, is enough too.
+		const named = { error: { code: "model_region_unavailable", message: "No provider for this model meets this request's residency requirements." }, code: "model_region_unavailable", unmet_requirements: { zero_data_retention: true } };
+		expect(classifyTurnError(new AgentGatewayError({ status: 403, statusText: "Forbidden", body: named }), "openai/gpt-test", true)).toBe("search_needs_zdr");
 		expect(turnErrorText("search_needs_zdr")).toBe("I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model. An admin can choose a model that keeps no data in Phaseo settings.");
 		expect(turnErrorText("search_needs_zdr", true)).toContain("none could answer with the model you chose for this message. Ask again with a model that keeps no data");
 		expect(turnErrorText("search_needs_zdr")).not.toMatch(/region|guardrail|policy/i);
+	});
+
+	it("says no provider kept no data only when the gateway says that is what no route met", () => {
+		const forbidden = (body: Record<string, unknown>) => new AgentGatewayError({ status: 403, statusText: "Forbidden", body });
+		// The same code for a request from a country none of the model's routes serves.
+		expect(classifyTurnError(forbidden(noRouteInCountry()), "openai/gpt-test", true)).toBe("failed");
+		// Or with no diagnostics at all.
+		expect(classifyTurnError(forbidden({ error: { code: "model_region_unavailable" }, code: "model_region_unavailable" }), "openai/gpt-test", true)).toBe("failed");
+		// A residency gate that dropped routes for their region only.
+		const region = noZeroDataRetentionRoute() as { routing_diagnostics: { filterStages: Array<Record<string, any>> } };
+		const regional = structuredClone(region);
+		regional.routing_diagnostics.filterStages[1].droppedProviders = [{ providerId: "us-cloud", reason: "execution_region_mismatch" }];
+		expect(classifyTurnError(forbidden(regional), "openai/gpt-test", true)).toBe("failed");
+		// A route that needs the workspace's own provider key: its body doesn't say zero data retention left only such routes.
+		const byok = new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: { code: "byok_credentials_required", message: "The selected route requires your own provider credential." }, code: "byok_credentials_required", error_type: "user" } });
+		expect(classifyTurnError(byok, "openai/gpt-test", true)).toBe(classifyTurnError(byok, "openai/gpt-test"));
+		expect(classifyTurnError(byok, "openai/gpt-test", true)).not.toBe("search_needs_zdr");
+	});
+
+	it("never sends a model request for Auto, and says why", async () => {
+		const sent: string[] = [];
+		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(await (input as Request).text()); return new Response("{}"); });
+		let searched = false;
+		const wrapped = withZeroDataRetention(passed as unknown as typeof fetch, async () => searched);
+		// Before a search, Auto is asked like any model.
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "phaseo/auto", input: "hello" }) });
+		searched = true;
+		for (const model of ["phaseo/auto", " Phaseo/Auto "]) {
+			await expect(wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model, input: "what the search found" }) })).rejects.toBeInstanceOf(AutoAfterSearchError);
+		}
+		expect(sent).toHaveLength(1);
+		expect(sent.join("")).not.toContain("what the search found");
+		expect(classifyTurnError(new AutoAfterSearchError(), "phaseo/auto", true)).toBe("search_needs_zdr");
+		expect(classifyTurnError(new Error("run failed", { cause: new AutoAfterSearchError() }), "phaseo/auto", true)).toBe("search_needs_zdr");
+
+		// Through the runner too: the agent's own steps and the models it asks.
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const run = runner.run(request({ model: "phaseo/auto", zeroDataRetention: async () => true }), { onText: async () => undefined, onStep: async () => undefined });
+		await expect(run.catch((error: unknown) => classifyTurnError(error, "phaseo/auto", true))).resolves.toBe("search_needs_zdr");
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		await expect(runner.ask({ gatewayKey, endUser, sessionId, labels, signal, model: "phaseo/auto", instructions: "Answer.", prompt: "Right?", webTools: false, maxOutputTokens: 100, zeroDataRetention: async () => true }))
+			.rejects.toSatisfy((error: unknown) => classifyTurnError(error, "phaseo/auto", true) === "search_needs_zdr");
+		expect(fetchImpl).not.toHaveBeenCalled();
 	});
 });

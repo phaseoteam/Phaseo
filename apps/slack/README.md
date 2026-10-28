@@ -263,14 +263,27 @@ doesn't otherwise:
   for one);
 - the model answering (the installation's, or the one chosen for the message)
   has a route the gateway routes to (enabled, `active` or `degraded`, in
-  effect) whose provider keeps no data (`v2_providers.zero_data_retention`) and
-  passes the guardrail (`active`, a confirmed policy of not training on prompts):
-  `zeroRetentionModels`, two catalogue reads. Auto never does: the gateway's
-  auto router picks a model without regard to `require_zero_data_retention`,
-  and a 403 doesn't make it try another. Otherwise (`needs_zdr`) the
-  instructions say search isn't available with this model, and name the allowed
-  models that keep no data when model choice is on (`with <model>:`), or say an
-  admin can choose one.
+  effect, from an `active` provider) that keeps no data, passes the guardrail (a
+  confirmed policy of not training on prompts) and that the agent's key can
+  use: `zeroRetentionModels`. It reads each route's policy as the gateway does
+  (`resolveEffectiveDataPolicy`): the provider's (`v2_providers`), unless the
+  route's `text.generate` (else `responses`) capability declares its own in
+  `v2_effective_route_capabilities.params.data_policy`, which can promise zero
+  data retention the provider doesn't, or withdraw it (a catalogue's
+  declaration only until its `validUntil`). A route that takes only the
+  workspace's own provider key (`credential_mode = 'byok_only'` on the provider
+  or the route) counts only when the workspace has an enabled `byok_keys` row
+  for that provider. That is the routes, then the providers, the capabilities
+  and the keys together. Since the gateway enforces zero data retention on each
+  request anyway, it errs towards offering search: capabilities that can't be
+  read leave the providers' policies, and keys that can't be read leave the
+  routes Phaseo's credentials serve; only routes or providers that can't be read
+  mean no search. Auto never qualifies: the gateway's auto router picks a model
+  without regard to `require_zero_data_retention` (and its classifier request
+  goes without it), and a 403 doesn't make it try another. Otherwise
+  (`needs_zdr`) the instructions say search isn't available with this model,
+  and name the allowed models that keep no data when model choice is on
+  (`with <model>:`), or say an admin can choose one.
 
 Slack's terms forbid storing or copying what the API returns, so nothing of the
 results outlives the run that asked for them: they go to the model with its
@@ -288,10 +301,24 @@ run's after a question, from its first request. Requests before the first
 search are unchanged, and a Compare never searches. The same requests also go
 without the gateway's web search and web fetch tools (`phaseo:web_*` are taken
 out of `tools`), so nothing found can leave in a search query or a fetched URL;
-the instructions tell the model to search the web first if it needs both. When the gateway still finds
-no such route (a 403 `model_region_unavailable`), the answer ends with
-`search_needs_zdr`'s message and its cost so far counts; a refused consult or
-image tells the model that model can't be used after a Slack search.
+the instructions tell the model to search the web first if it needs both.
+
+No request for Auto is sent after a search: the gateway's auto router sends
+the prompt to a classifier model of its own, without the flag, to choose a
+model. `ask_model` refuses Auto before sending anything (not counted as a
+consult), and `withZeroDataRetention` refuses any model request for Auto as a
+backstop (`AutoAfterSearchError`). When the gateway still finds no route that
+keeps no data, it refuses with a 403 `model_region_unavailable`; the answer
+ends with `search_needs_zdr`'s message and its cost so far counts, and a
+refused consult or image tells the model that model can't be used after a Slack
+search. That code also covers a request from a country no route serves, or a
+region no route meets, so `classifyTurnError` says `search_needs_zdr` only when
+the error says zero data retention is what no route met: the residency gate's
+dropped routes in `routing_diagnostics` with `zero_data_retention_unsupported`,
+or `unmet_requirements.zero_data_retention` (which the gateway's public error
+body drops today). Any other refusal, a `byok_credentials_required` too (its
+body doesn't say why only routes needing the workspace's key were left), reads
+as it would without a search.
 
 While the answer is being written, the thread coordinator holds what any answer
 holds so a retried step can finish it (the reply so far, tool notes, the titles

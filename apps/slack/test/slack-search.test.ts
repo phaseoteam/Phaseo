@@ -91,13 +91,34 @@ describe("Slack search: when it's offered", () => {
 
 describe("Slack search: models that keep no data", () => {
 	const NOW = Date.UTC(2026, 9, 28, 12, 0, 0);
-	const PRIVATE = { status: "active", routing_enabled: true, zero_data_retention: true, data_policy_tier: "private", data_policy_confidence: "confirmed", prompt_training_policy: "no_train" };
+	const WORKSPACE = "ws_slack_test";
+	const PRIVATE = { status: "active", routing_enabled: true, credential_mode: "managed_and_byok", zero_data_retention: true, data_policy_tier: "private", data_policy_confidence: "confirmed", prompt_training_policy: "no_train" };
+	/** A capability's own policy that keeps no data, as v2_effective_route_capabilities gives it in params.data_policy. */
+	const KEEPS_NOTHING = { tier: "private", confidence: "confirmed", zeroDataRetention: true };
 
-	/** A catalogue with `model`'s routes, each to its own provider with the fields given. */
-	function catalogue(entries: Array<{ model: string; provider: string; route?: Record<string, unknown>; fields?: Record<string, unknown> }>): FakeDb {
+	/**
+	 * A catalogue with `model`'s routes, each to its own provider with the fields given, and the capabilities
+	 * (text.generate unless given) whose data_policy each declares.
+	 */
+	function catalogue(entries: Array<{ model: string; provider: string; route?: Record<string, unknown>; fields?: Record<string, unknown>; capabilities?: Array<{ capability_id?: string; status?: string; data_policy: Record<string, unknown> }> }>): FakeDb {
 		const db = new FakeDb();
-		db.tables.v2_model_provider_routes = entries.map((entry) => ({ model_slug: entry.model, provider_slug: entry.provider, routing_enabled: true, status: "active", effective_from: null, effective_to: null, ...entry.route }));
+		const id = (entry: { model: string; provider: string }) => `${entry.provider}:${entry.model}`;
+		db.tables.v2_model_provider_routes = entries.map((entry) => ({ model_slug: entry.model, provider_slug: entry.provider, provider_model_id: id(entry), credential_mode: "managed_and_byok", routing_enabled: true, status: "active", effective_from: null, effective_to: null, ...entry.route }));
 		db.tables.v2_providers = entries.map((entry) => ({ provider_slug: entry.provider, ...PRIVATE, ...entry.fields }));
+		db.tables.v2_effective_route_capabilities = entries.flatMap((entry) => (entry.capabilities ?? []).map(({ data_policy, ...capability }) => ({
+			provider_model_id: id(entry), capability_id: "text.generate", status: "active", ...capability, params: { reasoning: { supported: true }, data_policy },
+		})));
+		db.tables.byok_keys = [];
+		return db;
+	}
+
+	/** The db, with reads of `table` failing as if Postgres were unavailable. */
+	function failing(db: FakeDb, table: string): FakeDb {
+		const select = db.select.bind(db);
+		db.select = (async (from: string, query: Record<string, string>) => {
+			if (from === table) throw new DbError(503, null);
+			return select(from, query);
+		}) as FakeDb["select"];
 		return db;
 	}
 
@@ -124,19 +145,80 @@ describe("Slack search: models that keep no data", () => {
 			{ model: "acme/degraded", provider: "zdr-degraded", route: { status: "degraded" } },
 		]);
 		const all = db.tables.v2_model_provider_routes.map((route) => String(route.model_slug));
-		await expect(zeroRetentionModels(db, all, NOW)).resolves.toEqual(new Set(["openai/gpt-zdr", "acme/two-routes", "acme/no-tier", "acme/degraded"]));
-		// Two reads: the models' routes, then their providers that keep no data.
-		expect(db.queries.map((query) => query.table)).toEqual(["v2_model_provider_routes", "v2_providers"]);
-		expect(db.queries[1].query.zero_data_retention).toBe("eq.true");
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["openai/gpt-zdr", "acme/two-routes", "acme/no-tier", "acme/degraded"]));
+		// The models' routes, then together their providers, their capabilities' policies and the workspace's provider keys.
+		expect(db.queries.map((query) => query.table)).toEqual(["v2_model_provider_routes", "v2_providers", "v2_effective_route_capabilities", "byok_keys"]);
+		// Every provider: a capability can keep no data where its provider doesn't.
+		expect(db.queries[1].query).not.toHaveProperty("zero_data_retention");
+		expect(db.queries[2].query).toMatchObject({ capability_id: 'in.("text.generate","responses")', status: 'in.("active","deranked","deranked_lvl1","deranked_lvl2","deranked_lvl3")' });
+		expect(db.queries[3].query).toMatchObject({ workspace_id: `eq.${WORKSPACE}`, enabled: "eq.true" });
 	});
 
-	it("never include Auto, and are none when the catalogue can't be read", async () => {
+	it("read a route's policy as the gateway does: its capability's own, where it declares one, ahead of its provider's", async () => {
+		const db = catalogue([
+			// The provider keeps logs, but this model's capability is verified to keep nothing.
+			{ model: "acme/capability-zdr", provider: "logs-cloud", fields: { zero_data_retention: false, data_policy_tier: "logs" }, capabilities: [{ data_policy: KEEPS_NOTHING }] },
+			// The same promise made only for the Responses capability.
+			{ model: "acme/responses-zdr", provider: "logs-two", fields: { zero_data_retention: false, data_policy_tier: "logs" }, capabilities: [{ capability_id: "responses", data_policy: KEEPS_NOTHING }] },
+			// text.generate's declaration comes first: here it withdraws what responses' promises.
+			{ model: "acme/text-first", provider: "logs-three", fields: { zero_data_retention: false }, capabilities: [{ capability_id: "responses", data_policy: KEEPS_NOTHING }, { data_policy: { ...KEEPS_NOTHING, zeroDataRetention: false } }] },
+			// The provider keeps no data, but this capability isn't eligible.
+			{ model: "acme/withdrawn", provider: "zdr-withdrawn", capabilities: [{ data_policy: { tier: "private", confidence: "confirmed", zdrEligibility: "ineligible" } }] },
+			// A catalogue's declaration counts only until its validUntil.
+			{ model: "acme/catalogue-current", provider: "logs-four", fields: { zero_data_retention: false }, capabilities: [{ data_policy: { ...KEEPS_NOTHING, catalogManaged: true, validUntil: "2026-10-29T00:00:00Z" } }] },
+			{ model: "acme/catalogue-expired", provider: "zdr-expired", capabilities: [{ data_policy: { ...KEEPS_NOTHING, catalogManaged: true, validUntil: "2026-10-28T11:00:00Z" } }] },
+			// A declaration without a confidence leaves it unknown, so the guardrail drops the route.
+			{ model: "acme/no-confidence", provider: "logs-five", fields: { zero_data_retention: false }, capabilities: [{ data_policy: { zeroDataRetention: true } }] },
+			// A capability the gateway doesn't route to declares nothing.
+			{ model: "acme/disabled-capability", provider: "logs-six", fields: { zero_data_retention: false }, capabilities: [{ status: "disabled", data_policy: KEEPS_NOTHING }] },
+			// One that declares nothing about retention keeps its provider's.
+			{ model: "acme/inherits", provider: "zdr-inherits", capabilities: [{ data_policy: { tier: "private", confidence: "confirmed" } }] },
+		]);
+		const all = db.tables.v2_model_provider_routes.map((route) => String(route.model_slug));
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/capability-zdr", "acme/responses-zdr", "acme/catalogue-current", "acme/inherits"]));
+
+		// Policies that can't be read leave the providers', erring towards offering search: the gateway still enforces it.
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		await expect(zeroRetentionModels(failing(db, "v2_effective_route_capabilities"), all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/withdrawn", "acme/catalogue-expired", "acme/inherits"]));
+		expect(warn).toHaveBeenCalledWith("[slack-agent] route data policies not read");
+		warn.mockRestore();
+	});
+
+	it("count a route that takes only the workspace's own provider key when the workspace has one", async () => {
+		const db = catalogue([
+			{ model: "acme/byok-provider", provider: "byok-cloud", fields: { credential_mode: "byok_only" } },
+			{ model: "acme/byok-route", provider: "zdr-route", route: { credential_mode: "byok_only" } },
+			{ model: "acme/managed", provider: "zdr-managed" },
+		]);
+		const all = db.tables.v2_model_provider_routes.map((route) => String(route.model_slug));
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/managed"]));
+		// Another workspace's key, or a disabled one, isn't the agent's.
+		db.tables.byok_keys = [
+			{ id: "byok_1", workspace_id: "ws_other", provider_id: "byok-cloud", enabled: true },
+			{ id: "byok_2", workspace_id: WORKSPACE, provider_id: "zdr-route", enabled: false },
+		];
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/managed"]));
+		db.tables.byok_keys.push(
+			{ id: "byok_3", workspace_id: WORKSPACE, provider_id: "byok-cloud", enabled: true },
+			{ id: "byok_4", workspace_id: WORKSPACE, provider_id: "zdr-route", enabled: true },
+		);
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(all));
+		// Keys that can't be read leave the routes Phaseo's own credentials serve.
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		await expect(zeroRetentionModels(failing(db, "byok_keys"), all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/managed"]));
+		expect(warn).toHaveBeenCalledWith("[slack-agent] provider keys not read");
+		warn.mockRestore();
+	});
+
+	it("never include Auto, and are none when the routes or providers can't be read", async () => {
 		const db = catalogue([{ model: "openai/gpt-zdr", provider: "zdr-cloud" }]);
-		await expect(zeroRetentionModels(db, ["phaseo/auto"], NOW)).resolves.toEqual(new Set());
+		await expect(zeroRetentionModels(db, ["phaseo/auto"], NOW, WORKSPACE)).resolves.toEqual(new Set());
 		expect(db.queries).toEqual([]);
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		await expect(zeroRetentionModels(failing(catalogue([{ model: "openai/gpt-zdr", provider: "zdr-cloud" }]), "v2_providers"), ["openai/gpt-zdr"], NOW, WORKSPACE)).resolves.toEqual(new Set());
 		db.select = async () => { throw new DbError(503, null); };
-		await expect(zeroRetentionModels(db, ["openai/gpt-zdr"], NOW)).resolves.toEqual(new Set());
+		await expect(zeroRetentionModels(db, ["openai/gpt-zdr"], NOW, WORKSPACE)).resolves.toEqual(new Set());
+		vi.restoreAllMocks();
 	});
 
 	it("are explained to the model when its own can't search, with the models that could", () => {

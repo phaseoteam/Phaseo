@@ -2,10 +2,11 @@ import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it } from "vitest";
 import type { AskOutput } from "../src/agent";
 import { askModelTool, askModelTools, CONSULT_MAX_OUTPUT_TOKENS, MAX_CONSULTS, type AskModelOptions, type Consult } from "../src/ask-model";
-import { FakeDb } from "./fakes";
+import { FakeDb, noRouteInCountry, noZeroDataRetentionRoute } from "./fakes";
 
 const LUNA = { id: "openai/gpt-6-luna", name: "GPT-6 Luna" };
 const OPUS = { id: "anthropic/claude-opus-5-5", name: "Claude Opus 5.5" };
+const AUTO = { id: "phaseo/auto", name: "Auto" };
 
 type Asked = Parameters<AskModelOptions["ask"]>[0];
 
@@ -107,9 +108,9 @@ describe("ask_model", () => {
 	});
 
 	it("after a Slack search, asks only providers that keep no data, and says a model without one can't be used", async () => {
-		const noZdrRoute = { error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention." }, code: "model_region_unavailable" };
 		let searched = false;
-		const { asked, call } = setup({ searched: async () => searched }, async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body: noZdrRoute }); });
+		let body = noZeroDataRetentionRoute(OPUS.id);
+		const { asked, call } = setup({ searched: async () => searched }, async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body }); });
 		searched = true;
 		await expect(call({ model: OPUS.id, prompt: "a" })).rejects.toThrow(
 			"Claude Opus 5.5 can't be used after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and Claude Opus 5.5 has none. Answer without it, and say so if they asked for it.",
@@ -118,6 +119,28 @@ describe("ask_model", () => {
 		await expect(asked[0].zeroDataRetention!()).resolves.toBe(true);
 		searched = false;
 		await expect(asked[0].zeroDataRetention!()).resolves.toBe(false);
+		// The same code for a request from a country the model isn't served in isn't about zero data retention.
+		searched = true;
+		body = noRouteInCountry(OPUS.id);
+		await expect(call({ model: OPUS.id, prompt: "a" })).rejects.toThrow(/^Asking Claude Opus 5\.5 failed\.$/);
+	});
+
+	it("never asks Auto after a Slack search: its router would send the prompt to a model of its own without that promise", async () => {
+		let searched = false;
+		const { asked, consults, notes, call } = setup({ models: [LUNA, OPUS, AUTO], searched: async () => searched });
+		await expect(call({ model: AUTO.id, prompt: "Before the search" })).resolves.toMatchObject({ model: AUTO.id, asks_left: 2 });
+		searched = true;
+		const refusal = "Auto can't be asked after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and Auto picks a model for each request and can't promise one. Answer without it, or ask another model, and say so if they asked for it.";
+		await expect(call({ model: "auto", prompt: "What the search found" })).rejects.toThrow(refusal);
+		// Never sent, so not a consult: the next one still has its turn.
+		expect(asked.map((request) => request.prompt)).toEqual(["Before the search"]);
+		expect(consults).toHaveLength(1);
+		expect(notes).toEqual(["ask_model phaseo/auto"]);
+		await expect(call({ model: OPUS.id, prompt: "a" })).resolves.toMatchObject({ asks_left: 1 });
+		// When it can't be told whether the answer has searched, Auto is refused all the same.
+		const unsure = setup({ models: [AUTO], searched: async () => { throw new Error("coordinator unavailable"); } });
+		await expect(unsure.call({ model: AUTO.id, prompt: "a" })).rejects.toThrow(refusal);
+		expect(unsure.asked).toEqual([]);
 	});
 
 	it("rejects models it can't ask and empty prompts without asking", async () => {
