@@ -3,6 +3,7 @@
 // can't be run from inside the archive. Run `pnpm run build` first, or `pnpm run package`, which does both.
 // Usage: node scripts/package.mjs [output folder]
 import { createPackageWithOptions } from "@electron/asar";
+import { rcedit } from "rcedit";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
@@ -28,6 +29,7 @@ await mkdir(stage, { recursive: true });
 
 // Vite bundles everything but Electron and the Agent SDK into dist, so those two are all the app needs at run time.
 await cp(path.join(root, "dist"), path.join(stage, "dist"), { recursive: true });
+await cp(path.join(root, "assets/icon.png"), path.join(stage, "assets/icon.png"));
 await writeFile(path.join(stage, "package.json"), JSON.stringify({ name: own.name, productName: name, version: own.version, description: own.description, author: own.author, type: "module", main: own.main }, null, 2));
 const sdk = await realpath(path.join(root, "node_modules/@anthropic-ai/claude-agent-sdk"));
 const binary = path.dirname(createRequire(path.join(sdk, "package.json")).resolve(`@anthropic-ai/claude-agent-sdk-${platform}/package.json`));
@@ -41,7 +43,13 @@ await cp(electron, app, { recursive: true, dereference: true });
 const resources = process.platform === "darwin" ? path.join(app, "Electron.app/Contents/Resources") : path.join(app, "resources");
 await rm(path.join(resources, "default_app.asar"), { force: true });
 await createPackageWithOptions(stage, path.join(resources, "app.asar"), { unpackDir: `node_modules/@anthropic-ai/claude-agent-sdk-${platform}` });
-if (process.platform === "win32") await rename(path.join(app, "electron.exe"), path.join(app, `${name}.exe`));
+// The icon Windows shows for the program and the macOS app bundle's; the window's own comes from assets.
+if (process.platform === "win32") {
+	const exe = path.join(app, `${name}.exe`);
+	await rename(path.join(app, "electron.exe"), exe);
+	await rcedit(exe, { icon: path.join(root, "assets/icon.ico"), "product-version": own.version, "file-version": own.version, "version-string": { ProductName: name, FileDescription: name, CompanyName: "Phaseo", OriginalFilename: `${name}.exe` } });
+}
+if (process.platform === "darwin") await cp(path.join(root, "assets/icon.icns"), path.join(resources, "electron.icns"));
 await rm(stage, { recursive: true, force: true });
 
 await writeFile(marker, "Made by apps/factory/scripts/package.mjs. Packaging again empties this folder.\n");

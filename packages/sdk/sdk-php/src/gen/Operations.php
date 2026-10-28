@@ -3,6 +3,13 @@ declare(strict_types=1);
 
 namespace Phaseo\Gen;
 
+function acceptWorkspaceInvite(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/invites/accept";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function addGuardrailKeys(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -709,6 +716,13 @@ function getApiKey(Client $client, ?array $path = null, ?array $query = null, ?a
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getAutoRoutingSettings(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/routing/auto";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -792,6 +806,13 @@ function getManagementKey(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getMe(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/me";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getMusicGeneration(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -805,6 +826,13 @@ function getMusicGenerationAlias(Client $client, ?array $path = null, ?array $qu
 	$path = $path ?? [];
 	if (in_array((string)($path["music_id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/music/generations/" . rawurlencode((string)($path["music_id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getMyProfile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/me/profile";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -891,6 +919,13 @@ function getRateLimitPolicy(Client $client, ?array $path = null, ?array $query =
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/rate-limits/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getRateLimitTier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/tier";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1021,6 +1056,13 @@ function listApiKeys(Client $client, ?array $path = null, ?array $query = null, 
 {
 	$path = $path ?? [];
 	$resolvedPath = "/keys";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listAuthorizedApps(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/me/authorized-apps";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1205,6 +1247,13 @@ function listModels(Client $client, ?array $path = null, ?array $query = null, ?
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listMyJoinRequests(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/invites/requests";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listOAuthClients(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1317,6 +1366,13 @@ function listSpendRules(Client $client, ?array $path = null, ?array $query = nul
 {
 	$path = $path ?? [];
 	$resolvedPath = "/spend-rules";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listSuccessorReplacements(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/routing/successor/replacements";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1487,6 +1543,21 @@ function publishPresetVersion(Client $client, ?array $path = null, ?array $query
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function raiseRateLimitTier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/rate-limits/tier/raise";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function reduceAuthorizedAppScopes(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/me/authorized-apps/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
 function regenerateOAuthClientSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1520,6 +1591,13 @@ function removeGuardrailMembers(Client $client, ?array $path = null, ?array $que
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function removeSuccessorReplacement(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/routing/successor/replacements";
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function removeWorkspaceMembers(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1549,6 +1627,13 @@ function replaceGuardrailKeys(Client $client, ?array $path = null, ?array $query
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/guardrails/" . rawurlencode((string)($path["id"] ?? "")) . "/keys";
 	return $client->request("PUT", $resolvedPath, $query, $headers, $body);
+}
+
+function reportLeakedKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/security/report-leaked-key";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
 function retrieveBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1631,6 +1716,14 @@ function retrieveFileContent(Client $client, ?array $path = null, ?array $query 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function revokeAuthorizedApp(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/me/authorized-apps/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function revokeWorkspaceScimToken(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1663,6 +1756,21 @@ function rotateWorkspaceNotificationDestinationSecret(Client $client, ?array $pa
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function saveSuccessorReplacement(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/routing/successor/replacements";
+	return $client->request("PUT", $resolvedPath, $query, $headers, $body);
+}
+
+function sendObservabilityDestinationSample(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/observability/destinations/" . rawurlencode((string)($path["id"] ?? "")) . "/sample";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function setPresetLabel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1686,6 +1794,21 @@ function summarizeGatewayFeedback(Client $client, ?array $path = null, ?array $q
 	$path = $path ?? [];
 	$resolvedPath = "/feedback/summary";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function testObservabilityDestination(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/observability/destinations/" . rawurlencode((string)($path["id"] ?? "")) . "/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function testObservabilityDestinationConfig(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/observability/destinations/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
 function testSpendRule(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
@@ -1724,6 +1847,13 @@ function updateApiKey(Client $client, ?array $path = null, ?array $query = null,
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/keys/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateAutoRoutingSettings(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/routing/auto";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1779,6 +1909,13 @@ function updateManagementKey(Client $client, ?array $path = null, ?array $query 
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/management-keys/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateMyProfile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/me/profile";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

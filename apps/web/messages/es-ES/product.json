@@ -1153,6 +1153,7 @@
 		"realtimeBillingOpenAI": "Eventos de uso de OpenAI",
 		"realtimeBillingXai": "Medidor de duración de xAI",
 		"realtimeBillingGoogle": "Metadatos de uso de Google",
+		"realtimeBillingProvider": "Uso de {provider}",
 		"selectRealtimeModel": "Selecciona un modelo en tiempo real",
 		"searchRealtimeModels": "Buscar modelos en tiempo real...",
 		"noRealtimeModels": "No se han encontrado modelos en tiempo real.",

@@ -67,8 +67,26 @@ it("retries derived reports after failure and only acknowledges a successful syn
 		single: async () => ({ data: { id: "request_1", created_at: "2026-09-11T10:00:00Z" }, error: null }) };
 	for (const method of ["select", "eq", "is", "order", "limit"]) query[method] = () => query;
 	mocks.db = { from: () => query, rpc };
-	await expect(syncRealtimeBillingReviewSummaries()).rejects.toThrow("temporary failure");
+	// A failed item is logged and left unacknowledged; the loop does not throw.
+	await expect(syncRealtimeBillingReviewSummaries()).resolves.toEqual({ synced: 0, failed: 1 });
 	expect(rpc).toHaveBeenCalledTimes(1);
-	await syncRealtimeBillingReviewSummaries();
+	await expect(syncRealtimeBillingReviewSummaries()).resolves.toEqual({ synced: 1, failed: 0 });
 	expect(rpc).toHaveBeenLastCalledWith("gateway_realtime_review_summary_synced", { p_session_id: "rt_test" });
+});
+
+it("keeps refreshing later reviews when one review fails", async () => {
+	const rpc = vi.fn(async () => ({ data: true, error: null }));
+	let reads = 0;
+	const query: any = { then: (resolve: any) => resolve({ data: [{ session_id: "rt_bad" }, { session_id: "rt_good" }], error: null }),
+		single: async () => (++reads === 1
+			? { data: null, error: { message: "read failed" } }
+			: { data: { session_id: "rt_good", model_id: "openai/gpt-live-1", status: "billing_unresolved", usage: completed(), metadata }, error: null }) };
+	for (const method of ["select", "eq", "lte", "order", "limit"]) query[method] = () => query;
+	mocks.db = { from: () => query, rpc };
+	const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+	try {
+		expect(await refreshRealtimeBillingReviews()).toBe(2);
+		expect(rpc).toHaveBeenCalledOnce();
+		expect(rpc.mock.calls[0]).toMatchObject(["gateway_realtime_review_evidence", { p_session_id: "rt_good" }]);
+	} finally { error.mockRestore(); }
 });

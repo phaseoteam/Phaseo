@@ -350,6 +350,13 @@ async function updateLoggingPolicy(req: Request) {
 	} catch (error) { return internalServerError("observability.logging_policy.update", error); }
 }
 
+export {
+	authorize as authorizeObservability,
+	config as destinationConfigMap,
+	pathId as destinationPathId,
+	validateEndpoint as validateDestinationEndpoint,
+};
+
 export const observabilityRoutes = new Hono<Env>();
 observabilityRoutes.get("/logging-policy", withRuntime(getLoggingPolicy));
 observabilityRoutes.patch("/logging-policy", withRuntime(updateLoggingPolicy));

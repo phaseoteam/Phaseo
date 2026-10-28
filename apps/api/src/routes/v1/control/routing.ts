@@ -12,6 +12,13 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
 import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import {
+	handleGetAutoRouting,
+	handleListSuccessorReplacements,
+	handleRemoveSuccessorReplacement,
+	handleSaveSuccessorReplacement,
+	handleUpdateAutoRouting,
+} from "./routing-preferences";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const ROUTE_COLUMNS = "id,workspace_id,name,slug,description,status,version,deployed_version,config,created_at,updated_at";
@@ -275,6 +282,11 @@ async function deleteRoute(req: Request) {
 
 export const routingRoutes = new Hono<Env>();
 
+routingRoutes.get("/auto", withRuntime(handleGetAutoRouting));
+routingRoutes.patch("/auto", withRuntime(handleUpdateAutoRouting));
+routingRoutes.get("/successor/replacements", withRuntime(handleListSuccessorReplacements));
+routingRoutes.put("/successor/replacements", withRuntime(handleSaveSuccessorReplacement));
+routingRoutes.delete("/successor/replacements", withRuntime(handleRemoveSuccessorReplacement));
 routingRoutes.get("/dynamic-routes", withRuntime(listRoutes));
 routingRoutes.post("/dynamic-routes", withRuntime(createRoute));
 routingRoutes.get("/dynamic-routes/:id", withRuntime(getRoute));

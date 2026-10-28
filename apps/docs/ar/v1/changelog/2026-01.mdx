@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- أُعيد تطوير البوابة مرة أخرى، مع إضافة دعم `/messages` المتوافق مع Anthropic.
-- حُدّثت بنية قاعدة البيانات وتجربة الموقع وأدوات ساحة التجربة واتجاه SDK لدعم توسع أوسع.
+- يتيح Chat على [phaseo.app/chat](https://phaseo.app/chat) التحدث مع نماذج البوابة وضبط معاملات الطلب وحفظ سجل المحادثات في متصفحك ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- يمكن للفرق اختيار طريقة اختيار البوابة للمزوّدين في **Settings -> Routing**: **Balanced** أو **Lowest cost** أو **Lowest latency** أو **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- تقدّر حاسبة الأسعار في Tools تكلفة الطلبات من عدد الرموز وتقارنها بين النماذج ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يقبل `POST /v1/messages` الطلبات بتنسيق Anthropic Messages، فتستطيع حزم Anthropic SDK استدعاء نماذج البوابة؛ راجع [إنشاء رسالة](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- يستخرج `POST /v1/ocr` النص من صورة تُرسل برابط URL أو بترميز base64؛ راجع [استخراج النص باستخدام OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- ينشئ `POST /v1/music/generate` مقطوعات موسيقية، ويعيد `GET /v1/music/generate/{id}` حالتها؛ راجع [إنشاء موسيقى](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- تضيف واجهة API للإدارة `GET /v1/credits` لرصيد الأرصدة و`GET /v1/activity` للطلبات الأخيرة و`/v1/provisioning/keys` لعرض المفاتيح وتحديثها وحذفها؛ راجع [الحصول على الأرصدة](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
 
 </div>
 

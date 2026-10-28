@@ -14,8 +14,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Product</p>
 
-- The gateway was overhauled again, including Anthropic-compatible `/messages` support.
-- Database architecture, website UX, playground tooling, and SDK direction were all refreshed for broader expansion.
+- Chat at [phaseo.app/chat](https://phaseo.app/chat) lets you talk to gateway models, tune request parameters and keep your chat history in your browser ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Teams can choose how the gateway picks providers in **Settings -> Routing**: **Balanced**, **Lowest cost**, **Lowest latency** or **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- A pricing calculator under Tools estimates request costs from token counts and compares them across models ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `POST /v1/messages` accepts requests in the Anthropic Messages format, so Anthropic SDKs can call gateway models; see [Create a message](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/ocr` extracts text from an image by URL or base64; see [Extract text with OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/music/generate` creates music tracks, and `GET /v1/music/generate/{id}` returns their status; see [Generate music](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- The management API adds `GET /v1/credits` for the credit balance, `GET /v1/activity` for recent requests and `/v1/provisioning/keys` to list, update and delete keys; see [Get credits](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
 
 </div>
 

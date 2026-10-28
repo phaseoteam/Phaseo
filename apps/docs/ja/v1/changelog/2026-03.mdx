@@ -23,6 +23,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月23日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- チャットルームで、テキストモデルに加えて音声、モデレーション、埋め込みのモデルを実行できるようになりました ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#157](https://github.com/phaseoteam/Phaseo/pull/157))。
+- 実験的なプロジェクトのための新しい場である Foundry が、1 つのプロンプトを複数のモデルに送り、回答を 1 つにまとめる LLM Council とともに公開されました ([#201](https://github.com/phaseoteam/Phaseo/pull/201))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- TypeScript と Python の SDK に加えて、Go、C#、Java、PHP、Ruby の SDK が利用可能になりました。いずれもバージョン `1.1.0` です ([#203](https://github.com/phaseoteam/Phaseo/pull/203), [#201](https://github.com/phaseoteam/Phaseo/pull/201))。
+- SDK `1.1.0` は、リクエストで非推奨または提供終了のモデルを指定すると警告を出し、モデルの型とルートのパスが API と一致するようになりました ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#203](https://github.com/phaseoteam/Phaseo/pull/203))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -41,8 +59,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">製品</p>
 
-- 新しい言語のSDKを公開し、TypeScriptとPythonのSDKを刷新するとともに、チャットルームをマルチモーダルに対応させました。
-- Foundryを公開し、LLM Councilを最初のFoundryプロジェクトとしました。SDK `1.1.0`では、モデルの提供状況とライフサイクルの警告をAPIに合わせました。
+- 新しい **Redeem** ページ（**Settings -> Credits** からリンク）で、プロモーションコードをクレジットに引き換えられます。請求書払いのチームは引き換えできません ([#188](https://github.com/phaseoteam/Phaseo/pull/188))。
+- アカウント設定の任意のステップでエラーが起きても、サインアップが失敗しなくなりました ([#187](https://github.com/phaseoteam/Phaseo/pull/187))。
 
 </div>
 
@@ -63,6 +81,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年3月18日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat では、アシスタントの各メッセージの上にモデル ID ではなくモデル名が表示され、その名前からモデルのページに移動できます ([#179](https://github.com/phaseoteam/Phaseo/pull/179))。
+- スマートフォンでは、ヘッダーのメニューが 1 つにまとまり、ナビゲーション、設定・クレジット・キーなどのアカウントリンク、ライト・ダーク・システムのテーマ切り替えが入りました ([#180](https://github.com/phaseoteam/Phaseo/pull/180), [#183](https://github.com/phaseoteam/Phaseo/pull/183), [#181](https://github.com/phaseoteam/Phaseo/pull/181))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -97,6 +124,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月16日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページのゲートウェイのクイックスタートには、選択したエンドポイントと有効なプロバイダーが受け付けるモデル ID だけが表示されます ([#157](https://github.com/phaseoteam/Phaseo/pull/157))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -126,14 +161,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月12日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- モデル一覧ページを刷新し、提供状況、メタデータの階層、サポート情報を分かりやすくしました。
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -145,6 +172,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年3月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- **Settings -> Provisioning Keys** は **Settings -> Management API Keys** になり、以前のアドレスは新しいページにリダイレクトされます ([#153](https://github.com/phaseoteam/Phaseo/pull/153))。
+- ヘッダーの検索でモデル名の一致が優先されるようになり、`Grok 4.20` と検索すると Grok 4.20 が先頭に表示されます ([#156](https://github.com/phaseoteam/Phaseo/pull/156))。
+- 新しいガイド [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx) では、Grok 4.20 を導入する際の推論とマルチエージェントのエフォート設定を説明しています ([#155](https://github.com/phaseoteam/Phaseo/pull/155))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** `/v1/provisioning/keys` のエイリアスは削除されました。代わりに `/v1/management/keys` を呼び出してください。詳しくは[管理 API キー](../developers/management-api-keys.mdx)をご覧ください ([#153](https://github.com/phaseoteam/Phaseo/pull/153))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -160,15 +205,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月10日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- ブランドの刷新をウェブサイトとドキュメントにも広げました。
-- Alibaba CloudをPhaseo、ゲートウェイルート、ドキュメントでサポートしました。
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -177,20 +213,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Aion Labs: Aion 2.5](https://phaseo.app/models/aion-labs/aion-2.5)
 - [Google: Gemini Embedding 2 Preview](https://phaseo.app/models/google/gemini-embedding-2-preview)
+- Alibaba Cloud がゲートウェイのリクエストを処理するプロバイダーに加わりました。
+
+</div>
+
+</Update>
+
+<Update label="2026年3月6日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルの料金表では、プロバイダーが無効にした batch などの機能を非表示にせず、**Not Active** と表示します ([#141](https://github.com/phaseoteam/Phaseo/pull/141))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- リクエストで `service_tier` に `standard` または `priority` を再び指定できるようになりました。詳しくは[サービス階層](../guides/service-tiers.mdx)をご覧ください ([#141](https://github.com/phaseoteam/Phaseo/pull/141))。
+- エイリアス `openai/gpt-latest` が `openai/gpt-5.4` を指すようになりました ([#140](https://github.com/phaseoteam/Phaseo/pull/140))。
 
 </div>
 
 </Update>
 
 <Update label="2026年3月5日">
-
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- GPT 5.4とGPT 5.4 Proをモデル検索、ゲートウェイ、ドキュメントで提供しました。
-
-</div>
 
 <div data-changelog-category="models">
 
@@ -207,11 +257,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月3日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">製品</p>
+<p className="changelog-category">API と SDK</p>
 
-- Gemini 3.1 Flash Lite Previewを製品各所、ゲートウェイルーティング、ドキュメントで提供しました。
+- エイリアス `openai/gpt-chat-latest` が `openai/gpt-5.3-chat` を指すようになりました ([#138](https://github.com/phaseoteam/Phaseo/pull/138))。
 
 </div>
 
@@ -230,11 +280,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月2日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">製品</p>
+<p className="changelog-category">API と SDK</p>
 
-- Responses APIのassistant `phase`をリクエスト処理、レスポンス、OpenAPIドキュメントでサポートしました。
+- Responses API は、アシスタントメッセージの `phase`（`commentary` または `final_answer`）を受け付けて返すため、複数ターンのリクエストでそのまま送り返せます。詳しくは[応答を作成](../api-reference/endpoint/responses.mdx)をご覧ください ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
+- OpenAI モデルへの Responses リクエストで、`type: "compaction"` と任意の `compact_threshold` を指定した `provider_options.openai.context_management` を使えます。詳しくは[パラメーター](../api-reference/parameters.mdx)をご覧ください ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
+- `safety_identifier` を省略した OpenAI へのリクエストでは、`user` または `user_id`、どちらもなければリクエスト ID から値を設定して送信します ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
 
 </div>
 

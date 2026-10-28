@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- गेटवे को फिर से बेहतर बनाया गया और इसमें Anthropic-संगत `/messages` समर्थन जोड़ा गया।
-- विस्तार को आसान बनाने के लिए डेटाबेस आर्किटेक्चर, वेबसाइट अनुभव, प्लेग्राउंड टूलिंग और SDK की दिशा को नया रूप दिया गया।
+- [phaseo.app/chat](https://phaseo.app/chat) पर Chat में गेटवे मॉडल से बात की जा सकती है, अनुरोध के पैरामीटर बदले जा सकते हैं और चैट इतिहास आपके ब्राउज़र में रहता है ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+- टीमें **Settings -> Routing** में चुन सकती हैं कि गेटवे प्रदाता कैसे चुने: **Balanced**, **Lowest cost**, **Lowest latency** या **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+- Tools में मूल्य कैलकुलेटर टोकन की संख्या से अनुरोधों की लागत का अनुमान लगाता है और मॉडलों के बीच उसकी तुलना करता है ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- `POST /v1/messages` Anthropic Messages फ़ॉर्मैट के अनुरोध स्वीकार करता है, जिससे Anthropic SDK गेटवे मॉडल को कॉल कर सकते हैं; देखें [संदेश बनाएँ](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+- `POST /v1/ocr` URL या base64 से दी गई छवि से टेक्स्ट निकालता है; देखें [OCR से टेक्स्ट निकालें](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+- `POST /v1/music/generate` संगीत ट्रैक बनाता है, और `GET /v1/music/generate/{id}` उनकी स्थिति लौटाता है; देखें [संगीत बनाएँ](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
+- प्रबंधन API में क्रेडिट बैलेंस के लिए `GET /v1/credits`, हाल के अनुरोधों के लिए `GET /v1/activity` और कुंजियों को सूचीबद्ध करने, बदलने और हटाने के लिए `/v1/provisioning/keys` जुड़े हैं; देखें [क्रेडिट प्राप्त करें](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))।
 
 </div>
 

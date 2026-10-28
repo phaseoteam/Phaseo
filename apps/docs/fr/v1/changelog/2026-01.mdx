@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produit</p>
 
-- La passerelle a de nouveau été remaniée, avec la prise en charge de `/messages` compatible avec Anthropic.
-- L’architecture de la base de données, l’expérience du site, les outils du playground et l’orientation des SDK ont été revus pour accompagner une expansion plus large.
+- Chat, sur [phaseo.app/chat](https://phaseo.app/chat), permet de discuter avec les modèles de la passerelle, de régler les paramètres des requêtes et de conserver l'historique dans votre navigateur ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Les équipes peuvent choisir comment la passerelle sélectionne les fournisseurs dans **Settings -> Routing** : **Balanced**, **Lowest cost**, **Lowest latency** ou **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Un calculateur de prix dans Tools estime le coût des requêtes à partir du nombre de tokens et le compare entre modèles ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- `POST /v1/messages` accepte les requêtes au format Anthropic Messages, ce qui permet aux SDK Anthropic d'appeler les modèles de la passerelle ; voir [Créer un message](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/ocr` extrait le texte d'une image fournie par URL ou en base64 ; voir [Extraire du texte avec l'OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/music/generate` crée des morceaux de musique et `GET /v1/music/generate/{id}` renvoie leur statut ; voir [Générer de la musique](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- L'API de gestion ajoute `GET /v1/credits` pour le solde de crédits, `GET /v1/activity` pour les requêtes récentes et `/v1/provisioning/keys` pour lister, modifier et supprimer des clés ; voir [Obtenir les crédits](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
 
 </div>
 

@@ -2422,6 +2422,8 @@
 			"selectModelsToCompare": "比較するモデルを選択してください。",
 			"viewFullLeaderboard": "すべてのランキングを見る",
 			"sourceArtificialAnalysis": "出典：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "年やインデックスのバージョンをまたいで比較可能",
 			"fullLeaderboard": "すべてのランキング",
 			"noModelsMatchThisSearch": "この検索に一致するモデルはありません。",
 			"noResultsAvailableForThisMetric": "この指標の結果はありません。",

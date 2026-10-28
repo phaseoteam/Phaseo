@@ -141,7 +141,7 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	return { data: patch };
 }
 
-async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
+export async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
 	const { data, error } = await getSupabaseAdmin()
 		.from("keys")
 		.select("id")

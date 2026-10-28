@@ -2,12 +2,14 @@ CREATE OR REPLACE FUNCTION public.gateway_realtime_settle_once (
   p_workspace_id      uuid,
   p_session_id        text,
   p_final_cost_nanos  bigint,
-  p_usage             jsonb  DEFAULT '{}'::jsonb,
-  p_pricing_lines     jsonb  DEFAULT '[]'::jsonb,
-  p_status            text   DEFAULT 'completed'::text,
-  p_disconnect_reason text   DEFAULT NULL::text,
-  p_error_code        text   DEFAULT NULL::text,
-  p_error_message     text   DEFAULT NULL::text
+  p_usage             jsonb   DEFAULT '{}'::jsonb,
+  p_pricing_lines     jsonb   DEFAULT '[]'::jsonb,
+  p_status            text    DEFAULT 'completed'::text,
+  p_disconnect_reason text    DEFAULT NULL::text,
+  p_error_code        text    DEFAULT NULL::text,
+  p_error_message     text    DEFAULT NULL::text,
+  p_estimated         boolean DEFAULT false,
+  p_estimate_basis    text    DEFAULT NULL::text
 )
   RETURNS TABLE (
     applied               boolean,
@@ -20,18 +22,31 @@ CREATE OR REPLACE FUNCTION public.gateway_realtime_settle_once (
     before_balance_nanos  bigint,
     after_balance_nanos   bigint,
     before_reserved_nanos bigint,
-    after_reserved_nanos  bigint
+    after_reserved_nanos  bigint,
+    debt_nanos            bigint,
+    uncollected_nanos     bigint
   )
   LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path TO 'public'
   AS $function$
 declare
+  -- REALTIME_MAX_OVERDRAFT_NANOS: a settlement may leave the wallet at most $1 negative.
+  c_max_overdraft_nanos constant bigint := 1000000000;
   v_session public.gateway_realtime_sessions%rowtype;
   v_wallet public.wallets%rowtype;
   v_reservation public.gateway_wallet_reservations%rowtype;
   v_cost bigint := greatest(0, coalesce(p_final_cost_nanos, 0));
   v_held bigint := 0;
+  v_prepaid bigint := 0;
+  v_total bigint;
+  v_due bigint;
+  v_free bigint;
+  v_release bigint;
+  v_charge bigint;
+  v_debt bigint;
+  v_uncollected bigint;
+  v_anomaly text;
   v_capture_remaining bigint;
   v_row_capture bigint;
   v_before_balance bigint;
@@ -47,13 +62,13 @@ begin
   where workspace_id = p_workspace_id and session_id = p_session_id;
   if not found then
     return query select false, false, 'not_found'::text, 0::bigint, 0::bigint,
-      0::bigint, 0::bigint, null::bigint, null::bigint, null::bigint, null::bigint;
+      0::bigint, 0::bigint, null::bigint, null::bigint, null::bigint, null::bigint, 0::bigint, 0::bigint;
     return;
   end if;
   if v_session.status in ('completed', 'failed', 'cancelled', 'expired') then
     return query select false, true, v_session.status, coalesce(v_session.final_cost_nanos, 0),
       v_session.reserved_nanos, v_session.captured_nanos, v_session.released_nanos,
-      null::bigint, null::bigint, null::bigint, null::bigint;
+      null::bigint, null::bigint, null::bigint, null::bigint, v_session.debt_nanos, v_session.uncollected_nanos;
     return;
   end if;
 
@@ -72,7 +87,7 @@ begin
   if v_session.status in ('completed', 'failed', 'cancelled', 'expired') then
     return query select false, true, v_session.status, coalesce(v_session.final_cost_nanos, 0),
       v_session.reserved_nanos, v_session.captured_nanos, v_session.released_nanos,
-      null::bigint, null::bigint, null::bigint, null::bigint;
+      null::bigint, null::bigint, null::bigint, null::bigint, v_session.debt_nanos, v_session.uncollected_nanos;
     return;
   end if;
 
@@ -81,26 +96,42 @@ begin
   where gwr.workspace_id = p_workspace_id and gwr.status in ('held', 'reserved')
     and (gwr.hold_ref_id = p_session_id or gwr.reservation_id like v_session.reservation_prefix || '%');
 
+  -- Confirmed usage may already have been captured when the session entered
+  -- billing review; only the remainder is charged now, and never refunded.
+  v_prepaid := greatest(0, coalesce(v_session.captured_nanos, 0));
+  v_total := greatest(v_cost, v_prepaid);
+  v_due := v_total - v_prepaid;
+
   v_before_balance := coalesce(v_wallet.balance_nanos, 0);
   v_before_reserved := coalesce(v_wallet.reserved_nanos, 0);
+  v_release := v_held;
   if v_before_reserved < v_held then
-    return query select false, false, 'reserved_balance_mismatch'::text, v_cost, v_held,
-      0::bigint, v_held, v_before_balance, v_before_balance, v_before_reserved, v_before_reserved;
-    return;
+    -- Clamp instead of failing forever: the session holds are still released.
+    v_anomaly := 'reserved_balance_mismatch';
+    v_release := greatest(0, v_before_reserved);
+    raise warning 'realtime_settlement_reserved_balance_mismatch session=% held=% wallet_reserved=%',
+      p_session_id, v_held, v_before_reserved;
   end if;
-  if v_cost > v_held + greatest(0, v_before_balance - v_before_reserved) then
-    return query select false, false, 'insufficient_unreserved_balance'::text, v_cost, v_held,
-      0::bigint, v_held, v_before_balance, v_before_balance, v_before_reserved, v_before_reserved;
-    return;
+
+  -- Charge the full cost from the holds and free balance. Beyond that the
+  -- wallet may go negative up to the overdraft cap (recorded as debt); any
+  -- remainder is recorded as uncollected instead of retrying settlement.
+  v_free := v_before_balance - v_before_reserved;
+  v_charge := least(v_due, greatest(v_release, v_free + v_release + c_max_overdraft_nanos));
+  v_uncollected := v_due - v_charge;
+  v_debt := greatest(0, v_charge - v_release - greatest(0, v_free));
+  if v_uncollected > 0 then
+    v_anomaly := coalesce(v_anomaly || ',', '') || 'overdraft_cap_reached';
+    raise warning 'realtime_settlement_overdraft_cap_reached session=% uncollected=%', p_session_id, v_uncollected;
   end if;
 
   update public.wallets w
-  set balance_nanos = w.balance_nanos - v_cost,
-      reserved_nanos = w.reserved_nanos - v_held,
+  set balance_nanos = w.balance_nanos - v_charge,
+      reserved_nanos = greatest(0, w.reserved_nanos - v_held),
       updated_at = now()
   where workspace_id = p_workspace_id;
 
-  v_capture_remaining := least(v_cost, v_held);
+  v_capture_remaining := least(v_charge, v_held);
   for v_reservation in
     select gwr.* from public.gateway_wallet_reservations gwr
     where gwr.workspace_id = p_workspace_id and gwr.status in ('held', 'reserved')
@@ -122,14 +153,14 @@ begin
     v_capture_remaining := greatest(0, v_capture_remaining - v_row_capture);
   end loop;
 
-  if v_cost > 0 then
+  if v_charge > 0 then
     insert into public.credit_ledger (
       workspace_id, event_time, kind, amount_nanos, before_balance_nanos,
       after_balance_nanos, before_reserved_nanos, after_reserved_nanos,
       ref_type, ref_id, created_at, status
     ) values (
-      p_workspace_id, now(), 'charge', -v_cost, v_before_balance,
-      v_before_balance - v_cost, v_before_reserved, v_before_reserved - v_held,
+      p_workspace_id, now(), 'charge', -v_charge, v_before_balance,
+      v_before_balance - v_charge, v_before_reserved, greatest(0, v_before_reserved - v_held),
       'realtime_session', p_session_id, now(), 'captured'
     ) on conflict (ref_type, ref_id) do nothing;
   end if;
@@ -137,16 +168,22 @@ begin
   update public.gateway_realtime_sessions
   set status = v_next_status,
       ended_at = coalesce(ended_at, now()),
-      final_cost_nanos = v_cost,
-      captured_nanos = v_cost,
-      released_nanos = greatest(0, v_held - least(v_cost, v_held)),
-      reserved_nanos = v_held,
+      final_cost_nanos = v_total,
+      captured_nanos = v_prepaid + v_charge,
+      released_nanos = greatest(0, v_held - least(v_charge, v_held)),
+      reserved_nanos = greatest(coalesce(v_session.reserved_nanos, 0), v_held),
       usage = coalesce(p_usage, '{}'::jsonb),
       pricing_lines = case when jsonb_typeof(coalesce(p_pricing_lines, '[]'::jsonb)) = 'array'
         then p_pricing_lines else '[]'::jsonb end,
       disconnect_reason = nullif(trim(coalesce(p_disconnect_reason, '')), ''),
       error_code = nullif(trim(coalesce(p_error_code, '')), ''),
       error_message = nullif(trim(coalesce(p_error_message, '')), ''),
+      billing_estimated = coalesce(p_estimated, false),
+      estimate_basis = case when coalesce(p_estimated, false)
+        then left(coalesce(nullif(trim(p_estimate_basis), ''), 'metered_audio'), 120) end,
+      debt_nanos = v_debt,
+      uncollected_nanos = v_uncollected,
+      billing_anomaly = v_anomaly,
       updated_at = now()
   where id = v_session.id
   returning * into v_session;
@@ -159,7 +196,8 @@ begin
       error_message = nullif(trim(coalesce(p_error_message, '')), ''),
       generation_ms = greatest(0, floor(extract(epoch from (v_session.ended_at - v_session.started_at)) * 1000))::integer,
       usage = coalesce(p_usage, '{}'::jsonb),
-      cost_nanos = v_cost,
+      -- The full priced cost; any uncollected part stays on the session.
+      cost_nanos = v_total,
       currency = 'USD',
       pricing_lines = case when jsonb_typeof(coalesce(p_pricing_lines, '[]'::jsonb)) = 'array'
         then p_pricing_lines else '[]'::jsonb end
@@ -170,16 +208,17 @@ begin
     raise exception 'realtime_request_summary_missing';
   end if;
 
-  return query select true, false, v_session.status, v_cost, v_held, v_cost,
-    greatest(0, v_held - least(v_cost, v_held)), v_before_balance,
-    v_before_balance - v_cost, v_before_reserved, v_before_reserved - v_held;
+  return query select true, false, v_session.status, v_total, v_held, v_prepaid + v_charge,
+    greatest(0, v_held - least(v_charge, v_held)), v_before_balance,
+    v_before_balance - v_charge, v_before_reserved, greatest(0, v_before_reserved - v_held),
+    v_debt, v_uncollected;
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text, boolean, text) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text, boolean, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text, boolean, text) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_realtime_settle_once"(uuid, text, bigint, jsonb, jsonb, text, text, text, text, boolean, text) FROM PUBLIC, "anon", "authenticated";

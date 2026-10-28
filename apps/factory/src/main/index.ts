@@ -14,11 +14,15 @@ import { version as FACTORY_VERSION } from "../../package.json";
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
 const rendererPath = path.join(currentDirectory, "../renderer/index.html");
+// The window and taskbar icon; macOS takes the app bundle's instead. Packaging copies assets beside dist.
+const iconPath = path.join(currentDirectory, "../../assets/icon.png");
 const developmentUrl = process.env.PHASEO_FACTORY_DEV_URL;
 const demo = process.env.PHASEO_FACTORY_DEMO === "1" || process.argv.includes("--demo");
 
 // Factory keeps its own profile so it never shares storage with the Phaseo desktop app.
 app.setName("Phaseo Factory");
+// Its own taskbar entry and icon on Windows, rather than grouping with every other Electron app.
+if (process.platform === "win32") app.setAppUserModelId("app.phaseo.factory");
 if (process.env.PHASEO_FACTORY_USER_DATA) app.setPath("userData", process.env.PHASEO_FACTORY_USER_DATA);
 
 // Proof files (screenshots, recordings, logs) are served from each run's folder as factory-proof://<run>/<file>.
@@ -55,6 +59,7 @@ export function createWindow(options: { show?: boolean; width?: number; height?:
 		show: false,
 		backgroundColor: nativeTheme.shouldUseDarkColors ? "#0a0a0a" : "#ffffff",
 		title: "Phaseo Factory",
+		icon: process.platform === "darwin" ? undefined : iconPath,
 		frame: process.platform === "darwin",
 		titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
 		trafficLightPosition: process.platform === "darwin" ? { x: 14, y: 14 } : undefined,

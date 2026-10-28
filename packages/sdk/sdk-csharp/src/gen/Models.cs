@@ -340,6 +340,9 @@ public sealed class ApiKey
 	[JsonPropertyName("include_byok_in_limit")]
 	public bool IncludeByokInLimit { get; set; }
 
+	[JsonPropertyName("ip_allowlist")]
+	public List<Dictionary<string, object>>? IpAllowlist { get; set; }
+
 	[JsonPropertyName("label")]
 	public string? Label { get; set; }
 
@@ -438,6 +441,8 @@ public sealed class ApiKeyCreateRequest
 	public string? WorkspaceId { get; set; }
 
 }
+
+public sealed class ApiKeyIpAllowlist { }
 
 public sealed class ApiKeyLimitBucket
 {
@@ -540,6 +545,9 @@ public sealed class ApiKeyUpdateRequest
 	[JsonPropertyName("include_byok_in_limit")]
 	public bool? IncludeByokInLimit { get; set; }
 
+	[JsonPropertyName("ip_allowlist")]
+	public List<Dictionary<string, object>>? IpAllowlist { get; set; }
+
 	[JsonPropertyName("limit")]
 	public double? Limit { get; set; }
 
@@ -617,6 +625,9 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("include_byok_in_limit")]
 	public bool IncludeByokInLimit { get; set; }
+
+	[JsonPropertyName("ip_allowlist")]
+	public List<Dictionary<string, object>>? IpAllowlist { get; set; }
 
 	[JsonPropertyName("key")]
 	public string Key { get; set; }
@@ -918,6 +929,125 @@ public sealed class AudioTranslationResponse
 {
 	[JsonPropertyName("text")]
 	public string? Text { get; set; }
+
+}
+
+public sealed class AuthorizedApp
+{
+	[JsonPropertyName("app_name")]
+	public string? AppName { get; set; }
+
+	[JsonPropertyName("authorized_at")]
+	public string? AuthorizedAt { get; set; }
+
+	[JsonPropertyName("client_id")]
+	public string? ClientId { get; set; }
+
+	[JsonPropertyName("current")]
+	public bool? Current { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("last_used_at")]
+	public string? LastUsedAt { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public List<string>? Scopes { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string? WorkspaceId { get; set; }
+
+	[JsonPropertyName("workspace_name")]
+	public string? WorkspaceName { get; set; }
+
+}
+
+public sealed class AuthorizedAppListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class AuthorizedAppRevokedResponse
+{
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("revoked")]
+	public bool? Revoked { get; set; }
+
+}
+
+public sealed class AuthorizedAppScopesRequest
+{
+	[JsonPropertyName("scopes")]
+	public List<string> Scopes { get; set; }
+
+}
+
+public sealed class AuthorizedAppScopesResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class AutoRoutingSettings
+{
+	[JsonPropertyName("allow_fallbacks")]
+	public bool? AllowFallbacks { get; set; }
+
+	[JsonPropertyName("allowed_patterns")]
+	public List<string>? AllowedPatterns { get; set; }
+
+	[JsonPropertyName("max_input_price_per_million")]
+	public double? MaxInputPricePerMillion { get; set; }
+
+	[JsonPropertyName("max_output_price_per_million")]
+	public double? MaxOutputPricePerMillion { get; set; }
+
+	[JsonPropertyName("objective")]
+	public string? Objective { get; set; }
+
+	[JsonPropertyName("revision")]
+	public string? Revision { get; set; }
+
+	[JsonPropertyName("spend_profile")]
+	public string? SpendProfile { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+}
+
+public sealed class AutoRoutingSettingsResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class AutoRoutingSettingsUpdateRequest
+{
+	[JsonPropertyName("allow_fallbacks")]
+	public bool? AllowFallbacks { get; set; }
+
+	[JsonPropertyName("allowed_patterns")]
+	public List<string>? AllowedPatterns { get; set; }
+
+	[JsonPropertyName("max_input_price_per_million")]
+	public double? MaxInputPricePerMillion { get; set; }
+
+	[JsonPropertyName("max_output_price_per_million")]
+	public double? MaxOutputPricePerMillion { get; set; }
+
+	[JsonPropertyName("objective")]
+	public string? Objective { get; set; }
+
+	[JsonPropertyName("spend_profile")]
+	public string? SpendProfile { get; set; }
 
 }
 
@@ -4739,6 +4869,32 @@ public sealed class KeyInvalidateResponse
 
 public sealed class KnownModelId { }
 
+public sealed class LeakedKeyReportRequest
+{
+	[JsonPropertyName("comment")]
+	public string? Comment { get; set; }
+
+	[JsonPropertyName("evidence_url")]
+	public string? EvidenceUrl { get; set; }
+
+	[JsonPropertyName("reporter_email")]
+	public string? ReporterEmail { get; set; }
+
+	[JsonPropertyName("source")]
+	public string? Source { get; set; }
+
+	[JsonPropertyName("token")]
+	public string Token { get; set; }
+
+}
+
+public sealed class LeakedKeyReportResponse
+{
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
 public sealed class LegacyDecisionBoxQuestion
 {
 	[JsonPropertyName("instructions")]
@@ -5115,6 +5271,13 @@ public sealed class ManagementKeyUpdateResponse
 
 	[JsonPropertyName("ok")]
 	public bool Ok { get; set; }
+
+}
+
+public sealed class MeResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
 
 }
 
@@ -5545,6 +5708,42 @@ public sealed class MusicGenerateResponse
 
 }
 
+public sealed class MyJoinRequest
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("decided_at")]
+	public string? DecidedAt { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string? WorkspaceId { get; set; }
+
+	[JsonPropertyName("workspace_name")]
+	public string? WorkspaceName { get; set; }
+
+}
+
+public sealed class MyJoinRequestCreatedResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class MyJoinRequestListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
 public sealed class NotImplementedResponse
 {
 	[JsonPropertyName("description")]
@@ -5943,6 +6142,23 @@ public sealed class ObservabilityDestinationPolicyInput
 }
 
 public sealed class ObservabilityDestinationResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ObservabilityDestinationTestRequest
+{
+	[JsonPropertyName("config")]
+	public Dictionary<string, object> Config { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ObservabilityDestinationTestResponse
 {
 	[JsonPropertyName("data")]
 	public Dictionary<string, object> Data { get; set; }
@@ -7565,6 +7781,13 @@ public sealed class RateLimitPolicyUpdateInput
 
 public sealed class RateLimitTargetType { }
 
+public sealed class RateLimitTierResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
 public sealed class ReasoningConfig
 {
 	[JsonPropertyName("effort")]
@@ -8550,6 +8773,53 @@ public sealed class SubagentToolDefinition
 
 }
 
+public sealed class SuccessorReplacement
+{
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("successor")]
+	public string? Successor { get; set; }
+
+}
+
+public sealed class SuccessorReplacementListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class SuccessorReplacementRemovedResponse
+{
+	[JsonPropertyName("deleted")]
+	public bool? Deleted { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+}
+
+public sealed class SuccessorReplacementResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SuccessorReplacementRow
+{
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("successor")]
+	public string? Successor { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+}
+
 public sealed class SupportedParameterDetails
 {
 }
@@ -8759,6 +9029,42 @@ public sealed class UsageCostDetails
 {
 	[JsonPropertyName("upstream_inference_cost")]
 	public double? UpstreamInferenceCost { get; set; }
+
+}
+
+public sealed class UserProfile
+{
+	[JsonPropertyName("default_workspace_id")]
+	public string? DefaultWorkspaceId { get; set; }
+
+	[JsonPropertyName("display_name")]
+	public string? DisplayName { get; set; }
+
+	[JsonPropertyName("obfuscate_info")]
+	public bool? ObfuscateInfo { get; set; }
+
+	[JsonPropertyName("user_id")]
+	public string? UserId { get; set; }
+
+}
+
+public sealed class UserProfileResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class UserProfileUpdateRequest
+{
+	[JsonPropertyName("default_workspace_id")]
+	public string? DefaultWorkspaceId { get; set; }
+
+	[JsonPropertyName("display_name")]
+	public string? DisplayName { get; set; }
+
+	[JsonPropertyName("obfuscate_info")]
+	public bool? ObfuscateInfo { get; set; }
 
 }
 
@@ -10195,6 +10501,13 @@ public sealed class WorkspaceInvite
 
 	[JsonPropertyName("workspace_id")]
 	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class WorkspaceInviteAcceptRequest
+{
+	[JsonPropertyName("token")]
+	public string Token { get; set; }
 
 }
 

@@ -7,7 +7,73 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
 
+<Update label="31 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يتضمن BYOK الآن 250,000 طلب لكل مساحة عمل في كل شهر UTC دون رسوم من Phaseo، ثم يُحتسب 2.5% من التكلفة المكافئة لدى المزوّد؛ وتُحفظ البيانات الوصفية لكل طلب BYOK لمدة 90 يومًا ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+
+</div>
+
+</Update>
+
+<Update label="30 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تشرح أخطاء Chat الآن ما الذي حدث وتقترح خطوة تالية، مثل إعادة المحاولة أو تسجيل الدخول أو اختيار نموذج آخر؛ وترتبط أخطاء `402` بصفحة الرصيد و`phaseo/free` ([#2100](https://github.com/phaseoteam/Phaseo/pull/2100)).
+- يتوقف مربع الكتابة في Chat عن التمدد عند خمسة أسطر ويعرض الموجّهات الطويلة بالتمرير بدل تغطية المحادثة ([#2096](https://github.com/phaseoteam/Phaseo/pull/2096)).
+- تفتح صفحات النماذج تفاصيل المزوّد من رابط مثل `?provider=openai`، وتعرض نافذة المزوّد معرّف نموذج مقيّدًا بالمزوّد يمكن نسخه؛ راجع [معرّفات النماذج المؤهلة بمزوّد](../guides/provider-qualified-models.mdx) ([#2095](https://github.com/phaseoteam/Phaseo/pull/2095), [#2052](https://github.com/phaseoteam/Phaseo/pull/2052)).
+- يعرض البحث عن النماذج النماذج القابلة للتوجيه عبر البوابة فقط إلى أن تغيّر عامل تصفية الحالة؛ راجع [تحقّق من موثوقية Gateway وحالته](../developers/reliability-and-status.mdx) ([#2057](https://github.com/phaseoteam/Phaseo/pull/2057)).
+- تجمع تصنيفات التطبيقات العامة كل موقع ويب في إدخال واحد برابط مقروء، مثل `/apps/phaseo-chat` ([#2087](https://github.com/phaseoteam/Phaseo/pull/2087)).
+- يضيف Trust Centre ورقة بيضاء عن الأمان وقائمة بالمعالجين الفرعيين ومسودة اتفاقية معالجة بيانات، وأصبح حذف الحساب يزيل بياناته من جميع مخازن Phaseo النشطة خلال 30 يومًا ([#2058](https://github.com/phaseoteam/Phaseo/pull/2058)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تسأل CLI قبل تثبيت وكيل برمجة غير موجود وتعرض أمر التثبيت الدقيق؛ استخدم `--skip-install` للأدوات التي تديرها بنفسك؛ راجع [وكلاء البرمجة](../guides/integrations/coding-assistants.mdx) ([#2066](https://github.com/phaseoteam/Phaseo/pull/2066)).
+- تدير واجهة الإدارة الآن بيانات اعتماد المزوّدين عبر `/v1/byok` وميزانيات مساحة العمل عبر `/v1/budgets`، وأُعيد توليد جميع حزم SDK لتطابقها؛ راجع [عرض بيانات اعتماد المزوّد](../api-reference/endpoint/provider-credentials-list.mdx) ([#2086](https://github.com/phaseoteam/Phaseo/pull/2086)).
+
+</div>
+
+</Update>
+
+<Update label="29 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يمكن الآن سحب الملفات إلى Chat لإرفاقها، بما في ذلك صور HEIC وAVIF ([#2050](https://github.com/phaseoteam/Phaseo/pull/2050)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تقبل الطلبات تسميات في الترويسة `X-Phaseo-Metadata`، ويمكن لصفحتي السجلات والنشاط تصفية الطلبات والإنفاق حسب التسمية؛ راجع [تسميات الطلب](../guides/request-labels.mdx) ([#2049](https://github.com/phaseoteam/Phaseo/pull/2049)).
+
+</div>
+
+</Update>
+
 <Update label="28 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يمكن للمزوّدين المطالبة بملفهم على Phaseo بإثبات ملكية النطاق، وإرسال موجز كتالوج النماذج للمراجعة من إعدادات المزوّد؛ راجع [نشر كتالوج المزوّد](../guides/provider-catalog.mdx) ([#2037](https://github.com/phaseoteam/Phaseo/pull/2037)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -22,6 +88,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="27 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض تفاصيل الطلب كل مزوّد رتّبه الموجّه أو استبعده، مع كل عامل في الدرجة وما إذا كان المزوّد قد اختير أو جُرّب أو خُفّضت رتبته؛ راجع [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011), [#2015](https://github.com/phaseoteam/Phaseo/pull/2015)).
+- يضع Chat علامات عند تغيّر اليوم وعند الفجوات التي تبلغ ست ساعات أو أكثر وعند تبديل النموذج، مع شعارات النماذج الجديدة ([#1992](https://github.com/phaseoteam/Phaseo/pull/1992)).
+- تعرض صفحات النماذج الأداء ووقت التشغيل للنماذج قليلة الطلبات أيضًا؛ وكانت هذه الأقسام تبقى فارغة سابقًا دون 20 طلبًا ([#1997](https://github.com/phaseoteam/Phaseo/pull/1997)).
+- يعرض تقويم الإصدارات على الشاشات الصغيرة نظرة عامة على الشهر مع جدول اليوم المحدد، ويستخدم قسم "On this day" سجل الإصدارات الكامل ([#2019](https://github.com/phaseoteam/Phaseo/pull/2019)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يوازن التوجيه المتوازن الآن بين الموثوقية وزمن الاستجابة وزمن الاستجابة الطرفي والإنتاجية والسعر وملاءمة الرموز، ولم يعد وقت تشغيل المزوّد يحتسب ردود `400` و`403` و`413` و`429` إخفاقات؛ راجع [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -38,6 +123,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="26 أغسطس 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تضيف صفحة التصنيفات قسمًا أسبوعيًا باسم **Return Rate** يبيّن النماذج التي تعود إليها مساحات العمل، مع نطاقات ثقة ([#1961](https://github.com/phaseoteam/Phaseo/pull/1961)).
+- يرتّب البحث العام المختبرات والمزوّدين والنماذج حسب الصلة بمجرد الكتابة، فتظهر المطابقات التامة مثل Nvidia أولًا ([#1974](https://github.com/phaseoteam/Phaseo/pull/1974)).
+- تميّز بطاقات النماذج النماذج المتقاعدة والمهملة بشارتي **End of life** أو **Deprecated** ([#1977](https://github.com/phaseoteam/Phaseo/pull/1977)).
+- تعرض تفاصيل الخصوصية للمزوّدين **Data policy** وZDR ومواقع المعالجة بدل تسميات منفصلة للتدريب والاحتفاظ ([#1954](https://github.com/phaseoteam/Phaseo/pull/1954)).
+- يفتح النقر على الشعار النصي لـ Phaseo قائمة العلامة التجارية التي تنسخ الشعار والشعار النصي أو تنزّلهما بصيغة SVG أو PNG، بنسخة فاتحة أو داكنة ([#1734](https://github.com/phaseoteam/Phaseo/pull/1734), [#1968](https://github.com/phaseoteam/Phaseo/pull/1968), [#1983](https://github.com/phaseoteam/Phaseo/pull/1983)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تعيد `POST /v1/music/generate` معرّف طلب من Phaseo، وتعيد `GET /v1/music/generate/{music_id}` النتائج بالشكل نفسه لكل المزوّدين؛ راجع [إنشاء موسيقى](../api-reference/endpoint/music-generate.mdx) ([#1941](https://github.com/phaseoteam/Phaseo/pull/1941), [#1952](https://github.com/phaseoteam/Phaseo/pull/1952)).
+- تمرّر الطلبات الفاشلة قيمة `Retry-After` من المزوّد، وتعيد طلبات BYOK أيضًا ترويسات الحصة `X-Phaseo-Upstream-RateLimit-*`؛ راجع [حدود الطلبات](../api-reference/limits.mdx) ([#1960](https://github.com/phaseoteam/Phaseo/pull/1960)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -53,6 +159,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="25 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يمكن إرسال كل تنبيه في مساحة العمل إلى وجهات الإشعارات الخاصة به، فتصل تنبيهات انخفاض الرصيد وتنبيهات إهمال النماذج إلى قنوات مختلفة؛ راجع [إشعارات مساحة العمل](../guides/workspace-notifications.mdx) ([#1830](https://github.com/phaseoteam/Phaseo/pull/1830)).
+- يظهر مستوى الخدمة **Priority** الآن باسم **Fast** في صفحات النماذج والأسعار؛ وتستمر الطلبات التي ترسل `priority` في العمل؛ راجع [مستويات الخدمة](../guides/service-tiers.mdx) ([#1931](https://github.com/phaseoteam/Phaseo/pull/1931)).
+- تحتفظ صفحة Compare بالنماذج الحالية عند إضافة نموذج آخر، وتعرض شعارات المزوّدين وخيارًا للمستوى لدى المزوّدين الذين لديهم أكثر من خطة ([#1826](https://github.com/phaseoteam/Phaseo/pull/1826)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -74,15 +190,36 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- أُضيفت إضافات Enterprise ذاتية الخدمة لمساحات العمل، وتشمل SSO وSCIM وإدارة الدليل والأقسام.
-- أُضيفت وجهات إشعارات لمساحات العمل تشمل البريد الإلكتروني وDiscord وSlack وMicrosoft Teams وخطافات HTTPS مخصصة.
-- أُضيف إسناد فئات التطبيقات عبر `X-App-Categories` وTypeScript SDK.
+- يمكن لمالكي مساحات العمل شراء خطة Enterprise لما بين 100 و100,000 عضو، مع SSO وSCIM 2.0 وإعدادات الدليل والأقسام ودون التزام بإنفاق على النماذج ([#1754](https://github.com/phaseoteam/Phaseo/pull/1754), [#1743](https://github.com/phaseoteam/Phaseo/pull/1743), [#1749](https://github.com/phaseoteam/Phaseo/pull/1749)).
+- يمكن لمساحات العمل إرسال تنبيهات انخفاض الرصيد والفوترة وإهمال النماذج إلى البريد الإلكتروني أو Discord أو Slack أو Microsoft Teams أو Webhook مخصص من **Workspace settings -> Notifications**؛ راجع [إشعارات مساحة العمل](../guides/workspace-notifications.mdx) ([#1796](https://github.com/phaseoteam/Phaseo/pull/1796)).
+- يصف Trust Centre على `/trust` ممارسات الأمان لدى Phaseo ومعالجة البيانات ومزوّدي الخدمات وحالة الامتثال ([#1811](https://github.com/phaseoteam/Phaseo/pull/1811), [#1816](https://github.com/phaseoteam/Phaseo/pull/1816)).
+- أصبحت صفحات المؤسسات صفحات **Labs**، وتعرض الأداء المجمّع وبطاقات أحدث النماذج ([#1807](https://github.com/phaseoteam/Phaseo/pull/1807)).
+- تفتح صفحة Compare مباشرة على عرض المقارنة بدل أداة اختيار الإعدادات المسبقة ([#1803](https://github.com/phaseoteam/Phaseo/pull/1803)).
+- تحتسب إعدادات BYOK الطلبات المجانية المتبقية من الحصة الشهرية البالغة 1,000,000 طلب؛ وكانت تستخدم سابقًا الحصة الملغاة البالغة 100,000 ([#1595](https://github.com/phaseoteam/Phaseo/pull/1595)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يمكن للطلبات تصنيف التطبيق عبر الترويسة `X-App-Categories`، وتدعمها حزمة TypeScript SDK أيضًا؛ راجع [إسناد التطبيق](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
+- تحدد لواحق النماذج `:nitro` و`:cheap` و`:fast` الآن وضع التوجيه حتى لو طلبت حقول الطلب أو الإعدادات المسبقة أو الإعدادات الافتراضية لمساحة العمل وضعًا آخر؛ راجع [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
+- يقصر `provider.quantizations` التوجيه الآن على العروض ذات التكميم المطابق، ويعيد معلومات تشخيصية عندما لا يطابق أي عرض؛ راجع [اختيار استراتيجية التكميم](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
 
 </div>
 
 </Update>
 
 <Update label="21 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تتيح صفحة المزوّدين التصفية حسب دعم BYOK وسياسة التدريب والاحتفاظ بالبيانات ومنطقة مركز البيانات، وتميّز المزوّدين الخارجيين ([#1755](https://github.com/phaseoteam/Phaseo/pull/1755), [#1758](https://github.com/phaseoteam/Phaseo/pull/1758), [#1748](https://github.com/phaseoteam/Phaseo/pull/1748)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -96,7 +233,69 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="20 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض صفحات النماذج سجل الأسعار حسب المزوّد ومستوى الخدمة، مع نطاقات التاريخ وأسعار القائمة أو الأسعار الفعلية والتصدير بصيغة CSV ([#1557](https://github.com/phaseoteam/Phaseo/pull/1557)).
+
+</div>
+
+</Update>
+
+<Update label="19 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يؤدي تحديد نص في إجابة Chat إلى إظهار إجراءات Explain وImprove وShorten وChange tone وFix grammar التي تضع موجّهًا في مربع الكتابة ([#1619](https://github.com/phaseoteam/Phaseo/pull/1619)).
+- يحتفظ Chat بالموجّه غير المرسل أثناء تسجيل الدخول ويعيدك إلى المحادثة والنموذج نفسيهما ([#1728](https://github.com/phaseoteam/Phaseo/pull/1728)).
+- تعرض السجلات **Source** لكل طلب، مثل Direct HTTP أو حزمة SDK حسب اللغة أو وكيل برمجة، بشكل منفصل عن التطبيق ([#1723](https://github.com/phaseoteam/Phaseo/pull/1723)).
+- تفتح السجلات الجلسات والمهام غير المتزامنة في لوحات جانبية تضم خطًا زمنيًا للطلبات وزرّي السابق والتالي وبحث **Investigate** بمعرّف الطلب ([#1724](https://github.com/phaseoteam/Phaseo/pull/1724)).
+- تجمع Connected Apps الأذونات حسب المورد، ويمكن للمالكين إزالة نطاقات بعينها دون إلغاء التطبيق كله ([#1585](https://github.com/phaseoteam/Phaseo/pull/1585)).
+- تعرض عوامل تصفية النماذج على الهاتف العوامل النشطة كشرائح قابلة للإزالة، وتحتفظ بها كلها عند التبديل بين البطاقات والجدول ([#1590](https://github.com/phaseoteam/Phaseo/pull/1590)).
+- تضيف صفحة Tools أداة للتحقق من مصدر المحتوى للصور والملفات الصوتية المرفوعة حتى 20 ميغابايت ([#1529](https://github.com/phaseoteam/Phaseo/pull/1529)).
+- أصبح حفظ مفاتيح BYOK ممكنًا مجددًا، وتتحدّث قائمة المفاتيح فور التغيير؛ وكان حفظ المفتاح يفشل سابقًا ([#1591](https://github.com/phaseoteam/Phaseo/pull/1591)).
+- تفتح صفحتا السجلات وUsage Overview مساحة عمل متاحة عندما لا تعود المساحة المحفوظة متاحة، وعاد إنشاء مساحة العمل إلى العمل ([#1589](https://github.com/phaseoteam/Phaseo/pull/1589), [#1592](https://github.com/phaseoteam/Phaseo/pull/1592), [#1593](https://github.com/phaseoteam/Phaseo/pull/1593)).
+
+</div>
+
+</Update>
+
+<Update label="17 أغسطس 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- عادت الإعدادات المسبقة العامة المشار إليها بصيغة `@publisher/slug` إلى العمل، ولا تعمل الإعدادات المسبقة الخاصة إلا مع مفاتيح API التي أنشأها مالكها؛ راجع [الإعدادات المسبقة](../guides/presets.mdx) ([#1707](https://github.com/phaseoteam/Phaseo/pull/1707), [#1706](https://github.com/phaseoteam/Phaseo/pull/1706)).
+
+</div>
+
+</Update>
+
 <Update label="14 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- أصبحت إعدادات الخصوصية ضمن **Workspace -> Privacy** وتنطبق على Chat ومفاتيح API وحركة SDK والتطبيقات في مساحة العمل كلها ([#1676](https://github.com/phaseoteam/Phaseo/pull/1676), [#1678](https://github.com/phaseoteam/Phaseo/pull/1678)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يُعدّ الأمر `phaseo <agent>` كلًا من Codex أو Claude Code أو OpenCode أو Hermes أو Pi أو Prime Agent أو DeepSeek Harness أو OpenClaw بمفتاح Phaseo خاص به في أمر واحد؛ راجع [وكلاء البرمجة](../guides/integrations/coding-assistants.mdx) ([#1685](https://github.com/phaseoteam/Phaseo/pull/1685), [#1662](https://github.com/phaseoteam/Phaseo/pull/1662)).
+- ترسل الردود المتدفقة من `POST /v1/messages` أجزاء النص والاستدلال ووسائط الأدوات فور وصولها؛ وكانت تصل سابقًا دفعة واحدة في النهاية؛ راجع [إنشاء رسالة](../api-reference/endpoint/anthropic-messages.mdx) ([#1679](https://github.com/phaseoteam/Phaseo/pull/1679), [#1681](https://github.com/phaseoteam/Phaseo/pull/1681)).
+- يبقى المزوّدون الذين لا يُعرف دعمهم لمعامل في الطلب مؤهلين للتوجيه؛ ولا يُستبعد إلا من يُعرف أنه لا يدعمه ([#1667](https://github.com/phaseoteam/Phaseo/pull/1667)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -112,6 +311,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="13 أغسطس 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يقبل DeepSeek V4 Pro 0813 وDeepSeek V4 Flash 0731 المعامل `reasoning_effort`، وتُرسل القيمة `minimal` على أنها `low` ([#1651](https://github.com/phaseoteam/Phaseo/pull/1651), [#1652](https://github.com/phaseoteam/Phaseo/pull/1652), [#1654](https://github.com/phaseoteam/Phaseo/pull/1654)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -130,6 +337,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="12 أغسطس 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يرسل Chat معرّف جلسة واحدًا لكل محادثة، فتُجمع طلبات المحادثة معًا في السجلات ([#1599](https://github.com/phaseoteam/Phaseo/pull/1599)).
+- تستبدل صفحات النماذج قسم Quickstart بلوحة **Use This Model** تشمل إعداد المفتاح وأمثلة الشيفرة حسب اللغة ونقاط النهاية والمعاملات المدعومة ([#1637](https://github.com/phaseoteam/Phaseo/pull/1637)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -144,6 +360,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="11 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تستخدم الإعدادات شريطًا جانبيًا واحدًا مع مبدّل بين **Account** و**Workspace** بدل أنماط التنقل المنفصلة ([#1509](https://github.com/phaseoteam/Phaseo/pull/1509)).
+- تفتح صفحة Usage Overview للمستخدمين المسجّلين على الهاتف؛ وكانت قد تعيدهم سابقًا إلى صفحة تسجيل الدخول ([#1556](https://github.com/phaseoteam/Phaseo/pull/1556)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تقبل طلبات Gemma 4 المعامل `reasoning_effort` وتترك مساحة للإجابة النهائية؛ وكانت ميزانيات الإخراج الصغيرة قد تعيد سابقًا ردود `502` فارغة ([#1550](https://github.com/phaseoteam/Phaseo/pull/1550)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -161,6 +394,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="10 أغسطس 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تجمع شاشة موافقة OAuth الأذونات المطلوبة حسب المورد وتلخّص صلاحيات القراءة والكتابة والحذف ([#1538](https://github.com/phaseoteam/Phaseo/pull/1538)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** تعيد `GET /v1/models` بنية كتالوج جديدة من Phaseo تشمل دورة الحياة والوسائط والحدود والقدرات والأسعار وعروض المزوّدين؛ حدّث الشيفرة التي تقرأ الحقول القديمة؛ راجع [عرض النماذج](../api-reference/endpoint/models.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531)).
+- يدعم خادم MCP البعيد إصدار البروتوكول `2026-07-28`، ويمكن لعملاء OAuth التسجيل بعنوان URL لمستند Client ID Metadata Document؛ راجع [CLI وMCP](../developers/cli-and-mcp.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531)).
+- يضيف `@phaseo/cli` 0.2.1 الأمرين `phaseo update` و`phaseo doctor` اللذين يحددان مدير الحزم الذي ثبّت CLI ويبلغان عن تعارضات PATH؛ راجع [واجهة Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#1534](https://github.com/phaseoteam/Phaseo/pull/1534), [#1535](https://github.com/phaseoteam/Phaseo/pull/1535)).
+- يُعدّ `phaseo integrations setup` كلًا من Codex أو Claude Code أو OpenCode لاستخدام Phaseo دون كتابة مفاتيح API في ملفات إعداداتها؛ راجع [وكلاء البرمجة](../guides/integrations/coding-assistants.mdx) ([#1510](https://github.com/phaseoteam/Phaseo/pull/1510), [#1545](https://github.com/phaseoteam/Phaseo/pull/1545)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -173,7 +425,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="8 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تضيف صفحات النماذج أداة تنقل بين الأقسام على الهاتف، وتُعاد توجيه الصفحات الفرعية القديمة إلى القسم المطابق في صفحة النموذج ([#1508](https://github.com/phaseoteam/Phaseo/pull/1508)).
+
+</div>
+
+</Update>
+
 <Update label="7 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض صفحات النماذج مخططًا لنسبة رموز الإدخال المقدَّمة من ذاكرة التخزين المؤقت عبر الزمن وحسب المزوّد ([#1499](https://github.com/phaseoteam/Phaseo/pull/1499)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -199,6 +471,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="5 أغسطس 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض صفحات النماذج مخططات TTFT وسرعة الإخراج وTPOT وITL والحمل الإضافي لـ Phaseo من P01 إلى P99، مقسّمة حسب البث وطول الإدخال ([#1344](https://github.com/phaseoteam/Phaseo/pull/1344)).
+- تحفظ الإعدادات المسبقة التعديلات كمسودات وتنشرها كإصدارات مرقّمة لا تتغير، وتُثبَّت النسخ المتفرعة في السوق على إصدار مصدر محدد؛ راجع [الإعدادات المسبقة](../guides/presets.mdx) ([#1419](https://github.com/phaseoteam/Phaseo/pull/1419)).
+- تصدّر وجهات OTLP في Broadcast تتبعات البوابة بتنسيق OpenTelemetry GenAI؛ ولا يُرسل محتوى الموجّهات والردود إلا إذا اخترت ذلك؛ راجع [Broadcast](../guides/broadcast.mdx) ([#1355](https://github.com/phaseoteam/Phaseo/pull/1355)).
+- يعرض Chat كرات متحركة أثناء عمل النموذج أو كتابته للرد، وتسرد صفحة شكر جديدة المشاريع مفتوحة المصدر التي يعتمد عليها Phaseo ([#1459](https://github.com/phaseoteam/Phaseo/pull/1459)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تسرد `GET /v1/models/{author}/{slug}/endpoints` نقاط النهاية والمعاملات المدعومة والأسعار لدى كل مزوّد لنموذج معيّن؛ راجع [عرض قدرات مسارات النموذج](../api-reference/endpoint/model-endpoints.mdx) ([#1274](https://github.com/phaseoteam/Phaseo/pull/1274)).
+- تدعم `@phaseo/ai-sdk-provider` الإصدار AI SDK 7، بما في ذلك الأدوات والاستدلال والتضمينات والصور والتفريغ النصي والكلام؛ ويبقى AI SDK 6 على الإصدارات 1.x؛ راجع [AI SDK](../guides/integrations/ai-sdk.mdx) ([#1336](https://github.com/phaseoteam/Phaseo/pull/1336)).
+- تسجّل `POST /v1/feedback` و`POST /v1/events` التقييمات والأحداث المرتبطة بالطلبات والجلسات والإعدادات المسبقة، باستخدام نطاقي المفاتيح الجديدين `feedback:read` و`feedback:write`؛ راجع [جمع الملاحظات حول الإعدادات المسبقة](../guides/preset-feedback.mdx) ([#1033](https://github.com/phaseoteam/Phaseo/pull/1033)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -214,6 +507,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="4 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض تفاصيل الطلب كل محاولة لدى مزوّد، بما فيها إعادة المحاولة والتحويل الاحتياطي، مع سبب الانتهاء والتكلفة ([#1276](https://github.com/phaseoteam/Phaseo/pull/1276)).
+- تستخدم مقارنات Chat جنبًا إلى جنب حتى 96rem على الشاشات العريضة وتقسم المساحة بين النماذج المختارة ([#1365](https://github.com/phaseoteam/Phaseo/pull/1365)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تضيف أدوات الخادم Subagent وFusion والبحث عن النماذج، وتطبّق `max_uses` و`max_tool_calls`، وتجلب حتى 100,000 حرف من محتوى الويب؛ راجع [أدوات الخادم](../guides/server-tools/index.mdx) ([#1447](https://github.com/phaseoteam/Phaseo/pull/1447)).
+- تستدعي الطلبات إعدادًا مسبقًا بتعيين `model` إلى `@slug`، أو `@username/slug` للإعدادات المسبقة العامة؛ ولا يوجد حقل `preset` منفصل؛ راجع [الإعدادات المسبقة](../guides/presets.mdx) ([#1418](https://github.com/phaseoteam/Phaseo/pull/1418)).
+- تقبل `POST /v1/audio/transcriptions` تنسيقات الرد المفصولة حسب المتحدث من OpenAI و`chunking_strategy` وحقول المتحدثين المعروفين؛ راجع [إنشاء تفريغ صوتي](../api-reference/endpoint/audio-transcriptions.mdx) ([#1451](https://github.com/phaseoteam/Phaseo/pull/1451)).
+
+</div>
+
+</Update>
+
 <Update label="3 أغسطس 2026">
 
 <div data-changelog-category="models">
@@ -224,6 +540,32 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Qwen: Qwen 3.8 Max](https://phaseo.app/models/qwen/qwen3.8-max)
 - [Sakana AI: Namazu](https://phaseo.app/models/sakana/namazu)
+
+</div>
+
+</Update>
+
+<Update label="2 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يضيف قسم الاستخدام تبويب **Geography**، وتعرض التصنيفات الاستخدام خلال 30 يومًا حسب الدولة، ويختار المستخدمون الجدد دولتهم عند التسجيل ([#1425](https://github.com/phaseoteam/Phaseo/pull/1425)).
+- يعرض البحث العام مساحات عملك، ويؤدي اختيار إحداها إلى التبديل إليها وفتح إعداداتها ([#1417](https://github.com/phaseoteam/Phaseo/pull/1417), [#1424](https://github.com/phaseoteam/Phaseo/pull/1424)).
+- يؤدي الضغط على إرسال في Chat دون اختيار نموذج إلى فتح أداة اختيار النموذج؛ وكان الزر لا يفعل شيئًا سابقًا ([#1421](https://github.com/phaseoteam/Phaseo/pull/1421), [#1423](https://github.com/phaseoteam/Phaseo/pull/1423)).
+
+</div>
+
+</Update>
+
+<Update label="1 أغسطس 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تظهر رسائل المحادثات المؤقتة بإطار متقطع، ويحتفظ تشغيل الوضع المؤقت أو إيقافه بمسودتك ([#1399](https://github.com/phaseoteam/Phaseo/pull/1399), [#1362](https://github.com/phaseoteam/Phaseo/pull/1362)).
 
 </div>
 

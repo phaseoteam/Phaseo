@@ -51,11 +51,16 @@ function unitLabel(rule: PricingRule) {
 
 type Condition = { op?: string; path?: string; value?: number };
 
-/** The input size above which a rule applies (a long-context tier), or null for the normal price. */
+/**
+ * The input size above which a rule applies (a long-context tier), or null for the normal price.
+ * Like the website's `tokenRangeFromConditions`, any token-count condition counts: Anthropic routes
+ * use `long_context_input_tokens`, OpenAI's `input_tokens`.
+ */
 export function longContextThreshold(rule: PricingRule): number | null {
   const conditions = Array.isArray((rule as { match?: unknown }).match) ? (rule as { match: Condition[] }).match : [];
-  const tier = conditions.find((condition) => condition.path === "long_context_input_tokens" && (condition.op === "gt" || condition.op === "gte"));
-  return tier && typeof tier.value === "number" ? tier.value : null;
+  const tier = conditions.find((condition) => typeof condition.path === "string" && condition.path.toLowerCase().includes("token") && (condition.op === "gt" || condition.op === "gte"));
+  const value = Number(tier?.value);
+  return tier && Number.isFinite(value) ? value : null;
 }
 
 export type PriceLine = { meter: string; label: string; value: string; unit: string; longContext: { value: string; above: string } | null };
@@ -72,8 +77,45 @@ const priceRange = (values: number[]) => {
  * price when the provider charges more above an input size. Other variations (time
  * windows) show as a range rather than a guess.
  */
-export function priceLines(provider: ProviderPricing, plan = "standard"): PriceLine[] {
-  const rules = provider.pricing_rules.filter((rule) => (rule.pricing_plan ?? "standard") === plan);
+const timeOf = (value: string | null | undefined, fallback: number) => {
+  const time = value ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(time) ? time : fallback;
+};
+
+/** Rules for a tier that apply at `nowMs` (scheduled and expired prices are left out when current ones exist). */
+export function currentRules(provider: ProviderPricing, plan = "standard", nowMs = Date.now()) {
+  const forPlan = provider.pricing_rules.filter((rule) => (rule.pricing_plan || "standard") === plan);
+  const current = forPlan.filter((rule) => timeOf(rule.effective_from, Number.NEGATIVE_INFINITY) <= nowMs && nowMs < timeOf(rule.effective_to, Number.POSITIVE_INFINITY));
+  return current.length ? current : forPlan;
+}
+
+const INPUT_METERS = ["input_text_tokens", "input_tokens"];
+const OUTPUT_METERS = ["output_text_tokens", "output_tokens"];
+const CACHE_READ_METERS = ["cached_read_text_tokens", "cached_read_tokens"];
+
+/** The normal (not long-context) per-million price for the first meter that has one. */
+export function basePricePerMillion(provider: ProviderPricing, meters: string[], plan = "standard", nowMs = Date.now()): number | null {
+  const rules = currentRules(provider, plan, nowMs);
+  for (const meter of meters) {
+    const forMeter = rules.filter((rule) => rule.meter === meter && (rule.unit ?? "token") === "token");
+    const normal = forMeter.filter((rule) => longContextThreshold(rule) == null);
+    const prices = (normal.length ? normal : forMeter).map(perMillion).filter((value): value is number => value != null);
+    if (prices.length) return Math.min(...prices);
+  }
+  return null;
+}
+
+/** The provider table's columns: input, output and cache-read per million tokens. */
+export function tablePrices(provider: ProviderPricing, plan = "standard", nowMs = Date.now()) {
+  return {
+    input: basePricePerMillion(provider, INPUT_METERS, plan, nowMs),
+    output: basePricePerMillion(provider, OUTPUT_METERS, plan, nowMs),
+    cacheRead: basePricePerMillion(provider, CACHE_READ_METERS, plan, nowMs),
+  };
+}
+
+export function priceLines(provider: ProviderPricing, plan = "standard", nowMs = Date.now()): PriceLine[] {
+  const rules = currentRules(provider, plan, nowMs);
   const byMeter = new Map<string, PricingRule[]>();
   for (const rule of rules) byMeter.set(rule.meter ?? "usage", [...(byMeter.get(rule.meter ?? "usage") ?? []), rule]);
   const order = Object.keys(METER_LABELS);

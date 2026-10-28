@@ -8,13 +8,340 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produkt","api":"API & SDKs","models":"Modelle"}} clearLabel="Zurücksetzen" />
 
+<Update label="28. Oktober 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `/v1/embeddings` gibt `400 validation_error` zurück, wenn ein Feld einer strukturierten Eingabe ein verschachteltes Objekt oder Array ist; vorher kam `502` ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296)).
+- Lehnen alle Anbieter eine Anfrage mit demselben `400`, `413` oder `422` ab, gibt das Gateway diesen Status und die Meldung des Anbieters statt `502` zurück ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296)).
+- `429`-Fehler zum Ausgabenlimit eines API-Schlüssels zeigen Dollarbeträge wie `$0.0117 of $0.01`, und Monatslimits behalten ihren `Retry-After`-Header ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296)).
+
+</div>
+
+</Update>
+
+<Update label="27. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Der Bereich **Versions and labels** im Preset-Editor lässt benannte Labels auf veröffentlichte Versionen zeigen, sodass ein verschobenes Label Anfragen mit einem Klick zurückrollt; siehe [Prompt-Vorlagen](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Preset-Anfragen können mit `prompt.version` oder `model: "@slug@label"` eine Version oder ein Label festlegen; ein unbekannter Wert ergibt `404 preset_version_not_found`; siehe [Prompt-Vorlagen](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281)).
+- `GET /v1/presets/{id}/labels` listet Preset-Labels, und `PUT` und `DELETE /v1/presets/{id}/labels/{label}` verschieben und entfernen ein Label; siehe [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- Gestreamte Events von Chat Completions, Responses und Messages tragen jetzt die Phaseo-Modell-ID in `model`; vorher trugen manche die eigene ID des Anbieters ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273)).
+- `GET /oauth/userinfo` gibt für Tokens mit dem Scope `profile` `picture`, `name` und `given_name` aus dem Phaseo-Profil zurück ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189)).
+
+</div>
+
+</Update>
+
+<Update label="26. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Spalte **Weekly tokens** auf der Modellseite zeigt wieder echte Summen; vorher stand dort bei jedem Modell 0 ([#3241](https://github.com/phaseoteam/Phaseo/pull/3241)).
+
+</div>
+
+</Update>
+
 <Update label="24. Oktober 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">Produkt</p>
 
-- Das Routing für eingestellte Modelle steht jetzt allen Workspaces zur Verfügung. Wenn kein Anbieter ein eingestelltes Modell mehr bereitstellt, können seine Anfragen an den freigegebenen Nachfolger gehen, statt fehlzuschlagen. Standardmäßig ist es aus: Inhaber und Admins aktivieren es unter **Einstellungen -> Routing -> Routing für eingestellte Modelle** und legen fest, ob ein Nachfolger mehr kosten darf. Umgeleitete Antworten enthalten den Header `x-phaseo-model-substitution`. Siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx).
+- Jeder Workspace kann das Routing für eingestellte Modelle nutzen: Inhaber und Admins aktivieren es unter **Einstellungen -> Routing -> Routing für eingestellte Modelle**, und Anfragen gehen an den freigegebenen Nachfolger; siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
+- Das Routing für eingestellte Modelle nutzt einen freigegebenen Nachfolger nur, wenn er nicht mehr kostet als das eingestellte Modell, außer Inhaber und Admins erlauben einen höheren Preis; einen selbst gewählten Nachfolger nutzt es unabhängig vom Preis ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Antworten, die der Nachfolger eines eingestellten Modells liefert, enthalten den Header `x-phaseo-model-substitution`; siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx) ([#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
+- Der Terraform-Provider ergänzt die Ressourcen `phaseo_rate_limit_policy`, `phaseo_rate_limit_assignment` und `phaseo_department_budget`, alle per ID importierbar; siehe [Anfragelimits](./api-reference/limits.mdx) ([#3216](https://github.com/phaseoteam/Phaseo/pull/3216)).
+
+</div>
+
+</Update>
+
+<Update label="23. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Inhaber und Admins können unter **Einstellungen -> Ratenlimits** Ratenlimit-Richtlinien mit Anfragen pro Minute, Tokens pro Minute, gleichzeitigen Anfragen und **Strikter Modus** anlegen; siehe [Anfragelimits](./api-reference/limits.mdx) ([#3150](https://github.com/phaseoteam/Phaseo/pull/3150), [#3213](https://github.com/phaseoteam/Phaseo/pull/3213)).
+- **Einstellungen -> Ratenlimits** weist eine Richtlinie einem API-Schlüssel, Mitglied, einer Abteilung, einer Guardrail oder dem Endnutzer-Standard zu und zeigt ihre gedrosselten Anfragen der letzten 24 Stunden ([#3150](https://github.com/phaseoteam/Phaseo/pull/3150)).
+- Inhaber und Admins können unter **Einstellungen -> Budgets** tägliche, wöchentliche oder monatliche Abteilungsbudgets anlegen; sie warnen bei 80 % und 100 % und blockieren nie Anfragen ([#3208](https://github.com/phaseoteam/Phaseo/pull/3208)).
+- Die Schlüsselsicherheit liegt jetzt unter **Einstellungen -> API-Schlüssel -> Schlüsselsicherheit**, und die Schlüsseltabelle erhält eine Spalte **Status** und sortierbare Spalten ([#3184](https://github.com/phaseoteam/Phaseo/pull/3184)).
+- Broadcast kann Traces an Amazon S3 und S3-kompatiblen Speicher, Cloudflare R2, Google Cloud Storage, ClickHouse, BigQuery und Snowflake senden; siehe [Broadcast](./guides/broadcast.mdx) ([#3181](https://github.com/phaseoteam/Phaseo/pull/3181), [#3182](https://github.com/phaseoteam/Phaseo/pull/3182), [#3185](https://github.com/phaseoteam/Phaseo/pull/3185)).
+- Neuer Leitfaden: [Broadcast](./guides/broadcast.mdx) listet die Einstellungen für jeden Zieltyp auf ([#3190](https://github.com/phaseoteam/Phaseo/pull/3190)).
+- Die Vergleichsseite ergänzt ein 30-Tage-Diagramm **Activity** mit den Tokens und Anfragen jedes Modells über Phaseo ([#3147](https://github.com/phaseoteam/Phaseo/pull/3147)).
+- Die Vergleichsseite zeigt, auf welchem Rang jedes Modell in den Fähigkeitsindizes steht ([#3148](https://github.com/phaseoteam/Phaseo/pull/3148)).
+- Vergleiche zweier Modelle haben eigene Seiten mit Zusammenfassung und FAQ, etwa `/compare/anthropic_claude-opus-5.5-vs-openai_gpt-6-astra` ([#3162](https://github.com/phaseoteam/Phaseo/pull/3162)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Ratenlimit-Richtlinien setzen `concurrent_requests` durch und geben `429` mit dem Grund `policy_concurrent_requests` und `Retry-After: 1` zurück, wenn alle Plätze belegt sind; siehe [Anfragelimits](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
+- Strikte Richtlinien (`fail_closed`) prüfen ihre Minutenlimits, bevor die Anfrage an einen Anbieter geht ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
+- Anfragen über die regionalen Gateways in der EU und den USA erreichen jetzt Broadcast-Ziele ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+
+</div>
+
+</Update>
+
+<Update label="22. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die neue Seite **Schlüsselsicherheit** markiert API-Schlüssel ohne Ausgabenlimit, Ablaufdatum, aktuelle Nutzung, IP-Allowlist oder erfassten Speicherort und schlägt eine Lösung vor ([#3159](https://github.com/phaseoteam/Phaseo/pull/3159)).
+- Für jeden API-Schlüssel lässt sich festhalten, wo er gespeichert ist, etwa Vercel, GitHub Actions oder 1Password ([#3158](https://github.com/phaseoteam/Phaseo/pull/3158)).
+- **Einstellungen -> Budgets** zeigt für jedes Workspace-Budget die Ausgaben, den Restbetrag und den Zeitpunkt des Zurücksetzens ([#3095](https://github.com/phaseoteam/Phaseo/pull/3095)).
+- Broadcast ergänzt 16 Ziele, darunter Langfuse, Datadog LLM Observability, LangSmith, PostHog und Sentry, jeweils mit einer Test-Schaltfläche; siehe [Broadcast](./guides/broadcast.mdx) ([#2962](https://github.com/phaseoteam/Phaseo/pull/2962), [#3080](https://github.com/phaseoteam/Phaseo/pull/3080), [#3083](https://github.com/phaseoteam/Phaseo/pull/3083)).
+- Die Broadcast-Einstellungen zeigen, ob jedes Ziel Daten erhält ([#3102](https://github.com/phaseoteam/Phaseo/pull/3102)).
+- **Einstellungen -> Benachrichtigungen** kann warnen, wenn ein Broadcast-Ziel wiederholt fehlschlägt ([#3105](https://github.com/phaseoteam/Phaseo/pull/3105)).
+- Webhook-Ziele von Broadcast akzeptieren ein optionales Signatur-Secret ([#3129](https://github.com/phaseoteam/Phaseo/pull/3129)).
+- Die Anfragedetails zeigen, wenn die Null-Datenaufbewahrung das Speichern des Inhalts übersprungen hat ([#3178](https://github.com/phaseoteam/Phaseo/pull/3178)).
+- Auf der Vergleichsseite lassen sich Route und Service-Tier unter jedem Modell wählen; Preise, Kostenrechner und Bewertungen folgen dieser Auswahl ([#3133](https://github.com/phaseoteam/Phaseo/pull/3133)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `/v1/messages` akzeptiert `role: "system"`-Nachrichten mitten im Gespräch an den Stellen, die Claude erlaubt; siehe [Eine Nachricht erstellen](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165)).
+- Die Schlüssel-Endpunkte und alle SDKs akzeptieren und liefern `storage_locations`, bis zu acht Orte, an denen ein Schlüssel liegt, etwa `["railway", "github"]`; siehe [API-Schlüssel erstellen](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164)).
+- **Beta:** `/v1/department-budgets` legt tägliche, wöchentliche oder monatliche USD-Budgets pro Abteilung fest, die Inhaber und Admins bei etwa 80 % und 100 % warnen, ohne Anfragen zu blockieren ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125)).
+- Null-Datenaufbewahrung hält Prompt- und Antwortinhalte einer Anfrage aus dem Antwort-Cache, den Datenproben und der Telemetrie von Phaseo heraus, ob sie vom Workspace, einer Schlüssel-Guardrail oder der Anfrage kommt ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
+- Zustellungen von Benachrichtigungen an eigene Webhooks werden mit `x-phaseo-timestamp` und `x-phaseo-signature` (HMAC-SHA256) signiert; siehe [Workspace-Benachrichtigungen](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089)).
+- Broadcast exportiert das `metadata` einer Anfrage als Span-Attribute `phaseo.metadata.<key>` ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
+- `trace_name`, `span_name`, `generation_name` und `trace_id` im `metadata` einer Anfrage benennen und gruppieren ihre von Broadcast exportierten Traces ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
+
+</div>
+
+</Update>
+
+<Update label="21. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Protokollierte Anfragen an Chat Completions, Responses und Messages lassen sich im Chat öffnen und fortsetzen, aus den Anfragedetails, dem Kontextmenü der Log-Tabelle oder einem Sitzungsschritt; siehe [Anfragen im Chat öffnen](./guides/open-requests-in-chat.mdx) ([#3084](https://github.com/phaseoteam/Phaseo/pull/3084), [#3092](https://github.com/phaseoteam/Phaseo/pull/3092)).
+- Inhaber und Admins können gespeicherte Prompts und Antworten unter **Einstellungen -> Datenschutz -> Wer Inhalte sehen darf** auf Inhaber und Admins beschränken ([#3103](https://github.com/phaseoteam/Phaseo/pull/3103)).
+- Mit **Keine Datenaufbewahrung verlangen** werden Anfrage- und Antwortinhalte nie in den Anfrage-Logs gespeichert ([#3081](https://github.com/phaseoteam/Phaseo/pull/3081)).
+- Presets können eine Prompt-Vorlage mit `{{variable}}`-Platzhaltern enthalten, sodass Anfragen nur `prompt.id` und die Variablen senden; siehe [Prompt-Vorlagen](./guides/prompt-templates.mdx) ([#3085](https://github.com/phaseoteam/Phaseo/pull/3085)).
+- Der Preset-Editor zeigt beim Bearbeiten eine Vorschau der Prompt-Vorlage und hat eine Schaltfläche **Run** zum Testen ([#3086](https://github.com/phaseoteam/Phaseo/pull/3086), [#3122](https://github.com/phaseoteam/Phaseo/pull/3122)).
+- Der Tab **Trace** in den Anfragedetails mit Routing, Anbieterversuchen, Tool-Aufrufen und der endgültigen Antwort steht allen Workspaces zur Verfügung ([#3082](https://github.com/phaseoteam/Phaseo/pull/3082)).
+- Die Vergleichsseite nutzt eine gruppierte Tabelle, die in jeder Zeile den besten Wert hervorhebt, mit einem Schalter, der nur abweichende Zeilen zeigt ([#3116](https://github.com/phaseoteam/Phaseo/pull/3116)).
+- `/models` und `/models/table` ergänzen einen Filter **Lizenz**, gruppiert in permissiv, eingeschränkt und proprietär, sowie einen Filter **Gewichte** für offene oder geschlossene Gewichte ([#3062](https://github.com/phaseoteam/Phaseo/pull/3062), [#3075](https://github.com/phaseoteam/Phaseo/pull/3075), [#3079](https://github.com/phaseoteam/Phaseo/pull/3079)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Inkompatible Änderung:** Fehlerantworten geben `error` als Objekt mit `code`, `message`, `type`, `param` und `metadata` zurück; Code, der `error` als String las, sollte das neue `code` auf oberster Ebene lesen; siehe [Fehler und Debugging](./api-reference/errors.mdx) ([#3055](https://github.com/phaseoteam/Phaseo/pull/3055)).
+- Antworten von Chat Completions, Responses, Messages und Embeddings enthalten `usage.cost` in USD und eine Aufschlüsselung `usage.cost_details` ([#3050](https://github.com/phaseoteam/Phaseo/pull/3050)).
+- `POST /v1/keys` gibt das neue Secret auf oberster Ebene als `key` zurück; siehe [API-Schlüssel erstellen](./api-reference/endpoint/keys-create.mdx) ([#3050](https://github.com/phaseoteam/Phaseo/pull/3050)).
+- Text-Endpunkte akzeptieren explizites `null` für optionale Parameter, `service_tier: "auto"` und `"scale"` sowie `prediction`, die bisher `400` ergaben ([#3049](https://github.com/phaseoteam/Phaseo/pull/3049)).
+- Die Plugins `web` und `web-fetch` funktionieren mit jedem Modell, als Server-Tools für Websuche und Web-Abruf von Phaseo; siehe [Websuche-Server-Tool](./guides/server-tools/web-search.mdx) ([#3051](https://github.com/phaseoteam/Phaseo/pull/3051)).
+- Ratenlimit-Richtlinien setzen `tokens_per_minute` durch und liefern die Header `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens` und `x-ratelimit-reset-tokens`; siehe [Anfragelimits](./api-reference/limits.mdx) ([#2961](https://github.com/phaseoteam/Phaseo/pull/2961)).
+- Ratenlimit-Richtlinien, die einer Abteilung zugewiesen sind, gelten jetzt für die Anfragen dieser Abteilung ([#3088](https://github.com/phaseoteam/Phaseo/pull/3088)).
+- Schreibvorgänge in den Prompt-Cache werden zu den dokumentierten Sätzen abgerechnet: 2x Input für 1-Stunden-Schreibvorgänge bei Claude und 2,5x für 12-Stunden-Schreibvorgänge bei OpenAI; siehe [Zwischenspeicherung von Prompts](./guides/prompt-caching.mdx) ([#3078](https://github.com/phaseoteam/Phaseo/pull/3078), [#3076](https://github.com/phaseoteam/Phaseo/pull/3076)).
+- Die Nutzung von Responses liefert `input_tokens_details.cache_write_tokens_details` mit der Aufteilung der Cache-Schreibvorgänge auf 30 Minuten und 12 Stunden ([#3078](https://github.com/phaseoteam/Phaseo/pull/3078)).
+
+</div>
+
+</Update>
+
+<Update label="19. Oktober 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Optionale Parameter, die der Anbieter nicht unterstützt, etwa `top_k` oder `min_p`, werden entfernt und im Antwort-Header `X-Phaseo-Dropped-Params` aufgeführt; siehe [Parameter](./api-reference/parameters.mdx) ([#2999](https://github.com/phaseoteam/Phaseo/pull/2999)).
+- Ein Anbieterfehler mitten im Stream beendet den Stream mit dem Fehler-Event des Endpunkts statt mit einem normalen Abschluss ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
+- Eine Anfrage, die alle Anbieter mit `429` abgelehnt haben, gibt `429` mit dem `Retry-After` des Anbieters zurück ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
+- Eine als ungültig abgelehnte Anfrage weicht nicht mehr auf die anderen Modelle in `models` aus ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
+
+</div>
+
+</Update>
+
+<Update label="18. Oktober 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Das Phaseo-Plugin für Claude Code bündelt den Phaseo-MCP-Server, den Docs-MCP-Server unter `https://phaseo.app/docs/mcp` und die Skills von Phaseo; siehe [CLI und MCP](./developers/cli-and-mcp.mdx) ([#2949](https://github.com/phaseoteam/Phaseo/pull/2949)).
+- Prompt-Caching wird zu den dokumentierten Sätzen jedes Anbieters abgerechnet; siehe [Zwischenspeicherung von Prompts](./guides/prompt-caching.mdx) ([#2964](https://github.com/phaseoteam/Phaseo/pull/2964)).
+- Agent-Schritte bleiben beim Anbieter, der ihren Prompt-Cache hält ([#2969](https://github.com/phaseoteam/Phaseo/pull/2969)).
+- Claude-Anfragen akzeptieren einen Cache-Bereich `agent`, der Cache-Breakpoints für Agents mit mehreren Schritten setzt; siehe [Zwischenspeicherung von Prompts](./guides/prompt-caching.mdx) ([#2957](https://github.com/phaseoteam/Phaseo/pull/2957)).
+
+</div>
+
+</Update>
+
+<Update label="17. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- **Einstellungen -> Benachrichtigungen** ergänzt **Warnungen zu Ratenlimits**, höchstens einmal pro Stunde per E-Mail, Slack, Discord, Teams oder Webhook; siehe [Workspace-Benachrichtigungen](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946)).
+
+</div>
+
+</Update>
+
+<Update label="16. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Dokumentation nutzt das Design von phaseo.app, mit neuem Theme, einfacherer Navigation und einer Fußzeile mit Links zu Models, Status und Support ([#2930](https://github.com/phaseoteam/Phaseo/pull/2930)).
+- Das Markdown jeder Doku-Seite und `llms.txt` enthalten Anweisungen für KI-Agents zu Authentifizierung, Modell-IDs und Endpunkten ([#2947](https://github.com/phaseoteam/Phaseo/pull/2947)).
+- Die öffentlichen Skills von Phaseo liegen unter `/.well-known/agent-skills/` und lassen sich mit `npx skills add https://phaseo.app/docs` installieren ([#2947](https://github.com/phaseoteam/Phaseo/pull/2947)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Die SDK-Dokumentation ergänzt das Java SDK, das aus dem Quellcode installiert wird; siehe [Java SDK — Installation](./sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904)).
+
+</div>
+
+</Update>
+
+<Update label="15. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Angemeldete Nutzer sehen unter dem Website-Header einen Hinweis, wenn ein Modell, das ihr Workspace in den letzten 90 Tagen genutzt hat, abgekündigt wird; siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx) ([#2871](https://github.com/phaseoteam/Phaseo/pull/2871)).
+- E-Mails zu Modellabkündigungen gehen an den Workspace-Inhaber, Admins können hinzugefügt werden ([#2868](https://github.com/phaseoteam/Phaseo/pull/2868)).
+- Die Prognosen in der Nutzungsübersicht folgen dem gewählten Zeitraum ([#2921](https://github.com/phaseoteam/Phaseo/pull/2921)).
+- Jede Zahl in der Nutzungsübersicht beruht auf exakten Summen; vorher auf einer Stichprobe aktueller Anfragen ([#2927](https://github.com/phaseoteam/Phaseo/pull/2927)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Beta:** `/v1/rate-limits` erstellt und weist Ratenlimit-Richtlinien zu, und das Gateway setzt ihr `requests_per_minute` für Schlüssel, Mitglieder, Guardrails und Endnutzer durch; siehe [Anfragelimits](./api-reference/limits.mdx) ([#2888](https://github.com/phaseoteam/Phaseo/pull/2888), [#2893](https://github.com/phaseoteam/Phaseo/pull/2893)).
+- Anfragen über dem `requests_per_minute` einer Richtlinie ergeben `429 rate_limit_exceeded` mit `x-ratelimit-*`-Headern ([#2893](https://github.com/phaseoteam/Phaseo/pull/2893)).
+- Eingestellte Modelle laufen weiter, solange noch eine Anbieterroute aktiv ist; ist keine mehr übrig, geben Anfragen `410 model_retired` zurück; siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx) ([#2884](https://github.com/phaseoteam/Phaseo/pull/2884)).
+- Die Batch API führt Gemini-Modelle auf Vertex AI mit von Phaseo verwalteten Schlüsseln aus; siehe [Video- und Stapelaufträge](./guides/async-video-and-batch.mdx) ([#2932](https://github.com/phaseoteam/Phaseo/pull/2932), [#2935](https://github.com/phaseoteam/Phaseo/pull/2935)).
+- `/v1/batches/models` listet Batch-Angebote für Gemini ([#2936](https://github.com/phaseoteam/Phaseo/pull/2936)).
+
+</div>
+
+</Update>
+
+<Update label="14. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- **Einstellungen -> Abrechnung und Guthaben** zeigt, wie lange dein Guthaben beim aktuellen Verbrauch reicht ([#2898](https://github.com/phaseoteam/Phaseo/pull/2898)).
+- Die Limits von API-Schlüsseln zeigen, wohin sich jedes Zeitfenster vor dem Zurücksetzen entwickelt ([#2895](https://github.com/phaseoteam/Phaseo/pull/2895)).
+- Die wöchentliche und monatliche Nutzung von API-Schlüsseln zeigt echte Beträge; vorher stand dort null ([#2895](https://github.com/phaseoteam/Phaseo/pull/2895)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `GET /v1/models` liefert ein `ETag` und antwortet auf ein passendes `If-None-Match` mit `304 Not Modified`; siehe [Modelle auflisten](./api-reference/endpoint/models.mdx) ([#2916](https://github.com/phaseoteam/Phaseo/pull/2916)).
+- Jedes Anbieterangebot in `GET /v1/models` listet die akzeptierten Service-Tiers ([#2916](https://github.com/phaseoteam/Phaseo/pull/2916)).
+
+</div>
+
+</Update>
+
+<Update label="13. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Jede Karte der Nutzungsübersicht zeigt eine Monatsend-Prognose für Ausgaben, Anfragen und Tokens oder bei Raten wie der Cache-Trefferquote den bisherigen Monat ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900)).
+
+</div>
+
+</Update>
+
+<Update label="12. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Modellseite ergänzt die Gruppen OCR, Dokumentanalyse und Übersetzung ([#2867](https://github.com/phaseoteam/Phaseo/pull/2867)).
+- Auf der Modellseite öffnet **Audio** eine Reihe mit Filtern für Sprache, Transkription, Übersetzung, Echtzeit und Musik ([#2873](https://github.com/phaseoteam/Phaseo/pull/2873), [#2876](https://github.com/phaseoteam/Phaseo/pull/2876)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Die Fallback-Liste `models` auf oberster Ebene funktioniert an jedem Inferenz-Endpunkt, auch an `/v1/messages` und den Medien-Endpunkten; siehe [Routing und Fallbacks](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858)).
+- `429`-Antworten für Anfrage- und Ausgabenlimits von API-Schlüsseln enthalten `Retry-After` mit den Sekunden bis zum Zurücksetzen ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864)).
+
+</div>
+
+</Update>
+
+<Update label="11. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellkarten zeigen die Standardpreise für Input und Output des günstigsten Anbieters mit Einheiten ([#2831](https://github.com/phaseoteam/Phaseo/pull/2831), [#2832](https://github.com/phaseoteam/Phaseo/pull/2832)).
+- Die Preis-Hovercard einer Modellkarte nennt den Anbieter hinter dem Preis und listet jede bepreiste Variante von Bild- und Videomodellen ([#2845](https://github.com/phaseoteam/Phaseo/pull/2845), [#2839](https://github.com/phaseoteam/Phaseo/pull/2839)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `GET /v1/models?format=openai` gibt die Modellliste im OpenAI-Listenformat mit kanonischen Modell-IDs zurück; siehe [Modelle auflisten](./api-reference/endpoint/models.mdx) ([#2838](https://github.com/phaseoteam/Phaseo/pull/2838)).
 
 </div>
 
@@ -26,13 +353,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produkt</p>
 
-- Der Chat bietet neben dem temporären Chat ein optionales Experiment mit interaktiven Antworten: Vergleichskarten, Tabellen, Balkendiagramme und Folgeformulare. Formularwerte bleiben bei jeder Antwortvariante gespeichert und das Absenden setzt die Unterhaltung fort.
+- Chat ergänzt das optionale Experiment **Interactive answers**, das neben dem temporären Chat aktiviert wird und mit Vergleichskarten, Tabellen, Balkendiagrammen und Folgeformularen antworten kann ([#2778](https://github.com/phaseoteam/Phaseo/pull/2778)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Jedes Workspace-Mitglied hat ein Kontingent an Anfragen pro Minute, geteilt über seine API-Schlüssel, das mit wachsender Etablierung des Workspace von 10 auf 120 steigt; siehe [Anfragelimits](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800)).
+- Jeder Nutzer kann pro UTC-Tag 1.500 Anfragen an kostenlose Modelle stellen, und Anfragen über einem der beiden Limits ergeben `429` mit `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787)).
+- Die regionalen Gateways in der EU und den USA geben `403 model_region_unavailable` zurück, wenn kein Anbieter das Modell in dieser Region bereitstellt; siehe [Textanfragen nach Region routen](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813)).
 
 </div>
 
 </Update>
 
 <Update label="7. Oktober 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `/v1/decisions` akzeptiert OpenAI-kompatible Eingaben mit geordneten Fragen und Antworten, und bestehende Anfrageformen funktionieren weiter; siehe [Eine Entscheidung treffen](./api-reference/endpoint/decisions.mdx) ([#2744](https://github.com/phaseoteam/Phaseo/pull/2744)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -48,6 +393,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="6. Oktober 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellseiten zeigen gespeicherte Spezifikationen wie Gesamt- und aktive Parameterzahl, Lizenz und Trainings-Tokens ([#2728](https://github.com/phaseoteam/Phaseo/pull/2728)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelle</p>
@@ -57,6 +410,54 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
+
+</div>
+
+</Update>
+
+<Update label="4. Oktober 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Jede Anfrage erhält eine vom Server erzeugte `G`-Generierungs-ID, die Antwort-Header, Payloads und Logs teilen, und ein `x-request-id` des Aufrufers ersetzt sie nicht mehr; siehe [Generierung abrufen](./api-reference/endpoint/generation.mdx) ([#2710](https://github.com/phaseoteam/Phaseo/pull/2710)).
+
+</div>
+
+</Update>
+
+<Update label="3. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Inhaber und Admins können das Profil eines Workspace-Mitglieds über dessen Nutzer-Chip öffnen, mit 30 Tagen Anfragen und Ausgaben, Top-Modellen, Schlüsseln und aktuellen Logs ([#2700](https://github.com/phaseoteam/Phaseo/pull/2700)).
+
+</div>
+
+</Update>
+
+<Update label="2. Oktober 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Jeder API-Schlüssel hat eine eigene Seite mit Nutzungsdiagrammen, Limits und Einstellungen ([#2686](https://github.com/phaseoteam/Phaseo/pull/2686)).
+- API-Schlüssel lassen sich auf benannte IPv4- oder IPv6-Adressen und CIDR-Bereiche beschränken ([#2686](https://github.com/phaseoteam/Phaseo/pull/2686)).
+- Web-App und Dokumentation sind auf Spanisch, Französisch, Deutsch, brasilianisches Portugiesisch, Japanisch, vereinfachtes Chinesisch, Hindi und Arabisch übersetzt, auch Texte, die bisher auf Englisch erschienen ([#2681](https://github.com/phaseoteam/Phaseo/pull/2681)).
+- Die öffentliche Seite Monitor entfällt, und gespeicherte Einstellungen, die beim Start Monitor öffneten, öffnen jetzt die Startseite ([#2683](https://github.com/phaseoteam/Phaseo/pull/2683)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Die Phaseo-MCP-App ergänzt einen Modell-Explorer mit Suche, Filtern, Vergleich von bis zu drei Modellen, Kostenschätzungen und Codebeispielen; siehe [CLI und MCP](./developers/cli-and-mcp.mdx) ([#2680](https://github.com/phaseoteam/Phaseo/pull/2680)).
+- Die Phaseo-MCP-App kann einen Textvergleich ausführen, nachdem du die geschätzten Kosten geprüft und freigegeben hast ([#2680](https://github.com/phaseoteam/Phaseo/pull/2680)).
 
 </div>
 
