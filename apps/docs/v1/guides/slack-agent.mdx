@@ -286,7 +286,8 @@ Each run is an ordinary answer to the person who set it up. The agent checks the
 
 When a run can't go ahead:
 
-- If the person who set it up can no longer use the agent, the agent has been paused in Phaseo, or it can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
+- If the agent has been paused in Phaseo, or a Phaseo bill is unpaid (**Payment due**), the run is skipped and the task carries on: it runs again at its next time once the agent is back on, with nothing to resume. These skipped runs don't count as failures, and **Settings → Slack** shows why the last run was skipped.
+- If the person who set it up can no longer use the agent, or the agent can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
 - Any other run that doesn't go through, such as one refused because the **Monthly spending cap** is reached, counts as a failure. After 3 in a row the task is paused, and the agent tells the person who set it up in a direct message.
 
 People can cancel the tasks they set up by asking the agent. Owners and admins of the Phaseo workspace who have [linked their Slack account](#link-a-slack-account) can cancel anyone's. People from other companies in shared Slack Connect channels can see a conversation's tasks but can't set them up. The agent's **Home** tab lists your own tasks.
@@ -549,7 +550,7 @@ A few rules for your own app:
 
 ## Pause or uninstall
 
-- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks that come due while it's paused are paused too; resume them under **Recurring tasks**.
+- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks skip the runs that come due while it's paused, then carry on at their next time after you resume answers.
 - **Uninstall** stops the agent straight away, deletes its API key, notes, saved skills and recurring tasks, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
 - Uninstalling also deletes the agent's shared pages, so their links stop working.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.

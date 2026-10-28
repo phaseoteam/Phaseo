@@ -7219,6 +7219,12 @@
 				"running": "Em andamento",
 				"none": "Ainda não executada"
 			},
+			"skipReasons": {
+				"installationPaused": "Pulada: o agente estava pausado",
+				"paymentDue": "Pulada: havia uma fatura da Phaseo não paga",
+				"schedulesOff": "Pulada: as tarefas recorrentes estavam desativadas",
+				"limit": "Pulada: um limite de uso foi atingido"
+			},
 			"failuresInRow": "Falhas seguidas: {count}",
 			"pause": "Pausar",
 			"resume": "Retomar",

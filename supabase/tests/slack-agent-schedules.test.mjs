@@ -15,6 +15,11 @@ const uninstallFromSlack = await read('../migrations/20261022113514_slack_agent_
 const modelChoice = await read('../migrations/20261027131100_slack_agent_model_choice.sql');
 const memory = await migrationNamed('_slack_agent_memory_and_skills.sql');
 const migration = await migrationNamed('_slack_agent_schedules.sql');
+// Skipped runs while the agent is paused or a bill is due: replaces the claim, recording a run and the failures
+// column's comment, and resumes the schedules the claim used to pause for that.
+const skipWhilePaused = await migrationNamed('_slack_agent_schedules_skip_while_paused.sql');
+const REPLACED = ['functions/claim_slack_agent_schedules.sql', 'functions/record_slack_agent_schedule_run.sql'];
+const FAILURES_COMMENT = /COMMENT ON COLUMN "public"\."slack_agent_schedules"\."failures" IS '[^\n]*';/;
 const declarative = [
   'tables/slack_agent_schedules.sql', 'functions/slack_agent_schedule_next_run.sql', 'functions/save_slack_agent_schedule.sql',
   'functions/claim_slack_agent_schedules.sql', 'functions/record_slack_agent_schedule_run.sql', 'functions/cancel_slack_agent_schedule.sql',
@@ -70,10 +75,21 @@ try {
   `);
   for (const sql of [billing, guardrailRule, uninstallFromSlack, modelChoice, memory, migration]) await db.exec(sql);
 
-  // The migration is the declarative schema, verbatim.
+  // The migrations are the declarative schema, verbatim: what the skip-while-paused migration replaced is in it,
+  // and the rest is in the schedules migration.
   for (const file of declarative) {
-    assert.ok(migration.includes(await read(`../schemas/public/${file}`)), `the migration matches ${file}`);
+    const definition = await read(`../schemas/public/${file}`);
+    if (REPLACED.includes(file)) {
+      assert.ok(skipWhilePaused.includes(definition), `the skip-while-paused migration matches ${file}`);
+    } else if (file === 'tables/slack_agent_schedules.sql') {
+      const comment = definition.match(FAILURES_COMMENT)?.[0];
+      assert.ok(comment && skipWhilePaused.includes(comment), 'the skip-while-paused migration matches the failures comment');
+      for (const part of definition.split(comment)) assert.ok(migration.includes(part), `the migration matches ${file}`);
+    } else {
+      assert.ok(migration.includes(definition), `the migration matches ${file}`);
+    }
   }
+  assert.doesNotMatch(skipWhilePaused, /\bdelete\s+from\b|\bdrop\s|\btruncate\b/i, 'deletes nothing');
   const trigger = installationsFile.match(/CREATE TRIGGER slack_installations_delete_agent_schedules[\s\S]*?delete_slack_agent_schedules\(\);/)?.[0];
   assert.ok(trigger && migration.includes(trigger), 'the migration matches the installations table trigger');
   assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /m);
@@ -90,6 +106,81 @@ try {
   await assert.rejects(rows('update public.slack_installations set schedules_max = 0 where id = $1', [installationId]), /slack_installations_schedules_max_check/);
   await assert.rejects(rows('update public.slack_installations set schedules_max = 101 where id = $1', [installationId]), /slack_installations_schedules_max_check/);
   await assert.rejects(rows(`update public.slack_installations set schedule_creators = 'admins' where id = $1`, [installationId]), /slack_installations_schedule_creators_check/);
+
+  // A schedule's row, making one due, claiming, recording a run, Settings' pause and resume, and an admin
+  // pausing the agent (or a bill falling due).
+  const schedule = async (id) => (await rows('select * from public.slack_agent_schedules where id = $1', [id]))[0];
+  const makeDue = async (id, minutesAgo) => {
+    await db.exec('reset role');
+    await rows(`update public.slack_agent_schedules set next_run_at = date_trunc('minute', now()) - make_interval(mins => $2) where id = $1`, [id, minutesAgo]);
+    await db.exec('set role service_role');
+    return (await schedule(id)).next_run_at;
+  };
+  const claim = async (limit = 50) => rows('select * from public.claim_slack_agent_schedules($1)', [limit]);
+  const record = async (id, runAt, result, { reason = null, pause = false } = {}) =>
+    (await rows('select public.record_slack_agent_schedule_run($1, $2, $3, $4, $5) as result', [id, runAt, result, reason, pause]))[0].result;
+  const setStatus = async (id, status, installation = installationId) =>
+    (await rows('select public.set_slack_agent_schedule_status($1, $2, $3) as result', [installation, id, status]))[0].result;
+  const setInstallationStatus = async (id, status) => {
+    await db.exec('reset role');
+    await rows('update public.slack_installations set status = $2 where id = $1', [id, status]);
+    await db.exec('set role service_role');
+  };
+
+  // Before the skip-while-paused migration, the claim paused the due schedules of a paused installation (or one
+  // with a bill due), and so did the Worker when it found that before a run started. The migration makes those
+  // active again, as Resume in Settings would, and leaves other pauses alone.
+  const LEGACY_WORKSPACE = '10000000-0000-4000-8000-000000000003';
+  const WAITING_WORKSPACE = '10000000-0000-4000-8000-000000000004';
+  await rows('insert into public.workspaces values ($1, null), ($2, null)', [LEGACY_WORKSPACE, WAITING_WORKSPACE]);
+  const legacyId = (await install(LEGACY_WORKSPACE, 'T0TEAM0003')).id;
+  const waitingId = (await install(WAITING_WORKSPACE, 'T0TEAM0004')).id;
+  await db.exec('set role service_role');
+  const legacy = {};
+  for (const [installation, title] of [[legacyId, 'Paused'], [legacyId, 'Bill due'], [legacyId, 'By admin'], [legacyId, 'Creator gone'], [waitingId, 'Waiting']]) {
+    legacy[title] = (await rows('select public.save_slack_agent_schedule($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) as result',
+      [installation, CHANNEL, title, 'Post the status.', 'hourly', null, 20, null, null, 'UTC', PERSON, `Legacy:${title}`]))[0].result.schedule.id;
+  }
+  await setInstallationStatus(legacyId, 'paused');
+  await setInstallationStatus(waitingId, 'paused');
+  await makeDue(legacy.Paused, 1);
+  await makeDue(legacy.Waiting, 1);
+  assert.deepEqual(await claim(), [], 'the old claim pauses them');
+  await setInstallationStatus(legacyId, 'active');
+  await makeDue(legacy['Bill due'], 1);
+  await makeDue(legacy['Creator gone'], 1);
+  const legacyRuns = await claim();
+  const legacyRun = (title) => legacyRuns.find((row) => row.schedule_id === legacy[title]).run_at;
+  await record(legacy['Bill due'], legacyRun('Bill due'), 'skipped', { reason: 'payment_due', pause: true });
+  await record(legacy['Creator gone'], legacyRun('Creator gone'), 'skipped', { reason: 'creator_access', pause: true });
+  await setStatus(legacy['By admin'], 'paused', legacyId);
+  const before = {};
+  for (const [title, id] of Object.entries(legacy)) before[title] = await schedule(id);
+  assert.deepEqual(Object.values(before).map((row) => [row.status, row.pause_reason, row.failures]), [
+    ['paused', 'installation_paused', 0], ['paused', 'payment_due', 1], ['paused', 'admin', 0], ['paused', 'creator_access', 1], ['paused', 'installation_paused', 0],
+  ], 'paused the old way');
+
+  await db.exec('reset role');
+  await db.exec(skipWhilePaused);
+  await db.exec('set role service_role');
+  for (const title of ['Paused', 'Bill due', 'Waiting']) {
+    const row = await schedule(legacy[title]);
+    assert.deepEqual([row.status, row.pause_reason, row.failures], ['active', null, 0], `${title} is active again`);
+    const sinceClaim = row.next_run_at.getTime() - before[title].last_claimed_at.getTime();
+    assert.ok(sinceClaim >= 50 * MINUTE && sinceClaim <= 110 * MINUTE, `${title} runs at its next time at least 50 minutes after its last claim`);
+    assert.equal(row.next_run_at.getUTCMinutes(), 20);
+    assert.deepEqual([row.last_result, row.last_result_reason], [before[title].last_result, before[title].last_result_reason], 'its last run as it was');
+  }
+  for (const title of ['By admin', 'Creator gone']) assert.deepEqual(await schedule(legacy[title]), before[title], `${title} stays paused`);
+  // An installation that's still paused skips the runs until it's active, then carries on.
+  await makeDue(legacy.Waiting, 1);
+  assert.deepEqual(await claim(), []);
+  const waiting = await schedule(legacy.Waiting);
+  assert.deepEqual([waiting.status, waiting.last_result, waiting.last_result_reason, waiting.failures], ['active', 'skipped', 'installation_paused', 0]);
+  await setInstallationStatus(waitingId, 'active');
+  await makeDue(legacy.Waiting, 1);
+  assert.deepEqual((await claim()).map((row) => row.schedule_id), [legacy.Waiting]);
+  await db.exec('reset role');
 
   // Clients can neither read the table nor call the functions.
   for (const role of ['anon', 'authenticated']) {
@@ -175,7 +266,6 @@ try {
   const hourly = await save({ title: 'Hourly status', frequency: 'hourly', hour: null, minute: 5, dayOfWeek: null });
   const daily = await save({ title: 'Daily digest', frequency: 'daily', dayOfWeek: null, tz: 'America/New_York' });
   assert.deepEqual(await save({ title: 'One too many' }), { status: 'full', limit: 4 }, 'at most schedules_max');
-  const schedule = async (id) => (await rows('select * from public.slack_agent_schedules where id = $1', [id]))[0];
   // A retried Workflow step saves again with the same key: it gets the schedule saved the first time, even when full.
   const replayed = await save({ title: 'Hourly status, reworded', frequency: 'hourly', hour: null, minute: 10, dayOfWeek: null, key: (await schedule(hourly.schedule.id)).creation_key });
   assert.deepEqual([replayed.status, replayed.schedule.id, replayed.schedule.title, replayed.schedule.minute], ['saved', hourly.schedule.id, 'Hourly status', 5]);
@@ -186,14 +276,7 @@ try {
   assert.equal(await count(otherId), 2);
 
   // Claiming: due rows once, the next run at least 50 minutes on.
-  const claim = async (limit = 50) => rows('select * from public.claim_slack_agent_schedules($1)', [limit]);
   assert.deepEqual(await claim(), [], 'nothing is due yet');
-  const makeDue = async (id, minutesAgo) => {
-    await db.exec('reset role');
-    await rows(`update public.slack_agent_schedules set next_run_at = date_trunc('minute', now()) - make_interval(mins => $2) where id = $1`, [id, minutesAgo]);
-    await db.exec('set role service_role');
-    return (await schedule(id)).next_run_at;
-  };
   const hourlyDue = await makeDue(hourly.schedule.id, 1);
   const weeklyDue = await makeDue(weekly.schedule.id, 3);
   const claimed = await claim();
@@ -227,8 +310,6 @@ try {
 
   // A run claimed late, 59.5 minutes after it was due: the next run is still at least 50 minutes after the
   // claim, not at its minute moments later. Resuming it keeps that gap too.
-  const setStatus = async (id, status, installation = installationId) =>
-    (await rows('select public.set_slack_agent_schedule_status($1, $2, $3) as result', [installation, id, status]))[0].result;
   const soon = (new Date().getUTCMinutes() + 2) % 60;
   await db.exec('reset role');
   await rows(`update public.slack_agent_schedules set minute = $2, next_run_at = now() - interval '59 minutes 30 seconds' where id = $1`, [hourly.schedule.id, soon]);
@@ -255,8 +336,6 @@ try {
   assert.equal(slightlyLate.next_run_at.getUTCMinutes(), slot);
 
   // Recording what became of a run.
-  const record = async (id, runAt, result, { reason = null, pause = false } = {}) =>
-    (await rows('select public.record_slack_agent_schedule_run($1, $2, $3, $4, $5) as result', [id, runAt, result, reason, pause]))[0].result;
   const dailyRun = (await schedule(daily.schedule.id)).last_run_at;
   const answered = await record(daily.schedule.id, dailyRun, 'answered');
   assert.deepEqual([answered.recorded, answered.paused, answered.failures, answered.created_by, answered.channel_id], [true, false, 0, PERSON, CHANNEL]);
@@ -314,20 +393,49 @@ try {
   await db.exec('reset role');
   await rows('update public.slack_installations set schedules_enabled = true where id = $1', [installationId]);
 
-  // A paused installation (or one with a charge unpaid): its due schedules pause with that reason.
-  await rows(`update public.slack_installations set status = 'paused' where id = $1`, [installationId]);
+  // A paused installation (or one with a charge unpaid): its due runs are skipped with that reason. The
+  // schedules stay active, keep their failures in a row and move on to their next time.
   await db.exec('set role service_role');
   await makeDue(weekly.schedule.id, 1);
-  await makeDue(daily.schedule.id, 1);
-  assert.deepEqual(await claim(), []);
-  for (const id of [weekly.schedule.id, daily.schedule.id]) {
-    const row = await schedule(id);
-    assert.deepEqual([row.status, row.pause_reason, row.last_result, row.last_result_reason], ['paused', 'installation_paused', 'skipped', 'installation_paused']);
+  [run] = await claim();
+  assert.equal((await record(weekly.schedule.id, run.run_at, 'failed')).failures, 1);
+  for (const [status, reason] of [['paused', 'installation_paused'], ['payment_due', 'payment_due']]) {
+    await setInstallationStatus(installationId, status);
+    const dueAt = await makeDue(weekly.schedule.id, 1);
+    await makeDue(daily.schedule.id, 1);
+    assert.deepEqual(await claim(), [], `nothing runs while ${status}`);
+    for (const [id, failures] of [[weekly.schedule.id, 1], [daily.schedule.id, 0]]) {
+      const row = await schedule(id);
+      assert.deepEqual([row.status, row.pause_reason, row.last_result, row.last_result_reason, row.failures], ['active', null, 'skipped', reason, failures]);
+      assert.ok(row.next_run_at.getTime() > Date.now(), 'and it moves on to its next time');
+    }
+    assert.equal((await schedule(weekly.schedule.id)).last_run_at.getTime(), dueAt.getTime());
   }
-  await db.exec('reset role');
-  await rows(`update public.slack_installations set status = 'active' where id = $1`, [installationId]);
-  await db.exec('set role service_role');
-  await setStatus(daily.schedule.id, 'active');
+  // The Worker skips a run it claimed when it finds the installation paused (or a bill due) before it starts,
+  // also in its Workflow: that neither pauses the schedule nor counts, even from a Worker that asks to pause.
+  await setInstallationStatus(installationId, 'active');
+  await makeDue(weekly.schedule.id, 1);
+  [run] = await claim();
+  assert.equal((await record(weekly.schedule.id, run.run_at, 'failed')).failures, 2);
+  for (const [reason, pause] of [['installation_paused', false], ['payment_due', false], ['installation_paused', true]]) {
+    await makeDue(weekly.schedule.id, 1);
+    [run] = await claim();
+    const skippedRun = await record(weekly.schedule.id, run.run_at, 'skipped', { reason, pause });
+    assert.deepEqual([skippedRun.recorded, skippedRun.paused, skippedRun.pause_reason, skippedRun.failures], [true, false, null, 2], `${reason} skipped`);
+  }
+  const carriedOn = await schedule(weekly.schedule.id);
+  assert.deepEqual([carriedOn.status, carriedOn.pause_reason, carriedOn.last_result, carriedOn.last_result_reason, carriedOn.failures], ['active', null, 'skipped', 'installation_paused', 2]);
+  // Back on, the next runs happen on time with no admin action.
+  await makeDue(weekly.schedule.id, 1);
+  await makeDue(daily.schedule.id, 1);
+  const backOn = await claim();
+  assert.deepEqual(backOn.map((row) => row.schedule_id).sort(), [weekly.schedule.id, daily.schedule.id].sort());
+  assert.equal((await record(weekly.schedule.id, backOn.find((row) => row.schedule_id === weekly.schedule.id).run_at, 'answered')).failures, 0);
+  // Losing the creator's access still pauses a schedule at once.
+  const lostAccess = await record(daily.schedule.id, backOn.find((row) => row.schedule_id === daily.schedule.id).run_at, 'skipped', { reason: 'creator_access', pause: true });
+  assert.deepEqual([lostAccess.paused, lostAccess.pause_reason, lostAccess.failures], [true, 'creator_access', 1]);
+  const lost = await schedule(daily.schedule.id);
+  assert.deepEqual([lost.status, lost.pause_reason], ['paused', 'creator_access']);
 
   // Cancelling from Slack: the creator, or someone linked to a workspace owner or admin.
   const cancel = async (id, by, installation = installationId) =>

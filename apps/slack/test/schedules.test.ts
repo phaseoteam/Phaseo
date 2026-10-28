@@ -5,7 +5,7 @@ import { TURN_TIMEOUT_MS } from "../src/coordinator";
 import { homeView, publishHome, type HomeFacts } from "../src/home";
 import { ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { pausedNotice, runDueSchedules, scheduledEventId, scheduledMessage, startScheduledRun, type ClaimedRun } from "../src/scheduled-runs";
-import { describeTiming, formatRunTime, scheduleCreationKey, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
+import { describeTiming, formatRunTime, lastRunText, scheduleCreationKey, scheduleMode, scheduleTools, timingInput, type ScheduleRow } from "../src/schedules";
 import type { TurnRef } from "../src/turns";
 import { runTurn, type StepConfig, type StepRunner } from "../src/workflow";
 import { BOT_TOKEN, INSTALLATION_ID, installationRow, storageOf, TEAM_ID, testWorld, type TestWorld } from "./fakes";
@@ -148,7 +148,7 @@ describe("schedule tools", () => {
 	};
 	const savedRow = (overrides: Partial<ScheduleRow> = {}): ScheduleRow => ({
 		id: SCHEDULE_ID, channel_id: CHANNEL, title: "Weekly spend", prompt: "Summarise it.", created_by: PERSON, status: "active", pause_reason: null,
-		next_run_at: "2026-11-02T09:00:00+00:00", last_result: null, frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null, timezone: "Europe/London",
+		next_run_at: "2026-11-02T09:00:00+00:00", last_result: null, last_result_reason: null, frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null, timezone: "Europe/London",
 		...overrides,
 	});
 
@@ -242,14 +242,14 @@ describe("schedule tools", () => {
 	it("lists this conversation's and the person's own in a direct message, and cancels by id", async () => {
 		const DM = "D0DIRECT01";
 		world.db.tables.slack_agent_schedules = [
-			{ ...savedRow({ channel_id: DM }), installation_id: INSTALLATION_ID, created_at: "2026-10-20T09:00:00Z" },
+			{ ...savedRow({ channel_id: DM, last_result: "skipped", last_result_reason: "installation_paused" }), installation_id: INSTALLATION_ID, created_at: "2026-10-20T09:00:00Z" },
 			{ ...savedRow({ id: "00000000-0000-4000-8000-00000000e5c2", channel_id: "C0OTHER001", status: "paused", pause_reason: "failures", last_result: "failed" }), installation_id: INSTALLATION_ID, created_at: "2026-10-21T09:00:00Z" },
 		];
 		const { run, notes } = tools(true, DM);
 		const { schedules } = await run("list_schedules");
 		expect(world.db.queries.at(-1)?.query).toMatchObject({ installation_id: `eq.${INSTALLATION_ID}`, or: `(channel_id.eq.${DM},created_by.eq.${PERSON})` });
 		expect(schedules).toEqual([
-			{ id: SCHEDULE_ID, title: "Weekly spend", prompt: "Summarise it.", runs: "every Monday at 09:00 (Europe/London time)", where: "this conversation", status: "active", next_run: "Mon, Nov 2, 2026, 09:00 (Europe/London)", set_up_by: `<@${PERSON}>` },
+			{ id: SCHEDULE_ID, title: "Weekly spend", prompt: "Summarise it.", runs: "every Monday at 09:00 (Europe/London time)", where: "this conversation", status: "active", next_run: "Mon, Nov 2, 2026, 09:00 (Europe/London)", last_run: "skipped: the agent was paused", set_up_by: `<@${PERSON}>` },
 			{ id: "00000000-0000-4000-8000-00000000e5c2", title: "Weekly spend", prompt: "Summarise it.", runs: "every Monday at 09:00 (Europe/London time)", where: "<#C0OTHER001>", status: "paused after 3 runs in a row didn't go through", last_run: "failed", set_up_by: `<@${PERSON}>` },
 		]);
 
@@ -275,6 +275,16 @@ describe("schedule tools", () => {
 		world.db.rpcResults.cancel_slack_agent_schedule = "deleted";
 		expect(await run("cancel_schedule", { id: SCHEDULE_ID })).toEqual({ cancelled: true });
 		expect(notes).toEqual(["list_schedules", "cancel_schedule"]);
+	});
+
+	it("says why the last run was skipped", () => {
+		expect(lastRunText("skipped", "installation_paused")).toBe("skipped: the agent was paused");
+		expect(lastRunText("skipped", "payment_due")).toBe("skipped: a Phaseo bill was unpaid");
+		expect(lastRunText("skipped", "schedules_off")).toBe("skipped: recurring tasks were off");
+		expect(lastRunText("skipped", "monthly_cap")).toBe("skipped: a usage limit was reached");
+		expect(lastRunText("skipped", "something_new")).toBe("skipped");
+		expect(lastRunText("failed", "failed")).toBe("failed");
+		expect(lastRunText("answered", null)).toBe("answered");
 	});
 
 	it("leaves out schedule_task where the turn can't set one up", () => {
@@ -360,15 +370,31 @@ describe("scheduled runs", () => {
 		expect(world.turns.created).toEqual([]);
 	});
 
-	it("counts any other failure to post as a failed run, and pauses a schedule of a paused installation", async () => {
+	it("counts any other failure to post as a failed run", async () => {
 		world.slack.failures.set("chat.postMessage", ["ratelimited"]);
 		expect(await startScheduledRun(world.deps, claimed())).toBe("failed");
+		expect(rpcCalls("record_slack_agent_schedule_run").map((args) => [args.p_result, args.p_reason, args.p_pause])).toEqual([["failed", "slack_post_failed", false]]);
+	});
+
+	it("skips a run while the agent is paused or a bill is due, without pausing the schedule, posting or holding a meter place", async () => {
 		await install({ status: "paused" });
 		expect(await startScheduledRun(world.deps, claimed())).toBe("skipped");
-		expect(rpcCalls("record_slack_agent_schedule_run").map((args) => [args.p_result, args.p_reason, args.p_pause])).toEqual([
-			["failed", "slack_post_failed", false],
-			["skipped", "installation_paused", true],
+		await install({ status: "payment_due" });
+		expect(await startScheduledRun(world.deps, claimed())).toBe("skipped");
+		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([
+			{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "skipped", p_reason: "installation_paused", p_pause: false },
+			{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "skipped", p_reason: "payment_due", p_pause: false },
 		]);
+		expect(world.slack.of("chat.postMessage")).toEqual([]);
+		expect(meter().usage(NOW)).toMatchObject({ pending: 0 });
+		expect(world.turns.created).toEqual([]);
+	});
+
+	it("skips a run the meter refuses because the agent is off here, without pausing the schedule", async () => {
+		meter().uninstalled(NOW);
+		expect(await startScheduledRun(world.deps, claimed())).toBe("skipped");
+		expect(rpcCalls("record_slack_agent_schedule_run")).toEqual([{ p_schedule_id: SCHEDULE_ID, p_run_at: RUN_AT, p_result: "skipped", p_reason: "installation_paused", p_pause: false }]);
+		expect(world.slack.of("chat.postMessage")).toEqual([]);
 	});
 
 	it("the cron tick claims due runs with one call and starts them; a failed claim does nothing", async () => {
@@ -440,6 +466,25 @@ describe("scheduled runs", () => {
 			["failed", "failed", false],
 			["skipped", "creator_access", true],
 		]);
+	});
+
+	it("records a turn skipped because the agent was paused or a bill fell due before it loaded, without pausing its schedule", async () => {
+		await startScheduledRun(world.deps, claimed());
+		const turn = world.turns.created[0].params as TurnRef;
+		const agent = new ScriptedAgent(async () => {
+			throw new Error("not run");
+		});
+		await install({ status: "paused" });
+		await expect(runTurn({ ...world.deps, agent }, turn, new FakeStep())).resolves.toEqual({ status: "skipped" });
+		await install({ status: "payment_due" });
+		await expect(runTurn({ ...world.deps, agent }, { ...turn, turnId: 99 }, new FakeStep())).resolves.toEqual({ status: "skipped" });
+		expect(agent.requests).toEqual([]);
+		expect(rpcCalls("record_slack_agent_schedule_run").map((args) => [args.p_result, args.p_reason, args.p_pause])).toEqual([
+			["skipped", "installation_paused", false],
+			["skipped", "payment_due", false],
+		]);
+		// Nothing paused, so the creator isn't told anything.
+		expect(world.slack.of("chat.postMessage").filter((call) => call.args.channel === PERSON)).toEqual([]);
 	});
 
 	it("tells the creator privately when the third failure pauses it", async () => {
@@ -526,8 +571,8 @@ describe("home tab", () => {
 			schedules: {
 				enabled: true,
 				mine: [
-					{ title: "Weekly <spend>", channel_id: CHANNEL, status: "active", pause_reason: null, next_run_at: "2026-11-02T09:00:00Z", frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null, timezone: "Europe/London" },
-					{ title: "Daily", channel_id: "D0DIRECT01", status: "paused", pause_reason: "admin", next_run_at: "2026-11-02T09:00:00Z", frequency: "daily", hour: 8, minute: 30, day_of_week: null, day_of_month: null, timezone: "UTC" },
+					{ title: "Weekly <spend>", channel_id: CHANNEL, status: "active", pause_reason: null, next_run_at: "2026-11-02T09:00:00Z", last_result: "answered", last_result_reason: null, frequency: "weekly", hour: 9, minute: 0, day_of_week: 1, day_of_month: null, timezone: "Europe/London" },
+					{ title: "Daily", channel_id: "D0DIRECT01", status: "paused", pause_reason: "admin", next_run_at: "2026-11-02T09:00:00Z", last_result: null, last_result_reason: null, frequency: "daily", hour: 8, minute: 30, day_of_week: null, day_of_month: null, timezone: "UTC" },
 				],
 			},
 		}));
@@ -542,6 +587,18 @@ describe("home tab", () => {
 		const off = JSON.stringify(homeView(facts({ schedules: { enabled: false, mine: [] } })));
 		expect(off).not.toContain("Recurring tasks");
 		expect(JSON.stringify(homeView(facts()))).not.toContain("ecurring");
+		expect(view).not.toContain("are skipped");
+	});
+
+	it("says a run was skipped while the agent was paused, and that they carry on once it's back on", () => {
+		const mine: NonNullable<HomeFacts["schedules"]>["mine"] = [
+			{ title: "Standup", channel_id: CHANNEL, status: "active", pause_reason: null, next_run_at: "2026-11-02T09:00:00Z", last_result: "skipped", last_result_reason: "installation_paused", frequency: "daily", hour: 9, minute: 0, day_of_week: null, day_of_month: null, timezone: "UTC" },
+		];
+		const back = JSON.stringify(homeView(facts({ schedules: { enabled: true, mine } })));
+		expect(back).toContain(`• *Standup*, every day at 09:00 (UTC time) in <#${CHANNEL}>: next Mon, Nov 2, 2026, 09:00 (UTC); last run skipped: the agent was paused`);
+		expect(back).not.toContain("are skipped");
+		const paused = JSON.stringify(homeView(facts({ installation: { bot_user_id: "U0BOT00001", status: "payment_due", access_mode: "everyone", usage_data_mode: "dm" }, schedules: { enabled: true, mine } })));
+		expect(paused).toContain("While the agent is paused their runs are skipped, and they carry on by themselves once it's back on.");
 	});
 
 	it("reads only the viewer's schedules", async () => {

@@ -77,7 +77,7 @@ COMMENT ON COLUMN "public"."slack_agent_schedules"."last_run_at" IS 'The time th
 
 COMMENT ON COLUMN "public"."slack_agent_schedules"."last_claimed_at" IS 'When the last run was claimed, which can be later than it was due. The next run is at least 50 minutes after it, also after a resume.';
 
-COMMENT ON COLUMN "public"."slack_agent_schedules"."failures" IS 'Runs in a row that failed or were skipped. The third pauses the schedule (pause_reason failures) and the creator is told privately.';
+COMMENT ON COLUMN "public"."slack_agent_schedules"."failures" IS 'Runs in a row that failed or were skipped, apart from runs skipped while the agent was paused, a bill was due or recurring tasks were off, which leave it as it was. The third pauses the schedule (pause_reason failures) and the creator is told privately.';
 
 REVOKE ALL ON TABLE "public"."slack_agent_schedules" FROM "service_role";
 

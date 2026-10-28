@@ -7219,6 +7219,12 @@
 				"running": "実行中",
 				"none": "未実行"
 			},
+			"skipReasons": {
+				"installationPaused": "スキップ: エージェントが一時停止されていました",
+				"paymentDue": "スキップ: Phaseo の請求が未払いでした",
+				"schedulesOff": "スキップ: 定期タスクがオフでした",
+				"limit": "スキップ: 利用上限に達していました"
+			},
 			"failuresInRow": "連続失敗: {count} 回",
 			"pause": "一時停止",
 			"resume": "再開",

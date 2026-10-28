@@ -90,6 +90,23 @@ export function pauseReasonKey(reason: string | null): SlackSchedulePauseKey {
 	return reason && Object.hasOwn(PAUSE_REASON_KEYS, reason) ? PAUSE_REASON_KEYS[reason as keyof typeof PAUSE_REASON_KEYS] : "admin";
 }
 
+/** SettingsUI.slack.schedules.skipReasons keys, by why a run was skipped; other skipped runs show as Skipped. */
+const SKIP_REASON_KEYS = {
+	installation_paused: "installationPaused",
+	payment_due: "paymentDue",
+	schedules_off: "schedulesOff",
+	max_people: "limit",
+	plan_full: "limit",
+	hourly_limit: "limit",
+	monthly_cap: "limit",
+} as const;
+
+export type SlackScheduleSkipKey = (typeof SKIP_REASON_KEYS)[keyof typeof SKIP_REASON_KEYS];
+
+export function skipReasonKey(reason: string | null): SlackScheduleSkipKey | null {
+	return reason && Object.hasOwn(SKIP_REASON_KEYS, reason) ? SKIP_REASON_KEYS[reason as keyof typeof SKIP_REASON_KEYS] : null;
+}
+
 /** What the last run did: its result, still running (claimed in the last half hour without a result), or none yet. */
 export function lastRunState(schedule: Pick<SlackAgentSchedule, "last_result" | "last_run_at">, now = Date.now()): SlackScheduleResult | "running" | "none" {
 	if (schedule.last_result) return schedule.last_result;

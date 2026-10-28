@@ -445,8 +445,11 @@ In one statement that call:
   `FOR UPDATE SKIP LOCKED`;
 - sets `last_run_at` to the time each was due (which keys the run),
   `last_claimed_at` to now, and moves `next_run_at` on;
-- pauses the rows of installations that aren't active, and skips them while
-  recurring tasks are off.
+- skips the runs of installations that aren't active (`installation_paused`
+  or `payment_due`) and all runs while recurring tasks are off
+  (`schedules_off`): it records them as skipped, leaves the schedules active
+  and their failure counts alone, and doesn't return them, so the next run after
+  the agent is back on happens on time.
 
 A run is claimed once, so overlapping ticks never start it twice. For each run:
 
@@ -473,18 +476,25 @@ A run is claimed once, so overlapping ticks never start it twice. For each run:
 - from the turn's `skip` or `finish` step, which fails when the call doesn't go
   through, so Workflows retries it (up to 3 times).
 
-- Lost access, a paused installation or a conversation the agent can't post in
-  (`not_in_channel` and similar) pause the schedule with that reason.
+- Lost access or a conversation the agent can't post in (`not_in_channel` and
+  similar) pause the schedule with that reason.
+- A run skipped because the installation is paused or has a bill due (found by
+  the run's own check, the meter or the turn's `load` step) is recorded as
+  `skipped` with `installation_paused` or `payment_due`. It neither pauses
+  the schedule nor counts as a failure. The database ignores `p_pause` for
+  those two reasons, also from a Worker deployed before this behaviour.
 - Anything else, such as the meter refusing over the spending cap, counts as a
   failure. The third in a row pauses it.
 - The creator gets a DM (`chat.postMessage` to their user id) when a schedule
   pauses for failures or because the agent can't post in its conversation.
 
 A tick that dies between claiming and queueing loses that one run; the next is
-on time. The Home tab lists the viewer's own schedules. Owners and admins list,
-pause, resume (`set_slack_agent_schedule_status`) and delete them in
-Settings → Slack (web-api `/api/account/settings/slack/schedules`). Uninstalling
-deletes them (the `delete_slack_agent_schedules` trigger).
+on time. The Home tab lists the viewer's own schedules, with why the last run
+was skipped when it was (`lastRunText`), and says runs are skipped while the
+agent is paused. Owners and admins list, pause, resume
+(`set_slack_agent_schedule_status`) and delete them in Settings → Slack (web-api
+`/api/account/settings/slack/schedules`), which also shows why a run was
+skipped. Uninstalling deletes them (the `delete_slack_agent_schedules` trigger).
 
 ## Shared pages
 
