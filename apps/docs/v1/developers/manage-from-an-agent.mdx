@@ -11,7 +11,7 @@ Some steps always need a person in a browser, by design:
 
 - **Signing up** for a Phaseo account.
 - **Approving a sign-in**: the browser page that `phaseo login` opens, or the code that `phaseo login --device-code` shows.
-- **Entering a card** the first time credits are bought.
+- **Entering a card** the first time credits are bought: with no saved card, `phaseo credits add` returns a checkout link that an owner or admin opens to pay, and the card is saved.
 - **Confirming each top-up**: every `phaseo credits add` with a saved card is confirmed by a workspace owner or admin from an emailed link.
 - **Account security**: password, multi-factor authentication and passkeys.
 
@@ -42,7 +42,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` needs the `billing:write` scope, which no sign-in has by default, and it never charges on its own. With a saved card, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result. With no saved card, it returns a link where an owner or admin enters a card. See [Credits](../api-reference/endpoint/credits) for the route.
+`phaseo credits add` needs the `billing:write` scope, which no sign-in has by default, and it never charges on its own. With a saved card, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result. With no saved card, it returns `next_action: "open_checkout_url"` and a checkout link where an owner or admin pays with a card, which is then saved for later top-ups. No email is sent in that case. See [Credits](../api-reference/endpoint/credits) for the route.
 
 ## Choose an interface
 

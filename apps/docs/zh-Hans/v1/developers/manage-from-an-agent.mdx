@@ -10,7 +10,7 @@ icon: "bot"
 
 - **注册** Phaseo 账户。
 - **批准登录**：即 `phaseo login` 打开的浏览器页面，或 `phaseo login --device-code` 显示的代码。
-- 首次购买额度时**输入银行卡**。
+- 首次购买额度时**输入银行卡**：没有已保存的银行卡时，`phaseo credits add` 会返回一个支付链接，由所有者或管理员打开并付款，银行卡随后会被保存。
 - **确认每次充值**：每次使用已保存银行卡的 `phaseo credits add`，都由工作区所有者或管理员通过邮件中的链接确认。
 - **账户安全**：密码、多重身份验证和通行密钥。
 
@@ -41,7 +41,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` 需要 `billing:write` 作用域，任何登录默认都不具备该作用域；该命令也不会自行扣款。如果有已保存的银行卡，Phaseo 会向工作区的每位所有者和管理员发送确认扣款的邮件链接，命令会等待结果。如果没有已保存的银行卡，则返回一个链接，由所有者或管理员在其中输入银行卡。路由请参阅[额度](../api-reference/endpoint/credits)。
+`phaseo credits add` 需要 `billing:write` 作用域，任何登录默认都不具备该作用域；该命令也不会自行扣款。如果有已保存的银行卡，Phaseo 会向工作区的每位所有者和管理员发送确认扣款的邮件链接，命令会等待结果。如果没有已保存的银行卡，则返回 `next_action: "open_checkout_url"` 和一个支付链接，由所有者或管理员在其中用银行卡付款，该银行卡会保存下来供之后充值使用。这种情况下不会发送邮件。路由请参阅[额度](../api-reference/endpoint/credits)。
 
 ## 选择接口
 

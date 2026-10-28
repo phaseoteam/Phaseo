@@ -10,7 +10,7 @@ Einige Schritte brauchen bewusst immer einen Menschen im Browser:
 
 - **Registrieren** bei Phaseo.
 - **Eine Anmeldung bestätigen**: die Browserseite, die `phaseo login` öffnet, oder den Code, den `phaseo login --device-code` anzeigt.
-- **Eine Karte eingeben**, wenn zum ersten Mal Guthaben gekauft wird.
+- **Eine Karte eingeben**, wenn zum ersten Mal Guthaben gekauft wird: Ohne gespeicherte Karte gibt `phaseo credits add` einen Zahlungslink zurück, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann gespeichert.
 - **Jede Aufladung bestätigen**: Jedes `phaseo credits add` mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace über einen Link per E-Mail.
 - **Kontosicherheit**: Passwort, Multi-Faktor-Authentifizierung und Passkeys.
 
@@ -41,7 +41,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` braucht den Scope `billing:write`, den keine Anmeldung standardmäßig hat, und belastet nie von selbst. Mit einer gespeicherten Karte schickt Phaseo jedem Inhaber und Admin des Workspace einen Link zur Bestätigung der Zahlung, und der Befehl wartet auf das Ergebnis. Ohne gespeicherte Karte gibt er einen Link zurück, unter dem ein Inhaber oder Admin eine Karte eingibt. Die Route findest du unter [Guthaben](../api-reference/endpoint/credits).
+`phaseo credits add` braucht den Scope `billing:write`, den keine Anmeldung standardmäßig hat, und belastet nie von selbst. Mit einer gespeicherten Karte schickt Phaseo jedem Inhaber und Admin des Workspace einen Link zur Bestätigung der Zahlung, und der Befehl wartet auf das Ergebnis. Ohne gespeicherte Karte gibt er `next_action: "open_checkout_url"` und einen Zahlungslink zurück, unter dem ein Inhaber oder Admin mit einer Karte bezahlt, die dann für spätere Aufladungen gespeichert wird. In diesem Fall wird keine E-Mail verschickt. Die Route findest du unter [Guthaben](../api-reference/endpoint/credits).
 
 ## Schnittstelle wählen
 

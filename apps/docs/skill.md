@@ -61,10 +61,10 @@ npm install -g @phaseo/cli
 phaseo login                          # or --device-code; a person approves the sign-in
 phaseo keys create --name <name> --json
 phaseo login --scopes billing:write   # opt in once before the first top-up
-phaseo credits add --amount 20 --json  # a workspace owner or admin confirms the charge
+phaseo credits add --amount 20 --json  # saved card: an owner or admin confirms by email; no card: returns a checkout link
 ```
 
-Never generate or guess a key. A person is still needed for sign-up, approving a sign-in, entering a card the first time, confirming each credit top-up from the emailed link, and account security (password, MFA, passkeys). For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
+Never generate or guess a key. A person is still needed for sign-up, approving a sign-in, paying the first top-up on the checkout link (no saved card yet), confirming each later top-up from the emailed link (saved card), and account security (password, MFA, passkeys). For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
 
 ## Endpoint selection
 

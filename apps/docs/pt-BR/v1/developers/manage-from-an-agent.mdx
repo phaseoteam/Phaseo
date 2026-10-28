@@ -10,7 +10,7 @@ Algumas etapas sempre precisam de uma pessoa em um navegador, por design:
 
 - **Criar uma conta** na Phaseo.
 - **Aprovar um login**: a página que `phaseo login` abre no navegador ou o código que `phaseo login --device-code` mostra.
-- **Informar um cartão** na primeira compra de créditos.
+- **Informar um cartão** na primeira compra de créditos: sem cartão salvo, `phaseo credits add` retorna um link de pagamento que um proprietário ou administrador abre para pagar, e o cartão fica salvo.
 - **Confirmar cada recarga**: cada `phaseo credits add` com cartão salvo é confirmado por um proprietário ou administrador do workspace por um link enviado por e-mail.
 - **Segurança da conta**: senha, autenticação multifator e passkeys.
 
@@ -41,7 +41,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` precisa do escopo `billing:write`, que nenhum login tem por padrão, e nunca cobra por conta própria. Com um cartão salvo, a Phaseo envia a cada proprietário e administrador do workspace um link para confirmar a cobrança, e o comando aguarda o resultado. Sem cartão salvo, ele retorna um link em que um proprietário ou administrador informa um cartão. Consulte [Créditos](../api-reference/endpoint/credits) para ver a rota.
+`phaseo credits add` precisa do escopo `billing:write`, que nenhum login tem por padrão, e nunca cobra por conta própria. Com um cartão salvo, a Phaseo envia a cada proprietário e administrador do workspace um link para confirmar a cobrança, e o comando aguarda o resultado. Sem cartão salvo, ele retorna `next_action: "open_checkout_url"` e um link de pagamento em que um proprietário ou administrador paga com um cartão, que fica salvo para as próximas recargas. Nesse caso, nenhum e-mail é enviado. Consulte [Créditos](../api-reference/endpoint/credits) para ver a rota.
 
 ## Escolha uma interface
 

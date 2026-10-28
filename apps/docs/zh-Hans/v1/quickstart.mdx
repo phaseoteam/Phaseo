@@ -31,7 +31,7 @@ Rules:
 面向智能体的快速开始清单：
 
 - 使用 CLI 创建密钥：先运行 `npm install -g @phaseo/cli`，再运行 `phaseo login`（无界面的 shell 中用 `phaseo login --device-code`；登录需要由人批准），然后运行 `phaseo keys create --name <name> --json`。不要生成或猜测密钥。只能在服务端代码中以 `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` 的形式发送。
-- 使用付费模型时，`phaseo credits add --amount <usd> --json` 会发起一次充值，由工作区所有者或管理员确认。首次充值前，请先运行一次 `phaseo login --scopes billing:write`；确认通过邮件进行。不要为了密钥、额度或设置把用户引导到控制台；请参阅 https://phaseo.app/docs/v1/developers/manage-from-an-agent.md。
+- 使用付费模型时，先运行一次 `phaseo login --scopes billing:write`，然后用 `phaseo credits add --amount <usd> --json` 发起充值。如果有已保存的银行卡，由工作区所有者或管理员通过邮件中的链接确认。如果没有已保存的银行卡，响应中会包含 `next_action: "open_checkout_url"` 和一个支付链接，由所有者或管理员打开并付款；银行卡随后会保存下来供之后充值使用。不要为了密钥、额度或设置把用户引导到控制台；请参阅 https://phaseo.app/docs/v1/developers/manage-from-an-agent.md。
 - 第一个请求使用 `POST https://api.phaseo.app/v1/responses`，发送 `model` 和 `input`。`phaseo/free` 无需钱包余额即可使用。
 - 从 `output[].content[]` 中 `type` 为 `output_text` 的项读取回复。
 - 如果请求失败，请按照 https://phaseo.app/docs/v1/api-reference/errors.md 中的说明，根据 JSON 中的 `error` 代码分支处理。
@@ -49,7 +49,7 @@ phaseo login                 # use --device-code over SSH or in an agent sandbox
 phaseo keys create --name "Quickstart" --json
 ```
 
-密钥只显示一次。请安全保存，例如保存为 `PHASEO_API_KEY`。要使用付费模型，请用 `phaseo credits add --amount 20` 充值；扣款由工作区所有者或管理员确认。首次充值前，请先运行一次 `phaseo login --scopes billing:write`；确认通过邮件进行。也可以在 [Phaseo 控制台](https://phaseo.app/settings/keys)的 **Gateway -> 密钥**下创建密钥。
+密钥只显示一次。请安全保存，例如保存为 `PHASEO_API_KEY`。要使用付费模型，请先运行一次 `phaseo login --scopes billing:write`，再用 `phaseo credits add --amount 20` 充值。如果有已保存的银行卡，由工作区所有者或管理员通过邮件中的链接确认扣款。如果没有已保存的银行卡，命令会返回一个支付链接，由所有者或管理员打开并付款，银行卡会保存下来供之后充值使用。也可以在 [Phaseo 控制台](https://phaseo.app/settings/keys)的 **Gateway -> 密钥**下创建密钥。
 
 密钥格式如下：
 

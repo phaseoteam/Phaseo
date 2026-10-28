@@ -10,7 +10,7 @@ Algunos pasos siempre necesitan a una persona en un navegador, por diseño:
 
 - **Registrarse** en Phaseo.
 - **Aprobar un inicio de sesión**: la página que abre `phaseo login` en el navegador o el código que muestra `phaseo login --device-code`.
-- **Introducir una tarjeta** la primera vez que se compran créditos.
+- **Introducir una tarjeta** la primera vez que se compran créditos: sin tarjeta guardada, `phaseo credits add` devuelve un enlace de pago que un propietario o administrador abre para pagar, y la tarjeta queda guardada.
 - **Confirmar cada recarga**: un propietario o administrador del espacio de trabajo confirma desde un enlace enviado por correo cada `phaseo credits add` con tarjeta guardada.
 - **Seguridad de la cuenta**: contraseña, autenticación multifactor y llaves de acceso.
 
@@ -41,7 +41,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` necesita el ámbito `billing:write`, que ningún inicio de sesión tiene por defecto, y nunca cobra por sí solo. Con una tarjeta guardada, Phaseo envía a cada propietario y administrador del espacio de trabajo un enlace para confirmar el cargo, y el comando espera el resultado. Sin tarjeta guardada, devuelve un enlace donde un propietario o administrador introduce una tarjeta. Consulta [Créditos](../api-reference/endpoint/credits) para ver la ruta.
+`phaseo credits add` necesita el ámbito `billing:write`, que ningún inicio de sesión tiene por defecto, y nunca cobra por sí solo. Con una tarjeta guardada, Phaseo envía a cada propietario y administrador del espacio de trabajo un enlace para confirmar el cargo, y el comando espera el resultado. Sin tarjeta guardada, devuelve `next_action: "open_checkout_url"` y un enlace de pago donde un propietario o administrador paga con una tarjeta, que queda guardada para las recargas posteriores. En ese caso no se envía ningún correo. Consulta [Créditos](../api-reference/endpoint/credits) para ver la ruta.
 
 ## Elige una interfaz
 

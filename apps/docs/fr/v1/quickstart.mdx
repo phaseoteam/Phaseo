@@ -31,7 +31,7 @@ Vous allez :
 Liste de contrôle du démarrage rapide pour les agents :
 
 - Créez la clé avec la CLI : `npm install -g @phaseo/cli`, puis `phaseo login` (ou `phaseo login --device-code` dans un shell sans interface ; une personne approuve la connexion), puis `phaseo keys create --name <name> --json`. N’en générez ni n’en devinez jamais. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code serveur.
-- Pour les modèles payants, `phaseo credits add --amount <usd> --json` lance une recharge qu’un propriétaire ou un administrateur de l’espace de travail confirme. Avant la première recharge, lancez une fois `phaseo login --scopes billing:write` ; la confirmation arrive par e-mail. N’envoyez pas l’utilisateur vers le tableau de bord pour les clés, les crédits ou les paramètres ; consultez https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
+- Pour les modèles payants, lancez une fois `phaseo login --scopes billing:write`, puis `phaseo credits add --amount <usd> --json` lance une recharge. Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail la confirme depuis un lien reçu par e-mail. Sans carte enregistrée, la réponse contient `next_action: "open_checkout_url"` et un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer ; la carte est ensuite enregistrée pour les recharges suivantes. N’envoyez pas l’utilisateur vers le tableau de bord pour les clés, les crédits ou les paramètres ; consultez https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Faites la première requête avec `POST https://api.phaseo.app/v1/responses`, en envoyant `model` et `input`. `phaseo/free` fonctionne sans solde dans le portefeuille.
 - Lisez la réponse dans `output[].content[]`, là où `type` vaut `output_text`.
 - Si la requête échoue, décidez selon le code `error` du JSON, comme décrit dans https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -49,7 +49,7 @@ phaseo login                 # use --device-code over SSH or in an agent sandbox
 phaseo keys create --name "Quickstart" --json
 ```
 
-La clé ne s’affiche qu’une seule fois. Conservez-la en lieu sûr, par exemple dans `PHASEO_API_KEY`. Pour utiliser des modèles payants, ajoutez des crédits avec `phaseo credits add --amount 20` ; un propriétaire ou un administrateur de l’espace de travail confirme le paiement. Avant la première recharge, lancez une fois `phaseo login --scopes billing:write` ; la confirmation arrive par e-mail. Vous pouvez aussi créer la clé dans le [tableau de bord Phaseo](https://phaseo.app/settings/keys), sous **Gateway -> Clés**.
+La clé ne s’affiche qu’une seule fois. Conservez-la en lieu sûr, par exemple dans `PHASEO_API_KEY`. Pour utiliser des modèles payants, lancez une fois `phaseo login --scopes billing:write`, puis ajoutez des crédits avec `phaseo credits add --amount 20`. Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail confirme le paiement depuis un lien reçu par e-mail. Sans carte enregistrée, la commande renvoie un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer, et la carte est enregistrée pour les recharges suivantes. Vous pouvez aussi créer la clé dans le [tableau de bord Phaseo](https://phaseo.app/settings/keys), sous **Gateway -> Clés**.
 
 Utilisez ce format :
 

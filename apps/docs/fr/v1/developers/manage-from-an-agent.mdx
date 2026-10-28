@@ -10,7 +10,7 @@ Certaines étapes demandent toujours une personne dans un navigateur, par concep
 
 - **S’inscrire** à Phaseo.
 - **Approuver une connexion** : la page que `phaseo login` ouvre dans le navigateur, ou le code qu’affiche `phaseo login --device-code`.
-- **Saisir une carte** la première fois que des crédits sont achetés.
+- **Saisir une carte** la première fois que des crédits sont achetés : sans carte enregistrée, `phaseo credits add` renvoie un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer, et la carte est enregistrée.
 - **Confirmer chaque recharge** : chaque `phaseo credits add` avec une carte enregistrée est confirmé par un propriétaire ou un administrateur de l’espace de travail depuis un lien reçu par e-mail.
 - **Sécurité du compte** : mot de passe, authentification multifacteur et clés d’accès.
 
@@ -41,7 +41,7 @@ phaseo login --scopes billing:write   # opt in once before the first top-up; a p
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` nécessite la portée `billing:write`, qu’aucune connexion n’a par défaut, et ne débite jamais de lui-même. Avec une carte enregistrée, Phaseo envoie à chaque propriétaire et administrateur de l’espace de travail un lien pour confirmer le paiement, et la commande attend le résultat. Sans carte enregistrée, elle renvoie un lien où un propriétaire ou un administrateur saisit une carte. Consultez [Crédits](../api-reference/endpoint/credits) pour la route.
+`phaseo credits add` nécessite la portée `billing:write`, qu’aucune connexion n’a par défaut, et ne débite jamais de lui-même. Avec une carte enregistrée, Phaseo envoie à chaque propriétaire et administrateur de l’espace de travail un lien pour confirmer le paiement, et la commande attend le résultat. Sans carte enregistrée, elle renvoie `next_action: "open_checkout_url"` et un lien de paiement où un propriétaire ou un administrateur paie avec une carte, ensuite enregistrée pour les recharges suivantes. Aucun e-mail n’est envoyé dans ce cas. Consultez [Crédits](../api-reference/endpoint/credits) pour la route.
 
 ## Choisir une interface
 
