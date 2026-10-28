@@ -345,6 +345,8 @@ function enablePosthog() {
 			// Secrets shown as text (new keys, signing secrets, TOTP) carry
 			// `ph-no-capture`; inputs such as the SCIM token rely on this.
 			maskAllInputs: true,
+			// Text under `ph-mask` (Chat) is masked by default; hide its media too.
+			blockSelector: ".ph-mask img, .ph-mask video, .ph-mask audio, .ph-mask canvas, .ph-mask iframe",
 		},
 		disable_session_recording: false,
 		disable_surveys: false,

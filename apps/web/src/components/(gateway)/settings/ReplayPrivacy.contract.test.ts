@@ -37,3 +37,16 @@ describe("session replay privacy", () => {
 		expect(nearestClassNameBefore(source, index)).toContain("ph-no-capture");
 	});
 });
+
+describe("session replay chat masking", () => {
+	it("masks chat text, including portals, and blocks chat media", () => {
+		const layout = fs.readFileSync(path.join(webRoot, "src/app/[locale]/(dashboard)/chat/layout.tsx"), "utf8");
+		const rootIndex = layout.indexOf('data-chat-viewport-root="true"');
+		expect(rootIndex).toBeGreaterThan(-1);
+		expect(layout.slice(rootIndex).match(/className="([^"]*)"/)?.[1].split(" ")).toContain("ph-mask");
+		expect(layout).toContain("<ReplayMaskBody />");
+
+		const client = fs.readFileSync(path.join(webRoot, "instrumentation-client.ts"), "utf8");
+		expect(client).toMatch(/blockSelector: "\.ph-mask img, \.ph-mask video/);
+	});
+});
