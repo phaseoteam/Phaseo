@@ -67,7 +67,7 @@ describe("feedback request email", () => {
 
 	it("drops the thank-you offer once the campaign's codes are used up", () => {
 		const available = renderFeedbackRequestEmail({ token, segment: "paid", recency: "active", reward_available: true });
-		expect(available.text).toContain("$1 of Phaseo credit");
+		expect(available.text).toContain("$1 of Phaseo credit for answering on that page");
 		const spent = renderFeedbackRequestEmail({ token, segment: "paid", recency: "active", reward_available: false });
 		expect(spent.text).not.toContain("credit for answering");
 		expect(spent.html).not.toContain("credit for answering");
