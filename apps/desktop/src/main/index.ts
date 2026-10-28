@@ -381,7 +381,8 @@ function usagePullRequests(since: string) {
 function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
 	return span("models.discover", { harness, force }, () => {
 		if (harness === "phaseo") return discoverModels(harness, accountId, projectId, force);
-		const discover = () => span("models.harness-list", { harness }, () => discoverModels(harness, accountId, projectId, force));
+		// Counted here rather than per request, so a background refresh also holds off a harness update.
+		const discover = () => span("models.harness-list", { harness }, () => modelCheck(harness, () => discoverModels(harness, accountId, projectId, force)));
 		return force ? harnessModelCache.refresh(harness, accountId, projectId, discover) : harnessModelCache.get(harness, accountId, projectId, discover);
 	});
 }
@@ -410,11 +411,12 @@ async function discoverModels(harness: Harness, accountId: string | undefined, p
 async function modelRequest(event: Electron.IpcMainInvokeEvent, harness: unknown, accountId: unknown, projectId: unknown, force: boolean) {
 	if (!senderWindow(event) || !["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
 	workspaceRuntime.assertHarnessAvailable(harness as Harness);
-	const checkedHarness = harness as Harness;
-	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
-	try {
-		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined, force);
-	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
+	return await discoverDesktopModels(harness as Harness, accountId as string | undefined, projectId as string | undefined, force);
+}
+async function modelCheck<T>(harness: Harness, check: () => Promise<T>) {
+	modelChecks.set(harness, (modelChecks.get(harness) ?? 0) + 1);
+	try { return await check(); }
+	finally { const remaining = modelChecks.get(harness)! - 1; if (remaining) modelChecks.set(harness, remaining); else modelChecks.delete(harness); }
 }
 ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
 // Skips the caches' freshness windows: Phaseo's catalog and the lists local harnesses last gave.
