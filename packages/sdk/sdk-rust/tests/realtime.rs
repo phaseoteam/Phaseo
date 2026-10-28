@@ -92,6 +92,8 @@ fn fake_relay(behaviour: impl FnOnce(&mut Relay, &Arc<Mutex<Seen>>) + Send + 'st
     let handle = thread::spawn(move || {
         let (stream, _) = relay.accept().unwrap();
         let callback_seen = Arc::clone(&relay_seen);
+        // The callback's error type is fixed by tungstenite's accept_hdr signature.
+        #[allow(clippy::result_large_err)]
         let mut socket = tungstenite::accept_hdr(stream, move |request: &Request, mut response: Response| {
             let mut seen = callback_seen.lock().unwrap();
             seen.protocols = request.headers().get("Sec-WebSocket-Protocol").map(|value| value.to_str().unwrap().to_string());
