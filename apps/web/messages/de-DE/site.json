@@ -2329,7 +2329,7 @@
 			],
 			"cookieControl": "Du kannst Cookies in den Browsereinstellungen verwalten. Wenn du bestimmte Arten blockierst, kann das deine Nutzung beeinträchtigen oder Funktionen verhindern.",
 			"analyticsIntro": "Wir können Analyse- und Fehlerverfolgungstools von Drittanbietern wie Google Analytics, PostHog oder vergleichbare Dienste einsetzen, um zu verstehen, wie Phaseo genutzt wird und wo wir das Produkt verbessern können.",
-			"analyticsDetails": "Diese Tools erfassen beispielsweise besuchte Seiten, ausgeführte Aktionen, Geräte- und Browserdaten sowie einen ungefähren Standort wie das Land. Wir konfigurieren sie so, dass keine Rohprompts, Outputs oder anderen besonders sensiblen Inhalte gespeichert werden, die über Gateway gesendet werden.",
+			"analyticsDetails": "Diese Tools erfassen beispielsweise besuchte Seiten, ausgeführte Aktionen, Geräte- und Browserdaten sowie einen ungefähren Standort wie das Land. Wir konfigurieren sie so, dass keine Rohprompts, Outputs oder anderen besonders sensiblen Inhalte gespeichert werden, die über Gateway gesendet werden. Wenn du angemeldet bist und Analyse-Cookies akzeptiert hast, verknüpfen wir diese Ereignisse, Sitzungsaufzeichnungen und Umfrageantworten mit den IDs deines Phaseo-Kontos und Workspaces, aber nicht mit deinem Namen oder deiner E-Mail-Adresse. Sitzungsaufzeichnungen maskieren Formulareingaben und blenden API-Schlüssel und andere auf dem Bildschirm angezeigte Geheimnisse aus.",
 			"legalBasesIntro": "Wir verwenden personenbezogene Daten für die folgenden Zwecke und auf Grundlage der folgenden Rechtsgrundlagen (für Nutzerinnen und Nutzer im Vereinigten Königreich und in der EU):",
 			"legalBasesItems": [
 				{

@@ -654,19 +654,28 @@ accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.visibility === "private" && preset.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const [versions, labels] = await Promise.all([
-		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false }),
+		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at,config").eq("preset_id", id).order("version_number", { ascending: false }),
 		client.from("preset_version_labels").select("label,version_id,updated_at").eq("preset_id", id).order("label", { ascending: true }),
 	]);
 	if (versions.error || labels.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const labelsByVersion = new Map<string, string[]>();
 	for (const row of labels.data ?? []) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
 	return c.json({
-		versions: (versions.data ?? []).map((version) => ({ ...version, labels: labelsByVersion.get(String(version.id)) ?? [] })),
+		versions: (versions.data ?? []).map((version) => ({ ...version, config: presetVersionContent(version.config), labels: labelsByVersion.get(String(version.id)) ?? [] })),
 		labels: labels.data ?? [],
 		activeVersionId: preset.data.active_version_id ?? null,
 		canManageLabels: canManagePresetLabels(context, user.id, preset.data),
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
+
+/** What the editor shows and compares for a version: its models and prompt template, not the rest of its config. */
+function presetVersionContent(config: unknown): { models: string[]; prompt: unknown } {
+	const value = config && typeof config === "object" && !Array.isArray(config) ? config as Record<string, unknown> : {};
+	return {
+		models: Array.isArray(value.models) ? value.models.filter((model): model is string => typeof model === "string") : [],
+		prompt: value.prompt && typeof value.prompt === "object" && !Array.isArray(value.prompt) ? value.prompt : null,
+	};
+}
 
 /** The rule set_preset_version_label applies: the creator, or an owner or admin when the preset is shared. */
 function canManagePresetLabels(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null; draft_visibility?: string | null }) {
@@ -732,6 +741,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (published.error) {
 		const message = published.error.message ?? "";
 		if (message.includes("invalid_semver_label")) return c.json({ error: "invalid_semver_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+		if (published.error.code === "23505") return c.json({ error: "version_label_taken" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_not_found")) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_publish_forbidden")) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		return c.json({ error: "version_publish_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

@@ -266,7 +266,7 @@ Los preajustes públicos usan `@publisher/support-triage@production`. Si `model`
 
 Una etiqueta es un nombre, como `production` o `staging`, que apunta a una versión publicada. Las etiquetas tienen de 1 a 32 letras minúsculas, números, guiones o guiones bajos, empiezan por una letra y no pueden parecer una etiqueta de versión (`v1`, `v2`).
 
-En **Ajustes -> Preajustes**, abre el preajuste y usa **Apuntar una etiqueta** en una versión para añadir una etiqueta o moverla allí. Quien creó el preajuste puede cambiar sus etiquetas, y también los propietarios y administradores del espacio de trabajo cuando el preajuste está compartido. Con una [clave de API de administración](../developers/management-api-keys.mdx) que tenga `presets:write`:
+En **Ajustes -> Preajustes**, abre el preajuste. **Publicar**, junto a **Guardar borrador**, guarda tus cambios y los publica como la siguiente versión. Abre **Versiones y etiquetas** para gestionar las etiquetas: cada etiqueta tiene un selector de versión, así que elegir otra versión mueve la etiqueta y elegir una anterior es una reversión. Usa **Añadir etiqueta** para crear una nueva. Abre una versión para ver sus modelos y mensajes de plantilla y en qué se diferencian de la versión predeterminada (la que ejecutan las solicitudes que no fijan una versión), y usa **Ejecutar** para probar esa versión con los valores de prueba de **Plantilla de prompt**. Quien creó el preajuste puede cambiar sus etiquetas, y también los propietarios y administradores del espacio de trabajo cuando el preajuste está compartido. Con una [clave de API de administración](../developers/management-api-keys.mdx) que tenga `presets:write`:
 
 ```bash
 curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
