@@ -452,6 +452,10 @@ describe("after a Slack search", () => {
 		// The first request went before the search; the one that carries its results, and any after, keep no data.
 		expect(bodies[0]).not.toHaveProperty("provider");
 		expect(bodies[1].provider).toEqual({ require_zero_data_retention: true });
+		// Without the gateway's web tools once it has searched: nothing found leaves in a query or a URL.
+		expect(bodies[0].tools.map((tool: { type: string }) => tool.type)).toEqual(expect.arrayContaining(["phaseo:web_search", "phaseo:web_fetch"]));
+		expect(bodies[1].tools.map((tool: { type: string }) => tool.type)).toEqual(["function"]);
+		expect(JSON.stringify(bodies[1].tools)).toContain("search_slack");
 		expect(JSON.stringify(bodies[1].input)).toContain("call_s1");
 		// Asked before each request, not once for the run.
 		expect(asked).toEqual([false, true]);

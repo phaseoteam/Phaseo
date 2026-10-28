@@ -285,7 +285,10 @@ it. `withZeroDataRetention` (`src/agent.ts`) asks before each request whether
 the answer has searched (`searchedThisAnswer`, the coordinator's count), so the
 request that carries the results has it, and so does a retried run's, or the
 run's after a question, from its first request. Requests before the first
-search are unchanged, and a Compare never searches. When the gateway still finds
+search are unchanged, and a Compare never searches. The same requests also go
+without the gateway's web search and web fetch tools (`phaseo:web_*` are taken
+out of `tools`), so nothing found can leave in a search query or a fetched URL;
+the instructions tell the model to search the web first if it needs both. When the gateway still finds
 no such route (a 403 `model_region_unavailable`), the answer ends with
 `search_needs_zdr`'s message and its cost so far counts; a refused consult or
 image tells the model that model can't be used after a Slack search.

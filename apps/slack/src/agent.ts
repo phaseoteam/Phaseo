@@ -28,8 +28,10 @@ import { withoutTrailingSlashes } from "./url";
 // An answer that has searched Slack goes further: from its first search on,
 // every model request it makes (its own steps, the models it asks and the
 // images it makes) sends provider.require_zero_data_retention, so only
-// providers that keep no data serve it (withZeroDataRetention). When none can,
-// the gateway refuses the request, and the turn says why (search_needs_zdr).
+// providers that keep no data serve it, and goes without the gateway's web search
+// and web fetch, so nothing found can leave in a query or a URL
+// (withZeroDataRetention). When no provider can, the gateway refuses the
+// request, and the turn says why (search_needs_zdr).
 //
 // Files shared in the thread go to the model as input parts of the run's first
 // user message (withAttachments). Images the agent generates are made through
@@ -222,13 +224,19 @@ export function withAttachments(fetchImpl: typeof fetch, parts: Array<Record<str
 	}) as typeof fetch;
 }
 
+/** The gateway's own web tools (GATEWAY_TOOLS), which send what the model writes to a search provider or a URL. */
+function isGatewayWebTool(tool: unknown): boolean {
+	const type = tool && typeof tool === "object" ? (tool as { type?: unknown }).type : undefined;
+	return typeof type === "string" && /^phaseo:web_/.test(type);
+}
+
 /** The gateway requests that go to a model: Responses (the agent's steps, the models it asks) and image generation. */
 const MODEL_REQUEST_PATH = /\/(responses|images\/generations)$/;
 
 /**
  * The fetch, adding provider.require_zero_data_retention (with any provider
  * fields the request already has) to each model request sent while `required`
- * says so. It is asked before every request, not once per run, so the request
+ * says so, and taking the gateway's web search and web fetch out of its tools. It is asked before every request, not once per run, so the request
  * that first carries a Slack search's results has it, and so does every one
  * after. A model request it can't read isn't sent without it.
  */
@@ -240,7 +248,8 @@ export function withZeroDataRetention(fetchImpl: typeof fetch, required: (() => 
 		const body = await request.clone().json().catch(() => null) as Record<string, unknown> | null;
 		if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("zero_data_retention_not_applied");
 		const provider = body.provider && typeof body.provider === "object" && !Array.isArray(body.provider) ? body.provider : {};
-		return fetchImpl(new Request(request, { body: JSON.stringify({ ...body, provider: { ...provider, require_zero_data_retention: true } }) }));
+		const tools = Array.isArray(body.tools) ? { tools: body.tools.filter((tool) => !isGatewayWebTool(tool)) } : {};
+		return fetchImpl(new Request(request, { body: JSON.stringify({ ...body, ...tools, provider: { ...provider, require_zero_data_retention: true } }) }));
 	}) as typeof fetch;
 }
 
