@@ -1,3 +1,4 @@
+import { violatesMcpManagementBinding } from "@/lib/oauth/mcpScopes";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
@@ -1019,6 +1020,12 @@ export async function rotateRefreshToken(
 	const clientId = String(data.client_id ?? "").trim();
 	const client = await loadOAuthClient(clientId);
 	if (!client) return { ok: false, reason: "invalid_grant" };
+	// Refresh tokens carry no resource, so they can never hold a dynamic
+	// client's MCP management scopes.
+	const refreshScopes = Array.isArray(data.scopes) ? data.scopes.map(String) : [];
+	if (violatesMcpManagementBinding(client.registration_source, null, refreshScopes)) {
+		return { ok: false, reason: "invalid_grant" };
+	}
 	if (clientAuth?.clientId && clientAuth.clientId !== clientId) {
 		return { ok: false, reason: "invalid_client" };
 	}

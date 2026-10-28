@@ -28,7 +28,6 @@ export const MCP_MANAGEMENT_SCOPES = [
 	"settings:write",
 ] as const;
 
-const MANAGEMENT_CHANGE_SCOPES = MCP_MANAGEMENT_SCOPES.filter((scope) => !scope.endsWith(":read"));
 const MAX_RESULT_TEXT_CHARS = 50_000;
 
 type Input = Record<string, unknown>;
@@ -275,7 +274,8 @@ export const managementTools: ManagementToolDefinition[] = [
 				.describe("ISO-8601 time the old key stops working, to allow a handover. Omit to expire it immediately."),
 		},
 		path: (input) => encodedPath("/v1/keys", input, "rotate"),
-		body: bodyWithout("id"),
+		// The API keeps the old key active when no expiry is sent, so omitting it means "now".
+		body: (input) => ({ previous_key_expires_at: input.previous_key_expires_at ?? new Date().toISOString() }),
 		oneTimeSecret: { label: "replacement API key", read: (payload) => readSecret(payload, "key") },
 	},
 	{
@@ -576,7 +576,9 @@ export const managementTools: ManagementToolDefinition[] = [
 		title: "Publish a Phaseo preset version",
 		description: "Publish the preset's current draft as a new version. Requests that use the preset's latest version start using it. Confirm with the user first.",
 		scopes: ["presets:write"],
-		effect: "create",
+		// Publishing changes the live config of every request that uses the latest version.
+		effect: "update",
+		idempotent: false,
 		method: "POST",
 		inputSchema: {
 			id: id("Preset id."),
@@ -726,14 +728,9 @@ export function managementAnnotations(definition: ManagementToolDefinition) {
 	};
 }
 
-/**
- * Whether the user consented to account management on this connection. Without
- * the manage URL, only a granted change scope counts, so older connections that
- * happen to hold a management read scope keep their reviewed read-only tools.
- */
-export function hasManagementConsent(user: AuthenticatedPhaseoUser, managementAccess = false): boolean {
-	const scopes: readonly string[] = managementAccess ? MCP_MANAGEMENT_SCOPES : MANAGEMENT_CHANGE_SCOPES;
-	return scopes.some((scope) => user.scopes.includes(scope));
+/** Whether the user granted any account-management scope on this connection. */
+export function hasManagementConsent(user: AuthenticatedPhaseoUser): boolean {
+	return MCP_MANAGEMENT_SCOPES.some((scope) => user.scopes.includes(scope));
 }
 
 const oneTimeSecretSchema = z.object({
@@ -815,7 +812,8 @@ export function registerManagementTools(
 	user: AuthenticatedPhaseoUser,
 	managementAccess = false,
 ): void {
-	if (!hasManagementConsent(user, managementAccess)) return;
+	// The plain /mcp URL stays read-only: management tools exist only on the manage URL.
+	if (!managementAccess || !hasManagementConsent(user)) return;
 	for (const definition of managementTools) {
 		if (!definition.scopes.every((scope) => user.scopes.includes(scope))) continue;
 		server.registerTool(

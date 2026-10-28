@@ -2,6 +2,13 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
+import {
+	MCP_MANAGEMENT_SCOPES,
+	PHASEO_MCP_RESOURCE,
+	RESOURCE_BOUND_MCP_SCOPES,
+	isMcpManagementChangeScope,
+	violatesMcpManagementBinding,
+} from "@/lib/oauth/mcpScopes";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
@@ -98,43 +105,8 @@ const DYNAMIC_MCP_DEFAULT_SCOPES = [
 	"oauth_clients:read",
 ] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
-const RESOURCE_BOUND_MCP_SCOPES = [
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"credits:read",
-	"activity:read",
-	"analytics:read",
-	"generations:read",
-] as const;
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
-// Account management through the Phaseo MCP. Never a default: a client must
-// name these scopes itself (the MCP's "manage" connection URL does), and the
-// consent screen lists each one so the user can untick any of them.
-export const MCP_MANAGEMENT_SCOPES = [
-	"keys:read",
-	"keys:write",
-	"keys:delete",
-	"budgets:read",
-	"budgets:write",
-	"budgets:delete",
-	"spend_rules:read",
-	"spend_rules:write",
-	"spend_rules:delete",
-	"provider_credentials:read",
-	"provider_credentials:write",
-	"provider_credentials:delete",
-	"guardrails:read",
-	"guardrails:write",
-	"guardrails:delete",
-	"presets:read",
-	"presets:write",
-	"settings:read",
-	"settings:write",
-] as const;
-const MCP_MANAGEMENT_SCOPE_SET = new Set<string>(MCP_MANAGEMENT_SCOPES);
 const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
-const PHASEO_MCP_RESOURCE = "https://mcp.phaseo.app/mcp";
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
@@ -327,12 +299,16 @@ export function filterMcpAuthorizationScopes(
 		&& resource === PHASEO_MCP_RESOURCE
 		&& requested.some((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))
 		&& requested.every((scope) => MCP_STEP_UP_SCOPE_SET.has(scope) || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
-	return filterAllowedScopes(explicitStepUp
+	const scopes = filterAllowedScopes(explicitStepUp
 		? {
 			...client,
 			allowed_scopes: [...client.allowed_scopes, ...requested.filter((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))],
 		}
 		: client, requested);
+	// Management changes stay bound to the MCP resource whatever the stored allowlist says.
+	return violatesMcpManagementBinding(client.registration_source, resource, scopes)
+		? scopes.filter((scope) => !isMcpManagementChangeScope(scope))
+		: scopes;
 }
 
 function canNarrowResourceBoundMcpScopes(
@@ -489,16 +465,14 @@ oauthRouter.post(
 		}
 
 		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_DEFAULT_SCOPES);
-		const includesUnsupportedScopes = requestedScopes.some(
-			(scope) => !DYNAMIC_MCP_SCOPE_SET.has(scope) && !MCP_MANAGEMENT_SCOPE_SET.has(scope),
-		);
+		const includesUnsupportedScopes = requestedScopes.some((scope) => !DYNAMIC_MCP_SCOPE_SET.has(scope));
 		// Some MCP clients register with the authorization server's complete
 		// advertised scope catalogue instead of the protected resource's narrower
 		// scope list. Never grant that broader request. When it also contains the
 		// canonical resource-bound MCP scopes, safely negotiate it down to that
 		// exact read-only set and return the narrowed scope in the response.
-		// Management scopes are kept only when the client asked for nothing
-		// outside the MCP's own scope list; the user still consents to each.
+		// Registration has no resource, so management write and delete scopes are
+		// never stored here; they are granted per authorization for the MCP resource.
 		const grantedScopes = includesUnsupportedScopes
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;
@@ -1006,6 +980,9 @@ oauthRouter.post(
 			};
 			if (requiresGatewayAccessScope(client.id, grantedResource, tokenInput.scopes)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
+			}
+			if (violatesMcpManagementBinding(client.registration_source, grantedResource, tokenInput.scopes)) {
+				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
 			// renewal. Third-party PKCE clients receive durable user-funded keys.

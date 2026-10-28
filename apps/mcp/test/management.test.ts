@@ -29,7 +29,7 @@ afterEach(async () => {
 	vi.unstubAllGlobals();
 });
 
-async function connect(scopes: string[], options: { managementAccess?: boolean } = {}) {
+async function connect(scopes: string[], options: { managementAccess?: boolean } = { managementAccess: true }) {
 	const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes }, options);
 	const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
 	connectedClients.push(client);
@@ -39,7 +39,7 @@ async function connect(scopes: string[], options: { managementAccess?: boolean }
 	return client;
 }
 
-async function toolNames(scopes: string[], options: { managementAccess?: boolean } = {}) {
+async function toolNames(scopes: string[], options: { managementAccess?: boolean } = { managementAccess: true }) {
 	const client = await connect(scopes, options);
 	return (await client.listTools()).tools.map((tool) => tool.name);
 }
@@ -58,8 +58,14 @@ async function sentRequest(fetchMock: ReturnType<typeof stubApi>) {
 
 describe("Phaseo MCP management scope gating", () => {
 	it("keeps read-only connections free of management tools, even with older management read scopes", async () => {
-		const names = await toolNames([...READ_ONLY, "keys:read", "presets:read", "settings:read", "guardrails:read"]);
+		const names = await toolNames([...READ_ONLY, "keys:read", "presets:read", "settings:read", "guardrails:read"], { managementAccess: false });
 		for (const definition of management.managementTools) expect(names).not.toContain(definition.name);
+	});
+
+	it("never exposes management tools on the plain URL, even when the token holds write scopes", async () => {
+		const names = await toolNames([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES], { managementAccess: false });
+		for (const definition of management.managementTools) expect(names).not.toContain(definition.name);
+		expect(names).toContain("models_list");
 	});
 
 	it("exposes only the tools whose route scopes were granted", async () => {
@@ -133,7 +139,7 @@ describe("Phaseo MCP management scope gating", () => {
 		expect(tools.api_key_delete?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
 		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: false, idempotentHint: false });
 		expect(tools.api_key_rotate?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
-		expect(tools.preset_version_publish?.annotations).toMatchObject({ readOnlyHint: false, idempotentHint: false });
+		expect(tools.preset_version_publish?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, idempotentHint: false });
 		expect(tools.settings_update?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
 		for (const definition of management.managementTools) {
 			const schema = tools[definition.name]?.inputSchema as { properties?: Record<string, { description?: string }> };
@@ -179,6 +185,18 @@ describe("Phaseo MCP management request mapping", () => {
 			body: { previous_key_expires_at: "2026-11-01T00:00:00Z" },
 		});
 		expect((result.structuredContent as { oneTimeSecret: { value: string } }).oneTimeSecret.value).toBe("sk-phaseo-new");
+	});
+
+	it("expires the old key immediately when the rotation has no handover time", async () => {
+		const fetchMock = stubApi(Response.json({ data: { id: "key_2", key: "sk-phaseo-new" }, previous_key_expires_at: null }));
+		const client = await connect(["keys:write"]);
+		const before = Date.now();
+		await client.callTool({ name: "api_key_rotate", arguments: { id: "key_1" } });
+		const sent = await sentRequest(fetchMock);
+		expect(sent.url).toBe("https://api.phaseo.app/v1/keys/key_1/rotate");
+		const expiresAt = Date.parse(sent.body.previous_key_expires_at);
+		expect(expiresAt).toBeGreaterThanOrEqual(before - 1000);
+		expect(expiresAt).toBeLessThanOrEqual(Date.now() + 1000);
 	});
 
 	it("encodes path ids and sends no body for deletes", async () => {

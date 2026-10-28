@@ -1046,7 +1046,7 @@ export default {
 		// An existing read-only connection opened with the manage URL is asked to
 		// sign in again so the user can consent to account management.
 		const managementAccess = wantsManagementAccess(url);
-		if (managementAccess && !hasManagementConsent(authenticatedUser, true)) {
+		if (managementAccess && !hasManagementConsent(authenticatedUser)) {
 			return secureResponse(insufficientManagementScope(request));
 		}
 		const response = await createMcpHandler(() => createServer(env, authenticatedUser, { managementAccess }), {

@@ -31,21 +31,24 @@ presets and settings. The plain `/mcp` URL never requests them.
 
 The API grants these scopes to a dynamically registered client only when it names
 them itself for the `https://mcp.phaseo.app/mcp` resource and asks for nothing outside
-the MCP scope list (`filterMcpAuthorizationScopes` in `apps/api/src/routes/oauth.ts`).
+the MCP scope list (`violatesMcpManagementBinding` in `apps/api/src/lib/oauth/mcpScopes.ts`).
+Registration, which has no resource, never stores management write or delete scopes;
+authorize, consent and the code exchange all apply the rule, and refresh tokens can never
+carry these scopes. The resulting delegated key is bound to the MCP resource, so it is
+rejected on `/v1` directly and only works through the MCP's token exchange.
 Broader requests are still narrowed to read-only or rejected. The consent screen lists
 every scope with a Read, Write or Delete badge and a checkbox, so the user can allow
 only some of them. Metadata-document (CIMD) clients stay read-only for now.
 
 Each tool calls the existing `/v1` Management API route with the user's
 resource-bound upstream token, so route scope checks, workspace roles and audit
-events all apply. A tool is registered only when its route scope was granted and the
-connection either uses the manage URL or holds at least one management write or
-delete scope, so older read-only connections keep their tool list. A read-only
+events all apply. Management tools are registered only on the manage URL, and each only when its route
+scope was granted. The plain `/mcp` URL never lists them, whatever scopes the token holds. A read-only
 connection opened with the manage URL gets a 403 `insufficient_scope` challenge
 that asks the client to sign in again.
 
 Annotations: list and get tools are read-only; create tools are additive and not
-idempotent; update, rotate, set and delete tools are destructive, so clients that
+idempotent; update, rotate, set, publish and delete tools are destructive, so clients that
 honour annotations ask before calling them. New API key and webhook signing secrets
 come back once in `oneTimeSecret` and are stripped from `result`. Stored provider keys,
 destination credentials and encrypted fields are never returned. 5xx error details are
