@@ -26,7 +26,8 @@ export function UsageScreen({ workspaceId }: { workspaceId: string }) {
   const { split } = useLayout();
   const { workspace } = useWorkspace();
   const { index } = useCatalogueIndex();
-  const barColour = String(useCSSVariable("--color-chart-3") ?? "#3b82f6");
+  // The website's usage charts draw in chart-4, the accent itself.
+  const barColour = String(useCSSVariable("--color-chart-4") ?? "#0069a8");
   const [period, setPeriod] = useState<UsagePeriod>("7d");
   // "Now" is fixed while the screen is open (so the query key is stable) and moves on refresh.
   const [now, setNow] = useState(() => Math.floor(Date.now() / 60_000) * 60_000);

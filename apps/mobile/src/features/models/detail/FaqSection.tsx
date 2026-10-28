@@ -30,7 +30,7 @@ export function FaqList({ items, onJump }: { items: FaqItem[]; onJump: (section:
         return (
           <View key={item.key} className="border-b border-border">
             <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setOpen(expanded ? null : item.key)} className="min-h-14 flex-row items-center gap-3 py-3.5 active:bg-accent">
-              <Text variant="body" className="flex-1">{item.question}</Text>
+              <Text variant="label" className="flex-1 font-medium">{item.question}</Text>
               <View style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}><Icon icon={ChevronRight} tone="muted" size={18} /></View>
             </Pressable>
             {expanded ? (

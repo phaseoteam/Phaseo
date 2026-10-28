@@ -54,31 +54,49 @@ const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(confi
   return manifest;
 });
 
+const git = (args: string) => execSync(`git ${args}`, { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+
 /**
- * Which source a build came from, for Account → Diagnostics: the commit and when the config was read (the app
- * build embeds this config). Builds outside a git checkout leave it out.
+ * Which source a build came from, for Account → About and Diagnostics: the commit, when the config was read (the app
+ * build embeds this config) and the build number, which is the number of commits up to HEAD, so each build from a
+ * later commit gets a higher Android versionCode and iOS build number. Builds outside a git checkout leave these
+ * out, and so does a shallow clone for the count, which would be meaningless there.
  */
-function buildInfo() {
+function buildInfo(): { buildCommit?: string; builtAt?: string; buildNumber?: number } {
   try {
-    const commit = execSync("git rev-parse --short=10 HEAD", { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-    return commit ? { buildCommit: commit, builtAt: new Date().toISOString() } : {};
+    const commit = git("rev-parse --short=10 HEAD");
+    if (!commit) return {};
+    const count = git("rev-parse --is-shallow-repository") === "true" ? Number.NaN : Number(git("rev-list --count HEAD"));
+    return { buildCommit: commit, builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
   } catch {
     return {};
   }
 }
 
 const expo = appJson.expo as ExpoConfig;
+const build = buildInfo();
+/**
+ * Android installs only replace a build with the same or a higher versionCode. android/ is generated, so prebuild
+ * again after committing for the number to move on (see "Build number" in README.md).
+ */
+const buildNumber = build.buildNumber ?? expo.android?.versionCode ?? 1;
 const base: ExpoConfig = {
   ...expo,
+  ios: {
+    ...expo.ios,
+    buildNumber: String(buildNumber),
+  },
   android: {
     ...expo.android,
+    versionCode: buildNumber,
     ...(hasGoogleServices && !perf ? { googleServicesFile } : {}),
   },
   extra: {
     ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
-    ...buildInfo(),
+    ...build,
+    buildNumber,
   },
 };
 

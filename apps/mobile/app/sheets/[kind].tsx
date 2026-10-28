@@ -78,7 +78,7 @@ function WorkspaceSheet() {
           key={workspace.id}
           title={workspace.name ?? workspace.id}
           subtitle={workspace.role ? workspace.role.replace(/^\w/, (letter) => letter.toUpperCase()) : null}
-          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="primary" size={18} /> : null}
+          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="link" size={18} /> : null}
           chevron={false}
           onPress={() => { selectWorkspace(workspace.id); router.back(); }}
           last={index === workspaces.length - 1}
@@ -203,7 +203,7 @@ function PickSheet() {
             title={option.name}
             leading={<Logo id={option.id} label={option.name} size={28} />}
             chevron={false}
-            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="primary" size={18} /> : null}
+            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="link" size={18} /> : null}
             onPress={() => setIds(scope.ids.includes(option.id) ? scope.ids.filter((id) => id !== option.id) : [...scope.ids, option.id])}
             last={index === options.length - 1}
           />

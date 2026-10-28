@@ -29,7 +29,8 @@ export type ConfirmOptions = {
 export type ConfirmRequest = Required<Omit<ConfirmOptions, "body">> & { id: number; body?: string; open: boolean; resolve(ok: boolean): void };
 
 export type ToastTone = "neutral" | "success" | "error";
-export type Toast = { id: number; message: string; title?: string; tone: ToastTone };
+/** `key` groups toasts that replace one another, such as a countdown. */
+export type Toast = { id: number; message: string; title?: string; tone: ToastTone; key?: string };
 
 export type MenuRequest = { id: number; title?: string; actions: MenuAction[]; anchor: Anchor | null; open: boolean };
 
@@ -64,11 +65,33 @@ export function settleConfirm(ok: boolean) {
   current.resolve(ok);
 }
 
-/** A short notice that goes away by itself, instead of a native alert. Returns its ID. */
-export function toast(message: string, options: { tone?: ToastTone; title?: string; durationMs?: number } = {}) {
-  const id = nextId++;
-  overlayStore.set((state) => ({ ...state, toasts: [...state.toasts.slice(-(MAX_TOASTS - 1)), { id, message, title: options.title, tone: options.tone ?? "neutral" }] }));
-  setTimeout(() => dismissToast(id), options.durationMs ?? TOAST_MS);
+const toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
+let toastListener: ((shown: Toast) => void) | null = null;
+
+/** Hears every toast as it's shown, a repeat included (OverlayHost plays its haptic). One listener; null removes it. */
+export function onToast(listener: ((shown: Toast) => void) | null) {
+  toastListener = listener;
+}
+
+/**
+ * A short notice that goes away by itself, instead of a native alert. Returns its ID.
+ * A toast with the `key` of one still showing replaces it in place (same slot, timer restarted), and the
+ * same notice twice only restarts the first one's timer, so repeated taps never stack copies.
+ */
+export function toast(message: string, options: { tone?: ToastTone; title?: string; durationMs?: number; key?: string } = {}) {
+  const entry = { message, title: options.title, tone: options.tone ?? "neutral", key: options.key } satisfies Omit<Toast, "id">;
+  const { toasts } = overlayStore.get();
+  const existing = toasts.find((shown) => (entry.key ? shown.key === entry.key : !shown.key && shown.message === entry.message && shown.title === entry.title && shown.tone === entry.tone));
+  const id = existing?.id ?? nextId++;
+  overlayStore.set((state) => ({
+    ...state,
+    toasts: existing
+      ? state.toasts.map((shown) => (shown.id === id ? { id, ...entry } : shown))
+      : [...state.toasts.slice(-(MAX_TOASTS - 1)), { id, ...entry }],
+  }));
+  clearTimeout(toastTimers.get(id));
+  toastTimers.set(id, setTimeout(() => dismissToast(id), options.durationMs ?? TOAST_MS));
+  toastListener?.({ id, ...entry });
   return id;
 }
 
@@ -78,6 +101,8 @@ export function toastError(title: string, error: unknown, fallback = "Try again.
 }
 
 export function dismissToast(id: number) {
+  clearTimeout(toastTimers.get(id));
+  toastTimers.delete(id);
   if (!overlayStore.get().toasts.some((entry) => entry.id === id)) return;
   overlayStore.set((state) => ({ ...state, toasts: state.toasts.filter((entry) => entry.id !== id) }));
 }

@@ -74,3 +74,30 @@ export function stepIndex(current: number | null, count: number, direction: 1 | 
   if (current == null) return direction === 1 ? 0 : count - 1;
   return Math.max(0, Math.min(count - 1, current + direction));
 }
+
+/**
+ * An SVG path through a series' points (already in screen coordinates), broken at missing values.
+ * A point with no neighbour on either side draws no line, so it comes back in `dots` to be drawn as a dot:
+ * a series with one day of data, or one busy hour between quiet ones.
+ */
+export function linePath(points: readonly { x: number; y: number | null }[], step = false) {
+  let d = "";
+  let previous: { x: number; y: number } | null = null;
+  let run = 0;
+  const dots: { x: number; y: number }[] = [];
+  for (const point of points) {
+    if (point.y == null || !Number.isFinite(point.y)) {
+      if (run === 1 && previous) dots.push(previous);
+      previous = null;
+      run = 0;
+      continue;
+    }
+    const { x, y } = point;
+    if (!previous) d += `M${x.toFixed(1)},${y.toFixed(1)}`;
+    else d += step ? `H${x.toFixed(1)}V${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`;
+    previous = { x, y };
+    run += 1;
+  }
+  if (run === 1 && previous) dots.push(previous);
+  return { d, dots };
+}
