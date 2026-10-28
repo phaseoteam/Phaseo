@@ -4,7 +4,7 @@ Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop 
 
 | Import | What it is |
 |---|---|
-| `@phaseo/app-kit/logos` | The logo list (`manifest.ts`) and `resolveLogo`, which turns an organisation or provider ID into its logo path for a theme. |
+| `@phaseo/app-kit/logos` | The logo list (`manifest.ts`) and `resolveLogo`, which turns an organisation or provider ID into its logo path for a theme. Also `phaseoMarkPath`, the SVG path of the Phaseo "P" mark. |
 | `@phaseo/app-kit/provider-offers` | Provider display names and logo IDs for offers such as regional or fast routes. |
 | `@phaseo/app-kit/gateway-status` | Gateway route statuses: normalising, ranking and choosing between them. |
 | `@phaseo/app-kit/benchmarks/epoch` | Epoch AI benchmark helpers (the Capabilities Index and its confidence intervals). |

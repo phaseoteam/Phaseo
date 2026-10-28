@@ -404,6 +404,9 @@ importers:
       '@base-ui/react':
         specifier: 1.6.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@phaseo/app-kit':
+        specifier: workspace:*
+        version: link:../../packages/shared/app-kit
       '@phaseo/ui':
         specifier: workspace:*
         version: link:../../packages/shared/ui

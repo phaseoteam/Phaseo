@@ -267,6 +267,7 @@ jobs:
                       data: 'packages/data/catalog/src/data/**'
                       factory:
                           - 'apps/factory/**'
+                          - 'packages/shared/app-kit/**'
                           - 'packages/shared/ui/**'
                           - 'pnpm-lock.yaml'
                           - '.github/workflows/ci.yml'
