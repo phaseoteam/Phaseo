@@ -23,13 +23,12 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="29 de abril de 2026">
 
-<div data-changelog-category="api">
+<div data-changelog-category="product">
 
-<p className="changelog-category">API y SDK</p>
+<p className="changelog-category">Producto</p>
 
-- Se publicó el SDK `2.0.2` para [TypeScript](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.2), [Python](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.2), [Go](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.2), [C#](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.2), [Java](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.2), [PHP](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.2) y [Ruby](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.2).
-- Esta versión separó los ID de modelo de las solicitudes en tiempo de ejecución de las constantes auxiliares generadas, para que los modelos nuevos puedan usarse antes de publicar la siguiente versión del SDK.
-- Los auxiliares generados ahora siguen la instantánea actual de modelos invocables en la pasarela, lo que reduce los cambios innecesarios del SDK causados solo por actualizaciones del catálogo.
+- Las páginas de modelos, las de proveedores y la lista de modelos etiquetan los modelos de audio como **Speech**, **Transcription** y **Music** en lugar de TTS y STT ([#417](https://github.com/phaseoteam/Phaseo/pull/417)).
+- Las tarjetas de modelos muestran el precio de modelos de imagen como Grok Imagine Image; antes, algunos aparecían como gratuitos ([#418](https://github.com/phaseoteam/Phaseo/pull/418)).
 
 </div>
 
@@ -65,14 +64,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="27 de abril de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Los SDK `2.0.1` de TypeScript, Python, Go, C#, Java, PHP y Ruby aceptan cualquier ID de modelo como cadena, así que los modelos nuevos funcionan sin esperar a una nueva versión del SDK ([#367](https://github.com/phaseoteam/Phaseo/pull/367), [#393](https://github.com/phaseoteam/Phaseo/pull/393)).
+- Las constantes de modelo generadas en los SDK ahora incluyen solo los modelos que la pasarela puede llamar, no todas las entradas del catálogo ([#367](https://github.com/phaseoteam/Phaseo/pull/367)).
+
+</div>
+
+</Update>
+
 <Update label="25 de abril de 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">Producto</p>
 
-- Se ampliaron las alertas de saldo bajo y las protecciones de facturación para avisar con más claridad antes de que el uso alcance los límites de la cuenta ([PR #371](https://github.com/phaseoteam/Phaseo/pull/371)).
-- Los casos límite de precios ahora fallan de forma más predecible cuando faltan reglas de facturación del proveedor o cambian inesperadamente los metadatos de una ruta ([PR #374](https://github.com/phaseoteam/Phaseo/pull/374)).
+- Los correos de saldo bajo se envían cuando el saldo de un espacio de trabajo cae por debajo del umbral definido en **Settings -> Credits -> Low balance email alert** ([#370](https://github.com/phaseoteam/Phaseo/pull/370), [#371](https://github.com/phaseoteam/Phaseo/pull/371)).
+- Las páginas de modelos muestran seis proveedores antes de contraer la lista e indican cuándo un modelo del catálogo aún no tiene proveedor de API ([#372](https://github.com/phaseoteam/Phaseo/pull/372)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes con un plan de precios no estándar, como `priority`, se facturan a tarifas estándar por el uso que ese plan no tarifica; antes, ese uso no se facturaba ([#374](https://github.com/phaseoteam/Phaseo/pull/374)).
 
 </div>
 
@@ -90,6 +110,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="24 de abril de 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las respuestas de la pasarela indican `latency_ms` como el tiempo hasta el primer fragmento, separado de `generation_ms`, también en solicitudes sin streaming ([#360](https://github.com/phaseoteam/Phaseo/pull/360)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -104,6 +132,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="23 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los créditos usan un único plan Standard con una comisión fija del 5% por recarga, que sustituye a los niveles Basic y Enterprise; consulta [Niveles de precios](../pricing/tiers.mdx) ([#351](https://github.com/phaseoteam/Phaseo/pull/351)).
+- Cada cuenta recibe un espacio de trabajo personal al iniciar sesión por primera vez, las cuentas de pago pueden crear más y las nuevas claves de API van al espacio seleccionado en el encabezado; consulta [Espacios de trabajo](../guides/workspaces.mdx) ([#352](https://github.com/phaseoteam/Phaseo/pull/352), [#351](https://github.com/phaseoteam/Phaseo/pull/351)).
+- El playground de la página de modelo ya no falla con `invalid_secret` tras rotar una clave de API ([#355](https://github.com/phaseoteam/Phaseo/pull/355)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes de imagen a `openai/gpt-image-2` ya no fallan por falta de precio cuando el precio existe ([#355](https://github.com/phaseoteam/Phaseo/pull/355)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -125,7 +171,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Producto</p>
 
-- Se publicó el SDK `2.0.0` con clientes regenerados y mayor compatibilidad con el contrato actual de la pasarela.
+- El playground de la página de modelo añade los modos **TTS** y **Music** para modelos que generan voz o música ([#348](https://github.com/phaseoteam/Phaseo/pull/348)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- **Cambio incompatible:** Los SDK `2.0.0` eliminan el ID de modelo `qwen/qwen3-tts-tokenizer-12hz`; actualiza el código que lo use ([#337](https://github.com/phaseoteam/Phaseo/pull/337)).
 
 </div>
 
@@ -151,7 +205,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Producto</p>
 
-- Se lanzaron el centro de anuncios, las funciones de gestión de espacios de trabajo y los flujos relacionados con sus miembros.
+- Los equipos pasan a ser espacios de trabajo, y los miembros, invitaciones, solicitudes de acceso y roles se gestionan en **Settings -> Workspaces**; consulta [Espacios de trabajo](../guides/workspaces.mdx) ([#336](https://github.com/phaseoteam/Phaseo/pull/336), [#345](https://github.com/phaseoteam/Phaseo/pull/345)).
+- La nueva página de anuncios reúne los anuncios de Phaseo, y la página de inicio muestra los tres más recientes ([#335](https://github.com/phaseoteam/Phaseo/pull/335), [#339](https://github.com/phaseoteam/Phaseo/pull/339)).
 
 </div>
 
@@ -186,17 +241,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="18 de abril de 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">Producto</p>
+<p className="changelog-category">API y SDK</p>
 
-- El SDK `1.2.0` sincronizó la disponibilidad de modelos, los tipos generados y la documentación con los cambios más recientes del catálogo.
+- Los SDK `1.2.0` añaden el ID de modelo `x-ai/grok-4.3` ([#314](https://github.com/phaseoteam/Phaseo/pull/314)).
 
 </div>
 
 </Update>
 
 <Update label="17 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La recarga manual mínima de créditos ahora es de $5, y la recarga automática sigue empezando en $1 ([#315](https://github.com/phaseoteam/Phaseo/pull/315)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -213,6 +276,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="16 de abril de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos añaden una pestaña **Pricing** con el precio efectivo de la última hora ponderado por tráfico y el historial de precios de cada proveedor ([#305](https://github.com/phaseoteam/Phaseo/pull/305), [#307](https://github.com/phaseoteam/Phaseo/pull/307)).
+- El playground de la página de modelo añade modos de imagen, vídeo, audio, embeddings y moderación ([#307](https://github.com/phaseoteam/Phaseo/pull/307)).
+- La sección **Apps** de las páginas de modelos muestra las aplicaciones públicas vistas en el tráfico de la pasarela, con sus solicitudes y tokens ([#302](https://github.com/phaseoteam/Phaseo/pull/302)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes a Claude Opus 4.7 en Anthropic, Google Vertex y Amazon Bedrock aceptan el esfuerzo de razonamiento `xhigh`, y la pasarela elimina `temperature`, `top_p` y `top_k`; consulta [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx) ([#308](https://github.com/phaseoteam/Phaseo/pull/308)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -226,6 +307,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="15 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- El calendario de lanzamientos tiene una página por organización con sus lanzamientos en el día de la semana actual o todos ellos, y ahora incluye todos los lanzamientos pasados ([#300](https://github.com/phaseoteam/Phaseo/pull/300)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes a modelos gratuitos, como los ID `:free`, funcionan sin créditos; las solicitudes de pago siguen necesitando al menos $1 en créditos ([#293](https://github.com/phaseoteam/Phaseo/pull/293), [#294](https://github.com/phaseoteam/Phaseo/pull/294)).
+- Los proveedores sin precios configurados se omiten, y una solicitud sin ningún proveedor con precio devuelve `unsupported_model_or_endpoint` con el motivo `pricing_not_configured` ([#293](https://github.com/phaseoteam/Phaseo/pull/293)).
+- **Cambio incompatible:** Las solicitudes a modelos anunciados, retenidos o retirados, o que superaron su fecha de obsolescencia, ahora se rechazan, y `validateModel` del SDK devuelve `ok: false`; cambia a un modelo activo ([#298](https://github.com/phaseoteam/Phaseo/pull/298)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -255,6 +354,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="13 de abril de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La sala de audio de Chat genera música a partir de una indicación y una letra, y guarda las pistas generadas en tu navegador ([#277](https://github.com/phaseoteam/Phaseo/pull/277)).
+- Usage y Logs muestran el nombre de Phaseo de cada modelo con el prefijo de su organización, en lugar del nombre del proveedor ([#277](https://github.com/phaseoteam/Phaseo/pull/277)).
+- Las tarjetas de modelos y la tabla de modelos muestran los nombres como **Organización: Modelo**, por ejemplo **Moonshot: Kimi K2.6** ([#278](https://github.com/phaseoteam/Phaseo/pull/278)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -276,6 +385,41 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Music 2.6 imagen del lanzamiento del modelo](../../../images/model-releases/2026-04-11--minimax--music-2-6.png)
 
 - [MiniMax: Music 2.6](https://phaseo.app/models/minimax/music-2.6)
+
+</div>
+
+</Update>
+
+<Update label="10 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de comparación muestran el uso de cada modelo en la pasarela y presentan todas las puntuaciones de benchmarks en el mismo formato ([#244](https://github.com/phaseoteam/Phaseo/pull/244)).
+- Las páginas de proveedores muestran tendencias de uso de cada modelo que sirven y el uso por aplicación a lo largo del tiempo ([#247](https://github.com/phaseoteam/Phaseo/pull/247)).
+- El calendario de lanzamientos en `/updates/calendar` muestra qué días de la semana suele lanzar cada organización y la probabilidad de un lanzamiento hoy ([#264](https://github.com/phaseoteam/Phaseo/pull/264)).
+
+</div>
+
+</Update>
+
+<Update label="9 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos marcan los modelos anunciados o retenidos y ocultan las secciones de proveedores, aplicaciones y rendimiento que no les corresponden ([#245](https://github.com/phaseoteam/Phaseo/pull/245), [#259](https://github.com/phaseoteam/Phaseo/pull/259)).
+- El sitio web añade guías paso a paso para migrar desde otras pasarelas de IA en `/migrate` ([#248](https://github.com/phaseoteam/Phaseo/pull/248)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- `POST /v1/rerank` ordena documentos por relevancia para una consulta, con soporte en los SDK de TypeScript y Python; consulta [Reordenar documentos](../api-reference/endpoint/rerank.mdx) ([#242](https://github.com/phaseoteam/Phaseo/pull/242)).
 
 </div>
 
@@ -310,13 +454,36 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="5 de abril de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La comisión de recarga de Pay As You Go baja del 7% al 5%, y la comisión mínima de $1 no cambia ([#225](https://github.com/phaseoteam/Phaseo/pull/225)).
+- Las tarjetas de modelos de imagen, vídeo y audio muestran un precio **From:** en la unidad propia de cada modelo en lugar de un precio por token ([#225](https://github.com/phaseoteam/Phaseo/pull/225)).
+- La analítica y la grabación de sesiones en phaseo.app solo se activan después de aceptar las cookies de analítica ([#226](https://github.com/phaseoteam/Phaseo/pull/226)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las respuestas de Chat Completions incluyen el uso de tokens de los proveedores que informan `input_tokens` y `output_tokens` en lugar de `prompt_tokens` y `completion_tokens` ([#227](https://github.com/phaseoteam/Phaseo/pull/227)).
+
+</div>
+
+</Update>
+
 <Update label="4 de abril de 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">Producto</p>
 
-- Se mejoraron las páginas de modelos para móviles, los diseños de precios y la visibilidad de las rutas gratuitas; además, la comisión de recarga de Pay As You Go bajó al 5%.
+- En el móvil, las páginas de modelos apilan los precios en dos columnas y mantienen la fila **Other models** dentro de la pantalla ([#223](https://github.com/phaseoteam/Phaseo/pull/223)).
+- Los proveedores que sirven un modelo gratis aparecen en el nivel de precios **Free** en lugar de **Standard** ([#223](https://github.com/phaseoteam/Phaseo/pull/223)).
 
 </div>
 
