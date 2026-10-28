@@ -1,14 +1,18 @@
 import type { LucideIcon } from "lucide-react-native";
 import { useCSSVariable } from "uniwind";
 
-export type IconTone = "foreground" | "muted" | "primary" | "primary-foreground" | "destructive" | "success" | "warning" | "link" | "border";
+export type IconTone = "foreground" | "background" | "muted" | "primary" | "primary-foreground" | "destructive" | "destructive-foreground" | "success" | "warning" | "link" | "border";
 
 const variable: Record<IconTone, string> = {
   foreground: "--color-foreground",
+  /** For icons on a bg-foreground fill (inverted in both themes). */
+  background: "--color-background",
   muted: "--color-muted-foreground",
   primary: "--color-primary",
   "primary-foreground": "--color-primary-foreground",
   destructive: "--color-destructive",
+  /** For icons on a bg-destructive fill. */
+  "destructive-foreground": "--color-destructive-foreground",
   success: "--color-success",
   warning: "--color-warning",
   link: "--color-link",

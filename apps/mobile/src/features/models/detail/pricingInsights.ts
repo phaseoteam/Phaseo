@@ -162,12 +162,13 @@ export function defaultRowPlan(row: Pick<EffectiveRow, "plans">) {
 export type PricingRange = "7d" | "30d" | "90d" | "1y" | "all";
 export type PricingView = "effective" | "listed";
 
-export const RANGE_OPTIONS: { value: PricingRange; label: string }[] = [
-  { value: "7d", label: "1 week" },
-  { value: "30d", label: "1 month" },
-  { value: "90d", label: "3 months" },
-  { value: "1y", label: "1 year" },
-  { value: "all", label: "All" },
+/** Short, as stock charts label them, so all five fit a phone's width; screen readers get the full names. */
+export const RANGE_OPTIONS: { value: PricingRange; label: string; accessibilityLabel: string }[] = [
+  { value: "7d", label: "1W", accessibilityLabel: "1 week" },
+  { value: "30d", label: "1M", accessibilityLabel: "1 month" },
+  { value: "90d", label: "3M", accessibilityLabel: "3 months" },
+  { value: "1y", label: "1Y", accessibilityLabel: "1 year" },
+  { value: "all", label: "All", accessibilityLabel: "All time" },
 ];
 
 const RANGE_DAYS: Record<Exclude<PricingRange, "all">, number> = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 };
@@ -208,6 +209,18 @@ export function normaliseHistoryPrice(pricePer1MUnits: number, unit: string) {
   if (value === "minute") return pricePer1MUnits / 1e6;
   if (value === "hour") return pricePer1MUnits / 60e6;
   return pricePer1MUnits / 1e6;
+}
+
+const UNIT_LABELS: Record<string, string> = {
+  token: "USD per million tokens", byte: "USD per million bytes", character: "USD per million characters", pixel: "USD per million pixels",
+  second: "USD per minute", minute: "USD per minute", hour: "USD per minute", call: "USD per request", request: "USD per request",
+};
+
+/** What the chart's numbers are, from the meter's unit as normaliseHistoryPrice converts it (formatPricingHistoryUnitLabel on the web). */
+export function historyUnitLabel(rules: PricingHistoryRule[], meter: string) {
+  const unit = rules.find((rule) => rule.meter === meter)?.unit.trim().toLowerCase();
+  if (!unit) return "USD per million tokens";
+  return UNIT_LABELS[unit] ?? `USD per ${unit}`;
 }
 
 function listPriceAt(rules: PricingHistoryRule[], meter: string, time: number, preferred: number | null) {

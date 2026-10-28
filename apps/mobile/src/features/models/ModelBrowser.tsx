@@ -9,6 +9,7 @@ import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, Opti
 import { useLayout } from "@/hooks/useLayout";
 import type { ModelCard } from "@/lib/api/models";
 import { activeFilterCount, DEFAULT_FILTERS, filterModels, type CatalogueSort } from "@/lib/catalogue";
+import { haptic } from "@/lib/haptics";
 import { compareStore, filtersStore, searchFocusStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
 import { ModelRow } from "./ModelRow";
 
@@ -58,9 +59,13 @@ export function ModelBrowser() {
 
   useEffect(() => {
     if (focusRequest === handledFocusRequest) return;
-    handledFocusRequest = focusRequest;
-    // Wait for the tab switch to settle before raising the keyboard.
-    const timer = setTimeout(() => searchRef.current?.focus(), 250);
+    // Wait for the tab switch to settle before raising the keyboard. The request only counts as handled
+    // once the field has focus, so a remount that cancels the timer still gets the keyboard.
+    const timer = setTimeout(() => {
+      if (!searchRef.current) return;
+      searchRef.current.focus();
+      handledFocusRequest = focusRequest;
+    }, 250);
     return () => clearTimeout(timer);
   }, [focusRequest]);
 
@@ -69,8 +74,15 @@ export function ModelBrowser() {
       model={item}
       selected={item.model_id === selectedId}
       comparing={comparing.includes(item.model_id)}
-      onPress={() => comparing.length ? toggleCompare(item.model_id) : openDetail(modelHref(item.model_id))}
-      onLongPress={() => toggleCompare(item.model_id)}
+      onPress={() => {
+        if (!comparing.length) return openDetail(modelHref(item.model_id));
+        haptic("selection");
+        toggleCompare(item.model_id);
+      }}
+      onLongPress={() => {
+        haptic("longPress");
+        toggleCompare(item.model_id);
+      }}
     />
   ), [selectedId, comparing, openDetail]);
 
