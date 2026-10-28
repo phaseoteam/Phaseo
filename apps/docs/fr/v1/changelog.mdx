@@ -55,6 +55,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="24 octobre 2026">
@@ -104,6 +112,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Les politiques de limites de débit appliquent `concurrent_requests` et renvoient `429` avec le motif `policy_concurrent_requests` et `Retry-After: 1` lorsque tous les emplacements sont pris ; voir [Limites de requêtes](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Les politiques strictes (`fail_closed`) vérifient leurs limites par minute avant d'envoyer la requête à un fournisseur ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Les requêtes envoyées via les passerelles régionales UE et US atteignent désormais les destinations Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
 
 </div>
 
@@ -176,6 +193,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="20 octobre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="19 octobre 2026">
@@ -188,6 +228,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Une défaillance du fournisseur en plein stream termine le stream avec l'événement d'erreur de l'endpoint au lieu d'une fin normale ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
 - Une requête rejetée par tous les fournisseurs avec `429` renvoie `429` avec le `Retry-After` du fournisseur ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
 - Une requête rejetée comme invalide ne bascule plus vers les autres modèles de `models` ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
 
 </div>
 
@@ -215,6 +265,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produit</p>
 
 - **Paramètres -> Notifications** ajoute les **Alertes de limites de débit**, envoyées au plus une fois par heure par e-mail, Slack, Discord, Teams ou webhook ; voir [Notifications de l’espace de travail](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -267,6 +325,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="14 octobre 2026">
@@ -290,6 +356,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+
+</div>
+
 </Update>
 
 <Update label="13 octobre 2026">
@@ -299,6 +374,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produit</p>
 
 - Chaque carte de la vue d'ensemble de l'utilisation affiche une prévision de fin de mois pour les dépenses, les requêtes et les jetons, ou le mois en cours pour des taux comme le taux de succès du cache ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -321,6 +404,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - La liste de repli `models` de premier niveau fonctionne sur tous les endpoints d'inférence, y compris `/v1/messages` et les endpoints multimédias ; voir [Routage et solutions de repli](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858)).
 - Les réponses `429` des limites de requêtes et de dépenses d'une clé API incluent `Retry-After` avec le nombre de secondes avant la réinitialisation ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -364,6 +455,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Chaque membre d'un espace de travail dispose d'un quota de requêtes par minute partagé entre ses clés API, qui passe de 10 à 120 à mesure que l'espace s'établit ; voir [Limites de requêtes](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800)).
 - Chaque utilisateur peut faire 1 500 requêtes vers des modèles gratuits par jour UTC, et les requêtes au-delà de l'une ou l'autre limite renvoient `429` avec `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787)).
 - Les passerelles régionales UE et US renvoient `403 model_region_unavailable` lorsqu'aucun fournisseur ne sert le modèle dans cette région ; voir [Acheminer les requêtes de texte par région](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 
