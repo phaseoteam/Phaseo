@@ -35,8 +35,11 @@ export function useProviderStats(modelId: string, providers: ProviderPricing[], 
   return { stats, health };
 }
 
-/** Which provider a sheet shows (its place in the list it was opened from) and which tier. */
-export type ProviderSheetTarget = { index: number; plan: string };
+/** Which provider a sheet shows, and which tier. By identity: the list can re-sort while the sheet is open (health and pricing load later). */
+export type ProviderSheetTarget = { key: string; plan: string };
+
+/** A provider's identity in a sheet's list (its position only for the rare provider without an ID). */
+export const sheetKey = (provider: ProviderPricing, index: number) => provider.provider.api_provider_id ?? `#${index}`;
 
 /**
  * One provider's route for this model, as the website's provider sheet shows it: its prices as a plain list, then
@@ -51,17 +54,19 @@ export function ProviderSheet({ providers, target, stats, percentile, onChange, 
   onChange(target: ProviderSheetTarget): void;
   onClose(): void;
 }) {
-  const provider = target ? providers[target.index] : undefined;
+  const index = target ? providers.findIndex((entry, position) => sheetKey(entry, position) === target.key) : -1;
+  const provider = index >= 0 ? providers[index] : undefined;
   return (
     <Sheet open={Boolean(provider)} onClose={onClose} size="tall">
-      {provider && target ? <SheetBody providers={providers} provider={provider} target={target} stats={stats} percentile={percentile} onChange={onChange} onClose={onClose} /> : null}
+      {provider && target ? <SheetBody providers={providers} provider={provider} index={index} target={target} stats={stats} percentile={percentile} onChange={onChange} onClose={onClose} /> : null}
     </Sheet>
   );
 }
 
-function SheetBody({ providers, provider, target, stats, percentile, onChange, onClose }: {
+function SheetBody({ providers, provider, index, target, stats, percentile, onChange, onClose }: {
   providers: ProviderPricing[];
   provider: ProviderPricing;
+  index: number;
   target: ProviderSheetTarget;
   stats: Map<string, RuntimeStats>;
   percentile: number;
@@ -82,8 +87,8 @@ function SheetBody({ providers, provider, target, stats, percentile, onChange, o
   const dataRegions = (provider.provider.default_data_regions ?? []).map((region) => (region.toUpperCase() === "GLOBAL" ? "Global" : region.toUpperCase()));
   const modelIds = [...new Set(modelScopeForPlan(provider, plan).map((model) => model.provider_model_slug).filter((slug): slug is string => Boolean(slug)))];
   const step = (by: number) => {
-    const index = (target.index + by + providers.length) % providers.length;
-    onChange({ index, plan: providerPlans(providers[index]!)[0] ?? "standard" });
+    const next = (index + by + providers.length) % providers.length;
+    onChange({ key: sheetKey(providers[next]!, next), plan: providerPlans(providers[next]!)[0] ?? "standard" });
   };
   const id = provider.provider.api_provider_id;
   return (
@@ -98,13 +103,13 @@ function SheetBody({ providers, provider, target, stats, percentile, onChange, o
           {providers.length > 1 ? (
             <>
               <IconButton icon={ChevronLeft} label="Previous provider" size={18} className="h-9 w-9" onPress={() => step(-1)} />
-              <Text variant="caption" accessibilityLabel={`Provider ${target.index + 1} of ${providers.length}`}>{`${target.index + 1}/${providers.length}`}</Text>
+              <Text variant="caption" accessibilityLabel={`Provider ${index + 1} of ${providers.length}`}>{`${index + 1}/${providers.length}`}</Text>
               <IconButton icon={ChevronRight} label="Next provider" size={18} className="h-9 w-9" onPress={() => step(1)} />
             </>
           ) : null}
           <IconButton icon={X} label="Close" size={18} className="h-9 w-9" onPress={onClose} />
         </View>
-        {plans.length > 1 ? <Segmented value={plan} options={plans.map((value) => ({ value, label: tierLabel(value) }))} onChange={(next) => onChange({ index: target.index, plan: next })} /> : null}
+        {plans.length > 1 ? <Segmented value={plan} options={plans.map((value) => ({ value, label: tierLabel(value) }))} onChange={(next) => onChange({ key: target.key, plan: next })} /> : null}
       </View>
       <ScrollView contentContainerClassName="px-4 pb-4">
         <SheetSection title="Pricing" note="Per 1M tokens unless noted" first>

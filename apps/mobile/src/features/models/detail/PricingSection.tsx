@@ -11,10 +11,10 @@ import { formatPrice, formatShortDate } from "@/lib/format";
 import { meterName } from "./faq";
 import { EmptyBox, ServiceTierBadge, SubHeading, TinyBadge } from "./parts";
 import {
-  buildPriceHistory, defaultRowPlan, effectiveRows, isEffectiveMeter, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
+  buildPriceHistory, defaultRowPlan, effectiveRows, historyUnitLabel, isEffectiveMeter, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
   tierDashArray, weightedEffectivePrice, type EffectiveRow, type PricingRange, type PricingView,
 } from "./pricingInsights";
-import { ProviderSheet, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
+import { ProviderSheet, sheetKey, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
 import { tierLabel } from "./providers";
 import { serviceTierLabel } from "./tiers";
 
@@ -51,6 +51,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
   const activeMeter = meters.includes(meter) ? meter : meters[0] ?? "input_text_tokens";
   const effectiveState = useMemo(() => buildPriceHistory({ rows: derived.rows, rules: history.data ?? [], observed: derived.observed, view: "effective", meter: activeMeter, range, nowMs }), [derived, history.data, activeMeter, range, nowMs]);
   const hasEffective = isEffectiveMeter(activeMeter) && effectiveState.hasData;
+  const unitLabel = historyUnitLabel(history.data ?? [], activeMeter);
   const shownView: PricingView = view === "effective" && !hasEffective ? "listed" : view;
   const state = useMemo(() => (shownView === "effective" ? effectiveState : buildPriceHistory({ rows: derived.rows, rules: history.data ?? [], observed: derived.observed, view: "listed", meter: activeMeter, range, nowMs })), [shownView, effectiveState, derived, history.data, activeMeter, range, nowMs]);
 
@@ -68,7 +69,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
   const [sheet, setSheet] = useState<ProviderSheetTarget | null>(null);
   const openSheet = (row: EffectiveRow) => {
     const index = sheetProviders.findIndex((provider) => provider.provider.api_provider_id === row.providerId);
-    if (index >= 0) setSheet({ index, plan: row.plan });
+    if (index >= 0) setSheet({ key: sheetKey(sheetProviders[index]!, index), plan: row.plan });
   };
 
   if (!providers.length) {
@@ -88,7 +89,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
 
       <View>
         <SubHeading>Price history</SubHeading>
-        <Text variant="caption" className="mt-1">USD per million tokens · 30-day rolling effective prices · exact UTC list changes</Text>
+        <Text variant="caption" className="mt-1">{`${unitLabel} · 30-day rolling effective prices · exact UTC list changes`}</Text>
         <View className="mt-3 gap-2">
           <View className="flex-row gap-2">
             <Segmented
@@ -112,7 +113,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
               xFormat={(time) => formatShortDate(time)}
               valueFormat={price}
               tooltipTitle={(time) => `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`}
-              accessibilityLabel={`${shownView === "effective" ? "Effective" : "List"} ${meterName(activeMeter).toLowerCase()} price per million tokens for ${visibleRows.length} ${visibleRows.length === 1 ? "route" : "routes"}`}
+              accessibilityLabel={`${shownView === "effective" ? "Effective" : "List"} ${meterName(activeMeter).toLowerCase()} price, ${unitLabel}, for ${visibleRows.length} ${visibleRows.length === 1 ? "route" : "routes"}`}
               series={visibleRows.map((row) => ({ key: row.seriesKey, label: row.plan === defaultRowPlan(row) ? row.providerName : `${row.providerName} · ${tierLabel(row.plan)}`, colour: row.colour, dash: tierDashArray(row.plan), points: state.points.map((point) => ({ x: point.time, y: point.values[row.seriesKey] ?? null })) }))}
               onInspect={setInspected}
             />

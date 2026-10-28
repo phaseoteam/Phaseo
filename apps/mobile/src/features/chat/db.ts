@@ -184,10 +184,17 @@ export function indexAnswer(chatId: string, content: string) {
   if (content) db().runSync("INSERT INTO chat_search (chat_id, body) VALUES (?, ?)", chatId, content);
 }
 
-/** Edit and resend: the message and everything after it go, with any summary that covered them. */
+/**
+ * Edit and resend: the message and everything after it go, with any summary that covered them. A summary written
+ * after the message was sent goes too: it was written while answering that message or a later one, and saw that
+ * request in full (summaryRequest's latestRequest), even when it ends before it.
+ */
 export function deleteMessagesFrom(chatId: string, position: number) {
   db().withTransactionSync(() => {
-    db().runSync("DELETE FROM chat_summaries WHERE chat_id = ? AND through_position >= ?", chatId, position);
+    db().runSync(
+      "DELETE FROM chat_summaries WHERE chat_id = ? AND (through_position >= ? OR created_at >= (SELECT created_at FROM messages WHERE chat_id = ? AND position = ?))",
+      chatId, position, chatId, position,
+    );
     db().runSync("DELETE FROM messages WHERE chat_id = ? AND position >= ?", chatId, position);
   });
 }
@@ -399,7 +406,12 @@ export function copyMessages(args: { from: string; to: string; upTo: number; mod
       copy.finalizeSync();
     }
     database.runSync("INSERT INTO chat_search (chat_id, body) SELECT ?, content FROM messages WHERE chat_id = ? AND content != '' AND (role = 'user' OR status = 'done')", args.to, args.to);
-    database.runSync(`INSERT INTO chat_summaries (chat_id, model, through_position, summary, usage, created_at) SELECT ?, model, through_position, summary, usage, created_at FROM chat_summaries WHERE chat_id = ? AND through_position < ? AND model IN (${placeholders})`, args.to, args.from, args.upTo, ...args.models);
+    // Not a summary written once a later message was sent: it saw that message, which the copy leaves out.
+    database.runSync(
+      `INSERT INTO chat_summaries (chat_id, model, through_position, summary, usage, created_at) SELECT ?, model, through_position, summary, usage, created_at FROM chat_summaries WHERE chat_id = ? AND through_position < ? AND model IN (${placeholders})
+        AND created_at < coalesce((SELECT min(created_at) FROM messages WHERE chat_id = ? AND role = 'user' AND position > ?), 9e15)`,
+      args.to, args.from, args.upTo, ...args.models, args.from, args.upTo,
+    );
   });
   return kept.length;
 }

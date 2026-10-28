@@ -107,8 +107,9 @@ function HomeSearch({ count }: { count?: number }) {
   const router = useRouter();
   return (
     <Pressable
-      accessibilityRole="search"
+      accessibilityRole="button"
       accessibilityLabel="Search models"
+      accessibilityHint="Opens Models with the search field ready"
       onPress={() => { searchFocusStore.set((value) => value + 1); router.navigate("/models"); }}
       className="mx-4 mt-1 h-11 flex-row items-center gap-2 rounded-md bg-muted px-3 active:opacity-80"
     >
