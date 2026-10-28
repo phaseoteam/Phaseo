@@ -280,7 +280,7 @@ describe("schedule tools", () => {
 	it("says why the last run was skipped", () => {
 		expect(lastRunText("skipped", "installation_paused")).toBe("skipped: the agent was paused");
 		expect(lastRunText("skipped", "payment_due")).toBe("skipped: a Phaseo bill was unpaid");
-		expect(lastRunText("skipped", "schedules_off")).toBe("skipped: recurring tasks were turned off");
+		expect(lastRunText("skipped", "schedules_off")).toBe("skipped: recurring tasks were off");
 		expect(lastRunText("skipped", "monthly_cap")).toBe("skipped: a usage limit was reached");
 		expect(lastRunText("skipped", "something_new")).toBe("skipped");
 		expect(lastRunText("failed", "failed")).toBe("failed");

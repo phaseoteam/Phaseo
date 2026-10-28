@@ -249,7 +249,7 @@ export function lastRunText(result: NonNullable<ScheduleRow["last_result"]>, rea
 		case "payment_due":
 			return "skipped: a Phaseo bill was unpaid";
 		case "schedules_off":
-			return "skipped: recurring tasks were turned off";
+			return "skipped: recurring tasks were off";
 		case "max_people":
 		case "plan_full":
 		case "hourly_limit":
