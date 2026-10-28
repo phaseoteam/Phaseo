@@ -61,7 +61,14 @@ Rules:
 ## Models entries
 
 - One bullet per model, written as `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
-- Put one release artwork image first when it exists.
+- Release artwork:
+  - At most one image per date. If a day has art for several models, pick one; the user says which.
+  - The image goes at the top of the Models section, straight after the label and before any bullet.
+  - The pictured model is the first bullet, followed by the day's other models. If the image shows a family, list the family's models first.
+  - Save it as `apps/docs/images/model-releases/YYYY-MM-DD--<org>--<model-id>.png`, at 1200×675, with the model's release date.
+  - Link it as `../images/model-releases/<file>` on the English `changelog.mdx` (`../../images/...` on `changelog/*.mdx`), and as `/images/model-releases/<file>` on locale pages.
+  - Alt text: `<Model name> model release artwork` in English, the model name on locale pages.
+  - Never add art for a model that has no changelog entry, such as an announced-only model.
 - Pricing or provider coverage notes go after the link, in the same bullet.
 
 ## Product and API & SDKs entries
