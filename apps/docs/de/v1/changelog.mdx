@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API & SDKs</p>
 
 - Preset-Anfragen können mit `prompt.version` oder `model: "@slug@label"` eine Version oder ein Label festlegen; ein unbekannter Wert ergibt `404 preset_version_not_found`; siehe [Prompt-Vorlagen](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281)).
-- `GET`, `PUT` und `DELETE /v1/presets/{id}/labels` listen, verschieben und entfernen Preset-Labels; siehe [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- `GET /v1/presets/{id}/labels` listet Preset-Labels, und `PUT` und `DELETE /v1/presets/{id}/labels/{label}` verschieben und entfernen ein Label; siehe [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
 - Gestreamte Events von Chat Completions, Responses und Messages tragen jetzt die Phaseo-Modell-ID in `model`; vorher trugen manche die eigene ID des Anbieters ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273)).
 - `GET /oauth/userinfo` gibt für Tokens mit dem Scope `profile` `picture`, `name` und `given_name` aus dem Phaseo-Profil zurück ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189)).
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produkt</p>
 
 - Jeder Workspace kann das Routing für eingestellte Modelle nutzen: Inhaber und Admins aktivieren es unter **Einstellungen -> Routing -> Routing für eingestellte Modelle**, und Anfragen gehen an den freigegebenen Nachfolger; siehe [Modellabkündigung und -einstellung](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- Das Routing für eingestellte Modelle nutzt einen Nachfolger nur, wenn er nicht mehr kostet als das eingestellte Modell, außer Inhaber und Admins erlauben einen höheren Preis ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- Das Routing für eingestellte Modelle nutzt einen freigegebenen Nachfolger nur, wenn er nicht mehr kostet als das eingestellte Modell, außer Inhaber und Admins erlauben einen höheren Preis; einen selbst gewählten Nachfolger nutzt es unabhängig vom Preis ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` akzeptiert `role: "system"`-Nachrichten mitten im Gespräch an den Stellen, die Claude erlaubt; siehe [Eine Nachricht erstellen](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165)).
 - Die Schlüssel-Endpunkte und alle SDKs akzeptieren und liefern `storage_locations`, bis zu acht Orte, an denen ein Schlüssel liegt, etwa `["railway", "github"]`; siehe [API-Schlüssel erstellen](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164)).
 - **Beta:** `/v1/department-budgets` legt tägliche, wöchentliche oder monatliche USD-Budgets pro Abteilung fest, die Inhaber und Admins bei etwa 80 % und 100 % warnen, ohne Anfragen zu blockieren ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125)).
-- Null-Datenaufbewahrung hält eine Anfrage aus dem Antwort-Cache, den Datenproben und der Telemetrie von Phaseo heraus, ob sie vom Workspace, einer Schlüssel-Guardrail oder der Anfrage kommt ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
+- Null-Datenaufbewahrung hält Prompt- und Antwortinhalte einer Anfrage aus dem Antwort-Cache, den Datenproben und der Telemetrie von Phaseo heraus, ob sie vom Workspace, einer Schlüssel-Guardrail oder der Anfrage kommt ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
 - Zustellungen von Benachrichtigungen an eigene Webhooks werden mit `x-phaseo-timestamp` und `x-phaseo-signature` (HMAC-SHA256) signiert; siehe [Workspace-Benachrichtigungen](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089)).
 - Broadcast exportiert das `metadata` einer Anfrage als Span-Attribute `phaseo.metadata.<key>` ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
 - `trace_name`, `span_name`, `generation_name` und `trace_id` im `metadata` einer Anfrage benennen und gruppieren ihre von Broadcast exportierten Traces ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).

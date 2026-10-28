@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API y SDK</p>
 
 - Las solicitudes con preset pueden fijar una versión o etiqueta con `prompt.version` o `model: "@slug@label"`, y una desconocida devuelve `404 preset_version_not_found`; consulta [Plantillas de prompt](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281)).
-- `GET`, `PUT` y `DELETE /v1/presets/{id}/labels` listan, mueven y eliminan etiquetas de presets; consulta [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- `GET /v1/presets/{id}/labels` lista las etiquetas de presets, y `PUT` y `DELETE /v1/presets/{id}/labels/{label}` mueven y eliminan una; consulta [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
 - Los eventos en streaming de Chat Completions, Responses y Messages ahora llevan el ID de modelo de Phaseo en `model`; antes, algunos llevaban el ID propio del proveedor ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273)).
 - `GET /oauth/userinfo` devuelve `picture`, `name` y `given_name` para tokens con el scope `profile`, tomados del perfil de Phaseo ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189)).
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Producto</p>
 
 - Todos los espacios de trabajo pueden usar el enrutamiento de modelos retirados: propietarios y administradores lo activan en **Ajustes -> Enrutamiento -> Enrutamiento de modelos retirados** y las solicitudes van al reemplazo aprobado; consulta [Obsolescencia y retirada de modelos](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- El enrutamiento de modelos retirados solo usa un reemplazo que no cueste más que el modelo retirado, salvo que propietarios y administradores permitan un precio mayor ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- El enrutamiento de modelos retirados solo usa un reemplazo aprobado que no cueste más que el modelo retirado, salvo que propietarios y administradores permitan un precio mayor; un reemplazo elegido por ellos mismos se usa cueste lo que cueste ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` acepta mensajes `role: "system"` a mitad de la conversación en las posiciones que permite Claude; consulta [Crear un mensaje](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165)).
 - Los endpoints de claves y todos los SDK aceptan y devuelven `storage_locations`, hasta ocho lugares donde se guarda una clave, como `["railway", "github"]`; consulta [Crear una clave de API](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164)).
 - **Beta:** `/v1/department-budgets` define presupuestos diarios, semanales o mensuales en USD por departamento, que avisan a propietarios y administradores hacia el 80 % y el 100 % sin bloquear solicitudes ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125)).
-- La retención cero de datos deja una solicitud fuera de la caché de respuestas, las muestras de datos y la telemetría de Phaseo, tanto si la activa el espacio de trabajo, un guardrail de clave o la solicitud ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
+- La retención cero de datos deja el contenido del prompt y de la respuesta de una solicitud fuera de la caché de respuestas, las muestras de datos y la telemetría de Phaseo, tanto si la activa el espacio de trabajo, un guardrail de clave o la solicitud ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
 - Las entregas de notificaciones a webhooks personalizados se firman con `x-phaseo-timestamp` y `x-phaseo-signature` (HMAC-SHA256); consulta [Notificaciones del espacio de trabajo](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089)).
 - Broadcast exporta el `metadata` de una solicitud como atributos de span `phaseo.metadata.<key>` ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
 - `trace_name`, `span_name`, `generation_name` y `trace_id` en el `metadata` de una solicitud dan nombre y agrupan sus trazas exportadas por Broadcast ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).

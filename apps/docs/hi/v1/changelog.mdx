@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API और SDK</p>
 
 - प्रीसेट वाले अनुरोध `prompt.version` या `model: "@slug@label"` से कोई संस्करण या लेबल तय कर सकते हैं, और अज्ञात मान पर `404 preset_version_not_found` मिलता है; देखें [प्रॉम्प्ट टेम्पलेट](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281))।
-- `GET`, `PUT` और `DELETE /v1/presets/{id}/labels` प्रीसेट लेबल की सूची दिखाते हैं, उन्हें दूसरे संस्करण पर ले जाते हैं और हटाते हैं; देखें [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))।
+- `GET /v1/presets/{id}/labels` प्रीसेट लेबल की सूची दिखाता है, और `PUT` और `DELETE /v1/presets/{id}/labels/{label}` किसी लेबल को दूसरे संस्करण पर ले जाते हैं और हटाते हैं; देखें [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))।
 - Chat Completions, Responses और Messages के स्ट्रीम इवेंट अब `model` में Phaseo मॉडल ID देते हैं; पहले कुछ इवेंट प्रदाता की अपनी ID देते थे ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273))।
 - `profile` स्कोप वाले टोकन के लिए `GET /oauth/userinfo` Phaseo प्रोफ़ाइल से `picture`, `name` और `given_name` लौटाता है ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189))।
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">उत्पाद</p>
 
 - हर वर्कस्पेस सेवानिवृत्त मॉडल रूटिंग इस्तेमाल कर सकता है: मालिक और एडमिन इसे **सेटिंग्स -> रूटिंग -> सेवानिवृत्त मॉडल रूटिंग** में चालू करते हैं, और अनुरोध स्वीकृत विकल्प पर जाते हैं; देखें [मॉडल का अप्रचलन और सेवानिवृत्ति](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))।
-- सेवानिवृत्त मॉडल रूटिंग केवल ऐसा विकल्प इस्तेमाल करती है जो सेवानिवृत्त मॉडल से महँगा न हो, जब तक मालिक और एडमिन ज़्यादा कीमत की अनुमति न दें ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))।
+- सेवानिवृत्त मॉडल रूटिंग केवल ऐसा स्वीकृत विकल्प इस्तेमाल करती है जो सेवानिवृत्त मॉडल से महँगा न हो, जब तक मालिक और एडमिन ज़्यादा कीमत की अनुमति न दें; उनका खुद चुना हुआ विकल्प कीमत की परवाह किए बिना इस्तेमाल होता है ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))।
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` बातचीत के बीच में `role: "system"` संदेश उन जगहों पर स्वीकार करता है जहाँ Claude अनुमति देता है; देखें [संदेश बनाएँ](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165))।
 - कुंजी एंडपॉइंट और सभी SDK `storage_locations` स्वीकार करते और लौटाते हैं, यानी कुंजी रखे जाने की अधिकतम आठ जगहें, जैसे `["railway", "github"]`; देखें [API कुंजी बनाएँ](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164))।
 - **बीटा:** `/v1/department-budgets` हर विभाग के लिए दैनिक, साप्ताहिक या मासिक USD बजट तय करता है, जो लगभग 80% और 100% पर मालिकों और एडमिन को सूचित करता है और अनुरोध नहीं रोकता ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125))।
-- शून्य डेटा प्रतिधारण, चाहे वर्कस्पेस, कुंजी गार्डरेल या अनुरोध से चालू हो, अनुरोध को रिस्पॉन्स कैश, डेटा सैंपल और Phaseo की टेलीमेट्री से बाहर रखता है ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))।
+- शून्य डेटा प्रतिधारण, चाहे वर्कस्पेस, कुंजी गार्डरेल या अनुरोध से चालू हो, अनुरोध के प्रॉम्प्ट और रिस्पॉन्स की सामग्री को रिस्पॉन्स कैश, डेटा सैंपल और Phaseo की टेलीमेट्री से बाहर रखता है ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))।
 - कस्टम वेबहुक पर भेजी गई सूचनाएँ `x-phaseo-timestamp` और `x-phaseo-signature` (HMAC-SHA256) से साइन होती हैं; देखें [वर्कस्पेस सूचनाएँ](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089))।
 - Broadcast किसी अनुरोध के `metadata` को `phaseo.metadata.<key>` स्पैन एट्रिब्यूट के रूप में एक्सपोर्ट करता है ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))।
 - अनुरोध के `metadata` में `trace_name`, `span_name`, `generation_name` और `trace_id` Broadcast से एक्सपोर्ट किए गए ट्रेस को नाम देते और समूहित करते हैं ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))।

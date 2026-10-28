@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API وحزم SDK</p>
 
 - يمكن للطلبات التي تستخدم إعدادًا مسبقًا تثبيت إصدار أو تسمية عبر `prompt.version` أو `model: "@slug@label"`، والقيمة غير المعروفة تُرجع `404 preset_version_not_found`؛ راجع [قوالب المطالبات](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281)).
-- تعرض `GET` و`PUT` و`DELETE /v1/presets/{id}/labels` تسميات الإعدادات المسبقة وتنقلها وتحذفها؛ راجع [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- يعرض `GET /v1/presets/{id}/labels` تسميات الإعدادات المسبقة، وينقل `PUT` و`DELETE /v1/presets/{id}/labels/{label}` تسمية واحدة ويحذفانها؛ راجع [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
 - تحمل أحداث البث في Chat Completions وResponses وMessages الآن معرّف نموذج Phaseo في `model`؛ وكان بعضها يحمل سابقًا معرّف المزوّد الخاص ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273)).
 - تُرجع `GET /oauth/userinfo` الحقول `picture` و`name` و`given_name` من ملف Phaseo الشخصي للرموز التي تملك النطاق `profile` ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189)).
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - يمكن لكل مساحات العمل استخدام توجيه النماذج المتوقفة: يفعّله المالكون والمسؤولون من **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة**، فتذهب الطلبات إلى البديل المعتمد؛ راجع [إهمال النماذج وإيقافها](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- لا يستخدم توجيه النماذج المتوقفة إلا بديلًا لا تزيد تكلفته على النموذج المتوقف، ما لم يسمح المالكون والمسؤولون بسعر أعلى ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- لا يستخدم توجيه النماذج المتوقفة إلا بديلًا معتمدًا لا تزيد تكلفته على النموذج المتوقف، ما لم يسمح المالكون والمسؤولون بسعر أعلى؛ أما البديل الذي يختارونه بأنفسهم فيُستخدم أيًا كان سعره ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - تقبل `/v1/messages` رسائل `role: "system"` في منتصف المحادثة في المواضع التي يسمح بها Claude؛ راجع [إنشاء رسالة](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165)).
 - تقبل نقاط نهاية المفاتيح وكل حزم SDK الحقل `storage_locations` وتُرجعه، وهو حتى ثمانية أماكن يُحفظ فيها المفتاح، مثل `["railway", "github"]`؛ راجع [إنشاء مفتاح API](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164)).
 - **تجريبي:** تضبط `/v1/department-budgets` ميزانيات يومية أو أسبوعية أو شهرية بالدولار لكل قسم، تنبّه المالكين والمسؤولين عند نحو 80% و100% دون حظر الطلبات ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125)).
-- يُبقي عدم الاحتفاظ بالبيانات الطلب خارج ذاكرة الاستجابات المؤقتة وعينات البيانات وقياسات Phaseo، سواء فعّلته مساحة العمل أو حاجز حماية المفتاح أو الطلب نفسه ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
+- يُبقي عدم الاحتفاظ بالبيانات محتوى الموجّه والاستجابة في الطلب خارج ذاكرة الاستجابات المؤقتة وعينات البيانات وقياسات Phaseo، سواء فعّلته مساحة العمل أو حاجز حماية المفتاح أو الطلب نفسه ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
 - تُوقَّع الإشعارات المرسلة إلى webhook مخصص باستخدام `x-phaseo-timestamp` و`x-phaseo-signature` (HMAC-SHA256)؛ راجع [إشعارات مساحة العمل](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089)).
 - يصدّر Broadcast حقل `metadata` في الطلب كسمات span باسم `phaseo.metadata.<key>` ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
 - تسمّي الحقول `trace_name` و`span_name` و`generation_name` و`trace_id` في `metadata` الطلب تتبعاته المصدّرة عبر Broadcast وتجمّعها ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).

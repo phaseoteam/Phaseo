@@ -38,7 +38,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API & SDKs</p>
 
 - Preset requests can pin a version or label with `prompt.version` or `model: "@slug@label"`, and an unknown one returns `404 preset_version_not_found`; see [Prompt Templates](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281)).
-- `GET`, `PUT` and `DELETE /v1/presets/{id}/labels` list, move and remove preset labels; see [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- `GET /v1/presets/{id}/labels` lists preset labels, and `PUT` and `DELETE /v1/presets/{id}/labels/{label}` move and remove one; see [Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
 - Streamed Chat Completions, Responses and Messages events now carry the Phaseo model ID in `model`; before, some carried the provider's own ID ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273)).
 - `GET /oauth/userinfo` returns `picture`, `name` and `given_name` for tokens with the `profile` scope, taken from the Phaseo profile ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189)).
 
@@ -65,7 +65,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Product</p>
 
 - Every workspace can use retired model routing: owners and admins turn it on in **Settings -> Routing -> Retired model routing**, and requests go to the approved replacement; see [Model Deprecation and Retirement](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
-- Retired model routing uses a replacement only when it costs no more than the retired model, unless owners and admins allow a higher price ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- Retired model routing uses an approved replacement only when it costs no more than the retired model, unless owners and admins allow a higher price; a replacement they choose themselves is used whatever it costs ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
 
 </div>
 
@@ -135,7 +135,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` accepts mid-conversation `role: "system"` messages in the positions Claude allows; see [Create a message](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165)).
 - The key endpoints and every SDK accept and return `storage_locations`, up to eight places where a key is kept, such as `["railway", "github"]`; see [Create API key](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164)).
 - **Beta:** `/v1/department-budgets` sets daily, weekly or monthly USD budgets per department, which alert owners and admins at about 80% and 100% without blocking requests ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125)).
-- Zero data retention keeps a request out of the response cache, data samples and Phaseo's telemetry, whether set by the workspace, a key guardrail or the request ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
+- Zero data retention keeps a request's prompt and response content out of the response cache, data samples and Phaseo's telemetry, whether set by the workspace, a key guardrail or the request ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175)).
 - Custom webhook notification deliveries are signed with `x-phaseo-timestamp` and `x-phaseo-signature` (HMAC-SHA256); see [Workspace Notifications](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089)).
 - Broadcast exports a request's `metadata` as `phaseo.metadata.<key>` span attributes ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).
 - `trace_name`, `span_name`, `generation_name` and `trace_id` in a request's `metadata` name and group its exported Broadcast traces ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127)).

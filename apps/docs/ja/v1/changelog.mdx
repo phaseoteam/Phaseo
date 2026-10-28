@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API と SDK</p>
 
 - プリセットを使うリクエストは `prompt.version` または `model: "@slug@label"` でバージョンやラベルを固定でき、存在しない指定には `404 preset_version_not_found` を返します。詳しくは[プロンプトテンプレート](./guides/prompt-templates.mdx)をご覧ください ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281))。
-- `GET`、`PUT`、`DELETE /v1/presets/{id}/labels` でプリセットのラベルを一覧、移動、削除できます。詳しくは[Set preset label](./api-reference/endpoint/presets-label-set.mdx)をご覧ください ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- `GET /v1/presets/{id}/labels` でプリセットのラベルを一覧でき、`PUT` と `DELETE /v1/presets/{id}/labels/{label}` でラベルを移動、削除できます。詳しくは[Set preset label](./api-reference/endpoint/presets-label-set.mdx)をご覧ください ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
 - Chat Completions、Responses、Messages のストリーミングイベントの `model` に Phaseo のモデル ID が入るようになりました。以前は一部にプロバイダー独自の ID が入っていました ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273))。
 - `GET /oauth/userinfo` は、`profile` スコープを持つトークンに対して Phaseo のプロフィールから `picture`、`name`、`given_name` を返します ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189))。
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">製品</p>
 
 - すべてのワークスペースで提供終了モデルのルーティングを使えます。オーナーと管理者が **設定 -> ルーティング -> 提供終了モデルのルーティング** でオンにすると、リクエストは承認済みの後継モデルに送られます。詳しくは[モデルの非推奨化と提供終了](./guides/model-retirement.mdx)をご覧ください ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
-- 提供終了モデルのルーティングは、オーナーと管理者が高い料金を許可しない限り、提供終了モデルより高くならない後継モデルだけを使います ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- 提供終了モデルのルーティングは、オーナーと管理者が高い料金を許可しない限り、提供終了モデルより高くならない承認済みの後継モデルだけを使います。オーナーと管理者が自分で選んだ後継モデルは料金にかかわらず使われます ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` は、Claude が許可する位置であれば会話途中の `role: "system"` メッセージを受け付けます。詳しくは[メッセージを作成](./api-reference/endpoint/anthropic-messages.mdx)をご覧ください ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165))。
 - キーのエンドポイントとすべての SDK が、キーの保管場所を最大 8 件まで示す `storage_locations` (例: `["railway", "github"]`) を受け付けて返します。詳しくは[APIキーを作成](./api-reference/endpoint/keys-create.mdx)をご覧ください ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164))。
 - **ベータ:** `/v1/department-budgets` は部門ごとに日次、週次、月次の USD 予算を設定し、約 80% と 100% でオーナーと管理者に通知しますが、リクエストはブロックしません ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125))。
-- ゼロデータ保持は、ワークスペース設定、キーのガードレール、リクエストのいずれで指定された場合も、リクエストをレスポンスキャッシュ、データサンプル、Phaseo のテレメトリから除外します ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))。
+- ゼロデータ保持は、ワークスペース設定、キーのガードレール、リクエストのいずれで指定された場合も、リクエストのプロンプトとレスポンスの内容をレスポンスキャッシュ、データサンプル、Phaseo のテレメトリから除外します ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))。
 - カスタム Webhook への通知配信は `x-phaseo-timestamp` と `x-phaseo-signature` (HMAC-SHA256) で署名されます。詳しくは[ワークスペース通知](./guides/workspace-notifications.mdx)をご覧ください ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089))。
 - Broadcast は、リクエストの `metadata` を `phaseo.metadata.<key>` スパン属性としてエクスポートします ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。
 - リクエストの `metadata` にある `trace_name`、`span_name`、`generation_name`、`trace_id` で、Broadcast がエクスポートするトレースに名前を付けたりグループ化したりできます ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。

@@ -37,7 +37,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">API 与 SDK</p>
 
 - 使用预设的请求可以用 `prompt.version` 或 `model: "@slug@label"` 固定版本或标签，未知的值返回 `404 preset_version_not_found`；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281))。
-- `GET`、`PUT` 和 `DELETE /v1/presets/{id}/labels` 可列出、移动和删除预设标签；请参阅[Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- `GET /v1/presets/{id}/labels` 可列出预设标签，`PUT` 和 `DELETE /v1/presets/{id}/labels/{label}` 可移动和删除单个标签；请参阅[Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
 - Chat Completions、Responses 和 Messages 的流式事件现在在 `model` 中返回 Phaseo 模型 ID；此前部分事件返回的是提供商自己的 ID ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273))。
 - 对于具有 `profile` 范围的令牌，`GET /oauth/userinfo` 会根据 Phaseo 个人资料返回 `picture`、`name` 和 `given_name` ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189))。
 
@@ -64,7 +64,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 所有工作区都可以使用已停用模型的路由：所有者和管理员在 **设置 -> 路由 -> 已停用模型的路由** 中开启后，请求会转到已批准的替代模型；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
-- 已停用模型的路由只使用价格不高于已停用模型的替代模型，除非所有者和管理员允许更高的价格 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- 已停用模型的路由只使用价格不高于已停用模型的已批准替代模型，除非所有者和管理员允许更高的价格；他们自己选择的替代模型无论价格高低都会使用 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
 
 </div>
 
@@ -134,7 +134,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - `/v1/messages` 接受对话中途的 `role: "system"` 消息，前提是位置符合 Claude 的规则；请参阅[创建消息](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165))。
 - 密钥端点和所有 SDK 都接受并返回 `storage_locations`，最多记录八个密钥存放位置，例如 `["railway", "github"]`；请参阅[创建 API 密钥](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164))。
 - **测试版：** `/v1/department-budgets` 为每个部门设置按日、按周或按月的美元预算，在约 80% 和 100% 时提醒所有者和管理员，但不会阻止请求 ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125))。
-- 无论由工作区设置、密钥护栏还是请求本身开启，零数据保留都会让请求不进入响应缓存、数据样本和 Phaseo 遥测 ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))。
+- 无论由工作区设置、密钥护栏还是请求本身开启，零数据保留都会让请求的提示词和响应内容不进入响应缓存、数据样本和 Phaseo 遥测 ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))。
 - 发往自定义 Webhook 的通知使用 `x-phaseo-timestamp` 和 `x-phaseo-signature`（HMAC-SHA256）签名；请参阅[工作区通知](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089))。
 - Broadcast 将请求的 `metadata` 导出为 `phaseo.metadata.<key>` span 属性 ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。
 - 请求 `metadata` 中的 `trace_name`、`span_name`、`generation_name` 和 `trace_id` 用于命名和分组 Broadcast 导出的追踪 ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。
