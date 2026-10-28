@@ -1378,6 +1378,7 @@
 		"publishForbidden": "Seul le créateur du préréglage, ou un propriétaire ou administrateur de l’espace de travail si le préréglage est partagé, peut publier.",
 		"publishNeedsHandle": "Définissez l’identifiant d’éditeur de l’espace de travail avant de publier sur la marketplace.",
 		"publishInvalidTemplate": "Corrigez le modèle de prompt avant de publier.",
+		"publishInvalidSemver": "Saisissez une version sémantique que ce préréglage n’a pas encore utilisée, par exemple 1.2.0 ou 2.0.0-beta.1.",
 		"publishFailed": "La version n’a pas pu être publiée."
 	},
 	"presetPage": {

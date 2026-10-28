@@ -228,6 +228,36 @@ describe("account policy settings routes", () => {
 		expect(publishRpcCalled).toBe(false);
 	});
 
+	it("forwards a semver label and reports one that is already taken", async () => {
+		let rpcBody: any = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			const url = request.url;
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
+			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
+				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
+				draft_description: null, draft_config: { models: ["openai/gpt-other"] }, draft_visibility: "team", versioning_method: "semver",
+			}]), { status: 200 });
+			if (url.includes("/rpc/publish_preset_version")) {
+				rpcBody = JSON.parse(await request.text());
+				return new Response(JSON.stringify({ code: "23505", message: "duplicate key value violates unique constraint \"preset_versions_preset_id_version_label_key\"" }), { status: 409 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/presets/preset-1/versions", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ versionLabel: "1.2.0" }),
+		}, env);
+
+		expect(rpcBody?.requested_label).toBe("1.2.0");
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toEqual({ error: "version_label_taken" });
+	});
+
 	describe("preset version labels", () => {
 		const VERSION_ID = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
 		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", rpc }: { role?: string; createdBy?: string; visibility?: string; rpc?: (name: string, body: any) => Response }) {

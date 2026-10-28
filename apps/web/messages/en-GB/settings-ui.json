@@ -1378,6 +1378,7 @@
 		"publishForbidden": "Only the preset's creator, or a workspace owner or admin when the preset is shared, can publish.",
 		"publishNeedsHandle": "Set the workspace's publisher handle before publishing to the marketplace.",
 		"publishInvalidTemplate": "Fix the prompt template before publishing.",
+		"publishInvalidSemver": "Enter a semantic version this preset hasn't used yet, such as 1.2.0 or 2.0.0-beta.1.",
 		"publishFailed": "The version could not be published."
 	},
 	"presetPage": {

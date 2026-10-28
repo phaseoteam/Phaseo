@@ -427,12 +427,12 @@ export type PublishedPresetVersion = { version_number?: number; version_label?: 
 export type PresetPublishResult = { ok: true; version: PublishedPresetVersion | null } | { ok: false; error: string };
 
 /** Publishes the saved draft as a new version, returning the gateway's error code (such as no_draft_changes) instead of throwing. */
-export async function publishPresetDraftAction(id: string, releaseNotes?: string): Promise<PresetPublishResult> {
+export async function publishPresetDraftAction(id: string, releaseNotes?: string, versionLabel?: string): Promise<PresetPublishResult> {
 	if (!id) return { ok: false, error: "bad_request" };
 	const { accessToken } = await getServerAccountContext(); if (!accessToken) return { ok: false, error: "unauthorized" };
 	let data: { version?: PublishedPresetVersion };
 	try {
-		data = await fetchAccountWebApi<{ version?: PublishedPresetVersion }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes: releaseNotes?.trim() || undefined }) });
+		data = await fetchAccountWebApi<{ version?: PublishedPresetVersion }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes: releaseNotes?.trim() || undefined, versionLabel: versionLabel?.trim() || undefined }) });
 	} catch (error) {
 		if (error instanceof WebApiError) return { ok: false, error: error.code ?? error.detail ?? "failed" };
 		throw error;

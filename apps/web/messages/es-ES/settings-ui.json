@@ -1378,6 +1378,7 @@
 		"publishForbidden": "Solo quien creó el preajuste, o un propietario o administrador del espacio de trabajo si el preajuste está compartido, puede publicar.",
 		"publishNeedsHandle": "Configura el identificador de editor del espacio de trabajo antes de publicar en el marketplace.",
 		"publishInvalidTemplate": "Corrige la plantilla de prompt antes de publicar.",
+		"publishInvalidSemver": "Introduce una versión semántica que este preajuste aún no haya usado, como 1.2.0 o 2.0.0-beta.1.",
 		"publishFailed": "No se pudo publicar la versión."
 	},
 	"presetPage": {

@@ -1378,6 +1378,7 @@
 		"publishForbidden": "Só quem criou a predefinição, ou um proprietário ou administrador do workspace quando a predefinição é compartilhada, pode publicar.",
 		"publishNeedsHandle": "Defina o identificador de publicador do workspace antes de publicar no marketplace.",
 		"publishInvalidTemplate": "Corrija o template de prompt antes de publicar.",
+		"publishInvalidSemver": "Informe uma versão semântica que esta predefinição ainda não usou, como 1.2.0 ou 2.0.0-beta.1.",
 		"publishFailed": "Não foi possível publicar a versão."
 	},
 	"presetPage": {

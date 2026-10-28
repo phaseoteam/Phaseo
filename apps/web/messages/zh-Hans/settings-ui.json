@@ -1378,6 +1378,7 @@
 		"publishForbidden": "只有预设的创建者，或在预设共享时的工作区所有者或管理员，才能发布。",
 		"publishNeedsHandle": "发布到市场之前，请先设置工作区的发布者标识。",
 		"publishInvalidTemplate": "请先修正提示词模板再发布。",
+		"publishInvalidSemver": "请输入此预设尚未使用过的语义化版本号，例如 1.2.0 或 2.0.0-beta.1。",
 		"publishFailed": "无法发布该版本。"
 	},
 	"presetPage": {

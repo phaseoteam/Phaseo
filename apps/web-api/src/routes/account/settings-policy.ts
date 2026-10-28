@@ -741,6 +741,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (published.error) {
 		const message = published.error.message ?? "";
 		if (message.includes("invalid_semver_label")) return c.json({ error: "invalid_semver_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+		if (published.error.code === "23505") return c.json({ error: "version_label_taken" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_not_found")) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_publish_forbidden")) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		return c.json({ error: "version_publish_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

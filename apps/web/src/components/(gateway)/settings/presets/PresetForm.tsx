@@ -324,6 +324,9 @@ export default function PresetForm({
 	const [publishOpen, setPublishOpen] = useState(false);
 	const [publishing, setPublishing] = useState(false);
 	const [releaseNotes, setReleaseNotes] = useState("");
+	// Semver presets name each version; the other methods number them automatically.
+	const needsVersionLabel = initialPreset?.versioning_method === "semver";
+	const [publishVersionLabel, setPublishVersionLabel] = useState("");
 	const [publishError, setPublishError] = useState<string | null>(null);
 	const [publishNotice, setPublishNotice] = useState<string | null>(null);
 	// The form as last loaded or saved, to tell whether Publish must save first.
@@ -687,12 +690,17 @@ export default function PresetForm({
 		if (code === "forbidden") return t("presetVersions.publishForbidden");
 		if (code === "workspace_publisher_required") return t("presetVersions.publishNeedsHandle");
 		if (code === "invalid_prompt_template") return t("presetVersions.publishInvalidTemplate");
+		if (code === "invalid_semver_label" || code === "version_label_taken") return t("presetVersions.publishInvalidSemver");
 		return t("presetVersions.publishFailed");
 	}
 
 	/** Saves the draft when it has unsaved edits, publishes it, and stays in the editor. */
 	async function publish() {
 		if (!presetId) return;
+		if (needsVersionLabel && !publishVersionLabel.trim()) {
+			setPublishError(t("presetVersions.publishInvalidSemver"));
+			return;
+		}
 		const submission = collectSubmission();
 		if (!validateSubmission(submission)) {
 			setPublishOpen(false);
@@ -705,7 +713,7 @@ export default function PresetForm({
 				await updatePresetAction({ id: presetId, ...submission });
 				markSaved(submission);
 			}
-			const result = await publishPresetDraftAction(presetId, releaseNotes);
+			const result = await publishPresetDraftAction(presetId, releaseNotes, needsVersionLabel ? publishVersionLabel : undefined);
 			if (!result.ok) {
 				setPublishError(publishErrorMessage(result.error));
 				return;
@@ -713,6 +721,7 @@ export default function PresetForm({
 			const published = result.version?.version_number ? versionName({ version_label: result.version.version_label ?? null, version_number: result.version.version_number }) : null;
 			setPublishOpen(false);
 			setReleaseNotes("");
+			setPublishVersionLabel("");
 			setPublishNotice(published ? t("presetVersions.published", { version: published }) : t("presetVersions.publishedNext"));
 			await versions.reload();
 			// The editor's address is the slug; keep it valid when the save renamed it.
@@ -1601,6 +1610,12 @@ export default function PresetForm({
 							{formHasUnsavedChanges ? t("presetVersions.publishSavesFirst") : null}{formHasUnsavedChanges ? " " : null}{t("presetVersions.publishDescription")}
 						</DialogDescription>
 					</DialogHeader>
+					{needsVersionLabel ? (
+						<div className="space-y-2">
+							<Label htmlFor="preset-version-label">{t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)}</Label>
+							<Input id="preset-version-label" value={publishVersionLabel} onChange={(event) => setPublishVersionLabel(event.target.value)} autoComplete="off" spellCheck={false} className="font-mono" />
+						</div>
+					) : null}
 					<div className="space-y-2">
 						<Label htmlFor="preset-release-notes">{t("presetVersions.releaseNotes")}</Label>
 						<Textarea id="preset-release-notes" value={releaseNotes} onChange={(event) => setReleaseNotes(event.target.value)} rows={3} maxLength={1000} aria-describedby="preset-release-notes-help" />

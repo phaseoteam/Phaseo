@@ -1378,6 +1378,7 @@
 		"publishForbidden": "Nur die Person, die das Preset erstellt hat, oder bei geteilten Presets ein Workspace-Owner oder -Admin kann veröffentlichen.",
 		"publishNeedsHandle": "Lege den Publisher-Handle des Workspace fest, bevor du im Marketplace veröffentlichst.",
 		"publishInvalidTemplate": "Korrigiere die Prompt-Vorlage, bevor du veröffentlichst.",
+		"publishInvalidSemver": "Gib eine semantische Version ein, die dieses Preset noch nicht verwendet hat, zum Beispiel 1.2.0 oder 2.0.0-beta.1.",
 		"publishFailed": "Die Version konnte nicht veröffentlicht werden."
 	},
 	"presetPage": {
