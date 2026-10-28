@@ -46,23 +46,31 @@ export async function refreshRealtimeBillingReviews(limit = 25) {
 		.select("session_id").eq("status", "open").lte("retry_after", new Date().toISOString())
 		.order("retry_after").limit(Math.max(1, Math.min(100, limit)));
 	if (error) throw error;
+	// One bad review must not stall the rest of the queue.
+	let failed = 0;
 	for (const review of data ?? []) {
-		const { data: session, error: readError } = await db.from("gateway_realtime_sessions")
-			.select("session_id,model_id,status,usage,metadata").eq("session_id", review.session_id).single();
-		if (readError) throw readError;
-		if (!session || session.status !== "billing_unresolved") continue;
-		let quote: ReturnType<typeof quoteRealtimeRecovery> | null = null;
-		let recoveryError: string | null = null;
-		try { quote = quoteRealtimeRecovery(session.model_id, session.usage, session.metadata); }
-		catch (cause) { recoveryError = cause instanceof Error ? cause.message : "recovery_evidence_invalid"; }
-		const result = await db.rpc("gateway_realtime_review_evidence", {
-			p_session_id: session.session_id, p_expected_usage: session.usage, p_expected_metadata: session.metadata,
-			p_cost_nanos: quote?.costNanos ?? null, p_pricing_lines: quote?.lines ?? [],
-			p_complete: quote?.complete ?? false, p_error: recoveryError,
-			p_billable_usage: quote?.billableUsage ?? null,
-		});
-		if (result.error) throw result.error;
+		try {
+			const { data: session, error: readError } = await db.from("gateway_realtime_sessions")
+				.select("session_id,model_id,status,usage,metadata").eq("session_id", review.session_id).single();
+			if (readError) throw readError;
+			if (!session || session.status !== "billing_unresolved") continue;
+			let quote: ReturnType<typeof quoteRealtimeRecovery> | null = null;
+			let recoveryError: string | null = null;
+			try { quote = quoteRealtimeRecovery(session.model_id, session.usage, session.metadata); }
+			catch (cause) { recoveryError = cause instanceof Error ? cause.message : "recovery_evidence_invalid"; }
+			const result = await db.rpc("gateway_realtime_review_evidence", {
+				p_session_id: session.session_id, p_expected_usage: session.usage, p_expected_metadata: session.metadata,
+				p_cost_nanos: quote?.costNanos ?? null, p_pricing_lines: quote?.lines ?? [],
+				p_complete: quote?.complete ?? false, p_error: recoveryError,
+				p_billable_usage: quote?.billableUsage ?? null,
+			});
+			if (result.error) throw result.error;
+		} catch (error) {
+			failed += 1;
+			console.error("realtime_billing_review_refresh_item_failed", { sessionId: review.session_id, error });
+		}
 	}
+	if (failed > 0) console.error("realtime_billing_review_refresh_partial", { failed, total: data?.length ?? 0 });
 	return data?.length ?? 0;
 }
 
@@ -73,14 +81,22 @@ export async function syncRealtimeBillingReviewSummaries() {
 		.select("session_id,workspace_id,session:gateway_realtime_sessions!inner(started_at)")
 		.eq("status", "resolved").is("summary_synced_at", null).order("resolved_at").limit(25);
 	if (error) throw error;
+	let failed = 0;
 	for (const review of data ?? []) {
-		const session = Array.isArray(review.session) ? review.session[0] : review.session;
-		const { data: request, error: readError } = await db.from("gateway_requests").select("id,created_at")
-			.eq("realtime_session_id", review.session_id).eq("created_at", session.started_at).single();
-		if (readError || !request) throw readError ?? new Error("realtime_review_summary_missing");
-		await syncWorkspaceUsageRollupForRequest({ requestRowId: request.id, requestCreatedAt: request.created_at,
-			workspaceId: review.workspace_id, context: "realtime_billing_review" });
-		const synced = await db.rpc("gateway_realtime_review_summary_synced", { p_session_id: review.session_id });
-		if (synced.error) throw synced.error;
+		try {
+			const session = Array.isArray(review.session) ? review.session[0] : review.session;
+			const { data: request, error: readError } = await db.from("gateway_requests").select("id,created_at")
+				.eq("realtime_session_id", review.session_id).eq("created_at", session.started_at).single();
+			if (readError || !request) throw readError ?? new Error("realtime_review_summary_missing");
+			await syncWorkspaceUsageRollupForRequest({ requestRowId: request.id, requestCreatedAt: request.created_at,
+				workspaceId: review.workspace_id, context: "realtime_billing_review" });
+			const synced = await db.rpc("gateway_realtime_review_summary_synced", { p_session_id: review.session_id });
+			if (synced.error) throw synced.error;
+		} catch (error) {
+			// Not acknowledged, so the next run retries this summary.
+			failed += 1;
+			console.error("realtime_billing_review_summary_item_failed", { sessionId: review.session_id, error });
+		}
 	}
+	return { synced: (data?.length ?? 0) - failed, failed };
 }
