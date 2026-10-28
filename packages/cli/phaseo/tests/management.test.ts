@@ -21,6 +21,16 @@ const noInput: ManagementInput = {
 	env: {},
 };
 
+function directoryInput(member: Record<string, unknown> = {}): ManagementInput {
+	return {
+		...noInput,
+		request: async (path) => {
+			assert.equal(path, "/identity/directory");
+			return { data: { members: [{ user_id: "u1", role_override: null, department_override_enabled: false, department_override_id: null, ...member }] } };
+		},
+	};
+}
+
 async function build(argv: string[], input: ManagementInput = noInput) {
 	const parsed = parseArgs(argv);
 	return buildManagementRequest(parsed.command, parsed.flags, input);
@@ -264,10 +274,10 @@ test("builds identity requests", async () => {
 	assert.deepEqual(await build(["identity", "scim", "update", "--enabled", "false"]), { method: "PUT", path: "/identity/scim", body: { enabled: false } });
 	assert.deepEqual(await build(["identity", "scim", "tokens", "create", "--label", "Okta"]), { method: "POST", path: "/identity/scim/tokens", body: { label: "Okta" } });
 	assert.deepEqual(await build(["identity", "scim", "tokens", "revoke", "t1"]), { method: "DELETE", path: "/identity/scim/tokens/t1" });
-	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1", "--department-position", "lead"]), {
+	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1", "--department-position", "lead"], directoryInput()), {
 		method: "PUT",
 		path: "/identity/directory/members/u1",
-		body: { department_id: "d1", department_position: "lead", department_mode: "department" },
+		body: { access_role: "directory", department_mode: "department", department_id: "d1", department_position: "lead" },
 	});
 	assert.deepEqual(await build(["identity", "departments", "create", "--name", "Eng", "--color", "blue"]), { method: "POST", path: "/identity/departments", body: { name: "Eng", color: "blue" } });
 	assert.deepEqual(await build(["identity", "departments", "set-member", "d1", "u1", "--position", "lead", "--primary", "true"]), {
@@ -466,13 +476,13 @@ test("S2: builds key rotate/invalidate, webhook test, analytics export, and even
 });
 
 test("S3: --department sets department_mode so the override is kept", async () => {
-	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1"]), {
+	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1"], directoryInput()), {
 		method: "PUT",
 		path: "/identity/directory/members/u1",
-		body: { department_id: "d1", department_mode: "department" },
+		body: { access_role: "directory", department_mode: "department", department_id: "d1" },
 	});
-	await assert.rejects(build(["identity", "directory", "update", "u1", "--department", "d1", "--department-mode", "none"]), /--department-mode department/);
-	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--department-mode", "none"])).body, { department_mode: "none" });
+	await assert.rejects(build(["identity", "directory", "update", "u1", "--department", "d1", "--department-mode", "none"], directoryInput()), /--department-mode department/);
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--department-mode", "none"], directoryInput())).body, { access_role: "directory", department_mode: "none" });
 });
 
 test("S4: observability destination create requires --name before any request", async () => {
@@ -504,4 +514,42 @@ test("S6: analytics export stdout gets no update notice", () => {
 	assert.equal(shouldPrintUpdateNoticeForCommand(["analytics", "export"]), false);
 	assert.equal(shouldPrintUpdateNoticeForCommand(["analytics", "get"]), true);
 	assert.equal(shouldPrintUpdateNoticeForCommand(["integrations", "credential"]), false);
+});
+
+test("Codex P2: directory update keeps the fields of the current override it was not asked to change", async () => {
+	const withDepartment = directoryInput({ role_override: "member", department_override_enabled: true, department_override_id: "d9" });
+	// Changing the role keeps the department override, but the position is unknown so it must be passed.
+	await assert.rejects(build(["identity", "directory", "update", "u1", "--access-role", "admin"], withDepartment), /--department-position/);
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--access-role", "admin", "--department-position", "lead"], withDepartment)).body, {
+		access_role: "admin",
+		department_mode: "department",
+		department_id: "d9",
+		department_position: "lead",
+	});
+	// Changing the department keeps the role override.
+	const withRole = directoryInput({ role_override: "admin" });
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--department", "d2"], withRole)).body, {
+		access_role: "admin",
+		department_mode: "department",
+		department_id: "d2",
+	});
+	// Leaving the department override drops the stale department id.
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--department-mode", "directory"], withDepartment)).body, {
+		access_role: "member",
+		department_mode: "directory",
+	});
+	// "No department" overrides survive a role change.
+	const noDepartment = directoryInput({ department_override_enabled: true, department_override_id: null });
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--access-role", "member"], noDepartment)).body, { access_role: "member", department_mode: "none" });
+	await assert.rejects(build(["identity", "directory", "update", "u9", "--access-role", "admin"], directoryInput()), /not a member/);
+	// The real runner passes its request function to the builder, so the read and the PUT share the session.
+	const { deps, calls } = fakeDeps({
+		request: async (path, options) => {
+			calls.push({ path, ...options });
+			return path === "/identity/directory" ? { data: { members: [{ user_id: "u1", role_override: "admin", department_override_enabled: false }] } } : { data: {} };
+		},
+	});
+	await runManagementCommand(["identity", "directory", "update", "u1"], { "department-mode": "none" }, deps);
+	assert.deepEqual(calls.map((call) => `${call.method} ${call.path}`), ["GET /identity/directory", "PUT /identity/directory/members/u1"]);
+	assert.deepEqual(calls[1].body, { access_role: "admin", department_mode: "none" });
 });

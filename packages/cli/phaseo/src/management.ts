@@ -16,6 +16,8 @@ export type ManagementRequest = {
 export type ManagementInput = {
 	readStdin: () => Promise<string>;
 	env: Record<string, string | undefined>;
+	/** Lets a command read current state before building a full-replacement request. */
+	request?: (path: string, options: { method: ManagementMethod; body?: Record<string, unknown> }) => Promise<any>;
 };
 
 export type ManagementDeps = ManagementInput & {
@@ -858,22 +860,29 @@ const COMMANDS: Record<string, CommandSpec> = {
 	"identity directory list": { usage: "", output: "detail", build: () => ({ method: "GET", path: "/identity/directory" }) },
 	"identity directory update": {
 		usage: "<user-id> [--access-role directory|admin|member] [--department-mode directory|department|none] [--department <id>] [--department-position member|lead]",
-		description: "Replaces the member's whole override: omitted fields fall back to the directory. --department implies --department-mode department.",
+		description: "Changes only the fields you pass; the rest of the member's current override is kept. --department implies --department-mode department.",
 		output: "action",
 		done: "Updated directory member",
-		build: (args, flags) => {
-			const body = nonEmpty(bodyFromFlags(flags, [
+		build: async (args, flags, input) => {
+			const userId = arg(args, 0, "User id");
+			const changes = nonEmpty(bodyFromFlags(flags, [
 				["access-role", "access_role"],
 				["department-mode", "department_mode"],
 				["department", "department_id"],
 				["department-position", "department_position"],
 			]), "a field to update");
 			// The API ignores department_id unless department_mode is "department" and defaults the mode to "directory".
-			if (body.department_id !== undefined) {
-				body.department_mode ??= "department";
-				if (body.department_mode !== "department") throw new Error("--department needs --department-mode department");
+			if (changes.department_id !== undefined) {
+				changes.department_mode ??= "department";
+				if (changes.department_mode !== "department") throw new Error("--department needs --department-mode department");
 			}
-			return { method: "PUT", path: `/identity/directory/members/${id(arg(args, 0, "User id"))}`, body };
+			const current = await currentDirectoryOverride(input, userId);
+			const body = { ...current, ...changes };
+			if (body.department_mode !== "department") delete body.department_id;
+			if (body.department_mode === "department" && current.department_mode === "department" && changes.department_position === undefined) {
+				throw new Error("This member already has a department override and the API would reset its position to member. Pass --department-position member|lead to keep or set it.");
+			}
+			return { method: "PUT", path: `/identity/directory/members/${id(userId)}`, body };
 		},
 	},
 	...group("identity departments", crud({
@@ -1105,6 +1114,26 @@ const COMMANDS: Record<string, CommandSpec> = {
 		}),
 	},
 };
+
+/**
+ * PUT /identity/directory/members/:id replaces the whole override, so read the current one and
+ * resend the fields the caller did not change. The directory does not report the override's
+ * department position, so keeping a department override requires --department-position.
+ */
+async function currentDirectoryOverride(input: ManagementInput, userId: string): Promise<Record<string, unknown>> {
+	if (!input.request) throw new Error("Reading the current directory override needs an API session");
+	const directory = await input.request("/identity/directory", { method: "GET" });
+	const members = Array.isArray(directory?.data?.members) ? directory.data.members : [];
+	const member = members.find((entry: any) => entry?.user_id === userId);
+	if (!member) throw new Error(`User ${userId} is not a member of this workspace directory`);
+	const current: Record<string, unknown> = { access_role: member.role_override ?? "directory" };
+	if (!member.department_override_enabled) current.department_mode = "directory";
+	else if (member.department_override_id) {
+		current.department_mode = "department";
+		current.department_id = member.department_override_id;
+	} else current.department_mode = "none";
+	return current;
+}
 
 async function notificationTarget(flags: Flags, input: ManagementInput): Promise<string> {
 	if (flagBool(flags, "target-stdin")) {
