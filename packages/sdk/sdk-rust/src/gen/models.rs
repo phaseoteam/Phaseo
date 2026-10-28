@@ -846,7 +846,7 @@ pub struct CreditTopup {
 	pub currency: String,
 	pub decided_at: Option<String>,
 	pub expires_at: String,
-	pub final: bool,
+	pub r#final: bool,
 	pub flow: String,
 	pub id: String,
 	pub message: String,
