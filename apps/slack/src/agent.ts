@@ -25,6 +25,12 @@ import { withoutTrailingSlashes } from "./url";
 // content (never_store_content, set at install). The request must not send
 // provider.data_collection: the gateway rejects "deny" with a 400.
 //
+// An answer that has searched Slack goes further: from its first search on,
+// every model request it makes (its own steps, the models it asks and the
+// images it makes) sends provider.require_zero_data_retention, so only
+// providers that keep no data serve it (withZeroDataRetention). When none can,
+// the gateway refuses the request, and the turn says why (search_needs_zdr).
+//
 // Files shared in the thread go to the model as input parts of the run's first
 // user message (withAttachments). Images the agent generates are made through
 // the gateway's image endpoint with the same key, labels, end user and session
@@ -63,6 +69,8 @@ export type AgentTurnRequest = {
 	resume?: { run: PausedRun; toolOutputs: AgentToolOutput[] };
 	/** Files shared in the thread, as Responses input parts (input_image, input_file), sent after the prompt's text. */
 	attachments?: Array<Record<string, unknown>>;
+	/** Whether a request must go only to providers that keep no data: asked before each model request (withZeroDataRetention). */
+	zeroDataRetention?: () => Promise<boolean>;
 };
 
 /**
@@ -82,7 +90,7 @@ export type AgentTurnHooks = {
 };
 
 /** One non-streaming gateway request: a model asked mid-answer (ask_model), or one model of a Compare. */
-export type AskRequest = Pick<AgentTurnRequest, "gatewayKey" | "model" | "endUser" | "sessionId" | "labels" | "signal"> & {
+export type AskRequest = Pick<AgentTurnRequest, "gatewayKey" | "model" | "endUser" | "sessionId" | "labels" | "signal" | "zeroDataRetention"> & {
 	instructions: string;
 	prompt: string;
 	/** Lets the gateway search the web and read pages for this request. */
@@ -133,6 +141,7 @@ export type ImageRequest = {
 	sessionId: string;
 	labels: AgentTurnRequest["labels"];
 	signal: AbortSignal;
+	zeroDataRetention?: AgentTurnRequest["zeroDataRetention"];
 };
 
 export type GeneratedImage = { bytes: Uint8Array; mimeType: string; costUsd: number; model: string | null };
@@ -210,6 +219,28 @@ export function withAttachments(fetchImpl: typeof fetch, parts: Array<Record<str
 		if (!items || first < 0) return fetchImpl(request);
 		items[first] = { ...items[first], content: [{ type: "input_text", text: items[first].content }, ...parts] };
 		return fetchImpl(new Request(request, { body: JSON.stringify(body) }));
+	}) as typeof fetch;
+}
+
+/** The gateway requests that go to a model: Responses (the agent's steps, the models it asks) and image generation. */
+const MODEL_REQUEST_PATH = /\/(responses|images\/generations)$/;
+
+/**
+ * The fetch, adding provider.require_zero_data_retention (with any provider
+ * fields the request already has) to each model request sent while `required`
+ * says so. It is asked before every request, not once per run, so the request
+ * that first carries a Slack search's results has it, and so does every one
+ * after. A model request it can't read isn't sent without it.
+ */
+export function withZeroDataRetention(fetchImpl: typeof fetch, required: (() => Promise<boolean>) | undefined): typeof fetch {
+	if (!required) return fetchImpl;
+	return (async (input: RequestInfo | URL, init?: RequestInit) => {
+		const request = new Request(input, init);
+		if (request.method !== "POST" || !MODEL_REQUEST_PATH.test(new URL(request.url).pathname) || !(await required())) return fetchImpl(request);
+		const body = await request.clone().json().catch(() => null) as Record<string, unknown> | null;
+		if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("zero_data_retention_not_applied");
+		const provider = body.provider && typeof body.provider === "object" && !Array.isArray(body.provider) ? body.provider : {};
+		return fetchImpl(new Request(request, { body: JSON.stringify({ ...body, provider: { ...provider, require_zero_data_retention: true } }) }));
 	}) as typeof fetch;
 }
 
@@ -363,11 +394,12 @@ function maxTurnCost(limit: number, otherCostUsd: () => number): AgentStopCondit
 
 export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl: string }): AgentRunner {
 	return {
-		generateImage: (request) => requestImage(options.fetchImpl, options.baseUrl, request),
+		generateImage: (request) => requestImage(withZeroDataRetention(options.fetchImpl, request.zeroDataRetention), options.baseUrl, request),
 		async run(request, hooks) {
 			let spentUsd = 0;
 			const otherCostUsd = () => request.otherCostUsd?.() ?? 0;
-			const client = meteredClient(gatewayClient({ ...options, fetchImpl: withAttachments(options.fetchImpl, request.attachments ?? []) }, request, true), (usd) => {
+			const fetchImpl = withZeroDataRetention(withAttachments(options.fetchImpl, request.attachments ?? []), request.zeroDataRetention);
+			const client = meteredClient(gatewayClient({ ...options, fetchImpl }, request, true), (usd) => {
 				spentUsd += usd;
 				hooks.onCost?.(spentUsd);
 			});
@@ -398,7 +430,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			};
 		},
 		async ask(request) {
-			const response = await gatewayClient(options, request, request.webTools).generate({
+			const response = await gatewayClient({ ...options, fetchImpl: withZeroDataRetention(options.fetchImpl, request.zeroDataRetention) }, request, request.webTools).generate({
 				agentId: AGENT_ID,
 				model: request.model,
 				instructions: request.instructions,
@@ -416,8 +448,9 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 /**
  * access_changed: after a question, the person (or the installation) could no longer use the agent.
  * files_unsupported: no route of the model takes the files sent with the request.
+ * search_needs_zdr: after a Slack search, no provider that keeps no data could serve the model.
  */
-export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "files_unsupported" | "access_changed" | "failed";
+export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "files_unsupported" | "search_needs_zdr" | "access_changed" | "failed";
 
 /**
  * Gateway refusals that won't change on a retry, because the agent's model can't
@@ -455,12 +488,18 @@ function errorCodes(error: unknown): { status: number | null; codes: string[]; f
 	return { status: gateway.status, codes, failedProviders: gateway.failedProviders.length };
 }
 
-/** Which plain reply a failed turn gets. `model` is the model the agent asked for. */
-export function classifyTurnError(error: unknown, model?: string | null): TurnErrorKind {
+/**
+ * Which plain reply a failed turn gets. `model` is the model the agent asked for.
+ * `zeroDataRetention`: the request asked for providers that keep no data (the
+ * answer had searched Slack). The agent asks for no region, so the gateway's
+ * model_region_unavailable then means no route of the model keeps no data.
+ */
+export function classifyTurnError(error: unknown, model?: string | null, zeroDataRetention = false): TurnErrorKind {
 	const { status, codes, failedProviders } = errorCodes(error);
 	if (status === null) return "failed";
 	if (status === 402 || codes.some((code) => /insufficient_(funds|quota|credits)/.test(code))) return "no_credits";
 	if (codes.some((code) => /(_limit_reached|_budget_reached|key_limit_exceeded|spend_limit)/.test(code))) return "cap_reached";
+	if (zeroDataRetention && codes.includes("model_region_unavailable")) return "search_needs_zdr";
 	if (codes.some((code) => MODEL_NOT_ALLOWED_CODES.has(code))) return "model_not_allowed";
 	if (codes.includes("unsupported_modalities")) return "files_unsupported";
 	if (isAutoModel(model) && codes.includes("not_supported")) return "model_not_allowed";
@@ -488,6 +527,10 @@ export function turnErrorText(kind: TurnErrorKind, chosenForMessage = false): st
 			return chosenForMessage
 				? "The model you chose for this message can't read the files shared here. Ask again without `with …:` to use the agent's model, or without the files."
 				: "The model this agent uses can't read the files shared here. Ask again without them, or an admin can choose a model that reads images and PDFs in Phaseo settings.";
+		case "search_needs_zdr":
+			return chosenForMessage
+				? "I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with the model you chose for this message. Ask again with a model that keeps no data, or without `with …:` to use the agent's model."
+				: "I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model. An admin can choose a model that keeps no data in Phaseo settings.";
 		case "access_changed":
 			return "I stopped here: what you can use the Phaseo agent for changed while I waited for your answer. Ask me again if you still need this.";
 		case "failed":

@@ -16,6 +16,8 @@ import { ToolInputError } from "./usage-tools";
 // consult costs counts against the answer's $0.50 limit with the agent's own
 // spend, so the agent stops being able to ask once too little is left to finish
 // its answer. Consults run one at a time, so each sees what the last one cost.
+// Once the answer has searched Slack, a consult goes only to providers that keep
+// no data (agent.ts), and a model without one can't be asked.
 
 export const ASK_MODEL_TOOL_ID = "ask_model";
 /** Consults an answer may make, including ones that failed. */
@@ -38,7 +40,13 @@ export type Consult = { model: string; costUsd: number; answered: boolean };
 export type AskModelOptions = {
 	/** The allowed models other than the one answering, in the admins' order. */
 	models: AllowedModel[];
-	ask: (request: { model: string; instructions: string; prompt: string; maxOutputTokens: number; signal?: AbortSignal }) => Promise<AskOutput>;
+	ask: (request: { model: string; instructions: string; prompt: string; maxOutputTokens: number; signal?: AbortSignal; zeroDataRetention?: () => Promise<boolean> }) => Promise<AskOutput>;
+	/**
+	 * Whether the answer has searched Slack (searchedThisAnswer). Asked as each
+	 * consult is sent: from the first search on, it goes only to providers that
+	 * keep no data, and a model none of whose providers do can't be asked.
+	 */
+	searched?: () => Promise<boolean>;
 	/** What the answer may still spend: its limit less the agent's own spend and the consults so far. */
 	budgetLeftUsd: () => number;
 	/** Every consult of this run, appended as each finishes. */
@@ -60,6 +68,8 @@ export function consultErrorText(kind: TurnErrorKind, name: string): string {
 			return `${name} isn't available to the Slack agent: no provider of it meets the agent's data rules, or a workspace policy blocks it.`;
 		case "model_unavailable":
 			return `${name} isn't available right now.`;
+		case "search_needs_zdr":
+			return `${name} can't be used after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and ${name} has none. Answer without it, and say so if they asked for it.`;
 		// access_changed only follows a question, never a gateway error; files_unsupported needs shared files, which aren't sent here.
 		case "access_changed":
 		case "files_unsupported":
@@ -120,14 +130,15 @@ export function askModelTool(options: AskModelOptions): AgentTool<any, any> {
 				}
 				const consult: Consult = { model: model.id, costUsd: 0, answered: false };
 				try {
-					const output = await options.ask({ model: model.id, instructions: CONSULT_INSTRUCTIONS, prompt, maxOutputTokens: CONSULT_MAX_OUTPUT_TOKENS, signal: context.signal });
+					const output = await options.ask({ model: model.id, instructions: CONSULT_INSTRUCTIONS, prompt, maxOutputTokens: CONSULT_MAX_OUTPUT_TOKENS, signal: context.signal, zeroDataRetention: options.searched });
 					consult.costUsd = output.costUsd;
 					consult.answered = output.text.length > 0;
 					return output;
 				} catch (error) {
 					// The answer is being stopped: not the other model's fault.
 					if (context.signal?.aborted) throw error;
-					throw new Error(consultErrorText(classifyTurnError(error, model.id), model.name));
+					const searched = options.searched ? await options.searched().catch(() => false) : false;
+					throw new Error(consultErrorText(classifyTurnError(error, model.id, searched), model.name));
 				} finally {
 					consults.push(consult);
 					options.notes.push(`${ASK_MODEL_TOOL_ID} ${model.id}`);

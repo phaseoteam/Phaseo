@@ -112,7 +112,7 @@ more for each question the agent asks (see below):
    - `x-title: Phaseo Slack agent`;
    - the gateway's web search and fetch tools.
 
-   Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training or prompt publishing; providers that keep logs without training may answer), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400.
+   Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training or prompt publishing; providers that keep logs without training may answer), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400. From an answer's first Slack search on, its requests also send `provider.require_zero_data_retention: true`, so only providers that keep no data serve them (see Slack search).
 
    It stops after 12 steps or $0.50 of model spend (other models it asks count too, below). The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked. A Compare (below) asks its models instead of running the agent.
 4. `reply`: finishes the Slack message with a footer: the model's catalogue name (with Auto, also the model it picked, after an arrow; other models the answer asked or compared, after a `+`) and the cost. A catalogue model's name links to its page (`PHASEO_WEB_ORIGIN/models/<model_slug>`; Auto has none), and the cost links to Logs filtered to the answer's session (`/settings/usage/logs/requests?session=…`, from the day before to the day after). The footer is a context block (`<url|text>` links) under a stopped stream, or italic markdown (`[text](url)`) when the answer is written with `chat.update` or `chat.postMessage`. It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
@@ -260,12 +260,35 @@ doesn't otherwise:
   (Slack doesn't allow apps to search for guests);
 - the message carried an action token. Scheduled runs have no message, so no
   token, and never search (`searchAvailability` says `scheduled` before looking
-  for one).
+  for one);
+- the model answering (the installation's, or the one chosen for the message)
+  has a route the gateway routes to (enabled, `active` or `degraded`, in
+  effect) whose provider keeps no data (`v2_providers.zero_data_retention`) and
+  passes the guardrail (`active`, a confirmed policy of not training on prompts):
+  `zeroRetentionModels`, two catalogue reads. Auto never does: the gateway's
+  auto router picks a model without regard to `require_zero_data_retention`,
+  and a 403 doesn't make it try another. Otherwise (`needs_zdr`) the
+  instructions say search isn't available with this model, and name the allowed
+  models that keep no data when model choice is on (`with <model>:`), or say an
+  admin can choose one.
 
 Slack's terms forbid storing or copying what the API returns, so nothing of the
 results outlives the run that asked for them: they go to the model with its
 requests (whose content the agent's key never logs) and nowhere else. Logs
 carry the turn id, counts and Slack's error code.
+
+Nor may they sit in a model provider's logs, so from an answer's first search
+on, every model request it makes (its steps, `ask_model` consults and
+`generate_image`) sends `provider.require_zero_data_retention: true`, merged
+with any `provider` fields it has, and only providers that keep no data serve
+it. `withZeroDataRetention` (`src/agent.ts`) asks before each request whether
+the answer has searched (`searchedThisAnswer`, the coordinator's count), so the
+request that carries the results has it, and so does a retried run's, or the
+run's after a question, from its first request. Requests before the first
+search are unchanged, and a Compare never searches. When the gateway still finds
+no such route (a 403 `model_region_unavailable`), the answer ends with
+`search_needs_zdr`'s message and its cost so far counts; a refused consult or
+image tells the model that model can't be used after a Slack search.
 
 While the answer is being written, the thread coordinator holds what any answer
 holds so a retried step can finish it (the reply so far, tool notes, the titles
@@ -290,7 +313,8 @@ turn has ended), nothing it writes is kept:
   for up to 90 days). Each checks after its input and before it stores
   anything. Reading, ticking off and forgetting notes, and listing and
   cancelling recurring tasks, still work.
-- The instructions say so whenever search is offered.
+- The instructions say so whenever search is offered, and that other models
+  and images may not be available after a search.
 
 Any new tool that keeps what the model writes (in Postgres, the coordinator or
 anywhere else that outlives the answer) must check `searchedThisAnswer` too.

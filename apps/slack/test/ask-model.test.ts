@@ -106,6 +106,20 @@ describe("ask_model", () => {
 		expect(failed.consults).toEqual([{ model: OPUS.id, costUsd: 0, answered: false }]);
 	});
 
+	it("after a Slack search, asks only providers that keep no data, and says a model without one can't be used", async () => {
+		const noZdrRoute = { error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention." }, code: "model_region_unavailable" };
+		let searched = false;
+		const { asked, call } = setup({ searched: async () => searched }, async () => { throw new AgentGatewayError({ status: 403, statusText: "Forbidden", body: noZdrRoute }); });
+		searched = true;
+		await expect(call({ model: OPUS.id, prompt: "a" })).rejects.toThrow(
+			"Claude Opus 5.5 can't be used after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and Claude Opus 5.5 has none. Answer without it, and say so if they asked for it.",
+		);
+		// The request asks as it is sent; the runner adds require_zero_data_retention from it (agent.ts).
+		await expect(asked[0].zeroDataRetention!()).resolves.toBe(true);
+		searched = false;
+		await expect(asked[0].zeroDataRetention!()).resolves.toBe(false);
+	});
+
 	it("rejects models it can't ask and empty prompts without asking", async () => {
 		const { asked, call } = setup();
 		await expect(call({ model: "google/gemini-3-pro", prompt: "a" })).rejects.toThrow("model must be one of: openai/gpt-6-luna, anthropic/claude-opus-5-5");

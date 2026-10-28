@@ -9,7 +9,8 @@ import { ToolInputError } from "./usage-tools";
 // offered only when the installation has files:write.
 //
 // The model is DEFAULT_IMAGE_MODEL: OpenAI's GPT Image 2, served by a provider
-// that doesn't train on prompts, so the guardrail allows it. Its cost counts
+// that doesn't train on prompts, so the guardrail allows it (after a Slack
+// search, only a provider that keeps no data may make it). Its cost counts
 // against the answer's $0.50 limit with the model's tokens and shows in the
 // footer's total; an image is only started while IMAGE_COST_RESERVE_USD of the
 // limit is left, and one answer makes at most MAX_IMAGES_PER_ANSWER, counted
@@ -30,10 +31,12 @@ function shorten(text: string, limit: number): string {
 	return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`;
 }
 
-/** Why an image couldn't be made, for the model to pass on. */
-function imageErrorText(error: unknown): string {
+/** Why an image couldn't be made, for the model to pass on. `searched`: the answer had searched Slack. */
+function imageErrorText(error: unknown, searched: boolean): string {
 	if (error instanceof ImageNotReadError) return "The image was made, but it couldn't be read back to post. Say so; they can ask again in a new message.";
-	switch (classifyTurnError(error, DEFAULT_IMAGE_MODEL)) {
+	switch (classifyTurnError(error, DEFAULT_IMAGE_MODEL, searched)) {
+		case "search_needs_zdr":
+			return "No image can be made after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and the image model has none. Say so.";
 		case "no_credits":
 			return "This Phaseo workspace is out of credits, so no image could be made.";
 		case "cap_reached":
@@ -51,9 +54,12 @@ function imageErrorText(error: unknown): string {
  * is left of the answer's limit; `made` is how many images the answer has paid
  * for; `onCost` adds an image's cost to the answer; `post` uploads it to the
  * thread; `onMade` records each paid image, and whether it is in the thread.
+ * `searched`: whether the answer has searched Slack, after which `generate`
+ * goes only to providers that keep no data (agent.ts), so a refusal says why.
  */
 export function generateImageTool(options: {
 	generate: (prompt: string, size: ImageSize) => Promise<GeneratedImage>;
+	searched?: () => Promise<boolean>;
 	remainingUsd: () => number;
 	made: () => number;
 	onCost: (costUsd: number) => Promise<void> | void;
@@ -91,12 +97,13 @@ export function generateImageTool(options: {
 			try {
 				image = await options.generate(prompt, size);
 			} catch (error) {
-				console.warn("[slack-agent] image not generated", { kind: error instanceof ImageNotReadError ? "not_read" : classifyTurnError(error, DEFAULT_IMAGE_MODEL) });
+				const searched = options.searched ? await options.searched().catch(() => false) : false;
+				console.warn("[slack-agent] image not generated", { kind: error instanceof ImageNotReadError ? "not_read" : classifyTurnError(error, DEFAULT_IMAGE_MODEL, searched) });
 				if (error instanceof ImageNotReadError) {
 					await options.onCost(error.costUsd);
 					await options.onMade({ title, shown: false });
 				}
-				return { posted: false, error: imageErrorText(error) };
+				return { posted: false, error: imageErrorText(error, searched) };
 			}
 			await options.onCost(image.costUsd);
 			const extension = EXTENSIONS[image.mimeType] ?? "png";

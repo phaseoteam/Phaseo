@@ -1,6 +1,9 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, type AgentTurnRequest, type AskRequest, type PausedRun } from "../src/agent";
+import {
+	classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
+	type AgentTurnRequest, type AskRequest, type PausedRun,
+} from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
 
 function sse(events: unknown[]): Response {
@@ -423,5 +426,85 @@ describe("files and images", () => {
 		expect(classifyTurnError(error, "phaseo/auto")).toBe("files_unsupported");
 		expect(turnErrorText("files_unsupported")).toBe("The model this agent uses can't read the files shared here. Ask again without them, or an admin can choose a model that reads images and PDFs in Phaseo settings.");
 		expect(turnErrorText("files_unsupported", true)).toContain("The model you chose for this message can't read the files shared here.");
+	});
+});
+
+describe("after a Slack search", () => {
+	/** The 403 the gateway sends when no route of the model meets require_zero_data_retention (pipeline/execute/guards.ts). */
+	const NO_ZDR_ROUTE = {
+		error: { code: "model_region_unavailable", message: "This model has no provider that offers zero data retention.", type: "permission_error", param: null },
+		code: "model_region_unavailable", error_type: "user", error_origin: "user", description: "This model has no provider that offers zero data retention.",
+	};
+
+	it("sends every request from the first search on only to providers that keep no data, and none before it", async () => {
+		const bodies: Array<Record<string, any>> = [];
+		let searched = false;
+		const asked: boolean[] = [];
+		const search = { id: "search_slack", description: "Search", parameters: { type: "object", properties: {} }, execute: async () => { searched = true; return { found: true }; } };
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			bodies.push((await capture(input, init)).body);
+			if (bodies.length === 1) return sse([{ ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "function_call", call_id: "call_s1", name: "search_slack", arguments: "{}" }] } }]);
+			return sse([COMPLETED]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ tools: [search], zeroDataRetention: async () => { asked.push(searched); return searched; } }), { onText: async () => undefined, onStep: async () => undefined });
+		expect(bodies).toHaveLength(2);
+		// The first request went before the search; the one that carries its results, and any after, keep no data.
+		expect(bodies[0]).not.toHaveProperty("provider");
+		expect(bodies[1].provider).toEqual({ require_zero_data_retention: true });
+		expect(JSON.stringify(bodies[1].input)).toContain("call_s1");
+		// Asked before each request, not once for the run.
+		expect(asked).toEqual([false, true]);
+		// Never the field the gateway rejects.
+		expect(JSON.stringify(bodies)).not.toContain("data_collection");
+	});
+
+	it("keeps the request's other provider fields, with the files added, and leaves requests that don't go to a model alone", async () => {
+		const sent: Request[] = [];
+		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(input as Request); return new Response("{}"); });
+		const wrapped = withZeroDataRetention(withAttachments(passed as unknown as typeof fetch, [{ type: "input_image", image_url: "data:image/png;base64,iVBORw0KGgo=" }]), async () => true);
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "openai/gpt-test", provider: { sort: "price", require_zero_data_retention: false }, input: [{ role: "user", content: "hello" }] }) });
+		const body = await sent[0].json() as Record<string, any>;
+		expect(body.provider).toEqual({ sort: "price", require_zero_data_retention: true });
+		expect(body.input[0].content).toHaveLength(2);
+		await wrapped("https://gateway.test/v1/models");
+		await wrapped("https://images.test/fox.png");
+		expect(sent.slice(1).map((request) => `${request.method} ${request.url}`)).toEqual(["GET https://gateway.test/v1/models", "GET https://images.test/fox.png"]);
+		// A model request it can't read isn't sent without the flag.
+		await expect(wrapped("https://gateway.test/v1/responses", { method: "POST", body: "not json" })).rejects.toThrow("zero_data_retention_not_applied");
+		expect(sent).toHaveLength(3);
+		expect(withZeroDataRetention(passed as unknown as typeof fetch, undefined)).toBe(passed);
+	});
+
+	it("sends the models it asks and the images it makes only to providers that keep no data", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const sent = await capture(input, init);
+			seen.push(sent);
+			return sent.url.endsWith("/images/generations")
+				? Response.json({ data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: 40_000_000 })
+				: Response.json({ ...COMPLETED.response, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Yes." }] }] });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		const ask: AskRequest = { gatewayKey, endUser, sessionId, labels, signal, model: "anthropic/claude-test", instructions: "Answer directly.", prompt: "Right?", webTools: false, maxOutputTokens: 4_000 };
+		await runner.ask(ask);
+		await runner.ask({ ...ask, zeroDataRetention: async () => true });
+		await runner.generateImage!({ gatewayKey, endUser, sessionId, labels, signal, model: "openai/gpt-image-2", prompt: "A fox", size: "1024x1024", zeroDataRetention: async () => true });
+		expect(seen.map((sent) => sent.body.provider ?? null)).toEqual([null, { require_zero_data_retention: true }, { require_zero_data_retention: true }]);
+	});
+
+	it("says so when no provider that keeps no data could answer, and only after a search", async () => {
+		const refusal = new AgentGatewayError({ status: 403, statusText: "Forbidden", body: NO_ZDR_ROUTE });
+		expect(classifyTurnError(refusal, "openai/gpt-test", true)).toBe("search_needs_zdr");
+		expect(classifyTurnError(new Error("run failed", { cause: refusal }), "openai/gpt-test", true)).toBe("search_needs_zdr");
+		// The same code before a search isn't about zero data retention.
+		expect(classifyTurnError(refusal, "openai/gpt-test")).toBe("failed");
+		// Other refusals after a search are what they always were.
+		expect(classifyTurnError(new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }), "openai/gpt-test", true)).toBe("no_credits");
+		expect(turnErrorText("search_needs_zdr")).toBe("I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model. An admin can choose a model that keeps no data in Phaseo settings.");
+		expect(turnErrorText("search_needs_zdr", true)).toContain("none could answer with the model you chose for this message. Ask again with a model that keeps no data");
+		expect(turnErrorText("search_needs_zdr")).not.toMatch(/region|guardrail|policy/i);
 	});
 });
