@@ -604,7 +604,9 @@ async function maybePrintUpdateNotice(json: boolean) {
 }
 
 export function shouldPrintUpdateNoticeForCommand(command: string[]): boolean {
-	return !(command[0] === "integrations" && command[1] === "credential");
+	// Commands whose stdout is data (a credential, a CSV export) must not get a trailing notice.
+	if (command[0] === "integrations" && command[1] === "credential") return false;
+	return !(command[0] === "analytics" && command[1] === "export");
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {

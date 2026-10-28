@@ -266,7 +266,7 @@ phaseo workload-identity policies delete <id> [--yes] --json
 ### keys
 
 ```bash
-phaseo keys rotate <id> [--previous-key-expires-at <iso>] [--show-secret] --json
+phaseo keys rotate <id> [--previous-key-expires-at <iso>] [--show-secret] [--yes] --json
 phaseo keys invalidate <id> [--yes] --json
 ```
 

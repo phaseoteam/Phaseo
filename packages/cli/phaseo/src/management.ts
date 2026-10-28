@@ -937,10 +937,11 @@ const COMMANDS: Record<string, CommandSpec> = {
 	})),
 
 	"keys rotate": {
-		usage: "<id> [--previous-key-expires-at <iso>] [--show-secret]",
+		usage: "<id> [--previous-key-expires-at <iso>] [--show-secret] [--yes]",
 		description: "Create a replacement key with the same settings. The old key keeps working until --previous-key-expires-at, if given. The new secret is shown once.",
 		output: "action",
 		done: "Rotated API key",
+		confirm: (args) => `This creates a replacement for API key ${args[0]} and shows its secret once; the old key stops working at --previous-key-expires-at if you set it.`,
 		build: (args, flags) => ({
 			method: "POST",
 			path: `/keys/${id(arg(args, 0, "Key id"))}/rotate`,

@@ -12,7 +12,7 @@ import {
 	type ManagementDeps,
 	type ManagementInput,
 } from "../src/management.ts";
-import { helpKeyForCommand, isCommandGroup, parseArgs, renderHelp } from "../src/index.ts";
+import { helpKeyForCommand, isCommandGroup, parseArgs, renderHelp, shouldPrintUpdateNoticeForCommand } from "../src/index.ts";
 
 const noInput: ManagementInput = {
 	readStdin: async () => {
@@ -483,4 +483,25 @@ test("S4: observability destination create requires --name before any request", 
 	);
 	assert.equal(calls.length, 0);
 	assert.match(renderHelp(["observability", "destinations", "create"]), /--type <type> --name <name>/);
+});
+
+test("S5: keys rotate needs confirmation with or without --previous-key-expires-at", async () => {
+	for (const flags of [{}, { "previous-key-expires-at": "2026-11-01T00:00:00Z" }, { json: true }]) {
+		const { deps, calls } = fakeDeps();
+		await assert.rejects(runManagementCommand(["keys", "rotate", "k1"], flags, deps), /Re-run with --yes/);
+		assert.equal(calls.length, 0);
+	}
+	const declined = fakeDeps({ interactive: true, confirm: async () => false });
+	await assert.rejects(runManagementCommand(["keys", "rotate", "k1"], {}, declined.deps), /Cancelled/);
+	assert.equal(declined.calls.length, 0);
+	const confirmed = fakeDeps();
+	await runManagementCommand(["keys", "rotate", "k1"], { yes: true }, confirmed.deps);
+	assert.deepEqual(confirmed.calls, [{ path: "/keys/k1/rotate", method: "POST", body: {} }]);
+	assert.match(renderHelp(["keys", "rotate"]), /--yes/);
+});
+
+test("S6: analytics export stdout gets no update notice", () => {
+	assert.equal(shouldPrintUpdateNoticeForCommand(["analytics", "export"]), false);
+	assert.equal(shouldPrintUpdateNoticeForCommand(["analytics", "get"]), true);
+	assert.equal(shouldPrintUpdateNoticeForCommand(["integrations", "credential"]), false);
 });
