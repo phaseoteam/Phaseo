@@ -2,6 +2,7 @@ import { ChevronRight, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { Pressable, View, type AccessibilityActionEvent } from "react-native";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
@@ -74,7 +75,7 @@ export function Row({ title, subtitle, icon, leading, trailing, value, onPress, 
       else actions.find((action) => action.label === name)?.run();
     },
   } : {};
-  return <Pressable accessibilityRole="button" onPress={onPress} onLongPress={onLongPress} {...a11y} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
+  return <Pressable accessibilityRole="button" onPress={onPress} onLongPress={onLongPress ? () => { haptic("longPress"); onLongPress(); } : undefined} {...a11y} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
 }
 
 /** Label/value line for facts (pricing, limits, dates). */

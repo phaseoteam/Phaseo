@@ -46,8 +46,16 @@ async function textFile(attachment: ChatAttachment) {
 
 const mediaNote = (attachment: ChatAttachment) => `[${attachment.kind === "image" ? "Image" : "Audio"} attached earlier: ${attachment.name}]`;
 
-/** The text a summary sees for a message (attachments named, not included). */
-export const entryText = (message: Pick<ThreadMessage, "content" | "attachments">) => [message.content, ...message.attachments.map((attachment) => (attachment.kind === "text" ? `[Text file: ${attachment.name}]` : mediaNote(attachment)))].filter(Boolean).join("\n\n");
+const fileText = async (attachment: ChatAttachment) => `Attached file ${attachment.name}:\n\`\`\`\n${await textFile(attachment)}\n\`\`\``;
+
+/**
+ * The text a summary sees for a message. Text files go in full, as requests send them: once the message is
+ * summarised, the summary is all that remains of the file. Photos and audio are named.
+ */
+export async function entryText(message: Pick<ThreadMessage, "content" | "attachments">) {
+  const attachments = await Promise.all(message.attachments.map((attachment) => (attachment.kind === "text" ? fileText(attachment) : mediaNote(attachment))));
+  return [message.content, ...attachments].filter(Boolean).join("\n\n");
+}
 
 async function userContent(message: ThreadMessage, latest: boolean): Promise<string | ContentPart[]> {
   if (!message.attachments.length) return message.content;
@@ -55,7 +63,7 @@ async function userContent(message: ThreadMessage, latest: boolean): Promise<str
   const texts: string[] = [];
   for (const attachment of message.attachments) {
     if (attachment.kind === "text") {
-      texts.push(`Attached file ${attachment.name}:\n\`\`\`\n${await textFile(attachment)}\n\`\`\``);
+      texts.push(await fileText(attachment));
       continue;
     }
     if (!latest) { texts.push(mediaNote(attachment)); continue; }
@@ -112,7 +120,7 @@ export async function prepareThread(args: {
   // Enough of the newest messages for the summary's transcript and the word-for-word tail; older ones were
   // already left out of desktop's transcript, so they aren't read at all.
   const loaded = await threadTail(chatId, model, after, upTo.position, Math.floor(contextTokens * (TRANSCRIPT_SHARE + TAIL_SHARE * CHARS_PER_TOKEN)));
-  const entries = loaded.messages.map((message) => ({ role: message.role, content: entryText(message) }));
+  const entries = await Promise.all(loaded.messages.map(async (message) => ({ role: message.role, content: await entryText(message) })));
   const tail = tailStart(entries, contextTokens);
   const fallback = async (reason: string): Promise<PreparedThread> => {
     if (estimate <= contextTokens * 0.95) {

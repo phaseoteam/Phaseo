@@ -2,6 +2,7 @@ import * as Crypto from "expo-crypto";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { AUDIO_FORMATS, audioFormat } from "./request";
 import type { ChatAttachment } from "./types";
 
 const MAX_TEXT_BYTES = 200 * 1024;
@@ -63,11 +64,12 @@ export async function pickTextFile(): Promise<ChatAttachment[]> {
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
-/** Audio files go to the model as input_audio, for models that take audio. */
+/** Audio files go to the model as input_audio, for models that take audio: MP3 or WAV only, which every audio route accepts. */
 export async function pickAudioFile(): Promise<ChatAttachment[]> {
-  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*"], copyToCacheDirectory: true, multiple: false });
+  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave"], copyToCacheDirectory: true, multiple: false });
   if (result.canceled) return [];
   return result.assets.map((asset) => {
+    if (!AUDIO_FORMATS.includes(audioFormat(asset.mimeType ?? "", asset.name))) throw new Error(`${asset.name} isn't MP3 or WAV. Convert it to one of those to attach it.`);
     if ((asset.size ?? 0) > MAX_AUDIO_BYTES) throw new Error(`${asset.name} is over 10 MB. Attach a shorter recording.`);
     return keep(asset.uri, asset.name, asset.mimeType ?? "audio/mpeg", "audio", asset.size ?? undefined);
   });

@@ -1,8 +1,8 @@
-import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
 import { Pressable, View, type PressableProps } from "react-native";
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 
 /**
  * Geometry of the website's switch (apps/web/src/components/ui/switch.tsx): a 2 px border around the thumb, which
@@ -27,9 +27,9 @@ export function switchHitSlop(size: keyof typeof SWITCH_SIZES) {
   return { top: y, bottom: y, left: x, right: x };
 }
 
-/** The light tick a switch gives when it changes, also for rows that toggle as a whole. */
-export function switchHaptic() {
-  void Haptics.selectionAsync().catch(() => undefined);
+/** The tick a switch gives when it turns on or off (`on` is its new value), also for rows that toggle as a whole. */
+export function switchHaptic(on: boolean) {
+  haptic(on ? "toggleOn" : "toggleOff");
 }
 
 export type SwitchProps = Omit<PressableProps, "children" | "onPress" | "disabled" | "style"> & {
@@ -69,7 +69,7 @@ export function Switch({ value, onValueChange, disabled, size = "default", acces
       {...props}
       disabled={disabled}
       onPress={() => {
-        switchHaptic();
+        switchHaptic(!value);
         onValueChange?.(!value);
       }}
       onFocus={(event) => { setFocused(true); onFocus?.(event); }}
