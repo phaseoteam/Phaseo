@@ -836,6 +836,38 @@ struct CreditsResponse {
 	std::any ok;
 };
 
+struct CreditTopup {
+	int amount_cents;
+	double amount_usd;
+	std::optional<std::string> checkout_url;
+	std::optional<int> confirmation_recipients;
+	std::string created_at;
+	std::string currency;
+	std::optional<std::string> decided_at;
+	std::string expires_at;
+	bool final;
+	std::any flow;
+	std::string id;
+	std::string message;
+	std::optional<std::any> next_action;
+	std::optional<std::string> paid_at;
+	std::optional<std::map<std::string, std::any>> payment_method;
+	std::optional<std::string> reason;
+	std::any status;
+	std::string workspace_id;
+};
+
+struct CreditTopupCreateRequest {
+	double amount_usd;
+	std::string idempotency_key;
+	std::string workspace_id;
+};
+
+struct CreditTopupResponse {
+	std::any ok;
+	std::map<std::string, std::any> topup;
+};
+
 struct DataContributionCategories {
 };
 

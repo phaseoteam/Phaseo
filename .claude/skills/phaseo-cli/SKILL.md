@@ -1,6 +1,6 @@
 ---
 name: phaseo-cli
-description: "Operates Phaseo from the terminal with the official `phaseo` CLI: install and update, browser or device OAuth login, API keys, workspaces, presets, BYOK, budgets, spend rules, rate limits, notifications, observability, routing, identity and other workspace settings, plus credits, analytics and request lookup by ID, with `--json` output for automation. Use when the user runs or wants `phaseo` commands, scripts Phaseo admin work or debugs a request from a shell. Not for application code that calls the API (use phaseo-gateway or an SDK skill)."
+description: "Operates Phaseo from the terminal with the official `phaseo` CLI: install and update, browser or device OAuth login, API keys, workspaces, presets, BYOK, budgets, spend rules, rate limits, notifications, observability, routing, identity and other workspace settings, plus credits and human-confirmed top-ups, analytics and request lookup by ID, with `--json` output for automation. Use when the user runs or wants `phaseo` commands, scripts Phaseo admin work or debugs a request from a shell. Not for application code that calls the API (use phaseo-gateway or an SDK skill)."
 license: MIT
 ---
 
@@ -55,6 +55,21 @@ Never pass secrets as argv values; the CLI rejects `--key` and `--credential`, a
 Commands whose usage shows `[--yes]` (delete, revoke, lift, rotate, rotate-secret, merge) refuse to run non-interactively without `--yes`. Pass `--yes` only after the user has asked for that exact change.
 
 `byok` and `private-models` work with the default login scopes. A `403` from them usually means the session predates those scopes; ask the user to run `phaseo login` again. `feedback`, `events` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; suggest `phaseo login --scopes` with them added. Do not widen scopes silently or switch to another credential.
+
+## Add Credits
+
+`phaseo credits add` never charges on its own: a workspace owner or admin approves every top-up. It needs the opt-in `billing:write` scope, so ask the user before running `phaseo login --scopes billing:write` (it keeps the default scopes).
+
+```bash
+phaseo credits add --amount 20 --json
+phaseo credits topups get <id> --json
+```
+
+- Amounts are $5 to $500. Only start a top-up the user asked for, with the amount they gave.
+- With a saved card the owners and admins get an email; the command prints `awaiting confirmation` and waits (up to about 35 minutes). Use `--no-wait` to return at once, then poll `credits topups get` until `final` is `true`.
+- Without a saved card the result has a `checkout_url` (with `--json` the command returns it at once). Give it to the user to pay with a new card in the browser; never open or pay it yourself. Then poll `credits topups get`.
+- `paid` means the credits were added. `declined`, `expired` and `failed` are final and carry a `reason` code: tell the user and stop. Do not retry them automatically or start another top-up in a loop.
+- `429 too_many_pending_topups` means 5 top-ups are already waiting; do not create more.
 
 ## Agent Output Rules
 

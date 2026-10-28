@@ -1520,6 +1520,38 @@ type CreditsResponse struct {
 	Ok bool `json:"ok"`
 }
 
+type CreditTopup struct {
+	AmountCents int `json:"amount_cents"`
+	AmountUsd float64 `json:"amount_usd"`
+	CheckoutUrl *string `json:"checkout_url"`
+	ConfirmationRecipients *int `json:"confirmation_recipients,omitempty"`
+	CreatedAt string `json:"created_at"`
+	Currency string `json:"currency"`
+	DecidedAt *string `json:"decided_at"`
+	ExpiresAt string `json:"expires_at"`
+	Final bool `json:"final"`
+	Flow string `json:"flow"`
+	Id string `json:"id"`
+	Message string `json:"message"`
+	NextAction *string `json:"next_action"`
+	PaidAt *string `json:"paid_at"`
+	PaymentMethod *map[string]interface{} `json:"payment_method"`
+	Reason *string `json:"reason"`
+	Status string `json:"status"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type CreditTopupCreateRequest struct {
+	AmountUsd float64 `json:"amount_usd"`
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+	WorkspaceId *string `json:"workspace_id,omitempty"`
+}
+
+type CreditTopupResponse struct {
+	Ok bool `json:"ok"`
+	Topup map[string]interface{} `json:"topup"`
+}
+
 type DataContributionCategories struct {
 }
 

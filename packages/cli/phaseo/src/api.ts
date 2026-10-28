@@ -1,6 +1,7 @@
 import { readSession, writeSession, type Session } from "./session.js";
 import {
 	DEFAULT_CLI_OAUTH_CAPABILITIES,
+	isOptInCapability,
 	normalizeScopeList,
 } from "./capabilities.js";
 
@@ -9,6 +10,10 @@ export const DEFAULT_LOGIN_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
 export const DEFAULT_SCOPE = DEFAULT_LOGIN_SCOPES.join(" ");
 
+/**
+ * --scopes replaces the default login scopes, except when it lists only opt-in scopes such as
+ * billing:write: `phaseo login --scopes billing:write` keeps the defaults and adds it.
+ */
 export function parseScopeArgument(raw?: string): string {
 	const normalized = normalizeScopeList(raw, {
 		allowIdentityScopes: true,
@@ -17,7 +22,11 @@ export function parseScopeArgument(raw?: string): string {
 	if (!normalized.ok) {
 		throw new Error("message" in normalized ? normalized.message : "Invalid scopes");
 	}
-	return normalized.value.join(" ");
+	const scopes = normalized.value;
+	if (raw !== undefined && scopes.length > 0 && scopes.every(isOptInCapability)) {
+		return [...new Set([...DEFAULT_LOGIN_SCOPES, ...scopes])].join(" ");
+	}
+	return scopes.join(" ");
 }
 
 export function normalizeApiRoot(input?: string): string {

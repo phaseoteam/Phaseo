@@ -6,6 +6,7 @@ import {
 	DEFAULT_CLI_OAUTH_CAPABILITIES,
 	GATEWAY_ACCESS_SCOPE,
 	IDENTITY_SCOPES,
+	isOptInCapability,
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
@@ -694,7 +695,14 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
 	const allowed = new Set(parseStoredScopeList(client.allowed_scopes));
-	return requested.filter((scope) => allowed.has(scope));
+	// Opt-in scopes (billing:write) are for the first-party CLI only, whatever a client lists.
+	const optInAllowed = CLI_CLIENT_IDS.has(String(client.id ?? "").trim()) && client.is_first_party === true;
+	return requested.filter((scope) => allowed.has(scope) && (optInAllowed || !isOptInCapability(scope)));
+}
+
+/** Scopes a third-party or dynamically registered client may not register for. */
+export function thirdPartyForbiddenScopes(scopes: readonly string[]): string[] {
+	return scopes.filter((scope) => isOptInCapability(scope));
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
@@ -997,6 +1005,22 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	};
 }
 
+/**
+ * Scopes for a refreshed token: the authorization's scopes, narrowed to the refreshed token's.
+ * A later login that adds scopes (such as opt-in billing:write) must not widen older sessions.
+ * Only a token with no stored scope list (null) is legacy: it keeps the authorization's scopes
+ * minus opt-in ones. An empty result means the session must log in again (the caller refuses
+ * it), because an empty list must never be stored and later read as legacy.
+ * Mirrors public.rotate_oauth_refresh_token, which stores the same set.
+ */
+export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unknown): string[] {
+	const granted = Array.isArray(authorizationScopes) ? authorizationScopes.map(String) : [];
+	if (tokenScopes === null || tokenScopes === undefined) return granted.filter((scope) => !isOptInCapability(scope));
+	const held = Array.isArray(tokenScopes) ? tokenScopes.map(String) : [];
+	const heldSet = new Set(held);
+	return granted.filter((scope) => heldSet.has(scope));
+}
+
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
@@ -1060,16 +1084,17 @@ export async function rotateRefreshToken(
 	if (membership.error || !membership.data) {
 		return { ok: false, reason: "invalid_grant" };
 	}
-	const scopes = Array.isArray(authorization.data.scopes)
-		? authorization.data.scopes.map(String)
-		: Array.isArray(data.scopes)
-			? data.scopes.map(String)
-			: [];
-	// The new pair takes the current authorization's scopes and is bound to no
-	// resource, so it can never carry a dynamic client's MCP management scopes.
-	if (violatesMcpManagementBinding(client.registration_source, null, scopes)) {
+	// The new pair is bound to no resource, so a dynamic client whose authorization holds MCP
+	// management scopes fails closed (checked on the authorization, as before narrowing).
+	// The pair itself takes the authorization's scopes narrowed to the refreshed token's,
+	// so a later consent never widens an existing session.
+	const authorizationScopes = Array.isArray(authorization.data.scopes) ? authorization.data.scopes.map(String) : [];
+	if (violatesMcpManagementBinding(client.registration_source, null, authorizationScopes)) {
 		return { ok: false, reason: "invalid_grant" };
 	}
+	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
+	// Nothing left in common: refuse instead of storing an empty scope list.
+	if (scopes.length === 0) return { ok: false, reason: "invalid_grant" };
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),

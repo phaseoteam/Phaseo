@@ -1489,6 +1489,64 @@ class CreditsResponse
 	public $ok;
 }
 
+class CreditTopup
+{
+	/** @var int */
+	public $amount_cents;
+	/** @var float */
+	public $amount_usd;
+	/** @var string|null */
+	public $checkout_url;
+	/** @var int|null */
+	public $confirmation_recipients;
+	/** @var string */
+	public $created_at;
+	/** @var string */
+	public $currency;
+	/** @var string|null */
+	public $decided_at;
+	/** @var string */
+	public $expires_at;
+	/** @var bool */
+	public $final;
+	/** @var string */
+	public $flow;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $message;
+	/** @var string|null */
+	public $next_action;
+	/** @var string|null */
+	public $paid_at;
+	/** @var array<string, mixed>|null */
+	public $payment_method;
+	/** @var string|null */
+	public $reason;
+	/** @var string */
+	public $status;
+	/** @var string */
+	public $workspace_id;
+}
+
+class CreditTopupCreateRequest
+{
+	/** @var float */
+	public $amount_usd;
+	/** @var string|null */
+	public $idempotency_key;
+	/** @var string|null */
+	public $workspace_id;
+}
+
+class CreditTopupResponse
+{
+	/** @var string */
+	public $ok;
+	/** @var array<string, mixed> */
+	public $topup;
+}
+
 class DataContributionCategories
 {
 }

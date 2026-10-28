@@ -11,6 +11,7 @@ import { getStripe } from "@/lib/stripe";
 import { readBoundedTextBody } from "@/lib/server/boundedRequestBody";
 import { IDENTITY_ADDON_KEY } from "@/lib/billing/identityAddon";
 import { ENTERPRISE_MEMBER_OVERAGE_USD } from "@/lib/billing/enterprisePricing";
+import { recordCreditTopupPaymentFromWebhook } from "@/lib/server/creditTopups";
 
 const TOP_UP_PURPOSES = new Set(["top_up", "top_up_one_off", "auto_top_up", "credits_topup_offsession"]);
 type AppliedCreditRow = { applied?: boolean; before_balance_nanos?: number; after_balance_nanos?: number };
@@ -858,6 +859,10 @@ export async function POST(req: Request) {
 
                 if (applyErr) throw applyErr;
 
+                // API/CLI top-up requests (credit_topup_requests): mark the request paid. Runs on
+                // retries too, so a request still settles if an earlier attempt failed after crediting.
+                await recordCreditTopupPaymentFromWebhook({ db: supabase, paymentIntent: pi, outcome: "paid" });
+
                 const applied = (appliedRows?.[0] as AppliedCreditRow | undefined) ?? { applied: false };
 
                 if (!applied.applied) {
@@ -929,15 +934,19 @@ export async function POST(req: Request) {
                 const purpose = readPaymentIntentPurpose(pi);
                 if (!purpose || !TOP_UP_PURPOSES.has(purpose)) break;
 
+                // Only a pending entry can fail. A late or replayed failure must never downgrade a
+                // credited (Paid) entry: stripe_apply_payment_intent_credit would then credit it again.
                 await supabase
                     .from("credit_ledger")
                     .update({ status: "Failed", event_time: new Date().toISOString() })
                     .eq("ref_type", "Stripe_Payment_Intent")
-                    .eq("ref_id", pi.id);
+                    .eq("ref_id", pi.id)
+                    .eq("status", "Processing");
 
                 if (purpose === "auto_top_up" || purpose === "credits_topup_offsession") {
                     await enqueueAutoTopUpFailureFromWebhook({ supabase, paymentIntent: pi });
                 }
+                await recordCreditTopupPaymentFromWebhook({ db: supabase, paymentIntent: pi, outcome: "failed" });
                 break;
             }
 

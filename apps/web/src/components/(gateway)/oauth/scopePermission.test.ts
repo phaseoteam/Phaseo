@@ -33,6 +33,14 @@ describe("scopePermissionFor", () => {
 		});
 	});
 
+	it("gives billing:write its own copy instead of a generic manage label", () => {
+		expect(scopePermissionFor("billing:write")).toEqual({
+			scope: "billing:write",
+			action: "billing",
+			tone: "write",
+		});
+	});
+
 	it("keeps unknown scope identifiers intact for translated fallback copy", () => {
 		expect(scopePermissionFor("custom_tools:write")).toEqual({
 			scope: "custom_tools:write",

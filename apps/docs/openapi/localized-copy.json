@@ -11173,6 +11173,246 @@
 			"ja": "承認済みアプリ一覧の承認 ID。",
 			"zh-Hans": "来自已授权应用列表的授权标识符。",
 			"ar": "معرّف التصريح من قائمة التطبيقات المصرّح بها."
+		},
+		"Start a credit top-up": {
+			"es": "Iniciar una recarga de créditos",
+			"fr": "Lancer une recharge de crédits",
+			"de": "Guthabenaufladung starten",
+			"pt-BR": "Iniciar uma recarga de créditos",
+			"hi": "क्रेडिट टॉप-अप शुरू करें",
+			"ja": "クレジットのチャージを開始",
+			"zh-Hans": "发起额度充值",
+			"ar": "بدء شحن الرصيد"
+		},
+		"Asks to add credits to the authenticated workspace. Needs the opt-in billing:write scope and workspace membership. Nothing is charged here. With a saved card, every workspace owner and admin is emailed a single-use link and one of them confirms or declines the charge. Without one, the response has a checkout_url where an owner or admin pays with a new card, which is saved for later top-ups. Amounts are $5 to $500. A workspace can have 5 pending top-ups, and each expires after 30 minutes.": {
+			"es": "Solicita añadir créditos al espacio de trabajo autenticado. Requiere el alcance opcional billing:write y ser miembro del espacio de trabajo. Aquí no se cobra nada. Si hay una tarjeta guardada, cada propietario y administrador del espacio de trabajo recibe por correo un enlace de un solo uso y uno de ellos confirma o rechaza el cargo. Si no la hay, la respuesta incluye un checkout_url donde un propietario o administrador paga con una tarjeta nueva, que se guarda para recargas posteriores. Los importes van de $5 a $500. Un espacio de trabajo puede tener 5 recargas pendientes y cada una caduca a los 30 minutos.",
+			"fr": "Demande l’ajout de crédits à l’espace de travail authentifié. Nécessite le scope facultatif billing:write et l’appartenance à l’espace de travail. Rien n’est débité ici. Avec une carte enregistrée, chaque propriétaire et administrateur de l’espace de travail reçoit par e-mail un lien à usage unique, et l’un d’eux confirme ou refuse le débit. Sinon, la réponse contient un checkout_url où un propriétaire ou un administrateur paie avec une nouvelle carte, enregistrée pour les recharges suivantes. Les montants vont de $5 à $500. Un espace de travail peut avoir 5 recharges en attente, et chacune expire au bout de 30 minutes.",
+			"de": "Fordert Guthaben für den authentifizierten Arbeitsbereich an. Erfordert den optionalen Scope billing:write und die Mitgliedschaft im Arbeitsbereich. Hier wird nichts belastet. Mit gespeicherter Karte erhält jeder Owner und Admin des Arbeitsbereichs per E-Mail einen einmalig nutzbaren Link, und einer von ihnen bestätigt oder lehnt die Belastung ab. Ohne gespeicherte Karte enthält die Antwort eine checkout_url, unter der ein Owner oder Admin mit einer neuen Karte bezahlt, die für spätere Aufladungen gespeichert wird. Beträge von $5 bis $500. Ein Arbeitsbereich kann 5 offene Aufladungen haben, und jede läuft nach 30 Minuten ab.",
+			"pt-BR": "Solicita a adição de créditos ao espaço de trabalho autenticado. Exige o escopo opcional billing:write e ser membro do espaço de trabalho. Nada é cobrado aqui. Com um cartão salvo, cada proprietário e administrador do espaço de trabalho recebe por e-mail um link de uso único, e um deles confirma ou recusa a cobrança. Sem cartão salvo, a resposta traz um checkout_url onde um proprietário ou administrador paga com um cartão novo, que fica salvo para recargas futuras. Os valores vão de $5 a $500. Um espaço de trabalho pode ter 5 recargas pendentes, e cada uma expira após 30 minutos.",
+			"hi": "प्रमाणित वर्कस्पेस में क्रेडिट जोड़ने का अनुरोध करता है। वैकल्पिक billing:write स्कोप और वर्कस्पेस सदस्यता आवश्यक है। यहाँ कोई शुल्क नहीं लिया जाता। सहेजा गया कार्ड होने पर वर्कस्पेस के हर owner और admin को एक बार इस्तेमाल होने वाला लिंक ईमेल किया जाता है और उनमें से कोई एक शुल्क की पुष्टि करता है या उसे अस्वीकार करता है। कार्ड न होने पर जवाब में checkout_url होता है, जहाँ कोई owner या admin नए कार्ड से भुगतान करता है; वह कार्ड अगले टॉप-अप के लिए सहेज लिया जाता है। राशि $5 से $500 तक। एक वर्कस्पेस में 5 लंबित टॉप-अप हो सकते हैं, और हर एक 30 मिनट बाद समाप्त हो जाता है।",
+			"ja": "認証済みワークスペースへのクレジット追加をリクエストします。オプトインの billing:write スコープとワークスペースのメンバーシップが必要です。ここでは請求されません。保存済みのカードがある場合、ワークスペースのすべてのオーナーと管理者に 1 回限りのリンクがメールで送られ、そのうち 1 人が請求を確認または拒否します。ない場合、レスポンスには checkout_url が含まれ、オーナーまたは管理者が新しいカードで支払います。そのカードは以降のチャージ用に保存されます。金額は $5〜$500 です。ワークスペースごとに保留中のチャージは 5 件まで、各チャージは 30 分で期限切れになります。",
+			"zh-Hans": "请求为已认证的工作区添加额度。需要可选的 billing:write 范围，并且必须是工作区成员。此操作本身不会扣款。如果有已保存的银行卡，工作区的每位所有者和管理员都会收到一封含一次性链接的邮件，由其中一人确认或拒绝扣款。如果没有，响应中会包含 checkout_url，由所有者或管理员使用新卡付款，该卡会保存以供之后充值。金额为 $5 至 $500。每个工作区最多有 5 个待处理的充值，每个充值 30 分钟后过期。",
+			"ar": "يطلب إضافة رصيد إلى مساحة العمل التي تمت المصادقة عليها. يتطلب النطاق الاختياري billing:write وعضوية مساحة العمل. لا يتم أي خصم هنا. عند وجود بطاقة محفوظة، يتلقى كل مالك ومسؤول في مساحة العمل رابطًا للاستخدام مرة واحدة عبر البريد الإلكتروني، ويؤكد أحدهم الخصم أو يرفضه. وإلا فتتضمن الاستجابة checkout_url يدفع فيه مالك أو مسؤول ببطاقة جديدة تُحفظ لعمليات الشحن اللاحقة. المبالغ من $5 إلى $500. يمكن أن يكون لمساحة العمل 5 عمليات شحن معلقة، وتنتهي صلاحية كل منها بعد 30 دقيقة."
+		},
+		"Optional idempotency key. Repeating it returns the same top-up instead of creating another. Same as the idempotency_key field.": {
+			"es": "Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra. Equivale al campo idempotency_key.",
+			"fr": "Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre. Équivaut au champ idempotency_key.",
+			"de": "Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen. Entspricht dem Feld idempotency_key.",
+			"pt-BR": "Chave de idempotência opcional. Repeti-la retorna a mesma recarga em vez de criar outra. Equivale ao campo idempotency_key.",
+			"hi": "वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है। idempotency_key फ़ील्ड के समान।",
+			"ja": "任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。idempotency_key フィールドと同じです。",
+			"zh-Hans": "可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。与 idempotency_key 字段相同。",
+			"ar": "مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى. مماثل للحقل idempotency_key."
+		},
+		"Existing top-up for this idempotency key": {
+			"es": "Recarga existente para esta clave de idempotencia",
+			"fr": "Recharge existante pour cette clé d’idempotence",
+			"de": "Vorhandene Aufladung für diesen Idempotenzschlüssel",
+			"pt-BR": "Recarga existente para esta chave de idempotência",
+			"hi": "इस idempotency key का मौजूदा टॉप-अप",
+			"ja": "この冪等キーの既存のチャージ",
+			"zh-Hans": "此幂等键对应的现有充值",
+			"ar": "عملية الشحن الحالية لمفتاح عدم التكرار هذا"
+		},
+		"Top-up created": {
+			"es": "Recarga creada",
+			"fr": "Recharge créée",
+			"de": "Aufladung erstellt",
+			"pt-BR": "Recarga criada",
+			"hi": "टॉप-अप बनाया गया",
+			"ja": "チャージを作成しました",
+			"zh-Hans": "已创建充值",
+			"ar": "تم إنشاء عملية الشحن"
+		},
+		"Invalid amount (invalid_amount, amount_below_minimum or amount_above_maximum)": {
+			"es": "Importe no válido (invalid_amount, amount_below_minimum o amount_above_maximum)",
+			"fr": "Montant non valide (invalid_amount, amount_below_minimum ou amount_above_maximum)",
+			"de": "Ungültiger Betrag (invalid_amount, amount_below_minimum oder amount_above_maximum)",
+			"pt-BR": "Valor inválido (invalid_amount, amount_below_minimum ou amount_above_maximum)",
+			"hi": "अमान्य राशि (invalid_amount, amount_below_minimum या amount_above_maximum)",
+			"ja": "無効な金額（invalid_amount、amount_below_minimum、amount_above_maximum）",
+			"zh-Hans": "金额无效（invalid_amount、amount_below_minimum 或 amount_above_maximum）",
+			"ar": "مبلغ غير صالح (invalid_amount أو amount_below_minimum أو amount_above_maximum)"
+		},
+		"Idempotency key reused for a different top-up, or no owner or admin can confirm it": {
+			"es": "La clave de idempotencia ya se usó para otra recarga, o ningún propietario ni administrador puede confirmarla",
+			"fr": "Clé d’idempotence déjà utilisée pour une autre recharge, ou aucun propriétaire ni administrateur ne peut la confirmer",
+			"de": "Idempotenzschlüssel wurde für eine andere Aufladung verwendet, oder kein Owner oder Admin kann sie bestätigen",
+			"pt-BR": "Chave de idempotência já usada para outra recarga, ou nenhum proprietário ou administrador pode confirmá-la",
+			"hi": "Idempotency key किसी दूसरे टॉप-अप के लिए इस्तेमाल हो चुकी है, या कोई owner या admin इसकी पुष्टि नहीं कर सकता",
+			"ja": "冪等キーが別のチャージで使用済みか、確認できるオーナーまたは管理者がいません",
+			"zh-Hans": "幂等键已用于其他充值，或没有可以确认的所有者或管理员",
+			"ar": "تم استخدام مفتاح عدم التكرار لعملية شحن أخرى، أو لا يوجد مالك أو مسؤول يمكنه تأكيدها"
+		},
+		"The workspace already has 5 pending top-ups": {
+			"es": "El espacio de trabajo ya tiene 5 recargas pendientes",
+			"fr": "L’espace de travail a déjà 5 recharges en attente",
+			"de": "Der Arbeitsbereich hat bereits 5 offene Aufladungen",
+			"pt-BR": "O espaço de trabalho já tem 5 recargas pendentes",
+			"hi": "वर्कस्पेस में पहले से 5 लंबित टॉप-अप हैं",
+			"ja": "ワークスペースにはすでに保留中のチャージが 5 件あります",
+			"zh-Hans": "该工作区已有 5 个待处理的充值",
+			"ar": "لدى مساحة العمل بالفعل 5 عمليات شحن معلقة"
+		},
+		"Card payments are not available": {
+			"es": "Los pagos con tarjeta no están disponibles",
+			"fr": "Les paiements par carte ne sont pas disponibles",
+			"de": "Kartenzahlungen sind nicht verfügbar",
+			"pt-BR": "Pagamentos com cartão não estão disponíveis",
+			"hi": "कार्ड भुगतान उपलब्ध नहीं हैं",
+			"ja": "カード決済は利用できません",
+			"zh-Hans": "银行卡付款不可用",
+			"ar": "الدفع بالبطاقة غير متاح"
+		},
+		"Get a credit top-up": {
+			"es": "Obtener una recarga de créditos",
+			"fr": "Obtenir une recharge de crédits",
+			"de": "Guthabenaufladung abrufen",
+			"pt-BR": "Obter uma recarga de créditos",
+			"hi": "क्रेडिट टॉप-अप प्राप्त करें",
+			"ja": "クレジットのチャージを取得",
+			"zh-Hans": "获取额度充值",
+			"ar": "الحصول على عملية شحن رصيد"
+		},
+		"Returns the status of a credit top-up in the authenticated workspace. Needs credits:read or billing:write. Poll until final is true. Declined, expired and failed top-ups carry a reason code; do not retry them automatically.": {
+			"es": "Devuelve el estado de una recarga de créditos del espacio de trabajo autenticado. Requiere credits:read o billing:write. Consulta hasta que final sea true. Las recargas rechazadas, caducadas o fallidas incluyen un código de motivo; no las reintentes automáticamente.",
+			"fr": "Renvoie l’état d’une recharge de crédits de l’espace de travail authentifié. Nécessite credits:read ou billing:write. Interrogez jusqu’à ce que final soit true. Les recharges refusées, expirées ou échouées comportent un code de motif ; ne les relancez pas automatiquement.",
+			"de": "Gibt den Status einer Guthabenaufladung im authentifizierten Arbeitsbereich zurück. Erfordert credits:read oder billing:write. Abfragen, bis final true ist. Abgelehnte, abgelaufene und fehlgeschlagene Aufladungen enthalten einen Grundcode; nicht automatisch wiederholen.",
+			"pt-BR": "Retorna o status de uma recarga de créditos no espaço de trabalho autenticado. Exige credits:read ou billing:write. Consulte até que final seja true. Recargas recusadas, expiradas ou com falha trazem um código de motivo; não as repita automaticamente.",
+			"hi": "प्रमाणित वर्कस्पेस के किसी क्रेडिट टॉप-अप की स्थिति लौटाता है। credits:read या billing:write आवश्यक है। final true होने तक पोल करें। अस्वीकार, समाप्त और विफल टॉप-अप में कारण कोड होता है; उन्हें अपने आप दोबारा न आज़माएँ।",
+			"ja": "認証済みワークスペースのクレジットチャージの状態を返します。credits:read または billing:write が必要です。final が true になるまでポーリングしてください。拒否・期限切れ・失敗したチャージには理由コードが付きます。自動で再試行しないでください。",
+			"zh-Hans": "返回已认证工作区中某个额度充值的状态。需要 credits:read 或 billing:write。轮询直到 final 为 true。被拒绝、已过期和失败的充值带有原因代码；不要自动重试。",
+			"ar": "يعرض حالة عملية شحن رصيد في مساحة العمل التي تمت المصادقة عليها. يتطلب credits:read أو billing:write. استعلم حتى تصبح قيمة final هي true. تحمل عمليات الشحن المرفوضة والمنتهية والفاشلة رمز سبب؛ لا تُعِد محاولتها تلقائيًا."
+		},
+		"Top-up ID.": {
+			"es": "ID de la recarga.",
+			"fr": "ID de la recharge.",
+			"de": "ID der Aufladung.",
+			"pt-BR": "ID da recarga.",
+			"hi": "टॉप-अप ID।",
+			"ja": "チャージ ID。",
+			"zh-Hans": "充值 ID。",
+			"ar": "معرّف عملية الشحن."
+		},
+		"Top-up status": {
+			"es": "Estado de la recarga",
+			"fr": "État de la recharge",
+			"de": "Status der Aufladung",
+			"pt-BR": "Status da recarga",
+			"hi": "टॉप-अप की स्थिति",
+			"ja": "チャージの状態",
+			"zh-Hans": "充值状态",
+			"ar": "حالة عملية الشحن"
+		},
+		"Invalid top-up ID": {
+			"es": "ID de recarga no válido",
+			"fr": "ID de recharge non valide",
+			"de": "Ungültige Aufladungs-ID",
+			"pt-BR": "ID de recarga inválido",
+			"hi": "अमान्य टॉप-अप ID",
+			"ja": "無効なチャージ ID",
+			"zh-Hans": "充值 ID 无效",
+			"ar": "معرّف عملية شحن غير صالح"
+		},
+		"Top-up not found": {
+			"es": "Recarga no encontrada",
+			"fr": "Recharge introuvable",
+			"de": "Aufladung nicht gefunden",
+			"pt-BR": "Recarga não encontrada",
+			"hi": "टॉप-अप नहीं मिला",
+			"ja": "チャージが見つかりません",
+			"zh-Hans": "未找到充值",
+			"ar": "لم يتم العثور على عملية الشحن"
+		},
+		"Amount in US dollars, with at most two decimal places.": {
+			"es": "Importe en dólares estadounidenses, con dos decimales como máximo.",
+			"fr": "Montant en dollars américains, avec au plus deux décimales.",
+			"de": "Betrag in US-Dollar mit höchstens zwei Nachkommastellen.",
+			"pt-BR": "Valor em dólares americanos, com no máximo duas casas decimais.",
+			"hi": "अमेरिकी डॉलर में राशि, अधिकतम दो दशमलव स्थानों तक।",
+			"ja": "米ドル建ての金額（小数点以下 2 桁まで）。",
+			"zh-Hans": "以美元计的金额，最多两位小数。",
+			"ar": "المبلغ بالدولار الأمريكي، بحد أقصى منزلتين عشريتين."
+		},
+		"Optional. Must match the authenticated workspace.": {
+			"es": "Opcional. Debe coincidir con el espacio de trabajo autenticado.",
+			"fr": "Facultatif. Doit correspondre à l’espace de travail authentifié.",
+			"de": "Optional. Muss dem authentifizierten Arbeitsbereich entsprechen.",
+			"pt-BR": "Opcional. Deve corresponder ao espaço de trabalho autenticado.",
+			"hi": "वैकल्पिक। प्रमाणित वर्कस्पेस से मेल खाना चाहिए।",
+			"ja": "任意。認証済みワークスペースと一致する必要があります。",
+			"zh-Hans": "可选。必须与已认证的工作区一致。",
+			"ar": "اختياري. يجب أن يطابق مساحة العمل التي تمت المصادقة عليها."
+		},
+		"Optional idempotency key. Repeating it returns the same top-up instead of creating another.": {
+			"es": "Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra.",
+			"fr": "Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre.",
+			"de": "Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen.",
+			"pt-BR": "Chave de idempotência opcional. Repeti-la retorna a mesma recarga em vez de criar outra.",
+			"hi": "वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है।",
+			"ja": "任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。",
+			"zh-Hans": "可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。",
+			"ar": "مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى."
+		},
+		"True once the status will not change (paid, declined, expired or failed). Stop polling then.": {
+			"es": "true cuando el estado ya no cambiará (paid, declined, expired o failed). Deja de consultar entonces.",
+			"fr": "true dès que l’état ne changera plus (paid, declined, expired ou failed). Arrêtez alors d’interroger.",
+			"de": "true, sobald sich der Status nicht mehr ändert (paid, declined, expired oder failed). Dann das Abfragen beenden.",
+			"pt-BR": "true quando o status não mudará mais (paid, declined, expired ou failed). Pare de consultar então.",
+			"hi": "स्थिति आगे न बदलने पर true (paid, declined, expired या failed)। तब पोल करना बंद करें।",
+			"ja": "状態がこれ以上変わらない場合に true（paid、declined、expired、failed）。その時点でポーリングを止めてください。",
+			"zh-Hans": "状态不会再改变时为 true（paid、declined、expired 或 failed）。此时停止轮询。",
+			"ar": "تكون true عندما لا تتغير الحالة بعد ذلك (paid أو declined أو expired أو failed). توقف عن الاستعلام حينها."
+		},
+		"Reason code for declined, expired and failed top-ups, for example declined, expired, card_declined or authentication_failed.": {
+			"es": "Código de motivo de las recargas rechazadas, caducadas o fallidas, por ejemplo declined, expired, card_declined o authentication_failed.",
+			"fr": "Code de motif des recharges refusées, expirées ou échouées, par exemple declined, expired, card_declined ou authentication_failed.",
+			"de": "Grundcode für abgelehnte, abgelaufene und fehlgeschlagene Aufladungen, zum Beispiel declined, expired, card_declined oder authentication_failed.",
+			"pt-BR": "Código de motivo para recargas recusadas, expiradas ou com falha, por exemplo declined, expired, card_declined ou authentication_failed.",
+			"hi": "अस्वीकार, समाप्त और विफल टॉप-अप का कारण कोड, जैसे declined, expired, card_declined या authentication_failed।",
+			"ja": "拒否・期限切れ・失敗したチャージの理由コード。例: declined、expired、card_declined、authentication_failed。",
+			"zh-Hans": "被拒绝、已过期和失败的充值的原因代码，例如 declined、expired、card_declined 或 authentication_failed。",
+			"ar": "رمز سبب عمليات الشحن المرفوضة والمنتهية والفاشلة، مثل declined أو expired أو card_declined أو authentication_failed."
+		},
+		"A sentence that explains what happens next.": {
+			"es": "Una frase que explica qué ocurre a continuación.",
+			"fr": "Une phrase qui explique la suite.",
+			"de": "Ein Satz, der erklärt, was als Nächstes passiert.",
+			"pt-BR": "Uma frase que explica o que acontece em seguida.",
+			"hi": "एक वाक्य जो बताता है कि आगे क्या होगा।",
+			"ja": "次に何が起こるかを説明する文。",
+			"zh-Hans": "一句说明接下来会发生什么的话。",
+			"ar": "جملة توضح ما سيحدث بعد ذلك."
+		},
+		"checkout when an owner or admin pays with a new card at checkout_url; saved_card when an owner or admin confirms a charge to the saved card by email.": {
+			"es": "checkout cuando un propietario o administrador paga con una tarjeta nueva en checkout_url; saved_card cuando un propietario o administrador confirma por correo un cargo a la tarjeta guardada.",
+			"fr": "checkout lorsqu’un propriétaire ou un administrateur paie avec une nouvelle carte sur checkout_url ; saved_card lorsqu’un propriétaire ou un administrateur confirme par e-mail un débit sur la carte enregistrée.",
+			"de": "checkout, wenn ein Owner oder Admin unter checkout_url mit einer neuen Karte bezahlt; saved_card, wenn ein Owner oder Admin eine Belastung der gespeicherten Karte per E-Mail bestätigt.",
+			"pt-BR": "checkout quando um proprietário ou administrador paga com um cartão novo em checkout_url; saved_card quando um proprietário ou administrador confirma por e-mail uma cobrança no cartão salvo.",
+			"hi": "checkout जब कोई owner या admin checkout_url पर नए कार्ड से भुगतान करता है; saved_card जब कोई owner या admin ईमेल से सहेजे गए कार्ड पर शुल्क की पुष्टि करता है।",
+			"ja": "checkout はオーナーまたは管理者が checkout_url で新しいカードで支払う場合、saved_card はオーナーまたは管理者が保存済みカードへの請求をメールで確認する場合です。",
+			"zh-Hans": "checkout 表示所有者或管理员在 checkout_url 用新卡付款；saved_card 表示所有者或管理员通过邮件确认对已保存银行卡的扣款。",
+			"ar": "checkout عندما يدفع مالك أو مسؤول ببطاقة جديدة على checkout_url؛ وsaved_card عندما يؤكد مالك أو مسؤول خصمًا من البطاقة المحفوظة عبر البريد الإلكتروني."
+		},
+		"Phaseo page where an owner or admin pays with a new card. Only in the response that created a pending checkout top-up.": {
+			"es": "Página de Phaseo donde un propietario o administrador paga con una tarjeta nueva. Solo aparece en la respuesta que creó una recarga checkout pendiente.",
+			"fr": "Page Phaseo où un propriétaire ou un administrateur paie avec une nouvelle carte. Présente uniquement dans la réponse qui a créé une recharge checkout en attente.",
+			"de": "Phaseo-Seite, auf der ein Owner oder Admin mit einer neuen Karte bezahlt. Nur in der Antwort, die eine offene checkout-Aufladung erstellt hat.",
+			"pt-BR": "Página da Phaseo onde um proprietário ou administrador paga com um cartão novo. Só aparece na resposta que criou uma recarga checkout pendente.",
+			"hi": "Phaseo पेज जहाँ कोई owner या admin नए कार्ड से भुगतान करता है। केवल उस जवाब में जिसने लंबित checkout टॉप-अप बनाया।",
+			"ja": "オーナーまたは管理者が新しいカードで支払う Phaseo のページ。保留中の checkout チャージを作成したレスポンスにのみ含まれます。",
+			"zh-Hans": "所有者或管理员用新卡付款的 Phaseo 页面。仅出现在创建待处理 checkout 充值的响应中。",
+			"ar": "صفحة Phaseo يدفع فيها مالك أو مسؤول ببطاقة جديدة. تظهر فقط في الاستجابة التي أنشأت عملية شحن checkout معلقة."
+		},
+		"Number of owners and admins emailed to confirm a saved_card top-up.": {
+			"es": "Número de propietarios y administradores a los que se envió un correo para confirmar una recarga saved_card.",
+			"fr": "Nombre de propriétaires et d’administrateurs à qui un e-mail a été envoyé pour confirmer une recharge saved_card.",
+			"de": "Anzahl der Owner und Admins, die per E-Mail gebeten wurden, eine saved_card-Aufladung zu bestätigen.",
+			"pt-BR": "Número de proprietários e administradores que receberam e-mail para confirmar uma recarga saved_card.",
+			"hi": "saved_card टॉप-अप की पुष्टि के लिए ईमेल किए गए owners और admins की संख्या।",
+			"ja": "saved_card チャージの確認メールを送ったオーナーと管理者の数。",
+			"zh-Hans": "收到邮件以确认 saved_card 充值的所有者和管理员人数。",
+			"ar": "عدد المالكين والمسؤولين الذين أُرسل إليهم بريد إلكتروني لتأكيد عملية شحن saved_card."
 		}
 	},
 	"GET /apps": {

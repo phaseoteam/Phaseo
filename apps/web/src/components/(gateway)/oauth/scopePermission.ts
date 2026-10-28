@@ -1,4 +1,4 @@
-export type ScopeAction = "identity" | "gateway" | "read" | "manage" | "delete" | "unknown";
+export type ScopeAction = "identity" | "gateway" | "billing" | "read" | "manage" | "delete" | "unknown";
 export type ScopeTone = "identity" | "read" | "write" | "delete";
 
 const SCOPE_RESOURCES = {
@@ -48,6 +48,9 @@ export function scopePermissionFor(scope: string): ScopePermission {
 	}
 	if (scope === "gateway:access") {
 		return { scope, action: "gateway", resourceKey: "gatewayCredits", tone: "write" };
+	}
+	if (scope === "billing:write") {
+		return { scope, action: "billing", tone: "write" };
 	}
 
 	const [rawResource, rawAction] = scope.split(":");

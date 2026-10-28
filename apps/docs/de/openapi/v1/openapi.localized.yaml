@@ -2823,6 +2823,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: Guthabenaufladung starten
+      description: Fordert Guthaben für den authentifizierten Arbeitsbereich an. Erfordert den optionalen Scope billing:write und die Mitgliedschaft im Arbeitsbereich. Hier wird nichts belastet. Mit gespeicherter Karte erhält jeder Owner und Admin des Arbeitsbereichs per E-Mail einen einmalig nutzbaren Link, und einer von ihnen bestätigt oder lehnt die Belastung ab. Ohne gespeicherte Karte enthält die Antwort eine checkout_url, unter der ein Owner oder Admin mit einer neuen Karte bezahlt, die für spätere Aufladungen gespeichert wird. Beträge von $5 bis $500. Ein Arbeitsbereich kann 5 offene Aufladungen haben, und jede läuft nach 30 Minuten ab.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen. Entspricht dem Feld idempotency_key.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: Vorhandene Aufladung für diesen Idempotenzschlüssel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: Aufladung erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Ungültiger Betrag (invalid_amount, amount_below_minimum oder amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Verboten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Idempotenzschlüssel wurde für eine andere Aufladung verwendet, oder kein Owner oder Admin kann sie bestätigen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Der Arbeitsbereich hat bereits 5 offene Aufladungen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Serverfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Kartenzahlungen sind nicht verfügbar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: Guthabenaufladung abrufen
+      description: Gibt den Status einer Guthabenaufladung im authentifizierten Arbeitsbereich zurück. Erfordert credits:read oder billing:write. Abfragen, bis final true ist. Abgelehnte, abgelaufene und fehlgeschlagene Aufladungen enthalten einen Grundcode; nicht automatisch wiederholen.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Aufladung.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status der Aufladung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Ungültige Aufladungs-ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Verboten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aufladung nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Serverfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /key:
     get:
       x-beta: true
@@ -20171,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: Betrag in US-Dollar mit höchstens zwei Nachkommastellen.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: Optional. Muss dem authentifizierten Arbeitsbereich entsprechen.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: true, sobald sich der Status nicht mehr ändert (paid, declined, expired oder failed). Dann das Abfragen beenden.
+        reason:
+          type: string
+          nullable: true
+          description: Grundcode für abgelehnte, abgelaufene und fehlgeschlagene Aufladungen, zum Beispiel declined, expired, card_declined oder authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: Ein Satz, der erklärt, was als Nächstes passiert.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout, wenn ein Owner oder Admin unter checkout_url mit einer neuen Karte bezahlt; saved_card, wenn ein Owner oder Admin eine Belastung der gespeicherten Karte per E-Mail bestätigt.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Phaseo-Seite, auf der ein Owner oder Admin mit einer neuen Karte bezahlt. Nur in der Antwort, die eine offene checkout-Aufladung erstellt hat.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: Anzahl der Owner und Admins, die per E-Mail gebeten wurden, eine saved_card-Aufladung zu bestätigen.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:

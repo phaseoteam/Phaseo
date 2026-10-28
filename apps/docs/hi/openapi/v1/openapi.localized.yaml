@@ -2823,6 +2823,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: क्रेडिट टॉप-अप शुरू करें
+      description: प्रमाणित वर्कस्पेस में क्रेडिट जोड़ने का अनुरोध करता है। वैकल्पिक billing:write स्कोप और वर्कस्पेस सदस्यता आवश्यक है। यहाँ कोई शुल्क नहीं लिया जाता। सहेजा गया कार्ड होने पर वर्कस्पेस के हर owner और admin को एक बार इस्तेमाल होने वाला लिंक ईमेल किया जाता है और उनमें से कोई एक शुल्क की पुष्टि करता है या उसे अस्वीकार करता है। कार्ड न होने पर जवाब में checkout_url होता है, जहाँ कोई owner या admin नए कार्ड से भुगतान करता है; वह कार्ड अगले टॉप-अप के लिए सहेज लिया जाता है। राशि $5 से $500 तक। एक वर्कस्पेस में 5 लंबित टॉप-अप हो सकते हैं, और हर एक 30 मिनट बाद समाप्त हो जाता है।
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है। idempotency_key फ़ील्ड के समान।
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: इस idempotency key का मौजूदा टॉप-अप
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: टॉप-अप बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: अमान्य राशि (invalid_amount, amount_below_minimum या amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: निषिद्ध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Idempotency key किसी दूसरे टॉप-अप के लिए इस्तेमाल हो चुकी है, या कोई owner या admin इसकी पुष्टि नहीं कर सकता
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: वर्कस्पेस में पहले से 5 लंबित टॉप-अप हैं
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: सर्वर त्रुटि
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: कार्ड भुगतान उपलब्ध नहीं हैं
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: क्रेडिट टॉप-अप प्राप्त करें
+      description: प्रमाणित वर्कस्पेस के किसी क्रेडिट टॉप-अप की स्थिति लौटाता है। credits:read या billing:write आवश्यक है। final true होने तक पोल करें। अस्वीकार, समाप्त और विफल टॉप-अप में कारण कोड होता है; उन्हें अपने आप दोबारा न आज़माएँ।
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: टॉप-अप ID।
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: टॉप-अप की स्थिति
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: अमान्य टॉप-अप ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: निषिद्ध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: टॉप-अप नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: सर्वर त्रुटि
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /key:
     get:
       x-beta: true
@@ -20171,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: अमेरिकी डॉलर में राशि, अधिकतम दो दशमलव स्थानों तक।
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: वैकल्पिक। प्रमाणित वर्कस्पेस से मेल खाना चाहिए।
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है।
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: स्थिति आगे न बदलने पर true (paid, declined, expired या failed)। तब पोल करना बंद करें।
+        reason:
+          type: string
+          nullable: true
+          description: अस्वीकार, समाप्त और विफल टॉप-अप का कारण कोड, जैसे declined, expired, card_declined या authentication_failed।
+          example: declined
+        message:
+          type: string
+          description: एक वाक्य जो बताता है कि आगे क्या होगा।
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout जब कोई owner या admin checkout_url पर नए कार्ड से भुगतान करता है; saved_card जब कोई owner या admin ईमेल से सहेजे गए कार्ड पर शुल्क की पुष्टि करता है।
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Phaseo पेज जहाँ कोई owner या admin नए कार्ड से भुगतान करता है। केवल उस जवाब में जिसने लंबित checkout टॉप-अप बनाया।
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: saved_card टॉप-अप की पुष्टि के लिए ईमेल किए गए owners और admins की संख्या।
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:

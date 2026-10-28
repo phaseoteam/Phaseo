@@ -10,6 +10,10 @@ describe("isAnalyticsBlockedPath", () => {
 	it("blocks the Slack agent's account links, whose token is in the query", () => {
 		expect(isAnalyticsBlockedPath("/slack/link")).toBe(true);
 		expect(isAnalyticsBlockedPath("/ja/slack/link")).toBe(true);
+		// Credit top-up review links carry their single-use token in the query.
+		expect(isAnalyticsBlockedPath("/settings/credits/topups/00000000-0000-4000-8000-0000000000aa")).toBe(true);
+		expect(isAnalyticsBlockedPath("/fr-FR/settings/credits/topups/00000000-0000-4000-8000-0000000000aa")).toBe(true);
+		expect(isAnalyticsBlockedPath("/settings/credits")).toBe(false);
 	});
 
 	it("leaves every other page alone", () => {

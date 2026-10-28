@@ -53,6 +53,8 @@ phaseo providers list --json
 phaseo pricing models --json
 phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json '<json>'
 phaseo credits get [--workspace <id>] --json
+phaseo credits add --amount <usd> [--workspace <id>] [--idempotency-key <key>] [--open] [--no-wait] --json   # needs billing:write; a person confirms
+phaseo credits topups get <id> --json
 phaseo logs list [--since <15m|1h|7d>] [--from <iso>] [--to <iso>] [--status <success|error|2xx|4xx|5xx|code>] [--provider <id>] [--model <id>] [--endpoint <path>] [--request-id <id>] [--key-id <id>] [--session-id <id>] [--error-code <code>] [--workspace <id>] [--limit <n>] [--offset <n>] --json
 phaseo logs get <request-id> [--workspace <id>] --json
 phaseo activity list [--workspace <id>] [--days <n>] [--limit <n>] [--offset <n>] --json

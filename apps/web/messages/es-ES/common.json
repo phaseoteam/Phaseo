@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "Permite que esta aplicación verifique quién inicia sesión.",
 			"gatewayPermissionLabel": "Usar AI Gateway con tus créditos",
 			"gatewayPermissionDescription": "Permite a la aplicación enviar solicitudes de modelos con cargo a los créditos del equipo seleccionado.",
+			"billingPermissionLabel": "Iniciar recargas de créditos",
+			"billingPermissionDescription": "Permite a la aplicación solicitar compras de créditos para el equipo seleccionado. Un propietario o administrador del equipo debe confirmar cada cargo por correo electrónico.",
 			"readPermissionLabel": "Leer: {resource}",
 			"readPermissionDescription": "Permite que esta aplicación lea: {resource}.",
 			"managePermissionLabel": "Gestionar: {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "Aplicaciones OAuth",
 					"description": "Configuración de clientes OAuth e integraciones."
+				},
+				"billing": {
+					"title": "Facturación",
+					"description": "Compras de créditos que un propietario o administrador del equipo confirma por correo electrónico."
 				}
 			},
 			"resources": {

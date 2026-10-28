@@ -2065,6 +2065,87 @@ public sealed class CreditsResponse
 
 }
 
+public sealed class CreditTopup
+{
+	[JsonPropertyName("amount_cents")]
+	public long AmountCents { get; set; }
+
+	[JsonPropertyName("amount_usd")]
+	public double AmountUsd { get; set; }
+
+	[JsonPropertyName("checkout_url")]
+	public string? CheckoutUrl { get; set; }
+
+	[JsonPropertyName("confirmation_recipients")]
+	public long? ConfirmationRecipients { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("currency")]
+	public string Currency { get; set; }
+
+	[JsonPropertyName("decided_at")]
+	public string? DecidedAt { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string ExpiresAt { get; set; }
+
+	[JsonPropertyName("final")]
+	public bool Final { get; set; }
+
+	[JsonPropertyName("flow")]
+	public string Flow { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("next_action")]
+	public string? NextAction { get; set; }
+
+	[JsonPropertyName("paid_at")]
+	public string? PaidAt { get; set; }
+
+	[JsonPropertyName("payment_method")]
+	public Dictionary<string, object>? PaymentMethod { get; set; }
+
+	[JsonPropertyName("reason")]
+	public string? Reason { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class CreditTopupCreateRequest
+{
+	[JsonPropertyName("amount_usd")]
+	public double AmountUsd { get; set; }
+
+	[JsonPropertyName("idempotency_key")]
+	public string? IdempotencyKey { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string? WorkspaceId { get; set; }
+
+}
+
+public sealed class CreditTopupResponse
+{
+	[JsonPropertyName("ok")]
+	public bool Ok { get; set; }
+
+	[JsonPropertyName("topup")]
+	public Dictionary<string, object> Topup { get; set; }
+
+}
+
 public sealed class DataContributionCategories
 {
 }

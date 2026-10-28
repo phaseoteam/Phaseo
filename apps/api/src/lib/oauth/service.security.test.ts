@@ -238,6 +238,17 @@ describe("OAuth refresh rotation security", () => {
 		expect(state.rpcCalls).toEqual([]);
 	});
 
+	it("refuses a refresh whose narrowed scopes are empty instead of storing an empty list", async () => {
+		state.rotationStatus = "rotated";
+		// A CLI session with models:read; a later login replaced the authorization with keys:delete only.
+		state.refreshRow = { ...state.refreshRow!, scopes: ["models:read"] };
+		state.authorizationRow = { id: "auth_1", scopes: ["keys:delete"], revoked_at: null };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).resolves.toEqual({ ok: false, reason: "invalid_grant" });
+		expect(state.rpcCalls).toEqual([]);
+	});
+
 	it("returns the new pair only after atomic rotation succeeds", async () => {
 		state.rotationStatus = "rotated";
 		const { rotateRefreshToken } = await import("./service");

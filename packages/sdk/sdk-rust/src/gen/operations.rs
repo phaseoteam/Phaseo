@@ -100,6 +100,11 @@ pub fn createClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createCreditTopup<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/credits/topups");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createDataContributionClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data-contribution/classifiers");
 	client.request("POST", &resolved_path, body)
@@ -507,6 +512,11 @@ pub fn getClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 
 pub fn getCredits<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/credits");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getCreditTopup<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/credits/topups/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
