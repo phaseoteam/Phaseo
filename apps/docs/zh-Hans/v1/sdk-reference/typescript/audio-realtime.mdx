@@ -1,0 +1,106 @@
+---
+icon: "phone"
+title: "实时语音"
+description: "使用 TypeScript SDK 通过 Phaseo 中继进行实时语音通话，并在通话结束时获得最终账单。"
+---
+
+<Note>
+实时语音目前处于 Beta 阶段，并按工作区控制访问权限。
+</Note>
+
+**方法**: `client.realtime.connect()` 会创建会话（`POST /v1/audio/realtime/sessions`），打开中继 WebSocket，并在中继发送 `relay.connected` 后完成。它会发送你的 API 密钥，因此只能在服务器上调用。Node.js 22 及更高版本提供全局 `WebSocket`；在更旧的运行时中，请安装 `ws` 包，或将你自己的构造函数作为 `webSocket` 传入。
+
+对于在浏览器中进行的通话，请在服务器上创建会话，然后在浏览器中使用 `connectRealtimeSession()` 打开套接字。它接收你的服务器创建的会话，其中包含仅对该会话有效的 `client_secret`，因此始终不需要 API 密钥。[浏览器通话](#browser-calls) 展示了这两部分。
+
+中继协议、警告和原因代码请参阅 [实时语音会话](/zh-Hans/v1/guides/realtime-voice)。
+
+### 示例
+
+```typescript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // The call is still billed. Fetch the final cost later with error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+如果要读取每一个事件，可以迭代会话。套接字关闭时迭代结束。
+
+```typescript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+<span id="browser-calls"></span>
+
+### 浏览器通话
+
+切勿在浏览器代码中放入 Phaseo API 密钥。在你的服务器上使用 `client.realtime.createSession()` 创建会话，它接受与 `connect()` 相同的 `model`、`voice`、`instructions`、`provider` 和 `metadata` 选项，然后将响应返回给你的页面：
+
+```typescript
+// Server route, for example POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+在浏览器中，使用 `connectRealtimeSession()` 加入会话。它会使用会话的 `client_secret` 打开中继，并返回与 `connect()` 相同的会话对象：
+
+```typescript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` 与 `connect()` 一样接受 `webSocket` 和 `connectTimeoutMs`，如果你使用区域端点，还可以传入 `baseUrl`（默认 `https://api.phaseo.app/v1`）。
+
+### 连接选项
+
+- `model`（必填）：实时模型 ID，例如 `openai/gpt-realtime-2`。
+- `voice`、`instructions`、`provider`、`metadata`：传递给创建会话请求。
+- `webSocket`：用来替代全局 WebSocket 的构造函数。
+- `connectTimeoutMs`：等待 `relay.connected` 的时长。默认 30 秒。
+
+### 会话
+
+| 成员 | 说明 |
+| --- | --- |
+| `id`, `info` | 会话 ID 和创建会话的响应，不含 `client_secret`。 |
+| `sendAudio(pcm16)` | 将 PCM16 音频的 `Uint8Array` 或 `ArrayBuffer` 作为 `client.audio` 发送。SDK 会对其进行 base64 编码。 |
+| `send(event)` | 以 JSON 形式发送任意事件，用于供应商特定的消息。 |
+| `on(type, listener)` | 订阅一种事件类型，或使用 `"*"` 订阅所有事件。返回一个取消订阅的函数。供应商事件会原样到达。 |
+| `onWarning(listener)`, `onEnded(listener)` | 用于 `session.warning` 和 `session.ended` 的类型化辅助方法。 |
+| `[Symbol.asyncIterator]` | 产出从迭代开始到套接字关闭期间的每一个事件。 |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | 发送 `session.end`，并以 `session.ended` 完成：包含 `reason`、`initiated_by`、`duration_seconds`、`usage`、`cost`、`billing_status`，以及未结算时的 `final_bill`。默认超时 60 秒。 |
+| `ended` | 无论通话以何种方式结束，都会得到 `session.ended` 的 Promise，包括由供应商或网关发起的结束。 |
+| `close()` | 关闭套接字而不等待账单。通话仍会计费。 |
+
+### 错误
+
+如果套接字关闭或 `end()` 超时，而没有收到 `session.ended`，`end()` 和 `ended` 会以 `RealtimeSessionClosedError` 拒绝。它包含 `sessionId`、`closeCode`、`closeReason` 和 `finalBill`，后者是在结算完成后返回最终成本的请求：`GET /v1/generations?id=realtime%3A<session_id>`。`realtimeFinalBill(sessionId)` 会构建相同的请求。
+
+如果中继在连接之前就结束了会话，或者 `relay.connected` 未能及时到达，`connect()` 会拒绝。
