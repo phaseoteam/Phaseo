@@ -266,7 +266,7 @@ Predefinições públicas usam `@publisher/support-triage@production`. Se `model
 
 Um rótulo é um nome, como `production` ou `staging`, que aponta para uma versão publicada. Os rótulos têm de 1 a 32 letras minúsculas, números, hifens ou sublinhados, começam com uma letra e não podem parecer um rótulo de versão (`v1`, `v2`).
 
-Em **Configurações -> Predefinições**, abra a predefinição e use **Apontar um rótulo** em uma versão para adicionar um rótulo ou movê-lo para lá. Quem criou a predefinição pode alterar os rótulos, assim como proprietários e administradores do espaço de trabalho quando a predefinição é compartilhada. Com uma [chave de API de gerenciamento](../developers/management-api-keys.mdx) que tenha `presets:write`:
+Em **Configurações -> Predefinições**, abra a predefinição. **Publicar**, ao lado de **Salvar rascunho**, salva suas alterações e as publica como a próxima versão. Abra **Versões e rótulos** para gerenciar os rótulos: cada rótulo tem um seletor de versão, então escolher outra versão move o rótulo e escolher uma anterior é uma reversão. Use **Adicionar rótulo** para criar um novo. Abra uma versão para ver os modelos e as mensagens do template e como eles diferem da versão padrão (a que as solicitações executam quando não fixam uma versão), e use **Executar** para testar essa versão com os valores de teste de **Template de prompt**. Quem criou a predefinição pode alterar os rótulos, assim como proprietários e administradores do espaço de trabalho quando a predefinição é compartilhada. Com uma [chave de API de gerenciamento](../developers/management-api-keys.mdx) que tenha `presets:write`:
 
 ```bash
 curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
