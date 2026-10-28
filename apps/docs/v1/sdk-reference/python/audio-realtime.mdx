@@ -6,7 +6,7 @@ description: "Run a realtime voice call through the Phaseo relay with the Python
 ---
 
 <Note>
-Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
+Realtime voice is in beta and access is gated per workspace.
 </Note>
 
 **Method**: `await client.realtime.connect()` on `AsyncPhaseo` creates the session (`POST /v1/audio/realtime/sessions`), opens the relay WebSocket and returns once the relay sends `relay.connected`. The realtime client is async only and needs the optional `websockets` package:

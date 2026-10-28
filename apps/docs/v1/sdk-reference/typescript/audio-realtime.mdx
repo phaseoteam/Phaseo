@@ -6,7 +6,7 @@ description: "Run a realtime voice call through the Phaseo relay with the TypeSc
 ---
 
 <Note>
-Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
+Realtime voice is in beta and access is gated per workspace.
 </Note>
 
 **Method**: `client.realtime.connect()` creates the session (`POST /v1/audio/realtime/sessions`), opens the relay WebSocket and resolves once the relay sends `relay.connected`. It sends your API key, so call it on your server only. Node.js 22 or later has a global `WebSocket`; on older runtimes, install the `ws` package or pass your own constructor as `webSocket`.
