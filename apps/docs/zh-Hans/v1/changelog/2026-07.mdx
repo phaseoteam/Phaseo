@@ -9,6 +9,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月31日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 工作区可在 **Settings -> Routing** 中创建动态路由，按请求字段分支、拆分流量并设置回退，再将其绑定到 API 密钥；请参阅[路由与回退](../guides/routing-and-fallbacks.mdx) ([#1314](https://github.com/phaseoteam/Phaseo/pull/1314))。
+- 日志分为 **Requests**、**Upstream Requests**、**Jobs** 和 **Sessions**，每一行都会在侧边面板中打开详情 ([#1314](https://github.com/phaseoteam/Phaseo/pull/1314))。
+- 支持、切换工作区和密钥管理等下拉菜单操作重新响应点击；此前其中一些点击后没有反应 ([#1378](https://github.com/phaseoteam/Phaseo/pull/1378))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 模型 ID 可以指定提供商，例如 `baseten:thinking-machines/inkling-small`，使请求只发送到该提供商且不回退；请参阅[指定提供商的模型 ID](../guides/provider-qualified-models.mdx) ([#1369](https://github.com/phaseoteam/Phaseo/pull/1369))。
+- Phaseo MCP 服务器支持 MCP 协议版本 `2026-07-28`，并继续接受旧版本的客户端 ([#1341](https://github.com/phaseoteam/Phaseo/pull/1341))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -25,6 +44,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月30日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Models 页面不再向大多数访问者显示 "Something went wrong"，并重新列出即将推出和已停用的模型及其状态计数 ([#1345](https://github.com/phaseoteam/Phaseo/pull/1345), [#1347](https://github.com/phaseoteam/Phaseo/pull/1347))。
+- Chat 的模型选择器显示每个模型的开发方，例如 Kimi K3 显示 Moonshot AI，而不是第一个提供该模型的提供商 ([#1349](https://github.com/phaseoteam/Phaseo/pull/1349))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `service_tier` 接受 `"fast"` 作为 `"priority"` 的别名，两者选择相同的 Priority 路由和定价；请参阅[服务层级](../guides/service-tiers.mdx) ([#1359](https://github.com/phaseoteam/Phaseo/pull/1359), [#1357](https://github.com/phaseoteam/Phaseo/pull/1357))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -40,7 +76,84 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年7月27日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **测试版：** Fusion 现已成为 Chat 房间选择器中的一个房间，Chat 也在控制台内、网站主页眉下方打开 ([#1313](https://github.com/phaseoteam/Phaseo/pull/1313))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/chat/completions` 接受 `stream_options` 字段，不再拒绝该请求 ([#1300](https://github.com/phaseoteam/Phaseo/pull/1300))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月26日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 价格计算器可并排比较多个模型（包括长上下文费率），并将所选内容保存在页面 URL 中 ([#1299](https://github.com/phaseoteam/Phaseo/pull/1299))。
+- BYOK 请求每月前 100 万次免费，之后收取 2.5% 的服务费，详见定价页面 ([#1299](https://github.com/phaseoteam/Phaseo/pull/1299))。
+- 模型页面链接到同一系列中的上一个和下一个模型以及模型的许可证，系列页面按从新到旧列出版本 ([#1266](https://github.com/phaseoteam/Phaseo/pull/1266))。
+- 模型迁移指南按目标模型命名，并按从新到旧排列，新增 Claude Opus 5 指南；请参阅[模型迁移](../model-migrations/index.mdx) ([#1273](https://github.com/phaseoteam/Phaseo/pull/1273))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Agent SDK 软件包现已发布 Python、Go、C#、PHP 和 Ruby 版本，与 TypeScript `0.2.0` 一起提供工具审批、停止条件和可取消的流式传输；请参阅[Agent SDK 概览](../sdk-reference/agent-sdk/overview.mdx) ([#1263](https://github.com/phaseoteam/Phaseo/pull/1263), [#1269](https://github.com/phaseoteam/Phaseo/pull/1269), [#1259](https://github.com/phaseoteam/Phaseo/pull/1259))。
+- Rust 客户端 `phaseo` 和同步 Rust Agent SDK `phaseo-agent` `0.1.0` 已在 crates.io 发布；请参阅[Rust SDK](../sdk-reference/rust/overview.mdx) ([#1287](https://github.com/phaseoteam/Phaseo/pull/1287), [#1289](https://github.com/phaseoteam/Phaseo/pull/1289))。
+- `GET /v1/models` 返回一个 `variants` 对象，关联模型的标准版和 `:free` 版，Models 页面分别列出每个版本 ([#1298](https://github.com/phaseoteam/Phaseo/pull/1298))。
+- Phaseo MCP 服务器提供十个只读工具，涵盖模型、提供商、费用、额度、用量和请求健康状况，并且只申请这些工具需要的七个范围；请参阅[CLI 和 MCP](../developers/cli-and-mcp.mdx) ([#1290](https://github.com/phaseoteam/Phaseo/pull/1290), [#1292](https://github.com/phaseoteam/Phaseo/pull/1292), [#1297](https://github.com/phaseoteam/Phaseo/pull/1297))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月25日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 指向尚不存在的模型、组织、国家或提供商的链接会打开“未找到”页面，而不是服务器错误 ([#1234](https://github.com/phaseoteam/Phaseo/pull/1234), [#1240](https://github.com/phaseoteam/Phaseo/pull/1240))。
+- 已移除 Web 和 YouTube 更新页面；Model Updates 和发布日历仍然保留 ([#1235](https://github.com/phaseoteam/Phaseo/pull/1235))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 流式 OpenAI Chat Completions 请求会记录并计费其令牌用量；此前许多请求被记录为零令牌 ([#1225](https://github.com/phaseoteam/Phaseo/pull/1225))。
+- Phaseo CLI 的分析和价格命令重新返回数据，读取命令在通过 OAuth 登录时也可使用 ([#1245](https://github.com/phaseoteam/Phaseo/pull/1245), [#1244](https://github.com/phaseoteam/Phaseo/pull/1244))。
+- TypeScript SDK `2.1.1` 安装时不再运行交互式 postinstall 步骤，该步骤可能导致全新安装失败 ([#1251](https://github.com/phaseoteam/Phaseo/pull/1251), [#1249](https://github.com/phaseoteam/Phaseo/pull/1249))。
+
+</div>
+
+</Update>
+
 <Update label="2026年7月24日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 对于有高峰和非高峰定价的模型，模型页面上的提供商表格显示当前适用的费率，另一时段的费率列在下方 ([#1120](https://github.com/phaseoteam/Phaseo/pull/1120))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -56,6 +169,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月23日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面在 **Providers** 旁新增提供商状态和隐私筛选，并默认隐藏外部提供商，除非你将其打开 ([#1205](https://github.com/phaseoteam/Phaseo/pull/1205))。
+- Models 页面上的模型卡片重新显示七天用量，按模型类型以令牌、图片、视频小时数、音频秒数或请求数计算 ([#1210](https://github.com/phaseoteam/Phaseo/pull/1210))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -66,7 +188,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年7月22日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 会显示 Gemini 3.6 Flash 和 Gemini 3.5 Flash-Lite 的服务器工具调用，例如日期时间工具 ([#1198](https://github.com/phaseoteam/Phaseo/pull/1198), [#1199](https://github.com/phaseoteam/Phaseo/pull/1199), [#1196](https://github.com/phaseoteam/Phaseo/pull/1196))。
+
+</div>
+
+</Update>
+
 <Update label="2026年7月21日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 发送到 Gemini 3.6 Flash 和 Gemini 3.5 Flash-Lite 的带工具请求不再以 `502` 失败，Google 返回的空响应会回退到其他提供商 ([#1182](https://github.com/phaseoteam/Phaseo/pull/1182), [#1190](https://github.com/phaseoteam/Phaseo/pull/1190))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -96,7 +238,30 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年7月17日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Phaseo MCP 服务器支持 OAuth 登录，包括面向浏览器端 MCP 客户端的动态客户端注册和令牌交换；请参阅[CLI 和 MCP](../developers/cli-and-mcp.mdx) ([#1123](https://github.com/phaseoteam/Phaseo/pull/1123), [#1126](https://github.com/phaseoteam/Phaseo/pull/1126), [#1128](https://github.com/phaseoteam/Phaseo/pull/1128))。
+
+</div>
+
+</Update>
+
 <Update label="2026年7月16日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 所有账户都可以在账户设置中添加通行密钥并用其登录；添加或删除通行密钥时需要再次验证身份 ([#1041](https://github.com/phaseoteam/Phaseo/pull/1041), [#1046](https://github.com/phaseoteam/Phaseo/pull/1046))。
+- 在新的 Chat 页面上选择模型即可开始聊天；此前选择器会保持打开，输入框也保持禁用 ([#1044](https://github.com/phaseoteam/Phaseo/pull/1044))。
+- Chat 的 **Personalization** 设置可选择新聊天是从空白开始，还是保留已选的模型 ([#1047](https://github.com/phaseoteam/Phaseo/pull/1047))。
+- 当模型还没有路由流量时，模型定价表会显示提供商的标价，而不是空白值 ([#1037](https://github.com/phaseoteam/Phaseo/pull/1037))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -112,6 +277,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月15日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 第三方应用可以使用带 PKCE 的 OAuth 获取限定范围的网关密钥，费用计入用户的工作区，但前提是用户授予了 `gateway:access` ([#1028](https://github.com/phaseoteam/Phaseo/pull/1028), [#1019](https://github.com/phaseoteam/Phaseo/pull/1019), [#1032](https://github.com/phaseoteam/Phaseo/pull/1032))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -126,7 +299,85 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年7月14日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 管理 API 密钥使用 `phaseo_v1_mk_` 前缀，并且需要明确的范围，提供 **Read**、**Write** 和 **All** 模板；请参阅[管理 API 密钥](../developers/management-api-keys.mdx) ([#969](https://github.com/phaseoteam/Phaseo/pull/969))。
+- Phaseo CLI 新增 `phaseo logs list` 和 `phaseo logs get <request-id>`，用于查看已脱敏的请求日志，并默认使用 `https://api.phaseo.app` ([#972](https://github.com/phaseoteam/Phaseo/pull/972))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月13日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面会打开提供商面板，按模态分组显示价格（包括图片、视频、嵌入和 OCR 计量），并比较各服务层级 ([#1000](https://github.com/phaseoteam/Phaseo/pull/1000), [#1001](https://github.com/phaseoteam/Phaseo/pull/1001))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Models 页面提供卡片和表格两种视图，筛选条件相同，包括服务层级、上下文长度和参数量；旧的 Collections 链接会重定向到对应的筛选 ([#971](https://github.com/phaseoteam/Phaseo/pull/971))。
+- Rankings 页面新增固定的模态选择器和排行榜各部分的目录 ([#967](https://github.com/phaseoteam/Phaseo/pull/967))。
+- Chat 会渲染回复中的 LaTeX 公式，包括行内公式和独立公式块 ([#965](https://github.com/phaseoteam/Phaseo/pull/965))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月10日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 流式回复失败时，Chat 会显示错误，而不是保存一条空白回复 ([#955](https://github.com/phaseoteam/Phaseo/pull/955), [#952](https://github.com/phaseoteam/Phaseo/pull/952))。
+- Chat 会为 OpenAI GPT-5.6 模型显示详细的推理摘要 ([#963](https://github.com/phaseoteam/Phaseo/pull/963))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Responses 和 Chat Completions 接受 `reasoning.effort: "max"` 和 `reasoning.mode` 字段，后者会以 Pro 模式将 GPT-5.6 `-pro` 模型发送给 OpenAI ([#950](https://github.com/phaseoteam/Phaseo/pull/950))。
+- 发往 OpenAI 的请求会带上 Phaseo 根据你的工作区设置的 `safety_identifier`；请求中发送的任何值都会被忽略 ([#950](https://github.com/phaseoteam/Phaseo/pull/950))。
+
+</div>
+
+</Update>
+
 <Update label="2026年7月9日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- AI Stats 现已更名为 Phaseo：网站、Chat、控制台和文档在 phaseo.app 上使用新名称 ([#913](https://github.com/phaseoteam/Phaseo/pull/913))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** SDK 软件包、导入路径和环境变量改用 Phaseo 名称，例如 `@phaseo/sdk` 和 `PHASEO_API_KEY`，不保留 AI Stats 别名；升级时请相应更新 ([#913](https://github.com/phaseoteam/Phaseo/pull/913))。
+- **已弃用：** 旧 AI Stats 格式的 API 密钥将于 2027 年 1 月 1 日停止使用；新密钥使用 `phaseo_` 前缀，请在此之前替换旧密钥 ([#913](https://github.com/phaseoteam/Phaseo/pull/913))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -163,6 +414,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月7日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 创建或轮换 API 密钥后，可以将其复制为 `.env` 文件或应用配置片段、保存到 1Password，或发送一条测试请求 ([#812](https://github.com/phaseoteam/Phaseo/pull/812))。
+- Chat 输入框可以录制音频并附加到消息中，账户菜单会显示你的额度余额 ([#922](https://github.com/phaseoteam/Phaseo/pull/922))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -183,6 +443,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年7月6日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 价格计算器新增 **Pricing Time (HH:MM UTC)** 字段，可为有高峰和非高峰定价的模型显示该时间适用的费率 ([#864](https://github.com/phaseoteam/Phaseo/pull/864))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -190,6 +458,52 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - [OpenAI: GPT Realtime 2.1](https://phaseo.app/models/openai/gpt-realtime-2.1)
 - [OpenAI: GPT Realtime 2.1 Mini](https://phaseo.app/models/openai/gpt-realtime-2.1-mini)
 - [Tencent Hunyuan: Hy3](https://phaseo.app/models/tencent/hy3)
+
+</div>
+
+</Update>
+
+<Update label="2026年7月5日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 发送到 Claude Sonnet 5 的请求使用 Anthropic 的自适应思考，不再发送该模型会拒绝的思考预算或采样参数 ([#901](https://github.com/phaseoteam/Phaseo/pull/901))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 新增键盘快捷键及其参考对话框、回复生成期间所发提示的队列，以及批量编辑聊天 ([#896](https://github.com/phaseoteam/Phaseo/pull/896))。
+
+</div>
+
+</Update>
+
+<Update label="2026年7月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 重新支持为对话添加标签，并可按标签筛选侧边栏；标签保存在你的浏览器中 ([#894](https://github.com/phaseoteam/Phaseo/pull/894))。
+- Chat 按发生顺序显示推理、工具调用和回答，每个工具调用的输入和输出都可以展开 ([#895](https://github.com/phaseoteam/Phaseo/pull/895), [#919](https://github.com/phaseoteam/Phaseo/pull/919))。
+- 在 Android 上，Chat 输入框会显示在屏幕键盘上方，而不会被键盘遮住 ([#891](https://github.com/phaseoteam/Phaseo/pull/891))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 服务器工具 `phaseo:datetime` 可以在一次调用中返回多个时区的当前时间；请参阅[日期时间服务器工具](../guides/server-tools/datetime.mdx) ([#895](https://github.com/phaseoteam/Phaseo/pull/895))。
 
 </div>
 
