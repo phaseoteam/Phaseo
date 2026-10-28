@@ -9,6 +9,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="31 مايو 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** تختار طلبات النص المستوى عبر `service_tier` فقط؛ استبدل `speed: "fast"` بـ `service_tier: "priority"`، وأصبحت الطلبات المتزامنة التي تستخدم `service_tier: "batch"` تُرجع خطأ تحقق؛ راجع [مستويات الخدمة](../guides/service-tiers.mdx) ([#565](https://github.com/phaseoteam/Phaseo/pull/565)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -37,6 +45,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="29 مايو 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض أدلة البدء السريع في صفحات النماذج نقاط النهاية التي يدعمها النموذج مع طريقة HTTP لكل منها، واختيار إحداها يحدّث مثال الشيفرة ([#521](https://github.com/phaseoteam/Phaseo/pull/521)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- أصبحت الطلبات التي تستخدم `service_tier: "priority"` تُوجَّه فقط إلى المزوّدين الذين يدعمون هذا المستوى، وتخدم Venice طلبات الأولوية لـ Claude Opus 4.8 بمعرّف النموذج نفسه؛ راجع [مستويات الخدمة](../guides/service-tiers.mdx) ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -53,8 +77,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- تعرض محددات الأسعار الآن إصدارات Qwen 3.7 Max بوضوح أكبر، ما يقلل الالتباس بين المسارات التجريبية والمؤرخة والحالية ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- حُدّثت علامة Anthropic لدى AWS لتمييز مسارات Bedrock وClaude Platform بسهولة أكبر في قوائم المزوّدين ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+- تُبقي لوحات أسعار النماذج محدد الخطة ظاهرًا عندما يكون لدى المزوّد خطة نشطة واحدة فقط، مثل تسعير الدفعات فقط ([#515](https://github.com/phaseoteam/Phaseo/pull/515)).
+- تعرض مسارات Anthropic on AWS شعار AWS وأسماء مزوّدين أوضح في أسعار النماذج وقوائم المزوّدين ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526)).
 
 </div>
 
@@ -132,11 +156,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="19 مايو 2026">
 
-<div data-changelog-category="api">
+<div data-changelog-category="product">
 
-<p className="changelog-category">API وحزم SDK</p>
+<p className="changelog-category">المنتج</p>
 
-- أضاف إطلاق TypeScript Agent SDK حزمة مخصصة لبناء تطبيقات الوكلاء على Phaseo Gateway ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). راجع [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+- تعرض **Models** الموجّه المجاني، وتبيّن صفحته النماذج المجانية التي يمكنه التوجيه إليها والاستخدام الأخير؛ راجع [ابدأ بالموجّه المجاني](../cookbook/free-router-first-deploy.mdx) ([#495](https://github.com/phaseoteam/Phaseo/pull/495)).
 
 </div>
 
@@ -169,23 +193,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="16 مايو 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">المنتج</p>
-
-- حُسّنت حالات تفعيل المزوّدين وفلاتر المناطق لتسهيل التعرف على المسارات غير المتاحة قبل إرسال الطلب ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- أصبح سلوك الموجّه المجاني أكثر قابلية للتوقع في التسعير واختيار المزوّدين وتوجيه البوابة ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
-<div data-changelog-category="api">
-
-<p className="changelog-category">API وحزم SDK</p>
-
-- أُطلقت وثائق وأمثلة Agent SDK مع أول إرشادات عامة لسير العمل حول الحلقات المستمرة والأدوات المتوازية وتنسيق الوكلاء ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -210,14 +217,48 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="9 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يمكن لـ Chat إعادة محاولة توليد صورة أو فيديو فشل، بالموجّه نفسه والنموذج نفسه وإعداد الدردشة المؤقتة نفسه ([#479](https://github.com/phaseoteam/Phaseo/pull/479)).
+
+</div>
+
+</Update>
+
+<Update label="8 مايو 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تضيف حزم SDK لـ TypeScript وPython وGo وC# وJava وPHP وRuby `2.0.4` إلى أنواعها `session_id` وتشخيصات الأخطاء المنظّمة وحقول توفر النماذج؛ راجع [ملاحظات الإصدار](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) ([#476](https://github.com/phaseoteam/Phaseo/pull/476)).
+
+</div>
+
+</Update>
+
 <Update label="7 مايو 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">المنتج</p>
 
-- وُسّعت ملخصات توفر المزوّدين والأسعار لتوضيح اختلاف المسارات والفئات والتكاليف في صفحات النماذج ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- أصبح سعر الدقيقة في الوقت الفعلي ظاهرًا في المنتج، ما يسهّل مقارنة نماذج الصوت والجلسات المباشرة بالنماذج المسعّرة بالرموز ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- تعرض بطاقات الأسعار المنبثقة في **Models** أسعار الصور والفيديو والنص المتدرج، مجمّعة حسب الجودة والدقة والمدة والصوت وحجم السياق ([#474](https://github.com/phaseoteam/Phaseo/pull/474)).
+- تعرض **Models** نماذج الصوت المحتسبة بالدقيقة، مثل `whisper-1`، بسعرها لكل دقيقة، مثل $0.006 للدقيقة، بدلًا من سعر تقريبي لكل رمز ([#477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- يضيف رأس صفحات النماذج عنصر تحكم بمعرّف النموذج يبدّل بين الأسماء البديلة للنموذج وينسخ المعرّف المختار ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+- أصبحت أعداد عوامل التصفية في الشريط الجانبي لـ **Models** تتحدّث وفق عوامل التصفية الأخرى المختارة ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** نقاط النهاية `/v1/videos` و`/v1/batches` و`/v1/files` و`/v1/music/generations` معطّلة مؤقتًا وتُرجع `501 not_implemented`؛ أوقف استدعاءها حتى يُعاد تفعيلها ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
 
 </div>
 
@@ -238,12 +279,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="6 مايو 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">المنتج</p>
+<p className="changelog-category">API وحزم SDK</p>
 
-- وُسّع دعم إنشاء الفيديو ودورة حياة المهام غير المتزامنة، مع توضيح أفضل لحالة أعمال المزوّدين طويلة التشغيل ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- تعرض واجهات البوابة الآن مزيدًا من حالات الحجز والإكمال والفشل لتسهيل تصحيح طلبات الوسائط غير المتزامنة ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+- تقبل نقطة نهاية سرد النماذج `availability=all` لتضمين النماذج القادمة وغير النشطة، ويُرجع كل مزوّد `availability_status` و`availability_reason`؛ راجع [سرد النماذج](../api-reference/endpoint/models.mdx) ([#466](https://github.com/phaseoteam/Phaseo/pull/466)).
+- تتضمن استجابات الأخطاء `failed_providers` و`routing_diagnostics` و`provider_failure_diagnostics`، وهي تشير إلى أسباب مثل غياب بيانات الاعتماد أو القيود الإقليمية؛ راجع [الأخطاء وتصحيحها](../api-reference/errors.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- تُرجع نقطة نهاية جلب التوليد `replay_request` و`replay_supported`، لإعادة إرسال طلب مسجّل إلى نقطة نهايته الأصلية؛ راجع [جلب توليد](../api-reference/endpoint/generation.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
 
 </div>
 
@@ -273,19 +315,55 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
-<Update label="1 مايو 2026">
+<Update label="4 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تقسّم **Settings -> Usage** النشاط إلى طرق العرض **Logs** و**Jobs** و**Sessions**، مع تحديث مباشر وحفظ عوامل التصفية والفترات الزمنية في عنوان URL ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- تعرض ساحة تجربة النماذج **Retry** و**Delete** على عمليات توليد الصور والفيديو الفاشلة، ويعيد **Retry** استخدام الموجّه والنموذج نفسيهما ([#465](https://github.com/phaseoteam/Phaseo/pull/465)).
+
+</div>
 
 <div data-changelog-category="api">
 
 <p className="changelog-category">API وحزم SDK</p>
 
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
+- تقبل طلبات Chat Completions وResponses الحقل `session_id`، الذي يجمع الطلبات المرتبطة في جلسة واحدة في سجلات الاستخدام ([#463](https://github.com/phaseoteam/Phaseo/pull/463)).
+
+</div>
+
+</Update>
+
+<Update label="2 مايو 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- عادت سياسات مساحة العمل التي تحظر نماذج أو مزوّدين إلى التطبيق، فتُرفض الطلبات المحظورة قبل التوجيه ([#444](https://github.com/phaseoteam/Phaseo/pull/444)).
+
+</div>
+
+</Update>
+
+<Update label="1 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تضيف ساحة تجربة النماذج وضعي **TTS** و**Music** لنماذج تحويل النص إلى كلام وتوليد الموسيقى ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+- لم تعد بطاقات النماذج في **Models** تعرض **Free** للنماذج المدفوعة، وأصبح عدد عامل تصفية النماذج القادمة مطابقًا للنماذج المعروضة ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تضيف حزم SDK لـ TypeScript وPython وGo وC# وJava وPHP وRuby `2.0.3` أحدث معرّفات النماذج والمقاييس المعيارية إلى قوائمها المحددة الأنواع؛ راجع [ملاحظات الإصدار](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) ([#439](https://github.com/phaseoteam/Phaseo/pull/439)).
 
 </div>
 

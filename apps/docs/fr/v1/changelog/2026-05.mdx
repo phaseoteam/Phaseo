@@ -9,6 +9,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="31 mai 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- **Changement incompatible :** Les requêtes texte choisissent le niveau uniquement avec `service_tier` ; remplacez `speed: "fast"` par `service_tier: "priority"`, et les requêtes synchrones avec `service_tier: "batch"` renvoient désormais une erreur de validation ; voir [Niveaux de service](../guides/service-tiers.mdx) ([#565](https://github.com/phaseoteam/Phaseo/pull/565)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modèles</p>
@@ -37,6 +45,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="29 mai 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Les guides de démarrage des pages de modèles listent les endpoints pris en charge par chaque modèle avec leur méthode HTTP, et en choisir un met à jour le code d'exemple ([#521](https://github.com/phaseoteam/Phaseo/pull/521)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les requêtes avec `service_tier: "priority"` ne sont plus routées que vers les fournisseurs qui prennent en charge ce niveau, et Venice traite les requêtes prioritaires Claude Opus 4.8 sous le même ID de modèle ; voir [Niveaux de service](../guides/service-tiers.mdx) ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modèles</p>
@@ -53,8 +77,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produit</p>
 
-- Les sélecteurs de tarifs présentent plus clairement les variantes Qwen 3.7 Max et distinguent mieux les routes préliminaires, datées et actuelles ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- La marque des fournisseurs Anthropic sur AWS a été revue pour mieux distinguer Bedrock et Claude Platform dans les listes de fournisseurs ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+- Les panneaux de tarifs des modèles gardent le sélecteur de forfait visible quand un fournisseur n'a qu'un seul forfait actif, comme une tarification batch uniquement ([#515](https://github.com/phaseoteam/Phaseo/pull/515)).
+- Les routes Anthropic sur AWS affichent le logo AWS et des noms de fournisseur plus clairs dans les tarifs des modèles et les listes de fournisseurs ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526)).
 
 </div>
 
@@ -132,11 +156,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="19 mai 2026">
 
-<div data-changelog-category="api">
+<div data-changelog-category="product">
 
-<p className="changelog-category">API et SDK</p>
+<p className="changelog-category">Produit</p>
 
-- Le lancement du SDK Agent TypeScript a ajouté un package dédié à la création d’applications agentiques avec Phaseo Gateway ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). Voir [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+- **Models** liste le routeur gratuit, et sa page indique vers quels modèles gratuits il peut router et l'usage récent ; voir [Démarrer avec le routeur gratuit](../cookbook/free-router-first-deploy.mdx) ([#495](https://github.com/phaseoteam/Phaseo/pull/495)).
 
 </div>
 
@@ -169,23 +193,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="16 mai 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">Produit</p>
-
-- Les états d’activation des fournisseurs et les filtres régionaux ont été affinés pour mieux repérer les routes indisponibles avant l’envoi d’une requête ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- Le comportement du routeur gratuit est désormais plus prévisible pour les tarifs, le choix des fournisseurs et le routage de la passerelle ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
-<div data-changelog-category="api">
-
-<p className="changelog-category">API et SDK</p>
-
-- La documentation et les exemples du SDK Agent ont été publiés, avec les premiers guides publics sur les boucles durables, les outils parallèles et l’orchestration d’agents ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modèles</p>
@@ -210,14 +217,48 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="9 mai 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Chat peut relancer une génération d'image ou de vidéo échouée avec le même prompt, le même modèle et le même réglage de chat temporaire ([#479](https://github.com/phaseoteam/Phaseo/pull/479)).
+
+</div>
+
+</Update>
+
+<Update label="8 mai 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les SDK TypeScript, Python, Go, C#, Java, PHP et Ruby `2.0.4` ajoutent à leurs types `session_id`, les diagnostics d'erreur structurés et les champs de disponibilité des modèles ; voir les [notes de version](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) ([#476](https://github.com/phaseoteam/Phaseo/pull/476)).
+
+</div>
+
+</Update>
+
 <Update label="7 mai 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">Produit</p>
 
-- Les informations sur la disponibilité des fournisseurs et les tarifs ont été enrichies pour mieux présenter les routes, les niveaux et les coûts sur les pages de modèles ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- Le produit affiche désormais le tarif à la minute en temps réel, ce qui facilite la comparaison des modèles audio et des sessions en direct avec ceux facturés au jeton ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- Les infobulles de tarifs de **Models** affichent les prix image, vidéo et texte par paliers, regroupés par qualité, résolution, durée, audio et taille de contexte ([#474](https://github.com/phaseoteam/Phaseo/pull/474)).
+- **Models** affiche les modèles audio facturés à la minute, comme `whisper-1`, à leur prix par minute, par exemple $0.006 par minute, au lieu d'un prix par token arrondi ([#477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- L'en-tête des pages de modèles ajoute un contrôle d'ID de modèle qui passe d'un alias du modèle à l'autre et copie l'ID choisi ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+- Les compteurs des filtres de la barre latérale de **Models** se mettent désormais à jour selon les autres filtres sélectionnés ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- **Changement incompatible :** `/v1/videos`, `/v1/batches`, `/v1/files` et `/v1/music/generations` sont temporairement désactivés et renvoient `501 not_implemented` ; suspendez les appels à ces endpoints jusqu'à leur réactivation ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
 
 </div>
 
@@ -238,12 +279,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="6 mai 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">Produit</p>
+<p className="changelog-category">API et SDK</p>
 
-- La prise en charge de la génération vidéo et du cycle de vie des tâches asynchrones a été élargie, avec une gestion plus claire de l’état des opérations longues des fournisseurs ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- Les interfaces de la passerelle exposent désormais davantage d’états de réservation, de fin et d’échec pour faciliter le débogage des requêtes multimédias asynchrones ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+- L'endpoint de liste des modèles accepte `availability=all` pour inclure les modèles à venir et inactifs, et chaque fournisseur renvoie `availability_status` et `availability_reason` ; voir [Lister les modèles](../api-reference/endpoint/models.mdx) ([#466](https://github.com/phaseoteam/Phaseo/pull/466)).
+- Les réponses d'erreur incluent `failed_providers`, `routing_diagnostics` et `provider_failure_diagnostics`, qui indiquent des causes comme des identifiants manquants ou des restrictions régionales ; voir [Erreurs et débogage](../api-reference/errors.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- L'endpoint de récupération d'une génération renvoie `replay_request` et `replay_supported`, pour renvoyer une requête journalisée vers son endpoint d'origine ; voir [Récupérer une génération](../api-reference/endpoint/generation.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
 
 </div>
 
@@ -273,19 +315,55 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
-<Update label="1 mai 2026">
+<Update label="4 mai 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- **Settings -> Usage** répartit l'activité entre les vues **Logs**, **Jobs** et **Sessions**, avec actualisation en direct et filtres et plages de dates conservés dans l'URL ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- Le playground des modèles affiche **Retry** et **Delete** sur les générations d'image et de vidéo échouées, et **Retry** réutilise le même prompt et le même modèle ([#465](https://github.com/phaseoteam/Phaseo/pull/465)).
+
+</div>
 
 <div data-changelog-category="api">
 
 <p className="changelog-category">API et SDK</p>
 
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4): mises à jour d’OpenAPI générées et de la surface des modèles pour le schéma de passerelle le plus récent.
+- Les requêtes Chat Completions et Responses acceptent `session_id`, qui regroupe les requêtes liées dans une même session dans les journaux d'utilisation ([#463](https://github.com/phaseoteam/Phaseo/pull/463)).
+
+</div>
+
+</Update>
+
+<Update label="2 mai 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les règles d'espace de travail qui bloquent des modèles ou des fournisseurs sont de nouveau appliquées, et les requêtes bloquées sont refusées avant le routage ([#444](https://github.com/phaseoteam/Phaseo/pull/444)).
+
+</div>
+
+</Update>
+
+<Update label="1 mai 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Le playground des modèles ajoute les modes **TTS** et **Music** pour les modèles de synthèse vocale et de génération musicale ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+- Les cartes de **Models** n'affichent plus **Free** pour les modèles payants, et le compteur du filtre des modèles à venir correspond aux modèles listés ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les SDK TypeScript, Python, Go, C#, Java, PHP et Ruby `2.0.3` ajoutent les derniers ID de modèles et de benchmarks à leurs listes typées ; voir les [notes de version](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) ([#439](https://github.com/phaseoteam/Phaseo/pull/439)).
 
 </div>
 
