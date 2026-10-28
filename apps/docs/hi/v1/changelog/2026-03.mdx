@@ -23,6 +23,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="23 मार्च 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- चैट रूम अब टेक्स्ट मॉडलों के साथ ऑडियो, मॉडरेशन और एम्बेडिंग मॉडल भी चला सकते हैं ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#157](https://github.com/phaseoteam/Phaseo/pull/157))।
+- प्रायोगिक प्रोजेक्ट के लिए नई जगह Foundry, LLM Council के साथ शुरू हुई है, जो एक प्रॉम्प्ट कई मॉडलों को भेजकर उनके जवाबों को एक में जोड़ता है ([#201](https://github.com/phaseoteam/Phaseo/pull/201))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- TypeScript और Python SDK के साथ अब Go, C#, Java, PHP और Ruby SDK भी उपलब्ध हैं, सभी वर्शन `1.1.0` पर ([#203](https://github.com/phaseoteam/Phaseo/pull/203), [#201](https://github.com/phaseoteam/Phaseo/pull/201))।
+- SDK `1.1.0` तब चेतावनी देते हैं जब अनुरोध किसी अप्रचलित या रिटायर मॉडल का नाम लेता है, और उनके मॉडल टाइप व रूट पाथ API से मेल खाते हैं ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#203](https://github.com/phaseoteam/Phaseo/pull/203))।
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -41,8 +59,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- नई भाषाओं के SDK जारी किए गए, TypeScript और Python SDK को बेहतर बनाया गया और चैट रूम में मल्टीमोडल सुविधाएँ जोड़ी गईं।
-- Foundry लॉन्च हुआ, LLM Council पहला Foundry प्रोजेक्ट बना और SDK `1.1.0` ने मॉडल उपलब्धता व लाइफ़साइकिल चेतावनियों को API के अनुरूप किया।
+- प्रोमो कोड को नए **Redeem** पेज पर क्रेडिट में बदला जा सकता है, जिसका लिंक **Settings -> Credits** में है; इनवॉइस से भुगतान करने वाली टीमें इन्हें रिडीम नहीं कर सकतीं ([#188](https://github.com/phaseoteam/Phaseo/pull/188))।
+- खाता सेटअप का कोई वैकल्पिक चरण विफल होने पर अब साइन-अप विफल नहीं होता ([#187](https://github.com/phaseoteam/Phaseo/pull/187))।
 
 </div>
 
@@ -63,6 +81,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="18 मार्च 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- Chat हर असिस्टेंट संदेश के ऊपर मॉडल ID के बजाय मॉडल का नाम दिखाता है, और वह नाम मॉडल के पेज से लिंक होता है ([#179](https://github.com/phaseoteam/Phaseo/pull/179))।
+- फ़ोन पर हेडर में अब एक ही मेनू है, जिसमें नेविगेशन, सेटिंग्स, क्रेडिट और कुंजियों जैसे खाता लिंक, और लाइट, डार्क या सिस्टम थीम का विकल्प है ([#180](https://github.com/phaseoteam/Phaseo/pull/180), [#183](https://github.com/phaseoteam/Phaseo/pull/183), [#181](https://github.com/phaseoteam/Phaseo/pull/181))।
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -97,6 +124,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="16 मार्च 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल पेजों पर गेटवे क्विकस्टार्ट अब केवल वे मॉडल ID दिखाता है जिन्हें चुना गया एंडपॉइंट और उसके सक्रिय प्रदाता स्वीकार करते हैं ([#157](https://github.com/phaseoteam/Phaseo/pull/157))।
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -126,14 +161,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="12 मार्च 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">उत्पाद</p>
-
-- मॉडल प्रदर्शन पृष्ठ को नया रूप दिया गया ताकि उपलब्धता, मेटाडेटा क्रम और सहायता जानकारी अधिक स्पष्ट हो।
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -145,6 +172,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="11 मार्च 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **Settings -> Provisioning Keys** अब **Settings -> Management API Keys** है, और पुराना पता नए पेज पर रीडायरेक्ट करता है ([#153](https://github.com/phaseoteam/Phaseo/pull/153))।
+- हेडर सर्च अब मॉडल के नाम से मेल खाने वाले नतीजों को पहले रखता है, इसलिए `Grok 4.20` खोजने पर Grok 4.20 सबसे ऊपर आता है ([#156](https://github.com/phaseoteam/Phaseo/pull/156))।
+- नई गाइड: [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx) बताती है कि Grok 4.20 अपनाते समय रीज़निंग और मल्टी-एजेंट प्रयास को कैसे नियंत्रित करें ([#155](https://github.com/phaseoteam/Phaseo/pull/155))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- **असंगत बदलाव:** `/v1/provisioning/keys` उपनाम हटा दिए गए हैं; इसके बजाय `/v1/management/keys` कॉल करें; देखें [मैनेजमेंट API कुंजियाँ](../developers/management-api-keys.mdx) ([#153](https://github.com/phaseoteam/Phaseo/pull/153))।
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -160,15 +205,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="10 मार्च 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">उत्पाद</p>
-
-- ब्रांड में व्यापक बदलाव वेबसाइट और दस्तावेज़ों तक भी लाए गए।
-- Phaseo, गेटवे रूट और दस्तावेज़ों में Alibaba Cloud का समर्थन जोड़ा गया।
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -177,20 +213,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Aion Labs: Aion 2.5](https://phaseo.app/models/aion-labs/aion-2.5)
 - [Google: Gemini Embedding 2 Preview](https://phaseo.app/models/google/gemini-embedding-2-preview)
+- Alibaba Cloud अब गेटवे अनुरोधों के लिए एक प्रदाता है।
+
+</div>
+
+</Update>
+
+<Update label="6 मार्च 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल की कीमत तालिकाएँ उन क्षमताओं को, जिन्हें किसी प्रदाता ने बंद किया है (जैसे batch), छिपाने के बजाय **Not Active** के रूप में दिखाती हैं ([#141](https://github.com/phaseoteam/Phaseo/pull/141))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- अनुरोध फिर से `service_tier` को `standard` या `priority` पर सेट करना स्वीकार करते हैं; देखें [सेवा स्तर](../guides/service-tiers.mdx) ([#141](https://github.com/phaseoteam/Phaseo/pull/141))।
+- `openai/gpt-latest` उपनाम अब `openai/gpt-5.4` की ओर इशारा करता है ([#140](https://github.com/phaseoteam/Phaseo/pull/140))।
 
 </div>
 
 </Update>
 
 <Update label="5 मार्च 2026">
-
-<div data-changelog-category="product">
-
-<p className="changelog-category">उत्पाद</p>
-
-- GPT 5.4 और GPT 5.4 Pro को मॉडल खोज, गेटवे और दस्तावेज़ों में उपलब्ध कराया गया।
-
-</div>
 
 <div data-changelog-category="models">
 
@@ -207,11 +257,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="3 मार्च 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">उत्पाद</p>
+<p className="changelog-category">API और SDK</p>
 
-- Gemini 3.1 Flash Lite Preview को उत्पाद के विभिन्न हिस्सों, गेटवे रूटिंग और दस्तावेज़ों में उपलब्ध कराया गया।
+- `openai/gpt-chat-latest` उपनाम अब `openai/gpt-5.3-chat` की ओर इशारा करता है ([#138](https://github.com/phaseoteam/Phaseo/pull/138))।
 
 </div>
 
@@ -230,11 +280,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2 मार्च 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">उत्पाद</p>
+<p className="changelog-category">API और SDK</p>
 
-- Responses API assistant `phase` का समर्थन अनुरोध हैंडलिंग, प्रतिक्रिया पेलोड और OpenAPI दस्तावेज़ों में जोड़ा गया।
+- Responses API असिस्टेंट संदेश का `phase` (`commentary` या `final_answer`) स्वीकार करता है और लौटाता है, ताकि कई टर्न वाले अनुरोध उसे वापस भेज सकें; देखें [रिस्पॉन्स बनाएँ](../api-reference/endpoint/responses.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130))।
+- OpenAI मॉडलों को भेजे गए Responses अनुरोध `type: "compaction"` और वैकल्पिक `compact_threshold` के साथ `provider_options.openai.context_management` स्वीकार करते हैं; देखें [पैरामीटर](../api-reference/parameters.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130))।
+- जिन OpenAI अनुरोधों में `safety_identifier` नहीं होता, उनमें अब `user` या `user_id` से, और इनके न होने पर अनुरोध ID से, एक मान भेजा जाता है ([#130](https://github.com/phaseoteam/Phaseo/pull/130))।
 
 </div>
 

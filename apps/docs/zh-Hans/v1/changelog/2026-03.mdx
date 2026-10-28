@@ -23,6 +23,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月23日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 聊天室现在除了文本模型，还可以运行音频、审核和嵌入模型 ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#157](https://github.com/phaseoteam/Phaseo/pull/157))。
+- Foundry 是面向实验性项目的新空间，首个项目 LLM Council 会把同一个提示发给多个模型，并将它们的回答合并为一个 ([#201](https://github.com/phaseoteam/Phaseo/pull/201))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 除 TypeScript 和 Python SDK 外，现已提供 Go、C#、Java、PHP 和 Ruby SDK，版本均为 `1.1.0` ([#203](https://github.com/phaseoteam/Phaseo/pull/203), [#201](https://github.com/phaseoteam/Phaseo/pull/201))。
+- SDK `1.1.0` 会在请求指定已弃用或已退役的模型时发出警告，其模型类型和路由路径也与 API 保持一致 ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#203](https://github.com/phaseoteam/Phaseo/pull/203))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -41,8 +59,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- 我们发布了新的语言 SDK，全面改进了 TypeScript 和 Python SDK，并为聊天室加入多模态能力。
-- Foundry 正式推出，LLM Council 成为首个 Foundry 项目；SDK `1.1.0` 也让模型可用性和生命周期警告与 API 保持一致。
+- 可以在新的 **Redeem** 页面（从 **Settings -> Credits** 进入）将促销码兑换为额度；按发票付款的团队无法兑换 ([#188](https://github.com/phaseoteam/Phaseo/pull/188))。
+- 账户设置中的可选步骤出错时，注册不再失败 ([#187](https://github.com/phaseoteam/Phaseo/pull/187))。
 
 </div>
 
@@ -63,6 +81,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年3月18日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 在每条助手消息上方显示模型名称而不是模型 ID，点击名称可打开该模型的页面 ([#179](https://github.com/phaseoteam/Phaseo/pull/179))。
+- 在手机上，页眉合并为一个菜单，包含导航、设置、额度和密钥等账户链接，以及浅色、深色或跟随系统的主题切换 ([#180](https://github.com/phaseoteam/Phaseo/pull/180), [#183](https://github.com/phaseoteam/Phaseo/pull/183), [#181](https://github.com/phaseoteam/Phaseo/pull/181))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -97,6 +124,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月16日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面上的网关快速入门只提供所选端点及其可用提供商接受的模型 ID ([#157](https://github.com/phaseoteam/Phaseo/pull/157))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -126,14 +161,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月12日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">产品</p>
-
-- 模型展示页经过全面改版，更清晰地呈现可用性、元数据层级和支持信息。
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -145,6 +172,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年3月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Settings -> Provisioning Keys** 现已改为 **Settings -> Management API Keys**，旧地址会重定向到新页面 ([#153](https://github.com/phaseoteam/Phaseo/pull/153))。
+- 页眉搜索会优先匹配模型名称，因此搜索 `Grok 4.20` 时 Grok 4.20 会排在最前 ([#156](https://github.com/phaseoteam/Phaseo/pull/156))。
+- 新指南：[SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx) 介绍采用 Grok 4.20 时的推理和多智能体强度控制 ([#155](https://github.com/phaseoteam/Phaseo/pull/155))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** `/v1/provisioning/keys` 别名已移除，请改为调用 `/v1/management/keys`；请参阅[管理 API 密钥](../developers/management-api-keys.mdx) ([#153](https://github.com/phaseoteam/Phaseo/pull/153))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -160,15 +205,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月10日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">产品</p>
-
-- 品牌焕新扩展到了网站和文档。
-- Phaseo、网关路由和文档现已支持 Alibaba Cloud。
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -177,20 +213,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Aion Labs: Aion 2.5](https://phaseo.app/models/aion-labs/aion-2.5)
 - [Google: Gemini Embedding 2 Preview](https://phaseo.app/models/google/gemini-embedding-2-preview)
+- Alibaba Cloud 现已成为处理网关请求的提供商。
+
+</div>
+
+</Update>
+
+<Update label="2026年3月6日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型价格表会把提供商已关闭的功能（例如 batch）显示为 **Not Active**，而不是将其隐藏 ([#141](https://github.com/phaseoteam/Phaseo/pull/141))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 请求重新接受 `service_tier` 取值 `standard` 或 `priority`；请参阅[服务等级](../guides/service-tiers.mdx) ([#141](https://github.com/phaseoteam/Phaseo/pull/141))。
+- 别名 `openai/gpt-latest` 现在指向 `openai/gpt-5.4` ([#140](https://github.com/phaseoteam/Phaseo/pull/140))。
 
 </div>
 
 </Update>
 
 <Update label="2026年3月5日">
-
-<div data-changelog-category="product">
-
-<p className="changelog-category">产品</p>
-
-- GPT 5.4 和 GPT 5.4 Pro 已在模型发现、网关和文档中上线。
-
-</div>
 
 <div data-changelog-category="models">
 
@@ -207,11 +257,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月3日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">产品</p>
+<p className="changelog-category">API 与 SDK</p>
 
-- Gemini 3.1 Flash Lite Preview 已在产品界面、网关路由和文档中上线。
+- 别名 `openai/gpt-chat-latest` 现在指向 `openai/gpt-5.3-chat` ([#138](https://github.com/phaseoteam/Phaseo/pull/138))。
 
 </div>
 
@@ -230,11 +280,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年3月2日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">产品</p>
+<p className="changelog-category">API 与 SDK</p>
 
-- Responses API assistant `phase` 已在请求处理、响应内容和 OpenAPI 文档中得到支持。
+- Responses API 接受并返回助手消息的 `phase`（`commentary` 或 `final_answer`），多轮请求可以将其原样发回；请参阅[创建响应](../api-reference/endpoint/responses.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
+- 发往 OpenAI 模型的 Responses 请求接受 `provider_options.openai.context_management`，其中 `type: "compaction"`，`compact_threshold` 可选；请参阅[参数](../api-reference/parameters.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
+- 发往 OpenAI 且未提供 `safety_identifier` 的请求，现在会使用 `user` 或 `user_id` 的值，若都没有则使用请求 ID ([#130](https://github.com/phaseoteam/Phaseo/pull/130))。
 
 </div>
 
