@@ -232,6 +232,9 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	});
 	const hasSelectedModel = Boolean(modelId && chartRows.some((row) => row.entry.model_id === modelId));
 	const maxScore = Math.max(...chartRows.map((row) => Number(row.configuration.score)), 1);
+	// Index scores start at zero; the Progress Index scale has no meaningful zero, so bars start just below the lowest shown.
+	const minScore = Math.min(...chartRows.map((row) => Number(row.configuration.score)));
+	const chartBase = isArtificialAnalysisProgressIndex(expandedMetric ?? "") && chartRows.length ? Math.max(0, minScore - Math.max((maxScore - minScore) * 0.25, 5)) : 0;
 	const rankFor = (benchmarkId: string, score: number) => {
 		const summary = rankSummaries?.[benchmarkId];
 		if (summary && !rankings.length) {
@@ -288,7 +291,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 				<div className="pointer-events-none absolute inset-x-16 bottom-[140px] top-4 flex flex-col justify-between">{[0, 1, 2, 3, 4].map((line) => <span key={line} className="border-t border-dashed border-border/70" />)}</div>
 								<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
 									const isSelectedModel = entry.model_id === modelId;
-									const proportionalHeight = (Number(configuration.score) / maxScore) * 205;
+									const proportionalHeight = ((Number(configuration.score) - chartBase) / (maxScore - chartBase)) * 205;
 									const height = Math.max(proportionalHeight, 3);
 									const compactBar = proportionalHeight < 30;
 									const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
