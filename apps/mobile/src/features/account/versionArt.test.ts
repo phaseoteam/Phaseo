@@ -157,8 +157,7 @@ describe("the frontier labs", () => {
   it("use the catalogue's organisation IDs and names, so a tap finds the newest model", () => {
     for (const lab of FRONTIER_LABS) {
       const organisation = ORGANISATIONS[lab.id];
-      expect(organisation).toBeDefined();
-      expect({ id: organisation.organisation_id, name: organisation.name }).toEqual(lab);
+      expect({ id: organisation?.organisation_id, name: organisation?.name }).toEqual(lab);
     }
     // xAI's models are listed under SpaceXAI.
     expect(FRONTIER_LABS.map((lab) => lab.id)).toContain("spacex-ai");
