@@ -8,13 +8,340 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年10月28日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 当结构化输入的某个字段是嵌套对象或数组时，`/v1/embeddings` 返回 `400 validation_error`；此前返回 `502` ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296))。
+- 当所有提供商都以相同的 `400`、`413` 或 `422` 拒绝请求时，网关返回该状态码和提供商的消息，而不是 `502` ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296))。
+- API 密钥支出上限触发的 `429` 错误显示美元金额，例如 `$0.0117 of $0.01`，月度上限也会保留 `Retry-After` 标头 ([#3296](https://github.com/phaseoteam/Phaseo/pull/3296))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月27日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 预设编辑器的 **Versions and labels** 部分可将命名标签指向已发布的版本，移动标签即可一键回滚请求；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 使用预设的请求可以用 `prompt.version` 或 `model: "@slug@label"` 固定版本或标签，未知的值返回 `404 preset_version_not_found`；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3281](https://github.com/phaseoteam/Phaseo/pull/3281))。
+- `GET /v1/presets/{id}/labels` 可列出预设标签，`PUT` 和 `DELETE /v1/presets/{id}/labels/{label}` 可移动和删除单个标签；请参阅[Set preset label](./api-reference/endpoint/presets-label-set.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- Chat Completions、Responses 和 Messages 的流式事件现在在 `model` 中返回 Phaseo 模型 ID；此前部分事件返回的是提供商自己的 ID ([#3273](https://github.com/phaseoteam/Phaseo/pull/3273))。
+- 对于具有 `profile` 范围的令牌，`GET /oauth/userinfo` 会根据 Phaseo 个人资料返回 `picture`、`name` 和 `given_name` ([#3189](https://github.com/phaseoteam/Phaseo/pull/3189))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月26日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的 **Weekly tokens** 列重新显示真实总量；此前所有模型都显示 0 ([#3241](https://github.com/phaseoteam/Phaseo/pull/3241))。
+
+</div>
+
+</Update>
+
 <Update label="2026年10月24日">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">产品</p>
 
-- 已停用模型的路由现已向所有工作区开放。当不再有任何提供商提供某个已停用模型时，它的请求可以转到已批准的替代模型，而不会失败。此功能默认关闭：所有者和管理员可在 **设置 -> 路由 -> 已停用模型的路由** 中开启，并选择是否允许替代模型价格更高。被重定向的响应会带有 `x-phaseo-model-substitution` 标头。请参阅[模型弃用与停用](./guides/model-retirement.mdx)。
+- 所有工作区都可以使用已停用模型的路由：所有者和管理员在 **设置 -> 路由 -> 已停用模型的路由** 中开启后，请求会转到已批准的替代模型；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
+- 已停用模型的路由只使用价格不高于已停用模型的已批准替代模型，除非所有者和管理员允许更高的价格；他们自己选择的替代模型无论价格高低都会使用 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 由已停用模型的替代模型返回的响应会带有 `x-phaseo-model-substitution` 标头；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
+- Terraform 提供程序新增 `phaseo_rate_limit_policy`、`phaseo_rate_limit_assignment` 和 `phaseo_department_budget` 资源，均可按 ID 导入；请参阅[速率限制](./api-reference/limits.mdx) ([#3216](https://github.com/phaseoteam/Phaseo/pull/3216))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月23日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 所有者和管理员可以在 **设置 -> 速率限制** 中创建速率限制策略，设置每分钟请求数、每分钟令牌数、并发请求数和 **严格模式**；请参阅[速率限制](./api-reference/limits.mdx) ([#3150](https://github.com/phaseoteam/Phaseo/pull/3150), [#3213](https://github.com/phaseoteam/Phaseo/pull/3213))。
+- **设置 -> 速率限制** 可将策略分配给 API 密钥、成员、部门、护栏或终端用户默认值，并显示该策略过去 24 小时限流的请求数 ([#3150](https://github.com/phaseoteam/Phaseo/pull/3150))。
+- 所有者和管理员可以在 **设置 -> 预算** 中添加按日、按周或按月的部门预算；预算在 80% 和 100% 时发送警报，从不阻止请求 ([#3208](https://github.com/phaseoteam/Phaseo/pull/3208))。
+- 密钥安全移至 **设置 -> API 密钥 -> 密钥安全**，密钥表格新增 **Status** 列和可排序的列 ([#3184](https://github.com/phaseoteam/Phaseo/pull/3184))。
+- Broadcast 可以将追踪发送到 Amazon S3 及兼容 S3 的存储、Cloudflare R2、Google Cloud Storage、ClickHouse、BigQuery 和 Snowflake；请参阅[Broadcast](./guides/broadcast.mdx) ([#3181](https://github.com/phaseoteam/Phaseo/pull/3181), [#3182](https://github.com/phaseoteam/Phaseo/pull/3182), [#3185](https://github.com/phaseoteam/Phaseo/pull/3185))。
+- 新指南：[Broadcast](./guides/broadcast.mdx) 列出了每种目标类型的设置 ([#3190](https://github.com/phaseoteam/Phaseo/pull/3190))。
+- 对比页面新增 30 天 **Activity** 图表，显示每个模型通过 Phaseo 的令牌数和请求数 ([#3147](https://github.com/phaseoteam/Phaseo/pull/3147))。
+- 对比页面显示每个模型在能力指数上的排名 ([#3148](https://github.com/phaseoteam/Phaseo/pull/3148))。
+- 两个模型的对比有了自己的页面，包含摘要和常见问题，例如 `/compare/anthropic_claude-opus-5.5-vs-openai_gpt-6-astra` ([#3162](https://github.com/phaseoteam/Phaseo/pull/3162))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 速率限制策略会执行 `concurrent_requests`，所有名额都被占用时返回 `429`，原因为 `policy_concurrent_requests`，并带有 `Retry-After: 1`；请参阅[速率限制](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
+- 严格策略（`fail_closed`）会在请求发送给提供商之前检查每分钟限制 ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
+- 通过欧盟和美国区域网关发送的请求现在也会到达 Broadcast 目标 ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月22日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 新的 **密钥安全** 页面会标出没有支出上限、过期时间、近期使用、IP 允许列表或已记录存储位置的 API 密钥，并给出修复建议 ([#3159](https://github.com/phaseoteam/Phaseo/pull/3159))。
+- 每个 API 密钥都可以记录其存放位置，例如 Vercel、GitHub Actions 或 1Password ([#3158](https://github.com/phaseoteam/Phaseo/pull/3158))。
+- **设置 -> 预算** 显示每个工作区预算的支出、剩余金额和重置时间 ([#3095](https://github.com/phaseoteam/Phaseo/pull/3095))。
+- Broadcast 新增 16 个目标，包括 Langfuse、Datadog LLM Observability、LangSmith、PostHog 和 Sentry，每个都有测试按钮；请参阅[Broadcast](./guides/broadcast.mdx) ([#2962](https://github.com/phaseoteam/Phaseo/pull/2962), [#3080](https://github.com/phaseoteam/Phaseo/pull/3080), [#3083](https://github.com/phaseoteam/Phaseo/pull/3083))。
+- Broadcast 设置会显示每个目标是否正在正常接收数据 ([#3102](https://github.com/phaseoteam/Phaseo/pull/3102))。
+- **设置 -> 通知** 可以在某个 Broadcast 目标持续失败时发送警报 ([#3105](https://github.com/phaseoteam/Phaseo/pull/3105))。
+- Broadcast 的 Webhook 目标支持可选的签名密钥 ([#3129](https://github.com/phaseoteam/Phaseo/pull/3129))。
+- 请求详情会说明零数据保留何时跳过了内容存储 ([#3178](https://github.com/phaseoteam/Phaseo/pull/3178))。
+- 对比页面可以在每个模型下选择路由和服务层级，价格、成本计算器和结论都会随之更新 ([#3133](https://github.com/phaseoteam/Phaseo/pull/3133))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `/v1/messages` 接受对话中途的 `role: "system"` 消息，前提是位置符合 Claude 的规则；请参阅[创建消息](./api-reference/endpoint/anthropic-messages.mdx) ([#3165](https://github.com/phaseoteam/Phaseo/pull/3165))。
+- 密钥端点和所有 SDK 都接受并返回 `storage_locations`，最多记录八个密钥存放位置，例如 `["railway", "github"]`；请参阅[创建 API 密钥](./api-reference/endpoint/keys-create.mdx) ([#3164](https://github.com/phaseoteam/Phaseo/pull/3164))。
+- **测试版：** `/v1/department-budgets` 为每个部门设置按日、按周或按月的美元预算，在约 80% 和 100% 时提醒所有者和管理员，但不会阻止请求 ([#3125](https://github.com/phaseoteam/Phaseo/pull/3125))。
+- 无论由工作区设置、密钥护栏还是请求本身开启，零数据保留都会让请求的提示词和响应内容不进入响应缓存、数据样本和 Phaseo 遥测 ([#3161](https://github.com/phaseoteam/Phaseo/pull/3161), [#3175](https://github.com/phaseoteam/Phaseo/pull/3175))。
+- 发往自定义 Webhook 的通知使用 `x-phaseo-timestamp` 和 `x-phaseo-signature`（HMAC-SHA256）签名；请参阅[工作区通知](./guides/workspace-notifications.mdx) ([#3089](https://github.com/phaseoteam/Phaseo/pull/3089))。
+- Broadcast 将请求的 `metadata` 导出为 `phaseo.metadata.<key>` span 属性 ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。
+- 请求 `metadata` 中的 `trace_name`、`span_name`、`generation_name` 和 `trace_id` 用于命名和分组 Broadcast 导出的追踪 ([#3127](https://github.com/phaseoteam/Phaseo/pull/3127))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月21日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 已记录的 Chat Completions、Responses 和 Messages 请求可以从请求详情、日志表格的右键菜单或会话的某一轮在聊天中打开并继续；请参阅[在聊天中打开请求](./guides/open-requests-in-chat.mdx) ([#3084](https://github.com/phaseoteam/Phaseo/pull/3084), [#3092](https://github.com/phaseoteam/Phaseo/pull/3092))。
+- 所有者和管理员可以在 **设置 -> 隐私 -> 谁可以查看内容** 中将已存储的提示和响应限制为仅所有者和管理员可见 ([#3103](https://github.com/phaseoteam/Phaseo/pull/3103))。
+- 开启 **要求零数据保留** 后，请求和响应内容永远不会存入请求日志 ([#3081](https://github.com/phaseoteam/Phaseo/pull/3081))。
+- 预设可以包含带 `{{variable}}` 占位符的提示词模板，请求只需发送 `prompt.id` 和变量；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3085](https://github.com/phaseoteam/Phaseo/pull/3085))。
+- 预设编辑器会在编辑时实时预览提示词模板，并提供 **Run** 按钮用于测试 ([#3086](https://github.com/phaseoteam/Phaseo/pull/3086), [#3122](https://github.com/phaseoteam/Phaseo/pull/3122))。
+- 请求详情中的 **追踪** 标签页显示路由、提供商尝试、工具调用和最终响应，现已对所有工作区开放 ([#3082](https://github.com/phaseoteam/Phaseo/pull/3082))。
+- 对比页面改用一张分组表格，突出显示每行的最佳值，并可切换为只显示有差异的行 ([#3116](https://github.com/phaseoteam/Phaseo/pull/3116))。
+- `/models` 和 `/models/table` 新增 **许可证** 筛选（分为宽松、受限和专有三组）以及区分开放或封闭权重的 **权重** 筛选 ([#3062](https://github.com/phaseoteam/Phaseo/pull/3062), [#3075](https://github.com/phaseoteam/Phaseo/pull/3075), [#3079](https://github.com/phaseoteam/Phaseo/pull/3079))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** 错误响应中的 `error` 改为包含 `code`、`message`、`type`、`param` 和 `metadata` 的对象；原先把 `error` 当字符串读取的代码应改读新的顶层 `code`；请参阅[错误与调试](./api-reference/errors.mdx) ([#3055](https://github.com/phaseoteam/Phaseo/pull/3055))。
+- Chat Completions、Responses、Messages 和 embeddings 响应包含以美元计的 `usage.cost` 和明细 `usage.cost_details` ([#3050](https://github.com/phaseoteam/Phaseo/pull/3050))。
+- `POST /v1/keys` 在顶层以 `key` 返回新密钥；请参阅[创建 API 密钥](./api-reference/endpoint/keys-create.mdx) ([#3050](https://github.com/phaseoteam/Phaseo/pull/3050))。
+- 文本端点接受可选参数的显式 `null`、`service_tier: "auto"` 和 `"scale"`，以及 `prediction`，这些输入以前会返回 `400` ([#3049](https://github.com/phaseoteam/Phaseo/pull/3049))。
+- `web` 和 `web-fetch` 插件可用于任何模型，以 Phaseo 网页搜索和网页抓取服务器工具的形式运行；请参阅[网页搜索服务器工具](./guides/server-tools/web-search.mdx) ([#3051](https://github.com/phaseoteam/Phaseo/pull/3051))。
+- 速率限制策略会执行 `tokens_per_minute`，并返回 `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens` 和 `x-ratelimit-reset-tokens` 标头；请参阅[速率限制](./api-reference/limits.mdx) ([#2961](https://github.com/phaseoteam/Phaseo/pull/2961))。
+- 分配给部门的速率限制策略现在会作用于该部门的请求 ([#3088](https://github.com/phaseoteam/Phaseo/pull/3088))。
+- 提示缓存写入按公开费率计费：Claude 1 小时写入为输入价格的 2 倍，OpenAI 12 小时写入为 2.5 倍；请参阅[提示缓存](./guides/prompt-caching.mdx) ([#3078](https://github.com/phaseoteam/Phaseo/pull/3078), [#3076](https://github.com/phaseoteam/Phaseo/pull/3076))。
+- Responses 的 usage 在 `input_tokens_details.cache_write_tokens_details` 中返回 30 分钟和 12 小时缓存写入的拆分 ([#3078](https://github.com/phaseoteam/Phaseo/pull/3078))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月19日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 提供商不支持的可选参数（如 `top_k` 或 `min_p`）会被丢弃，并列在 `X-Phaseo-Dropped-Params` 响应标头中；请参阅[参数](./api-reference/parameters.mdx) ([#2999](https://github.com/phaseoteam/Phaseo/pull/2999))。
+- 流式传输中途的提供商故障会以端点的错误事件结束流，而不是正常结束 ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
+- 所有提供商都以 `429` 拒绝的请求会返回 `429`，并带有提供商的 `Retry-After` ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
+- 被判定为无效的请求不再回退到 `models` 中的其他模型 ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月18日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 适用于 Claude Code 的 Phaseo 插件包含 Phaseo MCP 服务器、位于 `https://phaseo.app/docs/mcp` 的文档 MCP 服务器以及 Phaseo 的技能；请参阅[CLI 与 MCP](./developers/cli-and-mcp.mdx) ([#2949](https://github.com/phaseoteam/Phaseo/pull/2949))。
+- 提示缓存按各提供商公开的费率计费；请参阅[提示缓存](./guides/prompt-caching.mdx) ([#2964](https://github.com/phaseoteam/Phaseo/pull/2964))。
+- 智能体的各轮请求会留在持有其提示缓存的提供商上 ([#2969](https://github.com/phaseoteam/Phaseo/pull/2969))。
+- Claude 请求接受 `agent` 缓存范围，可为多轮智能体放置缓存断点；请参阅[提示缓存](./guides/prompt-caching.mdx) ([#2957](https://github.com/phaseoteam/Phaseo/pull/2957))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月17日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **设置 -> 通知** 新增 **速率限制警报**，每小时最多发送一次，可发往电子邮件、Slack、Discord、Teams 或 Webhook；请参阅[工作区通知](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月16日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 文档采用 phaseo.app 的设计，包括新主题、更简洁的导航，以及带有 Models、Status 和 Support 链接的页脚 ([#2930](https://github.com/phaseoteam/Phaseo/pull/2930))。
+- 每个文档页面的 Markdown 和 `llms.txt` 都包含面向 AI 智能体的说明，涵盖身份验证、模型 ID 和端点 ([#2947](https://github.com/phaseoteam/Phaseo/pull/2947))。
+- Phaseo 的公开技能发布在 `/.well-known/agent-skills/` 下，可用 `npx skills add https://phaseo.app/docs` 安装 ([#2947](https://github.com/phaseoteam/Phaseo/pull/2947))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- SDK 文档新增 Java SDK，需从源码安装；请参阅[Java SDK — 安装](./sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月15日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 当工作区在过去 90 天内使用过的模型即将弃用时，已登录用户会在网站页眉下方看到通知；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2871](https://github.com/phaseoteam/Phaseo/pull/2871))。
+- 模型弃用邮件会发送给工作区所有者，也可以添加管理员 ([#2868](https://github.com/phaseoteam/Phaseo/pull/2868))。
+- 用量概览中的预测会跟随所选日期范围 ([#2921](https://github.com/phaseoteam/Phaseo/pull/2921))。
+- 用量概览中的每个数字都来自精确总量；此前使用的是近期请求的样本 ([#2927](https://github.com/phaseoteam/Phaseo/pull/2927))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **测试版：** `/v1/rate-limits` 可创建并分配速率限制策略，网关会对密钥、成员、护栏和终端用户执行其 `requests_per_minute`；请参阅[速率限制](./api-reference/limits.mdx) ([#2888](https://github.com/phaseoteam/Phaseo/pull/2888), [#2893](https://github.com/phaseoteam/Phaseo/pull/2893))。
+- 超过策略 `requests_per_minute` 的请求返回 `429 rate_limit_exceeded`，并带有 `x-ratelimit-*` 标头 ([#2893](https://github.com/phaseoteam/Phaseo/pull/2893))。
+- 只要还有启用的提供商路由，已停用模型就会继续提供服务；没有路由后，请求返回 `410 model_retired`；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2884](https://github.com/phaseoteam/Phaseo/pull/2884))。
+- Batch API 可以使用 Phaseo 托管的密钥在 Vertex AI 上运行 Gemini 模型；请参阅[视频和批处理任务](./guides/async-video-and-batch.mdx) ([#2932](https://github.com/phaseoteam/Phaseo/pull/2932), [#2935](https://github.com/phaseoteam/Phaseo/pull/2935))。
+- `/v1/batches/models` 列出 Gemini 的批处理报价 ([#2936](https://github.com/phaseoteam/Phaseo/pull/2936))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月14日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **设置 -> 账单和额度** 显示按当前速度余额还能用多久 ([#2898](https://github.com/phaseoteam/Phaseo/pull/2898))。
+- API 密钥限制会显示每个时间窗口在重置前的走向 ([#2895](https://github.com/phaseoteam/Phaseo/pull/2895))。
+- API 密钥的每周和每月用量显示真实数值；此前显示为零 ([#2895](https://github.com/phaseoteam/Phaseo/pull/2895))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `GET /v1/models` 返回 `ETag`，并对匹配的 `If-None-Match` 返回 `304 Not Modified`；请参阅[列出模型](./api-reference/endpoint/models.mdx) ([#2916](https://github.com/phaseoteam/Phaseo/pull/2916))。
+- `GET /v1/models` 中每个提供商报价都会列出其接受的服务层级 ([#2916](https://github.com/phaseoteam/Phaseo/pull/2916))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月13日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 用量概览的每张卡片显示支出、请求数和令牌数的月末预测，缓存命中率等比率则显示本月至今的数值 ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月12日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面新增 OCR、文档解析和翻译分组 ([#2867](https://github.com/phaseoteam/Phaseo/pull/2867))。
+- 在模型页面中，**Audio** 会展开一行语音合成、转写、翻译、实时和音乐筛选 ([#2873](https://github.com/phaseoteam/Phaseo/pull/2873), [#2876](https://github.com/phaseoteam/Phaseo/pull/2876))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 顶层 `models` 回退列表适用于所有推理端点，包括 `/v1/messages` 和媒体端点；请参阅[路由与回退](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858))。
+- API 密钥请求数和支出上限触发的 `429` 响应包含 `Retry-After`，给出距离限制重置的秒数 ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型卡片显示最便宜提供商的标准输入和输出价格，并带单位 ([#2831](https://github.com/phaseoteam/Phaseo/pull/2831), [#2832](https://github.com/phaseoteam/Phaseo/pull/2832))。
+- 模型卡片的价格悬停卡会注明该价格来自哪个提供商，并列出图像和视频模型的每个计价变体 ([#2845](https://github.com/phaseoteam/Phaseo/pull/2845), [#2839](https://github.com/phaseoteam/Phaseo/pull/2839))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `GET /v1/models?format=openai` 以 OpenAI 列表格式返回模型列表，并使用规范模型 ID；请参阅[列出模型](./api-reference/endpoint/models.mdx) ([#2838](https://github.com/phaseoteam/Phaseo/pull/2838))。
 
 </div>
 
@@ -26,13 +353,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- 聊天新增可选的交互式回答实验功能，开关位于临时聊天旁边，支持对比卡片、表格、条形图和后续表单。表单值会保存在各个回答版本中，提交后将继续对话。
+- 聊天新增可选的 **Interactive answers** 实验，在临时聊天旁开启，可用对比卡片、表格、柱状图和后续表单作答 ([#2778](https://github.com/phaseoteam/Phaseo/pull/2778))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 工作区每个成员都有每分钟请求额度，在其 API 密钥之间共享，随工作区逐渐稳定从 10 提高到 120；请参阅[速率限制](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800))。
+- 每个用户每个 UTC 日可向免费模型发送 1,500 个请求，超过任一限制的请求返回 `429` 并带 `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787))。
+- 当某区域没有提供商提供该模型时，欧盟和美国区域网关返回 `403 model_region_unavailable`；请参阅[按区域路由文本请求](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813))。
 
 </div>
 
 </Update>
 
 <Update label="2026年10月7日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `/v1/decisions` 接受带有序问题和答案的 OpenAI 兼容输入，现有请求格式仍然可用；请参阅[作出决策](./api-reference/endpoint/decisions.mdx) ([#2744](https://github.com/phaseoteam/Phaseo/pull/2744))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -48,6 +393,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年10月6日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面显示已保存的规格，例如总参数量和激活参数量、许可证和训练令牌数 ([#2728](https://github.com/phaseoteam/Phaseo/pull/2728))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -57,6 +410,54 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
+
+</div>
+
+</Update>
+
+<Update label="2026年10月4日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 每个请求都会获得服务器生成的 `G` 生成 ID，响应标头、负载和日志共用该 ID，调用方的 `x-request-id` 不再替代它；请参阅[获取生成记录](./api-reference/endpoint/generation.mdx) ([#2710](https://github.com/phaseoteam/Phaseo/pull/2710))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 所有者和管理员可以通过用户标签打开工作区成员的资料页，查看 30 天的请求和支出、常用模型、密钥和近期日志 ([#2700](https://github.com/phaseoteam/Phaseo/pull/2700))。
+
+</div>
+
+</Update>
+
+<Update label="2026年10月2日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 每个 API 密钥都有独立页面，包含用量图表、限制和设置 ([#2686](https://github.com/phaseoteam/Phaseo/pull/2686))。
+- API 密钥可以限制为带标签的 IPv4 或 IPv6 地址和 CIDR 范围 ([#2686](https://github.com/phaseoteam/Phaseo/pull/2686))。
+- Web 应用和文档已翻译为西班牙语、法语、德语、巴西葡萄牙语、日语、简体中文、印地语和阿拉伯语，包括以前仍显示英文的文本 ([#2681](https://github.com/phaseoteam/Phaseo/pull/2681))。
+- 公开的 Monitor 页面已移除，原先设置为打开 Monitor 的偏好现在会打开首页 ([#2683](https://github.com/phaseoteam/Phaseo/pull/2683))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Phaseo MCP 应用新增模型浏览器，支持搜索、筛选、最多三个模型的对比、成本估算和代码示例；请参阅[CLI 与 MCP](./developers/cli-and-mcp.mdx) ([#2680](https://github.com/phaseoteam/Phaseo/pull/2680))。
+- 在你查看并批准估算成本后，Phaseo MCP 应用可以运行文本对比 ([#2680](https://github.com/phaseoteam/Phaseo/pull/2680))。
 
 </div>
 
