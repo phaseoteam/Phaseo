@@ -1008,13 +1008,15 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 /**
  * Scopes for a refreshed token: the authorization's scopes, narrowed to the refreshed token's.
  * A later login that adds scopes (such as opt-in billing:write) must not widen older sessions.
- * Tokens stored without scopes keep the authorization's scopes minus opt-in ones.
+ * Only a token with no stored scope list (null) is legacy: it keeps the authorization's scopes
+ * minus opt-in ones. An empty result means the session must log in again (the caller refuses
+ * it), because an empty list must never be stored and later read as legacy.
  * Mirrors public.rotate_oauth_refresh_token, which stores the same set.
  */
 export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unknown): string[] {
 	const granted = Array.isArray(authorizationScopes) ? authorizationScopes.map(String) : [];
+	if (tokenScopes === null || tokenScopes === undefined) return granted.filter((scope) => !isOptInCapability(scope));
 	const held = Array.isArray(tokenScopes) ? tokenScopes.map(String) : [];
-	if (held.length === 0) return granted.filter((scope) => !isOptInCapability(scope));
 	const heldSet = new Set(held);
 	return granted.filter((scope) => heldSet.has(scope));
 }
@@ -1091,6 +1093,8 @@ export async function rotateRefreshToken(
 		return { ok: false, reason: "invalid_grant" };
 	}
 	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
+	// Nothing left in common: refuse instead of storing an empty scope list.
+	if (scopes.length === 0) return { ok: false, reason: "invalid_grant" };
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),

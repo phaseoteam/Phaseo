@@ -434,15 +434,19 @@ begin
   end if;
 
   -- Never widen a session on refresh: the new token keeps the scopes of the token it replaces
-  -- that the authorization still grants. Tokens stored without scopes keep the authorization's
-  -- scopes minus opt-in ones (billing:write), which need a new login.
+  -- that the authorization still grants. Only a NULL scope list counts as legacy; it keeps the
+  -- authorization's scopes minus opt-in ones (billing:write), which need a new login. An empty
+  -- result is refused rather than stored, since an empty list must never grant anything later.
   granted_scopes := case
-    when coalesce(cardinality(current_token.scopes), 0) = 0 then array_remove(granted_scopes, 'billing:write')
+    when current_token.scopes is null then array_remove(granted_scopes, 'billing:write')
     else array(
       select scope from unnest(granted_scopes) as scope
       where scope = any(current_token.scopes)
     )
   end;
+  if coalesce(cardinality(granted_scopes), 0) = 0 then
+    return 'invalid';
+  end if;
 
   update public.oauth_refresh_tokens
   set revoked_at = now(), last_used_at = now()

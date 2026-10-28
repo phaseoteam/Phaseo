@@ -46,8 +46,11 @@ describe("OAuth service helpers", () => {
 		// A session keeps billing:write only while the authorization still grants it.
 		expect(refreshedScopes(authorization, ["openid", "billing:write"])).toEqual(["openid", "billing:write"]);
 		expect(refreshedScopes(["openid"], ["openid", "billing:write"])).toEqual(["openid"]);
-		// Tokens stored without scopes keep the authorization minus opt-in scopes.
-		expect(refreshedScopes(authorization, [])).toEqual(["openid", "credits:read"]);
+		// Only a token with no stored scope list (null) is legacy: authorization minus opt-in scopes.
+		expect(refreshedScopes(authorization, null)).toEqual(["openid", "credits:read"]);
+		// An empty list is not legacy: nothing in common stays empty (and the refresh is refused).
+		expect(refreshedScopes(authorization, [])).toEqual([]);
+		expect(refreshedScopes(["keys:delete"], ["models:read"])).toEqual([]);
 	});
 
 	it("restricts desktop callbacks to its registered public loopback client", () => {

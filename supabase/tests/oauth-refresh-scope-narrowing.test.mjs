@@ -49,13 +49,28 @@ try {
   assert.equal(await rotate('opted-in', 'opted-in-2'), 'rotated');
   assert.deepEqual(await scopesOf('opted-in-2'), ['openid', 'billing:write'], 'a session that opted in keeps it');
 
-  assert.equal(await rotate('legacy', 'legacy-2'), 'rotated');
-  assert.deepEqual(await scopesOf('legacy-2'), ['openid', 'credits:read'], 'tokens without stored scopes drop opt-in scopes');
+  // An empty stored list is not legacy (the column is NOT NULL, so legacy means NULL only):
+  // it shares nothing with the authorization, so the refresh is refused and nothing is stored.
+  const count = async (hash) => Number((await one('select count(*) n from public.oauth_refresh_tokens where token_hash = $1', [hash])).n);
+  assert.equal(await rotate('legacy', 'legacy-2'), 'invalid', 'an empty scope list never gains the authorization\'s scopes');
+  assert.equal(await count('legacy-2'), 0);
 
   // Narrowing the authorization narrows the next refresh too.
   await db.exec(`update public.oauth_authorizations set scopes = array['openid']`);
   assert.equal(await rotate('opted-in-2', 'opted-in-3'), 'rotated');
   assert.deepEqual(await scopesOf('opted-in-3'), ['openid']);
+
+  // Empty intersection: a session with models:read, after another login granted only keys:delete.
+  // Refused instead of storing [], which a later refresh would have read as legacy (keys:delete).
+  await db.exec(`
+    update public.oauth_authorizations set scopes = array['keys:delete'];
+    insert into public.oauth_refresh_tokens (token_hash, user_id, workspace_id, client_id, scopes)
+    values ('models-only', '${USER}', '${WS}', 'phaseo_cli', array['models:read']);
+  `);
+  assert.equal(await rotate('models-only', 'models-only-2'), 'invalid', 'an empty narrowed set is refused');
+  assert.equal(await count('models-only-2'), 0, 'no token with an empty scope list is stored');
+  assert.equal((await one('select revoked_at from public.oauth_refresh_tokens where token_hash = $1', ['models-only'])).revoked_at, null,
+    'the refused refresh does not rotate the token');
 
   console.log('oauth-refresh-scope-narrowing: all assertions passed');
 } finally {
