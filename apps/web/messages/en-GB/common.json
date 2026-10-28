@@ -634,6 +634,7 @@
 				"providerCredentials": "provider credentials",
 				"guardrails": "guardrails and policy settings",
 				"budgets": "team spending budgets and usage",
+				"spendRules": "spend alert and blocking rules",
 				"managementKeys": "machine-level management key details",
 				"oauthApps": "OAuth app and integration settings",
 				"privateModels": "workspace private models"

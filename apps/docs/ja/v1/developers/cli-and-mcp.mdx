@@ -1,6 +1,6 @@
 ---
 title: "CLI と MCP"
-description: "Phaseo CLI で端末作業を自動化するか、認証済み MCP サーバーを AI クライアントに接続して Phaseo の最新データを読み取り専用で利用できます。"
+description: "Phaseo CLI で端末作業を自動化するか、認証済み MCP サーバーを AI クライアントに接続して Phaseo の最新データを利用できます。許可すればアカウントの管理も行えます。"
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ CLI を使ってターミナルから Phaseo を操作するか、MCP 経由で 
 | インターフェース | 主な用途 | アクセス |
 | --- | --- | --- |
 | Phaseo CLI | ターミナルでの作業、CI、管理、自動化 | スコープとワークスペースのロールに応じた読み取り・書き込み |
-| Phaseo MCP | Codex、Claude、ChatGPT などの MCP クライアントから参照できる Phaseo の最新データ | 認証済み・読み取り専用 |
+| Phaseo MCP | Codex、Claude、ChatGPT などの MCP クライアントから参照できる Phaseo の最新データと、任意のアカウント管理 | 認証済み。アカウント管理付きで接続しない限り読み取り専用 |
 | Docs MCP | 開発中に Phaseo の最新ドキュメントを検索する | ドキュメントのみ・読み取り専用 |
 | Phaseo プラグイン | Claude Code や Codex に Phaseo MCP、Docs MCP、Phaseo スキルをまとめてインストールする | 各 MCP サーバーと同じ |
 
@@ -75,12 +75,41 @@ codex mcp list
 
 ### MCP が読み取れるデータ
 
-- モデル、プロバイダー、組織、エンドポイント群、料金
+- モデル、プロバイダー、ベンチマークランキング、料金、コスト見積もり
 - クレジット、アクティビティ、分析、リクエストログ、生成メタデータ
-- ワークスペース、メンバー、プリセット、設定、ガードレール
-- API キー、管理キー、OAuth アプリケーション、Webhook のメタデータ（シークレット値を除く）
 
-MCP は課金対象の推論を実行せず、シークレット値を返さず、Phaseo リソースを変更しません。これらの操作にはダッシュボード、CLI、Management API を使用してください。
+これらのツールは読み取り専用です。プロンプト、レスポンス、シークレット値を返すことはありません。
+
+### アカウントを管理する（任意）
+
+エージェントに Phaseo ワークスペースを変更させるには、代わりに管理用 URL で接続します。
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+サインイン時の同意画面には、API キーの管理や予算の削除など、接続が求める権限が 1 つずつ表示され、**読み取り**、**書き込み**、**削除** のいずれかが示されます。許可しない権限はチェックを外してください。エージェントが使えるのは許可した権限のツールだけです。また、Phaseo は変更のたびにワークスペースのロールも確認するため、オーナーでも管理者でもないメンバーが、この方法で管理者専用の設定を変更することはできません。
+
+読み取り専用の URL ですでに接続している場合は、クライアントを管理用 URL に切り替えてもう一度サインインしてください。読み取り専用に戻すには、通常の URL で再接続するか、**設定 → 接続アプリ** でアプリのアクセスを取り消します。
+
+| 対象 | ツール | 権限 |
+| --- | --- | --- |
+| API キー | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| 予算 | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| 支出ルール | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| プロバイダーキー（BYOK） | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| ガードレール | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| プリセット | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| 設定 | `settings_get`, `settings_update` (ルーティングモード、プライバシーと ZDR、ログ記録、プロバイダー制限) | `settings:read`, `settings:write` |
+| Webhook | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| オブザーバビリティの宛先 | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+何かを変更または削除するツールにはその旨が示されるため、対応する MCP クライアントは呼び出しのたびに確認を求めます。新しい API キーや Webhook の署名シークレットはツールの結果に 1 回だけ表示され、あとから再表示することはできません。保存済みのプロバイダーキーや宛先の認証情報が返されることはありません。
+
+MCP には、請求、支払い、ワークスペース、メンバー、管理キー、OAuth アプリのツールはありません。これらにはダッシュボード、CLI、または管理 API を使用してください。
 
 ## Docs MCP
 

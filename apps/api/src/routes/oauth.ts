@@ -2,6 +2,13 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
+import {
+	MCP_MANAGEMENT_SCOPES,
+	PHASEO_MCP_RESOURCE,
+	RESOURCE_BOUND_MCP_SCOPES,
+	isMcpManagementChangeScope,
+	violatesMcpManagementBinding,
+} from "@/lib/oauth/mcpScopes";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
@@ -98,16 +105,8 @@ const DYNAMIC_MCP_DEFAULT_SCOPES = [
 	"oauth_clients:read",
 ] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
-const RESOURCE_BOUND_MCP_SCOPES = [
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"credits:read",
-	"activity:read",
-	"analytics:read",
-	"generations:read",
-] as const;
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
+const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
@@ -287,20 +286,29 @@ function requiresGatewayAccessScope(clientId: string, resource: string, scopes: 
 		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
-// Permit explicit inference consent for an existing dynamic Phaseo MCP client.
-// This changes neither its stored allowlist nor any existing authorization grant.
+// Permit explicit inference or account-management consent for an existing
+// dynamic Phaseo MCP client. The request must name only MCP scopes; broader
+// catalogues are still narrowed or rejected. This changes neither the client's
+// stored allowlist nor any existing authorization grant.
 export function filterMcpAuthorizationScopes(
 	client: Parameters<typeof filterAllowedScopes>[0],
 	requested: string[],
 	resource: string,
 ): string[] {
 	const explicitStepUp = client.registration_source === "dynamic"
-		&& resource === "https://mcp.phaseo.app/mcp"
-		&& requested.includes(GATEWAY_ACCESS_SCOPE)
-		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
-	return filterAllowedScopes(explicitStepUp
-		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		&& resource === PHASEO_MCP_RESOURCE
+		&& requested.some((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))
+		&& requested.every((scope) => MCP_STEP_UP_SCOPE_SET.has(scope) || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
+	const scopes = filterAllowedScopes(explicitStepUp
+		? {
+			...client,
+			allowed_scopes: [...client.allowed_scopes, ...requested.filter((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))],
+		}
 		: client, requested);
+	// Management changes stay bound to the MCP resource whatever the stored allowlist says.
+	return violatesMcpManagementBinding(client.registration_source, resource, scopes)
+		? scopes.filter((scope) => !isMcpManagementChangeScope(scope))
+		: scopes;
 }
 
 function canNarrowResourceBoundMcpScopes(
@@ -463,6 +471,8 @@ oauthRouter.post(
 		// scope list. Never grant that broader request. When it also contains the
 		// canonical resource-bound MCP scopes, safely negotiate it down to that
 		// exact read-only set and return the narrowed scope in the response.
+		// Registration has no resource, so management write and delete scopes are
+		// never stored here; they are granted per authorization for the MCP resource.
 		const grantedScopes = includesUnsupportedScopes
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;
@@ -633,6 +643,10 @@ oauthRouter.post(
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
 		if (!(await checkOAuthRateLimit(req, "token", `authorize-approve:${actor.userId}`))) return rateLimitError();
+		// Same rule as device approval: an MFA account must approve from an AAL2 session.
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before authorizing this application", 403);
+		}
 
 		let body: Record<string, unknown>;
 		try {
@@ -970,6 +984,9 @@ oauthRouter.post(
 			};
 			if (requiresGatewayAccessScope(client.id, grantedResource, tokenInput.scopes)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
+			}
+			if (violatesMcpManagementBinding(client.registration_source, grantedResource, tokenInput.scopes)) {
+				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
 			// renewal. Third-party PKCE clients receive durable user-funded keys.

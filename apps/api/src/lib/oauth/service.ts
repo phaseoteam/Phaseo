@@ -1,3 +1,4 @@
+import { violatesMcpManagementBinding } from "@/lib/oauth/mcpScopes";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
@@ -1064,6 +1065,11 @@ export async function rotateRefreshToken(
 		: Array.isArray(data.scopes)
 			? data.scopes.map(String)
 			: [];
+	// The new pair takes the current authorization's scopes and is bound to no
+	// resource, so it can never carry a dynamic client's MCP management scopes.
+	if (violatesMcpManagementBinding(client.registration_source, null, scopes)) {
+		return { ok: false, reason: "invalid_grant" };
+	}
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),

@@ -634,6 +634,7 @@
 				"providerCredentials": "提供商凭据",
 				"guardrails": "防护规则和策略设置",
 				"budgets": "团队支出预算和用量",
+				"spendRules": "支出提醒与拦截规则",
 				"managementKeys": "机器级管理密钥详情",
 				"oauthApps": "OAuth 应用和集成设置",
 				"privateModels": "工作空间私有模型"

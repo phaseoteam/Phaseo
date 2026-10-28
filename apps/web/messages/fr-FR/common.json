@@ -634,6 +634,7 @@
 				"providerCredentials": "les identifiants des fournisseurs",
 				"guardrails": "les garde-fous et les politiques",
 				"budgets": "les budgets de dépenses et l’utilisation de l’équipe",
+				"spendRules": "règles d’alerte et de blocage des dépenses",
 				"managementKeys": "les informations des clés de gestion machine",
 				"oauthApps": "les paramètres des applications OAuth et des intégrations",
 				"privateModels": "modèles privés de l’espace de travail"
