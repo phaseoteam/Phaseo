@@ -1,6 +1,6 @@
 ---
 title: "CLI وMCP"
-description: "استخدم CLI الخاصة بـ Phaseo لأتمتة مهام الطرفية، أو اربط خادم MCP المصادق عليه بعملاء الذكاء الاصطناعي للوصول إلى بيانات Phaseo الحية للقراءة فقط."
+description: "استخدم CLI الخاصة بـ Phaseo لأتمتة مهام الطرفية، أو اربط خادم MCP المصادق عليه بعملاء الذكاء الاصطناعي للوصول إلى بيانات Phaseo الحية، وإدارة حسابك إذا سمحت بذلك."
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ icon: "square-terminal"
 | الواجهة | مناسبة لـ | الصلاحيات |
 | --- | --- | --- |
 | Phaseo CLI | سير العمل عبر الطرفية وCI والإدارة والأتمتة | قراءة وكتابة وفق النطاقات ودورك في مساحة العمل |
-| Phaseo MCP | بيانات Phaseo المباشرة داخل Codex وClaude وChatGPT وعملاء MCP الآخرين | مصادق عليه وللقراءة فقط |
+| Phaseo MCP | بيانات Phaseo المباشرة داخل Codex وClaude وChatGPT وعملاء MCP الآخرين، مع إدارة اختيارية للحساب | مصادق عليه؛ للقراءة فقط ما لم تتصل مع إدارة الحساب |
 | Docs MCP | البحث في وثائق Phaseo الحالية أثناء البرمجة | الوثائق فقط وللقراءة فقط |
 | إضافة Phaseo | تثبيت Phaseo MCP وDocs MCP ومهارات Phaseo في Claude Code أو Codex دفعة واحدة | مثل كل خادم MCP |
 
@@ -75,12 +75,41 @@ codex mcp list
 
 ### البيانات التي يمكن لـ MCP قراءتها
 
-- النماذج ومزوّدو الخدمة والمؤسسات وعائلات نقاط النهاية والأسعار
+- النماذج ومزوّدو الخدمة وتصنيفات المقاييس المعيارية والأسعار وتقديرات التكلفة
 - الأرصدة والنشاط والتحليلات وسجلات الطلبات وبيانات التوليد الوصفية
-- مساحات العمل والأعضاء والإعدادات المسبقة والضوابط والإعدادات
-- بيانات مفاتيح API ومفاتيح الإدارة وتطبيقات OAuth وخطافات الويب دون قيم سرية
 
-لا ينفّذ MCP استدلالاً مدفوعاً ولا يعيد قيماً سرية ولا يغيّر موارد Phaseo. استخدم لوحة التحكم أو CLI أو Management API لتنفيذ هذه العمليات.
+هذه الأدوات للقراءة فقط، ولا تُرجع أبدًا المطالبات أو الردود أو القيم السرية.
+
+### إدارة حسابك (اختياري)
+
+للسماح لوكيل بتغيير مساحة عمل Phaseo الخاصة بك، اتصل باستخدام عنوان الإدارة بدلًا من ذلك:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+عند تسجيل الدخول، تعرض شاشة الموافقة كل صلاحية يطلبها الاتصال على حدة، مثل إدارة مفاتيح API أو حذف الميزانيات، وتضع عليها علامة **قراءة** أو **كتابة** أو **حذف**. ألغِ تحديد أي صلاحية لا تريد منحها. لا يحصل الوكيل إلا على أدوات الصلاحيات التي تسمح بها، وتواصل Phaseo التحقق من دورك في مساحة العمل عند كل تغيير، لذا لا يستطيع العضو الذي ليس مالكًا أو مشرفًا تغيير الإعدادات المقصورة على المشرفين بهذه الطريقة.
+
+إذا كنت متصلًا بالفعل عبر عنوان القراءة فقط، فبدّل العميل إلى عنوان الإدارة وسجّل الدخول مرة أخرى. وللعودة إلى الوصول للقراءة فقط، أعد الاتصال بالعنوان العادي أو ألغِ وصول التطبيق من **الإعدادات ← التطبيقات المتصلة**.
+
+| المجال | الأدوات | الصلاحيات |
+| --- | --- | --- |
+| مفاتيح API | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| الميزانيات | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| قواعد الإنفاق | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| مفاتيح المزوّد (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| الضوابط | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| الإعدادات المسبقة | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| الإعدادات | `settings_get`, `settings_update` (وضع التوجيه، والخصوصية وZDR، والتسجيل، وقيود المزوّدين) | `settings:read`, `settings:write` |
+| خطافات الويب | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| وجهات قابلية الرصد | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+تحمل الأدوات التي تغيّر شيئًا أو تحذفه علامة تدل على ذلك، حتى تطلب منك عملاء MCP الداعمة لهذه الميزة التأكيد قبل كل استدعاء. يظهر مفتاح API الجديد أو سر توقيع خطاف الويب الجديد مرة واحدة فقط في نتيجة الأداة، ولا يمكن عرضه مرة أخرى. ولا تُرجع أبدًا مفاتيح المزوّد المحفوظة أو بيانات اعتماد الوجهات.
+
+لا يتضمن MCP أدوات للفوترة أو المدفوعات أو مساحات العمل أو الأعضاء أو مفاتيح الإدارة أو تطبيقات OAuth. استخدم لوحة التحكم أو CLI أو واجهة Management API لهذه العمليات.
 
 ## Docs MCP
 
