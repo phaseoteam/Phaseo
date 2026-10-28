@@ -577,7 +577,7 @@ Phaseo はインストール時に、Slack にちょうど次のボットトー�
 | "…isn't one of the models you can choose here, so I didn't answer." | メッセージが `with …:` で始まり、**モデルの選択** にないモデル、または複数の許可されたモデルに当てはまる名前を指定しています。 | 返信の一覧にあるモデルを使うか、`with …:` を外してください。 |
 | "The model you chose for this message isn't available to the Slack agent." | 上と同じ理由で、ゲートウェイがエージェントのキーで選ばれたモデルを使えません。 | `with …:` を付けずに質問するか、**モデルの選択** のモデルを入れ替えてください。 |
 | "The model this agent uses can't read the files shared here." | エージェントのモデルのどのプロバイダーも、共有された画像や PDF を読めません。 | ファイルなしで質問するか、**設定 → Slack** で画像を読めるモデルを選んでください。 |
-| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | 回答が Slack を検索し、そのモデルのデータ保持ゼロのプロバイダーがどれも回答できませんでした。 | **設定 → Slack** でデータを保持しないモデルを選んでください。 |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | 回答が Slack を検索し、そのモデルのデータ保持ゼロのプロバイダーがどれも回答できませんでした。 | **設定 → Slack** でデータを保持しないモデルを選んでください。メッセージを `with <model>:` で始めた場合は、そこでデータを保持しないモデルを選ぶか、それを外してエージェントのモデルを使ってください。 |
 | "…so I didn't compare them." または "Name 2 or 3 different models to compare…" | メッセージが `compare …:` で始まり、**モデルの選択** にないモデルや、複数の許可されたモデルに当てはまる名前を指定しているか、異なるモデルの数が 2 つ未満か 3 つより多くなっています。 | 返信のリストから 2 つか 3 つのモデルを使ってください。 |
 
 エージェントがまったく返信しない場合：

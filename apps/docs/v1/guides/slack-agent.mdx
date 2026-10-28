@@ -578,7 +578,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
 | "The model this agent uses can't read the files shared here." | No provider of the agent's model reads the images or PDFs shared. | Ask without the files, or choose a model that reads images in **Settings → Slack**. |
-| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | The answer searched Slack, and no provider of the model with zero data retention could answer. | Choose a model that keeps no data in **Settings → Slack**. |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | The answer searched Slack, and no provider of the model with zero data retention could answer. | Choose a model that keeps no data in **Settings → Slack**. If the message started with `with <model>:`, choose a model that keeps no data there, or leave it out to use the agent's model. |
 | "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
 
 If the agent doesn't reply at all:

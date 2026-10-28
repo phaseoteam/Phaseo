@@ -577,7 +577,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 | "…isn't one of the models you can choose here, so I didn't answer." | 消息以 `with …:` 开头，但指定的模型不在 **模型选择** 中，或者名称能对应多个允许的模型。 | 使用回复列表中的模型，或去掉 `with …:`。 |
 | "The model you chose for this message isn't available to the Slack agent." | 原因同上：网关无法用智能体的密钥使用所选模型。 | 去掉 `with …:` 再问，或在 **模型选择** 中换一个模型。 |
 | "The model this agent uses can't read the files shared here." | 智能体所用模型的提供商都无法读取所分享的图片或 PDF。 | 不带文件再问，或在 **设置 → Slack** 中选择一个能读取图片的模型。 |
-| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | 这次回答搜索过 Slack，而该模型没有零数据保留的提供商能够回答。 | 在 **设置 → Slack** 中选择一个不保留数据的模型。 |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | 这次回答搜索过 Slack，而该模型没有零数据保留的提供商能够回答。 | 在 **设置 → Slack** 中选择一个不保留数据的模型。如果消息以 `with <model>:` 开头，请在那里选择一个不保留数据的模型，或去掉它以使用智能体的模型。 |
 | "…so I didn't compare them." 或 "Name 2 or 3 different models to compare…" | 消息以 `compare …:` 开头，并且有模型不在 **模型选择** 中、某个名称能对应多个允许的模型，或者写了少于 2 个或多于 3 个不同的模型。 | 使用回复列表中的 2 到 3 个模型。 |
 
 如果智能体完全没有回复：
