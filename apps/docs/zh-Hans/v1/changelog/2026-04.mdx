@@ -23,13 +23,12 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年4月29日">
 
-<div data-changelog-category="api">
+<div data-changelog-category="product">
 
-<p className="changelog-category">API 与 SDK</p>
+<p className="changelog-category">产品</p>
 
-- SDK `2.0.2` 已面向以下语言发布：[TypeScript](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.2), [Python](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.2), [Go](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.2), [C#](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.2), [Java](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.2), [PHP](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.2)、[Ruby](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.2).
-- 此版本将运行时请求使用的模型 ID 与生成的可调用辅助常量分开，因此新发布的模型无需等待下一次 SDK 发布即可使用。
-- 生成的辅助函数现在会跟踪当前可由网关调用的模型快照，减少仅因目录更新而造成的 SDK 频繁变更。
+- 模型页、供应商页和模型列表将音频模型标为 **Speech**、**Transcription** 和 **Music**，不再使用 TTS 和 STT ([#417](https://github.com/phaseoteam/Phaseo/pull/417))。
+- 模型卡片会显示 Grok Imagine Image 等图像模型的价格；此前其中一些显示为免费 ([#418](https://github.com/phaseoteam/Phaseo/pull/418))。
 
 </div>
 
@@ -65,14 +64,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年4月27日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- TypeScript、Python、Go、C#、Java、PHP 和 Ruby SDK `2.0.1` 接受任意模型 ID 字符串，新模型无需等待 SDK 新版本即可使用 ([#367](https://github.com/phaseoteam/Phaseo/pull/367), [#393](https://github.com/phaseoteam/Phaseo/pull/393))。
+- SDK 生成的模型常量现在只包含网关可以调用的模型，而不是目录中的所有条目 ([#367](https://github.com/phaseoteam/Phaseo/pull/367))。
+
+</div>
+
+</Update>
+
 <Update label="2026年4月25日">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">产品</p>
 
-- 我们扩展了低余额提醒和账单保护，让团队能在使用量触及账户限制前收到更清晰的警告 ([PR #371](https://github.com/phaseoteam/Phaseo/pull/371)).
-- 当供应商账单规则不完整或路由元数据意外变化时，定价边缘情况现在会以更可预测的方式失败 ([PR #374](https://github.com/phaseoteam/Phaseo/pull/374)).
+- 当工作区余额低于 **Settings -> Credits -> Low balance email alert** 中设置的阈值时，会发送余额不足邮件 ([#370](https://github.com/phaseoteam/Phaseo/pull/370), [#371](https://github.com/phaseoteam/Phaseo/pull/371))。
+- 模型页在折叠列表前显示六个供应商，并在目录中的模型尚无 API 供应商时给出提示 ([#372](https://github.com/phaseoteam/Phaseo/pull/372))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 使用 `priority` 等非标准价格方案的请求，对该方案未定价的用量按标准价格计费；此前这部分用量不会计费 ([#374](https://github.com/phaseoteam/Phaseo/pull/374))。
 
 </div>
 
@@ -90,6 +110,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年4月24日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 网关响应将 `latency_ms` 报告为到首帧的时间，与 `generation_ms` 分开，非流式请求也是如此 ([#360](https://github.com/phaseoteam/Phaseo/pull/360))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -104,6 +132,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年4月23日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 额度改为单一的 Standard 方案，充值手续费统一为 5%，取代 Basic 和 Enterprise 等级；请参阅[价格等级](../pricing/tiers.mdx) ([#351](https://github.com/phaseoteam/Phaseo/pull/351))。
+- 每个账户首次登录时都会获得一个个人工作区，付费账户可以创建更多工作区，新的 API 密钥会归入页眉中选定的工作区；请参阅[工作区](../guides/workspaces.mdx) ([#352](https://github.com/phaseoteam/Phaseo/pull/352), [#351](https://github.com/phaseoteam/Phaseo/pull/351))。
+- 模型页的 Playground 在轮换 API 密钥后不再因 `invalid_secret` 而失败 ([#355](https://github.com/phaseoteam/Phaseo/pull/355))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 发往 `openai/gpt-image-2` 的图像请求在价格存在时不再因缺少价格而失败 ([#355](https://github.com/phaseoteam/Phaseo/pull/355))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -125,7 +171,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- SDK `2.0.0` 已发布，包含重新生成的客户端，并进一步符合当前网关契约。
+- 模型页的 Playground 为生成语音或音乐的模型新增 **TTS** 和 **Music** 模式 ([#348](https://github.com/phaseoteam/Phaseo/pull/348))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** SDK `2.0.0` 移除了模型 ID `qwen/qwen3-tts-tokenizer-12hz`；请更新引用它的代码 ([#337](https://github.com/phaseoteam/Phaseo/pull/337))。
 
 </div>
 
@@ -151,7 +205,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- 公告中心、工作区管理界面以及相关成员管理流程现已上线。
+- 团队现在称为工作区，成员、邀请、加入请求和角色在 **Settings -> Workspaces** 中管理；请参阅[工作区](../guides/workspaces.mdx) ([#336](https://github.com/phaseoteam/Phaseo/pull/336), [#345](https://github.com/phaseoteam/Phaseo/pull/345))。
+- 新的公告页面汇集 Phaseo 的公告，首页显示最新的三条 ([#335](https://github.com/phaseoteam/Phaseo/pull/335), [#339](https://github.com/phaseoteam/Phaseo/pull/339))。
 
 </div>
 
@@ -186,17 +241,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年4月18日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">产品</p>
+<p className="changelog-category">API 与 SDK</p>
 
-- SDK `1.2.0` 已将模型可用性、生成类型和文档同步到最新目录变更。
+- SDK `1.2.0` 新增模型 ID `x-ai/grok-4.3` ([#314](https://github.com/phaseoteam/Phaseo/pull/314))。
 
 </div>
 
 </Update>
 
 <Update label="2026年4月17日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 手动充值额度的最低金额现为 $5，自动充值仍从 $1 起 ([#315](https://github.com/phaseoteam/Phaseo/pull/315))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -213,6 +276,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年4月16日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页新增 **Pricing** 标签页，显示过去一小时按流量加权的有效价格以及各供应商的价格历史 ([#305](https://github.com/phaseoteam/Phaseo/pull/305), [#307](https://github.com/phaseoteam/Phaseo/pull/307))。
+- 模型页的 Playground 新增图像、视频、音频、嵌入和审核模式 ([#307](https://github.com/phaseoteam/Phaseo/pull/307))。
+- 模型页的 **Apps** 部分列出在网关流量中出现的公开应用，并显示其请求数和 token 数 ([#302](https://github.com/phaseoteam/Phaseo/pull/302))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 通过 Anthropic、Google Vertex 和 Amazon Bedrock 发出的 Claude Opus 4.7 请求支持 `xhigh` 推理强度，网关会去掉 `temperature`、`top_p` 和 `top_k`；请参阅[Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx) ([#308](https://github.com/phaseoteam/Phaseo/pull/308))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -226,6 +307,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年4月15日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 发布日历为每个组织提供一个页面，可查看其在今天这个星期几的发布或全部发布，并且现在涵盖所有历史发布 ([#300](https://github.com/phaseoteam/Phaseo/pull/300))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 发往免费模型（例如 `:free` ID）的请求无需额度即可使用；付费请求仍需至少 $1 额度 ([#293](https://github.com/phaseoteam/Phaseo/pull/293), [#294](https://github.com/phaseoteam/Phaseo/pull/294))。
+- 未配置价格的供应商会被跳过，没有任何已定价供应商的请求会返回 `unsupported_model_or_endpoint`，原因为 `pricing_not_configured` ([#293](https://github.com/phaseoteam/Phaseo/pull/293))。
+- **破坏性变更：** 发往已公布、暂不公开或已退役模型，或已过弃用日期模型的请求现在会被拒绝，SDK 的 `validateModel` 返回 `ok: false`；请改用可用的模型 ([#298](https://github.com/phaseoteam/Phaseo/pull/298))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -255,6 +354,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年4月13日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 的音频房间可以根据提示词和歌词生成音乐，并将生成的曲目保存在浏览器中 ([#277](https://github.com/phaseoteam/Phaseo/pull/277))。
+- Usage 和 Logs 显示每个模型带组织前缀的 Phaseo 名称，而不是供应商的名称 ([#277](https://github.com/phaseoteam/Phaseo/pull/277))。
+- 模型卡片和模型表格以 **组织: 模型** 的形式显示名称，例如 **Moonshot: Kimi K2.6** ([#278](https://github.com/phaseoteam/Phaseo/pull/278))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -276,6 +385,41 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Music 2.6 模型发布图片](../../../images/model-releases/2026-04-11--minimax--music-2-6.png)
 
 - [MiniMax: Music 2.6](https://phaseo.app/models/minimax/music-2.6)
+
+</div>
+
+</Update>
+
+<Update label="2026年4月10日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 对比页面显示每个模型在网关中的用量，并以统一格式显示所有基准分数 ([#244](https://github.com/phaseoteam/Phaseo/pull/244))。
+- 供应商页面显示其提供的每个模型的用量趋势以及应用用量随时间的变化 ([#247](https://github.com/phaseoteam/Phaseo/pull/247))。
+- `/updates/calendar` 的发布日历显示每个组织通常在星期几发布，以及今天发布的概率 ([#264](https://github.com/phaseoteam/Phaseo/pull/264))。
+
+</div>
+
+</Update>
+
+<Update label="2026年4月9日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页会标出已公布或暂不公开的模型，并隐藏不适用的供应商、应用和性能部分 ([#245](https://github.com/phaseoteam/Phaseo/pull/245), [#259](https://github.com/phaseoteam/Phaseo/pull/259))。
+- 网站在 `/migrate` 新增从其他 AI 网关迁移的分步指南 ([#248](https://github.com/phaseoteam/Phaseo/pull/248))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/rerank` 按与查询的相关度对文档排序，TypeScript 和 Python SDK 均已支持；请参阅[重新排序文档](../api-reference/endpoint/rerank.mdx) ([#242](https://github.com/phaseoteam/Phaseo/pull/242))。
 
 </div>
 
@@ -310,13 +454,36 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年4月5日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Pay As You Go 充值手续费从 7% 降至 5%，$1 的最低手续费不变 ([#225](https://github.com/phaseoteam/Phaseo/pull/225))。
+- 图像、视频和音频模型的卡片以各模型自身的计价单位显示 **From:** 价格，而不是按 token 计价 ([#225](https://github.com/phaseoteam/Phaseo/pull/225))。
+- phaseo.app 上的分析和会话录制仅在你接受分析 Cookie 后才会运行 ([#226](https://github.com/phaseoteam/Phaseo/pull/226))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 对于以 `input_tokens` 和 `output_tokens`（而非 `prompt_tokens` 和 `completion_tokens`）报告用量的供应商，Chat Completions 响应现在也包含其 token 用量 ([#227](https://github.com/phaseoteam/Phaseo/pull/227))。
+
+</div>
+
+</Update>
+
 <Update label="2026年4月4日">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">产品</p>
 
-- 我们改进了移动端模型页面、定价布局和免费路由的可见性，并将 Pay As You Go 充值费降至 5%。
+- 在手机上，模型页将价格分两列显示，**Other models** 一行也不会超出屏幕 ([#223](https://github.com/phaseoteam/Phaseo/pull/223))。
+- 免费提供某个模型的供应商显示在 **Free** 价格等级下，而不是 **Standard** ([#223](https://github.com/phaseoteam/Phaseo/pull/223))。
 
 </div>
 

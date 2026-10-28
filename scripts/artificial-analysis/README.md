@@ -25,6 +25,19 @@ Output files are created exclusively. Invalid identities, duplicates, broken
 manifests, authentication failures in the data envelope, and changed schemas
 abort extraction. Corrupt or partial data is not published.
 
+## Progress Index v1
+
+`pnpm data:sync-aa-progress-index [--write]` reads AA's IRT-based Progress Index
+from the Trends page data asset (its `score` field), using the same manifest and
+decoding. It refuses the payload unless the methodology's anchors still read
+o3-mini (high) = 220 and GPT-5.5 (xhigh) = 320. Configurations are matched with the
+ownership in the latest published dashboard snapshot, so the scheduled workflow
+runs it straight after that publication. Each run writes every matched
+configuration to `aa-progress-index-v1` and retires rows missing from the new
+fit, because AA refits all scores together; a run that would replace less than
+half the active rows is refused. See the
+[methodology](https://artificialanalysis.ai/methodology/progress-index).
+
 ### Catalogue matching
 
 Add `--match-db` with the existing maintenance Supabase environment variables
