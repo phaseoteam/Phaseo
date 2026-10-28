@@ -1020,12 +1020,6 @@ export async function rotateRefreshToken(
 	const clientId = String(data.client_id ?? "").trim();
 	const client = await loadOAuthClient(clientId);
 	if (!client) return { ok: false, reason: "invalid_grant" };
-	// Refresh tokens carry no resource, so they can never hold a dynamic
-	// client's MCP management scopes.
-	const refreshScopes = Array.isArray(data.scopes) ? data.scopes.map(String) : [];
-	if (violatesMcpManagementBinding(client.registration_source, null, refreshScopes)) {
-		return { ok: false, reason: "invalid_grant" };
-	}
 	if (clientAuth?.clientId && clientAuth.clientId !== clientId) {
 		return { ok: false, reason: "invalid_client" };
 	}
@@ -1071,6 +1065,11 @@ export async function rotateRefreshToken(
 		: Array.isArray(data.scopes)
 			? data.scopes.map(String)
 			: [];
+	// The new pair takes the current authorization's scopes and is bound to no
+	// resource, so it can never carry a dynamic client's MCP management scopes.
+	if (violatesMcpManagementBinding(client.registration_source, null, scopes)) {
+		return { ok: false, reason: "invalid_grant" };
+	}
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),

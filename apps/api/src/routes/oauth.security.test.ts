@@ -578,6 +578,30 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("blocks OAuth consent approval from an MFA account with an aal1 session", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" } as never);
+		state.client = { id: "dynamic_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read"] };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/authorize/approve", {
+			method: "POST",
+			headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			body: JSON.stringify({
+				client_id: "dynamic_mcp",
+				redirect_uri: "https://example.com/callback",
+				primary_workspace_id: "ws_1",
+				scopes: ["models:read", "keys:write"],
+				code_challenge: "a".repeat(43),
+				code_challenge_method: "S256",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ error: "access_denied" });
+		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
 	it("rejects Gateway API resource approval without gateway access consent", async () => {
 		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
 		const { oauthRouter } = await import("./oauth");

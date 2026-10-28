@@ -643,6 +643,10 @@ oauthRouter.post(
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
 		if (!(await checkOAuthRateLimit(req, "token", `authorize-approve:${actor.userId}`))) return rateLimitError();
+		// Same rule as device approval: an MFA account must approve from an AAL2 session.
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before authorizing this application", 403);
+		}
 
 		let body: Record<string, unknown>;
 		try {
