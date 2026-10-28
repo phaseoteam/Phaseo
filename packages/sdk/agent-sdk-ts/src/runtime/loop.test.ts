@@ -81,6 +81,13 @@ describe("Agent SDK runtime loop", () => {
   expect(result.run.context).toEqual({ value: "updated" }); expect(JSON.parse(result.run.messages.find(message => message.role === "tool" && message.toolCallId === "read")!.content as string)).toEqual({ value: "updated" });
  });
 
+	it("keeps a context change from a tool that ran beside a read", async () => {
+		let step = 0;
+		const agent = createAgent({ id: "parallel-context", tools: [defineTool({ id: "load", parallelSafe: true, execute: (_input, runtime) => { runtime.setContext({ value: "loaded" }); return "loaded"; } }), defineTool({ id: "read", parallelSafe: true, execute: () => "read" })] });
+		const result = await agent.run({ input: "Load", context: { value: "initial" }, client: { generate: async () => ({ message: { role: "assistant", content: "", ...(step++ === 0 ? { toolCalls: [{ id: "load", name: "load", input: {} }, { id: "read", name: "read", input: {} }] } : {}) } }) } });
+		expect(result.run.context).toEqual({ value: "loaded" });
+	});
+
 	it("resumes human review with structured input and rejects an empty response", async () => {
 		const agent = createAgent<string, string>({ id: "image-review", humanReview: ({ response }) => response.message.content === "Review needed" ? { reason: "image_review" } : null });
 		const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "Review needed" } }).mockImplementationOnce(async request => {

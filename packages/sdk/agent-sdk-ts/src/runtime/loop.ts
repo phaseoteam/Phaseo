@@ -409,7 +409,7 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 					}
 					return { entry, tool, rejection };
 				});
-				let executions;
+				let executions; const startContext = currentContext;
 				try { executions = await mapConcurrent(admitted, concurrency, async ({ entry, tool, rejection }) => {
 					if (concurrency === 1) {
 						abortIfNeeded(options.signal);
@@ -434,7 +434,7 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 				}
 				if (concurrency === 1) recordResults();
 				try {
-				for (const execution of executions) { run.messages.push(execution.message); if (execution.rejection === undefined) currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				for (const execution of executions) { run.messages.push(execution.message); if (execution.rejection === undefined && execution.context !== startContext) currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
 				} catch (error) { run.messages = [...originalMessages, ...executions.map((execution) => execution.message), ...continuationMessages]; run.pause = null; throw error; }
 				run.pause = null;
 			} else if (run.status === "waiting_for_human" && !(options.humanMessages !== undefined ? options.humanMessages.length : options.humanInput)) throw new Error(`Run ${run.id} is waiting for human input`);
@@ -536,13 +536,13 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			if (autoCalls.length) {
 				run.status = "waiting_for_tools"; step.status = "executing_tools";
 				// Reads that are safe side by side run together; anything else keeps the configured concurrency.
-				const width = autoCalls.every(({ tool }) => tool.parallelSafe) ? Math.max(concurrency, 8) : concurrency;
+				const width = autoCalls.every(({ tool }) => tool.parallelSafe) ? Math.max(concurrency, 8) : concurrency, startContext = currentContext;
 				const executed = await mapConcurrent(autoCalls, width, async ({ call, tool }) => {
 					const execution = await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming, maxOutputChars });
 					if (width === 1) currentContext = execution.context;
 					return { ...execution, call, input: call.input };
 				});
-				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
+				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); if (item.context !== startContext) currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
 				await applyNextTurnParams(nextParams, nextTurn as any, { ...turn, messages: run.messages, context: currentContext });
 			}
 
