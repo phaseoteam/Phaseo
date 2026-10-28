@@ -68,8 +68,9 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
           "color": "#2563eb",
-          "defaultChannel": "model-updates"
+          "defaultChannel": "new-models"
         }
       ],
       [

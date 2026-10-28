@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { View, type GestureResponderEvent, type LayoutChangeEvent } from "react-native";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const THUMB = 18;
@@ -28,6 +29,14 @@ export function Slider({ value, placeholder, min, max, step, onChange, onCommit,
   // The track is inset by half a thumb on each side so the thumb never overhangs the edges.
   const at = (event: GestureResponderEvent) => sliderValueAt(start.current.x + (event.nativeEvent.pageX - start.current.pageX) - THUMB / 2, width.current - THUMB, { min, max, step });
   const nudge = (direction: 1 | -1) => onCommit(Number(clamp(shown + direction * step, min, max).toFixed(4)));
+  // A tick for each step the thumb moves onto while dragging, so the steps can be felt.
+  const lastStep = useRef(shown);
+  const move = (next: number) => {
+    if (next !== lastStep.current) haptic("tick");
+    lastStep.current = next;
+    setDragging(next);
+    onChange?.(next);
+  };
 
   return (
     <View
@@ -43,15 +52,10 @@ export function Slider({ value, placeholder, min, max, step, onChange, onCommit,
       onResponderTerminationRequest={() => false}
       onResponderGrant={(event) => {
         start.current = { x: event.nativeEvent.locationX, pageX: event.nativeEvent.pageX };
-        const next = at(event);
-        setDragging(next);
-        onChange?.(next);
+        lastStep.current = shown;
+        move(at(event));
       }}
-      onResponderMove={(event) => {
-        const next = at(event);
-        setDragging(next);
-        onChange?.(next);
-      }}
+      onResponderMove={(event) => move(at(event))}
       onResponderRelease={(event) => {
         setDragging(null);
         onCommit(at(event));

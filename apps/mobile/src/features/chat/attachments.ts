@@ -2,15 +2,32 @@ import * as Crypto from "expo-crypto";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { AUDIO_FORMATS, audioFormat } from "./request";
 import type { ChatAttachment } from "./types";
 
 const MAX_TEXT_BYTES = 200 * 1024;
 const TEXT_TYPES = /^(text\/|application\/(json|xml|javascript|x-yaml|yaml|csv|x-sh|sql|toml))/;
 
+/** Where picked files are copied (one flat folder; each message's attachment list points into it). */
+export const attachmentsFolder = () => new Directory(Paths.document, "chat-attachments");
+
 function attachmentsDir() {
-  const dir = new Directory(Paths.document, "chat-attachments");
+  const dir = attachmentsFolder();
   if (!dir.exists) dir.create({ intermediates: true });
   return dir;
+}
+
+/** The size of every kept attachment file, without creating the folder. */
+export function attachmentFileSizes(): number[] {
+  const dir = attachmentsFolder();
+  if (!dir.exists) return [];
+  return dir.list().map((entry) => entry.size ?? 0);
+}
+
+/** Deletes every kept attachment (when every chat is deleted). */
+export function removeAllAttachmentFiles() {
+  const dir = attachmentsFolder();
+  try { if (dir.exists) dir.delete(); } catch { /* already gone */ }
 }
 
 /** Copies a picked file into app storage so the chat keeps it after the picker's cache is cleared. */
@@ -47,11 +64,12 @@ export async function pickTextFile(): Promise<ChatAttachment[]> {
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
-/** Audio files go to the model as input_audio, for models that take audio. */
+/** Audio files go to the model as input_audio, for models that take audio: MP3 or WAV only, which every audio route accepts. */
 export async function pickAudioFile(): Promise<ChatAttachment[]> {
-  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*"], copyToCacheDirectory: true, multiple: false });
+  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave"], copyToCacheDirectory: true, multiple: false });
   if (result.canceled) return [];
   return result.assets.map((asset) => {
+    if (!AUDIO_FORMATS.includes(audioFormat(asset.mimeType ?? "", asset.name))) throw new Error(`${asset.name} isn't MP3 or WAV. Convert it to one of those to attach it.`);
     if ((asset.size ?? 0) > MAX_AUDIO_BYTES) throw new Error(`${asset.name} is over 10 MB. Attach a shorter recording.`);
     return keep(asset.uri, asset.name, asset.mimeType ?? "audio/mpeg", "audio", asset.size ?? undefined);
   });
