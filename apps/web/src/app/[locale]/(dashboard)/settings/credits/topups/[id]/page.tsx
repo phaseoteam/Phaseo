@@ -11,8 +11,10 @@ import {
 	formatTopupUsd,
 	isTopupExpired,
 	loadCreditTopupForReviewer,
+	needsAuthenticationResume,
 	type CreditTopupStatus,
 } from "@/lib/server/creditTopups";
+import { getStripe } from "@/lib/stripe";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("SettingsUI.creditTopups");
@@ -73,6 +75,8 @@ export default async function CreditTopupReviewPage(props: {
 	const { row } = review;
 	const status: CreditTopupStatus = isTopupExpired(row) ? "expired" : row.status;
 	const amount = formatTopupUsd(row.amount_cents);
+	// A reload during 3D Secure leaves a confirmed request waiting on the bank: offer Resume.
+	const resume = await needsAuthenticationResume(getStripe(), row);
 	const { data: profile } = await admin.from("users").select("declared_country_code").eq("user_id", user!.id).maybeSingle();
 	const expiresAt = new Date(row.expires_at).toLocaleString("en-US", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" });
 
@@ -107,11 +111,12 @@ export default async function CreditTopupReviewPage(props: {
 				</CardContent>
 			</Card>
 
-			{status === "pending" ? (
+			{status === "pending" || resume ? (
 				<CreditTopupReviewActions
 					id={row.id}
 					token={token}
 					flow={row.flow}
+					resume={resume}
 					declaredCountryCode={typeof profile?.declared_country_code === "string" ? profile.declared_country_code : null}
 					copy={{
 						confirm: t("confirm", { amount }),
@@ -133,6 +138,8 @@ export default async function CreditTopupReviewPage(props: {
 						authenticationFailed: t("authenticationFailed"),
 						notPending: t("notPending"),
 						genericError: t("genericError"),
+						resume: t("resume"),
+						resumeNotice: t("resumeNotice"),
 					}}
 				/>
 			) : (

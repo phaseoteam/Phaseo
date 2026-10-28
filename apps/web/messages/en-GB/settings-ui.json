@@ -7720,6 +7720,8 @@
 		"paidTitle": "Paid",
 		"paidBody": "{amount} was charged and the credits were added to {workspace}.",
 		"expiredTitle": "This request expired",
-		"expiredBody": "Nobody answered within 30 minutes, so nothing was charged. The agent is told not to retry; it can start a new request when someone is available."
+		"expiredBody": "Nobody answered within 30 minutes, so nothing was charged. The agent is told not to retry; it can start a new request when someone is available.",
+		"resume": "Finish card verification",
+		"resumeNotice": "This top-up was confirmed, but the bank's card verification was not finished. Finish it to complete the payment."
 	}
 }

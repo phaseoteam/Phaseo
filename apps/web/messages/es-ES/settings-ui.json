@@ -7720,6 +7720,8 @@
 		"paidTitle": "Pagado",
 		"paidBody": "Se han cobrado {amount} y los créditos se han añadido a {workspace}.",
 		"expiredTitle": "Esta solicitud ha caducado",
-		"expiredBody": "Nadie respondió en 30 minutos, así que no se ha cobrado nada. Se indica al agente que no lo reintente; puede iniciar una nueva solicitud cuando haya alguien disponible."
+		"expiredBody": "Nadie respondió en 30 minutos, así que no se ha cobrado nada. Se indica al agente que no lo reintente; puede iniciar una nueva solicitud cuando haya alguien disponible.",
+		"resume": "Terminar la verificación de la tarjeta",
+		"resumeNotice": "Esta recarga se confirmó, pero no se terminó la verificación de la tarjeta del banco. Termínala para completar el pago."
 	}
 }

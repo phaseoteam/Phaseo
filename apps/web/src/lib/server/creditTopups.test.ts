@@ -3,6 +3,7 @@ import {
 	chargeConfirmedCreditTopup,
 	decideCreditTopup,
 	loadCreditTopupForReviewer,
+	needsAuthenticationResume,
 	recordCreditTopupPaymentFromWebhook,
 	type CreditTopupRow,
 } from "@/lib/server/creditTopups";
@@ -146,6 +147,24 @@ describe("chargeConfirmedCreditTopup", () => {
 
 	it("refuses checkout requests", async () => {
 		await expect(chargeConfirmedCreditTopup({ db: fakeDb({}), stripe: stripeWith(jest.fn()), row: row({ flow: "checkout", payment_method_id: null }), countryCode: "GB" })).rejects.toThrow("credit_topup_not_saved_card");
+	});
+});
+
+describe("needsAuthenticationResume", () => {
+	const stripeWith = (status: string) => ({ paymentIntents: { retrieve: jest.fn(async () => ({ id: "pi_1", status })) } }) as any;
+
+	it("offers Resume for a confirmed payment still waiting for 3D Secure", async () => {
+		const stripe = stripeWith("requires_action");
+		expect(await needsAuthenticationResume(stripe, row({ status: "confirmed", stripe_payment_intent_id: "pi_1" }))).toBe(true);
+		expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith("pi_1");
+	});
+
+	it("does not offer Resume otherwise", async () => {
+		expect(await needsAuthenticationResume(stripeWith("succeeded"), row({ status: "confirmed", stripe_payment_intent_id: "pi_1" }))).toBe(false);
+		expect(await needsAuthenticationResume(stripeWith("requires_action"), row({ status: "pending", stripe_payment_intent_id: "pi_1" }))).toBe(false);
+		const untouched = stripeWith("requires_action");
+		expect(await needsAuthenticationResume(untouched, row({ status: "confirmed", stripe_payment_intent_id: null }))).toBe(false);
+		expect(untouched.paymentIntents.retrieve).not.toHaveBeenCalled();
 	});
 });
 

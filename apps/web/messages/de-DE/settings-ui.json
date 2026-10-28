@@ -7720,6 +7720,8 @@
 		"paidTitle": "Bezahlt",
 		"paidBody": "{amount} wurde belastet und das Guthaben {workspace} gutgeschrieben.",
 		"expiredTitle": "Diese Anfrage ist abgelaufen",
-		"expiredBody": "Niemand hat innerhalb von 30 Minuten geantwortet, daher wurde nichts belastet. Der Agent wird angewiesen, es nicht erneut zu versuchen; er kann eine neue Anfrage starten, wenn jemand erreichbar ist."
+		"expiredBody": "Niemand hat innerhalb von 30 Minuten geantwortet, daher wurde nichts belastet. Der Agent wird angewiesen, es nicht erneut zu versuchen; er kann eine neue Anfrage starten, wenn jemand erreichbar ist.",
+		"resume": "Kartenbestätigung abschließen",
+		"resumeNotice": "Diese Aufladung wurde bestätigt, aber die Kartenbestätigung der Bank wurde nicht abgeschlossen. Schließe sie ab, um die Zahlung zu beenden."
 	}
 }

@@ -11,6 +11,7 @@ import {
 	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
+	refreshedScopes,
 	verifyPkce,
 	verifyClientSecret,
 } from "./service";
@@ -29,6 +30,26 @@ function replaceRuntime(bindings: Record<string, unknown>) {
 }
 
 describe("OAuth service helpers", () => {
+	it("grants billing:write only to the first-party CLI, whatever a client lists", () => {
+		const cli = { id: "phaseo_cli", is_first_party: true, allowed_scopes: ["me:read", "billing:write"] } as any;
+		const partner = { id: "partner_app", is_first_party: false, allowed_scopes: ["me:read", "billing:write"] } as any;
+		const impostor = { id: "phaseo_cli", is_first_party: false, allowed_scopes: ["billing:write"] } as any;
+		expect(filterAllowedScopes(cli, ["me:read", "billing:write"])).toEqual(["me:read", "billing:write"]);
+		expect(filterAllowedScopes(partner, ["me:read", "billing:write"])).toEqual(["me:read"]);
+		expect(filterAllowedScopes(impostor, ["billing:write"])).toEqual([]);
+	});
+
+	it("never widens a session on refresh", () => {
+		const authorization = ["openid", "credits:read", "billing:write"];
+		// An older session without billing:write stays without it after another login opts in.
+		expect(refreshedScopes(authorization, ["openid", "credits:read"])).toEqual(["openid", "credits:read"]);
+		// A session keeps billing:write only while the authorization still grants it.
+		expect(refreshedScopes(authorization, ["openid", "billing:write"])).toEqual(["openid", "billing:write"]);
+		expect(refreshedScopes(["openid"], ["openid", "billing:write"])).toEqual(["openid"]);
+		// Tokens stored without scopes keep the authorization minus opt-in scopes.
+		expect(refreshedScopes(authorization, [])).toEqual(["openid", "credits:read"]);
+	});
+
 	it("restricts desktop callbacks to its registered public loopback client", () => {
 		const client = { id: "phaseo_desktop", is_first_party: true, registration_source: "first_party", client_type: "public", redirect_uris: ["http://127.0.0.1/callback"] } as any;
 		expect(assertRedirectAllowed(client, "http://127.0.0.1:54321/callback")).toBe(true);

@@ -27,6 +27,8 @@ export type CreditTopupReviewCopy = {
 	authenticationFailed: string;
 	notPending: string;
 	genericError: string;
+	resume: string;
+	resumeNotice: string;
 };
 
 type Outcome = "declined" | "processing" | "failed" | "authentication_failed" | "not_pending" | "error";
@@ -54,10 +56,12 @@ export default function CreditTopupReviewActions(props: {
 	id: string;
 	token: string;
 	flow: "checkout" | "saved_card";
+	/** A confirmed payment waiting for 3D Secure: only offer to finish it. */
+	resume?: boolean;
 	declaredCountryCode: string | null;
 	copy: CreditTopupReviewCopy;
 }) {
-	const { id, token, flow, declaredCountryCode, copy } = props;
+	const { id, token, flow, resume = false, declaredCountryCode, copy } = props;
 	const router = useRouter();
 	const [countryCode, setCountryCode] = useState(declaredCountryCode ?? "");
 	const [busy, setBusy] = useState<"confirm" | "decline" | null>(null);
@@ -133,7 +137,7 @@ export default function CreditTopupReviewActions(props: {
 
 	return (
 		<div className="space-y-4">
-			<Callout tone="info">{flow === "checkout" ? copy.checkoutNotice : copy.savedCardNotice}</Callout>
+			<Callout tone="info">{resume ? copy.resumeNotice : flow === "checkout" ? copy.checkoutNotice : copy.savedCardNotice}</Callout>
 			{needsCountry ? (
 				<div className="space-y-2">
 					<label htmlFor="topup-country" className="text-sm font-medium">{copy.country}</label>
@@ -151,11 +155,13 @@ export default function CreditTopupReviewActions(props: {
 			{outcome === "error" ? <Callout tone="critical" role="alert">{copy.genericError}</Callout> : null}
 			<div className="flex flex-wrap gap-2">
 				<Button className="rounded-md" onClick={confirm} disabled={busy !== null || !countryCode}>
-					{flow === "checkout" ? copy.continueToPayment : copy.confirm}
+					{resume ? copy.resume : flow === "checkout" ? copy.continueToPayment : copy.confirm}
 				</Button>
-				<Button className="rounded-md" variant="outline" onClick={decline} disabled={busy !== null}>
-					{copy.decline}
-				</Button>
+				{resume ? null : (
+					<Button className="rounded-md" variant="outline" onClick={decline} disabled={busy !== null}>
+						{copy.decline}
+					</Button>
+				)}
 			</div>
 		</div>
 	);

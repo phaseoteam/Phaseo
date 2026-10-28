@@ -69,15 +69,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 			topUpRequest: {
 				id: row.id,
 				workspaceId: row.workspace_id,
+				createdAt: row.created_at,
+				expiresAt: row.expires_at,
 				onSessionCreated: async (sessionId) => {
+					// The idempotency key makes concurrent creates return this same session.
 					const { error } = await admin.from("credit_topup_requests")
 						.update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })
-						.eq("id", row.id);
+						.eq("id", row.id)
+						.is("stripe_checkout_session_id", null);
 					if (error) throw error;
+					// Declined or expired while the session was being created: never leave it payable.
+					const current = await loadCreditTopup(admin, row.id);
+					if (current?.status !== "pending") {
+						await getStripe().checkout.sessions.expire(sessionId).catch(() => undefined);
+						throw new Error("credit_topup_not_pending");
+					}
 				},
 			},
 		});
 	} catch (error) {
+		// A concurrent click is still creating the session under the same idempotency key.
+		const stripeError = error as { type?: string; statusCode?: number };
+		if (stripeError?.type === "StripeIdempotencyError" || stripeError?.statusCode === 409) {
+			return NextResponse.json({ error: "checkout_starting" }, { status: 409, headers: NO_STORE });
+		}
 		// eslint-disable-next-line no-console
 		console.error("[credit-topups] checkout failed", { id, error: error instanceof Error ? error.message : String(error) });
 		return NextResponse.json({ error: "checkout_failed" }, { status: 500, headers: NO_STORE });

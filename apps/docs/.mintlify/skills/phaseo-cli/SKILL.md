@@ -67,7 +67,7 @@ phaseo credits topups get <id> --json
 
 - Amounts are $5 to $500. Only start a top-up the user asked for, with the amount they gave.
 - With a saved card the owners and admins get an email; the command prints `awaiting confirmation` and waits (up to about 35 minutes). Use `--no-wait` to return at once, then poll `credits topups get` until `final` is `true`.
-- Without a saved card the result has a `checkout_url`. Give it to the user to pay with a new card in the browser; never open or pay it yourself.
+- Without a saved card the result has a `checkout_url` (with `--json` the command returns it at once). Give it to the user to pay with a new card in the browser; never open or pay it yourself. Then poll `credits topups get`.
 - `paid` means the credits were added. `declined`, `expired` and `failed` are final and carry a `reason` code: tell the user and stop. Do not retry them automatically or start another top-up in a loop.
 - `429 too_many_pending_topups` means 5 top-ups are already waiting; do not create more.
 

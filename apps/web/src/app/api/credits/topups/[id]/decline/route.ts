@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { decideCreditTopup } from "@/lib/server/creditTopups";
+import { getStripe } from "@/lib/stripe";
+import { creditTopupTokenMatches, decideCreditTopup, loadCreditTopup, reviewerAccess } from "@/lib/server/creditTopups";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -20,7 +21,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 	const token = typeof body.token === "string" ? body.token.trim() : "";
 
 	try {
-		const decision = await decideCreditTopup({ db: createAdminClient(), id, token, userId: user.id, decision: "decline" });
+		const admin = createAdminClient();
+		// A first top-up may already have a payable Checkout Session. Expire it before declining,
+		// so nobody can pay a declined request; if it was already paid, refuse to decline.
+		const row = await loadCreditTopup(admin, id);
+		if (row?.status === "pending" && row.stripe_checkout_session_id) {
+			if (!(await creditTopupTokenMatches(admin, id, token))) return NextResponse.json({ error: "not_found" }, { status: 404, headers: NO_STORE });
+			if (!(await reviewerAccess(admin, row.workspace_id, user.id)).canDecide) return NextResponse.json({ error: "forbidden" }, { status: 403, headers: NO_STORE });
+			const stripe = getStripe();
+			const session = await stripe.checkout.sessions.retrieve(row.stripe_checkout_session_id);
+			if (session.status === "open") {
+				try {
+					await stripe.checkout.sessions.expire(row.stripe_checkout_session_id);
+				} catch {
+					// The payer finished checkout in the meantime.
+					return NextResponse.json({ error: "checkout_completed" }, { status: 409, headers: NO_STORE });
+				}
+			} else if (session.status === "complete") {
+				return NextResponse.json({ error: "checkout_completed" }, { status: 409, headers: NO_STORE });
+			}
+		}
+		const decision = await decideCreditTopup({ db: admin, id, token, userId: user.id, decision: "decline" });
 		if (decision.ok === false) return NextResponse.json({ error: decision.error }, { status: decision.httpStatus, headers: NO_STORE });
 		if (decision.status !== "declined") {
 			return NextResponse.json({ error: "not_pending", status: decision.status, reason: decision.reason }, { status: 409, headers: NO_STORE });

@@ -273,6 +273,16 @@ export async function chargeConfirmedCreditTopup(args: {
 }
 
 /**
+ * True when a confirmed saved-card request is waiting for 3D Secure (for example after the page
+ * was reloaded mid-verification), so the review page offers Resume instead of no action at all.
+ */
+export async function needsAuthenticationResume(stripe: Pick<Stripe, "paymentIntents">, row: CreditTopupRow): Promise<boolean> {
+	if (row.status !== "confirmed" || row.flow !== "saved_card" || !row.stripe_payment_intent_id) return false;
+	const pi = await stripe.paymentIntents.retrieve(row.stripe_payment_intent_id);
+	return pi.status === "requires_action";
+}
+
+/**
  * Called by the Stripe webhook for top-up PaymentIntents. paid: after the wallet was credited
  * (or the credit was already applied). failed: only for saved_card requests, since Checkout
  * lets the payer retry with another card in the same session.

@@ -14,6 +14,7 @@ const state: {
 	paymentIntentsCreate: jest.Mock;
 	checkout: jest.Mock;
 	sessionRetrieve: jest.Mock;
+	sessionExpire: jest.Mock;
 } = {} as any;
 
 jest.mock("@/utils/supabase/server", () => ({
@@ -55,7 +56,7 @@ jest.mock("@/utils/supabase/admin", () => ({
 jest.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
 		paymentIntents: { create: (...args: unknown[]) => state.paymentIntentsCreate(...args), retrieve: jest.fn() },
-		checkout: { sessions: { retrieve: (...args: unknown[]) => state.sessionRetrieve(...args) } },
+		checkout: { sessions: { retrieve: (...args: unknown[]) => state.sessionRetrieve(...args), expire: (...args: unknown[]) => state.sessionExpire(...args) } },
 	}),
 }));
 
@@ -102,6 +103,7 @@ beforeEach(() => {
 	state.paymentIntentsCreate = jest.fn(async () => ({ id: "pi_1", status: "succeeded", client_secret: "secret" }));
 	state.checkout = jest.fn(async () => Response.json({ url: "https://checkout.stripe.com/c/pay/cs_test_1" }));
 	state.sessionRetrieve = jest.fn();
+	state.sessionExpire = jest.fn(async () => ({ status: "expired" }));
 });
 
 describe("credit top-up review routes", () => {
@@ -176,6 +178,29 @@ describe("credit top-up review routes", () => {
 		state.members = [{ workspace_id: WORKSPACE, user_id: "00000000-0000-4000-8000-000000000099", role: "member" }];
 		state.userId = "00000000-0000-4000-8000-000000000099";
 		expect((await post(checkoutRoute.POST, { token: TOKEN })).status).toBe(403);
+	});
+
+	it("expires an open checkout session before declining, and refuses once it was paid", async () => {
+		state.rows = [pendingRow({ flow: "checkout", payment_method_id: null, stripe_checkout_session_id: "cs_open" })];
+		state.sessionRetrieve = jest.fn(async () => ({ status: "open", url: "https://checkout.stripe.com/c/pay/cs_open" }));
+		state.sessionExpire = jest.fn(async () => {
+			expect(state.rows[0].status).toBe("pending");
+			return { status: "expired" };
+		});
+		const declined = await post(declineRoute.POST, { token: TOKEN });
+		expect(declined.status).toBe(200);
+		expect(state.sessionExpire).toHaveBeenCalledWith("cs_open");
+		expect(state.rows[0].status).toBe("declined");
+
+		state.rows = [pendingRow({ flow: "checkout", payment_method_id: null, stripe_checkout_session_id: "cs_paid" })];
+		state.sessionRetrieve = jest.fn(async () => ({ status: "complete" }));
+		state.sessionExpire = jest.fn();
+		state.decide.mockClear();
+		const refused = await post(declineRoute.POST, { token: TOKEN });
+		expect(refused.status).toBe(409);
+		expect(await refused.json()).toEqual({ error: "checkout_completed" });
+		expect(state.rows[0].status).toBe("pending");
+		expect(state.decide).not.toHaveBeenCalled();
 	});
 
 	it("expires a checkout request past its deadline", async () => {

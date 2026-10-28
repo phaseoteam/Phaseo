@@ -1926,6 +1926,17 @@ export async function waitForTopup(
 	return { topup, timedOut: false };
 }
 
+/**
+ * Whether credits add should poll. Not when asked not to, when the top-up is already final, or
+ * under --json when a person must open checkout_url first: an agent then gets the pending
+ * top-up (with the link) at once instead of a silent wait.
+ */
+export function shouldWaitForTopup(created: any, options: { json: boolean; noWait: boolean }): boolean {
+	if (options.noWait || created?.final) return false;
+	if (options.json && created?.next_action === "open_checkout_url") return false;
+	return true;
+}
+
 async function creditsAdd(flags: Record<string, string | boolean>) {
 	const json = flagBool(flags, "json");
 	const amount = parseTopupAmountFlag(flagString(flags, "amount"));
@@ -1948,7 +1959,7 @@ async function creditsAdd(flags: Record<string, string | boolean>) {
 	if (created?.checkout_url && await shouldOpenCheckout(flags, json) && !openUrl(created.checkout_url) && !json) {
 		process.stderr.write(`${ui.warning("Could not open a browser. Open the checkout link above.")}\n`);
 	}
-	if (flagBool(flags, "no-wait") || created?.final) {
+	if (!shouldWaitForTopup(created, { json, noWait: flagBool(flags, "no-wait") })) {
 		if (json) printJson(body);
 		if (created?.final && created?.status !== "paid") process.exitCode = 1;
 		return;

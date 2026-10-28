@@ -32,10 +32,14 @@ type CreateStripeCheckoutResponseArgs = {
 	 * A top-up request from the API or CLI (credit_topup_requests). Bills that request's
 	 * workspace instead of the active one, tags the PaymentIntent so the webhook can mark the
 	 * request paid, shows the saved-card terms, and expires the session with the request.
+	 * The session is created with the request id as the Stripe idempotency key and params that
+	 * depend only on the request, so concurrent or repeated clicks get one session, never two.
 	 */
 	topUpRequest?: {
 		id: string;
 		workspaceId: string;
+		createdAt: string;
+		expiresAt: string;
 		onSessionCreated: (sessionId: string) => Promise<void>;
 	};
 };
@@ -43,7 +47,8 @@ type CreateStripeCheckoutResponseArgs = {
 // Terms shown when an API or CLI top-up saves the card for later top-ups.
 const TOP_UP_REQUEST_MANDATE =
 	"By paying, you allow Phaseo to save this card and charge it for later credit top-ups. Each top-up requested through the Phaseo API or CLI is charged only after a workspace owner or admin confirms it from an email. You can remove the card at any time in Settings.";
-// Stripe needs at least 30 minutes; the request itself expires 30 minutes after it was made.
+// Stripe needs a session to last at least 30 minutes from its creation; counting from the
+// request's own expiry keeps expires_at stable across repeated creates for the same request.
 const TOP_UP_REQUEST_SESSION_SECONDS = 31 * 60;
 
 async function sendCheckoutStartedNotifications(args: {
@@ -247,7 +252,7 @@ export async function createStripeCheckoutResponse(
 			return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
 		}
 
-		const paymentAttempt = Date.now();
+		const paymentAttempt = topUpRequest ? Date.parse(topUpRequest.createdAt) : Date.now();
 		const { successUrl: paymentSuccessUrl } = buildStripeCheckoutRedirectUrls({
 			configuredBaseUrl,
 			originHeader,
@@ -296,10 +301,10 @@ export async function createStripeCheckoutResponse(
 			...(topUpRequest
 				? {
 						custom_text: { submit: { message: TOP_UP_REQUEST_MANDATE } },
-						expires_at: Math.floor(Date.now() / 1000) + TOP_UP_REQUEST_SESSION_SECONDS,
+						expires_at: Math.floor(Date.parse(topUpRequest.expiresAt) / 1000) + TOP_UP_REQUEST_SESSION_SECONDS,
 					}
 				: {}),
-		});
+		}, topUpRequest ? { idempotencyKey: `credit-topup-checkout:${topUpRequest.id}` } : undefined);
 		if (topUpRequest) await topUpRequest.onSessionCreated(session.id);
 
 		const startedAtIso = new Date().toISOString();

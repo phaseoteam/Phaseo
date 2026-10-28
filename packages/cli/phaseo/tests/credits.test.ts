@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_LOGIN_SCOPES, parseScopeArgument } from "../src/api.ts";
-import { helpKeyForCommand, parseArgs, parseTopupAmountFlag, renderHelp, renderTopup, waitForTopup } from "../src/index.ts";
+import { helpKeyForCommand, parseArgs, parseTopupAmountFlag, renderHelp, renderTopup, shouldWaitForTopup, waitForTopup } from "../src/index.ts";
 
 test("billing:write is opt-in and adds to the default login scopes", () => {
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("billing:write"), false);
@@ -87,4 +87,14 @@ test("gives up waiting five minutes after the request expires", async () => {
 	assert.equal(result.timedOut, true);
 	assert.equal(result.topup.status, "confirmed");
 	assert.equal(calls, 35);
+});
+
+test("--json returns a checkout top-up at once instead of polling", () => {
+	const checkout = { status: "pending", final: false, next_action: "open_checkout_url", checkout_url: "https://phaseo.app/settings/credits/topups/t_1?token=x" };
+	assert.equal(shouldWaitForTopup(checkout, { json: true, noWait: false }), false);
+	assert.equal(shouldWaitForTopup(checkout, { json: false, noWait: false }), true, "people see the link and the CLI waits");
+	const email = { status: "pending", final: false, next_action: "await_email_confirmation" };
+	assert.equal(shouldWaitForTopup(email, { json: true, noWait: false }), true);
+	assert.equal(shouldWaitForTopup(email, { json: true, noWait: true }), false);
+	assert.equal(shouldWaitForTopup({ status: "paid", final: true }, { json: false, noWait: false }), false);
 });

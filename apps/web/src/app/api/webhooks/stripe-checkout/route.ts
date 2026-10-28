@@ -934,11 +934,14 @@ export async function POST(req: Request) {
                 const purpose = readPaymentIntentPurpose(pi);
                 if (!purpose || !TOP_UP_PURPOSES.has(purpose)) break;
 
+                // Only a pending entry can fail. A late or replayed failure must never downgrade a
+                // credited (Paid) entry: stripe_apply_payment_intent_credit would then credit it again.
                 await supabase
                     .from("credit_ledger")
                     .update({ status: "Failed", event_time: new Date().toISOString() })
                     .eq("ref_type", "Stripe_Payment_Intent")
-                    .eq("ref_id", pi.id);
+                    .eq("ref_id", pi.id)
+                    .eq("status", "Processing");
 
                 if (purpose === "auto_top_up" || purpose === "credits_topup_offsession") {
                     await enqueueAutoTopUpFailureFromWebhook({ supabase, paymentIntent: pi });

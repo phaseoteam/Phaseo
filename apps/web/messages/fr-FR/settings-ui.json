@@ -7720,6 +7720,8 @@
 		"paidTitle": "Payé",
 		"paidBody": "{amount} a été débité et les crédits ont été ajoutés à {workspace}.",
 		"expiredTitle": "Cette demande a expiré",
-		"expiredBody": "Personne n’a répondu en 30 minutes, rien n’a donc été débité. L’agent est invité à ne pas réessayer ; il peut lancer une nouvelle demande lorsque quelqu’un est disponible."
+		"expiredBody": "Personne n’a répondu en 30 minutes, rien n’a donc été débité. L’agent est invité à ne pas réessayer ; il peut lancer une nouvelle demande lorsque quelqu’un est disponible.",
+		"resume": "Terminer la vérification de la carte",
+		"resumeNotice": "Cette recharge a été confirmée, mais la vérification de la carte par la banque n’a pas été terminée. Terminez-la pour finaliser le paiement."
 	}
 }
