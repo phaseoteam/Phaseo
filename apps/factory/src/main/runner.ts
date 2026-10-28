@@ -1,4 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
@@ -7,7 +8,7 @@ import { FACTORY_BRANCH_PREFIX } from "../shared/intake";
 import { PROOF_FOLDER, stageDefinition } from "../shared/stages";
 import type { AgentProfile, FactorySettings, LogLine, ProofFile, Run, RunReport, StageId, WorkItem } from "../shared/types";
 import { startClaude } from "./claude";
-import { killTree } from "./kill";
+import { killTree, OWN_GROUP } from "./kill";
 import { StringDecoder } from "node:string_decoder";
 import { agentEnvironment, onClaudePlan } from "./connections";
 
@@ -42,7 +43,7 @@ function slug(text: string): string {
  * what happened to bring a pull request's worktree up to date, for the run's log.
  */
 export async function prepareWorktree(root: string, checkout: string, item: WorkItem): Promise<{ dir: string; branch: string; note?: string }> {
-	const dir = path.join(root, `${slug(item.repo)}-${item.number}`);
+	const dir = await worktreeFolder(root, checkout, item);
 	const wanted = item.branch ?? `factory/${item.number}-${slug(item.title)}`;
 	if (existsSync(dir)) {
 		// The branch it really has: it may have been given another name when it was made.
@@ -77,6 +78,27 @@ export async function prepareWorktree(root: string, checkout: string, item: Work
 	if (await branchExists(checkout, branch)) await git(checkout, ["worktree", "add", dir, branch]);
 	else await git(checkout, ["worktree", "add", "--no-track", "-b", branch, dir, head]);
 	return { dir, branch };
+}
+
+/**
+ * The work item's worktree folder. Different repositories can share a slug (acme/tools-api and acme-tools/api),
+ * so a folder that's already there is only this item's when it's a worktree of the same clone; otherwise the
+ * item gets a folder named with a hash of its repository too.
+ */
+async function worktreeFolder(root: string, checkout: string, item: WorkItem): Promise<string> {
+	const plain = path.join(root, `${slug(item.repo)}-${item.number}`);
+	if (!existsSync(plain) || (await sameClone(plain, checkout))) return plain;
+	const hash = createHash("sha256").update(item.repo.toLowerCase()).digest("hex").slice(0, 8);
+	const hashed = path.join(root, `${slug(item.repo)}-${hash}-${item.number}`);
+	if (existsSync(hashed) && !(await sameClone(hashed, checkout))) throw new Error(`${hashed} is a worktree of another repository, so ${item.repo}#${item.number} can't use it`);
+	return hashed;
+}
+
+/** Whether two folders are checkouts of the same clone: they share its .git folder. */
+async function sameClone(dir: string, checkout: string): Promise<boolean> {
+	const common = (cwd: string) => git(cwd, ["rev-parse", "--path-format=absolute", "--git-common-dir"]).then((found) => path.resolve(found).toLowerCase(), () => null);
+	const [mine, theirs] = await Promise.all([common(dir), common(checkout)]);
+	return mine !== null && mine === theirs;
 }
 
 async function branchExists(checkout: string, branch: string): Promise<boolean> {
@@ -320,7 +342,7 @@ export function launchAgent(input: {
 	}
 	const { command, args } = commandFor(agent, stage, resume);
 	// The prompt goes in on stdin, so nothing the issue author wrote reaches the shell.
-	const child = spawn(command, args, { cwd, shell: true, windowsHide: true, env });
+	const child = spawn(command, args, { cwd, shell: true, windowsHide: true, env, ...OWN_GROUP });
 	const reader = lineReader((line) => handlers.parsed(parseLine(agent.harness, line)));
 	child.stdout?.on("data", (chunk: Buffer) => reader.push(chunk));
 	child.stderr?.on("data", (chunk: Buffer) => handlers.stderr(chunk.toString()));

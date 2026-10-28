@@ -474,7 +474,7 @@ function billing(total: string, good: boolean): string {
 	return page("Billing", `<text x="296" y="148" font-size="15" fill="#71717a">October invoice · en-GB</text>
 <rect x="296" y="180" width="920" height="300" rx="8" fill="none" stroke="#e4e4e7"/>
 <text x="320" y="216" font-size="13" fill="#71717a">Item</text><text x="680" y="216" font-size="13" fill="#71717a">Period</text><text x="1192" y="216" font-size="13" fill="#71717a" text-anchor="end">Amount</text>
-${rows.map(([item, period], index) => `<line x1="296" y1="${236 + index * 64}" x2="1216" y2="${236 + index * 64}" stroke="#f4f4f5"/><text x="320" y="${274 + index * 64}" font-size="15" fill="#09090b">${item}</text><text x="680" y="${274 + index * 64}" font-size="15" fill="#52525b">${period}</text><text x="1192" y="${274 + index * 64}" font-size="15" fill="#09090b" text-anchor="end">${good ? rows[index][2] : rows[index][2].replace("$", "US$")}</text>`).join("")}
+${rows.map(([item, period], index) => `<line x1="296" y1="${236 + index * 64}" x2="1216" y2="${236 + index * 64}" stroke="#f4f4f5"/><text x="320" y="${274 + index * 64}" font-size="15" fill="#09090b">${item}</text><text x="680" y="${274 + index * 64}" font-size="15" fill="#52525b">${period}</text><text x="1192" y="${274 + index * 64}" font-size="15" fill="#09090b" text-anchor="end">${good ? rows[index][2] : rows[index][2].replace(/^\$/, "US$$")}</text>`).join("")}
 <line x1="296" y1="364" x2="1216" y2="364" stroke="#e4e4e7"/>
 <text x="320" y="420" font-size="18" font-weight="700" fill="#09090b">Total</text>
 <rect x="1020" y="386" width="184" height="52" rx="8" fill="none" stroke="${tone}" stroke-width="3"/>

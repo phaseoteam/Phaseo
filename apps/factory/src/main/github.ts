@@ -76,6 +76,7 @@ interface GqlNode {
 	comments: { totalCount: number };
 	isDraft?: boolean;
 	headRefName?: string;
+	headRefOid?: string;
 	additions?: number;
 	deletions?: number;
 	changedFiles?: number;
@@ -84,7 +85,7 @@ interface GqlNode {
 
 const ISSUE_FIELDS = "number title body url state createdAt updatedAt author{login __typename avatarUrl(size:64)} labels(first:30){nodes{name color}} assignees(first:10){nodes{login avatarUrl(size:64)}} comments{totalCount}";
 // closingIssuesReferences covers issues linked in GitHub's Development box as well as "Fixes #12".
-const PULL_FIELDS = `${ISSUE_FIELDS} isDraft headRefName isCrossRepository maintainerCanModify headRepository{nameWithOwner} reviewRequests(first:10){nodes{requestedReviewer{... on User{login avatarUrl(size:64)} ... on Team{name} ... on Bot{login avatarUrl(size:64)}}}} latestReviews(first:10){nodes{state author{login avatarUrl(size:64)}}} additions deletions changedFiles closingIssuesReferences(first:5){nodes{number repository{nameWithOwner}}}`;
+const PULL_FIELDS = `${ISSUE_FIELDS} isDraft headRefName headRefOid isCrossRepository maintainerCanModify headRepository{nameWithOwner} reviewRequests(first:10){nodes{requestedReviewer{... on User{login avatarUrl(size:64)} ... on Team{name} ... on Bot{login avatarUrl(size:64)}}}} latestReviews(first:10){nodes{state author{login avatarUrl(size:64)}}} additions deletions changedFiles closingIssuesReferences(first:5){nodes{number repository{nameWithOwner}}}`;
 const PAGE = "pageInfo{hasNextPage endCursor}";
 
 function priorityFrom(labels: string[]): WorkItem["priority"] {
@@ -127,6 +128,7 @@ export function workItem(repo: string, node: GqlNode, kind: WorkItem["kind"]): W
 	};
 	if (kind === "pull") {
 		item.branch = node.headRefName;
+		item.head = node.headRefOid;
 		// From someone's fork: its branch lives there, not in this repository.
 		if (node.isCrossRepository) item.fork = { repo: node.headRepository?.nameWithOwner ?? "a deleted fork", canPush: Boolean(node.maintainerCanModify && node.headRepository) };
 		const closing = node.closingIssuesReferences?.nodes.find((issue) => issue.repository.nameWithOwner.toLowerCase() === repo.toLowerCase());

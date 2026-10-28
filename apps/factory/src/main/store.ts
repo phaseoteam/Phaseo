@@ -10,7 +10,7 @@ import { agentForStage, defaultPlaybooks, withPlaybookDefaults } from "../shared
 import { ASK_ROUNDS, asksReporter, pullRequestBody, reportMarkdown, reporterComment, runOutcome, stageOutcome, verdictPassed, type ProofRef } from "../shared/report";
 import { COMPUTER, MAX_NOTES, applyNoteReport, noteRefs, notesForPrompt } from "../shared/notes";
 import { TRIAGE_THRESHOLD, similarIssues } from "../shared/similar";
-import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../shared/stages";
+import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, staleChecks, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../shared/stages";
 import type { AgentProfile, Chat, ChatMessage, CheckRun, FactorySettings, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../shared/types";
 import { agentsFor, detectConnections } from "./connections";
 import type { ModelCatalog } from "./models";
@@ -416,7 +416,7 @@ export class FactoryStore {
 	private withOverlay(item: WorkItem): WorkItem {
 		const overlay = this.overlays[item.id];
 		if (!overlay) return item;
-		return { ...item, assigneeId: overlay.assigneeId, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: { ...emptyStages(), ...overlay.stages } };
+		return { ...item, assigneeId: overlay.assigneeId, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: staleChecks(item, { ...emptyStages(), ...overlay.stages }) };
 	}
 
 	private item(itemId: string): WorkItem {
@@ -462,6 +462,8 @@ export class FactoryStore {
 		const running = this.snapshot.runs.filter((run) => run.status === "running" && this.agentOrNull(run.agentId)?.connectionId === agent.connectionId).length;
 		const slots = this.snapshot.connections.find((connection) => connection.id === agent.connectionId)?.slots ?? 1;
 		if (running >= slots) throw new Error(`All ${slots} ${agent.label} slots are busy`);
+		const busy = this.worktreeBusy(item);
+		if (busy) throw new Error(`${stageLabel(busy.stage)} is still running in this worktree`);
 
 		const run: Run = { id: `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, itemId: item.id, stage: input.stage, agentId: agent.id, status: "running", startedAt: Date.now(), log: [], resumes: options.resume?.id, continued: options.continued };
 		this.snapshot = { ...this.snapshot, runs: [run, ...this.snapshot.runs] };
@@ -483,7 +485,8 @@ export class FactoryStore {
 			if (note) this.log(run.id, { at: Date.now(), kind: "info", text: note });
 			const proof = await prepareProof(dir, run.id);
 			const inputs = await this.copyInputs(item, dir);
-			this.patchRun(run.id, (current) => ({ ...current, worktree: dir, branch }));
+			const head = item.kind === "pull" ? await git(dir, ["rev-parse", "HEAD"]).catch(() => undefined) : undefined;
+			this.patchRun(run.id, (current) => ({ ...current, worktree: dir, branch, head }));
 			if (item.kind === "issue") this.patchItem(item.id, (current) => ({ ...current, branch }));
 			this.log(run.id, { at: Date.now(), kind: "info", text: `Worktree ready at ${branch}` });
 			// Which model and effort ran, in the log itself: Codex doesn't say, and settings change.
@@ -523,12 +526,23 @@ export class FactoryStore {
 	 * Anything else (no clone, no agent) won't fix itself, so the stage says why and Autopilot ends.
 	 */
 	private queueOrFail(itemId: string, stage: StageId, agentId: string, error: unknown) {
-		if (/slots are busy/.test(message(error))) return this.setStage(itemId, stage, { status: "queued", agentId });
+		if (/slots are busy|still running in this worktree/.test(message(error))) return this.setStage(itemId, stage, { status: "queued", agentId });
 		const why = `Couldn't start: ${message(error)}`;
 		const current = this.snapshot.items.find((candidate) => candidate.id === itemId);
 		if (!current) return;
 		this.setStage(itemId, stage, { ...current.stages[stage], status: "failed", agentId, summary: why });
 		this.endAutopilot(itemId, undefined, why);
+	}
+
+	/**
+	 * The run already working in the worktree this item's would use, if one is. An item's stages share one, and so
+	 * do an issue and the pull request Factory opened for it (on the same branch): two agents there would edit,
+	 * test and commit each other's unfinished work.
+	 */
+	private worktreeBusy(item: WorkItem): Run | undefined {
+		const items = this.snapshot.items;
+		const sharing = (other: WorkItem | undefined) => !!other && (other.id === item.id || linkedItem(item, items)?.id === other.id || linkedItem(other, items)?.id === item.id || (!!item.branch && other.branch === item.branch));
+		return this.snapshot.runs.find((run) => run.status === "running" && sharing(items.find((candidate) => candidate.id === run.itemId)));
 	}
 
 	/** The run was stopped or ended while it was being prepared. */
@@ -622,7 +636,7 @@ export class FactoryStore {
 			return;
 		}
 
-		this.setStage(run.itemId, run.stage, { status: outcome.status, agentId: run.agentId, runId, summary: outcome.summary, startedAt: run.startedAt, finishedAt: Date.now() });
+		this.setStage(run.itemId, run.stage, { status: outcome.status, agentId: run.agentId, runId, summary: outcome.summary, startedAt: run.startedAt, finishedAt: Date.now(), head: this.snapshot.runs.find((candidate) => candidate.id === runId)?.head });
 		settle(outcome);
 		if (run.stage === "triage" && result.status === "succeeded") this.patchItem(run.itemId, (current) => ({ ...current, duplicateOf: result.report?.duplicateOf }));
 		// The pull request Fix found becomes the issue's, so the issue sends you there.
@@ -1307,6 +1321,8 @@ export class FactoryStore {
 		if (!this.demo && fix?.worktree && pull.branch) await git(fix.worktree, ["push", pushTarget(pull), `HEAD:${pull.branch}`]);
 		this.setStage(pullId, "verify", { status: "idle" });
 		if (!this.demo) this.checksRestarted(pullId);
+		// Its new head commit, so the next Verify is about the code that's there now.
+		if (!this.demo) await this.reread(pull.repo, [pull.number]).catch(() => undefined);
 	}
 
 	/** Posts what the stage needs from the reporter on the issue, then waits for them to answer. */
@@ -1371,7 +1387,7 @@ export class FactoryStore {
 		for (const item of this.snapshot.items) {
 			const stage = stagesFor(item).find((definition) => item.stages[definition.id].status === "queued");
 			const agentId = stage && (item.stages[stage.id].agentId ?? item.assigneeId);
-			if (!stage || !agentId || this.snapshot.runs.some((run) => run.itemId === item.id && run.status === "running")) continue;
+			if (!stage || !agentId || this.worktreeBusy(item)) continue;
 			void this.startRun({ itemId: item.id, stage: stage.id, agentId }).catch(() => undefined);
 		}
 	}

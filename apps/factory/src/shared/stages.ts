@@ -322,3 +322,16 @@ export function ciBrief(failed: { name: string; link?: string; log?: string }[])
 		]),
 	].join("\n");
 }
+
+/**
+ * A pull request's Review and Verify only hold for the commit they checked: once someone pushes another, they
+ * start over, so the pull request isn't shown as reviewed and verified, or offered to merge, on code nobody checked.
+ */
+export function staleChecks(item: WorkItem, stages: WorkItem["stages"]): WorkItem["stages"] {
+	if (item.kind !== "pull" || !item.head) return stages;
+	// GitHub data read before the stage started can't know about commits Factory pushed since: only newer data counts.
+	const stale = (stage: StageState) => stage.status === "done" && !!stage.head && stage.head !== item.head && (stage.startedAt === undefined || item.updatedAt > stage.startedAt);
+	if (!stale(stages.review) && !stale(stages.verify)) return stages;
+	const again = (stage: StageState): StageState => (stale(stage) ? { status: "idle", agentId: stage.agentId, summary: "New commits since this passed. Run it again to check them." } : stage);
+	return { ...stages, review: again(stages.review), verify: again(stages.verify) };
+}

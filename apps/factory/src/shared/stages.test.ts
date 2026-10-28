@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoItems } from "./demo";
 import { notesForPrompt } from "./notes";
-import { currentStage, emptyStages, issueBody, laneFor, stagePrompt, stagesFor } from "./stages";
+import { currentStage, emptyStages, issueBody, laneFor, stagePrompt, stagesFor, staleChecks } from "./stages";
 import type { WorkItem } from "./types";
 
 const now = Date.UTC(2026, 9, 21, 18);
@@ -113,5 +113,27 @@ describe("stages", () => {
 		const prompt = stagePrompt(byNumber(3133), "verify", undefined, { fixes: byNumber(3126) });
 		expect(prompt).toContain("It fixes issue #3126: Billing page shows US$12.50 instead of $12.50");
 		expect(prompt).toContain("Done when list");
+	});
+});
+
+describe("staleChecks", () => {
+	const pull = { kind: "pull", head: "bbb", updatedAt: 200 } as WorkItem;
+	const passed = { ...emptyStages(), review: { status: "done" as const, head: "aaa", summary: "Looks good" }, verify: { status: "done" as const, head: "bbb" } };
+
+	it("starts Review and Verify over when the pull request has commits they didn't check", () => {
+		const stages = staleChecks(pull, passed);
+		expect(stages.review).toMatchObject({ status: "idle", summary: expect.stringMatching(/New commits/) });
+		expect(stages.verify).toBe(passed.verify);
+	});
+
+	it("leaves results alone when nothing says which commit they were about", () => {
+		const unknown = { ...passed, review: { status: "done" as const } };
+		expect(staleChecks(pull, unknown)).toBe(unknown);
+		expect(staleChecks({ kind: "pull" } as WorkItem, passed)).toBe(passed);
+	});
+
+	it("ignores GitHub data older than the check, which can't know about commits Factory pushed since", () => {
+		const checked = { ...passed, review: { ...passed.review, startedAt: 300 } };
+		expect(staleChecks(pull, checked)).toBe(checked);
 	});
 });

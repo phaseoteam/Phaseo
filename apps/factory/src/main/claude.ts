@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { query, type AccountInfo, type EffortLevel, type ModelInfo, type Options, type SDKMessage, type SDKUserMessage, type SpawnOptions, type SpawnedProcess } from "@anthropic-ai/claude-agent-sdk";
 import { stageDefinition } from "../shared/stages";
-import { killTree } from "./kill";
+import { killTree, OWN_GROUP } from "./kill";
 import type { AgentProfile, StageId } from "../shared/types";
 
 /**
@@ -45,7 +45,7 @@ export function unpacked(command: string): string {
 /** Starts Claude Code for the SDK. Factory does it itself so a stop ends the whole tree, and so an installed app runs the unpacked copy. */
 function spawnClaudeCode(onStart?: (child: ChildProcess) => void) {
 	return (spawned: SpawnOptions): SpawnedProcess => {
-		const child = spawn(unpacked(spawned.command), spawned.args, { cwd: spawned.cwd, env: spawned.env, signal: spawned.signal, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+		const child = spawn(unpacked(spawned.command), spawned.args, { cwd: spawned.cwd, env: spawned.env, signal: spawned.signal, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], ...OWN_GROUP });
 		onStart?.(child);
 		return child as unknown as SpawnedProcess;
 	};

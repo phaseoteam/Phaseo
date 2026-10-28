@@ -47,6 +47,8 @@ export interface StageState {
 	summary?: string;
 	startedAt?: number;
 	finishedAt?: number;
+	/** Pull requests: the commit this result is about. New commits after it make Review and Verify start over. */
+	head?: string;
 }
 
 export interface Person {
@@ -84,6 +86,8 @@ export interface WorkItem {
 	comments: number;
 	/** Pull requests: the head branch. Issues: the branch an agent opened, if any. */
 	branch?: string;
+	/** Pull requests: the head branch's latest commit. */
+	head?: string;
 	/** Issues: the pull request that fixes it. Pull requests: the issue it closes. */
 	linked?: number;
 	/** Pull requests: rounds of fixing review findings so far. */
@@ -203,6 +207,8 @@ export interface Run {
 	/** The worktree the agent works in. */
 	worktree?: string;
 	branch?: string;
+	/** Pull requests: the commit the worktree had when the agent started. */
+	head?: string;
 	log: LogLine[];
 	usage?: { inputTokens: number; outputTokens: number; costUsd?: number };
 	summary?: string;

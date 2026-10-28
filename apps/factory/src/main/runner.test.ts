@@ -112,6 +112,32 @@ describe("prepareWorktree", { timeout: 30_000 }, () => {
 		}
 	});
 
+	it("gives repositories whose names make the same slug worktrees of their own", async () => {
+		const base = await mkdtemp(path.join(os.tmpdir(), "factory-worktree-"));
+		try {
+			const run = (cwd: string, ...args: string[]) => git(cwd, args);
+			const clone = async (name: string) => {
+				await run(base, "init", "-q", "--bare", "-b", "main", `${name}.git`);
+				await run(base, "clone", "-q", `${name}.git`, name);
+				const dir = path.join(base, name);
+				await run(dir, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", name);
+				await run(dir, "push", "-q", "origin", "main");
+				await run(dir, "remote", "set-head", "origin", "main");
+				return dir;
+			};
+			const root = path.join(base, "worktrees");
+			const first = await prepareWorktree(root, await clone("first"), { repo: "acme/tools-api", number: 1, title: "One", kind: "issue" } as WorkItem);
+			const second = await prepareWorktree(root, await clone("second"), { repo: "acme-tools/api", number: 1, title: "Two", kind: "issue" } as WorkItem);
+			expect(second.dir).not.toBe(first.dir);
+			expect(await run(second.dir, "log", "-1", "--format=%s")).toBe("second");
+			// Each finds its own worktree again.
+			expect((await prepareWorktree(root, path.join(base, "second"), { repo: "acme-tools/api", number: 1, title: "Two", kind: "issue" } as WorkItem)).dir).toBe(second.dir);
+			expect((await prepareWorktree(root, path.join(base, "first"), { repo: "acme/tools-api", number: 1, title: "One", kind: "issue" } as WorkItem)).dir).toBe(first.dir);
+		} finally {
+			await rm(base, { recursive: true, force: true });
+		}
+	});
+
 	it("never touches a branch of yours, keeps a branch's commits, and brings a pull request's worktree up to date", async () => {
 		const base = await mkdtemp(path.join(os.tmpdir(), "factory-worktree-"));
 		try {
