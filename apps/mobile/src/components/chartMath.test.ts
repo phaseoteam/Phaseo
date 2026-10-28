@@ -1,4 +1,4 @@
-import { barLayout, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
 
 describe("nearestIndex", () => {
   const positions = [10, 20, 40, 80];
@@ -66,5 +66,18 @@ describe("niceTicks", () => {
     expect(niceTicks(4.2)).toEqual([0, 2, 4, 6]);
     expect(niceTicks(0.0031)).toEqual([0, 0.001, 0.002, 0.003, 0.004]);
     expect(niceTicks(0)).toEqual([0, 1]);
+  });
+});
+
+describe("linePath", () => {
+  test("joins points and breaks at missing values", () => {
+    expect(linePath([{ x: 0, y: 10 }, { x: 5, y: 20 }, { x: 10, y: null }, { x: 15, y: 30 }, { x: 20, y: 40 }])).toEqual({ d: "M0.0,10.0L5.0,20.0M15.0,30.0L20.0,40.0", dots: [] });
+    expect(linePath([{ x: 0, y: 10 }, { x: 5, y: 20 }], true).d).toBe("M0.0,10.0H5.0V20.0");
+  });
+
+  test("a single point, or one with gaps on both sides, comes back as a dot", () => {
+    expect(linePath([{ x: 50, y: 30 }])).toEqual({ d: "M50.0,30.0", dots: [{ x: 50, y: 30 }] });
+    expect(linePath([{ x: 0, y: 1 }, { x: 5, y: 2 }, { x: 10, y: null }, { x: 15, y: 3 }, { x: 20, y: Number.NaN }, { x: 25, y: 4 }]).dots).toEqual([{ x: 15, y: 3 }, { x: 25, y: 4 }]);
+    expect(linePath([{ x: 0, y: null }]).dots).toEqual([]);
   });
 });

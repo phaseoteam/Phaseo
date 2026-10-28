@@ -211,6 +211,18 @@ export function normaliseHistoryPrice(pricePer1MUnits: number, unit: string) {
   return pricePer1MUnits / 1e6;
 }
 
+const UNIT_LABELS: Record<string, string> = {
+  token: "USD per million tokens", byte: "USD per million bytes", character: "USD per million characters", pixel: "USD per million pixels",
+  second: "USD per minute", minute: "USD per minute", hour: "USD per minute", call: "USD per request", request: "USD per request",
+};
+
+/** What the chart's numbers are, from the meter's unit as normaliseHistoryPrice converts it (formatPricingHistoryUnitLabel on the web). */
+export function historyUnitLabel(rules: PricingHistoryRule[], meter: string) {
+  const unit = rules.find((rule) => rule.meter === meter)?.unit.trim().toLowerCase();
+  if (!unit) return "USD per million tokens";
+  return UNIT_LABELS[unit] ?? `USD per ${unit}`;
+}
+
 function listPriceAt(rules: PricingHistoryRule[], meter: string, time: number, preferred: number | null) {
   const selected = chooseRule(rules, [meter], time);
   if (!selected) return null;

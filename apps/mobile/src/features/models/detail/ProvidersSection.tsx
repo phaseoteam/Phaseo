@@ -9,7 +9,7 @@ import { formatMs, formatPrice } from "@/lib/format";
 import { basePricePerMillion, tablePrices } from "../pricing";
 import { EmptyBox, PolicyIcon, ServiceTierBadge, StatusIcon, STATUS_META } from "./parts";
 import { formatPercentile, PERCENTILES } from "./performance";
-import { formatThroughput, formatUptime, ProviderSheet, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
+import { formatThroughput, formatUptime, ProviderSheet, sheetKey, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
 import {
   dataPolicyTier, DEFAULT_STATUS_FILTERS, defaultPlan, executionRegions, isRouteVariant, listingCategory, providerDisplayName, providerLogoId, providerPlans,
   providerStatus, sortProviders, statsKey, type ListingCategory, type RuntimeStats,
@@ -92,7 +92,7 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
             return (
               <Fragment key={id}>
                 {rank > 0 && rows[index - 1]?.rank !== rank ? <Separator kind={rank === 2 ? "external" : "additional"} /> : null}
-                <ProviderRow provider={provider} stats={stats} onOpen={() => setSheet({ index, plan: defaultPlan(provider) })} last={index === rows.length - 1} />
+                <ProviderRow provider={provider} stats={stats} onOpen={() => setSheet({ key: sheetKey(provider, index), plan: defaultPlan(provider) })} last={index === rows.length - 1} />
               </Fragment>
             );
           })}
