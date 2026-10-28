@@ -234,6 +234,10 @@ jobs:
             - name: Enforce EUR routing restriction
               run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
 
+            # The desktop app imports the agent SDK's built types; desktop.yml runs the app's full checks on Windows.
+            - name: Build the agent SDK for the desktop typecheck
+              run: pnpm --filter "@phaseo/agent-sdk..." build
+
             # These apps have no CI build job; TypeScript 7 checks each in seconds.
             - name: Typecheck desktop, mobile and perf-upstream
               run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream run typecheck

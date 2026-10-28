@@ -1,0 +1,77 @@
+import type { Account, ModelOption } from "../shared/workspace";
+import { phaseoModelFacts } from "./phaseoModelFacts";
+import { phaseoModelOptions } from "./phaseoModelOptions";
+
+const record = (value: unknown): Record<string, unknown> | undefined => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+
+/** One fetched page of a catalog and the ETag it was served with, for conditional re-checks. */
+export type CatalogPageValidator = { offset: number; etag: string };
+export type ApiModelCatalog = { notModified: true } | { notModified?: false; models: ModelOption[]; validators: CatalogPageValidator[] };
+
+export async function apiModels(account: Account, key: string, fetcher: typeof fetch = fetch): Promise<ModelOption[]> {
+	const catalog = await apiModelCatalog(account, key, undefined, fetcher);
+	return catalog.notModified ? [] : catalog.models;
+}
+
+/** Re-checks every saved page with If-None-Match; when none changed, nothing is downloaded. */
+async function unchanged(url: URL, key: string, validators: CatalogPageValidator[], fetcher: typeof fetch, signal: AbortSignal) {
+	for (const { offset, etag } of validators) {
+		const page = new URL(url); if (offset) page.searchParams.set("offset", String(offset));
+		const response = await fetcher(page.href, { headers: { Authorization: `Bearer ${key}`, "If-None-Match": etag }, signal, redirect: "error" });
+		if (response.status !== 304) { await response.body?.cancel(); return false; }
+	}
+	return true;
+}
+
+export async function apiModelCatalog(account: Account, key: string, previous?: CatalogPageValidator[], fetcher: typeof fetch = fetch): Promise<ApiModelCatalog> {
+	if (!account.endpoint || account.kind !== "api") throw new Error("Choose an API account.");
+	const url = new URL(`${account.endpoint.replace(/\/$/, "")}/models`);
+	const phaseo = url.protocol === "https:" && url.hostname === "api.phaseo.app";
+	// Phaseo advertises canonical capabilities, not wire protocol route names.
+	if (phaseo) { url.searchParams.set("limit", "250"); url.searchParams.set("gateway_available_only", "true"); url.searchParams.set("endpoints", "text.generate"); }
+	const models = new Map<string, ModelOption>();
+	const seenIds = new Set<string>();
+	let offset = 0;
+	const signal = AbortSignal.timeout(30_000);
+	if (previous?.length && await unchanged(url, key, previous, fetcher, signal)) return { notModified: true };
+	const validators: CatalogPageValidator[] = [];
+	for (let page = 0; page < 40; page++) {
+		const response = await fetcher(url.href, { headers: { Authorization: `Bearer ${key}` }, signal, redirect: "error" });
+		const etag = response.headers?.get("etag");
+		if (etag && response.ok) validators.push({ offset, etag });
+		if (!response.ok) throw new Error(`Model discovery returned HTTP ${response.status}.`);
+		const result = record(await response.json());
+		if (!result) throw new Error("The endpoint returned an invalid model catalog.");
+		const native = Array.isArray(result.models);
+		const entries = native ? result.models as unknown[] : result.data;
+		if (!Array.isArray(entries) || entries.length > 10_000) throw new Error("The endpoint returned an invalid model catalog.");
+		if (native && (result.ok !== true || !Number.isSafeInteger(result.offset) || result.offset !== offset || !Number.isSafeInteger(result.total) || (result.total as number) < 0)) throw new Error("The endpoint returned invalid model pagination.");
+		let added = 0;
+		for (const entry of entries) {
+			const model = record(entry);
+			if (!model || typeof model.id !== "string" || !model.id.trim()) continue;
+			if (!seenIds.has(model.id)) added++;
+			seenIds.add(model.id);
+			if (native) {
+				const endpoints = record(model.capabilities)?.endpoints;
+				const offers = model.offers;
+				if (!Array.isArray(endpoints) || !endpoints.some(endpoint => endpoint === "text.generate" || endpoint === "responses") || !Array.isArray(offers) || !offers.some(offer => record(offer)?.routable === true)) continue;
+				if (record(model.lifecycle)?.status === "retired") continue;
+			}
+			const organisationId = record(model.organization)?.id;
+			const organisationName = record(model.organization)?.name;
+			const releaseDate = record(model.lifecycle)?.released_at;
+			const options = native ? phaseoModelOptions(model) : [];
+			const facts = native ? phaseoModelFacts(model) : undefined;
+			models.set(model.id, { id: model.id, name: typeof model.name === "string" && model.name.trim() ? model.name : model.id, ...(typeof model.description === "string" ? { description: model.description } : {}), ...(facts ? { facts } : {}),...(typeof organisationId === "string" && organisationId.trim() ? { organisationId } : {}), ...(typeof organisationName === "string" ? { organisationName } : {}), ...(typeof releaseDate === "string" ? { releaseDate } : {}), ...(options.length ? { options } : {}) });
+		}
+		if (seenIds.size > 10_000) throw new Error("Model catalog exceeded the limit.");
+		if (native && ((!entries.length && offset < (result.total as number)) || (page > 0 && entries.length > 0 && !added))) throw new Error("Model catalog repeated or omitted a page.");
+		// Conditional re-checks need an ETag for every page; otherwise the next refresh downloads in full.
+		if (!native || offset + entries.length >= (result.total as number)) return { models: [...models.values()], validators: validators.length === page + 1 ? validators : [] };
+		offset += entries.length;
+		if (offset > 5000) throw new Error("Model catalog exceeded the pagination limit.");
+		url.searchParams.set("offset", String(offset));
+	}
+	throw new Error("Model catalog exceeded the pagination limit.");
+}

@@ -163,6 +163,7 @@ Who has been working on the billing migration this month?
 - **It links what it uses.** Each message or file it relies on is linked, so you can open it in Slack. When a search finds nothing, it says so.
 - **It can narrow a search** to a channel, a person or a date range, and searches up to 4 times for one answer, 10 results at a time.
 - **By meaning or by keyword.** Questions in your own words are searched by meaning on Slack plans that include AI search (Business+ and Enterprise+); other plans search by keyword.
+- **Only providers that keep no data.** Once an answer has searched Slack, the rest of it, including another model it asks or an image it makes, goes only to AI providers with zero data retention, so what it found never sits in a provider's logs. Web search and reading web pages are also off for the rest of that answer, so nothing it found can leave in a search or a link: ask it to search the web first if you need both.
 
 Choose where it searches under **Slack search** in **Settings → Slack**. The change applies straight away.
 
@@ -179,6 +180,8 @@ A few limits come from Slack:
 - Slack lets each person search about 10 times a minute. When it's busier than that, the agent answers with what it has and says so.
 - Slack allows this search only for apps in the Slack Marketplace and for a company's own apps. Phaseo's Slack app can search once its Slack Marketplace listing is approved; until then, the agent says search isn't available. To search now, use [your own Slack app](#use-your-own-slack-app).
 - Installations from before search need [updated Slack permissions](#update-slack-permissions).
+
+Search also needs a model that a provider with zero data retention can serve. **Auto** picks a model for each request and can't promise one, so the agent doesn't search with Auto, or with a model whose providers all keep data, and says so when asked. An admin can choose a model that keeps no data in **Settings → Slack**, or, when people can [choose a model per message](#choosing-a-model-per-message), start a message with `with <model>:` to use one. If the gateway reports after a search that no provider that keeps no data can answer, the agent stops there and says why (other failures, such as a missing provider key, get their usual message); what the answer cost so far still counts.
 
 What it finds is used for that answer only and never stored (see [Data and privacy](#data-and-privacy)). For the same reason, an answer that has searched Slack can't stop to ask you a question, save notes, pins, to-dos or skills, set up a recurring task, or publish a shared page.
 
@@ -283,7 +286,8 @@ Each run is an ordinary answer to the person who set it up. The agent checks the
 
 When a run can't go ahead:
 
-- If the person who set it up can no longer use the agent, the agent has been paused in Phaseo, or it can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
+- If the agent has been paused in Phaseo, or a Phaseo bill is unpaid (**Payment due**), the run is skipped and the task carries on: it runs again at its next time once the agent is back on, with nothing to resume. These skipped runs don't count as failures, and **Settings → Slack** shows why the last run was skipped.
+- If the person who set it up can no longer use the agent, or the agent can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
 - Any other run that doesn't go through, such as one refused because the **Monthly spending cap** is reached, counts as a failure. After 3 in a row the task is paused, and the agent tells the person who set it up in a direct message.
 
 People can cancel the tasks they set up by asking the agent. Owners and admins of the Phaseo workspace who have [linked their Slack account](#link-a-slack-account) can cancel anyone's. People from other companies in shared Slack Connect channels can see a conversation's tasks but can't set them up. The agent's **Home** tab lists your own tasks.
@@ -406,7 +410,7 @@ Slack's API terms don't allow training on Slack data or archiving it, so the age
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
 - **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](#memory-and-skills)). People from other companies never see workspace-wide notes.
 - **Shared files are read, not kept.** The agent downloads the images and PDFs it reads for an answer and sends them to the model with that answer's requests, under the same rules. It never stores them; only their Slack file IDs and names are kept with the message until the answer ends.
-- **Slack search results aren't kept.** What the agent finds when it [searches Slack](#searching-slack) goes to the model with that answer's requests, under the same rules, and nowhere else: not in its working memory, its logs or Phaseo's database, not even while it waits for your answer to a question. For an answer that searched, its working memory keeps only which tools it used and a note that it answered, not what it searched for, what it found or what it wrote. Slack's permission to search for you is kept with your message until the answer ends.
+- **Slack search results aren't kept.** What the agent finds when it [searches Slack](#searching-slack) goes to the model with that answer's requests and nowhere else: not in its working memory, its logs or Phaseo's database, not even while it waits for your answer to a question. From an answer's first search on, its requests go only to providers with zero data retention, so the results don't sit in a provider's logs either. For an answer that searched, its working memory keeps only which tools it used and a note that it answered, not what it searched for, what it found or what it wrote. Slack's permission to search for you is kept with your message until the answer ends.
 - **Recurring tasks.** For each task, the agent keeps its title and instruction, where it posts, its schedule and time zone, the Slack ID of the person who set it up and how its last run went. They stay until someone cancels or deletes the task, or you uninstall the agent. Owners and admins can see, pause and delete them in **Settings → Slack**.
 - **Shared pages until they expire.** A page the agent publishes can include what was said in Slack or what it found, but never Slack search results. Pages are static, so a page can't run scripts or send anything anywhere. Phaseo keeps the page, its title, the Slack ID of the person who asked for it and how often it was opened until it expires (after 7, 30 or 90 days, as your admins chose), an owner or admin deletes it, or you uninstall the agent. Anyone with its link can open it, or only signed-in members of your Slack workspace, as set for the page. Pages never appear in Phaseo's logs.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
@@ -546,7 +550,7 @@ A few rules for your own app:
 
 ## Pause or uninstall
 
-- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks that come due while it's paused are paused too; resume them under **Recurring tasks**.
+- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks skip the runs that come due while it's paused, then carry on at their next time after you resume answers.
 - **Uninstall** stops the agent straight away, deletes its API key, notes, saved skills and recurring tasks, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
 - Uninstalling also deletes the agent's shared pages, so their links stop working.
 - Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
@@ -574,6 +578,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
 | "The model this agent uses can't read the files shared here." | No provider of the agent's model reads the images or PDFs shared. | Ask without the files, or choose a model that reads images in **Settings → Slack**. |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | The answer searched Slack, and no provider of the model with zero data retention could answer. | Choose a model that keeps no data in **Settings → Slack**. If the message started with `with <model>:`, choose a model that keeps no data there, or leave it out to use the agent's model. |
 | "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
 
 If the agent doesn't reply at all:

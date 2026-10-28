@@ -94,9 +94,11 @@ function failureText(error: Exclude<ComparedAnswer["error"], null>): string {
 			return "_This model isn't available to the Slack agent._";
 		case "model_unavailable":
 			return "_This model isn't available right now. Please try again in a few minutes._";
-		// access_changed only follows a question, never a gateway error; files_unsupported needs shared files, which aren't sent here.
+		// access_changed only follows a question, never a gateway error; files_unsupported needs shared files, which aren't sent here;
+		// search_needs_zdr follows a Slack search, which a Compare never makes.
 		case "access_changed":
 		case "files_unsupported":
+		case "search_needs_zdr":
 		case "failed":
 			return "_Something went wrong while this model was answering._";
 	}

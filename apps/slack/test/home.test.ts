@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { sectionTexts } from "../src/home";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, type Installation } from "../src/installations";
 import { BOT_USER_ID, eventEnvelope, INSTALLATION_ID, installationRow, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
@@ -115,6 +116,15 @@ describe("the Home tab", () => {
 		await install({ status: "paused" });
 		await openHome();
 		expect(published().text).toContain("The agent is paused in this Slack workspace.");
+	});
+
+	it("splits long text across sections, each within Slack's 3,000-character limit, never splitting a line", () => {
+		const lines = ["*Your recurring tasks*", ...Array.from({ length: 12 }, (_, index) => `• *Task ${index}* ${"x".repeat(290)}`), "_Ask the agent to list or cancel them._"];
+		const texts = sectionTexts(lines);
+		expect(texts.length).toBeGreaterThan(1);
+		for (const text of texts) expect(text.length).toBeLessThanOrEqual(3_000);
+		expect(texts.join("\n")).toBe(lines.join("\n"));
+		expect(sectionTexts(["short", "lines"])).toEqual(["short\nlines"]);
 	});
 
 	it("ignores the Messages tab, and events it can't place", async () => {

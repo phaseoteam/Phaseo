@@ -14,6 +14,8 @@ export default tseslint.config(
 		},
 		rules: {
 			"@typescript-eslint/consistent-type-imports": "error",
+			// Leaving keys out of a copy with a rest pattern is how fields are dropped.
+			"@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
 		},
 	},
 );

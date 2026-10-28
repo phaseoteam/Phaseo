@@ -28,7 +28,7 @@ import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./hist
 import { DEFAULT_IMAGE_MODEL, generateImageTool } from "./images";
 import { hasBotScope, installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
 import { loadTurnMemory, memoryInstructions, memoryPromptLines, memoryTools, noteAccess, type NoteAccess } from "./memory";
-import { modelChoiceOn, withoutMention } from "./model-choice";
+import { modelChoiceOn, modelNames, withoutMention } from "./model-choice";
 import { turnPageTools } from "./pages";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
@@ -36,7 +36,10 @@ import { reportScheduledRun, skippedTurnOutcome } from "./scheduled-runs";
 import { scheduleInstructions, scheduleMode, scheduleTools, type ScheduleMode } from "./schedules";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import { attachmentParts, fileLines, readableKinds, readSharedFiles, unreadByModel, uploadToThread, type FileOutcome, type SharedFile, type SharedFileRef } from "./slack-files";
-import { FILE_SEARCH_SCOPE, MAX_SEARCHES_PER_ANSWER, searchAvailability, searchedThisAnswer, searchInstructions, searchSlackTool, type SearchAvailability, type SearchedThisAnswer } from "./slack-search";
+import {
+	FILE_SEARCH_SCOPE, MAX_SEARCHES_PER_ANSWER, searchAvailability, searchedThisAnswer, searchInstructions, searchSlackTool, zeroRetentionModels,
+	type SearchAvailability, type SearchedThisAnswer, type ZeroRetentionNote,
+} from "./slack-search";
 import { answerEventType, turnSessionId, type TurnRef } from "./turns";
 import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
@@ -90,9 +93,11 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //
 // Slack search: with search:read.public, where its admins allow it, the agent
 // can search Slack as the person asking (search_slack, slack-search.ts), with
-// the action token the coordinator holds for the turn's message. The results
-// go to the model and nowhere else. Once the answer has searched (the
-// coordinator counts its searches, across its runs and retries), it asks no
+// the action token the coordinator holds for the turn's message, when its model
+// can be served by a provider that keeps no data (zeroRetentionModels). The
+// results go to the model and nowhere else. Once the answer has searched (the
+// coordinator counts its searches, across its runs and retries), every model
+// request it makes goes only to providers that keep no data, and it asks no
 // questions, saves no notes, skills or recurring tasks and publishes no pages
 // (searchedThisAnswer), so nothing the model writes after a search is kept.
 //
@@ -230,8 +235,11 @@ export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, 
 /** What the agent can post in the thread: charts (make_chart) and generated images (generate_image), with files:write. */
 export type PostAbilities = { charts: boolean; images: boolean };
 
-/** Whether the turn can search Slack (search_slack), for the person asking (asker), and whether others read the answer (inChannel). */
-export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean };
+/**
+ * Whether the turn can search Slack (search_slack), for the person asking (asker), and whether others read the answer (inChannel);
+ * with needs_zdr, the model that can't and the ones that could (zdr).
+ */
+export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean; zdr?: ZeroRetentionNote };
 
 /**
  * posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode), and a
@@ -262,7 +270,7 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 		lines.push("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack), and answer in text meanwhile.");
 	}
 	if (pages) lines.push("When an answer is too long or too rich for Slack, you can publish it as a web page with publish_page and link it. A page is static HTML and CSS (text, tables and charts drawn with inline SVG), with no scripts or links, so write any URL on it as text.");
-	if (search) lines.push(searchInstructions(search.availability, search.asker, search.inChannel));
+	if (search) lines.push(searchInstructions(search.availability, search.asker, search.inChannel, search.zdr));
 	if (installation.instructions?.trim()) lines.push("", "Instructions from this workspace's admins:", installation.instructions.trim());
 	return lines.join("\n");
 }
@@ -483,6 +491,13 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		};
 	}
 
+	// Whether any run of this answer searched Slack: then it keeps nothing the model writes, and every model request
+	// from then on (this run's steps, the models it asks, the images it makes) goes only to providers that keep no data.
+	// Asked before each request, so a retried run, or one after a question, has it from its first request.
+	const searched = searchedThisAnswer(coordinator, turn.turnId);
+	let hasSearched = false;
+	const zeroDataRetention = async () => (hasSearched ||= await searched());
+
 	// Other allowed models the agent asks (ask_model): their cost counts against the same limit.
 	const consults: Consult[] = [];
 	const consultedUsd = () => consults.reduce((sum, consult) => sum + consult.costUsd, 0);
@@ -491,6 +506,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let toolUsd = 0;
 	const askTools = await askModelTools(deps.db, installation, model, {
 		ask: (request) => deps.agent.ask({ ...gateway, ...request, webTools: false, signal: request.signal ?? controller.signal }),
+		searched: zeroDataRetention,
 		budgetLeftUsd: () => budgetUsd - modelSpentUsd - consultedUsd() - toolUsd,
 		consults,
 		alreadyAsked: before.consultCount,
@@ -499,8 +515,6 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
 	const asked: { question: QuestionDraft | null } = { question: null };
-	// Whether any run of this answer searched Slack: then it keeps nothing the model writes.
-	const searched = searchedThisAnswer(coordinator, turn.turnId);
 	const askQuestion = askQuestionTool({ refusal: (stepIndex) => questionRefusal(leg, stepIndex, searched), onAsk: (question) => { asked.question = question; } });
 	// The pins the turn may see (none with memory off, only this conversation's for someone from
 	// another organisation) and the saved skills go before the conversation.
@@ -543,7 +557,8 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		if (generate) {
 			posts.images = true;
 			fileTools.push(generateImageTool({
-				generate: (prompt, size) => generate({ ...gateway, model: DEFAULT_IMAGE_MODEL, prompt, size, signal: controller.signal }),
+				generate: (prompt, size) => generate({ ...gateway, model: DEFAULT_IMAGE_MODEL, prompt, size, signal: controller.signal, zeroDataRetention }),
+				searched: zeroDataRetention,
 				remainingUsd: () => budgetUsd - modelSpentUsd - consultedUsd() - toolUsd,
 				made: () => imagesMade,
 				onCost: async (usd) => {
@@ -566,8 +581,21 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let searchOn: SearchAvailability = searchAvailability(installation, turn);
 	const actionToken = searchOn === "on" ? await coordinator.actionToken(turn.turnId) : null;
 	if (searchOn === "on" && !actionToken) searchOn = "no_token";
-	const search: SearchOffer = { availability: searchOn, asker: turn.slackUserId, inChannel: !(turn.kind === "dm" || turn.channel.startsWith("D")) };
-	const searchTools = actionToken
+	// After a search the answer may only use providers that keep no data, so its model must have one (Auto never does).
+	// The models the person could choose instead, if model choice is on, are read with it.
+	let zdr: ZeroRetentionNote | undefined;
+	if (searchOn === "on") {
+		const others = modelChoiceOn(installation) ? installation.allowed_models.filter((id) => id !== model) : [];
+		const capable = await zeroRetentionModels(deps.db, [model, ...others], deps.now(), installation.workspace_id);
+		if (!capable.has(model)) {
+			searchOn = "needs_zdr";
+			const choices = others.filter((id) => capable.has(id));
+			const names = await modelNames(deps.db, [model, ...choices]);
+			zdr = { name: names.get(model) ?? model, auto: isAutoModel(model), choices: choices.map((id) => names.get(id) ?? id) };
+		}
+	}
+	const search: SearchOffer = { availability: searchOn, asker: turn.slackUserId, inChannel: !(turn.kind === "dm" || turn.channel.startsWith("D")), ...(zdr ? { zdr } : {}) };
+	const searchTools = searchOn === "on" && actionToken
 		? [searchSlackTool({
 			slack,
 			actionToken,
@@ -604,6 +632,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		// The models it asks and the images it makes.
 		otherCostUsd: () => consultedUsd() + toolUsd,
 		signal: controller.signal,
+		zeroDataRetention,
 		...(parts.length ? { attachments: parts } : {}),
 		...(paused ? { resume: resumeWith(answerLines(files)) } : {}),
 	});
@@ -639,7 +668,8 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		// Spend since the last step (a consult, an image, or the step's own model response) still counts.
 		costUsd = Math.max(costUsd, modelSpentUsd + consultedUsd() + toolUsd);
 		if (!cancelled) {
-			error = classifyTurnError(caught, model);
+			// After a search, a refusal for want of a provider that keeps no data is said as such (search_needs_zdr).
+			error = classifyTurnError(caught, model, await zeroDataRetention().catch(() => false));
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
 		}
 	}

@@ -8,7 +8,8 @@ export type AgentSchema<T = unknown> =
 	| { safeParse: (value: unknown) => { success: true; data: T } | { success: false; error: unknown } }
 	| ((value: unknown) => T);
 
-export type AgentToolCall = { id: string; name: string; input: unknown };
+/** inputError is set when the model sent arguments that could not be parsed; the call is answered with that error. */
+export type AgentToolCall = { id: string; name: string; input: unknown; inputError?: string };
 
 export type AgentItemBase = {
 	id?: string;
@@ -63,7 +64,8 @@ export type AgentItem<TOutput = unknown> =
 	| AgentOutputItem<TOutput>;
 
 export type AgentMessage =
-	| { role: "system" | "user"; content: string }
+	| { role: "system"; content: string }
+	| { role: "user"; content: string | ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[] }
 	| { role: "assistant"; content: string; toolCalls?: AgentToolCall[]; reasoning?: string }
 	| { role: "tool"; content: string; toolCallId: string; name: string; isError?: boolean };
 
@@ -130,6 +132,8 @@ export type AgentTool<TInput = unknown, TOutput = unknown, TContext = unknown> =
 	onResponseReceived?: (rawResult: unknown, context: AgentRuntimeContext<TContext>) => MaybePromise<TOutput>;
 	nextTurnParams?: AgentNextTurnParams<TContext>;
 	onError?: AgentToolErrorPolicy;
+	/** Read-only tools that may run at the same time as each other within a step. */
+	parallelSafe?: boolean;
 };
 
 export type AgentToolDescriptor = Pick<AgentTool, "id" | "description" | "parameters">;
@@ -174,8 +178,23 @@ export type AgentModelClient<TContext = unknown> = {
 	stream?: (request: AgentModelRequest<TContext>) => AsyncIterable<AgentModelStreamEvent>;
 };
 
-export type AgentModelRetryConfig = { maxRetries?: number; backoffMs?: number };
-export type AgentToolExecutionConfig = { toolConcurrency?: number; onError?: AgentToolErrorPolicy };
+export type AgentModelRetryConfig = {
+	maxRetries?: number;
+	/** Base delay; attempts back off exponentially with full jitter unless the gateway sends Retry-After. */
+	backoffMs?: number;
+	maxBackoffMs?: number;
+	/** Whether an error is worth another attempt. Defaults to agentErrorIsRetryable. Attempts never repeat once output has streamed. */
+	retryOn?: (error: unknown) => boolean;
+};
+export type AgentToolExecutionConfig = {
+	toolConcurrency?: number;
+	onError?: AgentToolErrorPolicy;
+	/** Longest tool output sent to the model, in characters. Longer output keeps its start and end around a notice. */
+	maxOutputChars?: number;
+};
+
+/** Called before each model request. Returning messages replaces the run's history, for example with a compacted one. */
+export type AgentPrepareMessages<TContext = unknown> = (messages: AgentMessage[], info: { stepIndex: number; context: TContext | undefined; signal?: AbortSignal; reason: "step" | "overflow"; error?: unknown }) => MaybePromise<AgentMessage[] | undefined>;
 
 export type AgentUsageSummary = {
 	inputTokens: number;
@@ -212,6 +231,8 @@ export type AgentStopWhen = AgentStopCondition | AgentStopCondition[];
 export type AgentPendingToolCall = {
 	call: AgentToolCall;
 	kind: "approval" | "hitl" | "manual";
+	/** Persisted before execution; an interrupted call may already have had effects. */
+	executionStartedAt?: string;
 	reason?: string;
 };
 
@@ -224,6 +245,8 @@ export type AgentHumanPause = {
 	requestedAt: string;
 	kind?: "human_review" | "tool_approval" | "hitl" | "manual_tool";
 	pendingToolCalls?: AgentPendingToolCall[];
+	/** Human messages deferred until the pending tool results are complete. */
+	continuationMessages?: AgentMessage[];
 };
 
 export type AgentHumanReviewRequest = { reason: string; payload?: unknown };
@@ -245,6 +268,10 @@ export type AgentDefinition<TInput = unknown, TOutput = unknown, TContext = unkn
 	preset?: string;
 	instructions?: AgentDynamicValue<string, TContext>;
 	tools?: AgentTool<any, any, TContext>[];
+	/** Ids of the tools offered to the model on a step. The others stay callable, so earlier calls still resolve. */
+	activeTools?: AgentDynamicValue<string[] | undefined, TContext>;
+	prepareMessages?: AgentPrepareMessages<TContext>;
+	/** Steps allowed in each run or continue call. */
 	maxSteps?: number;
 	stopWhen?: AgentStopWhen;
 	modelRetry?: AgentModelRetryConfig;
@@ -309,8 +336,9 @@ export type AgentStateAccessor<TInput = unknown, TContext = unknown, TOutput = u
 export type AgentEvent =
 	| { type: "run.started" | "run.completed" | "run.stopped" | "run.failed" | "run.cancelled"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; output?: unknown; stopReason?: string; error?: string; errorDetails?: AgentGatewayErrorDetails }
 	| { type: "run.resumed"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; previousStatus: AgentRunStatus }
+	| { type: "history.repaired"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; toolCallIds: string[] }
 	| { type: "run.waiting_for_human"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; stepIndex: number; pause: AgentHumanPause }
-	| { type: "step.started" | "step.completed" | "step.cancelled" | "step.failed" | "model.requested" | "model.failed" | "model.completed" | "checkpoint.saved"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; stepIndex: number; attempt?: number; requestId?: string; nativeResponseId?: string | null; provider?: string; model?: string; usage?: Record<string, unknown>; responseMeta?: Record<string, unknown>; error?: string; errorDetails?: AgentGatewayErrorDetails }
+	| { type: "step.started" | "step.completed" | "step.cancelled" | "step.failed" | "model.requested" | "model.failed" | "model.completed" | "model.retrying" | "checkpoint.saved"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; stepIndex: number; attempt?: number; delayMs?: number; requestId?: string; nativeResponseId?: string | null; provider?: string; model?: string; usage?: Record<string, unknown>; responseMeta?: Record<string, unknown>; error?: string; errorDetails?: AgentGatewayErrorDetails }
 	| { type: "tool.started" | "tool.completed" | "tool.failed"; runId: string; agentId: string; timestamp: string; status: AgentRunStatus; stepIndex: number; toolCallId: string; toolName: string; output?: unknown; error?: string }
 	| AgentToolProgressEvent
 	| { type: "response.output_text.delta" | "response.reasoning.delta"; runId: string; agentId: string; timestamp: string; stepIndex: number; delta: string }
@@ -320,6 +348,8 @@ export type AgentEventHandler = (event: AgentEvent) => MaybePromise<void>;
 
 export type AgentRunOptions<TInput = unknown, TContext = unknown, TOutput = unknown> = {
 	input: TInput;
+	/** Conversation messages used instead of coercing input into a single user message. */
+	messages?: AgentMessage[];
 	client: AgentModelClient<TContext>;
 	context?: TContext;
 	model?: AgentDynamicValue<string, TContext>;
@@ -336,12 +366,16 @@ export type AgentRunOptions<TInput = unknown, TContext = unknown, TOutput = unkn
 	onEvent?: AgentEventHandler;
 	devtools?: Partial<AgentDevtoolsConfig>;
 	state?: AgentStateAccessor<TInput, TContext, TOutput>;
+	/** Messages to add before the next model request, such as a person steering a turn in progress. */
+	takeMessages?: () => AgentMessage[] | undefined;
 };
 
-export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext = unknown> = Omit<AgentRunOptions<TInput, TContext, TOutput>, "input"> & {
+export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext = unknown> = Omit<AgentRunOptions<TInput, TContext, TOutput>, "input" | "messages"> & {
 	run?: AgentRunResult<TOutput, TInput, TContext>;
 	runId?: string;
 	humanInput?: string;
+	/** Structured follow-up messages appended after pending tool results. */
+	humanMessages?: AgentMessage[];
 	approveToolCalls?: Array<string | AgentToolDecision>;
 	rejectToolCalls?: Array<string | AgentToolDecision>;
 	/** Concise aliases for approveToolCalls and rejectToolCalls. */
