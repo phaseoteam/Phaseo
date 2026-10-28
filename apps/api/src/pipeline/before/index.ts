@@ -72,6 +72,10 @@ import {
     type DynamicRouteEvaluation,
 } from "./dynamic-routes";
 import {
+	AUTO_ROUTER_RESIDENCY_REJECTION,
+	autoRouterNeedsZeroDataRetention,
+	autoRouterResidencyRequirement,
+	autoRouterUnmetResidency,
 	buildAutoRouterCandidateEvidence,
 	applyAutoRouterHardRequirements,
 	deterministicAutoRouterClassification,
@@ -79,6 +83,7 @@ import {
 	loadAutoRouterBenchmarks,
 	loadManagedAutoRouterCandidates,
 	loadWorkspaceAutoRouterConfig,
+	providersMeetingResidency,
 	selectAutoRouterModel,
 	type AutoRouterClassification,
 	type AutoRouterEvaluation,
@@ -679,9 +684,26 @@ export async function beforeRequest(
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
 		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
+		const policyLoad = await loadWorkspacePolicy();
+		if ("error" in policyLoad) {
+			console.error("[beforeRequest] workspace_policy_fetch_failed", {
+				workspaceId,
+				requestId,
+				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
+			});
+			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
+		}
+		// A request that needs zero data retention (or a workspace or key that only
+		// allows it) picks only among models with a route that offers it.
+		const needsZeroDataRetention = autoRouterNeedsZeroDataRetention(autoRouterBody, policyLoad.value);
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(
+				config,
+				autoRouterBody,
+				classification,
+				{ endpoint, zeroDataRetention: needsZeroDataRetention },
+			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -695,15 +717,7 @@ export async function beforeRequest(
 			allowedModels: candidateUniverse.models,
 			candidateUniverseSize: candidateUniverse.totalEligible,
 		};
-		const policyLoad = await loadWorkspacePolicy();
-		if ("error" in policyLoad) {
-			console.error("[beforeRequest] workspace_policy_fetch_failed", {
-				workspaceId,
-				requestId,
-				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
-			});
-			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
-		}
+		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
 			body: autoRouterBody,
@@ -732,13 +746,19 @@ export async function beforeRequest(
 				if (!executableProviders.length) {
 					return { ok: false as const, reason: "no_executable_providers" };
 				}
+				// The request's own zero data retention and regions, which the routing
+				// gate would otherwise only apply after this model was chosen.
+				const residentProviders = providersMeetingResidency(executableProviders, residencyRequirement);
+				if (!residentProviders.length) {
+					return { ok: false as const, reason: AUTO_ROUTER_RESIDENCY_REJECTION };
+				}
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
 					body: autoRouterBody,
 					requestId,
 					workspaceId,
-					providers: executableProviders,
+					providers: residentProviders,
 					model: candidateResolvedModel,
 					requiredParams: requiredExecutionParams(endpoint),
 				});
@@ -767,6 +787,31 @@ export async function beforeRequest(
 			},
 		}));
 		if (selection.ok === false) {
+			const unmetRequirements = selection.reason === "no_eligible_models"
+				? autoRouterUnmetResidency({
+					requirement: residencyRequirement,
+					zeroDataRetention: needsZeroDataRetention,
+					rejectedReasons: selection.candidates.map((candidate) => candidate.reason),
+					droppedForZeroDataRetention: candidateUniverse.droppedForZeroDataRetention,
+				})
+				: null;
+			if (unmetRequirements) {
+				// The same error a chosen model gets from the routing gate, so callers
+				// can tell a residency requirement apart from no model at all.
+				return {
+					ok: false,
+					response: err("model_region_unavailable", {
+						model,
+						reason: "no_provider_meets_residency_requirements",
+						description: unmetRequirements.description,
+						action: "Relax the residency requirements, or choose a model that meets them.",
+						unmet_requirements: unmetRequirements.unmet,
+						routing_diagnostics: { autoRouter: { candidates: selection.candidates } },
+						request_id: requestId,
+						workspace_id: workspaceId,
+					}),
+				};
+			}
 			return {
 				ok: false,
 				response: err("unsupported_model_or_endpoint", {
