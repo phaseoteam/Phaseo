@@ -100,13 +100,11 @@ for (const locale of Object.keys(LABELS).filter((l) => l !== "en")) {
 			errors.push(`${locale}/v1/${page}: dates or sections do not match English (${dates.length} vs ${source.length} dates)`);
 			continue;
 		}
-		// Every language writes dates with Western digits, so each label must carry the English date's day and year.
+		// Locale labels are the English date in the language's long date format, with Western digits.
+		const format = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", numberingSystem: "latn" });
 		source.forEach((english, i) => {
-			const date = new Date(english.label);
-			const numbers = dates[i].label.match(/\d+/g)?.map(Number) ?? [];
-			if (!numbers.includes(date.getDate()) || !numbers.includes(date.getFullYear())) {
-				errors.push(`${locale}/v1/${page}: "${dates[i].label}" should be the same date as "${english.label}"`);
-			}
+			const expected = format.format(new Date(english.label));
+			if (dates[i].label !== expected) errors.push(`${locale}/v1/${page}: "${dates[i].label}" should be "${expected}" (${english.label})`);
 		});
 	}
 }
