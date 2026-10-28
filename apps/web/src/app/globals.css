@@ -471,6 +471,9 @@ html[data-font="arabic"] {
 /* Streamdown Tailwind utility source */
 @source "../../node_modules/streamdown/dist/*.js";
 
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
 @layer utilities {
 	@keyframes token-stream {
 		0% {

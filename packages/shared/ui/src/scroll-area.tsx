@@ -14,6 +14,7 @@ function ScrollArea({
   viewportRef,
   keepScrollbarMounted = false,
   scrollBarClassName,
+  wrapContent = true,
   type,
   children,
   ...props
@@ -25,6 +26,12 @@ function ScrollArea({
   viewportRef?: React.Ref<HTMLDivElement>
   keepScrollbarMounted?: boolean
   scrollBarClassName?: string
+  /**
+   * Wrap the children in Base UI's `Content`, so the scrollbar follows content that changes size in place.
+   * Pass `false` to put the children straight into the viewport, where `viewportClassName` can lay them
+   * out (a grid, a flex row, dividers); the scrollbar then only updates when the viewport scrolls or resizes.
+   */
+  wrapContent?: boolean
   type?: string
 }) {
   void type
@@ -47,7 +54,7 @@ function ScrollArea({
       >
         {/* Content reports its own size changes, so the thumb follows content that grows or shrinks in place.
             Base UI sizes it to fit its content; vertical lists take the viewport's width instead, so text truncates and wraps. */}
-        <ScrollAreaPrimitive.Content style={scrollBarOrientation === "vertical" ? { minWidth: 0 } : undefined}>{children}</ScrollAreaPrimitive.Content>
+        {wrapContent ? <ScrollAreaPrimitive.Content style={scrollBarOrientation === "vertical" ? { minWidth: 0 } : undefined}>{children}</ScrollAreaPrimitive.Content> : children}
       </ScrollAreaPrimitive.Viewport>
       {scrollBarOrientation === "both" ? (
         <>
