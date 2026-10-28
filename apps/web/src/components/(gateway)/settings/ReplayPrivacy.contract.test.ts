@@ -15,6 +15,7 @@ const SECRET_RENDERS: Array<[file: string, expression: string]> = [
 	["src/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog.tsx", "{createdApp.client_secret}"],
 	["src/components/(gateway)/settings/oauth-apps/RegenerateSecretDialog.tsx", "{newSecret}"],
 	["src/components/(gateway)/settings/webhooks/WebhookSecretNotice.tsx", "{secret}"],
+	["src/components/(gateway)/settings/notifications/NotificationSigningSecretDialog.tsx", "{revealed?.secret}"],
 	["src/components/(gateway)/settings/account/ProviderWebhookSettings.tsx", "{secret}</code>"],
 	["src/components/(gateway)/settings/account/ProviderOnboardingClient.tsx", "{submitted.webhookSecret}"],
 	["src/components/(gateway)/settings/account/ProviderOnboardingClient.tsx", "{claim.token}"],

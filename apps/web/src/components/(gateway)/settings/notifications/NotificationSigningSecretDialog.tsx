@@ -40,7 +40,7 @@ export default function NotificationSigningSecretDialog({ revealed, onClose }: {
 					<DialogDescription>{t("notificationCopy.signingSecretDescription")}</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-					<code className="min-w-0 flex-1 overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs" data-testid="notification-signing-secret">{revealed?.secret}</code>
+					<code className="ph-no-capture min-w-0 flex-1 overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs" data-testid="notification-signing-secret">{revealed?.secret}</code>
 					<Button className="rounded-md" type="button" variant="outline" size="sm" onClick={() => void copy()}>
 						{copied ? <Check className="mr-1 size-3.5" /> : <Copy className="mr-1 size-3.5" />}
 						{t("notificationCopy.copySecret")}
