@@ -7,6 +7,8 @@
 /* Styles for views that have not moved to Tailwind yet. Layered below the
    utilities so they never override new components. */
 @import "./styles.css" layer(legacy);
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

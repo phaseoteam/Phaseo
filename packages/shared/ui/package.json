@@ -1,0 +1,47 @@
+{
+	"name": "@phaseo/ui",
+	"description": "React DOM components shared by Phaseo's website, desktop app and Phaseo Factory",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"sideEffects": false,
+	"exports": {
+		"./cn": "./src/cn.ts",
+		"./base-ui-compat": "./src/base-ui-compat.tsx",
+		"./badge": "./src/badge.tsx",
+		"./button": "./src/button.tsx",
+		"./dropdown-menu": "./src/dropdown-menu.tsx",
+		"./input": "./src/input.tsx",
+		"./kbd": "./src/kbd.tsx",
+		"./popover": "./src/popover.tsx",
+		"./scroll-area": "./src/scroll-area.tsx",
+		"./separator": "./src/separator.tsx",
+		"./tabs": "./src/tabs.tsx",
+		"./tooltip": "./src/tooltip.tsx"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"dependencies": {
+		"clsx": "^2.1.1",
+		"tailwind-merge": "^3.6.0"
+	},
+	"peerDependencies": {
+		"@base-ui/react": "^1.6.0",
+		"class-variance-authority": "^0.7.1",
+		"lucide-react": "^1.17.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
+	},
+	"devDependencies": {
+		"@base-ui/react": "1.6.0",
+		"@types/react": "19.3.0",
+		"@types/react-dom": "19.3.0",
+		"@typescript/native": "catalog:",
+		"class-variance-authority": "^0.7.1",
+		"lucide-react": "^1.17.0",
+		"react": "19.3.0",
+		"react-dom": "19.3.0",
+		"typescript": "catalog:"
+	}
+}
