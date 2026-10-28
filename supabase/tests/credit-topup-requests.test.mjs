@@ -154,6 +154,23 @@ try {
   assert.equal(await record(late, 'pi_D', 'paid'), true, 'money taken after expiry is still recorded');
   assert.equal((await request(late)).status, 'paid');
 
+  // ---- Decline vs checkout race: a decline commits only for the Checkout Session it saw.
+  const raced = await create({ workspace: W2, by: outsider, flow: 'checkout', token: 'hash-race' });
+  const declineSeeing = (session) => one('select * from public.decide_credit_topup_request($1, $2, $3, $4, $5)', [raced.request_id, 'hash-race', outsider, 'decline', session]);
+  // Decline read "no session"; checkout then attached one before the decline committed.
+  await db.query(`update public.credit_topup_requests set stripe_checkout_session_id = 'cs_race' where id = $1 and status = 'pending' and stripe_checkout_session_id is null`, [raced.request_id]);
+  await rejects(declineSeeing(null), /credit_topup_checkout_changed/, 'a stale decline cannot leave a payable session behind');
+  assert.equal((await request(raced.request_id)).status, 'pending');
+  await rejects(declineSeeing('cs_other'), /credit_topup_checkout_changed/);
+  // After expiring cs_race, the caller declines again naming it.
+  assert.deepEqual({ ...(await declineSeeing('cs_race')) }, { status: 'declined', reason: 'declined', changed: true });
+  // Checkout's attach is conditional on pending + no session, so it cannot attach after a decline.
+  const attached = await db.query(`update public.credit_topup_requests set stripe_checkout_session_id = 'cs_late' where id = $1 and status = 'pending' and stripe_checkout_session_id is null returning id`, [raced.request_id]);
+  assert.equal(attached.rows.length, 0);
+  assert.equal((await request(raced.request_id)).stripe_checkout_session_id, 'cs_race');
+  // Confirm ignores the session guard (saved-card requests have no Checkout Session).
+  assert.deepEqual({ ...(await decide(first.request_id, owner, 'confirm')) }, { status: 'paid', reason: null, changed: false });
+
   // ---- Clients have no direct access; functions are service role only.
   await db.exec('grant usage on schema public to anon, authenticated, service_role; grant select on public.credit_topup_requests to authenticated;');
   await db.exec('set role authenticated');

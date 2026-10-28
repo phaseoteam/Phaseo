@@ -5,7 +5,8 @@
 --   requests send the requester to Stripe Checkout; saved_card requests wait for a workspace
 --   owner or admin to confirm the charge on an emailed, single-use link (30 minutes).
 -- * public.create_credit_topup_request (idempotency key, 5 pending per workspace),
---   public.decide_credit_topup_request (confirm/decline), public.record_credit_topup_payment
+--   public.decide_credit_topup_request (confirm/decline; a decline needs the Checkout Session the
+--   caller expired, so it cannot race a new session), public.record_credit_topup_payment
 --   (webhook outcome, one PaymentIntent per request).
 -- * public.rotate_oauth_refresh_token: a refreshed token keeps at most the scopes of the token it
 --   replaces, so a later login that opts in to billing:write does not widen older sessions.
@@ -184,7 +185,8 @@ CREATE OR REPLACE FUNCTION public.decide_credit_topup_request (
   p_request_id         uuid,
   p_confirm_token_hash text,
   p_user_id            uuid,
-  p_decision           text
+  p_decision           text,
+  p_expected_checkout_session_id text DEFAULT NULL::text
 )
   RETURNS TABLE (
     status  text,
@@ -200,6 +202,10 @@ CREATE OR REPLACE FUNCTION public.decide_credit_topup_request (
 -- unexpired request changes: confirm -> confirmed, decline -> declined. Asking again
 -- returns the current status with changed = false, so a confirmed request can resume its
 -- payment (for example after 3D Secure) without being confirmed twice.
+-- A decline only commits while the request's Checkout Session is the one the caller saw and
+-- expired (p_expected_checkout_session_id; NULL when it saw none). If checkout attached a
+-- session in the meantime it raises credit_topup_checkout_changed, so the caller expires that
+-- session and declines again. A declined request never keeps a payable session.
 declare
   v_request public.credit_topup_requests%rowtype;
 begin
@@ -242,6 +248,11 @@ begin
     return;
   end if;
 
+  if p_decision = 'decline'
+    and v_request.stripe_checkout_session_id is distinct from p_expected_checkout_session_id then
+    raise exception 'credit_topup_checkout_changed' using errcode = '40001';
+  end if;
+
   update public.credit_topup_requests r
   set status = case when p_decision = 'confirm' then 'confirmed' else 'declined' end,
       reason = case when p_decision = 'confirm' then null else 'declined' end,
@@ -257,17 +268,17 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) IS 'Confirms or declines a pending credit top-up request for a workspace owner or admin holding the confirm link token. Service role only.';
+COMMENT ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) IS 'Confirms or declines a pending credit top-up request for a workspace owner or admin holding the confirm link token. Service role only.';
 
-REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) TO "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text) FROM "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."decide_credit_topup_request"(uuid, text, uuid, text, text) FROM "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.record_credit_topup_payment (
   p_request_id        uuid,

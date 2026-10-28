@@ -72,15 +72,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 				createdAt: row.created_at,
 				expiresAt: row.expires_at,
 				onSessionCreated: async (sessionId) => {
-					// The idempotency key makes concurrent creates return this same session.
-					const { error } = await admin.from("credit_topup_requests")
+					// Attach only to a still-pending request without a session. The idempotency key makes a
+					// concurrent click return this same session, which is then already attached.
+					const { data: attached, error } = await admin.from("credit_topup_requests")
 						.update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })
 						.eq("id", row.id)
-						.is("stripe_checkout_session_id", null);
+						.eq("status", "pending")
+						.is("stripe_checkout_session_id", null)
+						.select("id");
 					if (error) throw error;
-					// Declined or expired while the session was being created: never leave it payable.
-					const current = await loadCreditTopup(admin, row.id);
-					if (current?.status !== "pending") {
+					if (!attached?.length) {
+						const current = await loadCreditTopup(admin, row.id);
+						if (current?.status === "pending" && current.stripe_checkout_session_id === sessionId) return;
+						// Declined or expired while the session was being created: never leave it payable.
 						await getStripe().checkout.sessions.expire(sessionId).catch(() => undefined);
 						throw new Error("credit_topup_not_pending");
 					}

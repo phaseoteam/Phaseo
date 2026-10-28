@@ -120,6 +120,8 @@ export async function decideCreditTopup(args: {
 	token: string;
 	userId: string;
 	decision: "confirm" | "decline";
+	/** Decline only: the Checkout Session the caller saw and expired (null for none). */
+	expectedCheckoutSessionId?: string | null;
 }): Promise<DecideResult> {
 	if (!isCreditTopupId(args.id) || !args.token) return { ok: false, httpStatus: 404, error: "not_found" };
 	const { data, error } = await args.db.rpc("decide_credit_topup_request", {
@@ -127,11 +129,13 @@ export async function decideCreditTopup(args: {
 		p_confirm_token_hash: hashCreditTopupToken(args.token),
 		p_user_id: args.userId,
 		p_decision: args.decision,
+		...(args.decision === "decline" ? { p_expected_checkout_session_id: args.expectedCheckoutSessionId ?? null } : {}),
 	});
 	if (error) {
 		const message = String(error.message ?? "");
 		if (message.includes("credit_topup_not_found")) return { ok: false, httpStatus: 404, error: "not_found" };
 		if (message.includes("credit_topup_forbidden")) return { ok: false, httpStatus: 403, error: "forbidden" };
+		if (message.includes("credit_topup_checkout_changed")) return { ok: false, httpStatus: 409, error: "checkout_changed" };
 		throw error;
 	}
 	const row = (Array.isArray(data) ? data[0] : data) as { status?: CreditTopupStatus; reason?: string | null; changed?: boolean } | null;

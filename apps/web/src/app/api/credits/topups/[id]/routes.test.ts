@@ -15,6 +15,7 @@ const state: {
 	checkout: jest.Mock;
 	sessionRetrieve: jest.Mock;
 	sessionExpire: jest.Mock;
+	beforeDecide: (() => Promise<void>) | null;
 } = {} as any;
 
 jest.mock("@/utils/supabase/server", () => ({
@@ -40,14 +41,21 @@ jest.mock("@/utils/supabase/admin", () => ({
 				is: (column: string, value: unknown) => { filters.push((row) => (row[column] ?? null) === value); return builder; },
 				maybeSingle: async () => ({ data: rows()[0] ?? null, error: null }),
 				then: (resolve: (value: unknown) => unknown) => {
-					if (update) for (const row of rows()) Object.assign(row, update);
-					return Promise.resolve({ data: null, error: null }).then(resolve);
+					// A conditional UPDATE: only matching rows change; .select() returns them.
+					const matched = update ? rows() : [];
+					for (const row of matched) Object.assign(row, update);
+					return Promise.resolve({ data: update ? matched.map((row) => ({ id: row.id })) : null, error: null }).then(resolve);
 				},
 			};
 			return builder;
 		},
 		rpc: async (name: string, args: any) => {
-			if (name === "decide_credit_topup_request") return state.decide(args);
+			if (name === "decide_credit_topup_request") {
+				const hook = state.beforeDecide;
+				state.beforeDecide = null;
+				if (hook) await hook();
+				return state.decide(args);
+			}
 			return { data: true, error: null };
 		},
 	}),
@@ -96,6 +104,11 @@ beforeEach(() => {
 		const row = state.rows[0];
 		if (args.p_confirm_token_hash !== row.confirm_token_hash) return { data: null, error: { message: "credit_topup_not_found" } };
 		if (row.status !== "pending") return { data: [{ status: row.status, reason: row.reason, changed: false }], error: null };
+		// public.decide_credit_topup_request: a decline commits only for the session the caller saw.
+		if (args.p_decision === "decline" && "p_expected_checkout_session_id" in args
+			&& (row.stripe_checkout_session_id ?? null) !== args.p_expected_checkout_session_id) {
+			return { data: null, error: { message: "credit_topup_checkout_changed" } };
+		}
 		row.status = args.p_decision === "confirm" ? "confirmed" : "declined";
 		row.reason = args.p_decision === "confirm" ? null : "declined";
 		return { data: [{ status: row.status, reason: row.reason, changed: true }], error: null };
@@ -104,6 +117,7 @@ beforeEach(() => {
 	state.checkout = jest.fn(async () => Response.json({ url: "https://checkout.stripe.com/c/pay/cs_test_1" }));
 	state.sessionRetrieve = jest.fn();
 	state.sessionExpire = jest.fn(async () => ({ status: "expired" }));
+	state.beforeDecide = null;
 });
 
 describe("credit top-up review routes", () => {
@@ -201,6 +215,40 @@ describe("credit top-up review routes", () => {
 		expect(await refused.json()).toEqual({ error: "checkout_completed" });
 		expect(state.rows[0].status).toBe("pending");
 		expect(state.decide).not.toHaveBeenCalled();
+	});
+
+	it("decline racing checkout: a session attached after decline read the request is expired, never left payable", async () => {
+		state.rows = [pendingRow({ flow: "checkout", payment_method_id: null })];
+		state.checkout = jest.fn(async (args: any) => {
+			await args.topUpRequest.onSessionCreated("cs_race");
+			return Response.json({ url: "https://checkout.stripe.com/c/pay/cs_race" });
+		});
+		state.sessionRetrieve = jest.fn(async (id: string) => ({ id, status: "open" }));
+		// Interleaving: decline has read the request (no session yet); checkout now runs to the
+		// end and attaches cs_race while the request is still pending; then decline commits.
+		state.beforeDecide = async () => {
+			const checkout = await post(checkoutRoute.POST, { token: TOKEN });
+			expect(await checkout.json()).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_race" });
+			expect(state.rows[0].stripe_checkout_session_id).toBe("cs_race");
+		};
+		const declined = await post(declineRoute.POST, { token: TOKEN });
+		expect(declined.status).toBe(200);
+		expect(state.rows[0].status).toBe("declined");
+		expect(state.sessionExpire).toHaveBeenCalledWith("cs_race");
+	});
+
+	it("checkout racing decline: a session created after the decline committed is expired", async () => {
+		state.rows = [pendingRow({ flow: "checkout", payment_method_id: null })];
+		state.checkout = jest.fn(async (args: any) => {
+			// The decline lands while Stripe is creating the session.
+			expect((await post(declineRoute.POST, { token: TOKEN })).status).toBe(200);
+			await args.topUpRequest.onSessionCreated("cs_late");
+			return Response.json({ url: "https://checkout.stripe.com/c/pay/cs_late" });
+		});
+		const checkout = await post(checkoutRoute.POST, { token: TOKEN });
+		expect(checkout.status).toBe(500);
+		expect(state.rows[0]).toMatchObject({ status: "declined", stripe_checkout_session_id: null });
+		expect(state.sessionExpire).toHaveBeenCalledWith("cs_late");
 	});
 
 	it("expires a checkout request past its deadline", async () => {
