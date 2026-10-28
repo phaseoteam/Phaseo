@@ -6,7 +6,8 @@
    These are the Phaseo theme. At launch src/lib/theme/store.ts replaces the
    surface, primary, ring, link and chart tokens with the chosen palettes and
    accents (src/lib/theme/model.ts); a test keeps these values equal to its
-   Phaseo output. */
+   Phaseo output. The values come from packages/shared/app-kit/src/theme/tokens.ts,
+   whose test/theme.test.mjs checks this file too. */
 @theme {
   --font-sans: Montserrat;
   --radius-sm: 6px;

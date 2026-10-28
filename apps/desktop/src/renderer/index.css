@@ -1,5 +1,7 @@
 /* Phaseo desktop design system. Tokens mirror apps/web/src/app/globals.css so
-   the desktop app and the website share one visual language. */
+   the desktop app and the website share one visual language. Their values come
+   from packages/shared/app-kit/src/theme/tokens.ts; its test/theme.test.mjs
+   checks the :root and .dark blocks below against it. */
 @layer theme, base, legacy, components, utilities;
 
 @import "tailwindcss";

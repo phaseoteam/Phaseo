@@ -143,6 +143,9 @@
   ---break---
 */
 
+/* Theme values come from packages/shared/app-kit/src/theme/tokens.ts, which the
+   mobile, desktop and Factory apps share. Its test/theme.test.mjs checks :root,
+   .dark, the palette blocks and the accent blocks below against it. */
 :root {
 	--font-phaseo-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 	--sidebar: oklch(0.985 0 0);

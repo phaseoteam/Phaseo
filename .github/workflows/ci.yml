@@ -201,6 +201,8 @@ jobs:
               run: pnpm run validate:workspace-routing-settings
             - name: Validate shared key IP allowlist validation
               run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared theme tokens
+              run: pnpm run validate:theme-tokens
 
             - name: Validate unique Supabase migration versions
               shell: bash
