@@ -9,6 +9,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年5月31日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** テキストリクエストのティア指定は `service_tier` のみになりました。`speed: "fast"` は `service_tier: "priority"` に置き換えてください。同期リクエストで `service_tier: "batch"` を指定すると検証エラーが返ります。詳しくは [サービスティア](../guides/service-tiers.mdx) を参照 ([#565](https://github.com/phaseoteam/Phaseo/pull/565))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -37,6 +45,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年5月29日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページのクイックスタートに、そのモデルが対応するエンドポイントが HTTP メソッド付きで一覧表示され、選択するとサンプルコードが切り替わります ([#521](https://github.com/phaseoteam/Phaseo/pull/521))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `service_tier: "priority"` のリクエストは、そのティアに対応するプロバイダーにのみルーティングされます。Venice は Claude Opus 4.8 の priority リクエストを同じモデル ID のまま処理します。詳しくは [サービスティア](../guides/service-tiers.mdx) を参照 ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -53,8 +77,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">製品</p>
 
-- 料金セレクターでQwen 3.7 Maxの各バリエーションを分かりやすく表示し、プレビュー版、日付付き、現行のモデルルートを区別しやすくしました ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- AWS上のAnthropicプロバイダー表記を見直し、プロバイダー一覧でBedrockとClaude Platformのルートを区別しやすくしました ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+- プロバイダーの有効なプランが 1 つだけの場合(バッチ専用の料金など)も、モデルの料金パネルにプラン選択が表示されたままになります ([#515](https://github.com/phaseoteam/Phaseo/pull/515))。
+- Anthropic on AWS のルートは、モデル料金とプロバイダー一覧で AWS のロゴと分かりやすいプロバイダー名を表示します ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526))。
 
 </div>
 
@@ -132,11 +156,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年5月19日">
 
-<div data-changelog-category="api">
+<div data-changelog-category="product">
 
-<p className="changelog-category">API と SDK</p>
+<p className="changelog-category">製品</p>
 
-- TypeScript Agent SDKの公開に伴い、Phaseo Gateway上でエージェントアプリを構築するための専用パッケージを追加しました ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). 参照: [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+- **Models** に無料ルーターが掲載され、そのページでルーティング先になりうる無料モデルと最近の利用状況を確認できます。詳しくは [無料ルーターで始める](../cookbook/free-router-first-deploy.mdx) を参照 ([#495](https://github.com/phaseoteam/Phaseo/pull/495))。
 
 </div>
 
@@ -169,23 +193,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年5月16日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- プロバイダーの有効化状態と地域フィルターを見直し、リクエスト前に利用できないルートを見分けやすくしました ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- 無料ルーターの動作を改善し、料金、プロバイダー選択、ゲートウェイルーティングの一貫性を高めました ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
-<div data-changelog-category="api">
-
-<p className="changelog-category">API と SDK</p>
-
-- Agent SDKのドキュメントとサンプルを公開し、永続的なループ、並列ツール、エージェントのオーケストレーションに関する初の公開ガイドを追加しました ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -210,14 +217,48 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年5月9日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat で、失敗した画像・動画生成を同じプロンプト、同じモデル、同じ一時チャット設定で再試行できます ([#479](https://github.com/phaseoteam/Phaseo/pull/479))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月8日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- TypeScript、Python、Go、C#、Java、PHP、Ruby の各 SDK `2.0.4` は、型に `session_id`、構造化されたエラー診断、モデルの提供状況フィールドを追加します。詳しくは [リリースノート](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) を参照 ([#476](https://github.com/phaseoteam/Phaseo/pull/476))。
+
+</div>
+
+</Update>
+
 <Update label="2026年5月7日">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">製品</p>
 
-- モデルページでルート、プラン、料金を分かりやすく表示できるよう、プロバイダーの提供状況と料金の概要を拡充しました ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- リアルタイムの分単位料金を製品に表示し、音声やライブセッションのモデルをトークン課金のモデルと比較しやすくしました ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- **Models** の料金ホバーカードに、画像・動画・段階制テキストの料金が品質、解像度、長さ、音声の有無、コンテキストサイズごとにまとめて表示されます ([#474](https://github.com/phaseoteam/Phaseo/pull/474))。
+- **Models** では、`whisper-1` など分単位で課金される音声モデルを、丸めたトークン単価ではなく分単価(例: 1 分あたり $0.006)で表示します ([#477](https://github.com/phaseoteam/Phaseo/pull/477))。
+- モデルページのヘッダーにモデル ID コントロールが追加され、モデルのエイリアスを切り替えて選んだ ID をコピーできます ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
+- **Models** のサイドバーのフィルター件数が、選択中の他のフィルターに合わせて更新されるようになりました ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** `/v1/videos`、`/v1/batches`、`/v1/files`、`/v1/music/generations` は一時的に無効化され、`501 not_implemented` を返します。再び有効になるまで、これらへの呼び出しを停止してください ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
 
 </div>
 
@@ -238,12 +279,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年5月6日">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">製品</p>
+<p className="changelog-category">API と SDK</p>
 
-- 動画生成と非同期ジョブのライフサイクル対応を拡充し、プロバイダーの長時間処理の状態をより明確にしました ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- ゲートウェイ画面に予約、完了、失敗の状態を追加し、非同期メディアリクエストをデバッグしやすくしました ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+- モデル一覧エンドポイントは `availability=all` を受け付け、近日公開や非アクティブのモデルも含めて返します。各プロバイダーには `availability_status` と `availability_reason` が含まれます。詳しくは [モデル一覧](../api-reference/endpoint/models.mdx) を参照 ([#466](https://github.com/phaseoteam/Phaseo/pull/466))。
+- エラーレスポンスに `failed_providers`、`routing_diagnostics`、`provider_failure_diagnostics` が含まれ、認証情報の不足やリージョン制限などの原因を示します。詳しくは [エラーとデバッグ](../api-reference/errors.mdx) を参照 ([#467](https://github.com/phaseoteam/Phaseo/pull/467))。
+- 生成の取得エンドポイントは `replay_request` と `replay_supported` を返すため、記録されたリクエストを元のエンドポイントに再送信できます。詳しくは [生成の取得](../api-reference/endpoint/generation.mdx) を参照 ([#467](https://github.com/phaseoteam/Phaseo/pull/467))。
 
 </div>
 
@@ -273,19 +315,55 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
-<Update label="2026年5月1日">
+<Update label="2026年5月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- **Settings -> Usage** のアクティビティが **Logs**、**Jobs**、**Sessions** の各ビューに分かれ、ライブ更新に対応し、フィルターと期間は URL に保持されます ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467))。
+- モデルプレイグラウンドで、失敗した画像・動画生成に **Retry** と **Delete** が表示され、**Retry** は同じプロンプトとモデルを再利用します ([#465](https://github.com/phaseoteam/Phaseo/pull/465))。
+
+</div>
 
 <div data-changelog-category="api">
 
 <p className="changelog-category">API と SDK</p>
 
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4)最新のゲートウェイスキーマに合わせて、生成済みOpenAPIとモデル関連の更新を適用しました。
+- Chat Completions と Responses のリクエストで `session_id` を指定でき、関連するリクエストを利用ログ上で 1 つのセッションにまとめます ([#463](https://github.com/phaseoteam/Phaseo/pull/463))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月2日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- モデルやプロバイダーをブロックするワークスペースポリシーが再び適用され、ブロック対象のリクエストはルーティング前に拒否されます ([#444](https://github.com/phaseoteam/Phaseo/pull/444))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月1日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルプレイグラウンドに、音声合成と音楽生成モデル向けの **TTS** モードと **Music** モードが追加されました ([#441](https://github.com/phaseoteam/Phaseo/pull/441))。
+- **Models** のモデルカードで有料モデルに **Free** と表示されなくなり、近日公開フィルターの件数が表示されるモデル数と一致するようになりました ([#441](https://github.com/phaseoteam/Phaseo/pull/441))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- TypeScript、Python、Go、C#、Java、PHP、Ruby の各 SDK `2.0.3` は、型付きリストに最新のモデル ID とベンチマーク ID を追加します。詳しくは [リリースノート](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) を参照 ([#439](https://github.com/phaseoteam/Phaseo/pull/439))。
 
 </div>
 
