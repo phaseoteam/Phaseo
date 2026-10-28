@@ -2422,6 +2422,8 @@
 			"selectModelsToCompare": "请选择要比较的模型。",
 			"viewFullLeaderboard": "查看完整排行榜",
 			"sourceArtificialAnalysis": "来源：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "可跨年份和指数版本进行比较",
 			"fullLeaderboard": "完整排行榜",
 			"noModelsMatchThisSearch": "没有与此搜索匹配的模型。",
 			"noResultsAvailableForThisMetric": "此指标暂无结果。",

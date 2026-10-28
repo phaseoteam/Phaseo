@@ -141,6 +141,43 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("$98.75");
 		expect(html).toContain("v4.3 / v5");
 	});
+	it("shows the Progress Index as its own row for the selected configuration and compares it on its own scale", () => {
+		const progressId = "aa-progress-index-v1";
+		const result = (benchmarkId: string, score: number, variant: string | null) => ({
+			id: `${benchmarkId}-${variant}`, benchmark_id: benchmarkId, score, raw_score: score, score_display: String(score),
+			is_percentage: false, is_self_reported: false, other_info: benchmarkId === progressId ? "Example; Progress Index v1" : "Example; Intelligence Index v5.0",
+			source_link: null, created_at: null, updated_at: null, rank: null, variant, result_key: `${benchmarkId}-${variant}`,
+			benchmark: { id: benchmarkId, name: benchmarkId, category: "general", link: null, total_models: null, max_score: null, order: null, ascending_order: true, type: "numerical" as const },
+		});
+		const results = [result("aa-intelligence-index-v5", 58.4, "max"), result(progressId, 350, "max"), result(progressId, 325, "low")];
+		const ranking: PublicBenchmarkRanking = { benchmark_id: progressId, name: "Progress Index", category: null, benchmark_type: null, lower_is_better: false, total_models: 1, entries: [
+			{ model_id: "test/older", model_name: "Older model on the same scale", organisation_id: null, organisation_name: null, score: 214.5, rank: 2, other_info: "Progress Index v1" },
+		] };
+		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[]} results={results} rankings={[ranking]} modelId="test/current" modelName="Current" initialExpandedMetric={progressId} />);
+		expect(html).toContain("Progress Index");
+		expect(html).toContain("Comparable across years and index versions");
+		// The row follows the selected configuration (Max); Low stays in the comparison chart.
+		expect(html).toMatch(/Comparable across years and index versions<\/span><\/span><span[^>]*><span class="tabular-nums">350<\/span>/);
+		expect(html).toContain("Older model on the same scale");
+		expect(html).toContain("Progress Index comparison");
+		expect(html).toContain('href="/benchmarks/aa-progress-index-v1#model-results"');
+		expect(html).toContain("58.4");
+
+		// Max has no Progress Index score of its own, so neither High's row nor the model-wide highlight stands in for it.
+		const unmatched = [result("aa-intelligence-index-v5", 58.4, "max"), result(progressId, 340, "high"), result(progressId, 325, "low")];
+		const other = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[{ ...highlight(progressId, 340), otherInfo: "Example; Progress Index v1" }]} results={unmatched} />);
+		expect(other).toContain("58.4");
+		expect(other).not.toContain("Comparable across years and index versions");
+	});
+	it("keeps the AA panel for a model scored only on the Progress Index and keeps it out of other benchmarks", async () => {
+		const progress = { ...highlight("aa-progress-index-v1", 214.5), otherInfo: "o3-mini; Progress Index v1" };
+		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[progress]} />);
+		expect(html).toContain("214.5");
+		expect(html).not.toContain("Intelligence</span>");
+		const page = renderLocalized(await ModelBenchmarks({ highlightCards: [progress, highlight("mmlu", 89)] }));
+		expect(page.indexOf("Progress Index")).toBeLessThan(page.indexOf("Other benchmarks"));
+		expect(page.match(/Progress Index v1|aa-progress-index-v1/g) ?? []).toHaveLength(0);
+	});
 	it("does not create a panel for models without AA scores", () => {
 		expect(renderLocalized(<ArtificialAnalysisBenchmarks highlights={[highlight("mmlu", 89)]} />)).toBe("");
 		expect(renderLocalized(<ArtificialAnalysisBenchmarks highlights={[{ ...highlight("aa-intelligence-index-v4", 42), score: null }]} />)).toBe("");

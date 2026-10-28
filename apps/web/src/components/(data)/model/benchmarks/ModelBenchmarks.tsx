@@ -8,7 +8,7 @@ import type {
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
-import { isArtificialAnalysisBenchmark, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { isArtificialAnalysisBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
@@ -38,9 +38,9 @@ export default async function ModelBenchmarks({
 	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
 	const otherHighlights = highlightCards.filter(
-		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
+		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isArtificialAnalysisProgressIndex(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
 	);
-	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
+	const hasArtificialAnalysis = highlightCards.some((item) => (isArtificialAnalysisBenchmark(item.benchmarkId) || isArtificialAnalysisProgressIndex(item.benchmarkId)) && item.score !== null);
 	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
 	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
 	const otherBenchmarks = otherHighlights.length ? (
