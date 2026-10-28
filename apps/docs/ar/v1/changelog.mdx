@@ -4,35 +4,53 @@ description: "أكتوبر 2026 - Phaseo"
 rss: true
 ---
 
-## 24 أكتوبر 2026
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>المنتج</p>
+<ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
+
+<Update label="24 أكتوبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
 
 - أصبح توجيه النماذج المتوقفة متاحًا لكل مساحات العمل. عندما لا يعود أي مزوّد يقدّم نموذجًا متوقفًا، يمكن توجيه طلباته إلى البديل المعتمد بدلًا من فشلها. الميزة معطّلة افتراضيًا: يفعّلها المالكون والمسؤولون من **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة** ويختارون ما إذا كان يُسمح للبديل بأن يكون أعلى تكلفة. تحمل الاستجابات المعاد توجيهها الترويسة `x-phaseo-model-substitution`. راجع [إهمال النماذج وإيقافها](./guides/model-retirement.mdx).
 
-***
+</div>
 
-## 9 أكتوبر 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>المنتج</p>
+<Update label="9 أكتوبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
 
 - تضيف الدردشة تجربة اختيارية للإجابات التفاعلية بجانب الدردشة المؤقتة، مع بطاقات مقارنة وجداول ومخططات شريطية ونماذج متابعة. تُحفظ قيم النماذج مع كل نسخة من الإجابة، وتتابع عمليات الإرسال المحادثة.
 
-***
+</div>
 
-## 7 أكتوبر 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>نماذج جديدة</p>
+<Update label="7 أكتوبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Claude Haiku 5.5](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
 
 - [Anthropic: Claude Haiku 5.5](https://phaseo.app/models/anthropic/claude-haiku-5.5)
 
-***
+</div>
 
-## 6 أكتوبر 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>نماذج جديدة</p>
+<Update label="6 أكتوبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Mistral Large 4](/images/model-releases/2026-10-06--mistral--mistral-large-4.0.png)
 
@@ -40,11 +58,15 @@ rss: true
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
 
-***
+</div>
 
-## 1 أكتوبر 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>نماذج جديدة</p>
+<Update label="1 أكتوبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Clef](/images/model-releases/2026-10-01--cloudflare--clef.png)
 
@@ -54,4 +76,6 @@ rss: true
 - [Microsoft: MAI-Voice-2.1-Flash](https://phaseo.app/models/microsoft/mai-voice-2.1-flash)
 - [Microsoft: MAI-Transcribe-2-Streaming](https://phaseo.app/models/microsoft/mai-transcribe-2-streaming)
 
-***
+</div>
+
+</Update>
