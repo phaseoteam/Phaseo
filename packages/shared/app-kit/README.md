@@ -8,14 +8,14 @@ Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop 
 | `@phaseo/app-kit/provider-offers` | Provider display names and logo IDs for offers such as regional or fast routes. |
 | `@phaseo/app-kit/gateway-status` | Gateway route statuses: normalising, ranking and choosing between them. |
 | `@phaseo/app-kit/benchmarks/epoch` | Epoch AI benchmark helpers (the Capabilities Index and its confidence intervals). |
-| `@phaseo/app-kit/theme` | Design tokens: the theme model (palettes, accents, presets, swatches), each palette's colours, the status colours, the chart mixes and the radius scale, plus the colour maths below. |
+| `@phaseo/app-kit/theme` | Design tokens: the theme model (palettes, accents, presets, swatches), each palette's colours, the status colours, the chart mixes and the radius scale. Also `themeVariables`, a theme's colours as CSS variables (the mobile app applies them), and the colour maths below. |
 | `@phaseo/app-kit/theme/colour` | Colour maths: hex, HSV, OKLCH, WCAG contrast, `mixOklch` (CSS `color-mix(in oklch, …)`) and `readableForegroundForAccent`. |
 
 ## Rules
 
 - **No React, no app imports.** The code has to run unchanged in Next.js, Electron (Vite) and React Native (Metro). If something needs React, it belongs in the app.
 - **Source, not a build.** The package exports `.ts` files, and each app compiles them with its own bundler. There is nothing to build first.
-- **Plain Node can load the token data.** `src/theme/tokens.ts` and `src/theme/colour.ts` import nothing, so `node --experimental-strip-types` can read them without a build or dependencies (the drift test does).
+- **Plain Node can load the theme.** `src/theme/tokens.ts` and `src/theme/colour.ts` import nothing, so `node --experimental-strip-types` reads them without a build or dependencies (the drift test does). `scripts/sync-theme-tokens.mjs` also loads `variables.ts`, retrying its extensionless imports with `.ts`.
 - **The website keeps its import paths.** Files such as `apps/web/src/lib/logos/index.ts` re-export from here, so the website's many importers didn't change.
 
 ## Logos
@@ -30,15 +30,15 @@ Every app picks it up from there.
 
 ## Theme tokens
 
-`src/theme/tokens.ts` is the one place the theme's values are written down. The apps use them like this:
+`src/theme/tokens.ts` is the one place the theme's values are written down. `scripts/sync-theme-tokens.mjs` writes them into each app:
 
-| App | Where the tokens are | How they follow tokens.ts |
+| App | Generated | Hand-written, checked by the drift test |
 |---|---|---|
-| Website | `apps/web/src/app/globals.css` (`:root`, `.dark`, the palette blocks, the accent blocks); the Appearance settings read the presets and swatches from here | Drift test |
-| Desktop app | `apps/desktop/src/renderer/index.css` (`:root`, `.dark`) | Drift test |
-| Factory | `apps/factory/src/renderer/index.css` (`:root`, `.dark`) | Drift test |
-| Mobile app | `apps/mobile/global.css` (the Phaseo theme before launch), then `src/lib/theme/model.ts` at runtime | Imports this package; drift test for global.css |
+| Website | `apps/web/src/app/theme-tokens.generated.css` (imported by `globals.css`): `:root`, `.dark` and the palette blocks | `globals.css`: the accent blocks (primary, ring and charts from the user's accent) and the radius scale. The Appearance settings read the presets and swatches from this package. |
+| Desktop app | `apps/desktop/src/renderer/theme-tokens.generated.css` (imported by `index.css`) | `index.css`: the radius scale |
+| Factory | `apps/factory/src/renderer/theme-tokens.generated.css` (imported by `index.css`) | `index.css`: the radius scale |
+| Mobile app | The `@layer theme` block of `apps/mobile/global.css`, between "Generated from" and "End of generated tokens" (Uniwind reads that file itself, so it isn't an import) | `@theme`: the radii. At runtime `src/lib/theme/model.ts` applies the chosen theme with `themeVariables`. |
 
-The drift test, `test/theme.test.mjs`, reads each app's CSS and checks every shared token it declares against tokens.ts. Differences on purpose are listed in the test with their current value. Run it with `pnpm --filter @phaseo/app-kit test` or `pnpm run validate:theme-tokens` (CI runs the latter in Repository checks).
+To change a token, edit tokens.ts and run `pnpm run theme:sync-tokens`. Don't edit the generated CSS.
 
-To change a token, change tokens.ts and the same value in each app's CSS; the test tells you which ones are left.
+`pnpm run validate:theme-tokens` runs in CI's Repository checks, before dependencies are installed. It fails if a generated file is out of date (`sync-theme-tokens.mjs --check`), then runs the drift test, `test/theme.test.mjs` (also `pnpm --filter @phaseo/app-kit test`). The drift test reads each app's CSS, generated and hand-written together. It checks every shared token against tokens.ts and fails if hand-written CSS declares a generated token again. Differences on purpose are listed in the test with their current value.
