@@ -127,9 +127,11 @@ shortlists only models with a provider that offers it. Required regions are
 checked against each candidate's providers in the same way. The classifier
 request carries the same limits, along with the `only` and `ignore` providers;
 if the classifier model can't meet them, Phaseo uses the local classifier
-instead. When no model Auto may choose meets the request's residency
-requirements, the request fails with `403 model_region_unavailable` and
-`unmet_requirements`, the same error a fixed model gets.
+instead. When the request's residency requirements are what leaves Auto no
+model (every model it considered failed them), the request fails with
+`403 model_region_unavailable` and `unmet_requirements`, the same error a fixed
+model gets; if models were also ruled out for other reasons, it fails with
+`400 unsupported_model_or_endpoint`.
 
 The response `model` field identifies the selected model. Request details show
 the workload, objective, selected model, fallback order, candidate scores,
