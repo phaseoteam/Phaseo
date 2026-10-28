@@ -71,25 +71,43 @@ function parse(file, locale, errors) {
 			order.push(index);
 		}
 		if (order.some((index, i) => i > 0 && index <= order[i - 1])) fail(`${label}: sections must be Product, API & SDKs, Models, each at most once`);
-		dates.push(`${label}:${order.join("")}`);
+		dates.push({ label, shape: order.join("") });
 	}
 	if (dates.length !== opens) fail("every <Update> needs only a label, and must close with </Update> on its own line");
-	return dates.map((entry) => entry.slice(entry.lastIndexOf(":") + 1));
+	if (locale === "en") {
+		let previous = Infinity;
+		for (const date of dates) {
+			const time = Date.parse(date.label);
+			if (Number.isNaN(time)) fail(`"${date.label}" is not a date like "October 24, 2026"`);
+			else if (time >= previous) fail(`${date.label}: dates must run newest first`);
+			else previous = time;
+		}
+	}
+	return dates;
 }
 
 const errors = [];
 const english = new Map(pagesFor("en").map(({ page, file }) => [page, parse(file, "en", errors)]));
 for (const locale of Object.keys(LABELS).filter((l) => l !== "en")) {
 	for (const { page, file } of pagesFor(locale)) {
-		const shape = parse(file, locale, errors);
+		const dates = parse(file, locale, errors);
 		const source = english.get(page);
 		if (!source) {
 			errors.push(`${locale}/v1/${page}: no English page`);
 			continue;
 		}
-		if (shape.join(",") !== source.join(",")) {
-			errors.push(`${locale}/v1/${page}: dates or sections do not match English (${shape.length} vs ${source.length} dates)`);
+		if (dates.map((d) => d.shape).join(",") !== source.map((d) => d.shape).join(",")) {
+			errors.push(`${locale}/v1/${page}: dates or sections do not match English (${dates.length} vs ${source.length} dates)`);
+			continue;
 		}
+		// Every language writes dates with Western digits, so each label must carry the English date's day and year.
+		source.forEach((english, i) => {
+			const date = new Date(english.label);
+			const numbers = dates[i].label.match(/\d+/g)?.map(Number) ?? [];
+			if (!numbers.includes(date.getDate()) || !numbers.includes(date.getFullYear())) {
+				errors.push(`${locale}/v1/${page}: "${dates[i].label}" should be the same date as "${english.label}"`);
+			}
+		});
 	}
 }
 
@@ -99,5 +117,5 @@ if (errors.length) {
 	process.exit(1);
 }
 const dates = [...english.values()].reduce((n, page) => n + page.length, 0);
-const sections = [...english.values()].reduce((n, page) => n + page.reduce((m, shape) => m + shape.length, 0), 0);
+const sections = [...english.values()].reduce((n, page) => n + page.reduce((m, date) => m + date.shape.length, 0), 0);
 console.log(`Changelog format valid: ${english.size} pages, ${dates} dates, ${sections} sections, 9 languages`);
