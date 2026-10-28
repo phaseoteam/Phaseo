@@ -36,6 +36,24 @@ it("leaves relays with open sockets and recent traffic alone", async () => {
 	expect(state.rpc).not.toHaveBeenCalled();
 });
 
+it("never reaps a quiet API session for idleness, but still reaps a quiet playground session", async () => {
+	const stale = new Date(Date.now() - 30 * 60_000).toISOString();
+	const future = new Date(Date.now() + 30 * 60_000).toISOString();
+	const row = { workspace_id: "workspace", status: "connected", provider: "openai", model_id: "openai/gpt-realtime",
+		usage: {}, metadata: { relay: true }, last_event_at: stale, expires_at: future };
+	state.rows = [{ ...row, session_id: "rt_api", source: "api" }];
+	state.rpc.mockReset();
+	const api = await runRealtimeSessionReconciliationJob();
+	expect(api).toMatchObject({ sessionsHealthy: 1, sessionsErrored: 0, sessionsExpired: 0 });
+	expect(state.rpc).not.toHaveBeenCalled();
+
+	state.rows = [{ ...row, session_id: "rt_chat", source: "chat" }];
+	state.rpc.mockResolvedValue({ data: [{ session_id: "rt_chat", status: "billing_unresolved" }], error: null });
+	const chat = await runRealtimeSessionReconciliationJob();
+	expect(chat.sessionsHealthy).toBe(0);
+	expect(state.rpc).toHaveBeenCalledWith("gateway_realtime_mark_billing_unresolved", expect.anything());
+});
+
 it("selects sessions whose relay was never claimed after two minutes", async () => {
 	state.rows = [];
 	state.filters.length = 0;
