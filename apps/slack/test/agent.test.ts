@@ -1,7 +1,7 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
 import {
-	AutoAfterSearchError, classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
+	classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
 	type AgentTurnRequest, type AskRequest, type PausedRun,
 } from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
@@ -444,7 +444,6 @@ describe("after a Slack search", () => {
 			return sse([COMPLETED]);
 		});
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
-		// Search is never offered with Auto (zeroRetentionModels).
 		await runner.run(request({ model: "openai/gpt-test", tools: [search], zeroDataRetention: async () => { asked.push(searched); return searched; } }), { onText: async () => undefined, onStep: async () => undefined });
 		expect(bodies).toHaveLength(2);
 		// The first request went before the search; the one that carries its results, and any after, keep no data.
@@ -505,7 +504,7 @@ describe("after a Slack search", () => {
 		expect(classifyTurnError(refusal, "openai/gpt-test")).toBe("failed");
 		// Other refusals after a search are what they always were.
 		expect(classifyTurnError(new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }), "openai/gpt-test", true)).toBe("no_credits");
-		// The gateway's own field for it, which its public error body doesn't carry today, is enough too.
+		// The gateway's own field for it is enough too.
 		const named = { error: { code: "model_region_unavailable", message: "No provider for this model meets this request's residency requirements." }, code: "model_region_unavailable", unmet_requirements: { zero_data_retention: true } };
 		expect(classifyTurnError(new AgentGatewayError({ status: 403, statusText: "Forbidden", body: named }), "openai/gpt-test", true)).toBe("search_needs_zdr");
 		expect(turnErrorText("search_needs_zdr")).toBe("I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model. An admin can choose a model that keeps no data in Phaseo settings.");
@@ -530,30 +529,32 @@ describe("after a Slack search", () => {
 		expect(classifyTurnError(byok, "openai/gpt-test", true)).not.toBe("search_needs_zdr");
 	});
 
-	it("never sends a model request for Auto, and says why", async () => {
-		const sent: string[] = [];
-		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(await (input as Request).text()); return new Response("{}"); });
+	it("sends Auto's requests after a search with the flag too, and says so when no model Auto may choose keeps no data", async () => {
+		const sent: Array<Record<string, any>> = [];
+		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(JSON.parse(await (input as Request).text())); return new Response("{}"); });
 		let searched = false;
 		const wrapped = withZeroDataRetention(passed as unknown as typeof fetch, async () => searched);
-		// Before a search, Auto is asked like any model.
 		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "phaseo/auto", input: "hello" }) });
 		searched = true;
-		for (const model of ["phaseo/auto", " Phaseo/Auto "]) {
-			await expect(wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model, input: "what the search found" }) })).rejects.toBeInstanceOf(AutoAfterSearchError);
-		}
-		expect(sent).toHaveLength(1);
-		expect(sent.join("")).not.toContain("what the search found");
-		expect(classifyTurnError(new AutoAfterSearchError(), "phaseo/auto", true)).toBe("search_needs_zdr");
-		expect(classifyTurnError(new Error("run failed", { cause: new AutoAfterSearchError() }), "phaseo/auto", true)).toBe("search_needs_zdr");
+		// The gateway's auto router picks only among models with a provider that keeps no data, and its classifier request carries the flag.
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "phaseo/auto", input: "what the search found", tools: [{ type: "phaseo:web_search" }] }) });
+		expect(sent[0]).not.toHaveProperty("provider");
+		expect(sent[1].provider).toEqual({ require_zero_data_retention: true });
+		expect(sent[1].tools).toEqual([]);
 
-		// Through the runner too: the agent's own steps and the models it asks.
-		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
-		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
-		const run = runner.run(request({ model: "phaseo/auto", zeroDataRetention: async () => true }), { onText: async () => undefined, onStep: async () => undefined });
-		await expect(run.catch((error: unknown) => classifyTurnError(error, "phaseo/auto", true))).resolves.toBe("search_needs_zdr");
-		const { gatewayKey, endUser, sessionId, labels, signal } = request();
-		await expect(runner.ask({ gatewayKey, endUser, sessionId, labels, signal, model: "phaseo/auto", instructions: "Answer.", prompt: "Right?", webTools: false, maxOutputTokens: 100, zeroDataRetention: async () => true }))
-			.rejects.toSatisfy((error: unknown) => classifyTurnError(error, "phaseo/auto", true) === "search_needs_zdr");
-		expect(fetchImpl).not.toHaveBeenCalled();
+		// Auto's refusal when the workspace's Auto settings leave no such model.
+		const autoRefusal = new AgentGatewayError({
+			status: 403,
+			statusText: "Forbidden",
+			body: {
+				error: { code: "model_region_unavailable", message: "No model Auto can choose has a provider that offers zero data retention." },
+				code: "model_region_unavailable",
+				reason: "no_provider_meets_residency_requirements",
+				unmet_requirements: { zero_data_retention: true },
+				routing_diagnostics: { autoRouter: { candidates: [{ model: "openai/gpt-test", eligible: false, reason: "no_residency_compliant_providers" }] } },
+			},
+		});
+		expect(classifyTurnError(autoRefusal, "phaseo/auto", true)).toBe("search_needs_zdr");
+		expect(classifyTurnError(autoRefusal, "phaseo/auto")).not.toBe("search_needs_zdr");
 	});
 });

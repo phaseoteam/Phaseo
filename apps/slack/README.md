@@ -278,9 +278,11 @@ doesn't otherwise:
   request anyway, it errs towards offering search: capabilities that can't be
   read leave the providers' policies, and keys that can't be read leave the
   routes Phaseo's credentials serve; only routes or providers that can't be read
-  mean no search. Auto never qualifies: the gateway's auto router picks a model
-  without regard to `require_zero_data_retention` (and its classifier request
-  goes without it), and a 403 doesn't make it try another. Otherwise
+  mean no search. Auto always qualifies: with `require_zero_data_retention` the
+  gateway's auto router shortlists only models with a route that keeps no data,
+  its classifier request carries the flag, and when the workspace's Auto
+  settings leave no such model it refuses with `model_region_unavailable` and
+  `unmet_requirements.zero_data_retention`. Otherwise
   (`needs_zdr`) the instructions say search isn't available with this model,
   and name the allowed models that keep no data when model choice is on
   (`with <model>:`), or say an admin can choose one.
@@ -303,20 +305,19 @@ without the gateway's web search and web fetch tools (`phaseo:web_*` are taken
 out of `tools`), so nothing found can leave in a search query or a fetched URL;
 the instructions tell the model to search the web first if it needs both.
 
-No request for Auto is sent after a search: the gateway's auto router sends
-the prompt to a classifier model of its own, without the flag, to choose a
-model. `ask_model` refuses Auto before sending anything (not counted as a
-consult), and `withZeroDataRetention` refuses any model request for Auto as a
-backstop (`AutoAfterSearchError`). When the gateway still finds no route that
-keeps no data, it refuses with a 403 `model_region_unavailable`; the answer
+Requests for Auto carry the flag like any other: the gateway's auto router then
+picks only among models with a route that keeps no data, and its classifier
+request carries the flag too (if the classifier model can't meet it, Auto
+classifies the request itself). When the gateway finds no route (or, with
+Auto, no model) that keeps no data, it refuses with a 403
+`model_region_unavailable`; the answer
 ends with `search_needs_zdr`'s message and its cost so far counts, and a
 refused consult or image tells the model that model can't be used after a Slack
 search. That code also covers a request from a country no route serves, or a
 region no route meets, so `classifyTurnError` says `search_needs_zdr` only when
 the error says zero data retention is what no route met: the residency gate's
 dropped routes in `routing_diagnostics` with `zero_data_retention_unsupported`,
-or `unmet_requirements.zero_data_retention` (which the gateway's public error
-body drops today). Any other refusal, a `byok_credentials_required` too (its
+or `unmet_requirements.zero_data_retention`. Any other refusal, a `byok_credentials_required` too (its
 body doesn't say why only routes needing the workspace's key were left), reads
 as it would without a search.
 

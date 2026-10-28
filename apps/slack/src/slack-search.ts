@@ -39,8 +39,8 @@ import { ToolInputError } from "./usage-tools";
 // who can't open the channels it found), the person isn't from another
 // organisation or a guest, the message carried an action token, and the model
 // answering has a route that keeps no data, that the agent's guardrail allows
-// and that its key can use (zeroRetentionModels; never Auto, which picks a
-// model per request without regard to that). Scheduled runs have no message,
+// and that its key can use (zeroRetentionModels), or is Auto, whose router then
+// picks only among models with such a route. Scheduled runs have no message,
 // so no token, and never search.
 //
 // Slack only lets apps published in its directory, and a company's own
@@ -210,13 +210,21 @@ function inEffect(route: CatalogueRoute, now: number): boolean {
  * that no route meets (search_needs_zdr). So where it can't tell, it errs
  * towards offering: a capability policy that can't be read leaves the
  * provider's, and keys that can't be read leave the routes Phaseo's
- * credentials serve. Auto never can: the gateway's auto router chooses a
- * model, with a request of its own, without regard to
- * require_zero_data_retention. Routes that can't be read leave none, so no
- * search is offered.
+ * credentials serve. Auto always can: with require_zero_data_retention the
+ * gateway's auto router picks only among models with a route that keeps no
+ * data (and its classifier request carries the flag), and refuses the request
+ * when the workspace's Auto settings leave none. Routes that can't be read
+ * leave no other model, so search is offered only with Auto.
  */
 export async function zeroRetentionModels(db: Db, models: string[], now: number, workspaceId: string): Promise<Set<string>> {
-	const wanted = [...new Set(models)].filter((model) => model && !isAutoModel(model));
+	const auto = models.filter((model) => isAutoModel(model));
+	const capable = await zeroRetentionCatalogueModels(db, models.filter((model) => model && !isAutoModel(model)), now, workspaceId);
+	return new Set([...auto, ...capable]);
+}
+
+/** zeroRetentionModels for catalogue models (not Auto), from their routes. */
+async function zeroRetentionCatalogueModels(db: Db, models: string[], now: number, workspaceId: string): Promise<Set<string>> {
+	const wanted = [...new Set(models)];
 	if (!wanted.length) return new Set();
 	try {
 		const routes = (await db.select<CatalogueRoute>("v2_model_provider_routes", {
@@ -275,11 +283,11 @@ export async function zeroRetentionModels(db: Db, models: string[], now: number,
 }
 
 /**
- * For needs_zdr: the model answering (`name`, and whether it is Auto), and the
- * allowed models the person could choose for a message instead (`choices`, by
- * name, with `with <model>:`), those that keep no data.
+ * For needs_zdr: the model answering (`name`; never Auto, which always can),
+ * and the allowed models the person could choose for a message instead
+ * (`choices`, by name, with `with <model>:`), those that keep no data.
  */
-export type ZeroRetentionNote = { name: string; auto: boolean; choices: string[] };
+export type ZeroRetentionNote = { name: string; choices: string[] };
 
 /** What the agent is told about searching Slack on this turn. `zdr` goes with needs_zdr. */
 export function searchInstructions(availability: SearchAvailability, asker: string, inChannel: boolean, zdr?: ZeroRetentionNote): string {
@@ -294,10 +302,8 @@ export function searchInstructions(availability: SearchAvailability, asker: stri
 				...(inChannel ? ["Everyone in this conversation reads your answer, so share only what the question needs and link to the rest."] : []),
 			].join(" ");
 		case "needs_zdr": {
-			const model = zdr?.auto ? "Auto" : zdr?.name ? zdr.name : "the model answering";
-			const why = zdr?.auto
-				? "Auto picks a model for each request and can't promise one"
-				: `${model} has no provider that does`;
+			const model = zdr?.name ? zdr.name : "the model answering";
+			const why = `${model} has no provider that does`;
 			const choose = zdr?.choices.length
 				? `they can ask again with a model that keeps no data by starting the message with \`with <model>:\` (${zdr.choices.join(", ")}), or an admin can choose one for the agent in Phaseo (Settings → Slack)`
 				: "an admin can choose a model that keeps no data for the agent in Phaseo (Settings → Slack)";
