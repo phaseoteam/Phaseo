@@ -180,7 +180,7 @@ New models, routes, prices and retirements. Every bullet starts with the model l
 
 ### New model
 
-Release artwork first when it exists, then the link. Add one short clause only when there is something a reader needs that the name doesn't say, such as a free period or an unusual price.
+Release artwork first when it exists, then the link. When the day has several models, the pictured one is listed first (see `changelog-format.md`). Add one short clause only when there is something a reader needs that the name doesn't say, such as a free period or an unusual price.
 
 ```md
 ![Claude Haiku 5.5 model release artwork](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
