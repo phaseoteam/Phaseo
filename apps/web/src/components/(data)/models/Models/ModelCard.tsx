@@ -17,6 +17,7 @@ import {
 	Check,
 	Copy,
 	BadgeAlert,
+	CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -540,6 +541,9 @@ function ModelCardImpl({
 			hasPassedLifecycleDate(model.deprecation_date));
 	const LifecycleIcon = isRetired || isDeprecated ? BadgeAlert : null;
 	const lifecycleLabel = isRetired ? "End of life" : isDeprecated ? "Deprecated" : null;
+	const modelDescription = String(model.description ?? "").trim();
+	const isComingSoon =
+		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -1096,9 +1100,21 @@ function ModelCardImpl({
 					</Button>
 				</div>
 
+				{modelDescription ? (
+					<p className="-mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
+						{modelDescription}
+					</p>
+				) : null}
+
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
+						{isComingSoon ? (
+							<span className="inline-flex items-center gap-1 rounded-md border border-[#2b7fff]/30 bg-[#2b7fff]/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
+								<CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+								<span>{t("filtersUi.comingSoon")}</span>
+							</span>
+						) : null}
 						{dualDecisionsModel ? (model.operation_pricing?.length ? model.operation_pricing.map(operation => (
 							<span key={operation.capability} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
 								<span className="text-muted-foreground">{t(`filtersUi.${operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions"}`)}</span>

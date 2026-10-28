@@ -1,8 +1,11 @@
 import { resolveDefaultGatewayStatuses } from "./defaultGatewayStatuses";
 
 describe("resolveDefaultGatewayStatuses", () => {
-	it("keeps the public models view limited to active Gateway routes by default", () => {
-		expect(resolveDefaultGatewayStatuses([], false)).toEqual(["active"]);
+	it("shows active and coming-soon Gateway models by default", () => {
+		expect(resolveDefaultGatewayStatuses([], false)).toEqual([
+			"active",
+			"coming_soon",
+		]);
 	});
 
 	it("preserves an explicit status selection", () => {
