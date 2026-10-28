@@ -168,7 +168,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	// The importer's effort labels can differ for non-reasoning models; a lone score still belongs to the model.
 	const progressResults = aaResults.filter((item) => isArtificialAnalysisProgressIndex(item.benchmark_id));
 	const progressResult = progressResults.find((item) => item.variant === (selectedVariant || null)) ?? (progressResults.length === 1 ? progressResults[0] : undefined);
-	const progress: DisplayResult | undefined = progressResult ? toDisplay(progressResult) : highlights.find((item) => isArtificialAnalysisProgressIndex(item.benchmarkId) && item.score !== null);
+	const progress: DisplayResult | undefined = progressResult ? toDisplay(progressResult) : progressResults.length ? undefined : highlights.find((item) => isArtificialAnalysisProgressIndex(item.benchmarkId) && item.score !== null);
 	const indexResults = selectedResults.length ? selectedResults : fallback;
 	const available = progress ? [...indexResults, progress] : indexResults;
 	if (!indexResults.length && !progressResults.length && !progress) return null;
