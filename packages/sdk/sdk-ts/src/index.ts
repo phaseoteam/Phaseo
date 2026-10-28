@@ -1846,6 +1846,8 @@ function isDoneEvent(chunk: Record<string, unknown>): boolean {
  * other typed events repeat what the deltas already sent, so summing `text` gives the answer once.
  */
 function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  // Reasoning and function-call argument deltas are not reply text.
+  if (typeof chunk.type === "string" && chunk.type.endsWith(".delta") && chunk.type !== "response.output_text.delta") return "";
   if (typeof chunk.delta === "string") return chunk.delta;
   if (typeof chunk.type === "string" && !chunk.type.endsWith(".delta")) return "";
   if (typeof chunk.text === "string") return chunk.text;

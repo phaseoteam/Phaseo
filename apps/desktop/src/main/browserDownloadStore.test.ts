@@ -1,0 +1,15 @@
+import { describe, expect, it } from "vitest";
+import { DatabaseSync } from "node:sqlite";
+import { mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { WorkspaceStore } from "./workspaceStore";
+import { BrowserDownloadStore } from "./browserDownloadStore";
+import type { BrowserDownload } from "../shared/browserDownloads";
+const download = (id: string, finished=true): BrowserDownload => ({ id, sourceId: "chat:tab", filename: "owned.txt", url: "https://owned.test/file", path: "/owned/file", received: 22, total: 22, status: finished ? "completed" : "paused", resumable: !finished, finished });
+describe("durable browser downloads", () => {
+ it("reopens completed paths and removes metadata without touching saved files", () => { const directory=mkdtempSync(path.join(tmpdir(),"phaseo-download-store-"));const filename=path.join(directory,"workspace.sqlite"),saved=path.join(directory,"owned.txt");writeFileSync(saved,"Owned file");let store=new WorkspaceStore(filename);try {store.browserDownloads.put({...download("owned"),path:saved});store.close();store=new WorkspaceStore(filename);expect(store.browserDownloads.list()[0]).toMatchObject({id:"owned",path:saved,status:"completed"});store.browserDownloads.remove("owned");store.close();store=new WorkspaceStore(filename);expect(store.browserDownloads.list()).toEqual([]);expect(readFileSync(saved,"utf8")).toBe("Owned file");}finally{store.close();rmSync(directory,{recursive:true,force:true});} });
+ it("recovers unfinished records as terminal interruptions while preserving completed files", () => { const db=new DatabaseSync(":memory:");try{let store=new BrowserDownloadStore(db);store.put(download("complete"));store.put(download("partial",false));store=new BrowserDownloadStore(db);expect(store.list()[0].status).toBe("completed");expect(store.list()[1]).toMatchObject({status:"interrupted",finished:true,resumable:false,path:"/owned/file",received:22,error:expect.stringContaining("app stopped")});}finally{db.close();} });
+ it("bounds retained history and preserves old active transfers while pruning finished entries", () => { const db=new DatabaseSync(":memory:");try{const store=new BrowserDownloadStore(db);store.put(download("active",false));for(let index=0;index<140;index++)store.put(download(String(index)));const values=store.list();expect(values).toHaveLength(100);expect(values[0].id).toBe("active");expect(values.at(-1)?.id).toBe("139");expect(values.some(value=>value.id==="0")).toBe(false);}finally{db.close();} });
+ it("updates native progress without moving a record's admission order", () => { const db=new DatabaseSync(":memory:");try{const store=new BrowserDownloadStore(db);store.put(download("first",false));store.put(download("second"));store.put({...download("first"),received:100,total:100});expect(store.list().map(value=>value.id)).toEqual(["first","second"]);expect(store.list()[0].received).toBe(100);}finally{db.close();} });
+});

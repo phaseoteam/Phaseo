@@ -179,8 +179,10 @@ describe("Phaseo chat helpers", () => {
 
     const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
     const dataChunks = [];
+    let text = "";
     for await (const chunk of client.streamResponses({ model: "openai/gpt-5-nano", input: "hi" })) {
       if (typeof chunk.delta === "string") dataChunks.push({ type: chunk.type, delta: chunk.delta });
+      text += chunk.text;
     }
 
     expect(dataChunks).toEqual([
@@ -188,6 +190,8 @@ describe("Phaseo chat helpers", () => {
       { type: "response.output_text.delta", delta: "hi" },
       { type: undefined, delta: "!" },
     ]);
+    // The reasoning delta, named only on its event: line, is not reply text.
+    expect(text).toBe("hi!");
   });
 
   test("parses message stream chunks with text and usage", async () => {
