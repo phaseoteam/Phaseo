@@ -174,8 +174,15 @@ describe("Slack search: models that keep no data", () => {
 			// One that declares nothing about retention keeps its provider's.
 			{ model: "acme/inherits", provider: "zdr-inherits", capabilities: [{ data_policy: { tier: "private", confidence: "confirmed" } }] },
 		]);
+		// An empty text.generate params object counts as no data, as the gateway reads it: responses' declaration applies.
+		db.tables.v2_model_provider_routes.push({ model_slug: "acme/empty-text", provider_slug: "logs-seven", provider_model_id: "logs-seven:acme/empty-text", credential_mode: "managed_and_byok", routing_enabled: true, status: "active", effective_from: null, effective_to: null });
+		db.tables.v2_providers.push({ provider_slug: "logs-seven", ...PRIVATE, zero_data_retention: false });
+		db.tables.v2_effective_route_capabilities.push(
+			{ provider_model_id: "logs-seven:acme/empty-text", capability_id: "text.generate", status: "active", params: {} },
+			{ provider_model_id: "logs-seven:acme/empty-text", capability_id: "responses", status: "active", params: { data_policy: KEEPS_NOTHING } },
+		);
 		const all = db.tables.v2_model_provider_routes.map((route) => String(route.model_slug));
-		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/capability-zdr", "acme/responses-zdr", "acme/catalogue-current", "acme/inherits"]));
+		await expect(zeroRetentionModels(db, all, NOW, WORKSPACE)).resolves.toEqual(new Set(["acme/capability-zdr", "acme/responses-zdr", "acme/catalogue-current", "acme/inherits", "acme/empty-text"]));
 
 		// Policies that can't be read leave the providers', erring towards offering search: the gateway still enforces it.
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);

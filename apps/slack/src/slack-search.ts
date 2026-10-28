@@ -140,6 +140,11 @@ type CatalogueProvider = {
 };
 type CatalogueCapability = { provider_model_id: string; capability_id: string; params: unknown };
 
+/** An object with at least one key. */
+function hasEntries(value: unknown): boolean {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value) && Object.keys(value as object).length > 0;
+}
+
 /** The capabilities whose policy the gateway reads for a Responses request, text.generate first (its context loader). */
 const TEXT_CAPABILITIES = ["text.generate", "responses"];
 /** Capability statuses the gateway routes to. */
@@ -245,10 +250,15 @@ export async function zeroRetentionModels(db: Db, models: string[], now: number,
 			}),
 		]);
 		const byProvider = new Map(providers.filter((provider) => provider.status === "active" && provider.routing_enabled !== false).map((provider) => [provider.provider_slug, provider]));
-		// text.generate's declaration, else responses', as the gateway prefers them.
+		// text.generate's declaration, else responses', as the gateway prefers them: it reads an empty
+		// text.generate params object as no data, and takes responses' instead.
 		const params = new Map<string, unknown>();
 		for (const capability of capabilities) {
-			if (capability.capability_id === TEXT_CAPABILITIES[0] || !params.has(capability.provider_model_id)) params.set(capability.provider_model_id, capability.params);
+			if (capability.capability_id === TEXT_CAPABILITIES[0]) {
+				if (hasEntries(capability.params)) params.set(capability.provider_model_id, capability.params);
+			} else if (!params.has(capability.provider_model_id)) {
+				params.set(capability.provider_model_id, capability.params);
+			}
 		}
 		const withKey = new Set(keys.map((key) => key.provider_id));
 		return new Set(routes.filter((route) => {
