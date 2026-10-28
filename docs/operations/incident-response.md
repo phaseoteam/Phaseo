@@ -2,8 +2,6 @@
 
 What to do when production breaks: how bad it is, who acts, what to check first, what to tell customers, and what to write up afterwards. Tracked in PHA-237.
 
-Lines marked **Decide:** are open choices for the maintainer. Replace each one with the decision, then delete the marker.
-
 ## Severity
 
 | Level | Meaning | Examples | First public update |
@@ -14,15 +12,14 @@ Lines marked **Decide:** are open choices for the maintainer. Replace each one w
 
 - When unsure, pick the higher level. Lower it once you know more.
 - Anything touching billing or API keys starts at SEV1 until you know how many workspaces it reached.
-- **Decide:** whether SEV3 goes on the status page, or only in the changelog or a support reply.
-- **Decide:** whether these first-update targets apply around the clock or only during working hours.
+- SEV3 doesn't go on the status page. Fix it, and answer customers who ask through support. If several customers ask about the same SEV3, post it after all.
+- The first-update targets apply around the clock where possible. One person runs Phaseo, so outside waking hours they depend on the outage alert reaching the maintainer.
 
 ## Roles
 
-Phaseo is run by one person today. The maintainer is the incident lead, fixes the problem and writes every customer update.
+Phaseo is run by one person today. The maintainer is the only contact: they lead the incident, fix the problem and write every customer update. There is no backup contact.
 
-- **Decide:** who is contacted if the maintainer can't be reached for an SEV1, how (phone, email, Discord), and what they are allowed to do: post on the status page only, or also roll back a deploy.
-- **Decide:** which accounts that person needs (incident.io, Vercel, Cloudflare, Supabase, GitHub), and where the access is kept.
+If a backup is added later, they need access to every service Phaseo runs on: GitHub, Vercel, Cloudflare, Supabase, incident.io, Stripe, PostHog, Axiom, Linear, Discord and X.
 
 ## First 15 minutes
 
@@ -48,8 +45,9 @@ Phaseo is run by one person today. The maintainer is the incident lead, fixes th
 
 - **Status page:** `https://status.phaseo.app`, hosted on incident.io. The site footer, the Trust page and the docs link to it; the footer shows its current state through `/api/_web/status` ([status.ts](../../apps/web-api/src/routes/public/status.ts)). The components shown include API health, Models API, Generations API, Homepage and Docs.
 - **Updates:** post at least every 30 minutes for SEV1 and every hour for SEV2 while the incident is open, even if nothing has changed.
-- **Email affected customers** when their own workspace was affected in a way they might not notice: wrong charges, failed batches or async jobs, revoked or paused keys, or data shown to the wrong workspace. For gateway traffic, find the affected workspaces from `v2_private_usage_15m` for the incident window (a rollup, so it is safe to query) rather than raw request tables. Failed batches and async jobs may never reach that rollup, so for those use `gateway_batch_requests` and `gateway_async_operations`, filtered by status and time window, with a `limit`. There is no bulk incident email tool; `/internal/key-incidents` covers only key leaks. **Decide:** how other incident emails are sent (from `support@phaseo.app` by hand, or a new tool), and the minimum impact that triggers one.
-- **X (`https://x.com/phaseoteam`) and Discord (`https://discord.gg/aQyywCvgZ5`):** post a short note linking to the status page for SEV1, and for SEV2 lasting more than an hour. **Decide:** whether that threshold is right.
+- **Email affected customers** when their own workspace was affected in a way they might not notice: wrong charges, failed batches or async jobs, revoked or paused keys, or data shown to the wrong workspace. For gateway traffic, find the affected workspaces from `v2_private_usage_15m` for the incident window (a rollup, so it is safe to query) rather than raw request tables. Failed batches and async jobs may never reach that rollup, so for those use `gateway_batch_requests` and `gateway_async_operations`, filtered by status and time window, with a `limit`. There is no bulk incident email tool; `/internal/key-incidents` covers only key leaks. Send these emails by hand from `support@phaseo.app`.
+- **Status page subscribers:** customers who subscribe to `https://status.phaseo.app` get an email from incident.io for each published incident and update, if subscriber notifications are on in the status page's settings. This covers broad outages; it doesn't replace the emails above, which go only to the affected workspaces.
+- **X (`https://x.com/phaseoteam`) and Discord (`https://discord.gg/aQyywCvgZ5`):** post a short note linking to the status page for SEV1, and for SEV2 lasting more than an hour.
 - Never name or blame a provider or a person. Say what customers see and what they can do.
 
 ### Templates
@@ -100,12 +98,16 @@ How money goes back today:
 
 - **Self-serve refunds:** a customer can refund a whole top-up within 24 hours if the credit from it hasn't been used ([refund route](../../apps/web/src/app/api/stripe/refunds/request/route.ts)). This doesn't help after an incident that consumed credit.
 - **Credit codes:** `/internal/credits` creates a promo code with an amount, a redemption limit and an expiry. Send the code to the affected workspace by email.
-- **Ledger adjustments:** the credit ledger supports `grant`, `refund` and `adjustment` entries ([v2_credit_ledger.sql](../../supabase/schemas/public/tables/v2_credit_ledger.sql)), but there is no admin tool to add one to a single workspace. TODO: add one, or confirm that credit codes are the only way.
+- **Ledger adjustments:** the credit ledger supports `grant`, `refund` and `adjustment` entries ([v2_credit_ledger.sql](../../supabase/schemas/public/tables/v2_credit_ledger.sql)), but there is no admin tool to add one to a single workspace, so use credit codes for now.
 - **Card refunds** beyond the self-serve window go through the Stripe dashboard.
 
-- **Decide:** when Phaseo credits customers. For example: always refund wrong charges in full; credit failed requests that were billed; no credit for slow responses or provider outages where fallback worked.
-- **Decide:** the minimum amount worth a credit, and whether larger amounts go back as a card refund instead of credit.
-- **Decide:** whether paying customers get a goodwill credit for a long SEV1, and how much.
+When Phaseo gives money back:
+
+- **Wrong charges:** refund in full, whatever the amount.
+- **Failed requests that were billed:** credit the amount billed.
+- **Minimum credit:** $5. Round smaller amounts up to $5.
+- **Long SEV1:** paying workspaces get a goodwill credit of at least $5. Set the amount per incident.
+- **No credit** for slow responses, or for provider outages where fallback served the request.
 
 ## Tools and links
 
@@ -129,4 +131,4 @@ How money goes back today:
 | Discord webhooks | `DISCORD_SIGNUP_WEBHOOK_URL` (signups, deletions, Slack agent installs) and `DISCORD_BILLING_WEBHOOK_URL` (checkouts, purchases). Neither sends outage alerts. |
 | Support | `support@phaseo.app`, `https://phaseo.app/help` |
 
-There is no automatic outage alert to a phone or chat channel today: the Linear bridge files issues, and the health pilot runs only by hand. **Decide:** whether to add a paging alert (for example a status page monitor on `/v1/health` that notifies you directly), and where it goes.
+There is no automatic outage alert to a phone or chat channel today: the Linear bridge files issues, and the health pilot runs only by hand. An outage alert on `/v1/health` is planned, sent to Discord or to incident.io alerts.
