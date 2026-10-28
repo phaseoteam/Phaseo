@@ -9,15 +9,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="30 de junho de 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">Produto</p>
-
-- As calculadoras de preços agora aceitam janelas de tempo e comparação lado a lado de modelos, facilitando a análise de custos por pico, em tempo real e por rota ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-- O layout da calculadora de preços foi simplificado para facilitar o ajuste do modelo, do provedor e das premissas de uso antes de comparar custos ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -35,11 +26,32 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="29 de junho de 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- O Phaseo Agent SDK para TypeScript `0.1.1` é a primeira versão pública, para criar loops de agente com várias etapas e ferramentas sobre o gateway; veja [Agent SDK Overview](../sdk-reference/agent-sdk/overview.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
 
 - [Meituan: LongCat 2.0](https://phaseo.app/models/meituan/longcat-2.0)
+
+</div>
+
+</Update>
+
+<Update label="28 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A página de modelos lista os modelos anunciados como **Coming Soon** com os preços do catálogo e mostra os modelos só para parceiros como **Limited Access** ([#850](https://github.com/phaseoteam/Phaseo/pull/850), [#852](https://github.com/phaseoteam/Phaseo/pull/852)).
+- Novo guia: [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx) explica como migrar para os níveis Sol, Terra e Luna, incluindo esforço de raciocínio e preços de cache ([#850](https://github.com/phaseoteam/Phaseo/pull/850)).
 
 </div>
 
@@ -89,6 +101,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="15 de junho de 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Requisições com `service_tier: "priority"` agora só são roteadas para provedores que oferecem esse nível, e as requisições da xAI e da Moonshot são cobradas pelo nível realmente atendido; veja [Níveis de serviço](../guides/service-tiers.mdx) ([#746](https://github.com/phaseoteam/Phaseo/pull/746), [#741](https://github.com/phaseoteam/Phaseo/pull/741), [#745](https://github.com/phaseoteam/Phaseo/pull/745)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -114,6 +134,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="12 de junho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O feed do **Monitor** mostra mudanças nos links de modelos e as datas de descontinuação e desativação, e as atualizações de preço com vários planos ganham um seletor de plano ([#703](https://github.com/phaseoteam/Phaseo/pull/703), [#704](https://github.com/phaseoteam/Phaseo/pull/704)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- **Beta:** O Phaseo CLI `0.1.1` é a primeira versão pública, com login pelo navegador, saída `--json` e comandos para gerenciar chaves, workspaces, presets e créditos; veja [Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#562](https://github.com/phaseoteam/Phaseo/pull/562)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -128,6 +164,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="11 de junho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat mostra os erros de requisição na própria conversa, abaixo da resposta que falhou, e o campo de mensagem oferece cartões que preenchem prompts comuns de avaliação e produtividade ([#691](https://github.com/phaseoteam/Phaseo/pull/691)).
+- As configurações dividem Activity e Usage em páginas de **Observability**: Overview, Trends, Explore, Guardrails e Logs ([#693](https://github.com/phaseoteam/Phaseo/pull/693)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- As ferramentas de servidor adicionam busca na web, leitura de páginas, Advisor, geração de imagens, apply patch e data e hora às requisições de Chat Completions, Responses e Messages, cobradas por uso; veja [Ferramentas de servidor](../guides/server-tools/index.mdx) ([#690](https://github.com/phaseoteam/Phaseo/pull/690)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -139,6 +192,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="10 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Contas novas começam em **Onboarding**, um guia de três etapas para criar uma chave de API, escolher um modelo e ver a prévia de uma primeira requisição ([#689](https://github.com/phaseoteam/Phaseo/pull/689)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- **Alteração incompatível:** `GET /v1/models` agora é o único endpoint de descoberta de modelos; `/v1/gateway/models` e `/v1/data/models` foram removidos, então chame `/v1/models`; veja [Listar modelos](../api-reference/endpoint/models.mdx) ([#681](https://github.com/phaseoteam/Phaseo/pull/681)).
+- A API de gerenciamento adiciona `/v1/presets`, `/v1/settings`, `/v1/guardrails` e `/v1/management-keys`, e `GET /v1/me` retorna o usuário e o workspace de um token OAuth ([#562](https://github.com/phaseoteam/Phaseo/pull/562)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -154,6 +224,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="9 de junho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A página **Monitor** lista adições de modelos, adições de provedores e mudanças de status de provedores como eventos separados, e o rodapé a vincula em **Explore** ([#678](https://github.com/phaseoteam/Phaseo/pull/678), [#679](https://github.com/phaseoteam/Phaseo/pull/679)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -168,7 +246,54 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="8 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Os cartões de ciclo de vida da página de um modelo mostram cada data de anúncio, lançamento, descontinuação e desativação com um selo de tempo relativo que indica o intervalo exato ao passar o mouse ([#671](https://github.com/phaseoteam/Phaseo/pull/671)).
+- Novas páginas de **Methodology** explicam como o Phaseo calcula preços de modelos, mede latência e throughput, normaliza benchmarks e acompanha a disponibilidade dos provedores ([#639](https://github.com/phaseoteam/Phaseo/pull/639)).
+
+</div>
+
+</Update>
+
+<Update label="7 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As páginas de modelos agora abrem no topo; antes, abrir uma a partir do fim da lista de modelos mantinha a posição de rolagem da lista ([#631](https://github.com/phaseoteam/Phaseo/pull/631)).
+- A lista de modelos volta a ser ordenada por data de lançamento ou anúncio; antes, alguns modelos antigos como Whisper 1 apareciam primeiro com uma data de 2026 ([#632](https://github.com/phaseoteam/Phaseo/pull/632)).
+- A compra de créditos volta a funcionar em workspaces com um cliente Stripe salvo ausente ou inválido; antes, o checkout podia não iniciar ([#633](https://github.com/phaseoteam/Phaseo/pull/633)).
+
+</div>
+
+</Update>
+
+<Update label="6 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As páginas de modelos podem mostrar um aviso informativo, de alerta ou crítico acima do cabeçalho do modelo, por exemplo sobre limites de acesso ou desativações ([#624](https://github.com/phaseoteam/Phaseo/pull/624)).
+
+</div>
+
+</Update>
+
 <Update label="5 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Quickstart da página de um modelo tem duas etapas, obter uma chave de API e copiar uma requisição pronta, e clicar em um ID de modelo aceito agora atualiza o exemplo ([#556](https://github.com/phaseoteam/Phaseo/pull/556), [#619](https://github.com/phaseoteam/Phaseo/pull/619)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -183,6 +308,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="4 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat mostra qual provedor deu cada resposta, e o seletor de modelos agrupa os modelos por mês de lançamento, com os favoritos em uma seção própria ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+- O Chat avisa quando um chat salvo usa um modelo descontinuado e troca para o sucessor quando o catálogo indica um ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Requisições de texto agora chegam a provedores que oferecem só um dos endpoints Responses, Chat Completions ou Messages, em vez de falhar como não compatíveis ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
+</Update>
+
 <Update label="3 de junho de 2026">
 
 <div data-changelog-category="models">
@@ -192,6 +338,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Gemma 4 12B imagem de lançamento do modelo](../../../images/model-releases/2026-06-03--google--gemma-4-12b.png)
 
 - [Google: Gemma 4 12B](https://phaseo.app/models/google/gemma-4-12b)
+
+</div>
+
+</Update>
+
+<Update label="2 de junho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O changelog da documentação reúne as notas de produto, SDK e modelos em uma única linha do tempo, em vez de páginas separadas ([#588](https://github.com/phaseoteam/Phaseo/pull/588)).
 
 </div>
 

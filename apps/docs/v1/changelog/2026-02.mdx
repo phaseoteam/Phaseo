@@ -8,13 +8,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
 
-<Update label="February 26, 2026">
+<Update label="February 27, 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">Product</p>
 
-- Gemini 3.1 Flash Image Preview support landed across discovery, gateway compatibility, and docs.
+- Email sign-in shows why an attempt failed, such as a wrong password or an unverified email, on the sign-in page instead of a generic error page ([#116](https://github.com/phaseoteam/Phaseo/pull/116)).
+- Email sign-up lists the password rules (lowercase, uppercase, number and symbol) and checks them before the form is sent ([#113](https://github.com/phaseoteam/Phaseo/pull/113)).
+- The models table shows prices per million units correctly and uses the full page width; before, some rows showed extremely high prices ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Gemini 3 requests map `reasoning.effort` to the thinking levels each model supports, from `minimal` to `high` ([#113](https://github.com/phaseoteam/Phaseo/pull/113)).
+
+</div>
+
+</Update>
+
+<Update label="February 26, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Breaking:** `/v1/responses/ws` is now marked experimental and rejects plain model slugs; send `openai/<model>` IDs, and use `POST /v1/responses` for production ([#112](https://github.com/phaseoteam/Phaseo/pull/112)).
 
 </div>
 
@@ -67,14 +89,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="February 19, 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">Product</p>
-
-- Gemini 3.1 Pro Preview coverage landed across discovery, pricing, gateway support, and docs.
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -94,7 +108,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Product</p>
 
-- Claude Sonnet 4.6 coverage landed across discovery, gateway compatibility, and docs.
+- Model pages show one provider logo in light mode; before, the light and dark versions could both appear ([#81](https://github.com/phaseoteam/Phaseo/pull/81)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Requests to Baseten, Chutes, Cohere, Together and Cerebras drop parameters the provider doesn't support instead of failing with an upstream `400` ([#82](https://github.com/phaseoteam/Phaseo/pull/82)).
 
 </div>
 
@@ -149,6 +171,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="February 15, 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Settings has a sidebar with **Account**, **Billing**, **Usage** and **API** sections split into tabs, and **Account** has separate details, MFA and danger zone pages ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55)).
+- **Settings -> Credits** adds an opt-in low balance email alert, sent when your credit balance drops below a threshold you set in USD ([#54](https://github.com/phaseoteam/Phaseo/pull/54)).
+- **Settings -> Keys** shows each key's status and how much of its request and spend limits it has used ([#55](https://github.com/phaseoteam/Phaseo/pull/55)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -173,7 +205,28 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="February 13, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Chat shows a banner with **Create account** and **Sign in** buttons when a signed-out visitor tries to send a message ([#52](https://github.com/phaseoteam/Phaseo/pull/52)).
+
+</div>
+
+</Update>
+
 <Update label="February 12, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- The AI SDK provider package is available on npm, starting at `1.0.1`; see [AI SDK](../guides/integrations/ai-sdk.mdx) ([#48](https://github.com/phaseoteam/Phaseo/pull/48)).
+- The TypeScript SDK `1.0.1` bundles devtools request capture, so installs no longer need a separate devtools core package ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48)).
+
+</div>
 
 <div data-changelog-category="models">
 

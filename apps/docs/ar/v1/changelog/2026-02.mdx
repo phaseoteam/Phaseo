@@ -7,13 +7,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
 
-<Update label="26 فبراير 2026">
+<Update label="27 فبراير 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">المنتج</p>
 
-- أُضيف دعم Gemini 3.1 Flash Image Preview إلى استكشاف النماذج وتوافق البوابة والوثائق.
+- يعرض تسجيل الدخول بالبريد الإلكتروني سبب فشل المحاولة، مثل كلمة مرور خاطئة أو بريد غير مُتحقَّق منه، في صفحة تسجيل الدخول نفسها بدلًا من صفحة خطأ عامة ([#116](https://github.com/phaseoteam/Phaseo/pull/116)).
+- يعرض التسجيل بالبريد الإلكتروني قواعد كلمة المرور (حرف صغير وحرف كبير ورقم ورمز) ويتحقق منها قبل إرسال النموذج ([#113](https://github.com/phaseoteam/Phaseo/pull/113)).
+- يعرض جدول النماذج الأسعار لكل مليون وحدة بشكل صحيح ويمتد بعرض الصفحة كاملًا؛ وكانت بعض الصفوف تعرض من قبل أسعارًا مرتفعة جدًا ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تربط طلبات Gemini 3 المعامل `reasoning.effort` بمستويات التفكير التي يدعمها كل نموذج، من `minimal` إلى `high` ([#113](https://github.com/phaseoteam/Phaseo/pull/113)).
+
+</div>
+
+</Update>
+
+<Update label="26 فبراير 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** أصبح `/v1/responses/ws` تجريبيًا ويرفض معرّفات النماذج دون بادئة؛ أرسل معرّفات بصيغة `openai/<model>`، واستخدم `POST /v1/responses` في بيئة الإنتاج ([#112](https://github.com/phaseoteam/Phaseo/pull/112)).
 
 </div>
 
@@ -66,14 +88,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="19 فبراير 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">المنتج</p>
-
-- أُضيف دعم Gemini 3.1 Pro Preview إلى استكشاف النماذج والتسعير والبوابة والوثائق.
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -93,7 +107,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">المنتج</p>
 
-- أُضيف دعم Claude Sonnet 4.6 إلى استكشاف النماذج وتوافق البوابة والوثائق.
+- تعرض صفحات النماذج شعارًا واحدًا للمزوّد في الوضع الفاتح؛ وكان من الممكن من قبل ظهور النسختين الفاتحة والداكنة معًا ([#81](https://github.com/phaseoteam/Phaseo/pull/81)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تُسقط الطلبات المرسلة إلى Baseten وChutes وCohere وTogether وCerebras المعاملات التي لا يدعمها المزوّد بدلًا من أن تفشل برمز `400` من المزوّد ([#82](https://github.com/phaseoteam/Phaseo/pull/82)).
 
 </div>
 
@@ -148,6 +170,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="15 فبراير 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- أصبح للإعدادات شريط جانبي يضم أقسام **Account** و**Billing** و**Usage** و**API** مقسّمة إلى علامات تبويب، ولقسم **Account** صفحات منفصلة للتفاصيل والمصادقة متعددة العوامل (MFA) ومنطقة الخطر ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55)).
+- تضيف **Settings -> Credits** تنبيهًا اختياريًا بالبريد الإلكتروني عند انخفاض الرصيد، يُرسل عندما ينخفض رصيد الأرصدة عن حد تحدده بالدولار الأمريكي ([#54](https://github.com/phaseoteam/Phaseo/pull/54)).
+- تعرض **Settings -> Keys** حالة كل مفتاح ومقدار ما استُخدم من حدود الطلبات والإنفاق الخاصة به ([#55](https://github.com/phaseoteam/Phaseo/pull/55)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">النماذج</p>
@@ -172,7 +204,28 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="13 فبراير 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يعرض Chat شريطًا يتضمن زرَّي **Create account** و**Sign in** عندما يحاول زائر غير مسجّل الدخول إرسال رسالة ([#52](https://github.com/phaseoteam/Phaseo/pull/52)).
+
+</div>
+
+</Update>
+
 <Update label="12 فبراير 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- أصبحت حزمة المزوّد الخاصة بـ AI SDK متاحة على npm بدءًا من الإصدار `1.0.1`؛ راجع [AI SDK](../guides/integrations/ai-sdk.mdx) ([#48](https://github.com/phaseoteam/Phaseo/pull/48)).
+- تتضمن حزمة TypeScript SDK `1.0.1` التقاط طلبات devtools، فلم يعد التثبيت يحتاج إلى حزمة devtools core منفصلة ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48)).
+
+</div>
 
 <div data-changelog-category="models">
 
