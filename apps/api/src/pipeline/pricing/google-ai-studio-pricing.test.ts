@@ -1,24 +1,20 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { computeBill } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "../../../../..");
-const flashLitePreviewPricingPath = path.join(
-	repoRoot,
-	"packages/data/catalog/src/data/pricing/google-ai-studio/google-gemini-3.1-flash-lite-preview/text.generate/pricing.json",
-);
-const geminiProImagePricingPath = path.join(
-	repoRoot,
-	"packages/data/catalog/src/data/pricing/google-ai-studio/google-gemini-3-pro-image/images.generations/pricing.json",
-);
+import { geminiFlashLitePreviewCard, geminiProImageCard } from "./__fixtures__/google-ai-studio-cards";
 
-function loadActivePriceCard(nowIso: string, pricingPath = flashLitePreviewPricingPath): PriceCard {
-	const raw = JSON.parse(fs.readFileSync(pricingPath, "utf8"));
+type CatalogCardFixture = {
+	api_provider_id: string;
+	api_model_id: string;
+	capability_id: string;
+	effective_from?: string | null;
+	effective_to?: string | null;
+	rules: ReadonlyArray<Record<string, unknown>>;
+};
+
+function loadActivePriceCard(nowIso: string, raw: CatalogCardFixture = geminiFlashLitePreviewCard): PriceCard {
 	const rules = raw.rules
 		.filter((rule: Record<string, unknown>) => {
 			const effectiveFrom = typeof rule.effective_from === "string" ? rule.effective_from : null;
@@ -76,7 +72,7 @@ describe("Google AI Studio Gemini 3.1 Flash Lite Preview pricing", () => {
 
 describe("Google AI Studio Gemini 3 Pro Image pricing", () => {
 	it("bills image output tokens when Gemini image size is supplied through quality", () => {
-		const card = loadActivePriceCard("2026-05-31T00:00:00.000Z", geminiProImagePricingPath);
+		const card = loadActivePriceCard("2026-05-31T00:00:00.000Z", geminiProImageCard);
 		const requestOptions = buildImagePricingRequestOptions({
 			size: "1:1",
 			quality: "1K",
