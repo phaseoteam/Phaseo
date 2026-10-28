@@ -10087,7 +10087,8 @@ paths:
             enum:
               - pending
               - approved
-              - rejected
+              - denied
+              - cancelled
               - all
       responses:
         '200':
@@ -10875,7 +10876,8 @@ components:
           enum:
             - pending
             - approved
-            - rejected
+            - denied
+            - cancelled
         created_at:
           type: string
           format: date-time

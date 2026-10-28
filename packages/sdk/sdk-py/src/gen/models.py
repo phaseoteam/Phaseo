@@ -2116,7 +2116,7 @@ class MyJoinRequest(TypedDict):
 	created_at: NotRequired[str]
 	decided_at: NotRequired[Optional[str]]
 	id: NotRequired[str]
-	status: NotRequired[Literal["pending", "approved", "rejected"]]
+	status: NotRequired[Literal["pending", "approved", "denied", "cancelled"]]
 	workspace_id: NotRequired[str]
 	workspace_name: NotRequired[Optional[str]]
 

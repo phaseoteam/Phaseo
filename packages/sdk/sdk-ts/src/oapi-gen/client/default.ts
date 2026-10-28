@@ -17545,7 +17545,7 @@ export async function listModels(
 export type ListMyJoinRequestsParams = {
   path?: Record<string, never>;
   query?: {
-    status?: "pending" | "approved" | "rejected" | "all";
+    status?: "pending" | "approved" | "denied" | "cancelled" | "all";
   };
   headers?: Record<string, never>;
   body?: never;
@@ -17562,7 +17562,7 @@ export async function listMyJoinRequests(
     created_at?: string;
     decided_at?: string | null;
     id?: string;
-    status?: "pending" | "approved" | "rejected";
+    status?: "pending" | "approved" | "denied" | "cancelled";
     workspace_id?: string;
     workspace_name?: string | null;
   }[];
@@ -17574,7 +17574,7 @@ export async function listMyJoinRequests(
       created_at?: string;
       decided_at?: string | null;
       id?: string;
-      status?: "pending" | "approved" | "rejected";
+      status?: "pending" | "approved" | "denied" | "cancelled";
       workspace_id?: string;
       workspace_name?: string | null;
     }[];

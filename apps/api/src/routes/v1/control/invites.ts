@@ -17,7 +17,8 @@ import { internalServerError, isResponse, requireCapability, requireJsonBody } f
 import { inviteFingerprint } from "./workspace-membership";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const JOIN_REQUEST_STATUSES = new Set(["pending", "approved", "rejected"]);
+// The join_request_status enum; anything else would be a database error.
+const JOIN_REQUEST_STATUSES = new Set(["pending", "approved", "denied", "cancelled"]);
 
 async function oauthUser(req: Request, scope: string): Promise<{ userId: string; requestId: string } | { response: Response }> {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
@@ -87,7 +88,7 @@ async function handleListMyJoinRequests(req: Request) {
 	if ("response" in access) return access.response;
 	const status = new URL(req.url).searchParams.get("status")?.trim().toLowerCase() || "pending";
 	if (status !== "all" && !JOIN_REQUEST_STATUSES.has(status)) {
-		return json({ error: "bad_request", message: "status must be pending, approved, rejected, or all" }, 400, NO_STORE);
+		return json({ error: "bad_request", message: "status must be pending, approved, denied, cancelled, or all" }, 400, NO_STORE);
 	}
 	try {
 		let query = getSupabaseAdmin().from("workspace_join_requests")

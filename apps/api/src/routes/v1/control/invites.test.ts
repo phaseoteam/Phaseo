@@ -80,13 +80,17 @@ describe("listing your join requests", () => {
 	it("lists only your own, pending unless asked otherwise", async () => {
 		state.db.tables.workspace_join_requests.push(
 			{ id: "r1", workspace_id: "ws_team", requester_user_id: "user_1", status: "pending", created_at: "2026-10-28T10:00:00Z", workspaces: { name: "Team" } },
-			{ id: "r2", workspace_id: "ws_old", requester_user_id: "user_1", status: "rejected", created_at: "2026-10-01T10:00:00Z", decided_at: "2026-10-02T10:00:00Z", workspaces: { name: "Old" } },
+			{ id: "r2", workspace_id: "ws_old", requester_user_id: "user_1", status: "denied", created_at: "2026-10-01T10:00:00Z", decided_at: "2026-10-02T10:00:00Z", workspaces: { name: "Old" } },
 			{ id: "r3", workspace_id: "ws_team", requester_user_id: "user_2", status: "pending", created_at: "2026-10-28T11:00:00Z", workspaces: { name: "Team" } },
 		);
 		let body = await (await requests()).json() as any;
 		expect(body.data).toEqual([{ id: "r1", workspace_id: "ws_team", workspace_name: "Team", status: "pending", created_at: "2026-10-28T10:00:00Z", decided_at: null }]);
 		body = await (await requests("?status=all")).json() as any;
 		expect(body.data.map((row: any) => row.id)).toEqual(["r1", "r2"]);
+		body = await (await requests("?status=denied")).json() as any;
+		expect(body.data.map((row: any) => row.id)).toEqual(["r2"]);
+		// "rejected" is not a stored status; it must be refused, not sent to the database.
+		expect((await requests("?status=rejected")).status).toBe(400);
 		expect((await requests("?status=maybe")).status).toBe(400);
 	});
 });
