@@ -127,6 +127,52 @@ export const TEAM_ID = "T0TEST0001";
 export const BOT_USER_ID = "U0BOT00001";
 export const BOT_TOKEN = "xoxb-1-test-token";
 
+/**
+ * The 403 body the gateway sends when no route of the model meets the request's
+ * require_zero_data_retention: its residency gate (apps/api pipeline/execute/guards.ts),
+ * as the error handler (core/error-handler.ts) rebuilds it, which keeps the routing
+ * diagnostics but not unmet_requirements.
+ */
+export function noZeroDataRetentionRoute(model = "openai/gpt-test"): Record<string, unknown> {
+	const description = "This model has no provider that offers zero data retention.";
+	return {
+		generation_id: "gen_test_zdr", status_code: 403,
+		error: { code: "model_region_unavailable", message: description, type: "permission_error", param: null },
+		code: "model_region_unavailable", error_type: "user", error_origin: "user", description, message: description,
+		routing_diagnostics: {
+			model, endpoint: "responses",
+			requestedRouting: { requiredExecutionRegion: null, requiredDataRegion: null, requireZeroDataRetention: true },
+			filterStages: [
+				{ stage: "geographic_availability_gate", beforeCount: 2, afterCount: 2, droppedProviders: [] },
+				{
+					stage: "residency_gate", beforeCount: 2, afterCount: 0, droppedProviders: [
+						{ providerId: "logs-cloud", apiModelId: model, providerModelSlug: null, reason: "zero_data_retention_unsupported" },
+						{ providerId: "logs-two", apiModelId: model, providerModelSlug: null, reason: "zero_data_retention_unsupported" },
+					],
+				},
+			],
+		},
+	};
+}
+
+/** The 403 with the same code for a request from a country none of the model's routes serves (the geographic gate in guards.ts). */
+export function noRouteInCountry(model = "openai/gpt-test"): Record<string, unknown> {
+	const description = "This model is not available from the request's geographic location.";
+	return {
+		generation_id: "gen_test_geo", status_code: 403,
+		error: { code: "model_region_unavailable", message: description, type: "permission_error", param: null },
+		code: "model_region_unavailable", error_type: "user", error_origin: "user", description, message: description,
+		routing_diagnostics: {
+			model, endpoint: "responses",
+			requestedRouting: { requiredExecutionRegion: null, requiredDataRegion: null, requireZeroDataRetention: true },
+			filterStages: [
+				{ stage: "geographic_availability_gate", beforeCount: 1, afterCount: 0, droppedProviders: [{ providerId: "zdr-cloud", apiModelId: model, providerModelSlug: null, reason: "request_country_not_allowed" }] },
+				{ stage: "residency_gate", beforeCount: 0, afterCount: 0, droppedProviders: [] },
+			],
+		},
+	};
+}
+
 export type TestWorld = {
 	env: Env;
 	meters: FakeNamespace<WorkspaceMeter>;
