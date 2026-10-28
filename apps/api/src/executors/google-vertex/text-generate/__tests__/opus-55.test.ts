@@ -51,12 +51,20 @@ describe("managed Vertex Opus 5.5", () => {
 		try {
 			const result = await executor(args(protocol));
 			expect(mock.calls).toHaveLength(1);
-			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", stream: true, thinking: { type: "adaptive" } });
+			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", stream: true });
+			// No reasoning settings from the client: thinking is left to the model default.
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("thinking");
 			expect(mock.calls[0].bodyJson).not.toHaveProperty("model");
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed") throw new Error("expected completion");
 			expect(result.ir?.choices[0].message.content).toEqual(expect.arrayContaining([{ type: "text", text: "Answer" }]));
-			expect(result.ir?.choices[0].message.content).toContainEqual({ type: "provider_block", block: opusMessage.content[0] });
+			// The thinking block keeps its signature, tagged as Claude reasoning.
+			expect(result.ir?.choices[0].message.content).toContainEqual(expect.objectContaining({
+				type: "reasoning_text",
+				text: "",
+				thoughtSignature: opusMessage.content[0].signature,
+				reasoningFormat: "anthropic-claude-v1",
+			}));
 			expect(result.ir?.choices[0].message.toolCalls?.[0]).toMatchObject({ id: "call_lookup", name: "lookup", arguments: '{"city":"London"}' });
 			expect(result.bill.usage).toMatchObject({ input_tokens: 10, output_tokens: 7 });
 			expect(priceOpusUsage(result.bill.usage, "google-vertex").cost_usd_str).toBe("0.000041000");

@@ -51,7 +51,6 @@ export default async function LocaleRootLayout({
 			locale={locale}
 			direction={definition.dir}
 			fontProfile={definition.font}
-			messages={messages}
 		>
 			{children}
 		</RootDocument>

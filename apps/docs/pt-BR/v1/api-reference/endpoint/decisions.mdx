@@ -1,7 +1,7 @@
 ---
 title: "Tomar uma decisão"
-sidebarTitle: "Decisions"
 badge: "Beta"
+tag: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Avalie perguntas tipadas sobre o estado da aplicação com os modelos de decisão suportados."
 ---
@@ -111,6 +111,30 @@ Para o exemplo da Respan, uma resposta tem este formato:
 Jev permite combinar os três tipos de perguntas em uma solicitação; Span-01 suporta apenas perguntas `noul`. Consulte o [início rápido](../../quickstart) para exemplos de cURL, JavaScript, SDK TypeScript e SDK Python prontos para copiar e colar. Jev 1.13 é cobrado a US$ 0,042 por milhão de tokens de entrada; os tokens de saída são gratuitos.
 
 Para a semântica das perguntas do provedor, consulte a [referência da API](https://docs.typesafe.ai/api) da TypeSafe.
+
+### Imagens, Box e contexto longo com Jev
+
+Nas rotas TypeSafe compatíveis, Jev 1.13 e 1.14 aceitam imagens PNG ou JPEG incorporadas por `input_image` ou pelo campo legado `images`. Phaseo cria os recursos de imagem da TypeSafe e habilita imagens automaticamente. As imagens devem cumprir os [limites de imagem](https://docs.typesafe.ai/images) da TypeSafe: até 16 MiB cada, dimensões de 256 a 1568 pixels e pelo menos 78.400 pixels no total. A TypeSafe valida dimensões e codificação; não redimensiona imagens rejeitadas. O corpo JSON enviado ao provedor é limitado a 32 MiB. Tokens de imagem usam o preço normal de entrada.
+
+`box` é um tipo de pergunta separado para rotas compatíveis, como Jev 1.14. Exige uma imagem, não aceita critérios e retorna uma única caixa delimitadora com confiança. As bordas `top`, `bottom`, `left` e `right` variam de 0 a 1, medidas a partir do canto superior esquerdo. Box sempre retorna um retângulo; combine com uma pergunta de presença `predicate` quando o alvo puder estar ausente. Com imagens legadas, use `images[0]`; com entrada ordenada, indique a primeira imagem ou `[Image 0]`. Consulte o [contrato Box](https://docs.typesafe.ai/primitives/box).
+
+Defina `provider_options.typesafe.long_context` como `true` para elevar os limites de contexto por solicitação e por pergunta a 262k tokens. Os padrões são 64k por solicitação e 32k por pergunta. O contexto longo exige adesão explícita e tem o mesmo preço por token. Imagens, Box e contexto longo são capacidades experimentais do provedor; verifique a disponibilidade do modelo antes de usar.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
 
 ### Decisões sobre imagens com Clef
 

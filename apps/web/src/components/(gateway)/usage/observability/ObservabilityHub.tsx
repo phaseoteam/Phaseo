@@ -5,7 +5,7 @@ import { SortableTableHead } from "../SortableTableHead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Bar,
 	BarChart,
@@ -86,9 +86,12 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
-import type { UsageRangePreset } from "@/lib/gateway/usage/timeRange";
+import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import UsageLabelBreakdown from "@/components/(gateway)/usage/UsageLabelBreakdown";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
+import { type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
 import { Logo } from "@/components/Logo";
 import type { UsageLabelFacet, UsageLabelSummary } from "@/lib/fetchers/internal/settingsTypes";
 import type {
@@ -107,6 +110,7 @@ import {
 	shouldOpenTrendExplore,
 	stopTrendControlClick,
 } from "./trendChart";
+import { MonthSpendChart } from "./MonthSpendChart";
 
 const CHART_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626"];
 
@@ -609,7 +613,7 @@ function Sparkline({
 					cx={hovered.x}
 					cy={hovered.y}
 					r={3.1}
-					fill="hsl(var(--background))"
+					fill="var(--background)"
 					stroke="currentColor"
 					strokeWidth={2}
 					pointerEvents="none"
@@ -620,11 +624,84 @@ function Sparkline({
 	);
 }
 
-function KpiMetric({
-	kpi,
-}: {
-	kpi: ObservabilityKpi;
-}) {
+// Only quality metrics have a good direction. More spend, requests or tokens is
+// not good or bad news in itself, so those deltas stay neutral.
+const KPI_GOOD_DIRECTION: Partial<Record<ObservabilityKpi["id"], "up" | "down">> = {
+	success_rate: "up",
+	cache: "up",
+	blended_price: "down",
+};
+
+function kpiDeltaClass(kpi: ObservabilityKpi): string {
+	const direction = KPI_GOOD_DIRECTION[kpi.id];
+	if (!direction || !kpi.deltaPercent) return "text-muted-foreground";
+	const improved = direction === "up" ? kpi.deltaPercent > 0 : kpi.deltaPercent < 0;
+	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+}
+
+/**
+ * Two significant figures, so a footer fits a narrow card. Dollar amounts
+ * under $10 keep their cents, so $0.20 doesn't read as $0.2.
+ */
+function compactKpiFormat(kpi: ObservabilityKpi, largest: number): (value: number) => string {
+	const currency = kpi.format === "currency";
+	return new Intl.NumberFormat("en", currency && largest < 10
+		? { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { notation: "compact", maximumSignificantDigits: 2, ...(currency ? { style: "currency", currency: "USD" } : {}) },
+	).format;
+}
+
+/** A projection range; one value when both ends round alike. */
+function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+	const format = compactKpiFormat(kpi, high);
+	const [lowLabel, highLabel] = [format(low), format(high)];
+	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
+}
+
+/** A signed change, such as +$412 or −1.2K. */
+function formatChange(kpi: ObservabilityKpi, change: number): string {
+	const label = compactKpiFormat(kpi, Math.abs(change))(Math.abs(change));
+	if (label === compactKpiFormat(kpi, 0)(0)) return label;
+	return `${change > 0 ? "+" : "−"}${label}`;
+}
+
+const RUNNING_PERIOD_LABELS = {
+	day: "kpiForecastDay",
+	week: "kpiForecastWeek",
+	month: "kpiForecastMonth",
+	quarter: "kpiForecastQuarter",
+	year: "kpiForecastYear",
+} as const;
+
+function KpiFooterRow({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
+	const t = useTranslations("SettingsUI.observability");
+	const footer = kpi.footer;
+	if (!footer || (footer.kind !== "projected" && !previousLabel)) return null;
+	let label: string;
+	let value: string;
+	if (footer.kind === "projected") {
+		const { period } = footer;
+		label = period.kind === "running"
+			? t(RUNNING_PERIOD_LABELS[period.unit])
+			: period.days === 1 ? t("kpiForecastNextDay") : t("kpiForecastNextDays", { days: period.days });
+		value = formatProjectedRange(kpi, footer.low, footer.high);
+	} else if (footer.kind === "change") {
+		label = t("kpiChangeVs", { period: previousLabel! });
+		value = formatChange(kpi, footer.value);
+	} else {
+		label = previousLabel!;
+		value = footer.value === null ? "–" : formatKpiValue(kpi, footer.value);
+	}
+	// The label gives way on a narrow card; the figure never does.
+	return (
+		<div className="flex min-w-0 items-baseline justify-between gap-2 border-t border-dashed px-4 py-2 text-xs text-muted-foreground">
+			<span className="truncate">{label}</span>
+			<span className="shrink-0 font-medium tabular-nums text-foreground">{value}</span>
+		</div>
+	);
+}
+
+function KpiMetric({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
@@ -636,7 +713,7 @@ function KpiMetric({
 			href="/settings/usage/explore"
 			className="group relative block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		>
-			<Card className="h-full rounded-lg py-0 transition-colors group-hover:bg-muted/20">
+			<Card className="h-full gap-0 rounded-lg py-0 transition-colors group-hover:bg-muted/20">
 				<div className="grid min-h-[124px] min-w-0 grid-rows-[auto_1fr] gap-2 px-4 py-4 sm:min-h-[112px] sm:gap-2 sm:py-3">
 					<CardTitle className="whitespace-nowrap text-xs font-medium leading-tight text-muted-foreground">
 						{kpi.label}
@@ -649,11 +726,7 @@ function KpiMetric({
 							<div
 								className={cn(
 									"mt-2 inline-flex max-w-full items-center gap-1 text-xs font-medium",
-									hoveredPoint
-										? "text-muted-foreground"
-										: positive
-											? "text-emerald-600"
-											: "text-rose-600",
+									hoveredPoint ? "text-muted-foreground" : kpiDeltaClass(kpi),
 								)}
 							>
 								{hoveredPoint ? (
@@ -669,7 +742,7 @@ function KpiMetric({
 											</span>
 										</UiTooltipTrigger>
 										<UiTooltipContent side="bottom" sideOffset={6}>
-											{t("comparedWithPreviousPeriod")}
+											{previousLabel ? t("comparedWithPeriod", { period: previousLabel }) : t("comparedWithPreviousPeriod")}
 										</UiTooltipContent>
 									</UiTooltip>
 								)}
@@ -685,6 +758,7 @@ function KpiMetric({
 						</div>
 					</div>
 				</div>
+				<KpiFooterRow kpi={kpi} previousLabel={previousLabel} />
 			</Card>
 		</Link>
 	);
@@ -705,11 +779,13 @@ function ExploreButton() {
 function ChartCard({
 	title,
 	subtitle,
+	actions,
 	children,
 	className,
 }: {
 	title: string;
 	subtitle?: string;
+	actions?: React.ReactNode;
 	children: React.ReactNode;
 	className?: string;
 }) {
@@ -722,7 +798,10 @@ function ChartCard({
 						<p className="text-sm text-muted-foreground">{subtitle}</p>
 					) : null}
 				</div>
-				<ExploreButton />
+				<div className="flex shrink-0 items-center gap-2">
+					{actions}
+					<ExploreButton />
+				</div>
 			</CardHeader>
 			<CardContent>
 				{children}
@@ -991,7 +1070,7 @@ function StackedTimeSeriesBarChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ fill: "hsl(var(--muted))", opacity: 0.32 }}
+						cursor={{ fill: "var(--muted)", opacity: 0.32 }}
 						content={(props) => (
 							<TimeSeriesTooltip
 								{...props}
@@ -1087,7 +1166,7 @@ function StackedTimeSeriesAreaChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ stroke: "hsl(var(--muted-foreground))", opacity: 0.28 }}
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
 						content={(props) => (
 							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
 						)}
@@ -1194,7 +1273,7 @@ function MultiSeriesLineChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ stroke: "hsl(var(--muted-foreground))", opacity: 0.28 }}
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
 						content={(props) => (
 							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
 						)}
@@ -1693,14 +1772,16 @@ function TrendSection({
 
 function Overview({ data }: { data: ObservabilityData }) {
 	const t = useTranslations("SettingsUI.observability");
+	const locale = useLocale();
+	const previousLabel = data.previousPeriod ? formatUsageComparisonRange({ ...data.previousPeriod, locale }) : null;
+	const monthSpend = data.monthSpend ?? null;
+	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
+	const showMonth = spendView === "month" && monthSpend !== null;
 	return (
 		<div className="space-y-4 sm:space-y-6">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
 				{data.kpis.map((kpi) => (
-					<KpiMetric
-						key={kpi.id}
-						kpi={kpi}
-					/>
+					<KpiMetric key={kpi.id} kpi={kpi} previousLabel={previousLabel} />
 				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
@@ -1709,14 +1790,31 @@ function Overview({ data }: { data: ObservabilityData }) {
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
 				<ChartCard
-					title={t("usageByModel")}
-					subtitle={t("dailySpendByModel")}
+					title={showMonth ? t("monthSpendTitle") : t("usageByModel")}
+					subtitle={showMonth ? t("monthSpendSubtitle") : t("dailySpendByModel")}
 					className="xl:col-span-2"
+					actions={monthSpend ? (
+						<ToggleGroup
+							type="single"
+							variant="outline"
+							size="sm"
+							value={showMonth ? "month" : "daily"}
+							onValueChange={(value) => { if (value === "daily" || value === "month") setSpendView(value); }}
+							aria-label={t("monthSpendTitle")}
+						>
+							<ToggleGroupItem value="daily" className="h-7 px-2.5 text-xs">{t("spendViewDaily")}</ToggleGroupItem>
+							<ToggleGroupItem value="month" className="h-7 px-2.5 text-xs">{t("spendViewMonth")}</ToggleGroupItem>
+						</ToggleGroup>
+					) : null}
 				>
-					<StackedTimeSeriesBarChart
-						data={data.charts.usageByModelCost}
-						valueKind="currency"
-					/>
+					{showMonth ? (
+						<MonthSpendChart forecast={monthSpend} formatCurrency={formatCurrency} />
+					) : (
+						<StackedTimeSeriesBarChart
+							data={data.charts.usageByModelCost}
+							valueKind="currency"
+						/>
+					)}
 				</ChartCard>
 				<ChartCard
 					title={t("usageType")}
@@ -1999,7 +2097,7 @@ function ExploreBarChart({
 					width={132}
 				/>
 				<Tooltip
-					cursor={{ fill: "hsl(var(--muted))", opacity: 0.32 }}
+					cursor={{ fill: "var(--muted)", opacity: 0.32 }}
 					content={(props) => {
 						const item = props.payload?.[0]?.payload;
 						if (!props.active || !item) return null;
@@ -2417,6 +2515,8 @@ export default function ObservabilityHub({
 	initialTab,
 	labelFacets = [],
 	labelSummary = null,
+	requestClassifiers = [],
+	labelBreakdown,
 	preset,
 	customFrom,
 	customTo,
@@ -2426,6 +2526,9 @@ export default function ObservabilityHub({
 	initialTab: ObservabilityTab;
 	labelFacets?: UsageLabelFacet[];
 	labelSummary?: UsageLabelSummary | null;
+	requestClassifiers?: RequestClassifierSummary[];
+	/** The period and key filters the "usage by label" table reads with; omitted, it is hidden. */
+	labelBreakdown?: { from: string; to: string; keyId?: string | null; excludeKey?: boolean; creatorId?: string | null };
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
@@ -2439,7 +2542,7 @@ export default function ObservabilityHub({
 					<p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t("yourUsage")}</p>
 				</div>
 				<div className="flex shrink-0 flex-wrap justify-end gap-2">
-					<RequestLabelFilter facets={labelFacets} />
+					<RequestLabelFilter facets={labelFacets} classifiers={requestClassifiers} mode="usage" />
 					<UsageLogsToolbar
 						view="logs"
 						preset={preset}
@@ -2448,38 +2551,23 @@ export default function ObservabilityHub({
 					/>
 				</div>
 			</div>
-			{data.isSampled ? (
-				<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-100">
-					{t("sampledRequests", { count: formatNumber(data.sampleLimit ?? 0) })}
-				</div>
-			) : null}
 			{labelSummary ? (
-				<Card className="ring-1 ring-primary/15">
-					<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-						<div className="min-w-0">
-							<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("filteredSpend")}</p>
-							<p className="mt-1 truncate text-sm font-medium">
-								<span className="font-mono">{labelSummary.key}</span>
-								<span className="px-1.5 text-muted-foreground">=</span>
-								<span>{labelSummary.value}</span>
-							</p>
-						</div>
-						<div className="flex items-center gap-6 text-sm">
-							<div>
-								<p className="text-xs text-muted-foreground">{t("requests")}</p>
-								<p className="mt-1 font-mono font-medium">{formatNumber(labelSummary.requestCount)}</p>
-							</div>
-							<div>
-								<p className="text-xs text-muted-foreground">{t("spend")}</p>
-								<p className="mt-1 font-mono font-medium">{formatCurrency(labelSummary.totalCostNanos / 1e9)}</p>
-							</div>
-						</div>
-						{labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("sampledSpend")}</p> : null}
-					</CardContent>
-				</Card>
+				<LabelFilterSummary
+					requestCount={labelSummary.requestCount}
+					totalCostNanos={labelSummary.totalCostNanos}
+					isSampled={labelSummary.isSampled}
+				/>
 			) : null}
 
 			{initialTab === "overview" ? <Overview data={data} /> : null}
+			{initialTab === "overview" && labelBreakdown ? (
+				<UsageLabelBreakdown
+					facets={labelFacets}
+					classifiers={requestClassifiers}
+					labelFilterActive={Boolean(labelSummary)}
+					{...labelBreakdown}
+				/>
+			) : null}
 			{initialTab === "trends" ? <Trends data={data} /> : null}
 			{initialTab === "explore" ? (
 				<Explore data={data} />

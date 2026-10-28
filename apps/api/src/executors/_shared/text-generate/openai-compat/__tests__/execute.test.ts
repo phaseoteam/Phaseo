@@ -813,7 +813,7 @@ describe("executeOpenAIWire", () => {
 
 		let callCount = 0;
 		const mock = installFetchMock([{
-			match: (url) => url === "https://api.venice.example/api/v1/responses",
+			match: (url) => url === "https://api.venice.example/api/v1/chat/completions",
 			response: () => {
 				callCount += 1;
 				if (callCount === 1) {

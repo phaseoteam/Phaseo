@@ -177,6 +177,129 @@ describe("guardAllFailed", () => {
 		expect(JSON.stringify(payload)).not.toContain("upstream_rate_limit_headers");
 	});
 
+	it("returns 429 with the final Retry-After when every dispatched provider throttled the request", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_all_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "5" } },
+				// A breaker-blocked candidate was never called and does not change the outcome.
+				{ provider: "together", type: "blocked" },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+		expect(await result.response.json()).toMatchObject({
+			error: "upstream_error",
+			reason: "all_candidates_failed",
+			failed_statuses: [429],
+		});
+	});
+
+	it("keeps 502 when a throttled provider is mixed with another failure", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_mixed_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 503 },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+				{ provider: "together", type: "error", message: "socket hang up" },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(502);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+	});
+
+	it("returns the provider's 400 when every attempt rejected the request with it", async () => {
+		const message = "Invalid type for 'input': expected one of a string, array of strings, array of integers, or array of integer arrays, but got an object instead.";
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_rejected_400",
+			attemptErrors: [
+				{ provider: "openai", type: "upstream_non_2xx", status: 400, upstream_error_code: "invalid_type", upstream_error_message: message, upstream_error_param: "input" },
+				{ provider: "azure", type: "upstream_non_2xx", status: 400, upstream_error_message: message },
+				// Never dispatched: says nothing about the request.
+				{ provider: "other", type: "breaker_open" },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			error: "upstream_error",
+			reason: "upstream_rejected_request",
+			failed_statuses: [400],
+		});
+		expect(String(payload.description).startsWith("The provider rejected the request (HTTP 400): Invalid type for 'input'")).toBe(true);
+		expect(payload.failure_sample[0]).toMatchObject({ upstream_error_param: "input", upstream_error_message: message });
+	});
+
+	it.each([413, 422])("returns %s when every attempt rejected the request with it", async (status) => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_rejected_" + status,
+			attemptErrors: [{ provider: "openai", type: "upstream_non_2xx", status }],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(status);
+		expect(String((await result.response.json()).description)).toContain("The provider rejected the request (HTTP " + status + ").");
+	});
+
+	it.each([
+		["a 400 mixed with a 5xx", [400, 503]],
+		["different client errors", [400, 422]],
+		["a 404 (the provider may not serve the model)", [404]],
+		["a 401", [401]],
+	])("keeps 502 for %s", async (_label, statuses) => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_mixed",
+			attemptErrors: (statuses as number[]).map((status, index) => ({ provider: "p" + index, type: "upstream_non_2xx", status })),
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(502);
+		expect((await result.response.json()).reason).toBe("all_candidates_failed");
+	});
+
+	it("keeps 502 when a provider threw instead of answering", async () => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_threw",
+			attemptErrors: [
+				{ provider: "openai", type: "upstream_non_2xx", status: 400 },
+				{ provider: "azure", type: "error", message: "socket hang up" },
+			],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(502);
+	});
+
 	it("summarizes multi-provider failures in the description", async () => {
 		const ctx: any = {
 			model: "xiaomi/mimo-v2-tts:free",

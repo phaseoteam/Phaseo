@@ -3,6 +3,7 @@ import { findEndpointMetadata, getEndpointMetadata, listEndpointMetadata } from 
 
 describe("endpoint metadata", () => {
     it.each([
+        ["extraction.extract", "extraction.extract", "/v1/extractions", "decisions"],
         ["chat/completions", "chat.completions", "/v1/chat/completions", "text"],
         ["image.generate", "images.generations", "/v1/images/generations", "images"],
         ["video.generate", "video.generation", "/v1/videos", "video"],

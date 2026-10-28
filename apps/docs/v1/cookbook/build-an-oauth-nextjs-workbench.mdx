@@ -2,6 +2,7 @@
 title: "Build an OAuth Next.js Workbench"
 icon: "key-round"
 description: "Use the full OAuth Next.js example as a walkthrough for a signed-in gateway app with a unified proxy."
+"og:image": "https://phaseo.app/og/dynamic?title=Build%20an%20OAuth%20Next.js%20Workbench&description=Use%20the%20full%20OAuth%20Next.js%20example%20as%20a%20walkthrough%20for%20a%20signed-in%20gateway%20app%20with%20a%20unified%20proxy.&pathname=/docs/v1/cookbook/build-an-oauth-nextjs-workbench"
 ---
 
 Use this page when your product needs sign-in, session-backed gateway access, and more than a single chat route.
@@ -68,12 +69,22 @@ Do not start here if:
 
 ## Key files
 
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
+<Tree>
+
+- app/
+  - page.tsx
+  - dashboard/
+    - page.tsx
+    - GatewayWorkbench.tsx
+  - api/
+    - gateway/
+      - [...surface]/
+        - route.ts
+- lib/
+  - oauth.ts
+  - session.ts
+
+</Tree>
 
 ## Why the sample is structured this way
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent as ReactDragEvent } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useQuery } from "@tanstack/react-query";
 import {
 	Background,
 	Handle,
@@ -64,10 +63,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { orderedRouteNodes } from "./dynamicRouteGraph";
-import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { fetchJsonQuery } from "@/lib/query/fetchers";
-import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
-import { webQueryKeys } from "@/lib/query/queryKeys";
+import { GatewayModelCombobox, capabilityLabel, useGatewayModelOptions } from "../GatewayModelCombobox";
 import type {
 	DynamicRouteAction,
 	DynamicRouteConfig,
@@ -88,16 +84,6 @@ import "@xyflow/react/dist/style.css";
 
 type StudioTab = "editor" | "versions" | "settings";
 type Provider = SettingsDynamicRoutesInitialData["providers"][number];
-type RoutingModelOption = {
-	id: string;
-	label: string;
-	organisationId: string;
-	organisationName: string;
-	providerNames: string[];
-	capabilities: string[];
-	releaseDate: string | null;
-};
-
 const NODE_COPY: Record<DynamicRouteNodeType, { label: string; description: string; icon: typeof Route; tone: string }> = {
 	start: { label: "start", description: "startDescription", icon: Play, tone: "border-sky-500/35 bg-sky-500/8" },
 	condition: { label: "condition", description: "conditionDescription", icon: GitBranch, tone: "border-amber-500/35 bg-amber-500/8" },
@@ -257,54 +243,6 @@ function WorkflowNodeCard({ data, selected }: { data: any; selected: boolean }) 
 
 const nodeTypes = { workflow: WorkflowNodeCard };
 
-function fallbackModelLabel(modelId: string): string {
-	const leaf = modelId.split("/").pop() ?? modelId;
-	return leaf.split(/[-_]/g).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
-}
-
-function buildRoutingModelOptions(models: GatewaySupportedModel[]): RoutingModelOption[] {
-	const byId = new Map<string, RoutingModelOption>();
-	for (const model of models) {
-		if (!model.isAvailable) continue;
-		const id = model.selectorModelId || model.modelId;
-		const organisationId = model.organisationId?.trim() || id.split("/")[0] || "phaseo";
-		const existing = byId.get(id);
-		const providerName = model.providerName ?? model.providerId;
-		if (!existing) {
-			byId.set(id, {
-				id,
-				label: model.modelName?.trim() || fallbackModelLabel(id),
-				organisationId,
-				organisationName: model.organisationName ?? organisationId.replaceAll("-", " "),
-				providerNames: [providerName],
-				capabilities: [...new Set(model.capabilities ?? [])],
-				releaseDate: model.releaseDate ?? model.announcementDate ?? null,
-			});
-			continue;
-		}
-		if (!existing.providerNames.includes(providerName)) existing.providerNames.push(providerName);
-		for (const capability of model.capabilities ?? []) if (!existing.capabilities.includes(capability)) existing.capabilities.push(capability);
-		const releaseDate = model.releaseDate ?? model.announcementDate ?? null;
-		if (!existing.releaseDate && releaseDate) existing.releaseDate = releaseDate;
-	}
-	return [...byId.values()].sort((left, right) => {
-		const leftTime = left.releaseDate ? Date.parse(left.releaseDate) : Number.NEGATIVE_INFINITY;
-		const rightTime = right.releaseDate ? Date.parse(right.releaseDate) : Number.NEGATIVE_INFINITY;
-		return rightTime - leftTime || left.label.localeCompare(right.label);
-	});
-}
-
-function releaseGroupLabel(releaseDate: string | null, locale: string): string {
-	if (!releaseDate) return "earlierModels";
-	const date = new Date(releaseDate);
-	if (Number.isNaN(date.getTime())) return "earlierModels";
-	return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
-}
-
-function capabilityLabel(capability: string): string {
-	return capability.replaceAll(".", " ").replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
 function getProviderLogoId(providerId: string): string {
 	const normalized = providerId.trim().toLowerCase();
 	return normalized.includes("bedrock") ? "amazon-bedrock" : normalized || "phaseo";
@@ -360,40 +298,6 @@ function ProviderSelect({ value, onChange, providers }: { value: string; onChang
 	);
 }
 
-function GatewayModelCombobox({ value, onChange, options, excludedIds = [], requiredCapabilities = [], ariaLabel, loading, error }: { value: string; onChange: (value: string) => void; options: RoutingModelOption[]; excludedIds?: string[]; requiredCapabilities?: string[]; ariaLabel: string; loading: boolean; error: boolean }) {
-	const t = useTranslations("SettingsUI.routingStudio");
-	const locale = useLocale();
-	const [open, setOpen] = useState(false);
-	const selected = options.find((option) => option.id === value);
-	const excluded = new Set(excludedIds.filter((id) => id !== value));
-	const available = options.filter((option) => !excluded.has(option.id) && requiredCapabilities.every((capability) => option.capabilities.includes(capability)));
-	const grouped = new Map<string, RoutingModelOption[]>();
-	for (const option of available) {
-		const rawGroup = releaseGroupLabel(option.releaseDate, locale);
-		const group = rawGroup === "earlierModels" ? t("earlierModels") : rawGroup;
-		grouped.set(group, [...(grouped.get(group) ?? []), option]);
-	}
-	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button variant="outline" role="combobox" aria-label={ariaLabel} aria-expanded={open} className="h-auto min-h-10 w-full justify-between gap-2 px-3 py-2 font-normal">
-					<span className="flex min-w-0 flex-1 items-center gap-2.5 text-left">{selected ? <Logo id={selected.organisationId} alt={selected.organisationName} width={20} height={20} className="size-5 shrink-0 object-contain" /> : <Sparkles className="size-5 shrink-0 text-muted-foreground" />}<span className="min-w-0">{value ? <><span className="block truncate text-sm font-medium text-foreground">{selected?.organisationName ? `${selected.organisationName}: ` : ""}{selected?.label ?? value}</span>{selected ? <span className="block truncate text-[11px] text-muted-foreground">{selected.id}</span> : null}</> : <span className="text-muted-foreground">{t("chooseModel")}</span>}</span></span>
-					<ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent align="start" className="w-[min(480px,calc(100vw-2rem))] p-0">
-				<Command>
-					<CommandInput placeholder={t("searchModels")} />
-					<CommandList className="max-h-96 p-1">
-						<CommandEmpty>{loading ? t("loadingModels") : error ? t("modelCatalogueError") : t("noCompatibleModels")}</CommandEmpty>
-						{Array.from(grouped.entries()).map(([releaseGroup, entries]) => <CommandGroup key={releaseGroup} heading={releaseGroup} className="pb-1 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-foreground">{entries.map((option) => <CommandItem key={option.id} value={`${option.label} ${option.id} ${option.organisationName} ${option.providerNames.join(" ")} ${option.capabilities.join(" ")}`} onSelect={() => { onChange(option.id); setOpen(false); }} className="min-h-11 gap-3 py-2"><Logo id={option.organisationId} alt={option.organisationName} width={20} height={20} className="size-5 shrink-0 object-contain" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{option.organisationName}: {option.label}</p><div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"><span className="truncate">{option.id}</span>{option.capabilities.slice(0, 2).map((capability) => <Badge key={capability} variant="outline" className="h-4 shrink-0 rounded px-1 text-[9px] font-medium">{capabilityLabel(capability)}</Badge>)}</div></div><Check className={cn("size-4 shrink-0", option.id === value ? "opacity-100" : "opacity-0")} /></CommandItem>)}</CommandGroup>)}
-					</CommandList>
-				</Command>
-			</PopoverContent>
-		</Popover>
-	);
-}
-
 function nestedValue(path: string, value: unknown): Record<string, unknown> {
 	const parts = path.split(".").map((part) => part.trim()).filter(Boolean);
 	if (!parts.length) return {};
@@ -429,13 +333,7 @@ function NodeInspector({ node, providers, update, remove }: { node: DynamicRoute
 	const translate: StudioTranslator = (key, values) => t(key as never, values as never);
 	const copy = NODE_COPY[node.type];
 	const [copied, setCopied] = useState(false);
-	const { data: modelCatalog, error: modelCatalogRequestError, isLoading: modelCatalogLoading } = useQuery<{ models: GatewaySupportedModel[] }>({
-		queryKey: webQueryKeys.public.gatewayModels(),
-		queryFn: ({ signal }) => fetchJsonQuery<{ models: GatewaySupportedModel[] }>("/api/gateway/models", { signal }),
-		...WEB_QUERY_POLICIES.public,
-	});
-	const modelOptions = useMemo(() => buildRoutingModelOptions(modelCatalog?.models ?? []), [modelCatalog?.models]);
-	const modelCatalogError = Boolean(modelCatalogRequestError);
+	const { options: modelOptions, loading: modelCatalogLoading, error: modelCatalogError } = useGatewayModelOptions();
 	const example = node.type === "condition" ? conditionTriggerExample(node) : "";
 	async function copyExample() {
 		await navigator.clipboard.writeText(example);

@@ -1,9 +1,11 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
+import { compilePromptTemplate, type PromptTemplateIssue } from "./prompt-templates";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 
@@ -29,7 +31,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 		context.client.from("workspaces").select("id,name").eq("id", context.workspaceId).maybeSingle(),
 		context.client.from("keys").select("id,name,prefix,status,created_at")
 			.eq("workspace_id", context.workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("workspace_members").select("user_id,role,users(display_name)")
 			.eq("workspace_id", context.workspaceId),
 		context.client.from("v2_providers")
@@ -46,16 +48,28 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 		? await context.client.from("v2_models").select("model_slug,name,lab_slug,organisation:v2_labs(lab_slug,name)").in("model_slug", modelSlugs)
 		: { data: [], error: null };
 	if (modelMetadataResult.error) throw new Error("settings_unavailable");
-	const capabilitiesResult = modelsResult.data?.length
-		? await context.client.from("v2_route_capabilities")
-			.select("provider_model_id,capability_id,status,metadata")
-			.in("capability_id", ["batch", "files.upload", "files.list", "files.retrieve"])
-			.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
-		: { data: [], error: null };
-	if (capabilitiesResult.error) throw new Error("settings_unavailable");
+	const providerModelIds = Array.from(new Set((modelsResult.data ?? [])
+		.map((row) => String(row.provider_model_id ?? "").trim()).filter(Boolean)));
+	const capabilityRows: Array<{ provider_model_id: string; capability_id: string; metadata: Record<string, unknown> | null }> = [];
+	// Bound URL size and page below PostgREST's row cap so scoped policies are not truncated.
+	for (let index = 0; index < providerModelIds.length; index += 100) {
+		const batch = providerModelIds.slice(index, index + 100);
+		for (let offset = 0; ; offset += 500) {
+			const result = await context.client.from("v2_effective_route_capabilities")
+				.select("provider_model_id,capability_id,status,metadata")
+				.in("provider_model_id", batch)
+				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
+				.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
+				.order("provider_model_id").order("capability_id")
+				.range(offset, offset + 499);
+			if (result.error) throw new Error("settings_unavailable");
+			capabilityRows.push(...(result.data ?? []));
+			if ((result.data?.length ?? 0) < 500) break;
+		}
+	}
 	const modelMetadata = new Map((modelMetadataResult.data ?? []).map((row: any) => [String(row.model_slug), row]));
 	const capabilitiesByProviderModel = new Map<string, Array<{ id: string; dataPolicy: Record<string, unknown> | null }>>();
-	for (const row of capabilitiesResult.data ?? []) {
+	for (const row of capabilityRows) {
 		const providerModelId = String(row.provider_model_id ?? "").trim();
 		const capabilityId = String(row.capability_id ?? "").trim();
 		if (!providerModelId || !capabilityId) continue;
@@ -218,6 +232,123 @@ accountSettingsPolicyRouter.put("/routing", async (c) => {
 		gatewayCacheInvalidated = false;
 	}
 	return c.json({ ok: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+const SUCCESSOR_PRICE_POLICIES = new Set(["never", "limit", "any"]);
+const SERVABLE_SUCCESSOR_STATUSES = new Set(["active", "deprecated", "retired"]);
+const MAX_SUCCESSOR_REPLACEMENTS = 500;
+
+function successorModelSlug(value: unknown): string | null {
+	const slug = String(value ?? "").trim().toLowerCase();
+	return slug && slug.length <= 512 && /^[a-z0-9][a-z0-9._:/+@-]*$/.test(slug) ? slug : null;
+}
+
+// Successor routing: send requests for a model no provider serves any more to
+// a replacement. The gateway reads these settings with a short cache, so a
+// change takes effect within about a minute.
+accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
+	const workspaceId = c.req.query("workspaceId")?.trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const [settingsResult, replacementsResult] = await Promise.all([
+		context.client.from("workspace_settings")
+			.select("model_successor_redirect_enabled,model_successor_price_policy,model_successor_max_price_increase_percent")
+			.eq("workspace_id", workspaceId)
+			.maybeSingle(),
+		context.client.from("workspace_model_successor_overrides")
+			.select("model_slug,successor_model_slug,updated_at")
+			.eq("workspace_id", workspaceId)
+			.order("model_slug")
+			.limit(MAX_SUCCESSOR_REPLACEMENTS),
+	]);
+	if (settingsResult.error || replacementsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const pricePolicy = String(settingsResult.data?.model_successor_price_policy ?? "never");
+	return c.json({
+		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
+		enabled: settingsResult.data?.model_successor_redirect_enabled === true,
+		pricePolicy: SUCCESSOR_PRICE_POLICIES.has(pricePolicy) ? pricePolicy : "never",
+		maxPriceIncreasePercent: Number(settingsResult.data?.model_successor_max_price_increase_percent ?? 0) || 0,
+		replacements: (replacementsResult.data ?? []).map((row: any) => ({
+			model: String(row.model_slug),
+			successor: typeof row.successor_model_slug === "string" ? row.successor_model_slug : null,
+			updatedAt: row.updated_at ?? null,
+		})),
+		workspaceId,
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.put("/routing/successor", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const pricePolicy = String(body.pricePolicy ?? "never");
+	const percent = Number(body.maxPriceIncreasePercent ?? 0);
+	if (typeof body.enabled !== "boolean") return c.json({ error: "invalid_enabled" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!SUCCESSOR_PRICE_POLICIES.has(pricePolicy)) return c.json({ error: "invalid_price_policy" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!Number.isInteger(percent) || percent < 0 || percent > 1000) return c.json({ error: "invalid_max_price_increase_percent", maximum: 1000 }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_settings").upsert({
+		workspace_id: workspaceId,
+		model_successor_redirect_enabled: body.enabled,
+		model_successor_price_policy: pricePolicy,
+		model_successor_max_price_increase_percent: pricePolicy === "limit" ? percent : 0,
+		updated_at: new Date().toISOString(),
+	}, { onConflict: "workspace_id" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.put("/routing/successor/replacements", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const model = successorModelSlug(body.model);
+	// null means "never redirect this model".
+	const successor = body.successor === null ? null : successorModelSlug(body.successor);
+	if (!model) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (body.successor !== null && !successor) return c.json({ error: "invalid_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (successor === model) return c.json({ error: "successor_is_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const slugs = successor ? [model, successor] : [model];
+	const models = await context.client.from("v2_models").select("model_slug,status").in("model_slug", slugs).eq("hidden", false);
+	if (models.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const statuses = new Map((models.data ?? []).map((row: any) => [String(row.model_slug), String(row.status ?? "")]));
+	if (!statuses.has(model)) return c.json({ error: "unknown_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (successor && !statuses.has(successor)) return c.json({ error: "unknown_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// The gateway only redirects to models it can list; anything else would be saved and never used.
+	if (successor && !SERVABLE_SUCCESSOR_STATUSES.has(statuses.get(successor)!)) return c.json({ error: "inactive_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const existing = await context.client.from("workspace_model_successor_overrides").select("model_slug", { count: "exact", head: true }).eq("workspace_id", workspaceId);
+	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if ((existing.count ?? 0) >= MAX_SUCCESSOR_REPLACEMENTS) {
+		const current = await context.client.from("workspace_model_successor_overrides").select("model_slug").eq("workspace_id", workspaceId).eq("model_slug", model).maybeSingle();
+		if (current.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!current.data) return c.json({ error: "too_many_replacements", maximum: MAX_SUCCESSOR_REPLACEMENTS }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+	const result = await context.client.from("workspace_model_successor_overrides").upsert({
+		workspace_id: workspaceId,
+		model_slug: model,
+		successor_model_slug: successor,
+		created_by: context.user.id,
+		updated_at: new Date().toISOString(),
+	}, { onConflict: "workspace_id,model_slug" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, replacement: { model, successor } }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.delete("/routing/successor/replacements", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const model = successorModelSlug(body.model);
+	if (!model) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_model_successor_overrides").delete().eq("workspace_id", workspaceId).eq("model_slug", model);
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.get("/routing/auto", async (c) => {
@@ -424,12 +555,23 @@ accountSettingsPolicyRouter.put("/presets/publisher", async (c) => {
 	return c.json({ handle: String(result.data ?? handle) }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** Problems with a config's prompt template, or null when it has none or it is valid. */
+function promptTemplateIssues(config: unknown): PromptTemplateIssue[] | null {
+	if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+	const template = (config as Record<string, unknown>).prompt;
+	if (template === undefined || template === null) return null;
+	const compiled = compilePromptTemplate(template);
+	return compiled.ok === false ? compiled.issues : null;
+}
+
 accountSettingsPolicyRouter.post("/presets", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({}));
 	const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim(); const slug = normalizePresetSlug(body.slug ?? name);
 	if (!workspaceId || !validPresetName(name) || !slug) return c.json({ error: "invalid_preset" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const templateIssues = promptTemplateIssues(body.config);
+	if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const duplicate = await context.client.from("presets").select("id").eq("workspace_id", workspaceId).eq("name", name).maybeSingle();
@@ -490,6 +632,10 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	if (body.name != null) { const name = String(body.name).trim(); if (!validPresetName(name)) return c.json({ error: "invalid_preset" }, 400, PRIVATE_NO_STORE_HEADERS); update.draft_name = name; }
 	if (body.description !== undefined) update.draft_description = body.description ? String(body.description).trim().slice(0, 500) : null;
 	if (body.config !== undefined) update.draft_config = body.replaceConfig === true ? (body.config && typeof body.config === "object" ? body.config : {}) : { ...((existing.data.draft_config as Record<string, unknown>) ?? (existing.data.config as Record<string, unknown>) ?? {}), ...(body.config && typeof body.config === "object" ? body.config : {}) };
+	if (update.draft_config !== undefined) {
+		const templateIssues = promptTemplateIssues(update.draft_config);
+		if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
 	if (body.visibility !== undefined) update.draft_visibility = presetVisibility(body.visibility);
 	if (body.slug !== undefined) update.draft_slug = normalizePresetSlug(body.slug);
 	if (["sequential", "semver", "date"].includes(String(body.versioningMethod))) update.versioning_method = String(body.versioningMethod);
@@ -503,13 +649,73 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env); const id = c.req.param("presetId");
-	const preset = await client.from("presets").select("workspace_id,created_by,visibility").eq("id", id).is("archived_at", null).maybeSingle();
+	const preset = await client.from("presets").select("workspace_id,created_by,visibility,draft_visibility,active_version_id").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.visibility === "private" && preset.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const versions = await client.from("preset_versions").select("id,version_number,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false });
-	if (versions.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ versions: versions.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	const [versions, labels] = await Promise.all([
+		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false }),
+		client.from("preset_version_labels").select("label,version_id,updated_at").eq("preset_id", id).order("label", { ascending: true }),
+	]);
+	if (versions.error || labels.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const labelsByVersion = new Map<string, string[]>();
+	for (const row of labels.data ?? []) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
+	return c.json({
+		versions: (versions.data ?? []).map((version) => ({ ...version, labels: labelsByVersion.get(String(version.id)) ?? [] })),
+		labels: labels.data ?? [],
+		activeVersionId: preset.data.active_version_id ?? null,
+		canManageLabels: canManagePresetLabels(context, user.id, preset.data),
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+/** The rule set_preset_version_label applies: the creator, or an owner or admin when the preset is shared. */
+function canManagePresetLabels(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null; draft_visibility?: string | null }) {
+	return canWritePreset(context, userId, { created_by: preset.created_by, visibility: preset.draft_visibility ?? preset.visibility });
+}
+const PRESET_LABEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
+function normalizePresetLabel(value: unknown): string | null {
+	const label = String(value ?? "").trim().toLowerCase();
+	return PRESET_LABEL_PATTERN.test(label) && !/^v[0-9]+$/.test(label) ? label : null;
+}
+function presetLabelRpcError(message: string): { error: string; status: 400 | 403 | 404 } | null {
+	if (message.includes("invalid_preset_label")) return { error: "invalid_preset_label", status: 400 };
+	if (message.includes("preset_version_not_found")) return { error: "preset_version_not_found", status: 404 };
+	if (message.includes("preset_not_found")) return { error: "not_found", status: 404 };
+	if (message.includes("preset_label_forbidden")) return { error: "forbidden", status: 403 };
+	return null;
+}
+async function presetForLabelChange(c: Context<{ Bindings: Env }>, userId: string) {
+	const client = getDataClient(c.env);
+	const preset = await client.from("presets").select("id,workspace_id,created_by,visibility,draft_visibility").eq("id", String(c.req.param("presetId") ?? "")).is("archived_at", null).maybeSingle();
+	if (preset.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
+	if (!preset.data?.workspace_id) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id });
+	if (!context || !canManagePresetLabels(context, userId, preset.data)) return { response: c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS) } as const;
+	return { client, preset: preset.data } as const;
+}
+
+accountSettingsPolicyRouter.put("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const body: { versionId?: string } = await c.req.json<{ versionId?: string }>().catch(() => ({})); const versionId = String(body.versionId ?? "").trim();
+	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(versionId)) return c.json({ error: "preset_version_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const saved = await loaded.client.rpc("set_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, p_version_id: versionId, actor_user_id: user.id });
+	if (saved.error) { const mapped = presetLabelRpcError(saved.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	const row = Array.isArray(saved.data) ? saved.data[0] : saved.data;
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ label: row ?? { label, version_id: versionId }, cache }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.delete("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const removed = await loaded.client.rpc("remove_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, actor_user_id: user.id });
+	if (removed.error) { const mapped = presetLabelRpcError(removed.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	if (removed.data !== true) return c.json({ error: "label_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ removed: true, label, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
@@ -519,6 +725,8 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context || !canWritePreset(context, user.id, preset.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (!presetHasDraftChanges(preset.data)) return c.json({ error: "no_draft_changes" }, 409, PRIVATE_NO_STORE_HEADERS);
+	const templateIssues = promptTemplateIssues(preset.data.draft_config ?? preset.data.config);
+	if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.draft_visibility === "public" && !await workspacePublisher(client, preset.data.workspace_id).catch(() => null)) return c.json({ error: "workspace_publisher_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const published = await client.rpc("publish_preset_version", { target_preset_id: id, actor_user_id: user.id, notes: String(body.releaseNotes ?? "").slice(0, 1000), requested_label: body.versionLabel ? String(body.versionLabel).slice(0, 100) : null });
 	if (published.error) {

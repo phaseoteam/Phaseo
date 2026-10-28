@@ -35,6 +35,11 @@ describe("key detail access", () => {
 		expect(columns).not.toContain("hash"); expect(columns).not.toContain("kid");
 		expect(response.headers.get("cache-control")).toContain("no-store");
 	});
+	it("reads window usage for only this key from the gateway's UTC totals", async () => {
+		await load();
+		expect(mocks.rpc).toHaveBeenCalledWith("gateway_workspace_key_usage", { p_workspace_id: "workspace-1", p_key_ids: ["key-1"] });
+		expect(mocks.userRpc).not.toHaveBeenCalledWith("get_workspace_key_usage", expect.anything());
+	});
 	it("allows members to read without edit permission", async () => { mocks.role = "member"; expect(await (await load()).json()).toMatchObject({ canManage: false }); });
 	it("loads a bounded daily rollup for this workspace and key", async () => {
 		const today = new Date().toISOString().slice(0, 10);
@@ -48,6 +53,9 @@ describe("key detail access", () => {
 	it("does not expose keys or query usage outside the user's workspace", async () => { mocks.authorized = false; expect((await load()).status).toBe(404); expect(mocks.rpc).not.toHaveBeenCalled(); expect(mocks.userRpc).not.toHaveBeenCalled(); });
 	it("requires authentication", async () => { mocks.signedIn = false; expect((await load()).status).toBe(401); expect(mocks.select).not.toHaveBeenCalled(); });
 	it("hides deleted keys", async () => { mocks.key.status = "deleted"; expect((await load()).status).toBe(404); });
-	it("distinguishes a usage outage from zero usage", async () => { mocks.userRpc.mockResolvedValue({ data: null, error: { message: "unavailable" } }); expect(await (await load()).json()).toMatchObject({ usage: null }); });
+	it("distinguishes a usage outage from zero usage", async () => {
+		mocks.rpc.mockImplementation(async (name: string) => name === "gateway_workspace_key_usage" ? { data: null, error: { message: "unavailable" } } : { data: [], error: null });
+		expect(await (await load()).json()).toMatchObject({ usage: null });
+	});
 	it("distinguishes a chart outage from zero usage", async () => { mocks.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } }); expect(await (await load()).json()).toMatchObject({ chart: null }); });
 });

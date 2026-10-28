@@ -40,6 +40,7 @@ CREATE OR REPLACE FUNCTION public.get_public_intelligence_index (
     left join public.v2_labs lab
       on lab.lab_slug = model.lab_slug
     where result.benchmark_id = 'aa-intelligence-index-v4'
+      and (result.effective_to is null or result.effective_to > now())
       and result.score_numeric is not null
   )
   select *

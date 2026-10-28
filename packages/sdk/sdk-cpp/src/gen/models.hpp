@@ -60,14 +60,19 @@ struct AnthropicMessage {
 };
 
 struct AnthropicMessagesRequest {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> context_management;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
-	std::vector<std::map<std::string, std::any>> messages;
+	std::vector<std::any> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
 	std::vector<std::string> models;
+	std::vector<std::any> plugins;
+	std::map<std::string, std::any> prompt;
+	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -82,10 +87,12 @@ struct AnthropicMessagesRequest {
 	std::optional<int> top_k;
 	std::optional<double> top_p;
 	std::optional<bool> usage;
+	std::string user;
 };
 
 struct AnthropicMessagesResponse {
 	std::vector<std::map<std::string, std::any>> content;
+	std::map<std::string, std::any> context_management;
 	std::string id;
 	std::string model;
 	std::any role;
@@ -93,6 +100,17 @@ struct AnthropicMessagesResponse {
 	std::string stop_sequence;
 	std::string type;
 	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicSystemMessage {
+	std::any content;
+	std::any role;
+};
+
+struct AnthropicSystemTextBlock {
+	std::map<std::string, std::any> cache_control;
+	std::string text;
+	std::any type;
 };
 
 struct AnthropicTool {
@@ -103,6 +121,11 @@ struct AnthropicTool {
 };
 
 struct AnthropicUsage {
+	std::map<std::string, std::any> cache_creation;
+	std::optional<int> cache_creation_input_tokens;
+	std::optional<int> cache_read_input_tokens;
+	std::optional<double> cost;
+	std::map<std::string, std::any> cost_details;
 	std::optional<int> input_tokens;
 	std::optional<int> output_tokens;
 };
@@ -128,6 +151,7 @@ struct ApiKey {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -148,6 +172,7 @@ struct ApiKeyCreateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
 
@@ -194,6 +219,8 @@ struct ApiKeyRotateResponse {
 
 using ApiKeyScopeValue = std::any;
 
+using ApiKeyStorageLocations = std::any;
+
 struct ApiKeyUpdateRequest {
 	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
@@ -205,6 +232,7 @@ struct ApiKeyUpdateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::optional<std::any> storage_locations;
 };
 
 struct ApiKeyUsageBucket {
@@ -241,6 +269,7 @@ struct ApiKeyWithValue {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -252,6 +281,7 @@ struct ApiKeyWithValue {
 
 struct ApiKeyWithValueResponse {
 	std::map<std::string, std::any> data;
+	std::string key;
 };
 
 struct AsyncJobWebSocketClientEvent {
@@ -527,6 +557,11 @@ struct CacheControl {
 	std::string type;
 };
 
+struct CacheWriteTokensDetails {
+	std::optional<int> ttl_12h_tokens;
+	std::optional<int> ttl_30m_tokens;
+};
+
 struct ChatAudioOutputPart {
 	std::map<std::string, std::any> audio_url;
 	std::any format;
@@ -541,10 +576,12 @@ struct ChatChoice {
 };
 
 struct ChatCompletionsRequest {
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
 	std::map<std::string, std::any> image_config;
+	std::optional<bool> include_reasoning;
 	std::map<std::string, std::any> logit_bias;
 	std::optional<bool> logprobs;
 	std::optional<int> max_completion_tokens;
@@ -557,8 +594,13 @@ struct ChatCompletionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
+	std::vector<std::any> plugins;
+	std::map<std::string, std::any> prediction;
 	std::optional<double> presence_penalty;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::any provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -566,7 +608,7 @@ struct ChatCompletionsRequest {
 	std::any response_format;
 	std::optional<std::string> safety_identifier;
 	std::optional<int> seed;
-	std::any service_tier;
+	std::optional<std::any> service_tier;
 	std::string session_id;
 	std::any stop;
 	std::optional<bool> store;
@@ -600,13 +642,125 @@ struct ChatImageOutputPart {
 };
 
 struct ChatMessage {
+	std::optional<std::map<std::string, std::any>> audio;
 	std::vector<std::map<std::string, std::any>> audios;
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
+	std::string reasoning;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
 	std::any role;
 	std::string tool_call_id;
 	std::vector<std::map<std::string, std::any>> tool_calls;
+};
+
+struct ChatReasoningDetail {
+	std::string data;
+	std::string format;
+	std::string id;
+	std::optional<int> index;
+	std::string signature;
+	std::string summary;
+	std::string text;
+	std::any type;
+};
+
+struct ChatResponseMessage {
+	std::map<std::string, std::any> audio;
+	std::vector<std::map<std::string, std::any>> audios;
+	std::any content;
+	std::vector<std::map<std::string, std::any>> images;
+	std::string name;
+	std::string reasoning;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
+	std::any role;
+	std::string tool_call_id;
+	std::vector<std::map<std::string, std::any>> tool_calls;
+};
+
+struct Classifier {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	bool enabled;
+	std::string id;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	double sample_rate;
+	std::map<std::string, std::any> scope;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct ClassifierCreateInput {
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	std::optional<bool> enabled;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	std::optional<double> sample_rate;
+	std::map<std::string, std::any> scope;
+};
+
+struct ClassifierDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct ClassifierDimension {
+	std::optional<bool> allow_other;
+	std::optional<std::string> description;
+	std::string key;
+	std::optional<bool> multiple;
+	std::string name;
+	std::vector<std::map<std::string, std::any>> values;
+};
+
+using ClassifierInputScope = std::any;
+
+struct ClassifierListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct ClassifierResponse {
+	std::map<std::string, std::any> data;
+};
+
+using ClassifierSampleBy = std::any;
+
+struct ClassifierScope {
+	std::vector<std::string> app_ids;
+	std::vector<std::string> key_ids;
+	std::vector<std::string> models;
+};
+
+struct ClassifierUpdateInput {
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	std::optional<bool> enabled;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	std::optional<double> sample_rate;
+	std::map<std::string, std::any> scope;
+};
+
+struct ClassifierValue {
+	std::optional<std::string> description;
+	std::string value;
 };
 
 struct CreditsResponse {
@@ -718,6 +872,26 @@ struct DecisionAudioSource {
 	std::string url;
 };
 
+struct DecisionBox {
+	double bottom;
+	double left;
+	double right;
+	double top;
+};
+
+struct DecisionBoxAnswer {
+	std::map<std::string, std::any> box;
+	std::optional<double> confidence;
+	std::optional<std::string> name;
+	std::any type;
+};
+
+struct DecisionBoxQuestion {
+	std::string instructions;
+	std::string name;
+	std::any type;
+};
+
 struct DecisionChoiceAnswer {
 	std::any choice;
 	double confidence;
@@ -788,6 +962,10 @@ struct DecisionPredicateQuestion {
 	std::any type;
 };
 
+struct DecisionProviderOptions {
+	std::map<std::string, std::any> typesafe;
+};
+
 struct DecisionRefusalAnswer {
 	std::optional<std::string> name;
 	std::any type;
@@ -816,6 +994,7 @@ struct DecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -839,6 +1018,47 @@ struct DecisionsUsage {
 
 struct DeletedResponse {
 	std::any deleted;
+};
+
+struct DepartmentBudget {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string department_id;
+	std::optional<std::string> department_name;
+	bool exceeded;
+	std::string id;
+	std::any interval;
+	double limit;
+	int limit_nanos;
+	double remaining;
+	int remaining_nanos;
+	std::optional<std::string> reset_at;
+	std::string updated_at;
+	double usage;
+	int usage_nanos;
+	std::optional<std::string> window_start;
+	std::string workspace_id;
+};
+
+struct DepartmentBudgetInput {
+	std::string department_id;
+	std::any interval;
+	double limit;
+};
+
+using DepartmentBudgetInterval = std::any;
+
+struct DepartmentBudgetListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct DepartmentBudgetResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct DepartmentBudgetUpdateInput {
+	std::any interval;
+	std::optional<double> limit;
 };
 
 struct DynamicRoute {
@@ -1011,6 +1231,14 @@ struct ErrorFailureSampleItem {
 	std::optional<std::string> upstream_payload_preview;
 };
 
+struct ErrorObject {
+	std::string code;
+	std::string message;
+	std::map<std::string, std::any> metadata;
+	std::optional<std::string> param;
+	std::any type;
+};
+
 struct ErrorProviderCandidateDiagnostics {
 	std::optional<int> candidateCount;
 	std::vector<std::map<std::string, std::any>> droppedMissingAdapter;
@@ -1034,6 +1262,7 @@ struct ErrorProviderFailureDiagnostics {
 
 struct ErrorResponse {
 	std::optional<int> attempt_count;
+	std::string code;
 	std::string description;
 	std::vector<std::map<std::string, std::any>> details;
 	std::any error;
@@ -1068,6 +1297,105 @@ struct ErrorUpstreamError {
 	std::optional<std::string> param;
 };
 
+using ExtractionAnswer = std::any;
+
+struct ExtractionDateField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionDatetimeField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionDurationField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::optional<bool> integer;
+	std::any type;
+	std::any unit;
+};
+
+using ExtractionField = std::any;
+
+struct ExtractionImage {
+	std::string base64;
+	std::any content_type;
+};
+
+struct ExtractionListAnswer {
+	double confidence;
+	std::any type;
+	std::vector<std::any> value;
+};
+
+struct ExtractionListField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::any items;
+	std::any type;
+};
+
+struct ExtractionNumberAnswer {
+	double confidence;
+	double p_null;
+	std::any type;
+	std::optional<double> value;
+};
+
+struct ExtractionNumberField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::optional<bool> integer;
+	std::any type;
+	std::string unit;
+};
+
+struct ExtractionRequest {
+	std::map<std::string, std::any> fields;
+	std::vector<std::map<std::string, std::any>> images;
+	std::string input;
+	std::string model;
+	std::string reference_date;
+};
+
+struct ExtractionResponse {
+	std::map<std::string, std::any> answers;
+	std::string model;
+	bool truncated;
+	std::map<std::string, std::any> usage;
+};
+
+struct ExtractionStringAnswer {
+	double confidence;
+	double p_null;
+	std::any type;
+	std::optional<std::string> value;
+};
+
+struct ExtractionTextField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionTimeField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionUsage {
+	int input_tokens;
+	std::any output_tokens;
+	int total_tokens;
+};
+
+struct FileContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> file;
+	std::any type;
+};
+
 struct FileResponse {
 	std::optional<int> bytes;
 	std::optional<int> created_at;
@@ -1086,6 +1414,7 @@ struct FileUploadRequest {
 
 struct FunctionToolDefinition {
 	std::optional<bool> async;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> function;
 	std::any type;
 };
@@ -1201,6 +1530,7 @@ struct GatewayModelOffer {
 	std::map<std::string, std::any> provider;
 	bool routable;
 	std::map<std::string, std::any> routing;
+	std::vector<std::any> service_tiers;
 	std::any status;
 	std::any status_reason;
 };
@@ -1259,6 +1589,8 @@ struct GatewayObservabilityEventListResponse {
 struct GatewayObservabilityEventResponse {
 	std::map<std::string, std::any> data;
 };
+
+using GatewayPlugin = std::any;
 
 struct GatewayPricing {
 	std::map<std::string, std::any> meters;
@@ -1615,6 +1947,12 @@ struct ImagesGenerationResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };
 
+struct InputTokensDetails {
+	std::optional<int> cache_write_tokens;
+	std::map<std::string, std::any> cache_write_tokens_details;
+	std::optional<int> cached_tokens;
+};
+
 struct InvalidRequestResponse {
 	std::string error;
 	std::optional<int> max_offset;
@@ -1630,6 +1968,11 @@ struct KeyInvalidateResponse {
 
 using KnownModelId = std::any;
 
+struct LegacyDecisionBoxQuestion {
+	std::any instructions;
+	std::any type;
+};
+
 struct LegacyDecisionsRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
@@ -1639,6 +1982,7 @@ struct LegacyDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -2198,6 +2542,7 @@ struct OpenAIDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::vector<std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::optional<std::string> safety_identifier;
@@ -2224,11 +2569,18 @@ struct OpenAIModelsResponse {
 };
 
 struct OpenAIReasoningConfig {
-	std::any effort;
+	std::optional<std::any> effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
 	std::any mode;
 	std::any summary;
+};
+
+struct OpenAIWebSearchToolDefinition {
+	std::map<std::string, std::any> filters;
+	std::any search_context_size;
+	std::any type;
+	std::map<std::string, std::any> user_location;
 };
 
 using OrganisationId = std::any;
@@ -2294,6 +2646,7 @@ struct Preset {
 };
 
 struct PresetConfig {
+	std::map<std::string, std::any> prompt;
 };
 
 struct PresetCreateRequest {
@@ -2314,9 +2667,60 @@ struct PresetForkRequest {
 	std::string source_version_id;
 };
 
+struct PresetLabel {
+	std::optional<std::string> created_at;
+	std::string label;
+	std::optional<std::string> updated_at;
+	std::optional<std::string> updated_by;
+	std::string version_id;
+	std::optional<std::string> version_label;
+	std::optional<int> version_number;
+};
+
+struct PresetLabelDeleteResponse {
+	bool deleted;
+	std::string label;
+};
+
+struct PresetLabelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PresetLabelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PresetLabelSetRequest {
+	std::string version;
+	std::string version_id;
+};
+
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
+};
+
+struct PresetPromptTemplate {
+	std::vector<std::map<std::string, std::any>> messages;
+	std::map<std::string, std::any> response_format;
+	std::any syntax;
+	std::any tool_choice;
+	std::vector<std::map<std::string, std::any>> tools;
+	std::map<std::string, std::any> variables;
+};
+
+struct PresetPromptTemplateMessage {
+	std::any content;
+	std::any role;
+};
+
+struct PresetPromptVariable {
+	std::any default;
+	std::string description;
+	std::vector<std::string> enum;
+	std::optional<int> max_length;
+	std::optional<bool> required;
+	std::any type;
 };
 
 struct PresetPublisher {
@@ -2413,6 +2817,7 @@ struct PresetVersion {
 	std::string created_by;
 	std::optional<std::string> description;
 	std::string id;
+	std::vector<std::string> labels;
 	std::string name;
 	std::string preset_id;
 	std::optional<std::string> release_notes;
@@ -2513,6 +2918,22 @@ struct PrivateModelUpdateRequest {
 	std::string upstream_model_id;
 };
 
+struct PromptCacheBreakpoint {
+	std::any mode;
+	std::string ttl;
+};
+
+struct PromptCacheOptions {
+	std::any mode;
+	std::string ttl;
+};
+
+struct PromptTemplateReference {
+	std::string id;
+	std::map<std::string, std::any> variables;
+	std::string version;
+};
+
 struct Provider {
 	std::string api_provider_id;
 	std::optional<std::string> api_provider_name;
@@ -2592,6 +3013,7 @@ struct ProviderOptions {
 	std::map<std::string, std::any> anthropic;
 	std::map<std::string, std::any> google;
 	std::map<std::string, std::any> openai;
+	std::map<std::string, std::any> xai;
 };
 
 struct ProviderRoutingOptions {
@@ -2725,7 +3147,7 @@ struct RateLimitPolicyUpdateInput {
 using RateLimitTargetType = std::any;
 
 struct ReasoningConfig {
-	std::any effort;
+	std::optional<std::any> effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
 	std::any mode;
@@ -2766,9 +3188,20 @@ struct RerankResult {
 	std::optional<double> relevance_score;
 };
 
+struct ResponseHealingPlugin {
+	std::optional<bool> enabled;
+	std::any id;
+	std::any mode;
+};
+
 struct ResponsesInputItem {
 	std::any content;
+	std::string encrypted_content;
+	std::any format;
+	std::string id;
 	std::any role;
+	std::string signature;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
@@ -2793,8 +3226,11 @@ struct ResponsesOutputItem {
 	std::string arguments;
 	std::string call_id;
 	std::vector<std::any> content;
+	std::string encrypted_content;
+	std::string id;
 	std::string name;
 	std::string role;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
@@ -2804,8 +3240,19 @@ struct ResponsesOutputTextPart {
 	std::any type;
 };
 
+struct ResponsesReasoningSummaryPart {
+	std::string text;
+	std::any type;
+};
+
+struct ResponsesReasoningTextPart {
+	std::string text;
+	std::any type;
+};
+
 struct ResponsesRequest {
 	std::optional<bool> background;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> image_config;
@@ -2819,13 +3266,17 @@ struct ResponsesRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
+	std::vector<std::any> plugins;
 	std::string previous_response_id;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
 	std::optional<std::string> safety_identifier;
-	std::any service_tier;
+	std::optional<std::any> service_tier;
 	std::string session_id;
 	std::optional<bool> store;
 	std::optional<bool> stream;
@@ -2878,6 +3329,207 @@ struct ServerToolUsage {
 	std::optional<int> subagent_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;
+};
+
+struct SpendBlock {
+	bool active;
+	bool block_free_models;
+	std::string id;
+	std::optional<std::any> lift_reason;
+	std::optional<std::string> lifted_at;
+	std::optional<std::string> lifted_by;
+	int limit_nanos;
+	double limit_usd;
+	std::string period_start;
+	std::optional<std::string> resets_at;
+	std::optional<std::string> rule_id;
+	std::optional<std::string> rule_name;
+	std::optional<std::string> scope_id;
+	std::string scope_label;
+	std::any scope_type;
+	int spend_nanos;
+	double spend_usd;
+	std::string started_at;
+	std::string workspace_id;
+};
+
+using SpendBlockLiftReason = std::any;
+
+struct SpendBlockListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SpendBlockResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRule {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	int block_at_percent;
+	bool block_free_models;
+	int cooldown_minutes;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::vector<std::string> destination_ids;
+	bool enabled;
+	bool evaluated;
+	std::string id;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::string updated_at;
+	std::optional<int> window_hours;
+	std::string workspace_id;
+};
+
+using SpendRuleAction = std::any;
+
+struct SpendRuleDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleHistory {
+	std::vector<std::map<std::string, std::any>> events;
+	bool has_more;
+	std::vector<std::map<std::string, std::any>> periods;
+};
+
+struct SpendRuleHistoryResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleInput {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	std::optional<int> block_at_percent;
+	std::optional<bool> block_free_models;
+	std::optional<int> cooldown_minutes;
+	std::vector<std::string> destination_ids;
+	std::optional<bool> enabled;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::optional<int> window_hours;
+};
+
+struct SpendRuleListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	int max_rules;
+};
+
+using SpendRuleMetric = std::any;
+
+using SpendRulePeriod = std::any;
+
+struct SpendRulePreview {
+	std::optional<std::map<std::string, std::any>> alert;
+	std::optional<std::any> base_kind;
+	std::optional<int> base_nanos;
+	std::optional<std::any> base_ref;
+	std::optional<double> base_usd;
+	std::optional<int> block_at_nanos;
+	std::optional<double> block_at_usd;
+	std::string computed_at;
+	bool evaluated;
+	std::any metric;
+	std::optional<std::map<std::string, std::any>> next_threshold;
+	std::optional<double> percent;
+	std::optional<std::map<std::string, std::any>> period;
+	std::optional<int> reached_threshold_percent;
+	std::string rule_id;
+	std::optional<std::map<std::string, std::any>> state;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::string time_zone;
+	std::optional<int> value_nanos;
+	std::optional<double> value_usd;
+};
+
+struct SpendRulePreviewResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleResponse {
+	std::map<std::string, std::any> data;
+};
+
+using SpendRuleScope = std::any;
+
+struct SpendRuleTestResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleTestResult {
+	int delivered;
+	std::vector<std::map<std::string, std::any>> deliveries;
+	int failed;
+	std::string message;
+	std::string rule_id;
+	std::string rule_name;
+	std::any source;
+	bool test;
+	std::string title;
+};
+
+struct SpendRuleUpdateInput {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	std::optional<int> block_at_percent;
+	std::optional<bool> block_free_models;
+	std::optional<int> cooldown_minutes;
+	std::vector<std::string> destination_ids;
+	std::optional<bool> enabled;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::optional<int> window_hours;
 };
 
 struct SubagentToolDefinition {
@@ -2935,6 +3587,8 @@ struct SystemOneUsage {
 };
 
 struct TextContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> prompt_cache_breakpoint;
 	std::string text;
 	std::any type;
 };
@@ -2966,9 +3620,19 @@ struct UpdatedResponse {
 
 struct Usage {
 	std::optional<int> completion_tokens;
+	std::optional<double> cost;
+	std::map<std::string, std::any> cost_details;
+	std::optional<int> input_tokens;
+	std::map<std::string, std::any> input_tokens_details;
+	std::optional<int> output_tokens;
 	std::optional<int> prompt_tokens;
+	std::map<std::string, std::any> prompt_tokens_details;
 	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
+};
+
+struct UsageCostDetails {
+	std::optional<double> upstream_inference_cost;
 };
 
 struct VideoBillingSummary {
@@ -3116,6 +3780,16 @@ struct VideoOutputConfig {
 	std::any access;
 };
 
+struct WebFetchPlugin {
+	std::vector<std::string> allowed_domains;
+	std::vector<std::string> blocked_domains;
+	std::optional<bool> enabled;
+	std::any engine;
+	std::any id;
+	std::optional<int> max_content_tokens;
+	std::optional<int> max_uses;
+};
+
 struct WebhookEndpoint {
 	std::optional<std::string> createdAt;
 	std::optional<std::string> createdBy;
@@ -3184,6 +3858,65 @@ struct WebhookEndpointUpdateRequest {
 	std::any status;
 	std::string url;
 };
+
+struct WebSearchPlugin {
+	std::optional<bool> enabled;
+	std::any engine;
+	std::vector<std::string> exclude_domains;
+	std::any id;
+	std::vector<std::string> include_domains;
+	std::optional<int> max_results;
+	std::optional<int> max_uses;
+	std::any search_context_size;
+};
+
+struct WorkloadIdentityPolicy {
+	std::string audience;
+	std::map<std::string, std::any> claim_conditions;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string issuer;
+	std::string key_id;
+	std::optional<std::string> last_used_at;
+	int max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+	std::any status;
+	std::string updated_at;
+};
+
+struct WorkloadIdentityPolicyDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::string issuer;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+};
+
+struct WorkloadIdentityPolicyListResponse {
+	std::string audience;
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct WorkloadIdentityPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyUpdateInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::any status;
+};
+
+using WorkloadIdentityProvider = std::any;
 
 struct Workspace {
 	std::optional<std::string> created_at;
@@ -3323,6 +4056,8 @@ struct WorkspaceAutoTopUpUpdate {
 	std::string mfa_bypass_phrase;
 	std::optional<std::string> payment_method_id;
 };
+
+using WorkspaceBillingTimeZone = std::any;
 
 struct WorkspaceBudget {
 	std::string created_at;
@@ -3592,10 +4327,15 @@ struct WorkspaceMemberRoleUpdateRequest {
 	std::any role;
 };
 
+using WorkspaceModelSuccessorPricePolicy = std::any;
+
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
+	std::optional<bool> has_signing_secret;
 	std::string id;
 	std::string name;
+	std::string signing_secret;
+	std::optional<std::string> signing_secret_rotated_at;
 	std::any status;
 	std::string target_preview;
 	std::any type;
@@ -3644,9 +4384,15 @@ struct WorkspaceNotificationRoute {
 
 struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
+	std::vector<std::string> broadcast_destination_failing;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
+	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
+	std::vector<std::string> rate_limit_throttled;
+	std::vector<std::string> spend_alert;
+	std::vector<std::string> spend_blocked;
+	std::vector<std::string> spend_report;
 };
 
 struct WorkspaceNotificationRouteResponse {
@@ -3665,6 +4411,7 @@ struct WorkspaceNotificationSettings {
 	std::map<std::string, std::any> auto_top_up;
 	std::map<std::string, std::any> email_preferences;
 	std::map<std::string, std::any> low_balance_email;
+	std::map<std::string, std::any> spend;
 };
 
 struct WorkspaceNotificationSettingsResponse {
@@ -3675,6 +4422,7 @@ struct WorkspaceNotificationSettingsUpdateRequest {
 	std::map<std::string, std::any> auto_top_up;
 	std::map<std::string, std::any> email_preferences;
 	std::map<std::string, std::any> low_balance_email;
+	std::map<std::string, std::any> spend;
 };
 
 struct WorkspaceNotificationTestResponse {
@@ -3753,6 +4501,9 @@ struct WorkspaceSettings {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::optional<std::any> model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;
@@ -3779,6 +4530,9 @@ struct WorkspaceSettingsUpdateRequest {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::any model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;
@@ -3791,6 +4545,18 @@ struct WorkspaceSettingsUpdateRequest {
 	std::optional<bool> response_healing_locked;
 	std::any response_healing_mode;
 	std::any routing_mode;
+};
+
+using WorkspaceSpendAttribution = std::any;
+
+struct WorkspaceSpendSettings {
+	std::string billing_time_zone;
+	std::any department_attribution;
+};
+
+struct WorkspaceSpendSettingsUpdate {
+	std::string billing_time_zone;
+	std::any department_attribution;
 };
 
 struct WorkspaceSsoResponse {

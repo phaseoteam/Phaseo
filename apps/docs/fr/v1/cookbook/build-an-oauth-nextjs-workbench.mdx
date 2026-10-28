@@ -1,5 +1,6 @@
 ---
 title: "Créer un environnement de travail OAuth avec Next.js"
+sidebarTitle: "Atelier OAuth avec Next.js"
 icon: "key-round"
 description: "Suivez l’exemple OAuth complet avec Next.js pour créer une application gateway avec connexion et proxy unifié."
 ---
@@ -68,12 +69,22 @@ Ne commencez pas ici si :
 
 ## Fichiers principaux
 
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
+<Tree>
+
+- app/
+  - page.tsx
+  - dashboard/
+    - page.tsx
+    - GatewayWorkbench.tsx
+  - api/
+    - gateway/
+      - [...surface]/
+        - route.ts
+- lib/
+  - oauth.ts
+  - session.ts
+
+</Tree>
 
 ## Pourquoi l’exemple est structuré ainsi
 

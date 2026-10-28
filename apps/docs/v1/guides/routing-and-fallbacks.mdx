@@ -1,6 +1,7 @@
 ---
 title: "Routing and Fallbacks"
 description: "How the Gateway selects providers and keeps requests reliable."
+"og:image": "https://phaseo.app/og/dynamic?title=Routing%20and%20Fallbacks&description=How%20the%20Gateway%20selects%20providers%20and%20keeps%20requests%20reliable.&pathname=/docs/v1/guides/routing-and-fallbacks"
 icon: "git-branch"
 ---
 
@@ -224,7 +225,7 @@ The same page also exposes beta and alpha channel toggles so preview traffic can
 
 ### BYOK fallback is explicit
 
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
 
 ### Dynamic routes attach policy to API keys
 
@@ -267,6 +268,19 @@ Custom metadata is available on the OpenAI-compatible text inference surfaces:
 
 If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
 
+```mermaid
+flowchart TD
+  req["Request"] --> pol["Apply presets, guardrails and provider policy"]
+  pol --> rnk["Rank eligible providers by routing mode"]
+  rnk --> prov["Call the top-ranked provider"]
+  prov -->|"Success"| resp["Return the response"]
+  prov -->|"Provider error or rate limit"| nextProv{{"Another eligible provider?"}}
+  nextProv -->|"Yes"| prov
+  nextProv -->|"No"| fallbackCheck{{"Retryable status and a fallback model left?"}}
+  fallbackCheck -->|"Yes: rerun with the next model"| pol
+  fallbackCheck -->|"No"| err["Return the error"]
+```
+
 Model nodes in a dynamic route can also define an ordered list of fallback
 models. Phaseo first exhausts the eligible provider attempts for the selected
 model. If the resulting response is retryable (`429`, `500`, `502`, `503`, or
@@ -301,6 +315,8 @@ Request-level fallbacks use the same machinery as dynamic-route fallbacks:
   `422` are returned without switching models. A `429` from a Phaseo budget or
   free-model quota reached while executing the request also moves to the next
   model, because a different model may fit within the remaining limit.
+  When no provider serves the primary model at all, for example because it is
+  [retired](#retired-models), Phaseo also moves to the next model.
   Authentication, API key rate limits, and other checks that fail before the
   primary model runs return immediately.
 - **Limits.** `models` accepts 1 to 25 entries. Duplicates and entries equal to
@@ -356,17 +372,34 @@ Read more in:
 - [Rate limits](../api-reference/limits.mdx)
 - [Error handling](../api-reference/errors.mdx)
 
+## Retired models
+
+A retired model is still served while any provider serves it. Once none does,
+requests fail with `410 model_retired`, unless the workspace has turned on
+retired model routing to send them to a replacement. Your own `models` list is
+always tried before a replacement. See
+[Model Deprecation and Retirement](./model-retirement.mdx).
+
 ## Cache-aware and session-aware affinity
 
-Cache-aware routing is enabled by default on text generation endpoints. After a
-provider reports a real prompt-cache read, Phaseo pins matching context back to
-that provider for 15 minutes, provided the provider remains healthy and allowed
-by the active route, preset, guardrail, and request policy.
+Cache-aware routing is enabled by default on text generation endpoints. Requests
+that send `prompt_cache_key` or `session_id`, or opt into caching with
+`cache_control` (top-level, `provider_options.anthropic.cache_control`, or a
+`cache_control` or `prompt_cache_breakpoint` mark on a message block or tool),
+are pinned to the provider and route that served their first successful request.
+Other requests are pinned for 15 minutes once a provider reports a prompt-cache
+read or write for the same opening context, as long as that provider's cached
+input is cheaper than its standard input.
+
+Pins are kept per workspace and last from 15 minutes to 24 hours, following the
+provider's cache retention. A pin moves only when its provider's circuit breaker
+opens, its recent error rate is high, Phaseo's managed quota on it runs out, or
+the active route, preset, guardrail, or request policy no longer allows it.
 
 When `session_id` is present, the cache affinity is keyed to the session instead
-of only the opening context. Session affinity is refreshed when Phaseo observes
-another cache read and is retained for up to 24 hours of session activity.
-Circuit breakers and policy filters always take precedence over affinity.
+of only the opening context, and is retained for up to 24 hours of session
+activity. See [Provider affinity](./prompt-caching.mdx#provider-affinity) for pin
+lifetimes and the affinity hints Phaseo sends to each provider.
 
 Opt out for one request without changing workspace or dynamic-route defaults:
 
@@ -411,4 +444,5 @@ For production workloads, log request ids, response status codes, and model ids 
 ## Related guides
 
 - [Presets](./presets)
+- [Model Deprecation and Retirement](./model-retirement)
 - [Feature Parity Matrix](../migration-guides/feature-parity-matrix)

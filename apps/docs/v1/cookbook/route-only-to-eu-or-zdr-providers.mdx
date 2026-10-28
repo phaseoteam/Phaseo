@@ -1,7 +1,9 @@
 ---
 title: "Route only to EU or ZDR-capable providers"
+sidebarTitle: "Route to EU or ZDR providers"
 icon: "globe"
 description: "Apply request-level residency and zero-data-retention requirements so a model only routes to compliant provider offers."
+"og:image": "https://phaseo.app/og/dynamic?title=Route%20only%20to%20EU%20or%20ZDR-capable%20providers&description=Apply%20request-level%20residency%20and%20zero-data-retention%20requirements%20so%20a%20model%20only%20routes%20to%20compliant%20provider%20offers.&pathname=/docs/v1/cookbook/route-only-to-eu-or-zdr-providers"
 ---
 
 Use this recipe when one request needs provider filtering for compliance or data-handling reasons without changing the whole workspace policy.
@@ -87,7 +89,7 @@ Examples:
   - `required_execution_region: "eu"`
 - data locality only:
   - `required_data_region: "eu"`
-- ZDR-capable providers only:
+- <Tooltip tip="Zero data retention: only providers that meet zero-data-retention constraints.">ZDR</Tooltip>-capable providers only:
   - `require_zero_data_retention: true`
 
 ## 3. Expect the candidate pool to shrink

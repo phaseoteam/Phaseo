@@ -1,5 +1,6 @@
 ---
 title: "OAuth対応のNext.jsワークベンチを構築する"
+sidebarTitle: "OAuth Next.js ワークベンチ"
 icon: "key-round"
 description: "OAuthを使ったNext.jsの完全なサンプルを通じて、統合プロキシを備えたログイン済みGatewayアプリを作ります。"
 ---
@@ -68,12 +69,22 @@ description: "OAuthを使ったNext.jsの完全なサンプルを通じて、統
 
 ## 主なファイル
 
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
+<Tree>
+
+- app/
+  - page.tsx
+  - dashboard/
+    - page.tsx
+    - GatewayWorkbench.tsx
+  - api/
+    - gateway/
+      - [...surface]/
+        - route.ts
+- lib/
+  - oauth.ts
+  - session.ts
+
+</Tree>
 
 ## この構成を採用している理由
 

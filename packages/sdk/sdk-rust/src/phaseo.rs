@@ -482,10 +482,12 @@ fn parse_response(
             Err(PhaseoError {
                 message,
                 status: Some(status),
+                // `error` is the error object; older responses sent the code string there.
                 code: body
                     .pointer("/error/code")
                     .and_then(Value::as_str)
                     .or_else(|| body.get("code").and_then(Value::as_str))
+                    .or_else(|| body.get("error").and_then(Value::as_str))
                     .map(Into::into),
                 request_id: request_id.map(String::into_boxed_str),
                 trace_url: trace_url.map(String::into_boxed_str),
@@ -586,6 +588,46 @@ mod tests {
         assert!(!output.contains("other-secret"));
         assert!(output.contains("[REDACTED]"));
         assert!(output.contains("x-extra-token"));
+    }
+
+    #[test]
+    fn reads_the_error_object_and_the_older_code_string() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let bodies = [
+            r#"{"error":{"code":"validation_error","message":"Unknown parameter: foo","type":"invalid_request_error","param":"foo"},"code":"validation_error"}"#,
+            r#"{"error":"validation_error","message":"Unknown parameter: foo"}"#,
+        ];
+        let server = thread::spawn(move || {
+            for body in bodies {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = Vec::new();
+                while !String::from_utf8_lossy(&request).contains("\r\n\r\n") {
+                    let mut chunk = [0_u8; 1024];
+                    let size = stream.read(&mut chunk).unwrap();
+                    request.extend_from_slice(&chunk[..size]);
+                }
+                let response = format!(
+                    "HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                stream.write_all(response.as_bytes()).unwrap();
+            }
+        });
+
+        let client = Phaseo::new("test")
+            .unwrap()
+            .with_base_url(format!("http://{address}"))
+            .unwrap();
+        for _ in 0..2 {
+            let error = client
+                .request("GET", "/models", None, &RequestOptions::default())
+                .unwrap_err();
+            assert_eq!(error.status, Some(400));
+            assert_eq!(error.message, "Unknown parameter: foo");
+            assert_eq!(error.code.as_deref(), Some("validation_error"));
+        }
+        server.join().unwrap();
     }
 
     #[test]

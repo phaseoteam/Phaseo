@@ -1,0 +1,10 @@
+---
+title: "Label der Voreinstellung setzen"
+sidebarTitle: "Label setzen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "Richtet ein Label auf eine veröffentlichte Version aus oder schiebt es für ein Rollback zurück."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `presets:write` und einer zugeordneten Benutzeridentität erforderlich. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins.</Note>
+
+Anfragen, die das Label pinnen, etwa `@support-triage@production` oder `prompt.version: "production"`, nutzen die neue Version innerhalb von etwa zwei Minuten. Siehe [Prompt-Vorlagen](../../guides/prompt-templates.mdx).

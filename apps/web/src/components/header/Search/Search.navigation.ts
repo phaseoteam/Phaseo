@@ -5,6 +5,9 @@ export type GlobalNavigationItem = PaletteItem & { href: string };
 
 export type SearchCapabilities = {
 	autoRouting: boolean;
+	classifiers: boolean;
+	workloadIdentity: boolean;
+	slackAgent: boolean;
 	enterprise: boolean;
 	webhooks: boolean;
 	video: boolean;
@@ -14,6 +17,9 @@ export type SearchCapabilities = {
 
 export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 	autoRouting: false,
+	classifiers: false,
+	workloadIdentity: false,
+	slackAgent: false,
 	enterprise: false,
 	webhooks: false,
 	video: false,
@@ -23,6 +29,9 @@ export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 
 const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
 	["/settings/routing/auto", "autoRouting"],
+	["/settings/classifiers", "classifiers"],
+	["/settings/trusted-workloads", "workloadIdentity"],
+	["/settings/slack", "slackAgent"],
 	["/settings/workspaces/enterprise", "enterprise"],
 	["/settings/webhooks", "webhooks"],
 	["/chat/video", "video"],
@@ -91,6 +100,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-access", title: "Workspace Access", subtitle: "Manage workspace access controls", href: "/settings/workspaces/access", keywords: ["roles", "permissions", "team"] },
 	{ id: "nav-settings-enterprise", title: "Workspace Enterprise", subtitle: "Manage SSO, SCIM, and Enterprise billing", href: "/settings/workspaces/enterprise", keywords: ["enterprise", "sso", "saml", "scim", "provisioning"] },
 	{ id: "nav-settings-keys", title: "API Keys", subtitle: "Create and manage gateway API keys", href: "/settings/keys", keywords: ["keys", "tokens", "credentials"] },
+	{ id: "nav-settings-budgets", title: "Budgets", subtitle: "Cap workspace spend per day, week, month or in total", href: "/settings/budgets", keywords: ["budget", "spend limit", "spending cap", "cost limit"] },
 	{ id: "nav-settings-apps", title: "Workspace Apps", subtitle: "Manage gateway applications", href: "/settings/apps", keywords: ["apps", "applications"] },
 	{ id: "nav-settings-management-keys", title: "Management Keys", subtitle: "Manage provisioning credentials", href: "/settings/management-api-keys", keywords: ["management api", "provisioning keys"] },
 	{ id: "nav-settings-routing", title: "Routing Settings", subtitle: "Configure gateway routing", href: "/settings/routing", keywords: ["routing", "providers", "fallbacks"] },
@@ -98,6 +108,10 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-presets", title: "Routing Presets", subtitle: "Create reusable routing presets", href: "/settings/presets", keywords: ["presets", "routing profiles"] },
 	{ id: "nav-settings-privacy", title: "Privacy Settings", subtitle: "Configure data handling preferences", href: "/settings/privacy", keywords: ["privacy", "retention", "zdr"] },
 	{ id: "nav-settings-guardrails", title: "Guardrails", subtitle: "Manage request and response guardrails", href: "/settings/guardrails", keywords: ["safety", "validation", "policies"] },
+	{ id: "nav-settings-rate-limits", title: "Rate limits", subtitle: "Limit requests and tokens per minute for keys, members and departments", href: "/settings/rate-limits", keywords: ["rate limit", "throttle", "rpm", "tpm", "429", "quota"] },
+	{ id: "nav-settings-trusted-workloads", title: "Trusted workloads", subtitle: "Let Vercel and GitHub Actions call the API with OIDC tokens instead of API keys", href: "/settings/trusted-workloads", keywords: ["oidc", "workload identity", "vercel", "github actions", "federation", "keyless"] },
+	{ id: "nav-settings-classifiers", title: "Classifiers", subtitle: "Label requests automatically with a model", href: "/settings/classifiers", keywords: ["labels", "taxonomy", "department", "tagging", "categorise"] },
+	{ id: "nav-settings-slack", title: "Slack", subtitle: "Add the Phaseo agent to Slack", href: "/settings/slack", keywords: ["slack", "agent", "bot", "assistant", "integration"] },
 	{ id: "nav-settings-oauth", title: "OAuth Apps", subtitle: "Manage OAuth applications and grants", href: "/settings/oauth-apps", keywords: ["oauth", "clients", "authorized apps"] },
 	{ id: "nav-settings-broadcast", title: "Broadcast", subtitle: "Configure observability destinations", href: "/settings/broadcast", keywords: ["observability", "telemetry", "destinations"] },
 	{ id: "nav-settings-webhooks", title: "Webhooks", subtitle: "Manage event webhooks", href: "/settings/webhooks", keywords: ["events", "callbacks", "notifications"] },
@@ -113,7 +127,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 ];
 
 // Derive settings pages from the sidebar so new subpages remain discoverable.
-const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true }).flatMap((group) =>
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true }).flatMap((group) =>
 	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
 		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
 		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),
@@ -158,6 +172,7 @@ const additionalPages: Array<[string, string]> = [
 	["/settings/account/privacy", "Account Privacy"],
 	["/settings/credits/onboarding", "Set Up Billing"],
 	["/settings/guardrails/new", "Create Guardrail"],
+	["/settings/classifiers/new", "Create Classifier"],
 	["/settings/presets/new", "Create Routing Preset"],
 	["/how-phaseo-normalises-ai-benchmarks", "How Benchmarks Are Normalised"],
 	["/how-phaseo-measures-latency-throughput", "How Performance Is Measured"],

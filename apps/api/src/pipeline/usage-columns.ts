@@ -418,7 +418,9 @@ export function buildGatewayRequestUsageColumns(args: {
 	const endpointQuads = endpointQuadBreakdown(args.endpoint, totalQuadTokens);
 	const splitCachedWriteTextTokens =
 		firstNumber(shaped, ["cached_write_text_tokens_5m"]) +
-		firstNumber(shaped, ["cached_write_text_tokens_1h"]);
+		firstNumber(shaped, ["cached_write_text_tokens_1h"]) +
+		firstNumber(shaped, ["cached_write_text_tokens_30m"]) +
+		firstNumber(shaped, ["cached_write_text_tokens_12h"]);
 	const cachedWriteTextTokens =
 		firstNumber(shaped, ["cached_write_text_tokens"]) || splitCachedWriteTextTokens;
 

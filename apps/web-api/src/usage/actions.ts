@@ -5,6 +5,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "@/env";
 import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
+import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -87,6 +89,8 @@ export interface PaginatedRequestsParams {
 	sourceFilter?: string | null;
 	labelKey?: string | null;
 	labelValue?: string | null;
+	/** "is_not" excludes the label; without labelValue, the key with any value. */
+	labelOperator?: string | null;
 	filterOperators?: Record<string, string>;
 	inputTokensFilter?: string | null;
 	inputTokensMax?: string | null;
@@ -162,6 +166,8 @@ export interface NormalizedRequestUsageColumns {
 
 export interface RequestRow extends NormalizedRequestUsageColumns {
 	response_timeline?: RequestDetailMetadata["response_timeline"];
+	/** detail_metadata.labels, selected on its own for list rows. */
+	labels?: Array<{ key: string; value: string }> | null;
 	id?: string;
 	request_id: string;
 	created_at: string;
@@ -270,6 +276,8 @@ export type GatewayIoLog = {
 	bytes: number | null;
 	retention_until: string | null;
 	error: string | null;
+	/** Why nothing was stored, as a stable code (`zero_data_retention`); `error` has the gateway's English text. */
+	reason?: "zero_data_retention" | null;
 	payload: Record<string, unknown> | null;
 };
 
@@ -357,11 +365,23 @@ export function normalizeGatewayUpstreamRows(
 	});
 }
 
+// Shown instead of the stored log when the workspace limits contents to owners and admins.
+const RESTRICTED_IO_LOG: GatewayIoLog = {
+	status: "restricted",
+	storage_provider: null,
+	bytes: null,
+	retention_until: null,
+	error: null,
+	payload: null,
+};
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
 ): Promise<GatewayIoLog | null> {
-	const env = current().env;
+	const { account, env } = current();
+	const access = await readIoLogContentsAccess(account.client, workspaceId);
+	if (!canReadIoLogContents(access, account.role)) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -605,6 +625,7 @@ export async function fetchPaginatedRequests(
 ): Promise<PaginatedRequestsResult> {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const labelFilter = requestLabelFilterFromParams(params);
 
 	if (!workspaceId) {
 		return {
@@ -646,6 +667,7 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			response_timeline:detail_metadata->response_timeline,
+			labels:detail_metadata->labels,
 			finish_reason,
                         success,
                         status_code,
@@ -703,9 +725,7 @@ export async function fetchPaginatedRequests(
 	if (params.sourceFilter) {
 		query = params.filterOperators?.source === "is_not" ? query.neq("client_source_id", params.sourceFilter) : query.eq("client_source_id", params.sourceFilter);
 	}
-	if (params.labelKey && params.labelValue) {
-		query = query.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-	}
+	query = applyRequestLabelFilter(query, labelFilter);
 	if (params.statusFilter === "success") {
 		query = params.filterOperators?.status === "is_not" ? query.neq("success", true) : query.eq("success", true);
 	} else if (params.statusFilter === "error") {
@@ -758,6 +778,7 @@ export async function fetchPaginatedRequests(
 				generation_ms,
 				latency_ms,
 				response_timeline:detail_metadata->response_timeline,
+				labels:detail_metadata->labels,
 				finish_reason,
                                 success,
                                 status_code,
@@ -789,9 +810,7 @@ export async function fetchPaginatedRequests(
 		if (params.keyFilter) fallback = fallback.eq("key_id", params.keyFilter);
 		if (params.requestFilter) fallback = fallback.eq("request_id", params.requestFilter);
 		if (params.sessionFilter) fallback = fallback.eq("session_id", params.sessionFilter);
-		if (params.labelKey && params.labelValue) {
-			fallback = fallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-		}
+		fallback = applyRequestLabelFilter(fallback, labelFilter);
 		if (params.statusFilter === "success") fallback = fallback.eq("success", true);
 		else if (params.statusFilter === "error") fallback = fallback.eq("success", false);
 
@@ -826,6 +845,7 @@ export async function fetchPaginatedRequests(
 					generation_ms,
 					latency_ms,
 					response_timeline:detail_metadata->response_timeline,
+					labels:detail_metadata->labels,
 					finish_reason,
                                         success,
                                         status_code,
@@ -861,9 +881,7 @@ export async function fetchPaginatedRequests(
 			if (params.keyFilter) legacyFallback = legacyFallback.eq("key_id", params.keyFilter);
 			if (params.requestFilter) legacyFallback = legacyFallback.eq("request_id", params.requestFilter);
 			if (params.sessionFilter) legacyFallback = legacyFallback.eq("session_id", params.sessionFilter);
-			if (params.labelKey && params.labelValue) {
-				legacyFallback = legacyFallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-			}
+			legacyFallback = applyRequestLabelFilter(legacyFallback, labelFilter);
 			if (params.statusFilter === "success") legacyFallback = legacyFallback.eq("success", true);
 			else if (params.statusFilter === "error") legacyFallback = legacyFallback.eq("success", false);
 			const {
@@ -891,6 +909,7 @@ export async function fetchPaginatedRequests(
 						generation_ms,
 						latency_ms,
 						response_timeline:detail_metadata->response_timeline,
+						labels:detail_metadata->labels,
 						finish_reason,
 						success,
 						key_id
@@ -915,9 +934,7 @@ export async function fetchPaginatedRequests(
 				}
 				if (params.keyFilter) minimalFallback = minimalFallback.eq("key_id", params.keyFilter);
 				if (params.requestFilter) minimalFallback = minimalFallback.eq("request_id", params.requestFilter);
-				if (params.labelKey && params.labelValue) {
-					minimalFallback = minimalFallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-				}
+				minimalFallback = applyRequestLabelFilter(minimalFallback, labelFilter);
 				if (params.statusFilter === "success") minimalFallback = minimalFallback.eq("success", true);
 				else if (params.statusFilter === "error") minimalFallback = minimalFallback.eq("success", false);
 
@@ -2678,7 +2695,8 @@ export async function fetchSessionRequests(params: {
 		)
 		.eq("workspace_id", workspaceId)
 		.eq("session_id", sessionId)
-		.order("created_at", { ascending: true })
+		// The latest 500 turns, so long sessions can still be continued from their newest turn.
+		.order("created_at", { ascending: false })
 		.limit(500);
 
 	if (params.timeRange?.from) {
@@ -2738,7 +2756,7 @@ export async function fetchSessionRequests(params: {
 			)
 			.eq("workspace_id", workspaceId)
 			.eq("session_id", sessionId)
-			.order("created_at", { ascending: true })
+			.order("created_at", { ascending: false })
 			.limit(500);
 
 		if (params.timeRange?.from) {
@@ -2754,7 +2772,7 @@ export async function fetchSessionRequests(params: {
 			return [];
 		}
 		return (
-			(fallbackData as any[] | null)?.map((row) => {
+			(fallbackData as any[] | null)?.slice().reverse().map((row) => {
 				return {
 					...toRequestRow(row),
 				} as SessionRequestRow;
@@ -2763,7 +2781,7 @@ export async function fetchSessionRequests(params: {
 	}
 
 	return (
-		(data as any[] | null)?.map((row) => {
+		(data as any[] | null)?.slice().reverse().map((row) => {
 			return {
 				...toRequestRow(row),
 			} as SessionRequestRow;

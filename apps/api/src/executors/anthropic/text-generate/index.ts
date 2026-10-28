@@ -9,22 +9,33 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { normaliseAnthropicCacheBreakpoints } from "./breakpoints";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
+import { toIRAnnotations } from "@protocols/shared/citations";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-state";
+import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
-	normalizeClaudeModelId,
-	supportsAnthropicThinkingDisabled,
+	supportsAnthropicMidConversationSystemMessages,
+	isAnthropicSystemMessagePlacementValid,
+	anthropicThinkingOffType,
+	clampClaudeEffort,
+	isClaude46,
+	supportsAnthropicInferenceGeo,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
 import {
@@ -148,6 +159,14 @@ function usesAnthropicNativeAdvisor(requestBody: any): boolean {
 		requestBody.tools.some((tool: any) => tool?.type === "advisor_20260301");
 }
 
+// Context editing (clear_tool_uses_*, clear_thinking_*) is a beta:
+// https://platform.claude.com/docs/en/build-with-claude/context-editing
+const ANTHROPIC_CONTEXT_MANAGEMENT_BETA = "context-management-2025-06-27";
+
+function anthropicContextManagementBetas(requestBody: any): string[] {
+	return requestBody?.context_management ? [ANTHROPIC_CONTEXT_MANAGEMENT_BETA] : [];
+}
+
 function usesAnthropicFileReference(value: unknown): boolean {
 	if (Array.isArray(value)) return value.some(usesAnthropicFileReference);
 	if (!value || typeof value !== "object") return false;
@@ -159,7 +178,40 @@ function usesAnthropicFileReference(value: unknown): boolean {
 /**
  * Executes IR requests using Anthropic Messages API
  */
+/**
+ * Claude takes text, image and document content, but no audio or video
+ * (https://docs.claude.com/en/api/messages). Without this check those parts
+ * would reach it as meaningless text, so the request is rejected with a 400
+ * before anything is sent. Shared by the Claude routes on Bedrock and Vertex.
+ */
+export function anthropicUnsupportedMediaResult(ir: IRChatRequest, requestId: string): ExecutorResult | null {
+	const kinds = new Set<string>();
+	for (const message of ir.messages ?? []) {
+		const parts: IRContentPart[] = message.role === "tool"
+			? (message.toolResults ?? []).flatMap((result) => result.parts ?? [])
+			: Array.isArray(message.content) ? message.content : [];
+		for (const part of parts) {
+			if (part?.type === "audio" || part?.type === "video") kinds.add(part.type);
+		}
+	}
+	if (kinds.size === 0) return null;
+	const named = Array.from(kinds).sort().join(" or ");
+	return {
+		kind: "completed",
+		terminal: true,
+		localClientError: true,
+		upstream: Response.json({
+			error: "unsupported_content_type",
+			message: `Claude models do not accept ${named} input. Remove the ${named} content parts, or choose a model that accepts them.`,
+			request_id: requestId,
+		}, { status: 400 }),
+		bill: { cost_cents: 0, currency: "USD" },
+	};
+}
+
 export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
+		const unsupportedMedia = anthropicUnsupportedMediaResult(args.ir as IRChatRequest, args.requestId);
+		if (unsupportedMedia) return unsupportedMedia;
 		const awsPlatform = isAnthropicAwsProvider(args.providerId);
 		const bindings = getBindings() as any;
 		const azureArgs = { ...args, model: args.ir.model, forceGatewayKey: args.meta.forceGatewayKey } as any;
@@ -192,6 +244,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			args.providerModelSlug || args.ir.model,
 			{
 				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
+				providerId: args.providerId,
 			},
 		);
 
@@ -211,6 +264,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		usesAnthropicNativeWebFetch(requestBody) ? "web-fetch-2026-02-09" : null,
 		usesAnthropicNativeAdvisor(requestBody) ? ANTHROPIC_ADVISOR_BETA : null,
 		usesAnthropicFileReference(requestBody) ? "files-api-2025-04-14" : null,
+		...anthropicContextManagementBetas(requestBody),
 	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
@@ -269,7 +323,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         const model = args.providerModelSlug || args.ir.model;
 						const responsesStream = res.body.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, {
+									accounting,
+									providerId: args.providerId,
+									keepContextManagement: args.protocol === "anthropic.messages",
+								}),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -291,10 +349,12 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+										usage: anthropicUsageForPricing(final.usage),
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
+								usageFinalizerAuthoritative: true,
+								usageSnapshot: () => anthropicUsageForPricing(accounting.snapshot().usage) ?? null,
                                 bill,
                                 upstream: res,
                                 keySource: keyInfo.source,
@@ -314,7 +374,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
-			const usageMeters = normalizeTextUsageForPricing(ir.usage);
+			const usageMeters = normalizeTextUsageForPricing(ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -400,10 +460,7 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 
 	const applyUsage = (usage: any) => {
 		if (!usage || typeof usage !== "object") return;
-		message.usage = {
-			...(message.usage ?? {}),
-			...usage,
-		};
+		message.usage = mergeMessagesStreamUsage(message.usage, usage);
 	};
 
 	const parsePartialJson = (value: string): any => {
@@ -499,6 +556,10 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 				if (typeof delta?.stop_sequence === "string" || delta?.stop_sequence === null) {
 					message.stop_sequence = delta.stop_sequence;
 				}
+				// Context editing reports the edits it applied on the final message_delta.
+				if (isPlainObject(payload?.context_management)) {
+					message.context_management = payload.context_management;
+				}
 				applyUsage(payload?.usage);
 				continue;
 			}
@@ -548,17 +609,6 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 /**
  * Transform IR request to Anthropic Messages format
  */
-function supportsAnthropicFastMode(model: string | null | undefined): boolean {
-	const normalized = normalizeClaudeModelId(model);
-	if (!normalized) return false;
-	return (
-		normalized.includes("claude-opus-4-6") ||
-		normalized.includes("claude-opus-4.6") ||
-		normalized.includes("claude-opus-4-7") ||
-		normalized.includes("claude-opus-4.7")
-	);
-}
-
 function parseAnthropicToolInput(argumentsRaw: unknown): Record<string, any> {
 	if (argumentsRaw && typeof argumentsRaw === "object" && !Array.isArray(argumentsRaw)) {
 		return argumentsRaw as Record<string, any>;
@@ -582,38 +632,68 @@ export function irToAnthropicMessages(
 	modelHint?: string | null,
 	options?: {
 		inferenceGeo?: "global" | "us" | null;
+		/** Gateway provider the request goes to; decides which signatures are replayed. */
+		providerId?: string | null;
 	},
 ): any {
 	const messages: any[] = [];
-	let system: string | any[] | undefined;
+	const systemSegments: Array<string | any[]> = [];
+	let conversationStarted = false;
 	const resolvedModel = modelHint || ir.model;
 	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
+	const replayTarget = { providerId: options?.providerId ?? "anthropic", model: resolvedModel };
 
 	for (const msg of ir.messages) {
-		if (msg.role === "system") {
-			// Anthropic has system as a separate field
-			system = mapSystemContentToAnthropic(msg.content);
-		} else if (msg.role === "user") {
+		if (msg.role === "system" || msg.role === "developer") {
+			const mapped = mapSystemContentToAnthropic(msg.content);
+			if (!mapped) continue;
+			// Leading system and developer messages form the top-level system
+			// prompt. Later ones are placed after the loop.
+			if (!conversationStarted) systemSegments.push(mapped);
+			else messages.push({ role: "system", content: mapped, [LATE_SYSTEM_MESSAGE]: true });
+			continue;
+		}
+		conversationStarted = true;
+		if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: msg.content.map(mapIRContentToAnthropic),
 			});
 		} else if (msg.role === "assistant") {
 			const content: any[] = [];
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const anchoredThinking = new Map<string, any[]>();
 
 			for (const part of msg.content) {
 				if (part.type === "text") {
+					// Chat clients send content "" next to tool calls; Anthropic
+					// rejects empty text blocks.
+					if (part.text.length === 0) continue;
 					content.push(mapIRContentToAnthropic(part));
 					continue;
 				}
+				if (part.type === "reasoning_text") {
+					// Only Claude's own thinking goes back, with its signature;
+					// anything else is dropped rather than sent as a forged block.
+					const block = toAnthropicThinkingBlock(part, replayTarget);
+					if (!block) continue;
+					if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+						anchoredThinking.set(part.beforeToolCallId, [...(anchoredThinking.get(part.beforeToolCallId) ?? []), block]);
+					} else {
+						content.push(block);
+					}
+					continue;
+				}
 				if (part.type === "provider_block") {
-					content.push(part.block);
+					// Copy so cache defaults never write back into the shared IR.
+					content.push({ ...part.block });
 				}
 			}
 
 			// Add tool_use blocks
 			if (msg.toolCalls) {
 				for (const tc of msg.toolCalls) {
+					content.push(...(anchoredThinking.get(tc.id) ?? []));
 					content.push({
 						type: "tool_use",
 						id: tc.id,
@@ -630,10 +710,16 @@ export function irToAnthropicMessages(
 				role: "user",
 				content: msg.toolResults.map((result) => {
 					const cacheControl = normalizeAnthropicCacheControlValue(result.cacheControl);
+					// tool_result content takes text and image blocks, so a client's
+					// content parts are kept; a plain result stays a string.
+					const blocks = (result.parts ?? [])
+						.filter((part) => (part.type === "text" && part.text.length > 0) || part.type === "image")
+						.map(mapIRContentToAnthropic);
 					return {
 						type: "tool_result",
 						tool_use_id: result.toolCallId,
-						content: result.content,
+						content: blocks.length > 0 ? blocks : result.content,
+						...(result.isError ? { is_error: true } : {}),
 						...(cacheControl ? { cache_control: cacheControl } : {}),
 					};
 				}),
@@ -641,16 +727,33 @@ export function irToAnthropicMessages(
 		}
 	}
 
-	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens, otherwise 4096
-	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
+	// Microsoft Foundry (`azure`) is not among the platforms Anthropic lists for
+	// mid-conversation system messages, so those requests always hoist.
+	placeLateSystemMessages(
+		messages,
+		systemSegments,
+		options?.providerId !== "azure" && supportsAnthropicMidConversationSystemMessages(resolvedModel),
+	);
+	let system = joinAnthropicSystemSegments(systemSegments);
+
+	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens
+	// (a stored 0 is unknown, not a limit), otherwise 4096
+	const maxTokens = ir.maxTokens ?? routeOutputTokenLimit(providerMaxOutputTokens) ?? 4096;
 
 	const request: any = {
 		messages,
 		system: system || undefined,
 		max_tokens: maxTokens,
 	};
-	if (options?.inferenceGeo) {
+	// Older models reject `inference_geo`. "global" is their default, so it is left out; "us"
+	// is still sent, so a US-only request fails rather than running outside the US.
+	if (options?.inferenceGeo && (options.inferenceGeo === "us" || supportsAnthropicInferenceGeo(resolvedModel))) {
 		request.inference_geo = options.inferenceGeo;
+	}
+	// Context editing from /v1/messages. Routes that cannot send its beta header
+	// never see it: the execute stage drops it for them (unsupportedParams.ts).
+	if (ir.anthropicContextManagement) {
+		request.context_management = ir.anthropicContextManagement;
 	}
 
 	// Adaptive-thinking Claude models reject non-default sampling params, so omit them.
@@ -690,18 +793,33 @@ export function irToAnthropicMessages(
 			request.tool_choice = { type: "tool", name: ir.toolChoice.name };
 		}
 	}
-	if (request.tool_choice && ir.parallelToolCalls === false) {
+	if (ir.parallelToolCalls === false && !request.tool_choice && Array.isArray(request.tools) && request.tools.length > 0) {
+		// Anthropic carries the switch on tool_choice; "auto" is its default choice.
+		request.tool_choice = { type: "auto" };
+	}
+	if (request.tool_choice && request.tool_choice.type !== "none" && ir.parallelToolCalls === false) {
 		request.tool_choice.disable_parallel_tool_use = true;
 	}
 
 	// Add other parameters
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
-	if (ir.metadata) request.metadata = ir.metadata;
+	// Anthropic's metadata accepts only `user_id` and rejects any other key.
+	const anthropicUserId = resolveAnthropicMetadataUserId(ir);
+	if (anthropicUserId) request.metadata = { user_id: anthropicUserId };
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
-	if (usesAdaptiveThinkingControls) {
-		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
-			request.thinking = { type: "disabled" };
+	// Without client reasoning settings `thinking` is omitted, so the model's own
+	// default applies (off on Opus 4.7 and 4.8, adaptive on the 5-series).
+	const thinkingOffType = reasoningDisabled ? anthropicThinkingOffType(resolvedModel) : null;
+	if (usesAdaptiveThinkingControls && ir.reasoning) {
+		if (thinkingOffType) {
+			// `between_tools` and `disabled` take no other field. Both are accepted at effort
+			// high or below, so a client's low, medium or high effort still applies.
+			request.thinking = { type: thinkingOffType };
+			const offEffort = ir.reasoning?.effort;
+			if (offEffort === "low" || offEffort === "medium" || offEffort === "high") {
+				request.output_config = { ...(request.output_config ?? {}), effort: offEffort };
+			}
 		} else {
 			request.thinking = {
 				type: "adaptive",
@@ -723,24 +841,42 @@ export function irToAnthropicMessages(
 			ir.reasoning.enabled === true ||
 			typeof ir.reasoning.maxTokens === "number";
 
+		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number" && ir.reasoning.maxTokens > 0
+			? ir.reasoning.maxTokens
+			: undefined;
 		if (reasoningDisabled) {
 			request.thinking = { type: "disabled" };
+		} else if (
+			isClaude46(resolvedModel) &&
+			reasoningMaxTokens === undefined &&
+			(ir.reasoning.enabled === true || Boolean(ir.reasoning.effort))
+		) {
+			// Opus 4.6 and Sonnet 4.6 think only when `thinking` is set, and adaptive is their
+			// documented mode, so a reasoning request without a budget (effort alone, or
+			// Messages `adaptive`) turns adaptive thinking on, steered by effort.
+			// https://platform.claude.com/docs/en/build-with-claude/thinking
+			request.thinking = { type: "adaptive" };
 		} else if (hasThinkingControl) {
-			const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
-				? ir.reasoning.maxTokens
-				: undefined;
-			if (typeof reasoningMaxTokens === "number" && reasoningMaxTokens > 0) {
+			if (reasoningMaxTokens !== undefined) {
 				request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
 			} else if (ir.reasoning.enabled === true) {
 				request.thinking = { type: "enabled", budget_tokens: 1024 };
 			}
 		}
+		if (isClaude46(resolvedModel) && request.thinking && request.thinking.type !== "disabled") {
+			// With thinking on, these models reject temperature and top_k, and take top_p
+			// only from 0.95 to 1. Reasoning wins over the sampling settings.
+			delete request.temperature;
+			delete request.top_k;
+			if (typeof request.top_p === "number" && request.top_p < 0.95) delete request.top_p;
+		}
 
 		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
-		if (!reasoningDisabled && anthropicEffort) {
+		const supportedEffort = reasoningDisabled ? undefined : clampClaudeEffort(resolvedModel, anthropicEffort);
+		if (supportedEffort) {
 			request.output_config = {
 				...(request.output_config ?? {}),
-				effort: anthropicEffort,
+				effort: supportedEffort,
 			};
 		}
 	}
@@ -761,13 +897,125 @@ export function irToAnthropicMessages(
 		system = appendAnthropicSystemText(system, structuredOutputInstruction);
 		request.system = system;
 	}
+	enforceManualThinkingTurnStructure(request);
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
-		model: resolvedModel,
 	});
+	normaliseAnthropicCacheBreakpoints(request);
 
 	return request;
+}
+
+/**
+ * A replayable thinking or redacted_thinking block for a reasoning part, or
+ * null when the part is not Claude's own state for this route.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#preserving-thinking-blocks
+ */
+function toAnthropicThinkingBlock(
+	part: Extract<IRContentPart, { type: "reasoning_text" }>,
+	target: { providerId: string; model: string },
+): Record<string, any> | null {
+	if (!part.thoughtSignature && !part.redactedData) return null;
+	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
+	if (!canReplayReasoning(origin, target)) return null;
+	if (part.redactedData) return { type: "redacted_thinking", data: part.redactedData };
+	return { type: "thinking", thinking: part.text, signature: part.thoughtSignature };
+}
+
+function isToolResultOnlyUserMessage(message: any): boolean {
+	return message?.role === "user"
+		&& Array.isArray(message.content)
+		&& message.content.length > 0
+		&& message.content.every((block: any) => block?.type === "tool_result");
+}
+
+/**
+ * Manual thinking (`type: "enabled"`) requires the final assistant turn to
+ * start with a thinking block. The turn is in progress when tool results
+ * follow it. When its thinking was not returned (or came from another
+ * provider and was dropped), send this step without thinking, which is what
+ * the API's own mid-turn degradation does, instead of an invalid turn.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#thinking-with-tool-use
+ */
+function enforceManualThinkingTurnStructure(request: any): void {
+	if (request?.thinking?.type !== "enabled" || !Array.isArray(request.messages)) return;
+	const messages = request.messages;
+	let turnStart = -1;
+	for (let index = messages.length - 1; index >= 0; index -= 1) {
+		const message = messages[index];
+		if (message?.role === "user" && !isToolResultOnlyUserMessage(message)) {
+			turnStart = index;
+			break;
+		}
+	}
+	const firstAssistant = messages.slice(turnStart + 1).find((message: any) => message?.role === "assistant");
+	if (!firstAssistant) return;
+	const firstBlock = Array.isArray(firstAssistant.content) ? firstAssistant.content[0] : null;
+	if (firstBlock?.type === "thinking" || firstBlock?.type === "redacted_thinking") return;
+	const budgetTokens = request.thinking.budget_tokens;
+	delete request.thinking;
+	// Observable downgrade: no prompt content, only what was changed and why.
+	console.warn("[gateway] manual thinking dropped for this step", {
+		model: typeof request.model === "string" ? request.model : null,
+		reason: "in_progress_turn_without_thinking_block",
+		budget_tokens: typeof budgetTokens === "number" ? budgetTokens : null,
+	});
+}
+
+const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");
+// https://platform.claude.com/docs/en/api/messages/create: metadata.user_id maxLength 512.
+const ANTHROPIC_METADATA_USER_ID_MAX_LENGTH = 512;
+
+function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
+	const candidates = [ir.metadata?.user_id, ir.userId];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const value = candidate.trim();
+		if (value && value.length <= ANTHROPIC_METADATA_USER_ID_MAX_LENGTH) return value;
+	}
+	return undefined;
+}
+
+/**
+ * Place system or developer messages that arrive after the conversation has
+ * started. Models that support mid-conversation system messages keep them in
+ * place when Anthropic's placement rule holds (straight after a user turn or
+ * an assistant turn ending in a server tool result, and either last or
+ * followed by an assistant turn), which leaves the cached prefix untouched.
+ * Anything else is hoisted into the top-level system prompt, which is how
+ * Anthropic's own OpenAI compatibility layer treats them.
+ */
+function placeLateSystemMessages(
+	messages: any[],
+	systemSegments: Array<string | any[]>,
+	supportsMidConversation: boolean,
+): void {
+	for (let index = 0; index < messages.length; index += 1) {
+		const message = messages[index];
+		if (!message?.[LATE_SYSTEM_MESSAGE]) continue;
+		// Consecutive system messages are judged together, so merge them.
+		const parts: Array<string | any[]> = [message.content];
+		while (messages[index + 1]?.[LATE_SYSTEM_MESSAGE]) {
+			parts.push(messages[index + 1].content);
+			messages.splice(index + 1, 1);
+		}
+		if (supportsMidConversation && isAnthropicSystemMessagePlacementValid(messages[index - 1], messages[index + 1])) {
+			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
+			continue;
+		}
+		systemSegments.push(...parts);
+		messages.splice(index, 1);
+		index -= 1;
+	}
+}
+
+function joinAnthropicSystemSegments(segments: Array<string | any[]>): string | any[] | undefined {
+	if (segments.length === 0) return undefined;
+	if (segments.length === 1) return segments[0];
+	// Anthropic's compatibility layer joins system messages with one newline.
+	if (segments.every((segment) => typeof segment === "string")) return segments.join("\n");
+	return segments.flatMap((segment) => typeof segment === "string" ? [{ type: "text", text: segment }] : segment);
 }
 
 export function resolveAnthropicInferenceGeo(
@@ -846,75 +1094,16 @@ function appendAnthropicSystemText(system: string | any[] | undefined, text: str
 }
 
 
-function normalizeAnthropicCacheControlValue(value: unknown): Record<string, any> | undefined {
-	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-	const next: Record<string, any> = { ...(value as Record<string, any>) };
-	delete next.scope;
-	if (typeof next.type === "string") next.type = next.type.trim();
-	if (typeof next.ttl === "string") next.ttl = next.ttl.trim();
-	for (const key of Object.keys(next)) {
-		if (next[key] === undefined || next[key] === null || next[key] === "") delete next[key];
-	}
-	return Object.keys(next).length > 0 ? next : undefined;
-}
-
-function applyCacheControlToContentBlocks(content: any[] | undefined, cacheControl: Record<string, any>): void {
-	if (!Array.isArray(content)) return;
-	for (const block of content) {
-		if (!block || typeof block !== "object") continue;
-		if (block.type !== "text" && block.type !== "image") continue;
-		if (block.cache_control && typeof block.cache_control === "object") continue;
-		block.cache_control = { ...cacheControl };
-	}
-}
-
-function applyAnthropicCacheControlDefaults(
-	request: any,
-	control: unknown,
-): void {
-	const scopeRaw = typeof (control as any)?.scope === "string" ? (control as any).scope.trim().toLowerCase() : "all_text";
-	if (scopeRaw === "none") return;
-
-	const cacheControl = normalizeAnthropicCacheControlValue(control);
-	if (!cacheControl) return;
-
-	if (scopeRaw === "all_text") {
-		if (typeof request.system === "string" && request.system.trim().length > 0) {
-			request.system = [{ type: "text", text: request.system, cache_control: { ...cacheControl } }];
-		} else if (Array.isArray(request.system)) {
-			applyCacheControlToContentBlocks(request.system, cacheControl);
-		}
-	}
-
-	const messages = Array.isArray(request.messages) ? request.messages : [];
-	if (scopeRaw === "last_user_message") {
-		for (let i = messages.length - 1; i >= 0; i -= 1) {
-			const msg = messages[i];
-			if (msg?.role !== "user") continue;
-			applyCacheControlToContentBlocks(msg.content, cacheControl);
-			break;
-		}
-		return;
-	}
-
-	for (const msg of messages) {
-		if (msg?.role !== "user") continue;
-		applyCacheControlToContentBlocks(msg.content, cacheControl);
-	}
-}
 function applyAnthropicServiceControls(
 	request: any,
-	controls: { serviceTier?: string; model?: string | null },
+	controls: { serviceTier?: string },
 ) {
 	if (typeof controls.serviceTier !== "string") return;
 	const tier = controls.serviceTier.toLowerCase();
 
 	if (tier === "fast" || tier === "priority") {
-		if (supportsAnthropicFastMode(controls.model)) {
-			request.speed = "fast";
-			return;
-		}
-		request.service_tier = "auto";
+		// Routing validates tier availability against the catalogue pricing card.
+		request.speed = "fast";
 		return;
 	}
 
@@ -948,6 +1137,14 @@ function mapIRContentToAnthropic(part: any): any {
 				source: { type: "url", url: part.data },
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
+		} else if (part.source === "id") {
+			// Files API upload; the executor adds the files beta header.
+			// https://platform.claude.com/docs/en/build-with-claude/files
+			return {
+				type: "image",
+				source: { type: "file", file_id: part.data },
+				...(cacheControl ? { cache_control: cacheControl } : {}),
+			};
 		} else {
 			return {
 				type: "image",
@@ -961,12 +1158,112 @@ function mapIRContentToAnthropic(part: any): any {
 		}
 	}
 
+	if (part.type === "file") {
+		return mapIRFileToAnthropicDocument(part, cacheControl);
+	}
+
 	if (part.type === "provider_block") {
-		return part.block;
+		// Copy so cache defaults never write back into the shared IR.
+		return { ...part.block };
 	}
 
 	// Fallback
 	return { type: "text", text: String(part) };
+}
+
+function decodeBase64Utf8(data: string): string | null {
+	try {
+		const binary = atob(data);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * A Chat `file` or Responses `input_file` part as an Anthropic `document`
+ * block: base64 PDF, plain text, a URL, or a Files API id (the executor adds
+ * the files beta header for `source.type: "file"`).
+ * https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ */
+function mapIRFileToAnthropicDocument(part: Extract<IRContentPart, { type: "file" }>, cacheControl: any): any {
+	const cache = cacheControl ? { cache_control: cacheControl } : {};
+	if (part.nativeBlock) {
+		// The client's own document block. The IR's cache mark decides whether
+		// it is marked, since the execute stage may have removed or changed it.
+		const { cache_control: original, ...block } = part.nativeBlock;
+		if (!cacheControl) return block;
+		const unchanged = original && typeof original === "object" && original.ttl === part.cacheControl?.ttl;
+		return { ...block, cache_control: unchanged ? original : cacheControl };
+	}
+	const title = part.filename ? { title: part.filename } : {};
+	if (part.source === "url") {
+		return { type: "document", source: { type: "url", url: part.data }, ...title, ...cache };
+	}
+	if (part.source === "id") {
+		return { type: "document", source: { type: "file", file_id: part.data }, ...title, ...cache };
+	}
+	const mimeType = (part.mimeType || "application/pdf").toLowerCase();
+	if (mimeType.startsWith("text/")) {
+		const text = decodeBase64Utf8(part.data);
+		if (text !== null) {
+			return { type: "document", source: { type: "text", media_type: "text/plain", data: text }, ...title, ...cache };
+		}
+	}
+	return { type: "document", source: { type: "base64", media_type: mimeType, data: part.data }, ...title, ...cache };
+}
+
+type AnthropicServerToolUse =NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]>["serverToolUse"];
+
+/**
+ * The numeric counters of Anthropic's `usage.server_tool_use` (web_search_requests,
+ * web_fetch_requests, ...). Server tools are billed per call, so the counts must reach
+ * pricing on every surface.
+ */
+export function anthropicServerToolUse(usage: any): AnthropicServerToolUse | undefined {
+	const raw = usage?.server_tool_use ?? usage?._ext?.serverToolUse;
+	if (!raw || typeof raw !== "object") return undefined;
+	const counts: Record<string, number> = {};
+	for (const [key, value] of Object.entries(raw)) {
+		if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[key] = value;
+	}
+	return Object.keys(counts).length ? counts as AnthropicServerToolUse : undefined;
+}
+
+function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_ext"] | undefined {
+	const serverToolUse = anthropicServerToolUse(usage);
+	const ext: NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]> = {};
+	if (typeof usage?.cache_creation_input_tokens === "number") {
+		ext.cachedWriteTokens = usage.cache_creation_input_tokens;
+		ext.cachedWriteTokens5m = typeof usage.cache_creation?.ephemeral_5m_input_tokens === "number"
+			? usage.cache_creation.ephemeral_5m_input_tokens
+			: undefined;
+		ext.cachedWriteTokens1h = typeof usage.cache_creation?.ephemeral_1h_input_tokens === "number"
+			? usage.cache_creation.ephemeral_1h_input_tokens
+			: undefined;
+	}
+	if (serverToolUse) ext.serverToolUse = serverToolUse;
+	if (typeof usage?.inference_geo === "string" && usage.inference_geo) ext.inferenceGeo = usage.inference_geo;
+	return Object.keys(ext).length ? ext : undefined;
+}
+
+/**
+ * Pricing meters for raw Anthropic Messages usage. Keeps `server_tool_use` next to the
+ * flat meters: after-stage usage shaping passes that object through, and the engine reads
+ * `server_tool_use.web_search_requests` as native_web_search_requests, so web searches on
+ * streamed responses are billed as well as buffered ones.
+ */
+export function anthropicUsageForPricing(usage: any): Record<string, unknown> | undefined {
+	const meters = normalizeTextUsageForPricing(usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
+	// Fast mode is priced on the priority plan; its usage still says `service_tier: "standard"`.
+	if (meters && typeof usage?.speed === "string" && usage.speed.toLowerCase() === "fast") {
+		meters.service_tier = "priority";
+		meters.serviceTier = "priority";
+	}
+	const serverToolUse = anthropicServerToolUse(usage);
+	return meters && serverToolUse ? { ...meters, server_tool_use: serverToolUse } : meters;
 }
 
 /**
@@ -981,12 +1278,14 @@ export function anthropicMessagesToIR(
 ): IRChatResponse {
 	const toolCalls: IRToolCall[] = [];
 	const contentParts: IRContentPart[] = [];
+	const unanchored: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 
 	// Extract content blocks
 	for (const block of json.content || []) {
 		if (block.type === "text") {
 			if (block.text.length > 0) {
-				contentParts.push({ type: "text", text: block.text });
+				const annotations = toIRAnnotations(block.citations);
+				contentParts.push({ type: "text", text: block.text, ...(annotations.length > 0 ? { annotations } : {}) });
 			}
 		} else if (block.type === "tool_use") {
 			// CRITICAL: Extract tool_use blocks
@@ -995,6 +1294,13 @@ export function anthropicMessagesToIR(
 				name: block.name,
 				arguments: JSON.stringify(block.input),
 			});
+			for (const reasoning of unanchored.splice(0)) reasoning.beforeToolCallId = block.id;
+		} else if (block?.type === "thinking" || block?.type === "redacted_thinking") {
+			// Keep the signature (or redacted data) so OpenAI-style surfaces can
+			// return it and the next tool-loop step can replay it to Claude.
+			const reasoning = anthropicThinkingBlockToIR(block, model, provider);
+			contentParts.push(reasoning);
+			if (toolCalls.length > 0) unanchored.push(reasoning);
 		} else if (block && typeof block === "object") {
 			contentParts.push({ type: "provider_block", block });
 		}
@@ -1020,6 +1326,10 @@ export function anthropicMessagesToIR(
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 		},
 		finishReason,
+		// stop_sequence, pause_turn and refusal, for Messages clients
+		...(finishReason !== "tool_calls" && (json.stop_reason === "stop_sequence" || json.stop_reason === "pause_turn" || json.stop_reason === "refusal")
+			? { finishDetail: json.stop_reason }
+			: {}),
 		// Preserve which stop sequence triggered (Anthropic-specific)
 		stopSequence: json.stop_sequence ?? undefined,
 	};
@@ -1028,6 +1338,10 @@ export function anthropicMessagesToIR(
 	if (!json.id) {
 		console.warn(`[ID-VALIDATION] Provider ${provider} (Anthropic Messages) did not return response ID`);
 	}
+	const serviceTier = resolveAnthropicServiceTierFromResponse(json);
+	// Edits applied by context editing, for Messages clients
+	// (https://platform.claude.com/docs/en/build-with-claude/context-editing).
+	const contextManagement = isPlainObject(json.context_management) ? json.context_management : undefined;
 
 	return {
 		id: requestId,
@@ -1038,6 +1352,8 @@ export function anthropicMessagesToIR(
 		choices: [choice],
 		usage: json.usage
 			? {
+				// The buffered bill is priced from this usage, so it carries the tier too.
+				...(serviceTier ? { serviceTier } : {}),
 				inputTokens: json.usage.input_tokens || 0,
 				outputTokens: json.usage.output_tokens || 0,
 				totalTokens: (json.usage.input_tokens || 0) + (json.usage.output_tokens || 0),
@@ -1045,37 +1361,56 @@ export function anthropicMessagesToIR(
 					typeof json.usage.cache_read_input_tokens === "number"
 						? json.usage.cache_read_input_tokens
 						: undefined,
-				_ext:
-					typeof json.usage.cache_creation_input_tokens === "number"
-						? {
-							cachedWriteTokens: json.usage.cache_creation_input_tokens,
-							cachedWriteTokens5m:
-								typeof json.usage.cache_creation?.ephemeral_5m_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_5m_input_tokens
-									: undefined,
-							cachedWriteTokens1h:
-								typeof json.usage.cache_creation?.ephemeral_1h_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_1h_input_tokens
-									: undefined,
-						}
-						: undefined,
+				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
+				cachedReadTokensAreSubsetOfInput: false,
+				cachedWriteTokensAreSubsetOfInput: false,
+				_ext: anthropicUsageExt(json.usage),
 			}
 			: undefined,
-		serviceTier: resolveAnthropicServiceTierFromResponse(json),
+		serviceTier,
+		...(contextManagement ? { anthropicContextManagement: contextManagement } : {}),
+	};
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function anthropicThinkingBlockToIR(
+	block: any,
+	model: string,
+	provider: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> {
+	const origin = {
+		reasoningFormat: ANTHROPIC_REASONING_FORMAT,
+		...(model ? { reasoningModel: model } : {}),
+		...(provider ? { reasoningProvider: provider } : {}),
+	};
+	if (block?.type === "redacted_thinking") {
+		return { type: "reasoning_text", text: "", redactedData: String(block.data ?? ""), ...origin };
+	}
+	return {
+		type: "reasoning_text",
+		text: typeof block?.thinking === "string" ? block.thinking : "",
+		...(typeof block?.signature === "string" && block.signature ? { thoughtSignature: block.signature } : {}),
+		...origin,
 	};
 }
 
 function resolveAnthropicServiceTierFromResponse(json: any): string | undefined {
+	// A fast-mode response reports `usage.speed: "fast"` next to `usage.service_tier: "standard"`
+	// (https://platform.claude.com/docs/en/build-with-claude/fast-mode), and fast is priced
+	// on the priority plan, so the speed decides first.
+	const usageSpeed = typeof json?.usage?.speed === "string"
+		? json.usage.speed.toLowerCase()
+		: undefined;
+	if (usageSpeed === "fast") return "priority";
+
 	const usageTier = typeof json?.usage?.service_tier === "string"
 		? json.usage.service_tier.toLowerCase()
 		: undefined;
 	if (usageTier === "standard_only") return "standard";
 	if (usageTier) return usageTier;
-
-	const usageSpeed = typeof json?.usage?.speed === "string"
-		? json.usage.speed.toLowerCase()
-		: undefined;
-	if (usageSpeed === "fast") return "priority";
 
 	const responseTier = typeof json?.service_tier === "string"
 		? json.service_tier.toLowerCase()

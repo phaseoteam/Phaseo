@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { IRRerankRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { executor } from "./index";
+import { calculatePricing } from "@pipeline/after/pricing";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import {
 	setupRuntimeFromEnv,
@@ -179,6 +180,32 @@ describe("openai rerank executor", () => {
 		expect((result as any).ir?.results?.[0]?.relevanceScore).toBe(0.91);
 		expect((result as any).ir?.usage?.searchUnits).toBe(1);
 		expect((result as any).bill?.usage?.search_units).toBe(1);
+	});
+
+	it.each([
+		["reported search units", { billed_units: { search_units: 3 } }, 3],
+		["no reported search units (one per 100 documents)", {}, 3],
+	])("bills Cohere rerank per search unit: %s", async (_label, meta, expectedUnits) => {
+		setupRuntimeFromEnv({ COHERE_API_KEY: "test-cohere-key" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.cohere.example/v2/rerank",
+			response: jsonResponse({ id: "rerank_units", results: [{ index: 0, relevance_score: 0.5 }], meta }),
+		}]);
+		const documents = Array.from({ length: 250 }, (_, index) => `doc ${index}`);
+		const result = await executor(buildArgs({ ir: { documents } }));
+		mock.restore();
+
+		const usage = (result as any).bill.usage;
+		expect(usage.requests).toBe(expectedUnits);
+		expect(usage.search_units).toBe(expectedUnits);
+		// Production card: `requests` at $0.002 (Cohere's $2.00 per 1,000 searches).
+		const card = {
+			provider: "cohere", model: "cohere/rerank-v4.0-fast", endpoint: "text.rerank", currency: "USD",
+			effective_from: null, effective_to: null, version: null,
+			rules: [{ id: "requests", pricing_plan: "standard", meter: "requests", unit: "request", unit_size: 1, price_per_unit: "0.002", currency: "USD", match: [], priority: 0 }],
+		} as any;
+		const priced = calculatePricing(usage, card, { model: "cohere/rerank-v4.0-fast" });
+		expect(priced.totalNanos).toBe(6_000_000);
 	});
 
 	it("prefers provider_model_slug when present", async () => {

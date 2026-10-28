@@ -164,7 +164,15 @@ describe("optimistic sticky routing", () => {
                 body: endpoint === "responses" ? { input: opening } : { messages: opening },
             });
             const laterContent = vi.fn(() => "Later answer");
-            const history = [...opening, { role: "assistant", get content() { return laterContent(); } }];
+            // A mid-conversation turn: neither the context hash nor the cache-mark scan
+            // (opening and latest turns only) should read it.
+            const turn = (index: number) => ({ role: index % 2 ? "user" : "assistant", content: `Turn ${index}` });
+            const history = [
+                ...opening,
+                ...Array.from({ length: 6 }, (_, index) => turn(index)),
+                { role: "assistant", get content() { return laterContent(); } },
+                ...Array.from({ length: 4 }, (_, index) => turn(index + 7)),
+            ];
             const actual = await sticky.resolveStickyRoutingContext({
                 endpoint,
                 body: endpoint === "responses" ? { input: history } : { messages: history },
@@ -205,5 +213,185 @@ describe("optimistic sticky routing", () => {
             ] },
         });
         expect(context).toEqual(equivalent);
+    });
+
+    it("caches a missing pin for seconds and a found pin for at most a minute", async () => {
+        vi.useFakeTimers({ now: Date.parse("2026-10-17T10:00:00Z") });
+        try {
+            const stored = {
+                providerId: "anthropic",
+                cachedReadTokens: 0,
+                contextKey: "context:fresh",
+                source: "context_hash" as const,
+                createdAt: new Date().toISOString(),
+            };
+            runtime.getJson.mockResolvedValueOnce(null);
+            const read = () => sticky.readStickyRoutingOptimistic("workspace", "messages", "anthropic/claude-sonnet-5", "context:fresh");
+
+            expect(read()).toBeNull();
+            await Promise.allSettled(runtime.background.splice(0));
+            // Another isolate writes the pin. The negative entry expires within seconds.
+            runtime.getJson.mockResolvedValue(stored);
+            expect(read()).toBeNull();
+            expect(runtime.background).toHaveLength(0);
+            vi.setSystemTime(Date.now() + 6_000);
+            expect(read()).toBeNull();
+            await Promise.allSettled(runtime.background.splice(0));
+            expect(read()).toEqual(stored);
+
+            // A positive entry is re-read from KV after a minute, even though the pin lasts longer.
+            runtime.getJson.mockResolvedValue({ ...stored, providerId: "anthropic-us" });
+            vi.setSystemTime(Date.now() + 59_000);
+            expect(read()?.providerId).toBe("anthropic");
+            vi.setSystemTime(Date.now() + 2_000);
+            expect(read()).toBeNull();
+            await Promise.allSettled(runtime.background.splice(0));
+            expect(read()?.providerId).toBe("anthropic-us");
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it("waits for KV on a cold isolate when the request carries an affinity key", async () => {
+        const stored = {
+            providerId: "openai-eu",
+            cachedReadTokens: 0,
+            contextKey: "prompt:abc",
+            source: "prompt_cache_key" as const,
+            createdAt: new Date().toISOString(),
+        };
+        runtime.getJson.mockResolvedValue(stored);
+        const keyed = await sticky.readStickyRoutingForRouting("workspace", "responses", "openai/gpt-5.6", {
+            key: "prompt:abc",
+            source: "prompt_cache_key",
+            explicit: true,
+        });
+        expect(keyed).toEqual({ entry: stored, mode: "kv" });
+        expect(runtime.background).toHaveLength(0);
+
+        const implicit = await sticky.readStickyRoutingForRouting("workspace", "responses", "openai/gpt-5.6", {
+            key: "context:other",
+            source: "context_hash",
+        });
+        expect(implicit).toEqual({ entry: null, mode: "optimistic" });
+        expect(runtime.background).toHaveLength(1);
+    });
+
+    it("marks prompt_cache_key, session_id and cache_control requests as explicit affinity", async () => {
+        const base = { messages: [{ role: "user", content: "hi" }] };
+        const explicitFor = async (endpoint: "chat.completions" | "messages", body: any) =>
+            (await sticky.resolveStickyRoutingContext({ endpoint, body }))?.explicit;
+        expect(await explicitFor("chat.completions", { ...base, prompt_cache_key: "k" })).toBe(true);
+        expect(await explicitFor("chat.completions", { ...base, session_id: "s" })).toBe(true);
+        expect(await explicitFor("messages", { ...base, cache_control: { type: "ephemeral" } })).toBe(true);
+        expect(await explicitFor("chat.completions", {
+            ...base,
+            provider_options: { anthropic: { cache_control: { type: "ephemeral", ttl: "1h" } } },
+        })).toBe(true);
+        expect(await explicitFor("chat.completions", base)).toBe(false);
+    });
+
+    it("treats block-level cache marks on content and tools as explicit affinity", async () => {
+        const explicitFor = async (endpoint: "chat.completions" | "messages" | "responses", body: any) =>
+            (await sticky.resolveStickyRoutingContext({ endpoint, body }))?.explicit;
+        const mark = { type: "ephemeral" };
+        expect(await explicitFor("messages", {
+            system: [{ type: "text", text: "Policy", cache_control: mark }],
+            messages: [{ role: "user", content: "hi" }],
+        })).toBe(true);
+        expect(await explicitFor("chat.completions", {
+            messages: [{ role: "user", content: [{ type: "text", text: "Doc", cache_control: mark }] }],
+        })).toBe(true);
+        expect(await explicitFor("chat.completions", {
+            tools: [{ type: "function", function: { name: "f", parameters: {} }, cache_control: mark }],
+            messages: [{ role: "user", content: "hi" }],
+        })).toBe(true);
+        expect(await explicitFor("responses", {
+            input: [{ role: "user", content: [{ type: "input_text", text: "Doc", prompt_cache_breakpoint: { mode: "explicit" } }] }],
+        })).toBe(true);
+        expect(await explicitFor("messages", {
+            messages: [{ role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: [{ type: "text", text: "out", cache_control: mark }] }] }],
+        })).toBe(true);
+
+        // The longest valid block TTL sets the provider retention.
+        expect(sticky.resolveProviderCacheRetentionSeconds({
+            providerId: "anthropic",
+            body: { messages: [
+                { role: "user", content: [{ type: "text", text: "a", cache_control: { type: "ephemeral", ttl: "1h" } }] },
+                { role: "user", content: [{ type: "text", text: "b", cache_control: mark }] },
+            ] },
+        })).toBe(60 * 60);
+        expect(sticky.resolveProviderCacheRetentionSeconds({
+            providerId: "anthropic",
+            body: { messages: [{ role: "user", content: [{ type: "text", text: "a", cache_control: { type: "ephemeral", ttl: "24h" } }] }] },
+        })).toBe(5 * 60);
+    });
+
+    it("pins on the first successful step without a reported cache read or write", async () => {
+        runtime.putJson.mockResolvedValue(undefined);
+        await sticky.maybeWriteStickyRoutingFromUsage({
+            workspaceId: "workspace",
+            endpoint: "chat.completions",
+            model: "anthropic/claude-sonnet-5",
+            body: { messages: [{ role: "user", content: "hi" }], prompt_cache_key: "turn-1" },
+            providerId: "anthropic-aws-us",
+            providerModelSlug: "claude-sonnet-5",
+            apiModelId: "anthropic/claude-sonnet-5",
+            keySource: "byok",
+            byokKeyId: "key_1",
+            usage: { prompt_tokens: 9_000, completion_tokens: 200 },
+        });
+        expect(runtime.putJson).toHaveBeenCalledTimes(1);
+        expect(runtime.putJson.mock.calls[0]?.[1]).toMatchObject({
+            providerId: "anthropic-aws-us",
+            providerModelSlug: "claude-sonnet-5",
+            apiModelId: "anthropic/claude-sonnet-5",
+            keySource: "byok",
+            byokKeyId: "key_1",
+            cachedReadTokens: 0,
+            source: "prompt_cache_key",
+        });
+
+        // Without an affinity request, a step that reports no cache use does not pin.
+        await sticky.maybeWriteStickyRoutingFromUsage({
+            workspaceId: "workspace",
+            endpoint: "chat.completions",
+            model: "anthropic/claude-sonnet-5",
+            body: { messages: [{ role: "user", content: "other" }] },
+            providerId: "anthropic",
+            usage: { prompt_tokens: 9_000, completion_tokens: 200 },
+        });
+        expect(runtime.putJson).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        ["Anthropic 5m default", "anthropic", { cache_control: { type: "ephemeral" } }, undefined, 15 * 60],
+        ["Anthropic 1h", "anthropic", { provider_options: { anthropic: { cache_control: { type: "ephemeral", ttl: "1h" } } } }, undefined, 90 * 60],
+        ["Anthropic 1h write reported", "amazon-bedrock", { cache_control: { type: "ephemeral" } }, { cache_creation: { ephemeral_1h_input_tokens: 4_000 } }, 90 * 60],
+        ["OpenAI default (in-memory)", "openai", { prompt_cache_key: "k" }, undefined, 90 * 60],
+        ["OpenAI 24h", "openai-eu", { prompt_cache_key: "k", prompt_cache_retention: "24h" }, undefined, 24 * 60 * 60],
+        ["OpenAI top-level wins over provider_options", "openai", { prompt_cache_key: "k", prompt_cache_retention: "in_memory", provider_options: { openai: { prompt_cache_retention: "24h" } } }, undefined, 90 * 60],
+        ["OpenAI provider_options alias", "azure", { prompt_cache_key: "k", provider_options: { openai: { prompt_cache_retention: "24h" } } }, undefined, 24 * 60 * 60],
+        ["GPT-5.6 prompt_cache_options 30m", "openai", { prompt_cache_key: "k", prompt_cache_options: { ttl: "30m" } }, undefined, 45 * 60],
+        ["GPT-5.6 prompt_cache_options 12h", "openai", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 18 * 60 * 60],
+        ["GPT-5.6 12h breakpoint", "openai", { input: [{ role: "user", content: [{ type: "input_text", text: "a", prompt_cache_breakpoint: { mode: "explicit", ttl: "12h" } }] }] }, undefined, 18 * 60 * 60],
+        ["GPT-5.6 12h write reported", "openai", { prompt_cache_key: "k" }, { input_tokens_details: { cache_write_tokens: 10, cache_write_tokens_details: { ttl_30m_tokens: 0, ttl_12h_tokens: 10 } } }, 18 * 60 * 60],
+        ["12h on Azure, which sends the 30m default", "azure", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 45 * 60],
+        ["12h removed before sending (openai-eu with no 12-hour price, or a model before GPT-5.6)", "openai-eu", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 45 * 60, true],
+        ["12h breakpoint removed before sending", "openai", { input: [{ role: "user", content: [{ type: "input_text", text: "a", prompt_cache_breakpoint: { mode: "explicit", ttl: "12h" } }] }] }, undefined, 45 * 60, true],
+        ["OpenAI retention ignored on other providers", "cerebras", { prompt_cache_key: "k", prompt_cache_retention: "24h" }, undefined, 15 * 60],
+        ["session_id", "fireworks", { session_id: "s" }, undefined, 24 * 60 * 60],
+    ])("derives the pin TTL from cache retention: %s", async (_label, providerId, extra, usage, expected, twelveHourCacheDropped?: boolean) => {
+        runtime.putJson.mockResolvedValue(undefined);
+        await sticky.maybeWriteStickyRoutingFromUsage({
+            workspaceId: "workspace",
+            endpoint: "chat.completions",
+            model: "model",
+            body: { messages: [{ role: "user", content: "hi" }], ...extra },
+            providerId,
+            usage: usage ?? {},
+            twelveHourCacheDropped,
+        });
+        expect(runtime.putJson.mock.calls[0]?.[2]).toBe(expected);
     });
 });

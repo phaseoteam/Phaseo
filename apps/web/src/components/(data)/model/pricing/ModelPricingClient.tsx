@@ -1,4 +1,6 @@
 "use client";
+
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
@@ -9,7 +11,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
@@ -85,6 +87,7 @@ import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelPro
 import ProviderCard, {
 	getProviderTableDiscountBadge,
 	PROVIDER_STATUS_META,
+	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import { ProviderRouteName } from "./ProviderRouteName";
@@ -407,13 +410,16 @@ function getProviderDefaultPlan(provider: ProviderPricing): string {
     return getPreferredPlan(getProviderAvailablePlans(provider));
 }
 
-function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
-    const override = provider.provider_models.find(
-        (model) => typeof model.prompt_training_policy_override === "string" && model.prompt_training_policy_override.trim()
-    )?.prompt_training_policy_override;
-    return normalizeProviderPromptTrainingPolicy(
-        override ?? provider.provider.prompt_training_policy ?? null
-    );
+export function getProviderPromptTrainingPolicy(provider: ProviderPricing, plan = getProviderDefaultPlan(provider)): string {
+    const scope = getProviderModelScopeForPlan(provider, plan);
+    const fallback = normalizeProviderPromptTrainingPolicy(provider.provider.prompt_training_policy);
+    const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+    const policies = scope.map((model) => currentCatalogDataPolicy(model.data_policy)?.trainingPolicy
+        ?? normalizeProviderPromptTrainingPolicy(model.prompt_training_policy_override ?? fallback));
+    if (tierPolicy?.trainingPolicy != null) policies.push(tierPolicy.trainingPolicy);
+    if (policies.includes("may_train")) return "may_train";
+    if (policies.length) return policies.every((policy) => policy === "no_train") ? "no_train" : "unknown";
+    return fallback;
 }
 
 function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatewayStatus {
@@ -450,20 +456,7 @@ function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
 			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -498,12 +491,11 @@ function getIgnoredPrivacyReasons(
         }
     }
 
-    const trainingPolicy = getProviderPromptTrainingPolicy(provider);
+    const trainingPolicy = getProviderPromptTrainingPolicy(provider, plan);
     if (trainingPolicy === "may_train") {
-        const defaultPlan = getProviderDefaultPlan(provider);
-        if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
+        if (plan === "free" && !settings.privacyEnableFreeMayTrain) {
             reasons.push("Free training-on-inputs endpoints are disabled in workspace privacy settings");
-        } else if (defaultPlan !== "free" && !settings.privacyEnablePaidMayTrain) {
+        } else if (plan !== "free" && !settings.privacyEnablePaidMayTrain) {
             reasons.push("Paid training-on-inputs endpoints are disabled in workspace privacy settings");
         }
     }
@@ -511,7 +503,7 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
-function matchesPrivacyFilter(
+export function matchesPrivacyFilter(
     provider: ProviderPricing,
     filter: PrivacyFilter,
     workspacePrivacySettings: WorkspacePrivacySettings | null,
@@ -522,7 +514,7 @@ function matchesPrivacyFilter(
         return getPlanZdrEligibility(provider, plan) === true;
     }
     if (filter === "no_training") {
-        return getProviderPromptTrainingPolicy(provider) !== "may_train";
+        return getProviderPromptTrainingPolicy(provider, plan) === "no_train";
     }
     if (!workspacePrivacySettings?.isAuthenticated) return true;
         return getIgnoredPrivacyReasons(provider, workspacePrivacySettings, plan)
@@ -530,36 +522,14 @@ function matchesPrivacyFilter(
 		.length === 0;
 }
 
-function getPlanZdrEligibility(
+export function getPlanZdrEligibility(
 	provider: ProviderPricing,
 	plan: string,
 ): boolean | null {
-	// Eligibility metadata describes a possible offer; it is not proof that
-	// this provider route enforces zero retention. A provider-level false must
-	// always win, and an eligible tier is usable only with a verified true flag.
 	const providerZdr = provider.provider.zero_data_retention;
-	if (providerZdr === false) return false;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
-	const tierEligibility = tierPolicy?.zdrEligibility;
-	if (tierEligibility === "eligible") return providerZdr === true ? true : null;
-	if (tierEligibility === "ineligible") return false;
-
-    const providerModels = getProviderModelScopeForPlan(provider, plan);
-    const capabilityPolicies = providerModels.map((providerModel) => providerModel.data_policy);
-    const policiesWithData = capabilityPolicies.filter(
-        (policy): policy is NonNullable<typeof policy> => Boolean(policy),
-    );
-    if (!policiesWithData.length) return provider.provider.zero_data_retention ?? null;
-    if (policiesWithData.length !== capabilityPolicies.length) return null;
-
-    const eligibilities = new Set(
-        policiesWithData.map((policy) => policy.zdrEligibility ?? null),
-    );
-    if (eligibilities.size !== 1) return null;
-    const eligibility = policiesWithData[0]?.zdrEligibility;
-	if (eligibility === "eligible") return providerZdr === true ? true : null;
-	if (eligibility === "ineligible") return false;
-	return providerZdr ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => currentCatalogDataPolicy(model.data_policy));
+	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
 function formatServiceTierLabel(plan: string): string {
@@ -662,9 +632,9 @@ function ProviderServiceTierInfoIcons({
 					: statusKey.startsWith("deranked_")
 						? "statusDescriptions.rateLimited"
 						: "statusDescriptions.inactive";
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
-		.map((providerModel) => providerModel.data_policy)
+		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 		.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 	const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 	const dataPolicy = (policies.length > 0 ? policies : [null]).map((policy) => ({
@@ -674,11 +644,8 @@ function ProviderServiceTierInfoIcons({
 		contractNotes: provider.provider.data_policy_contract_notes ?? null,
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-		zeroDataRetention: resolveEnforcedZdr(
-			provider.provider.zero_data_retention,
-			policy?.zdrEligibility,
-		),
+		promptTrainingPolicy: getProviderPromptTrainingPolicy(provider, plan),
+		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 
 	return (
@@ -727,7 +694,7 @@ function ProviderServiceTierInfoIcons({
 						residencyMode: provider.provider.residency_mode ?? null,
 						executionRegions: provider.provider.default_execution_regions ?? null,
 						dataRegions: provider.provider.default_data_regions ?? null,
-						zeroDataRetention: provider.provider.zero_data_retention ?? null,
+						zeroDataRetention: getPlanZdrEligibility(provider, plan),
 						notes: provider.provider.residency_notes ?? null,
 						sourceUrl: provider.provider.residency_source_url ?? null,
 					},
@@ -1718,7 +1685,7 @@ export default function ModelPricingClient({
 			if (option !== "uptime") return button;
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
+					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
 					<HoverCardContent align="end" className="w-72 text-left">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>

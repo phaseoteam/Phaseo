@@ -1,0 +1,38 @@
+{
+	"id": "aion-labs",
+	"source": {
+		"url": null,
+		"docs": "https://www.aionlabs.ai/docs/api-reference/",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Recorded from a web-search summary of the official API reference page (not fetched directly); verify before relying on it. reasoning_effort listed for Aion 2.0/3.0/3.0 Mini."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"max_tokens": {},
+					"stop": {},
+					"stream_options": {},
+					"tools": {},
+					"metadata": {},
+					"reasoning_split": {},
+					"reasoning_effort": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

@@ -6,8 +6,10 @@ import type { PipelineContext } from "@pipeline/before/types";
 import type { RequestResult } from "@pipeline/execute";
 import { ensureRuntimeForBackground, getBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "./axiom";
+import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { keyKeepsContentOutOfTelemetry, requestAsksForZeroDataRetention } from "@pipeline/audit/io-logging";
 
 type EventArgs = {
     ctx?: PipelineContext;
@@ -27,6 +29,8 @@ type EventArgs = {
     edgeContinent?: string | null;
     edgeAsn?: number | null;
     keyId?: string | null;
+    /** Zero data retention applies, as the caller knows it: a preset's, for a failure before the context exists. */
+    zeroDataRetention?: boolean;
     statusCode?: number | null;
     success: boolean;
     errorCode?: string | null;
@@ -220,10 +224,16 @@ function usageSummary(usage: any) {
     const total = usage.total_tokens ?? (typeof input === "number" && typeof output === "number" ? input + output : null);
     const inputDetails = usage.input_tokens_details ?? usage.input_details ?? usage.prompt_tokens_details ?? {};
     const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details ?? {};
+    // Cache reads and writes as billed (priced meters), whichever field the provider used.
+    const cache = reportedCacheTokens(usage);
     return {
         usage_input_tokens: toNum(input),
         usage_output_tokens: toNum(output),
         usage_total_tokens: toNum(total),
+        usage_cache_read_tokens: toNum(cache.readTokens ?? null),
+        usage_cache_write_tokens: toNum(cache.writeTokens ?? null),
+        usage_cache_write_5m_tokens: toNum(cache.write5mTokens ?? null),
+        usage_cache_write_1h_tokens: toNum(cache.write1hTokens ?? null),
         usage_request_tool_count: toNum(
             usage.request_tool_count ?? usage.requested_tool_count ?? null
         ),
@@ -612,6 +622,20 @@ function getProviderAttemptsFromArgs(args: EventArgs): Array<Record<string, unkn
     return getAttemptErrorsFromArgs(args);
 }
 
+/**
+ * Attempts without the provider's raw error body (`upstream_payload_preview`, a truncated
+ * copy that can echo the request or output), for requests whose content stays out of
+ * telemetry. Status codes, provider ids, error codes and messages stay, as on the event.
+ */
+function withoutAttemptPayloads(attempts: unknown): unknown {
+    if (!Array.isArray(attempts)) return attempts;
+    return attempts.map((attempt) => {
+        if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+        const { upstream_payload_preview: _payload, ...kept } = attempt as Record<string, unknown>;
+        return kept;
+    });
+}
+
 function extractAttemptSignals(args: EventArgs): AttemptSignals {
     const attempts = getProviderAttemptsFromArgs(args);
     const providerSet = new Set<string>();
@@ -906,6 +930,16 @@ function classifyOperationalError(args: EventArgs): OperationalErrorClassificati
         };
     }
 
+    // Only the gateway's own policy rejection is user-attributed; providers use the same code.
+    if (code === "user:rate_limit_exceeded") {
+        return {
+            origin: "user",
+            kind: "workspace_rate_limit_policy_exceeded",
+            owner: "workspace_admin",
+            operationallyActionable: false,
+        };
+    }
+
     if (
         rawCode === "invalid_json" ||
         rawCode === "model_required" ||
@@ -1165,17 +1199,36 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const containsParsedDocumentContent = (args.endpoint ?? args.ctx?.endpoint) === "parse";
         const includeDetailedPayloads =
             observabilityPlan.detailLevel === "full" && !containsParsedDocumentContent;
+        // A key created with never_store_content, or under zero data retention, keeps
+        // the operational detail (routing, attempts, headers) but none of its requests
+        // or responses. Both are set on the context when routing loads the policy; a
+        // request rejected before then may still ask for ZDR itself, or through its preset.
+        const keepContentOut = includeDetailedPayloads || !args.success
+            ? args.zeroDataRetention === true ||
+                requestAsksForZeroDataRetention(args.requestPayload ?? ctx?.rawBody ?? null) ||
+                await keyKeepsContentOutOfTelemetry({
+                    workspaceId,
+                    keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
+                    known: typeof ctx?.neverStoreContent === "boolean"
+                        ? ctx.neverStoreContent || ctx.zeroDataRetention === true
+                        : null,
+                })
+            : false;
+        const includeContent = includeDetailedPayloads && !keepContentOut;
+        // Attempts keep their operational detail but, like the event, not the raw upstream body.
+        const attemptsForTelemetry = (attempts: unknown) =>
+            keepContentOut ? withoutAttemptPayloads(attempts) : attempts;
 
-        const sanitizedGatewayRequest = includeDetailedPayloads
+        const sanitizedGatewayRequest = includeContent
             ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
             : null;
-        const sanitizedUpstreamRequest = includeDetailedPayloads
+        const sanitizedUpstreamRequest = includeContent
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
             : null;
-        const sanitizedErrorDetails = includeDetailedPayloads || (!args.success && !containsParsedDocumentContent)
+        const sanitizedErrorDetails = !keepContentOut && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
             ? sanitizeForAxiom(args.errorDetails ?? null)
             : null;
-        const sanitizedProviderResponse = includeDetailedPayloads
+        const sanitizedProviderResponse = includeContent
             ? sanitizeForAxiom(args.providerResponse ?? args.result?.rawResponse ?? null)
             : null;
         const sanitizedProviderResponseHeaders = includeDetailedPayloads
@@ -1184,7 +1237,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const providerHeaderSignals = readProviderHeaderSignals(
             args.result?.upstream?.headers ?? args.providerResponseHeaders,
         );
-        const sanitizedGatewayResponse = includeDetailedPayloads
+        const sanitizedGatewayResponse = includeContent
             ? sanitizeForAxiom(args.gatewayResponse ?? null)
             : null;
         const sanitizedParamRoutingDiagnostics = includeDetailedPayloads
@@ -1194,7 +1247,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             ? sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null)
             : null;
         const sanitizedAttemptErrors = includeDetailedPayloads
-            ? sanitizeForAxiom((ctx as any)?.attemptErrors ?? null)
+            ? sanitizeForAxiom(attemptsForTelemetry((ctx as any)?.attemptErrors ?? null))
             : null;
         const sanitizedProviderEnablement = includeDetailedPayloads
             ? sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null)
@@ -1218,7 +1271,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         })();
         const modelResolved = args.model ?? ctx?.model ?? modelRequested ?? null;
         const sanitizedProviderAttempts = includeDetailedPayloads
-            ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
+            ? sanitizeForAxiom(attemptsForTelemetry(getProviderAttemptsFromArgs(args)))
             : null;
         const providerFailure = extractProviderFailureSummary(args);
         const failureSample = extractFailureSampleSummary(args);
@@ -1496,7 +1549,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             upstream_error_param: upstreamError?.param ?? null,
             upstream_error_message: containsParsedDocumentContent ? null : upstreamError?.message ?? null,
             upstream_error_status: upstreamError?.status ?? null,
-            upstream_error_json: includeDetailedPayloads
+            upstream_error_json: includeContent
                 ? stringifyDetailForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null))
                 : null,
             provider_failure_category: providerFailure?.category ?? null,

@@ -1,12 +1,15 @@
 "use client";
+
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
+import { CacheWritePricing, groupCacheWriteTiers } from "./CacheWritePricing";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -30,6 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -62,6 +66,7 @@ import {
 } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
+	compareTokenTiers,
 	buildProviderTablePriceSummaryForColumn,
 	fmtUSD,
 	ruleMatchCovers,
@@ -224,8 +229,27 @@ function getPricingPlanTranslationKey(plan: string): string | null {
 function uptimeValueClass(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "text-foreground";
 	if (value > 99) return "text-emerald-600 dark:text-emerald-400";
-	if (value > 95) return "text-amber-600 dark:text-amber-400";
+	if (value >= 95) return "text-amber-600 dark:text-amber-400";
 	return "text-red-600 dark:text-red-400";
+}
+
+export function UptimeKey({ className }: { className?: string }) {
+	return (
+		<div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-emerald-500" />
+				<span>&gt;99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-amber-500" />
+				<span>95-99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-red-500" />
+				<span>&lt;95%</span>
+			</div>
+		</div>
+	);
 }
 
 function getDisplayedUptimePct(
@@ -302,20 +326,7 @@ function UptimeHoverContent({
 					);
 				})}
 			</div>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -641,7 +652,7 @@ function ProviderHourlyPerformance({
 								? "bg-muted-foreground/30"
 								: activeMetric === "uptime" && numericMetricValue > 99
 								? "bg-emerald-500"
-								: activeMetric === "uptime" && numericMetricValue > 95
+								: activeMetric === "uptime" && numericMetricValue >= 95
 									? "bg-amber-500"
 										: activeMetric === "uptime" ? "bg-red-500" : "bg-primary";
 							const barHeight = activeMetric === "uptime"
@@ -673,6 +684,9 @@ function ProviderHourlyPerformance({
 							);
 						})}
 					</div>
+					{activeMetric === "uptime" ? (
+						<UptimeKey className="mt-2 justify-center text-[11px]" />
+					) : null}
 				</div>
 			) : null}
 			{categories.length > 0 || rateLimited > 0 ? (
@@ -726,10 +740,7 @@ function renderCompactTierSummary(
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return (
 			<div className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
@@ -790,13 +801,15 @@ function renderSecondaryTierSummary(
 	valueClassName: string | undefined,
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
+	locale: string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
+	}
+	const cacheWriteGroups = groupCacheWriteTiers(orderedTiers);
+	if (cacheWriteGroups) {
+		return <CacheWritePricing label={label} groups={cacheWriteGroups} unitLabel={unitLabel} valueClassName={valueClassName} freeLabel={freeLabel} locale={locale} localizeLabel={l} />;
 	}
 	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
 	const conditions = getTokenTierConditions(orderedTiers);
@@ -804,10 +817,10 @@ function renderSecondaryTierSummary(
 	return (
 		<div
 			className={cn(
-				"inline-grid items-baseline gap-x-1.5 gap-y-0.5",
+				"grid w-full min-w-0 items-baseline gap-x-1.5 gap-y-0.5",
 				hasAnyComparison
-					? "grid-cols-[max-content_repeat(3,max-content)]"
-					: "grid-cols-[max-content_repeat(2,max-content)]",
+					? "grid-cols-[repeat(3,max-content)_minmax(0,1fr)]"
+					: "grid-cols-[repeat(2,max-content)_minmax(0,1fr)]",
 			)}
 		>
 			{orderedTiers.map((tier, index) => {
@@ -837,7 +850,7 @@ function renderSecondaryTierSummary(
 						>
 							{tier.per1M === 0 ? freeLabel : fmtUSD(tier.per1M)}
 						</span>
-						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+						<span className="min-w-0 break-words text-left text-[10px] text-muted-foreground">
 							{l(conditions[index])}
 						</span>
 					</React.Fragment>
@@ -845,7 +858,7 @@ function renderSecondaryTierSummary(
 			})}
 			<div
 				className={cn(
-					"justify-self-center text-[10px] text-muted-foreground",
+					"justify-self-start text-[10px] text-muted-foreground",
 					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>
@@ -907,6 +920,7 @@ const DATA_POLICY_FIELDS = [
 	"tier",
 	"confidence",
 	"zdrEligibility",
+	"zeroDataRetention",
 	"retentionMode",
 	"retentionDays",
 ] as const;
@@ -2357,13 +2371,13 @@ export default function ProviderCard({
 		label,
 		tiles,
 	}));
-	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => ({
-		label,
-		tiles: tiles.slice(0, 3),
-		columns: Math.min(3, tiles.length),
-	}));
+	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => {
+		const primaryTiles = tiles.filter((tile) => !tile.key.endsWith("-cache-write")).slice(0, 3);
+		return { label, tiles: primaryTiles, columns: primaryTiles.length };
+	}).filter((group) => group.tiles.length > 0);
+	const primaryTokenKeys = new Set(tokenMetricGroups.flatMap((group) => group.tiles.map((tile) => tile.key)));
 	const additionalTokenMetricTiles = allTokenMetricGroups.flatMap(({ label, tiles }) =>
-		tiles.slice(3).map((tile) => ({ ...tile, groupTitle: label })),
+		tiles.filter((tile) => !primaryTokenKeys.has(tile.key)).map((tile) => ({ ...tile, groupTitle: label })),
 	);
 	const infoScope = providerModelsInScope;
 	const tableInfoScope = tableProviderModelsInScope;
@@ -2826,7 +2840,7 @@ export default function ProviderCard({
 		dataPolicy: (() => {
 			const tierPolicy = provider.provider.service_tier_data_policies?.[selectedPlan] ?? null;
 			const capabilityPolicies = infoScope
-				.map((providerModel) => providerModel.data_policy)
+				.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 				.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 			const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 			if (!policies.length) return [{
@@ -2846,12 +2860,9 @@ export default function ProviderCard({
 				contractNotes: provider.provider.data_policy_contract_notes ?? null,
 				notes: policy.reason ?? provider.provider.prompt_training_notes ?? null,
 				sourceUrl: policy.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-				zeroDataRetention: policy.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-					? true
-					: policy.zdrEligibility === "ineligible"
-						? false
-						: provider.provider.zero_data_retention ?? null,
+				promptTrainingPolicy: policy.trainingPolicy ?? provider.provider.prompt_training_policy ?? null,
+				zeroDataRetention: resolveScopedZdr(provider.provider.zero_data_retention,
+					infoScope.map((model) => currentCatalogDataPolicy(model.data_policy)), tierPolicy),
 			}));
 		})(),
 		residency: [
@@ -2859,7 +2870,11 @@ export default function ProviderCard({
 				residencyMode: provider.provider.residency_mode ?? null,
 				executionRegions: provider.provider.default_execution_regions ?? null,
 				dataRegions: provider.provider.default_data_regions ?? null,
-				zeroDataRetention: provider.provider.zero_data_retention ?? null,
+				zeroDataRetention: resolveScopedZdr(
+					provider.provider.zero_data_retention,
+					infoScope.map((model) => currentCatalogDataPolicy(model.data_policy)),
+					provider.provider.service_tier_data_policies?.[selectedPlan],
+				),
 				notes: provider.provider.residency_notes ?? null,
 				sourceUrl: provider.provider.residency_source_url ?? null,
 			},
@@ -2883,6 +2898,7 @@ export default function ProviderCard({
 			infoScope.length > 0
 				? infoScope.map((providerModel) => ({
 						policy:
+							currentCatalogDataPolicy(providerModel.data_policy)?.trainingPolicy ??
 							providerModel.prompt_training_policy_override ??
 							provider.provider.prompt_training_policy ??
 							null,
@@ -2899,9 +2915,9 @@ export default function ProviderCard({
 						userIdentifierNotes:
 							provider.provider.user_identifier_notes ?? null,
 						privacyPolicyUrl:
-							provider.provider.privacy_policy_url ?? null,
+							currentCatalogDataPolicy(providerModel.data_policy)?.evidenceUrl ?? provider.provider.privacy_policy_url ?? null,
 						termsOfServiceUrl:
-							provider.provider.terms_of_service_url ?? null,
+							currentCatalogDataPolicy(providerModel.data_policy)?.termsOfServiceUrl ?? provider.provider.terms_of_service_url ?? null,
 						isOverride: Boolean(
 							providerModel.prompt_training_policy_override,
 						),
@@ -3009,7 +3025,7 @@ export default function ProviderCard({
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">
-									{tokenMetricGroups.length > 1
+										{allTokenMetricGroups.length > 1
 										? `${group.label} ${tile.title}`
 										: tile.title}
 								</div>
@@ -3112,7 +3128,7 @@ export default function ProviderCard({
 						{additionalTokenMetricTiles.map((tile) => (
 							<React.Fragment key={tile.key}>
 								{renderSecondaryTierSummary(
-									tokenMetricGroups.length > 1
+									allTokenMetricGroups.length > 1
 										? `${tile.groupTitle} ${tile.title}`
 										: tile.title,
 									tile.tiers,
@@ -3120,6 +3136,7 @@ export default function ProviderCard({
 									selectedPlanPriceClass,
 									tx("Common.ui.chatSettings.free" as never),
 									localizePricingLabel,
+									locale,
 								)}
 							</React.Fragment>
 						))}
@@ -3216,7 +3233,7 @@ export default function ProviderCard({
 	const dataPolicySectionId = `${sheetSectionPrefix}-data-policy`;
 	const parametersSectionId = `${sheetSectionPrefix}-parameters`;
 	const selectedTierPolicy = provider.provider.service_tier_data_policies?.[selectedPlan] ?? null;
-	const scopedCapabilityPolicies = providerModelsInScope.map((providerModel) => providerModel.data_policy ?? null);
+	const scopedCapabilityPolicies = providerModelsInScope.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy) ?? null);
 	const selectedCapabilityPolicies = scopedCapabilityPolicies.filter(
 		(policy): policy is NonNullable<typeof policy> => Boolean(policy),
 	);
@@ -3241,13 +3258,9 @@ export default function ProviderCard({
 		no: tSections("no"),
 		unknown: tSections("unknown"),
 	};
-	const selectedZdr = hasMixedCapabilityPolicies
-		? null
-		: selectedDataPolicy?.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-			? true
-			: selectedDataPolicy?.zdrEligibility === "ineligible"
-				? false
-				: provider.provider.zero_data_retention;
+	const selectedZdr = resolveScopedZdr(
+		provider.provider.zero_data_retention, scopedCapabilityPolicies, selectedTierPolicy,
+	);
 	const dataPolicySummary = [
 		{
 			label: tProvider("dataPolicy"),
@@ -3832,7 +3845,7 @@ export default function ProviderCard({
 												<span>{metric.label}</span>
 												{metric.key === "uptime" ? (
 													<HoverCard openDelay={120} closeDelay={80}>
-														<HoverCardTrigger asChild>
+														<HoverCardTrigger asChild openOnTap={false}>
 															<span
 																aria-label={tProvider("uptime")}
 																tabIndex={0}
@@ -3886,10 +3899,9 @@ export default function ProviderCard({
 								onPointLeave={handlePerformancePointLeave}
 							/>
 								{routingHealthSummary ? (
-									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
-										<div className="font-semibold">{routingHealthSummary.label}</div>
-										<p className="mt-1">{routingHealthSummary.description}</p>
-									</div>
+									<Callout tone="warning" title={routingHealthSummary.label}>
+										{routingHealthSummary.description}
+									</Callout>
 								) : null}
 							</section>
 
@@ -3981,14 +3993,13 @@ export default function ProviderCard({
 					))}
 				</div>
 								{privacyReasonMeta.length > 0 ? (
-									<div className="border-l-2 border-red-400 pl-3 text-xs text-red-900 dark:text-red-100">
-										<div className="font-semibold">{isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}</div>
-										<ul className="mt-1 list-inside list-disc space-y-1">
+									<Callout tone="critical" title={isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}>
+										<ul className="list-inside list-disc space-y-1">
 											{privacyReasonMeta.map(({ reason, meta }) => (
 												<li key={reason}>{meta?.label ?? reason}</li>
 											))}
 										</ul>
-									</div>
+									</Callout>
 								) : null}
 							</section>
 

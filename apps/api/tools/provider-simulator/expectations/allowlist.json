@@ -1,0 +1,350 @@
+{
+	"note": "Known or intended mismatches. Each entry names the AUDIT.md finding, the proposed fix PR group, and why the mismatch is accepted for now. Entries are matched in order; anything not matched fails the run. Remove an entry when its fix lands (the gate lists unused entries). Fix groups: billing-2, stream-2, request-2, routing-errors-2, catalogue-data, reasoning-2, by-design, harness.",
+	"entries": [
+		{
+			"id": "billing-gemini-thinking",
+			"finding": "N1",
+			"fixGroup": "billing-2",
+			"justification": "Gemini thoughtsTokenCount is not added to billed output and toolUsePromptTokenCount is not added to billed input (providers/google-ai-studio/usage.ts:116-142); image and audio prompt tokens are billed as text. Fix in the second billing PR.",
+			"match": {
+				"provider": "re:^google-(ai-studio|vertex(-eu)?)$",
+				"kind": [
+					"billing_under",
+					"billing_over",
+					"wrong_value",
+					"dropped"
+				],
+				"path": "re:^(billing(\\.(output|uncachedInput|reasoning|read|meter\\.(output_text_tokens|input_text_tokens|input_image_tokens|input_audio_tokens|cached_read_text_tokens)))?|client\\.(body\\.)?usage\\.(completion_tokens|output_tokens|prompt_tokens|input_tokens|completion_tokens_details\\.reasoning_tokens|cache_read_input_tokens))$"
+			}
+		},
+		{
+			"id": "billing-chat-cached-reads",
+			"finding": "N3",
+			"fixGroup": "billing-2",
+			"justification": "Chat clients of Claude and of Responses-dialect upstreams: the Chat encoder writes cache reads as usage.input_details.cached_tokens, which shapeUsageForClient and the engine do not treat as cache (protocols/openai-chat/encode.ts:196-211, pipeline/usage.ts:160-166), so reads are billed as input and the client sees no cached count.",
+			"match": {
+				"surface": "chat",
+				"kind": [
+					"billing_under",
+					"billing_over",
+					"dropped",
+					"wrong_value"
+				],
+				"path": "re:^(billing\\.(read|uncachedInput|write|write5m|write1h|meter\\.(input_text_tokens|cached_read_text_tokens))|billing|client\\.(body\\.)?usage\\.(prompt_tokens|prompt_tokens_details\\.(cached_tokens|cache_write_tokens)))$"
+			}
+		},
+		{
+			"id": "billing-messages-usage",
+			"finding": "N4",
+			"fixGroup": "billing-2",
+			"justification": "/v1/messages drops cache usage for every provider: normalizeUsageToAnthropic keeps only input and output (executors/_shared/text-generate/openai-compat/index.ts:801-818), and Claude's own Messages re-encode loses cache reads and writes, so reads bill as input or not at all and writes are not billed.",
+			"match": {
+				"surface": "messages",
+				"kind": [
+					"billing_under",
+					"billing_over",
+					"dropped",
+					"wrong_value"
+				],
+				"path": "re:^(billing(\\.(read|uncachedInput|write|write5m|write1h|reasoning|output))?|client\\.usage\\.(input_tokens|output_tokens|cache_read_input_tokens|cache_creation_input_tokens|cache_creation\\.ephemeral_(5m|1h)_input_tokens))$"
+			}
+		},
+		{
+			"id": "billing-responses-claude-cache",
+			"finding": "B2",
+			"fixGroup": "billing-2",
+			"justification": "Residual of B2 after #2964: on /v1/responses, Claude cache reads are subtracted from an input that already excludes them and cache writes are not billed; the client input_tokens excludes cached tokens.",
+			"match": {
+				"surface": "responses",
+				"kind": [
+					"billing_under",
+					"billing_over",
+					"dropped",
+					"wrong_value"
+				],
+				"path": "re:^(billing\\.(read|uncachedInput|write|write5m|write1h)|client\\.usage\\.(input_tokens|input_tokens_details\\.(cached_tokens|cache_write_tokens)))$"
+			}
+		},
+		{
+			"id": "billing-pricing-throws",
+			"finding": "B1",
+			"fixGroup": "catalogue-data",
+			"justification": "Remaining pricing_rule_missing throws are cards with no cache-write row or a fast-only/early-access card; #2964 added the input-rate fallback for cache reads only. Data rows or a write fallback fix them.",
+			"match": {
+				"layer": "pricing",
+				"kind": "wrong_value",
+				"path": "billing.error"
+			}
+		},
+		{
+			"id": "catalogue-data-rows",
+			"finding": "N24",
+			"fixGroup": "catalogue-data",
+			"justification": "Catalogue data problems (missing cache-read or write rows where the provider documents them, reads not discounted or priced at zero, expired-only rules, missing cards, overlapping or unreadable tier conditions). Database operations, not code; each needs a readback against production rows.",
+			"match": {
+				"layer": "pricing",
+				"path": "re:^catalogue\\."
+			}
+		},
+		{
+			"id": "stream-finish-mapping",
+			"finding": "N5",
+			"fixGroup": "stream-2",
+			"justification": "Finish reasons are mis-mapped across dialects: buffered Messages always end_turn (stream-events.ts:672-678), content filter and refusal become stop or completed, stop_sequence and pause_turn are lost, Responses-upstream truncation gives Chat no finish_reason (N6).",
+			"match": {
+				"kind": [
+					"wrong_value",
+					"dropped"
+				],
+				"path": "client.finish",
+				"caseId": "re:^resp:(finish:|max$|text$)"
+			}
+		},
+		{
+			"id": "stream-midstream-errors",
+			"finding": "N7",
+			"fixGroup": "stream-2",
+			"justification": "A mid-stream upstream error is delivered as a successful completion on most surface and dialect pairs; buffered clients get 200 with partial text.",
+			"match": {
+				"kind": "error_mapping",
+				"caseId": "re:^(resp:error:mid-stream|failover\\.midstream)"
+			}
+		},
+		{
+			"id": "stream-grammar",
+			"finding": "N26",
+			"fixGroup": "stream-2",
+			"justification": "Chat streams carry a final object 'chat.completion' frame that is not a chunk, and Claude-to-Responses streams emit deltas before output_item.added; strict OpenAI SDK consumers mis-handle both.",
+			"match": {
+				"kind": "stream_order"
+			}
+		},
+		{
+			"id": "stream-citations-refusal",
+			"finding": "N15",
+			"fixGroup": "stream-2",
+			"justification": "Citations (url_citation, Claude citations) and refusal text are lost on the way back to the client on most surfaces.",
+			"match": {
+				"kind": "dropped",
+				"path": [
+					"client.citations",
+					"client.refusal"
+				]
+			}
+		},
+		{
+			"id": "reasoning-roundtrip",
+			"finding": "N8",
+			"fixGroup": "reasoning-2",
+			"justification": "Residual after #2970: buffered Chat and Messages responses from Claude return thinking without its signature, because the materialised response is encoded with no reasoning origin (pipeline/surfaces/text-generate.ts:1299), so the next tool-loop step reaches Claude unsigned; streams are fixed. Also reasoning text missing from buffered Responses, and Vertex Gemini tool-loop signatures.",
+			"match": {
+				"kind": "dropped",
+				"path": "re:^(client\\.reasoning\\.|roundtrip\\.upstream\\.)"
+			}
+		},
+		{
+			"id": "request-other-rejections",
+			"finding": "N11",
+			"fixGroup": "request-2",
+			"justification": "Other documented request shapes rejected before routing (response_format types a route's catalogue params do not list, max_tokens above every route's limit); these are routing-policy rejections that should be reviewed with N11.",
+			"match": {
+				"kind": "error_mapping",
+				"path": "client.status",
+				"caseId": "re:^(chat|responses|messages)\\.(param|format|agent)"
+			}
+		},
+		{
+			"id": "request-invented-defaults",
+			"finding": "N13",
+			"fixGroup": "request-2",
+			"justification": "The gateway sends fields the client did not ask for: temperature 1 (zod default, core/schemas.ts:869), parallel_tool_calls, logprobs:false, store:false, safety_identifier, Claude adaptive thinking, stream_options to providers that do not document it, and input_items to SambaNova, Ambient and Scaleway (N9).",
+			"match": {
+				"kind": "invented",
+				"caseId": "re:^(chat|responses|messages)\\.base$"
+			}
+		},
+		{
+			"id": "request-unsupported-forwarded",
+			"finding": "N14",
+			"fixGroup": "request-2",
+			"justification": "Parameters the provider's spec does not define are forwarded instead of removed or rejected (for example top_k, min_p and max_tool_calls to OpenAI, stop to Responses APIs, image_config to OpenAI-compatible providers).",
+			"match": {
+				"kind": "invented",
+				"caseId": "re:^(chat|responses|messages)\\.(param|format|cache|reasoning|tools)\\."
+			}
+		},
+		{
+			"id": "request-params-dropped-or-changed",
+			"finding": "N14",
+			"fixGroup": "request-2",
+			"justification": "Parameters the provider's spec defines are dropped, renamed or sent with values outside the provider's enum (service tiers, reasoning efforts, metadata, user identity, store, prompt templates).",
+			"match": {
+				"kind": [
+					"dropped",
+					"renamed",
+					"wrong_value",
+					"wrong_type"
+				],
+				"path": "re:^upstream\\.body\\.\\$",
+				"caseId": "re:^(chat|responses|messages)\\.(param|format|cache|reasoning|tools)\\."
+			}
+		},
+		{
+			"id": "request-content-values",
+			"finding": "N29",
+			"fixGroup": "request-2",
+			"justification": "Client content does not reach the provider intact: array tool results are stringified into JSON text (98 providers), developer and later system messages are dropped for Claude, message names are dropped, Vertex Gemini replays no assistant functionCall (R2 residual), and some content parts are dropped.",
+			"match": {
+				"kind": [
+					"dropped",
+					"wrong_type",
+					"wrong_value"
+				],
+				"path": "re:^upstream\\.body\\(client "
+			}
+		},
+		{
+			"id": "request-url-and-dialect",
+			"finding": "N18",
+			"fixGroup": "request-2",
+			"justification": "Upstream URL or dialect differs from what the provider documents (DeepSeek V4 on /responses, Bedrock non-Claude models on /anthropic/v1/messages, providers whose documented host differs from Phaseo's config). Each needs a live check before changing routing.",
+			"match": {
+				"kind": [
+					"wrong_value",
+					"renamed"
+				],
+				"path": "re:^upstream\\.(url|dialect|header\\.)"
+			}
+		},
+		{
+			"id": "request-executor-local-errors",
+			"finding": "N30",
+			"fixGroup": "request-2",
+			"justification": "Valid requests that never reach the provider because the executor throws locally (Vertex open models reject reasoning options, AI21 tools need non-streaming, text-only routes reject images); these surface as 502 instead of a 400 before routing.",
+			"match": {
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"provider": [
+					"google-vertex",
+					"google-vertex-eu",
+					"ai21",
+					"amazon-bedrock",
+					"inflection",
+					"cohere",
+					"longcat",
+					"perplexity"
+				]
+			}
+		},
+		{
+			"id": "request-executor-explicit-rejections",
+			"finding": "N30",
+			"fixGroup": "request-2",
+			"justification": "Reflection and EmpirioLabs return an explicit 400 unsupported_parameter or unsupported_decision_request from the executor (executors/reflection/text-generate/index.ts:23, executors/empiriolabs/decisions/index.ts:10). Explicit rejection is what apps/api/AGENTS.md asks for, but it happens after routing instead of in the capability check, so it can count as a provider failure. Neither provider has active routes.",
+			"match": {
+				"provider": [
+					"reflection",
+					"empiriolabs"
+				],
+				"kind": "error_mapping",
+				"path": "upstream.call"
+			}
+		},
+		{
+			"id": "request-executor-file-url-rejected",
+			"finding": "N30",
+			"fixGroup": "request-2",
+			"justification": "Chat-dialect providers return an explicit 400 unsupported_parameter for a Responses input_file sent by URL, because Chat Completions has no file-by-URL field (executors/_shared/text-generate/openai-compat/transform-chat.ts:458-463, from #2993). Before #2993 the document was dropped and the model answered without it. The rejection is correct; it happens in the executor after routing instead of in the capability check.",
+			"match": {
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "responses.content.part.input_file_url"
+			}
+		},
+		{
+			"id": "routing-nontext-misc",
+			"finding": "N34",
+			"fixGroup": "request-2",
+			"justification": "Non-text response and routing gaps: Cohere rerank billed per request and sent to the legacy host, video submission response missing polling_url and lifecycle_status.",
+			"match": {
+				"layer": "e2e",
+				"caseId": "re:^nontext\\.(rerank|video)"
+			}
+		},
+		{
+			"id": "billing-meter-label",
+			"finding": "N36",
+			"fixGroup": "billing-2",
+			"justification": "Tokens billed under a related meter with the same total charge: OpenRouter reasoning inside output, Vertex Claude writes on the undivided write meter instead of the 5m and 1h meters, Kimi K3 writes without a TTL on the 5m meter. The charge is right, but usage exports and per-meter reports show the wrong meter.",
+			"match": {
+				"kind": "renamed",
+				"path": [
+					"billing.write.meter",
+					"billing.output.meter"
+				]
+			}
+		},
+		{
+			"id": "by-design-google-cached-content-byok",
+			"finding": "N35",
+			"fixGroup": "docs",
+			"justification": "provider_options.google.cached_content returns 400 without a customer Google key (executors/google-ai-studio/text-generate/index.ts:1097), since a cachedContents resource belongs to the customer's project. Intended, but the prompt-caching guide does not say a BYOK key is required.",
+			"match": {
+				"provider": "google-ai-studio",
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "re:\\.param\\.provider_options$"
+			}
+		},
+		{
+			"id": "by-design-google-vertex-cached-content-byok",
+			"finding": "N35",
+			"fixGroup": "docs",
+			"justification": "provider_options.google.cached_content returns 400 on Vertex AI without a customer Vertex AI credential (executors/google-vertex/text-generate/index.ts), since a cachedContents name is resolved in the project of the credential that serves the request. Documented in the prompt-caching guide.",
+			"match": {
+				"provider": "google-vertex",
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "re:\\.param\\.provider_options$"
+			}
+		},
+		{
+			"id": "by-design-google-vertex-eu-cached-content-byok",
+			"finding": "N35",
+			"fixGroup": "docs",
+			"justification": "As by-design-google-vertex-cached-content-byok, for the EU Vertex AI provider.",
+			"match": {
+				"provider": "google-vertex-eu",
+				"kind": "error_mapping",
+				"path": "upstream.call",
+				"caseId": "re:\\.param\\.provider_options$"
+			}
+		},
+		{
+			"id": "by-design-openai-request-id",
+			"finding": "N19",
+			"fixGroup": "by-design",
+			"justification": "OpenAI requests carry metadata.phaseo_request_id, which differs per request by design for reconciliation; it is outside the prompt, so the cached prefix is unaffected.",
+			"match": {
+				"kind": "nondeterminism",
+				"path": "re:metadata\\.phaseo_request_id"
+			}
+		},
+		{
+			"id": "harness-unroutable-providers",
+			"finding": "harness",
+			"fixGroup": "harness",
+			"justification": "Registered executors that cannot be driven offline: no base URL in any binding (Liquid), end-to-end encryption not implemented (Venice E2EE), private models and ScaleDown need workspace configuration. None has active catalogue routes.",
+			"match": {
+				"provider": [
+					"liquid",
+					"liquid-ai",
+					"venice-e2ee",
+					"private-model",
+					"scaledown"
+				],
+				"kind": "error_mapping"
+			}
+		}
+	]
+}

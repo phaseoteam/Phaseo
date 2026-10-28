@@ -1,8 +1,12 @@
 import { getSupabaseAdmin } from "@/runtime/env";
-import { sendEmail } from "@/lib/email/resend";
+import { isResendContactUnsubscribed, sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
+import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
+import { renderSlackAgentRefusedEmail } from "@/pipeline/notifications/slack-agent-refused";
+import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
+import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
 
 type OutboxRow = {
 	id: string;
@@ -236,8 +240,14 @@ function renderEmailForRow(row: OutboxRow): {
 	variables?: Record<string, string | number>;
 	html?: string;
 	text?: string;
+	from?: string;
+	replyTo?: string;
+	headers?: Record<string, string>;
 } {
 	const bindings = getBindings();
+	if (row.template === "feedback_request" || row.kind === "feedback_request") {
+		return renderFeedbackRequestEmail(row.payload ?? {});
+	}
 	if (row.template === "low_balance" || row.kind === "low_balance") {
 		const templateId = bindings.RESEND_TEMPLATE_LOW_BALANCE_ID?.trim() || "";
 		if (!templateId) throw new Error("missing_resend_template_low_balance_id");
@@ -272,6 +282,10 @@ function renderEmailForRow(row: OutboxRow): {
 			text: rendered.text,
 		};
 	}
+	if (row.template === "security_storage_incident" || row.kind === "security_storage_incident") {
+		const rendered = renderStorageIncidentEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "auto_top_up_failed" || row.kind === "auto_top_up_failed") {
 		const rendered = renderBillingAlertEmail(row.payload ?? {}, "auto_top_up_failed");
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
@@ -292,6 +306,10 @@ function renderEmailForRow(row: OutboxRow): {
 		}
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
+	if (row.template === "model_substitution" || row.kind === "model_substitution") {
+		const rendered = renderModelSubstitutionEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "io_retention_grace" || row.kind === "io_retention_grace") {
 		const rendered = renderIoRetentionEmail(row.payload ?? {}, "grace");
 		return {
@@ -308,8 +326,14 @@ function renderEmailForRow(row: OutboxRow): {
 			text: rendered.text,
 		};
 	}
+	if (row.template === "slack_agent_refused" || row.kind === "slack_agent_refused") {
+		const rendered = renderSlackAgentRefusedEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
 }
+
+const FEEDBACK_REQUESTS_PER_DRAIN = 5;
 
 export async function drainEmailOutbox(limit = 25): Promise<{
 	processed: number;
@@ -318,16 +342,22 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 }> {
 	const supabase = getSupabaseAdmin();
 	const bindings = getBindings();
+	const columns =
+		"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at";
 
+	// Routed notifications have their own destination snapshot and delivery job.
+	// Keep them out of the legacy owner-email drain so a routed model_deprecation
+	// event is not also emailed here. Spend rule events (spend_alert, spend_blocked,
+	// spend_report) are routed-only too. The owner and admin copies of a deprecation
+	// notice are separate model_deprecation_email rows, which this drain sends.
+	// Feedback requests are drained separately below so a daily batch never delays
+	// transactional email.
 	const { data, error } = await supabase
 		.from("email_outbox")
-		.select(
-			"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at",
-		)
+		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
-		.not("kind", "in", '("notification_test","model_deprecation")')
-		.neq("template", "model_deprecation")
+		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing","spend_alert","spend_blocked","spend_report")')
 		.order("created_at", { ascending: true })
 		.limit(limit);
 
@@ -335,10 +365,25 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		throw new Error(`email_outbox_fetch_error:${error.message ?? "unknown"}`);
 	}
 
-	// Routed notifications have their own destination snapshot and delivery job.
-	// Keep them out of the legacy owner-email drain so a model deprecation cannot
-	// be sent twice (or bypass the per-alert route entirely).
 	const rows = (data ?? []) as unknown as OutboxRow[];
+
+	// Feedback requests only use capacity transactional email left over, a few per
+	// run, which also spreads a day's batch out instead of sending it in one burst.
+	const feedbackLimit = Math.min(FEEDBACK_REQUESTS_PER_DRAIN, limit - rows.length);
+	if (feedbackLimit > 0) {
+		const { data: feedbackData, error: feedbackError } = await supabase
+			.from("email_outbox")
+			.select(columns)
+			.is("sent_at", null)
+			.lt("attempts", 5)
+			.eq("kind", "feedback_request")
+			.order("created_at", { ascending: true })
+			.limit(feedbackLimit);
+		if (feedbackError) {
+			throw new Error(`email_outbox_fetch_error:${feedbackError.message ?? "unknown"}`);
+		}
+		rows.push(...((feedbackData ?? []) as unknown as OutboxRow[]));
+	}
 	let sent = 0;
 	let failed = 0;
 
@@ -355,6 +400,33 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					.eq("id", row.id);
 				if (suppressionUpdateError) {
 					throw new Error(`email_outbox_update_error:${suppressionUpdateError.message ?? "unknown"}`);
+				}
+				failed += 1;
+				continue;
+			}
+
+			// Feedback requests are non-essential. They are dropped once the account is
+			// deleted (deletion clears the row's user_id and removes the feedback request
+			// its link points to), and they honour Resend's own unsubscribe state.
+			// Transactional mail (billing, alerts) does neither.
+			const isFeedbackRequest = row.template === "feedback_request" || row.kind === "feedback_request";
+			const feedbackSkipReason = !isFeedbackRequest
+				? null
+				: !row.user_id
+					? "user_deleted"
+					: (await isResendContactUnsubscribed(row.to_email))
+						? "unsubscribed:resend"
+						: null;
+			if (feedbackSkipReason) {
+				const { error: skippedUpdateError } = await supabase
+					.from("email_outbox")
+					.update({
+						attempts: 5,
+						last_error: feedbackSkipReason,
+					})
+					.eq("id", row.id);
+				if (skippedUpdateError) {
+					throw new Error(`email_outbox_update_error:${skippedUpdateError.message ?? "unknown"}`);
 				}
 				failed += 1;
 				continue;
@@ -401,6 +473,9 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					subject: rendered.subject,
 					html: rendered.html,
 					text: rendered.text,
+					...(rendered.from ? { from: rendered.from } : {}),
+					...(rendered.replyTo ? { replyTo: rendered.replyTo } : {}),
+					...(rendered.headers ? { headers: rendered.headers } : {}),
 					...(row.dedupe_key ? { idempotencyKey: row.dedupe_key } : {}),
 				});
 			}

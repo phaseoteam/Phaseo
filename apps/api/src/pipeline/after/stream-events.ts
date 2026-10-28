@@ -3,6 +3,8 @@
 // How: Parses protocol stream frames (chat/responses/messages) into canonical events.
 
 import type { IRContentPart } from "@core/ir";
+import { readGatewayStop, responsesOutputHasRefusal } from "@core/finish-reason";
+import { isBareChatErrorFrame } from "@core/stream-errors";
 
 type StopReason = string | null | undefined;
 
@@ -32,8 +34,13 @@ export type UnifiedStreamEvent =
 			choiceIndex?: number;
 			payload?: any;
 	  }
+	// Provider reasoning state (sealed signatures or encrypted reasoning) that
+	// Chat clients receive as reasoning_details and send back unchanged.
+	| { type: "reasoning_state"; details: Array<Record<string, any>>; choiceIndex?: number; payload?: any }
 	| { type: "usage"; usage: any; payload?: any }
-	| { type: "stop"; finishReason?: string | null; choiceIndex?: number; payload?: any }
+	// finishReason null marks the end of the stream without a reason of its own
+	// (Anthropic message_stop); consumers keep the reason they already have.
+	| { type: "stop"; finishReason?: string | null; stopSequence?: string | null; choiceIndex?: number; payload?: any }
 	| { type: "error"; message?: string; payload?: any }
 	| { type: "snapshot"; isFinal: boolean; payload: any };
 
@@ -121,12 +128,15 @@ function isExecutableResponseToolItem(item: any): boolean {
 function deriveResponsesStopReason(response: any): StopReason {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return "error";
+	// The provider's own stop (Anthropic stop_sequence, pause_turn, refusal), carried
+	// on the canonical Responses stream; see core/finish-reason.ts.
+	const gatewayStop = readGatewayStop(response);
 	if (status === "incomplete") {
 		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
+		if (reason.includes("content")) return gatewayStop?.reason === "refusal" ? "refusal" : "content_filter";
 		if (!reason) return "length";
 		if (reason.includes("max")) return "length";
 		if (reason.includes("tool")) return "tool_calls";
-		if (reason.includes("content")) return "content_filter";
 		return reason;
 	}
 
@@ -135,7 +145,10 @@ function deriveResponsesStopReason(response: any): StopReason {
 		: (Array.isArray(response?.output_items) ? response.output_items : []);
 	const hasToolCalls = outputItems.some((item: any) => isExecutableResponseToolItem(item));
 	if (hasToolCalls) return "tool_calls";
-	return status || "stop";
+	if (gatewayStop) return gatewayStop.reason;
+	if (responsesOutputHasRefusal(response)) return "refusal";
+	// "completed" (and any other status) is a normal stop, not a reason of its own.
+	return "stop";
 }
 
 function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
@@ -260,6 +273,16 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 		events.push({ type: "error", message: frame?.message, payload: frame });
 		return events;
 	}
+	// OpenAI-compatible providers report a failure after the stream started as a
+	// bare `{"error": {...}}` data frame with no `object` or `choices`.
+	if (isBareChatErrorFrame(frame)) {
+		events.push({
+			type: "error",
+			message: typeof frame.error.message === "string" ? frame.error.message : "stream_error",
+			payload: frame,
+		});
+		return events;
+	}
 
 	if (frame?.object === "chat.completion.chunk") {
 		events.push({
@@ -290,7 +313,12 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 					payload: choice,
 				});
 			}
-			if (typeof delta?.reasoning === "string" && delta.reasoning.length > 0) {
+			// `reasoning` is another name for the same text: read it only when a
+			// chunk does not also carry `reasoning_content`, or the text is doubled.
+			if (
+				typeof delta?.reasoning === "string" && delta.reasoning.length > 0 &&
+				!(typeof delta?.reasoning_content === "string" && delta.reasoning_content.length > 0)
+			) {
 				events.push({
 					type: "delta_text",
 					channel: "reasoning_text",
@@ -512,7 +540,9 @@ function extractOpenAIResponsesEvents(
 			message:
 				typeof frame?.error?.message === "string"
 					? frame.error.message
-					: (typeof frame?.message === "string" ? frame.message : "stream_error"),
+					: typeof frame?.response?.error?.message === "string"
+						? frame.response.error.message
+						: (typeof frame?.message === "string" ? frame.message : "stream_error"),
 			payload: frame,
 		});
 		events.push({
@@ -523,7 +553,9 @@ function extractOpenAIResponsesEvents(
 		return events;
 	}
 
-	if (event === "response.completed") {
+	// response.incomplete is as terminal as response.completed: it carries the final
+	// usage (billed) and the length or content-filter reason.
+	if (event === "response.completed" || event === "response.incomplete") {
 		const response = frame?.response ?? frame;
 		events.push({
 			type: "snapshot",
@@ -663,6 +695,9 @@ function extractAnthropicMessagesEvents(
 			events.push({
 				type: "stop",
 				finishReason: String(stopReason),
+				...(typeof frame?.delta?.stop_sequence === "string"
+					? { stopSequence: frame.delta.stop_sequence }
+					: {}),
 				payload: frame,
 			});
 		}
@@ -670,9 +705,11 @@ function extractAnthropicMessagesEvents(
 	}
 
 	if (event === "message_stop" || type === "message_stop") {
+		// message_stop ends the stream but has no stop reason of its own; the reason is
+		// on the preceding message_delta and must not be overwritten with end_turn.
 		events.push({
 			type: "stop",
-			finishReason: "end_turn",
+			finishReason: null,
 			payload: frame,
 		});
 		return events;

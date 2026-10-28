@@ -1,0 +1,59 @@
+---
+title: "استخراج القيم"
+badge: "Beta"
+tag: "Beta"
+description: "استخرج قيماً محددة النوع من النصوص والصور."
+icon: "list-filter"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>ميزة الاستخراج في مرحلة المعاينة. يعتمد توفر النموذج على مسارات المزوّد المهيأة.</Warning>
+
+ينتمي الاستخراج إلى عائلة Decisions. استخدم القرارات للاختيار من خيارات معروفة، والاستخراج لإرجاع قيم مثل رقم فاتورة أو تاريخ أو إجمالي.
+
+```typescript
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+
+تتطلب الأمثلة مساراً نشطاً لنموذج استخراج. تحقق من توفر النموذج قبل إرسال الطلبات. يوفّر `AsyncPhaseo` في Python أيضاً `await client.extractions.create(...)`.
+
+## أنواع الحقول
+
+الأنواع المدعومة هي `text` و`number` و`date` و`time` و`datetime` و`duration` و`list`. تتطلب القوائم `items: "text"` أو `"number"` أو `"date"`. قدّم من 1 إلى 64 حقلاً وبحد أقصى 16,384 محرفاً في المصدر. تبدأ أسماء الحقول بحرف أو شرطة سفلية، وتحتوي على 64 حرفاً أو رقماً أو شرطة سفلية أو نقطة أو شرطة بحد أقصى.
+
+تدعم الأرقام والمدد `integer` و`decimals` (0–6). تقبل المدد `seconds` أو `minutes` أو `hours` أو `days` أو `weeks` أو `months` أو `years`. اضبط `reference_date` عندما يعتمد تفسير التواريخ غير المكتملة على سنة محددة.
+
+تستخدم مدخلات الصور كائنات `{ content_type, base64 }`: حتى أربع صور PNG/JPEG/WebP، بحجم 4 MiB لكل صورة و8 MiB إجمالاً بعد فك الترميز. الحد الأقصى للطلب 16 MiB. لا تُدعم الروابط البعيدة أو ملفات PDF أو الصوت أو الفيديو أو التقديرات أو التنبؤات أو البث.
+
+## قراءة الإجابات
+
+اقرأ `answers[field_name].value`. قد تكون القيمة المفردة `null` عندما لا يحددها المصدر. يمثّل `p_null` احتمال تعذر تحديد القيمة وفقاً للنموذج؛ أما `confidence` فهو تقييم منفصل يبلغ عنه النموذج. توفر القوائم درجة ثقة دون `p_null`. لا تضمن هذه الدرجات صحة النتيجة: اختر عتبات مراجعة مناسبة لعبء عملك. تختلف القائمة الفارغة الصحيحة عن الطلب الفاشل.
+
+تعني `truncated: true` أن المزوّد لم يعالج مدخلات المصدر كلها. راجع النتيجة أو أعد إرسال مدخلات أقصر قبل الاعتماد على اكتمالها. لا تُعرض إزاحات النص أو التخمينات الخام. نفّذ العمليات الحسابية المعقدة في كود التطبيق.
+
+يعرض الاستخدام إجمالي `input_tokens` عبر تمريرات المزوّد. رموز الإخراج تساوي صفراً. استخدم التسعير الذي يعيده gateway بدلاً من تقدير التكلفة من طول المصدر أو ضرب الاستخدام في عدد الحقول.

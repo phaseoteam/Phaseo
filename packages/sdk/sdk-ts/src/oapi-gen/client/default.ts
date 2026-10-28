@@ -850,6 +850,19 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
+    context_management?: {
+      edits?: {
+        type: string;
+        [key: string]: unknown;
+      }[];
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -859,38 +872,97 @@ export type CreateAnthropicMessageParams = {
     };
     echo_upstream_request?: boolean;
     max_tokens: number;
-    messages: {
-      content:
-        | string
-        | {
-            cache_control?: {
-              scope?: string;
-              ttl?: string;
-              type?: string;
-              [key: string]: unknown;
-            };
-            content?: string;
-            id?: string;
-            input?: {};
-            name?: string;
-            source?: {
-              data?: string;
-              media_type?: string;
-              type?: string;
-              url?: string;
-            };
-            text?: string;
-            tool_use_id?: string;
-            type?: "text" | "image" | "tool_use" | "tool_result";
-          }[];
-      role: "user" | "assistant";
-    }[];
+    messages: (
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                content?: string;
+                id?: string;
+                input?: {};
+                name?: string;
+                source?: {
+                  data?: string;
+                  media_type?: string;
+                  type?: string;
+                  url?: string;
+                };
+                text?: string;
+                tool_use_id?: string;
+                type?: "text" | "image" | "tool_use" | "tool_result";
+              }[];
+          role: "user" | "assistant";
+        }
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                text: string;
+                type: "text";
+              }[];
+          role: "system";
+        }
+    )[];
     meta?: boolean;
     metadata?: {
       [key: string]: unknown;
     };
     model: string;
     models?: string[];
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+      version?: string;
+    };
+    prompt_cache_key?: string | null;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -952,11 +1024,20 @@ export type CreateAnthropicMessageParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?:
+        "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -969,7 +1050,9 @@ export type CreateAnthropicMessageParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "standard_only";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -1063,6 +1146,7 @@ export type CreateAnthropicMessageParams = {
     top_k?: number;
     top_p?: number;
     usage?: boolean;
+    user?: string;
   };
 };
 
@@ -1094,6 +1178,11 @@ export async function createAnthropicMessage(
     tool_use_id?: string;
     type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
+  context_management?: {
+    applied_edits?: {
+      [key: string]: unknown;
+    }[];
+  };
   id?: string;
   model?: string;
   role?: "assistant";
@@ -1101,6 +1190,16 @@ export async function createAnthropicMessage(
   stop_sequence?: string;
   type?: string;
   usage?: {
+    cache_creation?: {
+      ephemeral_1h_input_tokens?: number;
+      ephemeral_5m_input_tokens?: number;
+    };
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     output_tokens?: number;
   };
@@ -1129,6 +1228,11 @@ export async function createAnthropicMessage(
       tool_use_id?: string;
       type?: "text" | "image" | "tool_use" | "tool_result";
     }[];
+    context_management?: {
+      applied_edits?: {
+        [key: string]: unknown;
+      }[];
+    };
     id?: string;
     model?: string;
     role?: "assistant";
@@ -1136,6 +1240,16 @@ export async function createAnthropicMessage(
     stop_sequence?: string;
     type?: string;
     usage?: {
+      cache_creation?: {
+        ephemeral_1h_input_tokens?: number;
+        ephemeral_5m_input_tokens?: number;
+      };
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       output_tokens?: number;
     };
@@ -1176,6 +1290,7 @@ export type CreateApiKeyParams = {
     name: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[];
     workspace_id?: string;
   };
 };
@@ -1222,6 +1337,7 @@ export async function createApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -1247,6 +1363,7 @@ export async function createApiKey(
     usage_weekly: number;
     workspace_id: string;
   };
+  key: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/keys";
@@ -1286,6 +1403,7 @@ export async function createApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -1311,6 +1429,7 @@ export async function createApiKey(
       usage_weekly: number;
       workspace_id: string;
     };
+    key: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1985,6 +2104,12 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -2008,6 +2133,7 @@ export type CreateChatCompletionParams = {
       super_resolution_references?: string[];
       [key: string]: unknown;
     };
+    include_reasoning?: boolean;
     logit_bias?: {
       [key: string]: number;
     };
@@ -2016,6 +2142,9 @@ export type CreateChatCompletionParams = {
     max_tokens?: number;
     max_tool_calls?: number;
     messages: {
+      audio?: {
+        id: string;
+      } | null;
       audios?: {
         audio_url: {
           url: string;
@@ -2026,8 +2155,20 @@ export type CreateChatCompletionParams = {
       }[];
       content?:
         | string
+        | null
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  ttl?: string;
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2050,6 +2191,20 @@ export type CreateChatCompletionParams = {
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2066,6 +2221,18 @@ export type CreateChatCompletionParams = {
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2087,8 +2254,63 @@ export type CreateChatCompletionParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
+    prediction?: {
+      content:
+        | string
+        | {
+            [key: string]: unknown;
+          }[];
+      type: "content";
+    };
     presence_penalty?: number;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+      version?: string;
+    };
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?:
       | "openai"
       | "anthropic"
@@ -2160,7 +2382,15 @@ export type CreateChatCompletionParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -2172,7 +2402,8 @@ export type CreateChatCompletionParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -2202,7 +2433,10 @@ export type CreateChatCompletionParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2226,6 +2460,12 @@ export type CreateChatCompletionParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -2299,6 +2539,21 @@ export type CreateChatCompletionParams = {
           };
           type: "phaseo:search_models";
         }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
+        }
     )[];
     top_logprobs?: number;
     top_p?: number;
@@ -2319,6 +2574,12 @@ export async function createChatCompletion(
     finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
     index?: number;
     message?: {
+      audio?: {
+        data?: string;
+        expires_at?: number;
+        id?: string;
+        transcript?: string;
+      };
       audios?: {
         audio_url: {
           url: string;
@@ -2329,8 +2590,20 @@ export async function createChatCompletion(
       }[];
       content?:
         | string
+        | null
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  ttl?: string;
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2353,6 +2626,20 @@ export async function createChatCompletion(
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2369,6 +2656,18 @@ export async function createChatCompletion(
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2391,7 +2690,29 @@ export async function createChatCompletion(
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -2413,6 +2734,12 @@ export async function createChatCompletion(
       finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
       index?: number;
       message?: {
+        audio?: {
+          data?: string;
+          expires_at?: number;
+          id?: string;
+          transcript?: string;
+        };
         audios?: {
           audio_url: {
             url: string;
@@ -2423,8 +2750,20 @@ export async function createChatCompletion(
         }[];
         content?:
           | string
+          | null
           | (
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  prompt_cache_breakpoint?: {
+                    mode?: "explicit";
+                    ttl?: string;
+                    [key: string]: unknown;
+                  };
                   text: string;
                   type: "text";
                 }
@@ -2453,6 +2792,20 @@ export async function createChatCompletion(
                   video_url: string;
                 }
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  file: {
+                    file_data?: string;
+                    file_id?: string;
+                    filename?: string;
+                  };
+                  type: "file";
+                }
+              | {
                   function: {
                     arguments?: string;
                     name?: string;
@@ -2469,6 +2822,18 @@ export async function createChatCompletion(
           type: "image_url";
         }[];
         name?: string;
+        reasoning?: string;
+        reasoning_content?: string;
+        reasoning_details?: {
+          data?: string;
+          format?: string;
+          id?: string;
+          index?: number;
+          signature?: string;
+          summary?: string;
+          text?: string;
+          type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+        }[];
         role: "system" | "developer" | "user" | "assistant" | "tool";
         tool_call_id?: string;
         tool_calls?: {
@@ -2491,7 +2856,29 @@ export async function createChatCompletion(
     provider?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -2504,6 +2891,123 @@ export async function createChatCompletion(
         web_search_requests?: number;
       };
       total_tokens?: number;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateClassifierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model: string;
+    monthly_budget_usd?: number | null;
+    name: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+ */
+export async function createClassifier(
+  client: Client,
+  args: CreateClassifierParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
     };
   }>({
     method: "POST",
@@ -2579,6 +3083,75 @@ export async function createDataContributionClassifier(
       slug: string;
       updated_at?: string | null;
       [key: string]: unknown;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateDepartmentBudgetParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    department_id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+  };
+};
+
+/**
+ * Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+ */
+export async function createDepartmentBudget(
+  client: Client,
+  args: CreateDepartmentBudgetParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "POST",
@@ -3012,7 +3585,29 @@ export async function createEmbedding(
   object?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -3039,7 +3634,29 @@ export async function createEmbedding(
     object?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -3052,6 +3669,141 @@ export async function createEmbedding(
         web_search_requests?: number;
       };
       total_tokens?: number;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateExtractionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    fields: {
+      [key: string]:
+        | {
+            instructions?: string;
+            type: "text";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "number";
+            unit?: string;
+          }
+        | {
+            instructions?: string;
+            type: "date";
+          }
+        | {
+            instructions?: string;
+            type: "time";
+          }
+        | {
+            instructions?: string;
+            type: "datetime";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "duration";
+            unit?:
+              | "seconds"
+              | "minutes"
+              | "hours"
+              | "days"
+              | "weeks"
+              | "months"
+              | "years";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            items: "text" | "number" | "date";
+            type: "list";
+          };
+    };
+    images?: {
+      base64: string;
+      content_type: "image/png" | "image/jpeg" | "image/webp";
+    }[];
+    input: string;
+    model: string;
+    reference_date?: string;
+  };
+};
+
+/**
+ * Extracts text, numbers, dates, times, durations and typed lists from text or embedded images. Returns typed values and model-reported uncertainty. Estimates, forecasts, streaming and remote image URLs are not supported.
+ */
+export async function createExtraction(
+  client: Client,
+  args: CreateExtractionParams = {},
+): Promise<{
+  answers: {
+    [key: string]:
+      | {
+          confidence: number;
+          p_null: number;
+          type: "text" | "date" | "time" | "datetime";
+          value: string | null;
+        }
+      | {
+          confidence: number;
+          p_null: number;
+          type: "number" | "duration";
+          value: number | null;
+        }
+      | {
+          confidence: number;
+          type: "list";
+          value: (string | number)[];
+        };
+  };
+  model: string;
+  truncated: boolean;
+  usage: {
+    input_tokens: number;
+    output_tokens: 0;
+    total_tokens: number;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/extractions";
+  return client.request<{
+    answers: {
+      [key: string]:
+        | {
+            confidence: number;
+            p_null: number;
+            type: "text" | "date" | "time" | "datetime";
+            value: string | null;
+          }
+        | {
+            confidence: number;
+            p_null: number;
+            type: "number" | "duration";
+            value: number | null;
+          }
+        | {
+            confidence: number;
+            type: "list";
+            value: (string | number)[];
+          };
+    };
+    model: string;
+    truncated: boolean;
+    usage: {
+      input_tokens: number;
+      output_tokens: 0;
+      total_tokens: number;
     };
   }>({
     method: "POST",
@@ -3921,7 +4673,31 @@ export type CreateObservabilityDestinationParams = {
       }[];
     }[];
     sampling_rate?: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
   };
 };
 
@@ -3979,7 +4755,31 @@ export async function createObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -4034,7 +4834,31 @@ export async function createObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -4427,6 +5251,44 @@ export type CreatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -4448,6 +5310,44 @@ export async function createPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -4472,6 +5372,44 @@ export async function createPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -4767,7 +5705,7 @@ export type CreateRateLimitAssignmentParams = {
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -4823,7 +5761,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -5001,7 +5939,29 @@ export async function createRerank(
   }[];
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5034,7 +5994,29 @@ export async function createRerank(
     }[];
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5063,6 +6045,12 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -5090,7 +6078,20 @@ export type CreateResponseParams = {
       | string
       | {
           content?: string | {}[] | {};
+          encrypted_content?: string;
+          format?:
+            | "anthropic-claude-v1"
+            | "openai-responses-v1"
+            | "azure-openai-responses-v1"
+            | "xai-responses-v1"
+            | "google-gemini-v1";
+          id?: string;
           role?: "user" | "assistant" | "system" | "developer";
+          signature?: string;
+          summary?: {
+            text: string;
+            type: "summary_text";
+          }[];
           type?: string;
         }[]
       | {};
@@ -5104,8 +6105,55 @@ export type CreateResponseParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     previous_response_id?: string;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+      version?: string;
+    };
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -5167,7 +6215,15 @@ export type CreateResponseParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -5179,7 +6235,8 @@ export type CreateResponseParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -5193,7 +6250,10 @@ export type CreateResponseParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -5216,6 +6276,12 @@ export type CreateResponseParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -5289,6 +6355,21 @@ export type CreateResponseParams = {
           };
           type: "phaseo:search_models";
         }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
+        }
     )[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -5327,6 +6408,10 @@ export async function createResponse(
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -5344,8 +6429,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -5358,6 +6449,10 @@ export async function createResponse(
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -5375,8 +6470,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {
@@ -5390,7 +6491,29 @@ export async function createResponse(
   type?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5431,6 +6554,10 @@ export async function createResponse(
             type: "output_text";
           }
         | {
+            text: string;
+            type: "reasoning_text";
+          }
+        | {
             b64_json?: string;
             image_url?: {
               url?: string;
@@ -5448,8 +6575,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     output_items?: {
@@ -5462,6 +6595,10 @@ export async function createResponse(
             type: "output_text";
           }
         | {
+            text: string;
+            type: "reasoning_text";
+          }
+        | {
             b64_json?: string;
             image_url?: {
               url?: string;
@@ -5479,8 +6616,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     pricing_lines?: {
@@ -5494,7 +6637,29 @@ export async function createResponse(
     type?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cache_write_tokens_details?: {
+          ttl_12h_tokens?: number;
+          ttl_30m_tokens?: number;
+        };
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5592,6 +6757,134 @@ export async function createSpeech(
   const { path, query, headers, body } = args;
   const resolvedPath = "/audio/speech";
   return client.request<Blob>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateSpendRuleParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    action?: "notify" | "block";
+    base_amount_nanos?: number | null;
+    base_amount_usd?: number | null;
+    base_kind?:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref?: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos?: number | null;
+    block_at_amount_usd?: number | null;
+    block_at_percent?: number;
+    block_free_models?: boolean;
+    cooldown_minutes?: number;
+    destination_ids?: string[];
+    enabled?: boolean;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days?: number | null;
+    scope_id?: string | null;
+    scope_type?:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos?: number | null;
+    spike_floor_usd?: number | null;
+    spike_multiplier?: number | null;
+    threshold_amount_nanos?: number | null;
+    threshold_amount_usd?: number | null;
+    threshold_percents?: number[] | null;
+    time_zone?: string | null;
+    window_hours?: number | null;
+  };
+};
+
+/**
+ * Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.
+ */
+export async function createSpendRule(
+  client: Client,
+  args: CreateSpendRuleParams = {},
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-rules";
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
+      workspace_id: string;
+    };
+  }>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -6589,6 +7882,78 @@ export async function createWebhookEndpoint(
   });
 }
 
+export type CreateWorkloadIdentityPolicyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    issuer?: string;
+    max_token_lifetime_seconds?: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+  };
+};
+
+/**
+ * Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function createWorkloadIdentityPolicy(
+  client: Client,
+  args: CreateWorkloadIdentityPolicyParams = {},
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateWorkspaceParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -6928,8 +8293,11 @@ export async function createWorkspaceNotificationDestination(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -6947,8 +8315,11 @@ export async function createWorkspaceNotificationDestination(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -7052,6 +8423,45 @@ export async function deleteApiKey(
   });
 }
 
+export type DeleteClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a classifier. Labels it already wrote stay on past requests.
+ */
+export async function deleteClassifier(
+  client: Client,
+  args: DeleteClassifierParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteDataContributionClassifierParams = {
   path: {
     id: string;
@@ -7079,6 +8489,45 @@ export async function deleteDataContributionClassifier(
   return client.request<{
     data: {
       deleted: true;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a department budget and its alerts.
+ */
+export async function deleteDepartmentBudget(
+  client: Client,
+  args: DeleteDepartmentBudgetParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
     };
   }>({
     method: "DELETE",
@@ -7299,6 +8748,44 @@ export async function deletePreset(
   });
 }
 
+export type DeletePresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a label. Requests that still pin it fail with preset_version_not_found.
+ */
+export async function deletePresetLabel(
+  client: Client,
+  args: DeletePresetLabelParams,
+): Promise<{
+  deleted: boolean;
+  label: string;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    deleted: boolean;
+    label: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeletePrivateModelParams = {
   path: {
     id: string;
@@ -7375,7 +8862,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -7414,7 +8901,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -7429,6 +8916,45 @@ export async function deleteRateLimitPolicy(
   if ([".", ".."].includes(String(path?.["id"])))
     throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/rate-limits/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a spend rule. It is no longer evaluated and no longer counts toward the limit of 50 rules.
+ */
+export async function deleteSpendRule(
+  client: Client,
+  args: DeleteSpendRuleParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
       deleted: boolean;
@@ -7545,6 +9071,45 @@ export async function deleteWebhookEndpoint(
     deleted: true;
     id: string;
     object: "webhook_endpoint";
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function deleteWorkloadIdentityPolicy(
+  client: Client,
+  args: DeleteWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -7973,6 +9538,44 @@ export async function forkPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -7998,6 +9601,44 @@ export async function forkPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -8485,6 +10126,7 @@ export async function getApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -8550,6 +10192,7 @@ export async function getApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -8573,6 +10216,101 @@ export async function getApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one classifier. Owners and admins only.
+ */
+export async function getClassifier(
+  client: Client,
+  args: GetClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({
@@ -8679,6 +10417,7 @@ export async function getCurrentApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -8742,6 +10481,7 @@ export async function getCurrentApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -8865,6 +10605,75 @@ export async function getDataContributionSettings(
       starterCategories: {
         [key: string]: string[];
       };
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one department budget with the department's spend so far.
+ */
+export async function getDepartmentBudget(
+  client: Client,
+  args: GetDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "GET",
@@ -9713,7 +11522,31 @@ export async function getObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -9770,7 +11603,31 @@ export async function getObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -9849,6 +11706,44 @@ export async function getPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -9874,6 +11769,44 @@ export async function getPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -10242,7 +12175,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -10295,7 +12228,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -10331,6 +12264,109 @@ export async function getRateLimitPolicy(
       requests_per_minute: number | null;
       tokens_per_minute: number | null;
       updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one spend rule.
+ */
+export async function getSpendRule(
+  client: Client,
+  args: GetSpendRuleParams,
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
       workspace_id: string;
     };
   }>({
@@ -10993,6 +13029,73 @@ export async function getWebhookEndpoint(
   });
 }
 
+export type GetWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function getWorkloadIdentityPolicy(
+  client: Client,
+  args: GetWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetWorkspaceParams = {
   path: {
     id: string;
@@ -11248,6 +13351,10 @@ export async function getWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      billing_time_zone: string;
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -11268,6 +13375,10 @@ export async function getWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        billing_time_zone: string;
+        department_attribution: "all" | "primary";
       };
     };
   }>({
@@ -11394,6 +13505,9 @@ export async function getWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -11419,6 +13533,9 @@ export async function getWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;
@@ -11531,6 +13648,95 @@ export async function invalidateApiKeyCache(
   });
 }
 
+export type LiftSpendBlockParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lifts an active spend block so requests in its scope are accepted again within about a minute. The rule does not block again until its period resets, but it keeps sending alerts. Owners and admins only; the lift is recorded in the audit log and queues a spend_blocked event with state lifted. Returns 404 for an unknown block and 409 spend_block_not_active when it was already lifted.
+ */
+export async function liftSpendBlock(
+  client: Client,
+  args: LiftSpendBlockParams,
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-blocks/${encodeURIComponent(String(path["id"]))}/lift`;
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListApiKeysParams = {
   path?: Record<string, never>;
   query?: {
@@ -11584,6 +13790,7 @@ export async function listApiKeys(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -11648,6 +13855,7 @@ export async function listApiKeys(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -12786,6 +14994,97 @@ export async function listBatchRequestsAlias(
   });
 }
 
+export type ListClassifiersParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+ */
+export async function listClassifiers(
+  client: Client,
+  args: ListClassifiersParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListDataModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -12822,6 +15121,7 @@ export type ListDataModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -12943,6 +15243,7 @@ export type ListDataModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -13114,6 +15415,73 @@ export async function listDataModels(
     offset?: number;
     ok?: boolean;
     total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListDepartmentBudgetsParams = {
+  path?: Record<string, never>;
+  query?: {
+    department_id?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ */
+export async function listDepartmentBudgets(
+  client: Client,
+  args: ListDepartmentBudgetsParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -14247,6 +16615,7 @@ export type ListModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -14368,6 +16737,7 @@ export type ListModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -14484,7 +16854,9 @@ export type ListModelsParams = {
     status?: string[];
     supported_parameters?: string[];
   };
-  headers?: Record<string, never>;
+  headers?: {
+    "If-None-Match"?: string;
+  };
   body?: never;
 };
 
@@ -14595,6 +16967,7 @@ export async function listModels(
               | "deranked_lvl3"
               | "disabled";
           };
+          service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
           status: "active" | "coming_soon" | "inactive";
           status_reason:
             | "active"
@@ -14761,6 +17134,7 @@ export async function listModels(
                 | "deranked_lvl3"
                 | "disabled";
             };
+            service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
             status: "active" | "coming_soon" | "inactive";
             status_reason:
               | "active"
@@ -14975,7 +17349,31 @@ export async function listObservabilityDestinations(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   }[];
@@ -15031,7 +17429,31 @@ export async function listObservabilityDestinations(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     }[];
@@ -15097,6 +17519,55 @@ export async function listOrganisations(
   });
 }
 
+export type ListPresetLabelsParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the named labels, such as production or staging, and the published version each one points at.
+ */
+export async function listPresetLabels(
+  client: Client,
+  args: ListPresetLabelsParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListPresetsParams = {
   path?: Record<string, never>;
   query?: {
@@ -15118,6 +17589,44 @@ export async function listPresets(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -15142,6 +17651,44 @@ export async function listPresets(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -15259,12 +17806,51 @@ export async function listPresetVersions(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -15282,12 +17868,51 @@ export async function listPresetVersions(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -15563,7 +18188,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -15617,7 +18242,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -15655,6 +18280,309 @@ export async function listRateLimitPolicies(
       workspace_id: string;
     }[];
     has_more: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendBlocksParams = {
+  path?: Record<string, never>;
+  query?: {
+    include_lifted?: boolean;
+    limit?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's spend blocks, newest first: the blocks that spend rules with action block have started once spend reached their block point. Active blocks only, unless include_lifted is true. Owners and admins only.
+ */
+export async function listSpendBlocks(
+  client: Client,
+  args: ListSpendBlocksParams = {},
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-blocks";
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendRuleHistoryParams = {
+  path: {
+    id: string;
+  };
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the alerts and block events the rule has queued, newest first, with delivery counts, and its most recent period records.
+ */
+export async function listSpendRuleHistory(
+  client: Client,
+  args: ListSpendRuleHistoryParams,
+): Promise<{
+  data: {
+    events: {
+      base_nanos?: number | null;
+      base_usd?: number | null;
+      created_at: string;
+      deliveries: {
+        failed: number;
+        pending: number;
+        sent: number;
+      };
+      id: string;
+      kind: "spend_alert" | "spend_blocked";
+      message?: string | null;
+      percent?: number | null;
+      period?: {
+        [key: string]: unknown;
+      } | null;
+      state?: string | null;
+      threshold_amount_nanos?: number | null;
+      threshold_amount_usd?: number | null;
+      threshold_percent?: number | null;
+      thresholds_crossed?: number[] | null;
+      title?: string | null;
+      value_nanos?: number | null;
+      value_usd?: number | null;
+    }[];
+    has_more: boolean;
+    periods: {
+      amount_fired_at: string | null;
+      fire_count: number;
+      highest_percent_fired: number | null;
+      last_base_nanos: number | null;
+      last_base_usd: number | null;
+      last_fired_at: string | null;
+      last_value_nanos: number | null;
+      last_value_usd: number | null;
+      period_end: string | null;
+      period_start: string | null;
+    }[];
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/history`;
+  return client.request<{
+    data: {
+      events: {
+        base_nanos?: number | null;
+        base_usd?: number | null;
+        created_at: string;
+        deliveries: {
+          failed: number;
+          pending: number;
+          sent: number;
+        };
+        id: string;
+        kind: "spend_alert" | "spend_blocked";
+        message?: string | null;
+        percent?: number | null;
+        period?: {
+          [key: string]: unknown;
+        } | null;
+        state?: string | null;
+        threshold_amount_nanos?: number | null;
+        threshold_amount_usd?: number | null;
+        threshold_percent?: number | null;
+        thresholds_crossed?: number[] | null;
+        title?: string | null;
+        value_nanos?: number | null;
+        value_usd?: number | null;
+      }[];
+      has_more: boolean;
+      periods: {
+        amount_fired_at: string | null;
+        fire_count: number;
+        highest_percent_fired: number | null;
+        last_base_nanos: number | null;
+        last_base_usd: number | null;
+        last_fired_at: string | null;
+        last_value_nanos: number | null;
+        last_value_usd: number | null;
+        period_end: string | null;
+        period_start: string | null;
+      }[];
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendRulesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's spend rules. A rule notifies at thresholds in dollars or percent over a scope and a calendar or rolling period. Every workspace member can read them.
+ */
+export async function listSpendRules(
+  client: Client,
+  args: ListSpendRulesParams = {},
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  }[];
+  max_rules: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-rules";
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
+      workspace_id: string;
+    }[];
+    max_rules: number;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -15702,6 +18630,7 @@ export type ListTeamModelsParams = {
       | "cursor"
       | "cyfragovpl"
       | "databricks"
+      | "dealignai"
       | "decart"
       | "deepseek"
       | "dots-studio"
@@ -15823,6 +18752,7 @@ export type ListTeamModelsParams = {
           | "cursor"
           | "cyfragovpl"
           | "databricks"
+          | "dealignai"
           | "decart"
           | "deepseek"
           | "dots-studio"
@@ -16038,6 +18968,7 @@ export async function listTeamModels(
           | "deranked_lvl3"
           | "disabled";
       };
+      service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
       status: "active" | "coming_soon" | "inactive";
       status_reason:
         | "active"
@@ -16193,6 +19124,7 @@ export async function listTeamModels(
             | "deranked_lvl3"
             | "disabled";
         };
+        service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
         status: "active" | "coming_soon" | "inactive";
         status_reason:
           | "active"
@@ -17106,6 +20038,71 @@ export async function listWebhookEndpoints(
   });
 }
 
+export type ListWorkloadIdentityPoliciesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function listWorkloadIdentityPolicies(
+  client: Client,
+  args: ListWorkloadIdentityPoliciesParams = {},
+): Promise<{
+  audience: string;
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    audience: string;
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListWorkspaceAppsParams = {
   path?: Record<string, never>;
   query?: {
@@ -17616,8 +20613,11 @@ export async function listWorkspaceNotificationDestinations(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -17635,8 +20635,11 @@ export async function listWorkspaceNotificationDestinations(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -17673,9 +20676,15 @@ export async function listWorkspaceNotificationRoutes(
 ): Promise<{
   data: {
     auto_top_up_failed: string[];
+    broadcast_destination_failing: string[];
     low_balance: string[];
     model_deprecation: string[];
+    model_substitution: string[];
     payment_method_expiring: string[];
+    rate_limit_throttled: string[];
+    spend_alert: string[];
+    spend_blocked: string[];
+    spend_report: string[];
   };
 }> {
   const { path, query, headers, body } = args;
@@ -17683,9 +20692,15 @@ export async function listWorkspaceNotificationRoutes(
   return client.request<{
     data: {
       auto_top_up_failed: string[];
+      broadcast_destination_failing: string[];
       low_balance: string[];
       model_deprecation: string[];
+      model_substitution: string[];
       payment_method_expiring: string[];
+      rate_limit_throttled: string[];
+      spend_alert: string[];
+      spend_blocked: string[];
+      spend_report: string[];
     };
   }>({
     method: "GET",
@@ -17896,6 +20911,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: (
           | {
               instructions: string;
@@ -17919,6 +20939,11 @@ export type MakeDecisionParams = {
               }[];
               name?: string;
               type: "score";
+            }
+          | {
+              instructions: string;
+              name?: string;
+              type: "box";
             }
         )[];
         routing?: {
@@ -18019,6 +21044,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: {
           [key: string]:
             | {
@@ -18056,6 +21086,15 @@ export type MakeDecisionParams = {
                     }
                   | unknown[];
                 type: "score";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "box";
               };
         };
         routing?: {
@@ -18143,6 +21182,17 @@ export async function makeDecision(
             name: string | null;
             type: "refusal";
           }
+        | {
+            box: {
+              bottom: number;
+              left: number;
+              right: number;
+              top: number;
+            };
+            confidence: number | null;
+            name: string | null;
+            type: "box";
+          }
       )[];
       meta?: {
         [key: string]: unknown;
@@ -18219,6 +21269,17 @@ export async function makeDecision(
           | {
               name: string | null;
               type: "refusal";
+            }
+          | {
+              box: {
+                bottom: number;
+                left: number;
+                right: number;
+                top: number;
+              };
+              confidence: number | null;
+              name: string | null;
+              type: "box";
             }
         )[];
         meta?: {
@@ -18313,6 +21374,121 @@ export async function mergeWorkspaceApp(
   });
 }
 
+export type PreviewSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the rule's current period, spend so far, base, percent and next threshold, computed as the evaluator computes them, without sending or recording anything.
+ */
+export async function previewSpendRule(
+  client: Client,
+  args: PreviewSpendRuleParams,
+): Promise<{
+  data: {
+    alert: {
+      message: string;
+      scope_label: string;
+      title: string;
+    } | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_nanos: number | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    base_usd: number | null;
+    block_at_nanos: number | null;
+    block_at_usd: number | null;
+    computed_at: string;
+    evaluated: boolean;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    next_threshold: {
+      amount_nanos: number;
+      amount_usd: number;
+      percent: number | null;
+    } | null;
+    percent: number | null;
+    period: {
+      end: string;
+      kind: "day" | "week" | "month" | "rolling";
+      start: string;
+    } | null;
+    reached_threshold_percent: number | null;
+    rule_id: string;
+    state: {
+      amount_fired_at: string | null;
+      fire_count: number;
+      highest_percent_fired: number | null;
+      last_fired_at: string | null;
+    } | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string;
+    value_nanos: number | null;
+    value_usd: number | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/preview`;
+  return client.request<{
+    data: {
+      alert: {
+        message: string;
+        scope_label: string;
+        title: string;
+      } | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_nanos: number | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      base_usd: number | null;
+      block_at_nanos: number | null;
+      block_at_usd: number | null;
+      computed_at: string;
+      evaluated: boolean;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      next_threshold: {
+        amount_nanos: number;
+        amount_usd: number;
+        percent: number | null;
+      } | null;
+      percent: number | null;
+      period: {
+        end: string;
+        kind: "day" | "week" | "month" | "rolling";
+        start: string;
+      } | null;
+      reached_threshold_percent: number | null;
+      rule_id: string;
+      state: {
+        amount_fired_at: string | null;
+        fire_count: number;
+        highest_percent_fired: number | null;
+        last_fired_at: string | null;
+      } | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string;
+      value_nanos: number | null;
+      value_usd: number | null;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type PublishPresetVersionParams = {
   path: {
     id: string;
@@ -18334,12 +21510,51 @@ export async function publishPresetVersion(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -18357,12 +21572,51 @@ export async function publishPresetVersion(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -19567,6 +22821,7 @@ export async function rotateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -19634,6 +22889,7 @@ export async function rotateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -19717,6 +22973,128 @@ export async function rotateWebhookEndpointSecret(
     workspaceId: string;
   }>({
     method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RotateWorkspaceNotificationDestinationSecretParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Generates a new signing secret for a custom webhook destination and returns it once. Destinations created before signing get their first secret this way. Later deliveries are signed with the new secret and the previous secret stops being used.
+ */
+export async function rotateWorkspaceNotificationDestinationSecret(
+  client: Client,
+  args: RotateWorkspaceNotificationDestinationSecretParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    has_signing_secret?: boolean;
+    id: string;
+    name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
+    status: "active" | "disabled";
+    target_preview: string;
+    type:
+      | "email"
+      | "discord"
+      | "discord_webhook"
+      | "slack"
+      | "microsoft_teams"
+      | "custom_webhook";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}/rotate-secret`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      has_signing_secret?: boolean;
+      id: string;
+      name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
+      status: "active" | "disabled";
+      target_preview: string;
+      type:
+        | "email"
+        | "discord"
+        | "discord_webhook"
+        | "slack"
+        | "microsoft_teams"
+        | "custom_webhook";
+      updated_at?: string | null;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type SetPresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    version?: string;
+    version_id?: string;
+  };
+};
+
+/**
+ * Points a label at a published version, creating the label or moving it. Requests that pin the label, such as @support-triage@production, use the new version within about 2 minutes. Moving a label back to an earlier version is a rollback.
+ */
+export async function setPresetLabel(
+  client: Client,
+  args: SetPresetLabelParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    };
+  }>({
+    method: "PUT",
     path: resolvedPath,
     query,
     headers,
@@ -19832,6 +23210,73 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Renders the rule's alert from its current value, marked TEST, and sends it now to the rule's destinations, or to the Spend Alerts route when the rule has none. Nothing is recorded. A workspace can send 5 tests a minute.
+ */
+export async function testSpendRule(
+  client: Client,
+  args: TestSpendRuleParams,
+): Promise<{
+  data: {
+    delivered: number;
+    deliveries: {
+      delivered: boolean;
+      destination_id: string;
+      error: string | null;
+      name: string;
+      status: number | null;
+      type: string;
+    }[];
+    failed: number;
+    message: string;
+    rule_id: string;
+    rule_name: string;
+    source: "rule" | "routes";
+    test: boolean;
+    title: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/test`;
+  return client.request<{
+    data: {
+      delivered: number;
+      deliveries: {
+        delivered: boolean;
+        destination_id: string;
+        error: string | null;
+        name: string;
+        status: number | null;
+        type: string;
+      }[];
+      failed: number;
+      message: string;
+      rule_id: string;
+      rule_name: string;
+      source: "rule" | "routes";
+      test: boolean;
+      title: string;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -19993,6 +23438,7 @@ export type UpdateApiKeyParams = {
     name?: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[] | null;
   };
 };
 
@@ -20037,6 +23483,7 @@ export async function updateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -20102,6 +23549,7 @@ export async function updateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -20125,6 +23573,127 @@ export async function updateApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions?: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model?: string;
+    monthly_budget_usd?: number | null;
+    name?: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+ */
+export async function updateClassifier(
+  client: Client,
+  args: UpdateClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({
@@ -20248,6 +23817,78 @@ export async function updateDataContributionConsent(
       enabled: boolean;
       policyVersion: string;
       sampleRateBps: number;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    interval?: "daily" | "weekly" | "monthly";
+    limit?: number;
+  };
+};
+
+/**
+ * Changes the period or USD amount of a department budget.
+ */
+export async function updateDepartmentBudget(
+  client: Client,
+  args: UpdateDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "PATCH",
@@ -20911,7 +24552,31 @@ export async function updateObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -20968,7 +24633,31 @@ export async function updateObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -21040,6 +24729,44 @@ export type UpdatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -21061,6 +24788,44 @@ export async function updatePreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -21086,6 +24851,44 @@ export async function updatePreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -21422,7 +25225,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -21482,7 +25285,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
  */
 export async function updateRateLimitPolicy(
   client: Client,
@@ -21518,6 +25321,138 @@ export async function updateRateLimitPolicy(
       requests_per_minute: number | null;
       tokens_per_minute: number | null;
       updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    action?: "notify" | "block";
+    base_amount_nanos?: number | null;
+    base_amount_usd?: number | null;
+    base_kind?:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref?: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos?: number | null;
+    block_at_amount_usd?: number | null;
+    block_at_percent?: number;
+    block_free_models?: boolean;
+    cooldown_minutes?: number;
+    destination_ids?: string[];
+    enabled?: boolean;
+    metric?: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name?: string;
+    period?: "day" | "week" | "month" | "rolling";
+    runway_days?: number | null;
+    scope_id?: string | null;
+    scope_type?:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos?: number | null;
+    spike_floor_usd?: number | null;
+    spike_multiplier?: number | null;
+    threshold_amount_nanos?: number | null;
+    threshold_amount_usd?: number | null;
+    threshold_percents?: number[] | null;
+    time_zone?: string | null;
+    window_hours?: number | null;
+  };
+};
+
+/**
+ * Changes a spend rule. The fields sent are merged over the stored rule and the whole rule is checked again. destination_ids replaces the rule's destinations; leave it out to keep them.
+ */
+export async function updateSpendRule(
+  client: Client,
+  args: UpdateSpendRuleParams,
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
       workspace_id: string;
     };
   }>({
@@ -21644,6 +25579,80 @@ export async function updateWebhookEndpoint(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    max_token_lifetime_seconds?: number;
+    name?: string;
+    status?: "active" | "disabled";
+  };
+};
+
+/**
+ * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function updateWorkloadIdentityPolicy(
+  client: Client,
+  args: UpdateWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
   }>({
     method: "PATCH",
     path: resolvedPath,
@@ -22086,7 +26095,13 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution"
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -22108,7 +26123,13 @@ export async function updateWorkspaceNotificationRoute(
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution"
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -22122,7 +26143,13 @@ export async function updateWorkspaceNotificationRoute(
         | "low_balance"
         | "auto_top_up_failed"
         | "payment_method_expiring"
-        | "model_deprecation";
+        | "model_deprecation"
+        | "model_substitution"
+        | "rate_limit_throttled"
+        | "broadcast_destination_failing"
+        | "spend_alert"
+        | "spend_blocked"
+        | "spend_report";
     };
   }>({
     method: "PUT",
@@ -22155,6 +26182,10 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       enabled: boolean;
       threshold_usd?: number;
     };
+    spend?: {
+      billing_time_zone?: string;
+      department_attribution?: "all" | "primary";
+    };
   };
 };
 
@@ -22181,6 +26212,10 @@ export async function updateWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      billing_time_zone: string;
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -22201,6 +26236,10 @@ export async function updateWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        billing_time_zone: string;
+        department_attribution: "all" | "primary";
       };
     };
   }>({
@@ -22263,6 +26302,9 @@ export type UpdateWorkspaceSettingsParams = {
     byok_fallback_enabled?: boolean;
     io_logging_enabled?: boolean;
     io_logging_include_provider_payloads?: boolean;
+    model_successor_max_price_increase_percent?: number;
+    model_successor_price_policy?: "never" | "limit" | "any";
+    model_successor_redirect_enabled?: boolean;
     privacy_enable_free_may_publish_prompts?: boolean;
     privacy_enable_free_may_train?: boolean;
     privacy_enable_input_output_logging?: boolean;
@@ -22291,6 +26333,9 @@ export async function updateWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -22316,6 +26361,9 @@ export async function updateWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;

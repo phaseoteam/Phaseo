@@ -21,46 +21,33 @@ import type {
 	ObservabilityTab,
 	ObservabilityTimeSeriesChart,
 } from "@/components/(gateway)/usage/observability/types";
-import { extractUsageMeters } from "@/components/(gateway)/usage/usageMeters";
 import {
 	getUsageRangeLabel,
 	getUsageRangeParamKeys,
 	parseUsageDateInput,
 	parseUsageRangePreset,
+	resolvePreviousUsageTimeRange,
 	resolveUsageTimeRange,
 	type UsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
+import { forecastMonthSpend } from "@/lib/gateway/usage/monthSpendForecast";
+import { forecastPeriod, kpiFooters, type KpiCard } from "@/lib/gateway/usage/periodUsageKpis";
 import {
-	buildGuardrailEnforcementMetrics,
+	buildGuardrailBlockMetrics,
 	type GuardrailEnforcementMetricsResult,
 } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
 import type {
+	ObservabilityUsageCell,
 	SettingsObservabilityData,
-	ObservabilityRequestRow as RawRequestRow,
 } from "@/lib/fetchers/internal/fetchSettingsObservabilityData";
 
 
-function toNumber(value: unknown): number {
-	if (typeof value === "number" && Number.isFinite(value)) return value;
-	if (typeof value === "string" && value.trim()) {
-		const parsed = Number(value);
-		if (Number.isFinite(parsed)) return parsed;
-	}
-	return 0;
-}
+type UsageCell = ObservabilityUsageCell;
 
-function metricValue(usage: unknown, key: string): number {
-	const meters = extractUsageMeters(usage as any);
-	return meters.find((meter) => meter.key === key)?.value ?? 0;
-}
+const spendOf = (cell: UsageCell) => cell.costNanos / 1e9;
 
-function usageTokens(usage: unknown): number {
-	const meters = extractUsageMeters(usage as any);
-	const total = meters.find((meter) => meter.key === "total_tokens")?.value;
-	if (total && total > 0) return total;
-	const input = meters.find((meter) => meter.key === "input_tokens")?.value ?? 0;
-	const output = meters.find((meter) => meter.key === "output_tokens")?.value ?? 0;
-	return input + output;
+function sumCells(cells: UsageCell[], getValue: (cell: UsageCell) => number): number {
+	return cells.reduce((sum, cell) => sum + getValue(cell), 0);
 }
 
 function deltaPercent(current: number, previous: number): number | null {
@@ -147,114 +134,46 @@ function buildEmptySeries(args: {
 	return points;
 }
 
+/** The chart bucket a cell's own bucket falls in, or null for a cell summed over the whole window. */
+function cellBucket(cell: UsageCell, range: ObservabilityRange): string | null {
+	if (!cell.bucket) return null;
+	const start = new Date(cell.bucket);
+	return Number.isNaN(start.getTime()) ? null : floorToBucket(start, range).toISOString();
+}
+
 function sumByBucket(args: {
-	rows: RawRequestRow[];
+	cells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	from: string;
 	to: string;
-	getValue: (row: RawRequestRow) => number;
+	getValue: (cell: UsageCell) => number;
 }): ObservabilitySeriesPoint[] {
 	const points = buildEmptySeries(args);
 	const pointMap = new Map(points.map((point) => [point.bucket, point]));
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const bucket = floorToBucket(created, args.range).toISOString();
-		const point = pointMap.get(bucket);
-		if (!point) continue;
-		point.value += args.getValue(row);
+	for (const cell of args.cells) {
+		const point = pointMap.get(cellBucket(cell, args.range) ?? "");
+		if (point) point.value += args.getValue(cell);
 	}
 	return points;
 }
 
-function cacheHitRateByBucket(args: {
-	rows: RawRequestRow[];
+/** A rate per bucket, such as cached tokens over all tokens; zero where the bucket has none. */
+function ratioByBucket(args: {
+	cells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	from: string;
 	to: string;
+	numerator: (cell: UsageCell) => number;
+	denominator: (cell: UsageCell) => number;
+	scale?: number;
 }): ObservabilitySeriesPoint[] {
-	const points = buildEmptySeries(args);
-	const totals = new Map(
-		points.map((point) => [
-			point.bucket,
-			{
-				cachedTokens: 0,
-				totalTokens: 0,
-			},
-		]),
-	);
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const bucket = floorToBucket(created, args.range).toISOString();
-		const total = totals.get(bucket);
-		if (!total) continue;
-		const cachedTokens =
-			metricValue(row.usage, "cache_read_tokens") +
-			metricValue(row.usage, "cache_write_tokens");
-		total.cachedTokens += cachedTokens;
-		total.totalTokens += usageTokens(row.usage);
-	}
-	return points.map((point) => {
-		const total = totals.get(point.bucket);
-		return {
-			...point,
-			value:
-				total && total.totalTokens > 0
-					? total.cachedTokens / total.totalTokens
-					: 0,
-		};
-	});
-}
-
-function successRateByBucket(args: {
-	rows: RawRequestRow[];
-	range: ObservabilityRange;
-	locale: string;
-	from: string;
-	to: string;
-}): ObservabilitySeriesPoint[] {
-	const points = buildEmptySeries(args);
-	const totals = new Map(points.map((point) => [point.bucket, { successful: 0, total: 0 }]));
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const total = totals.get(floorToBucket(created, args.range).toISOString());
-		if (!total) continue;
-		total.total += 1;
-		if (row.success === true) total.successful += 1;
-	}
-	return points.map((point) => {
-		const total = totals.get(point.bucket);
-		return { ...point, value: total && total.total > 0 ? total.successful / total.total : 0 };
-	});
-}
-
-function blendedPriceByBucket(args: {
-	rows: RawRequestRow[];
-	range: ObservabilityRange;
-	locale: string;
-	from: string;
-	to: string;
-}): ObservabilitySeriesPoint[] {
-	const points = buildEmptySeries(args);
-	const totals = new Map(points.map((point) => [point.bucket, { spend: 0, tokens: 0 }]));
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const total = totals.get(floorToBucket(created, args.range).toISOString());
-		if (!total) continue;
-		total.spend += toNumber(row.cost_nanos) / 1e9;
-		total.tokens += usageTokens(row.usage);
-	}
-	return points.map((point) => {
-		const total = totals.get(point.bucket);
-		return {
-			...point,
-			value: total && total.tokens > 0 ? (total.spend / total.tokens) * 1_000_000 : 0,
-		};
+	const numerators = sumByBucket({ ...args, getValue: args.numerator });
+	const denominators = sumByBucket({ ...args, getValue: args.denominator });
+	return numerators.map((point, index) => {
+		const denominator = denominators[index]?.value ?? 0;
+		return { ...point, value: denominator > 0 ? (point.value / denominator) * (args.scale ?? 1) : 0 };
 	});
 }
 
@@ -272,26 +191,14 @@ function makeKpi(args: {
 	};
 }
 
-function isByokRequest(row: RawRequestRow): boolean {
-	const lines = Array.isArray(row.pricing_lines) ? row.pricing_lines : [];
-	const searchable = JSON.stringify(lines).toLowerCase();
-	const usageText = JSON.stringify(row.usage ?? {}).toLowerCase();
-	return (
-		searchable.includes("byok") ||
-		searchable.includes("bring_your_own") ||
-		usageText.includes("byok_key") ||
-		usageText.includes("provider_key")
-	);
-}
-
 function makeRankedItems(args: {
-	rows: RawRequestRow[];
-	previousRows: RawRequestRow[];
+	cells: UsageCell[];
+	previousCells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	from: string;
 	to: string;
-	getId: (row: RawRequestRow) => string | null;
+	getId: (cell: UsageCell) => string | null;
 	getLabel: (id: string) => string;
 	getSubtitle?: (id: string) => string | null | undefined;
 	getImageUrl?: (id: string) => string | null | undefined;
@@ -300,20 +207,20 @@ function makeRankedItems(args: {
 	const current = new Map<string, { tokens: number; requests: number; cost: number }>();
 	const previous = new Map<string, number>();
 
-	for (const row of args.rows) {
-		const id = args.getId(row);
+	for (const cell of args.cells) {
+		const id = args.getId(cell);
 		if (!id) continue;
 		const entry = current.get(id) ?? { tokens: 0, requests: 0, cost: 0 };
-		entry.tokens += usageTokens(row.usage);
-		entry.requests += 1;
-		entry.cost += toNumber(row.cost_nanos) / 1e9;
+		entry.tokens += cell.tokens;
+		entry.requests += cell.requests;
+		entry.cost += spendOf(cell);
 		current.set(id, entry);
 	}
 
-	for (const row of args.previousRows) {
-		const id = args.getId(row);
+	for (const cell of args.previousCells) {
+		const id = args.getId(cell);
 		if (!id) continue;
-		previous.set(id, (previous.get(id) ?? 0) + usageTokens(row.usage));
+		previous.set(id, (previous.get(id) ?? 0) + cell.tokens);
 	}
 
 	return Array.from(current.entries())
@@ -329,54 +236,35 @@ function makeRankedItems(args: {
 			deltaPercent: deltaPercent(values.tokens, previous.get(id) ?? 0),
 			sparkline: sumByBucket({
 				locale: args.locale,
-				rows: args.rows.filter((row) => args.getId(row) === id),
+				cells: args.cells.filter((cell) => args.getId(cell) === id),
 				range: args.range,
 				from: args.from,
 				to: args.to,
-				getValue: (row) => usageTokens(row.usage),
+				getValue: (cell) => cell.tokens,
 			}),
 		}))
 		.sort((a, b) => b.tokens - a.tokens)
 		.slice(0, args.limit ?? 6);
 }
 
-function buildBreakdown(args: {
-	rows: RawRequestRow[];
-	getId: (row: RawRequestRow) => string | null;
-	getLabel: (id: string) => string;
-	getValue: (row: RawRequestRow) => number;
-	limit?: number;
-}) {
-	const totals = new Map<string, number>();
-	for (const row of args.rows) {
-		const id = args.getId(row);
-		if (!id) continue;
-		totals.set(id, (totals.get(id) ?? 0) + args.getValue(row));
-	}
-	return Array.from(totals.entries())
-		.map(([id, value]) => ({ id, label: args.getLabel(id), value }))
-		.sort((a, b) => b.value - a.value)
-		.slice(0, args.limit ?? 8);
-}
-
 function buildTimeSeriesBreakdown(args: {
-	rows: RawRequestRow[];
+	cells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	from: string;
 	to: string;
-	getId: (row: RawRequestRow) => string | null;
+	getId: (cell: UsageCell) => string | null;
 	getLabel: (id: string) => string;
-	getValue: (row: RawRequestRow) => number;
+	getValue: (cell: UsageCell) => number;
 	limit?: number;
 	includeOther?: boolean;
 	otherLabel: string;
 }): ObservabilityTimeSeriesChart {
 	const totals = new Map<string, number>();
-	for (const row of args.rows) {
-		const id = args.getId(row);
+	for (const cell of args.cells) {
+		const id = args.getId(cell);
 		if (!id) continue;
-		totals.set(id, (totals.get(id) ?? 0) + args.getValue(row));
+		totals.set(id, (totals.get(id) ?? 0) + args.getValue(cell));
 	}
 	const series = Array.from(totals.entries())
 		.sort((a, b) => b[1] - a[1])
@@ -412,17 +300,15 @@ function buildTimeSeriesBreakdown(args: {
 		return row;
 	});
 	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
-	for (const row of args.rows) {
-		const sourceId = args.getId(row);
+	for (const cell of args.cells) {
+		const sourceId = args.getId(cell);
 		const id = sourceId
 			? seriesIdBySourceId.get(sourceId) ?? (hasOther ? "other" : null)
 			: null;
 		if (!id) continue;
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+		const point = pointMap.get(cellBucket(cell, args.range) ?? "");
 		if (!point) continue;
-		point[id] = Number(point[id] ?? 0) + args.getValue(row);
+		point[id] = Number(point[id] ?? 0) + args.getValue(cell);
 	}
 	return {
 		series: chartSeries.map(({ id, label }) => ({ id, label })),
@@ -431,13 +317,13 @@ function buildTimeSeriesBreakdown(args: {
 }
 
 function buildFixedTimeSeries(args: {
-	rows: RawRequestRow[];
+	cells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	from: string;
 	to: string;
 	series: Array<{ id: string; label: string; color?: string }>;
-	getValues: (row: RawRequestRow) => Record<string, number>;
+	getValues: (cell: UsageCell) => Record<string, number>;
 }): ObservabilityTimeSeriesChart {
 	const points = buildEmptySeries(args).map((point) => {
 		const row: Record<string, string | number> = {
@@ -448,12 +334,10 @@ function buildFixedTimeSeries(args: {
 		return row;
 	});
 	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+	for (const cell of args.cells) {
+		const point = pointMap.get(cellBucket(cell, args.range) ?? "");
 		if (!point) continue;
-		const values = args.getValues(row);
+		const values = args.getValues(cell);
 		for (const item of args.series) {
 			point[item.id] = Number(point[item.id] ?? 0) + (values[item.id] ?? 0);
 		}
@@ -462,7 +346,7 @@ function buildFixedTimeSeries(args: {
 }
 
 function buildExploreRows(args: {
-	rows: RawRequestRow[];
+	cells: UsageCell[];
 	range: ObservabilityRange;
 	locale: string;
 	unknownLabel: string;
@@ -471,14 +355,14 @@ function buildExploreRows(args: {
 	modelLabel: (id: string | null) => string;
 }): ObservabilityExploreRow[] {
 	const grouped = new Map<string, ObservabilityExploreRow>();
-	for (const row of args.rows) {
-		const created = new Date(row.created_at);
-		if (Number.isNaN(created.getTime())) continue;
-		const bucket = formatBucketLabel(floorToBucket(created, args.range), args.range, args.locale);
-		const model = args.modelLabel(row.model_id);
-		const apiKey = args.keyLabel(row.key_id);
-		const app = args.appLabel(row.app_id);
-		const provider = row.provider ?? args.unknownLabel;
+	for (const cell of args.cells) {
+		const bucketStart = cellBucket(cell, args.range);
+		if (!bucketStart) continue;
+		const bucket = formatBucketLabel(new Date(bucketStart), args.range, args.locale);
+		const model = args.modelLabel(cell.modelId);
+		const apiKey = args.keyLabel(cell.keyId);
+		const app = args.appLabel(cell.appId);
+		const provider = cell.provider ?? args.unknownLabel;
 		const key = `${bucket}\n${model}\n${apiKey}\n${app}\n${provider}`;
 		const existing =
 			grouped.get(key) ??
@@ -498,28 +382,27 @@ function buildExploreRows(args: {
 				cost: 0,
 				errors: 0,
 			} satisfies ObservabilityExploreRow);
-		const inputTokens = metricValue(row.usage, "input_tokens");
-		const outputTokens = metricValue(row.usage, "output_tokens");
-		const reasoningTokens =
-			metricValue(row.usage, "reasoning_tokens") +
-			metricValue(row.usage, "output_reasoning_tokens");
-		const cachedTokens =
-			metricValue(row.usage, "cache_read_tokens") +
-			metricValue(row.usage, "cache_write_tokens");
-		const tokens = usageTokens(row.usage);
-		existing.requests += 1;
-		existing.tokens += tokens;
-		existing.inputTokens += inputTokens;
-		existing.outputTokens += outputTokens;
-		existing.reasoningTokens += reasoningTokens;
-		existing.cachedTokens += cachedTokens;
-		existing.uncachedTokens += Math.max(0, tokens - cachedTokens);
-		existing.cost += toNumber(row.cost_nanos) / 1e9;
-		existing.errors += row.success === false ? 1 : 0;
+		existing.requests += cell.requests;
+		existing.tokens += cell.tokens;
+		existing.inputTokens += cell.inputTokens;
+		existing.outputTokens += cell.outputTokens;
+		existing.reasoningTokens += cell.reasoningTokens;
+		existing.cachedTokens += cell.cachedTokens;
+		existing.uncachedTokens += Math.max(0, cell.tokens - cell.cachedTokens);
+		existing.cost += spendOf(cell);
+		existing.errors += cell.requests - cell.successfulRequests;
 		grouped.set(key, existing);
 	}
 	return Array.from(grouped.values()).sort((a, b) => b.tokens - a.tokens);
 }
+
+const DATABASE_BUCKETS: Record<ObservabilityRange, string> = {
+	"1h": "5 minutes",
+	"1d": "hour",
+	"1w": "day",
+	"1m": "day",
+	"1y": "month",
+};
 
 function rangeForTimeWindow(from: string, to: string): ObservabilityRange {
 	const fromTime = new Date(from).getTime();
@@ -545,6 +428,7 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 	const scope = { ...initialScope, workspaceId: sp.get("workspaceId")?.trim() || initialScope.workspaceId };
 	const creatorId = sp.get("user") || "";
 	const keyId = sp.get("key") || "";
+	const excludeKey = Boolean(keyId) && sp.get("key_op") === "is_not";
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = sp.get(rangeKeys.preset);
 	const preset = presetParam
@@ -554,25 +438,38 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 	const customTo = parseUsageDateInput(sp.get(rangeKeys.to));
 	const labelKey = sp.get("label_key")?.trim() || "";
 	const labelValue = sp.get("label_value")?.trim() || "";
-	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, creatorId, keyId }, preset === "live", async (signal) => {
+	// "Is not" has no rollup totals, so the API leaves the overview unfiltered for it.
+	const excludeLabel = Boolean(labelKey) && sp.get("label_op") === "is_not";
+	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, labelOp: excludeLabel ? "is_not" : "", creatorId, keyId, keyOp: excludeKey ? "is_not" : "" }, preset === "live", async (signal) => {
 		const { from, to } = resolveUsageTimeRange({ preset, customFrom, customTo });
-		const previousFrom = new Date(2 * new Date(from).getTime() - new Date(to).getTime()).toISOString();
-		const params = new URLSearchParams({ workspaceId: scope.workspaceId!, from, to, previousFrom, previousTo: from });
+		const previous = resolvePreviousUsageTimeRange({ preset, from, to });
+		const params = new URLSearchParams({
+			workspaceId: scope.workspaceId!,
+			from,
+			to,
+			previousFrom: previous.from,
+			previousTo: previous.to,
+			// The database cuts the charts' buckets in the reader's time zone.
+			bucket: DATABASE_BUCKETS[rangeForTimeWindow(from, to)],
+			timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		});
 		if (creatorId) params.set("user", creatorId);
 		if (keyId) params.set("key", keyId);
+		if (excludeKey) params.set("key_op", "is_not");
 		if (labelKey) params.set("label_key", labelKey);
 		if (labelValue) params.set("label_value", labelValue);
+		if (excludeLabel) params.set("label_op", "is_not");
 		const path = `/api/account/settings/usage/observability?${params}` as const;
 		const initial = await fetchPrivateUsage<SettingsObservabilityData>(path, scope, signal);
 		if (!initial.signedIn) throw new WebApiError(path, 401);
 		if (initial.workspaceId !== scope.workspaceId) throw new WebApiError(path, 403);
-		return { initial, from, to };
+		return { initial, from, to, previous };
 	});
 	return <PrivateUsageQuery query={query} scope={scope} live={preset === "live"}>{(snapshot) => <ObservabilityView snapshot={snapshot} initialTab={initialTab} preset={preset} customFrom={customFrom} customTo={customTo} />}</PrivateUsageQuery>;
 }
 
-const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial, from, to }, initialTab, preset, customFrom, customTo }: {
-	snapshot: { initial: SettingsObservabilityData; from: string; to: string };
+const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial, from, to, previous }, initialTab, preset, customFrom, customTo }: {
+	snapshot: { initial: SettingsObservabilityData; from: string; to: string; previous: { from: string; to: string } };
 	initialTab: ObservabilityTab;
 	preset: UsageRangePreset;
 	customFrom: string | null;
@@ -584,10 +481,10 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	const clearFilterParams = new URLSearchParams(sp.toString());
 	clearFilterParams.delete("user");
 	const range = rangeForTimeWindow(from, to);
-	const { keys, current: currentRequestResult, previous: previousRequestResult } = initial;
-	const rawRows = currentRequestResult.rows;
-	const previousRows = previousRequestResult.rows;
-	const hasUsage = rawRows.length > 0 || previousRows.length > 0;
+	const { keys } = initial;
+	const cells = initial.current.cells;
+	const previousCells = initial.previous.cells;
+	const hasUsage = cells.some((cell) => cell.requests > 0) || previousCells.some((cell) => cell.requests > 0);
 
 	useEffect(() => {
 		if (!hasUsage || !initial.workspaceId) return;
@@ -617,8 +514,8 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		if (!id) return t("observability.noApp" as never);
 		return appNames.get(id) || id;
 	};
-	const modelFilterOptions = Array.from(new Set(rawRows.flatMap((row) => {
-		const id = row.model_id?.trim();
+	const modelFilterOptions = Array.from(new Set(cells.flatMap((cell) => {
+		const id = cell.modelId?.trim();
 		return id ? [id] : [];
 	}))
 	)
@@ -632,329 +529,149 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		})
 		.sort((a, b) => a.label.localeCompare(b.label));
 
-	const currentSpend = rawRows.reduce(
-		(sum, row) => sum + toNumber(row.cost_nanos) / 1e9,
-		0,
-	);
-	const previousSpend = previousRows.reduce(
-		(sum, row) => sum + toNumber(row.cost_nanos) / 1e9,
-		0,
-	);
-	const currentTokens = rawRows.reduce((sum, row) => sum + usageTokens(row.usage), 0);
-	const previousTokens = previousRows.reduce(
-		(sum, row) => sum + usageTokens(row.usage),
-		0,
-	);
-	const currentCachedTokens = rawRows.reduce(
-		(sum, row) =>
-			sum +
-			metricValue(row.usage, "cache_read_tokens") +
-			metricValue(row.usage, "cache_write_tokens"),
-		0,
-	);
-	const previousCachedTokens = previousRows.reduce(
-		(sum, row) =>
-			sum +
-			metricValue(row.usage, "cache_read_tokens") +
-			metricValue(row.usage, "cache_write_tokens"),
-		0,
-	);
-	const currentBlendedPrice = currentTokens > 0 ? (currentSpend / currentTokens) * 1_000_000 : 0;
-	const previousBlendedPrice = previousTokens > 0 ? (previousSpend / previousTokens) * 1_000_000 : 0;
-	const currentSuccessRate = rawRows.length > 0
-		? rawRows.filter((row) => row.success === true).length / rawRows.length
-		: 0;
-	const previousSuccessRate = previousRows.length > 0
-		? previousRows.filter((row) => row.success === true).length / previousRows.length
-		: 0;
+	const totals = (windowCells: UsageCell[]) => {
+		const spend = sumCells(windowCells, spendOf);
+		const requests = sumCells(windowCells, (cell) => cell.requests);
+		const tokens = sumCells(windowCells, (cell) => cell.tokens);
+		return {
+			spend,
+			requests,
+			tokens,
+			cache: tokens > 0 ? sumCells(windowCells, (cell) => cell.cachedTokens) / tokens : 0,
+			successRate: requests > 0 ? sumCells(windowCells, (cell) => cell.successfulRequests) / requests : 0,
+			blendedPrice: tokens > 0 ? (spend / tokens) * 1_000_000 : 0,
+		};
+	};
+	const currentTotals = totals(cells);
+	const previousTotals = totals(previousCells);
+	const series = { cells, range, locale, from, to };
 
 	const kpis: ObservabilityKpi[] = [
 		makeKpi({
 			id: "spend",
 			label: t("observability.metricCost" as never),
-			value: currentSpend,
-			previous: previousSpend,
+			value: currentTotals.spend,
+			previous: previousTotals.spend,
 			format: "currency",
-			sparkline: sumByBucket({
-		locale,
-				rows: rawRows,
-				range,
-				from,
-				to,
-				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-			}),
+			sparkline: sumByBucket({ ...series, getValue: spendOf }),
 		}),
 		makeKpi({
 			id: "requests",
 			label: t("observability.metricRequests" as never),
-			value: rawRows.length,
-			previous: previousRows.length,
+			value: currentTotals.requests,
+			previous: previousTotals.requests,
 			format: "number",
-			sparkline: sumByBucket({
-		locale,
-				rows: rawRows,
-				range,
-				from,
-				to,
-				getValue: () => 1,
-			}),
+			sparkline: sumByBucket({ ...series, getValue: (cell) => cell.requests }),
 		}),
 		makeKpi({
 			id: "tokens",
 			label: t("observability.metricTokens" as never),
-			value: currentTokens,
-			previous: previousTokens,
+			value: currentTotals.tokens,
+			previous: previousTotals.tokens,
 			format: "number",
-			sparkline: sumByBucket({
-		locale,
-				rows: rawRows,
-				range,
-				from,
-				to,
-				getValue: (row) => usageTokens(row.usage),
-			}),
+			sparkline: sumByBucket({ ...series, getValue: (cell) => cell.tokens }),
 		}),
 		makeKpi({
 			id: "cache",
 			label: t("observability.metricCacheHitRate" as never),
-			value: currentTokens > 0 ? currentCachedTokens / currentTokens : 0,
-			previous: previousTokens > 0 ? previousCachedTokens / previousTokens : 0,
+			value: currentTotals.cache,
+			previous: previousTotals.cache,
 			format: "percent",
-			sparkline: cacheHitRateByBucket({
-		locale,
-				rows: rawRows,
-				range,
-				from,
-				to,
-			}),
+			sparkline: ratioByBucket({ ...series, numerator: (cell) => cell.cachedTokens, denominator: (cell) => cell.tokens }),
 		}),
 		makeKpi({
 			id: "success_rate",
 			label: t("strings.Success rate" as never),
-			value: currentSuccessRate,
-			previous: previousSuccessRate,
+			value: currentTotals.successRate,
+			previous: previousTotals.successRate,
 			format: "percent",
-			sparkline: successRateByBucket({
-		locale, rows: rawRows, range, from, to }),
+			sparkline: ratioByBucket({ ...series, numerator: (cell) => cell.successfulRequests, denominator: (cell) => cell.requests }),
 		}),
 		makeKpi({
 			id: "blended_price",
 			label: t("observability.metricBlendedPricePerMillion" as never),
-			value: currentBlendedPrice,
-			previous: previousBlendedPrice,
+			value: currentTotals.blendedPrice,
+			previous: previousTotals.blendedPrice,
 			format: "currency_per_million",
-			sparkline: blendedPriceByBucket({
-		locale, rows: rawRows, range, from, to }),
+			sparkline: ratioByBucket({ ...series, numerator: spendOf, denominator: (cell) => cell.tokens, scale: 1_000_000 }),
 		}),
 	];
 
+	const rankedArgs = { ...series, previousCells };
 	const topApiKeys = makeRankedItems({
-		locale,
-		rows: rawRows,
-		previousRows,
-		range,
-		from,
-		to,
-		getId: (row) => row.key_id,
+		...rankedArgs,
+		getId: (cell) => cell.keyId,
 		getLabel: keyLabel,
 		getSubtitle: keySubtitle,
 		limit: 5,
 	});
 	const topApps = makeRankedItems({
-		locale,
-		rows: rawRows,
-		previousRows,
-		range,
-		from,
-		to,
-		getId: (row) => row.app_id,
+		...rankedArgs,
+		getId: (cell) => cell.appId,
 		getLabel: appLabel,
 		getImageUrl: (id) => appMetadata.get(id)?.imageUrl ?? null,
 		limit: 5,
 	});
 	const trendingModels = makeRankedItems({
-		locale,
-		rows: rawRows,
-		previousRows,
-		range,
-		from,
-		to,
-		getId: (row) => row.model_id,
+		...rankedArgs,
+		getId: (cell) => cell.modelId,
 		getLabel: modelLabel,
 	});
 
-	const usageByModelCost = buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-		rows: rawRows,
-		range,
-		from,
-		to,
-		getId: (row) => row.model_id,
-		getLabel: modelLabel,
-		getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-	});
-	const requestVolumeByModel = buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-		rows: rawRows,
-		range,
-		from,
-		to,
-		getId: (row) => row.model_id,
-		getLabel: modelLabel,
-		getValue: () => 1,
-	});
-	const trendChartArgs = {
-		rows: rawRows,
-		range,
-		from,
-		to,
-		limit: 10,
-		includeOther: true,
-	};
-	const modelTrendCharts = {
-		spend: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.model_id,
-			getLabel: modelLabel,
-			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-		}),
-		requests: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.model_id,
-			getLabel: modelLabel,
-			getValue: () => 1,
-		}),
-		tokens: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.model_id,
-			getLabel: modelLabel,
-			getValue: (row) => usageTokens(row.usage),
-		}),
-	};
-	const keyTrendCharts = {
-		spend: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.key_id,
-			getLabel: keyLabel,
-			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-		}),
-		requests: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.key_id,
-			getLabel: keyLabel,
-			getValue: () => 1,
-		}),
-		tokens: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.key_id,
-			getLabel: keyLabel,
-			getValue: (row) => usageTokens(row.usage),
-		}),
-	};
-	const appTrendCharts = {
-		spend: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.app_id,
-			getLabel: appLabel,
-			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-		}),
-		requests: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.app_id,
-			getLabel: appLabel,
-			getValue: () => 1,
-		}),
-		tokens: buildTimeSeriesBreakdown({
-		locale,
-		otherLabel: t("strings.Other" as never),
-			...trendChartArgs,
-			getId: (row) => row.app_id,
-			getLabel: appLabel,
-			getValue: (row) => usageTokens(row.usage),
-		}),
+	const otherLabel = t("strings.Other" as never);
+	const usageByModelCost = buildTimeSeriesBreakdown({ ...series, otherLabel, getId: (cell) => cell.modelId, getLabel: modelLabel, getValue: spendOf });
+	const requestVolumeByModel = buildTimeSeriesBreakdown({ ...series, otherLabel, getId: (cell) => cell.modelId, getLabel: modelLabel, getValue: (cell) => cell.requests });
+	const trendCharts = (getId: (cell: UsageCell) => string | null, getLabel: (id: string) => string) => {
+		const trendArgs = { ...series, otherLabel, limit: 10, includeOther: true, getId, getLabel };
+		return {
+			spend: buildTimeSeriesBreakdown({ ...trendArgs, getValue: spendOf }),
+			requests: buildTimeSeriesBreakdown({ ...trendArgs, getValue: (cell) => cell.requests }),
+			tokens: buildTimeSeriesBreakdown({ ...trendArgs, getValue: (cell) => cell.tokens }),
+		};
 	};
 	const usageTypeCost = buildFixedTimeSeries({
-		locale,
-		rows: rawRows,
-		range,
-		from,
-		to,
+		...series,
 		series: [
 			{ id: "phaseo", label: t("observability.metricPhaseoCredits" as never), color: "#2563eb" },
 			{ id: "byok", label: "BYOK", color: "#059669" },
 		],
-		getValues: (row) => {
-			const cost = toNumber(row.cost_nanos) / 1e9;
-			return isByokRequest(row)
-				? { phaseo: 0, byok: cost }
-				: { phaseo: cost, byok: 0 };
-		},
+		getValues: (cell) => cell.byok ? { phaseo: 0, byok: spendOf(cell) } : { phaseo: spendOf(cell), byok: 0 },
 	});
 	const tokenSplit = buildFixedTimeSeries({
-		locale,
-		rows: rawRows,
-		range,
-		from,
-		to,
+		...series,
 		series: [
 			{ id: "input", label: t("observability.metricInput" as never), color: "#2563eb" },
 			{ id: "output", label: t("observability.metricOutput" as never), color: "#059669" },
 			{ id: "reasoning", label: t("observability.metricReasoning" as never), color: "#d97706" },
 		],
-		getValues: (row) => ({
-			input: metricValue(row.usage, "input_tokens"),
-			output: metricValue(row.usage, "output_tokens"),
-			reasoning:
-				metricValue(row.usage, "reasoning_tokens") +
-				metricValue(row.usage, "output_reasoning_tokens"),
-		}),
+		getValues: (cell) => ({ input: cell.inputTokens, output: cell.outputTokens, reasoning: cell.reasoningTokens }),
 	});
 	const cacheSplit = buildFixedTimeSeries({
-		locale,
-		rows: rawRows,
-		range,
-		from,
-		to,
+		...series,
 		series: [
 			{ id: "cached", label: t("observability.metricCached" as never), color: "#059669" },
 			{ id: "uncached", label: t("observability.metricUncached" as never), color: "#94a3b8" },
 		],
-		getValues: (row) => {
-			const tokens = usageTokens(row.usage);
-			const cached =
-				metricValue(row.usage, "cache_read_tokens") +
-				metricValue(row.usage, "cache_write_tokens");
-			return {
-				cached,
-				uncached: Math.max(0, tokens - cached),
-			};
-		},
+		getValues: (cell) => ({ cached: cell.cachedTokens, uncached: Math.max(0, cell.tokens - cell.cachedTokens) }),
 	});
 
+	const recentCells = initial.recent?.cells ?? null;
+	const footers = kpiFooters({
+		observedAt: Date.parse(to),
+		period: forecastPeriod({ preset, from, to }),
+		cards: Object.fromEntries(kpis.map((kpi) => [kpi.id, { value: kpi.value, previous: kpi.previous }])) as Record<ObservabilityKpi["id"], KpiCard>,
+		recent: recentCells ? {
+			spend: sumCells(recentCells, spendOf),
+			requests: sumCells(recentCells, (cell) => cell.requests),
+			tokens: sumCells(recentCells, (cell) => cell.tokens),
+		} : null,
+	});
 	const data: ObservabilityData = {
 		range,
 		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
-		isSampled: currentRequestResult.isSampled,
-		sampleLimit: currentRequestResult.limit,
-		kpis,
+		previousPeriod: previous,
+		kpis: kpis.map((kpi) => ({ ...kpi, footer: footers[kpi.id] })),
+		monthSpend: initial.monthUsage ? forecastMonthSpend(initial.monthUsage) : null,
 		topApiKeys,
 		topApps,
 		trendingModels,
@@ -966,27 +683,20 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 			requestVolumeByModel,
 			tokenSplit,
 			cacheSplit,
-			spendOverTime: sumByBucket({
-		locale,
-				rows: rawRows,
-				range,
-				from,
-				to,
-				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
-			}),
+			spendOverTime: sumByBucket({ ...series, getValue: spendOf }),
 			trends: {
-				models: modelTrendCharts,
-				keys: keyTrendCharts,
-				apps: appTrendCharts,
+				models: trendCharts((cell) => cell.modelId, modelLabel),
+				keys: trendCharts((cell) => cell.keyId, keyLabel),
+				apps: trendCharts((cell) => cell.appId, appLabel),
 			},
 		},
 		filterOptions: {
 			models: modelFilterOptions,
 		},
 		exploreRows: buildExploreRows({
-		locale,
-		unknownLabel: t("strings.Unknown" as never),
-			rows: rawRows,
+			locale,
+			unknownLabel: t("strings.Unknown" as never),
+			cells,
 			range,
 			keyLabel,
 			appLabel,
@@ -994,16 +704,11 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		}),
 	};
 
-	const guardrailMetrics: GuardrailEnforcementMetricsResult =
-		buildGuardrailEnforcementMetrics({
-			rows: rawRows.map((row) => ({
-				createdAt: row.created_at,
-				errorPayload: row.error_payload,
-				errorMessage: row.error_message,
-			})),
-			timeRange: { from, to },
-			range,
-		});
+	const guardrailMetrics: GuardrailEnforcementMetricsResult = buildGuardrailBlockMetrics({
+		blocks: cells.flatMap((cell) => cell.bucket ? [{ bucket: cell.bucket, blocked: cell.guardrailBlocked }] : []),
+		timeRange: { from, to },
+		range,
+	});
 
 	return (
 		<div className="space-y-4">
@@ -1014,6 +719,14 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 			initialTab={initialTab}
 			labelFacets={initial.labelFacets}
 			labelSummary={initial.labelSummary}
+			requestClassifiers={initial.requestClassifiers ?? []}
+			labelBreakdown={{
+				from,
+				to,
+				keyId: sp.get("key") || null,
+				excludeKey: Boolean(sp.get("key")) && sp.get("key_op") === "is_not",
+				creatorId: sp.get("user") || null,
+			}}
 			preset={preset}
 			customFrom={customFrom}
 			customTo={customTo}

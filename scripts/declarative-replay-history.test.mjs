@@ -30,8 +30,11 @@ test("changed SQL or missing recorded history fails closed", () => {
 });
 
 test("desired routing function bodies match the latest recorded migration", () => {
-	const latest = readMigration("20261004222339_tighten_canonical_capability_boundaries.sql").replaceAll("\r\n", "\n");
 	for (const name of ["canonical_routing_capability_id", "enforce_canonical_routing_capability", "normalize_routing_pricing_operation"]) {
+		const migration = name === "canonical_routing_capability_id"
+			? "20261019193017_add_extraction_capability.sql"
+			: "20261004222339_tighten_canonical_capability_boundaries.sql";
+		const latest = readMigration(migration).replaceAll("\r\n", "\n");
 		const desired = readFileSync(new URL(`../supabase/schemas/public/functions/${name}.sql`, import.meta.url), "utf8").replaceAll("\r\n", "\n");
 		const body = desired.slice(desired.indexOf("as $$") + 5, desired.indexOf("$$;", desired.indexOf("as $$") + 5));
 		const start = latest.indexOf(`function public.${name}(`);

@@ -1,0 +1,97 @@
+---
+title: "Classificadores de solicitações"
+description: "Rotule cada solicitação com um modelo que você escolher, usando suas próprias categorias, e filtre os registros e o uso pelos resultados."
+icon: "list-tree"
+---
+
+<Note>
+Os classificadores de solicitações estão em beta. Proprietários e administradores os gerenciam em **Configurações → Classificadores** ou com a API de gerenciamento `/v1/classifiers`, usando uma [chave de gerenciamento](../developers/management-api-keys.mdx) com os escopos `classifiers:*`.
+</Note>
+
+Um classificador descreve uma taxonomia, como departamento, público ou tipo de tarefa, e indica o modelo que a aplica. Quando cada solicitação elegível termina, a Phaseo envia a solicitação para esse modelo, que escolhe um valor para cada dimensão. Cada resposta é adicionada à solicitação como um [rótulo de solicitação](./request-labels.mdx), então você pode filtrar e agrupar registros, uso e análises por ela exatamente como faz com os rótulos enviados pelo seu código.
+
+Use classificadores quando a categoria não é conhecida no seu código: para quem um prompt foi escrito, que tipo de trabalho um agente está fazendo ou se uma solicitação envolve um tema regulamentado.
+
+## Como uma solicitação é classificada
+
+1. A solicitação termina e a resposta é devolvida à sua aplicação. A classificação nunca adiciona latência.
+2. A Phaseo monta uma transcrição da solicitação: instruções do sistema, mensagens, nomes das ferramentas (não seus esquemas) e resultados das ferramentas. Cada turno é limitado a 4.000 caracteres, e segredos como chaves de API são ocultados. Se o classificador incluir a resposta, a saída gerada também é adicionada.
+3. O modelo do classificador escolhe entre os seus valores. Qualquer resposta fora deles é descartada (veja "Escolher um modelo" abaixo).
+4. As respostas são armazenadas como rótulos na solicitação, junto com a confiança de cada uma, antes que a solicitação apareça nos seus registros.
+
+Os classificadores são executados em solicitações bem-sucedidas para `chat/completions`, `responses` e `messages`. Se a classificação falhar ou exceder o tempo limite, a solicitação ainda é registrada, só que sem esses rótulos.
+
+## Criar um classificador
+
+Comece com um modelo pronto no painel ou envie a taxonomia você mesmo:
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| Campo | Significado |
+| --- | --- |
+| `dimensions` | De 1 a 12 perguntas. Cada `key` se torna a chave do rótulo; cada dimensão lista de 2 a 50 valores (1 com `allow_other`). |
+| `multiple` | Permite mais de um valor por dimensão. Cada valor se torna um rótulo próprio com a mesma chave. |
+| `allow_other` | Permite que o modelo responda `other` quando nada se encaixa. |
+| `instructions` | Orientações extras adicionadas ao prompt de classificação. |
+| `sample_rate` | Parcela das solicitações elegíveis a classificar, de `0.0001` a `1`. |
+| `sample_by` | `request` amostra cada solicitação. `session` mantém uma sessão inteira dentro ou fora e reutiliza as respostas dela por uma hora, então uma execução longa de agente é classificada uma única vez. |
+| `input_scope` | `prompt` classifica a solicitação. `prompt_and_response` também mostra a resposta ao modelo. |
+| `scope` | Classifica apenas solicitações destes `key_ids`, `app_ids` ou `models`. |
+| `monthly_budget_usd` | Pausa o classificador pelo resto do mês UTC depois que ele gastar esse valor. |
+
+Um espaço de trabalho pode ter até cinco classificadores. As alterações chegam ao gateway em cerca de um minuto.
+
+## Escolher um modelo
+
+Qualquer modelo de texto ou [modelo de decisões](../api-reference/endpoint/decisions.mdx) pode classificar. A Phaseo decide como perguntar com base no que os provedores do modelo suportam:
+
+| Modelo | Como é perguntado |
+| --- | --- |
+| Modelo de texto com saídas estruturadas | Uma requisição `responses` com um schema JSON estrito, então toda resposta é um dos seus valores. |
+| Modelo de decisões | Uma requisição `decisions` com uma pergunta de escolha por dimensão. Uma dimensão com `multiple` faz uma pergunta de sim/não por valor e mantém cada valor com probabilidade de pelo menos 0,5 (se um classificador precisasse de mais de 128 perguntas, essa dimensão recebe só o seu melhor valor). A confiança é a probabilidade do próprio modelo. |
+| Outros modelos de texto | Uma requisição `responses` que pede o mesmo JSON no prompt. Respostas fora dos seus valores são descartadas, então uma dimensão pode ficar sem rótulo com mais frequência. Também é a alternativa quando um provedor recusa o schema. |
+
+Um modelo pequeno e rápido costuma bastar. Use **Testar com um exemplo** no editor do classificador para verificar um modelo antes de salvar.
+
+## Filtrar e agrupar pelos resultados
+
+As respostas dos classificadores são rótulos de solicitação comuns:
+
+- Em **Registros** e **Uso**, filtre por um rótulo como `department` = `legal`.
+- Na API, use `label_key` e `label_value`:
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- Os destinos do [Broadcast](./integrations/observability.mdx) recebem os rótulos como atributos de span `phaseo.label.<key>`.
+
+Se o seu código já envia um rótulo com a chave de uma dimensão, a Phaseo mantém o seu valor e pula essa dimensão. Quando dois classificadores usam a mesma chave, vale o que foi criado primeiro.
+
+## Custo e privacidade
+
+- Cada classificação é uma solicitação separada ao modelo classificador, feita com a mesma chave de API ou o mesmo token OAuth da solicitação original. Ela é cobrada pelo preço normal desse modelo e segue as configurações de provedores, retenção de dados e BYOK do seu espaço de trabalho.
+- As solicitações do classificador levam o rótulo `phaseo.classifier` com o ID do classificador, para que você veja o gasto delas em **Uso**. Elas não são classificadas e não contam para as suas políticas de limites de taxa.
+- Mantenha os custos baixos com um modelo pequeno e rápido, uma taxa de amostragem, amostragem por sessão, um escopo ou um orçamento mensal.
+- A transcrição vai apenas para o modelo classificador. A solicitação do classificador é registrada como qualquer outra, então o armazenamento da entrada dela segue as configurações de registro do seu espaço de trabalho.

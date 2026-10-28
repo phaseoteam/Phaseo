@@ -30,6 +30,17 @@ export interface OpenAIDecisionsResponse {
         name: string | null;
         type: "refusal";
       }
+    | {
+        box: {
+          bottom: number;
+          left: number;
+          right: number;
+          top: number;
+        };
+        confidence: number | null;
+        name: string | null;
+        type: "box";
+      }
   )[];
   meta?: {
     [key: string]: unknown;

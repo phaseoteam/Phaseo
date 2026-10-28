@@ -6,20 +6,69 @@ icon: "house"
 
 Phaseoで複数プロバイダーのモデルを1つのAPIから呼び出し、ルーティングの制御と使用量・コストの追跡を行えます。
 
-<Columns cols={2}>
-  <Card title="最初のリクエストを送る" icon="rocket" href="./quickstart.mdx">
-    キーを作成し、リクエストを送信して結果を読みます。
-  </Card>
-  <Card title="アプリケーションを移行する" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    既存のプロバイダーまたはGateway連携を更新します。
-  </Card>
-  <Card title="コーディングアシスタントを接続する" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    Codex、Claude Code、Cursorなどのアシスタントを設定します。
-  </Card>
-  <Card title="SDKで開発する" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    クライアントSDKメニューから言語を選択します。
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "phaseo/free", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "phaseo/free", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+API キーをまだお持ちでない場合は、[ダッシュボードで作成](https://phaseo.app/ja/settings/keys)してから[クイックスタート](./quickstart.mdx)に進んでください。
+
+## 目的から始める
+
+<div className="ph-paths not-prose">
+
+[**<Icon icon="rocket" /> 最初のリクエストを送る** キーを作成し、リクエストを送信して結果を読みます。](./quickstart.mdx)
+
+[**<Icon icon="arrow-right-left" /> アプリケーションを移行する** 既存のプロバイダーまたはGateway連携を更新します。](./migration-guides/index.mdx)
+
+[**<Icon icon="terminal" /> コーディングアシスタントを接続する** Codex、Claude Code、Cursorなどのアシスタントを設定します。](./guides/integrations/coding-assistants.mdx)
+
+[**<Icon icon="bot" /> エージェントを構築する** Agent SDK で、モデルにツールを渡し、各ステップをストリーミングし、操作を承認します。](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## SDK を選ぶ
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## 開発と運用
 
@@ -30,11 +79,23 @@ Phaseoで複数プロバイダーのモデルを1つのAPIから呼び出し、�
 | 特定のワークフローを実装する | [クックブック](./cookbook/index.mdx) |
 | プロバイダーとフォールバックを選ぶ | [ルーティング](./guides/routing-and-fallbacks.mdx) |
 | 動画やバッチのジョブを処理する | [非同期ジョブとWebhook](./guides/async-video-and-batch.mdx) |
-| ツールを使うエージェントを開発する | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | リクエスト失敗を診断する | [エラーとデバッグ](./api-reference/errors.mdx) |
 
 ## モデルを選ぶ
 
 [モデルを探す](https://phaseo.app/models)か[比較](https://phaseo.app/compare)してください。カタログにはルーティングできないモデルも含まれるため、連携前にGatewayの利用可否を確認します。モデル、プロバイダー、料金は[Phaseoの仕組み](./developers/introduction.mdx)を参照してください。
 
-アシスタント内でドキュメントを使うには[Docs MCP](./guides/integrations/docs-mcp.mdx)を接続するか、[エージェント向け機能概要](https://phaseo.app/docs/skill.md)を読んでください。
+## AI エージェントで構築する
+
+<Prompt description="コーディングエージェント（Cursor、Claude Code、Codex など）に、プロジェクトへ Phaseo を追加するために必要な情報をすべて渡します。" icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+エージェントは [Docs MCP](./guides/integrations/docs-mcp.mdx) でこのドキュメントを検索したり、[機能の概要](https://phaseo.app/docs/skill.md)を読んだり、[llms.txt](https://phaseo.app/docs/llms.txt) から始めたりすることもできます。

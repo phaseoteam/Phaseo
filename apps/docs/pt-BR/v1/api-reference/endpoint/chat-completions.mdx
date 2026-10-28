@@ -55,4 +55,21 @@ Quando uma ferramenta de servidor é usada, os dados de uso incluem:
 
 ## Nota sobre streaming
 
-`stream: true` também é compatível. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno de chamada à ferramenta upstream, continuar o ciclo e emitir novamente um stream sintético.
+`stream: true` também é compatível. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno de chamada à ferramenta a montante, continuar o ciclo e emitir novamente um fluxo sintético.
+
+## Raciocínio em ciclos de ferramentas
+
+Modelos de raciocínio retornam o raciocínio em dois campos da mensagem do assistente:
+
+- `reasoning_content`: o texto do raciocínio, quando o provedor retorna algum.
+- `reasoning_details`: um array de blocos de raciocínio no formato usado pelo OpenRouter. Cada entrada tem um `type` (`reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`), um `index` e um `format` que indica a família do provedor, por exemplo `anthropic-claude-v1` ou `google-gemini-v1`.
+
+As entradas podem trazer estado do provedor de que o modelo precisa na próxima etapa de um ciclo de ferramentas:
+
+- Assinaturas de thinking do Claude, em `signature` nas entradas `reasoning.text`.
+- Thinking ocultado do Claude e raciocínio criptografado da OpenAI, em `data` nas entradas `reasoning.encrypted`.
+- Assinaturas de pensamento do Gemini, em `data` nas entradas `reasoning.encrypted` cujo `id` é a chamada de ferramenta a que pertencem.
+
+Com streaming, um delta de `reasoning_details` chega quando cada bloco de raciocínio termina.
+
+Para que o modelo mantenha o raciocínio entre as etapas, envie de volta a mensagem do assistente com o `reasoning_details` inalterado. Os valores de `signature` e `data` são opacos e registram o provedor e o modelo que os geraram. A Phaseo os envia apenas para essa família de provedores e esse modelo, então uma alternativa com outro provedor os descarta em vez de falhar. Modelos Claude no modo de thinking manual precisam receber o thinking de volta para continuar pensando durante um ciclo de ferramentas; se ele faltar, essa etapa é executada sem thinking.

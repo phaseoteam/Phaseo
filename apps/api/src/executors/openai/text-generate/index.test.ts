@@ -151,6 +151,55 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("team_test");
 		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
 		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual({ include_usage: true });
+		// Chat Completions does not store by default; store is not sent unasked.
+		expect(mock.calls[0]?.bodyJson).not.toHaveProperty("store");
+	});
+
+	it("routes a Chat request through Responses when its history carries OpenAI encrypted reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_replay",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.4-nano",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({
+				model: "openai/gpt-5.4-nano",
+				messages: [
+					{ role: "user", content: [{ type: "text", text: "Weather in Paris?" }] },
+					{
+						role: "assistant",
+						content: [{
+							type: "reasoning_text",
+							text: "Checked the tool.",
+							summary: "Checked the tool.",
+							encryptedContent: "gAAAAABo-RAW",
+							reasoningFormat: "openai-responses-v1",
+							reasoningId: "rs_1",
+						}],
+						toolCalls: [{ id: "call_1", name: "get_weather", arguments: "{}" }],
+					},
+					{ role: "tool", toolResults: [{ toolCallId: "call_1", content: "Sunny" }] },
+				],
+				tools: [{ name: "get_weather", parameters: { type: "object", properties: {} } }],
+			}),
+			providerModelSlug: "gpt-5.4-nano",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		const input = mock.calls[0]?.bodyJson?.input as any[];
+		expect(input.find((item) => item?.type === "reasoning")).toMatchObject({ encrypted_content: "gAAAAABo-RAW" });
 	});
 
 	it.each([
@@ -182,6 +231,202 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
 		expect(mock.calls[0]?.bodyJson?.service_tier).toBe(serviceTier);
+	});
+
+	// GPT-6 Astra needs Responses for tools; GPT-6 Sol and Luna take Chat tools only at
+	// reasoning_effort "none" (https://developers.openai.com/api/docs/guides/latest-model).
+	it.each([
+		["gpt-6-astra", true, "responses"],
+		["gpt-6-sol", true, "responses"],
+		["gpt-6-luna", true, "responses"],
+		["gpt-6-sol", false, "chat/completions"],
+		["gpt-5.4-nano", true, "chat/completions"],
+	] as const)("sends a Chat request for %s (tools: %s) to /v1/%s", async (model, withTools, path) => {
+		const mock = installFetchMock([{
+			match: (url) => url.startsWith("https://api.openai.com/v1/"),
+			response: jsonResponse({
+				id: "resp_gpt6_tools",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model,
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({
+				model: `openai/${model}`,
+				...(withTools ? { tools: [{ name: "get_weather", parameters: { type: "object", properties: {} } }] } : {}),
+			}),
+			providerModelSlug: model,
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		}).catch(() => undefined);
+		mock.restore();
+
+		expect(mock.calls[0]?.url).toBe(`https://api.openai.com/v1/${path}`);
+	});
+
+	// Model pages list Chat Completions as not supported, e.g.
+	// https://developers.openai.com/api/docs/models/gpt-5.5-pro.
+	it.each(["gpt-5-pro", "gpt-5.5-pro", "gpt-5.4-pro-2026-03-05", "o3-pro", "gpt-5.3-codex"])(
+		"routes the Responses-only model %s through Responses for Chat Completions requests",
+		async (model) => {
+			const mock = installFetchMock([{
+				match: (url) => url === "https://api.openai.com/v1/responses",
+				response: jsonResponse({
+					id: "resp_responses_only",
+					object: "response",
+					created_at: Math.floor(Date.now() / 1000),
+					model,
+					status: "completed",
+					output: [],
+					usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+				}),
+			}]);
+
+			await executor({
+				...buildArgs({ model: `openai/${model}` }),
+				providerModelSlug: model,
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			});
+			mock.restore();
+
+			expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		},
+	);
+
+	// https://developers.openai.com/api/docs/models/gpt-5.5: none, low, medium, high, xhigh.
+	it.each([["gpt-5.5", "xhigh", "xhigh"], ["gpt-5.5", "none", "none"], ["gpt-5.5-pro", "low", "medium"], ["gpt-5.3-codex", "none", "low"]] as const)(
+		"sends %s the documented reasoning effort (%s -> %s)",
+		async (model, effort, expected) => {
+			const mock = installFetchMock([{
+				match: (url) => url === "https://api.openai.com/v1/responses",
+				response: jsonResponse({
+					id: "resp_effort",
+					object: "response",
+					created_at: Math.floor(Date.now() / 1000),
+					model,
+					status: "completed",
+					output: [],
+					usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+				}),
+			}]);
+
+			await executor({
+				...buildArgs({ model: `openai/${model}`, reasoning: { effort } }),
+				providerModelSlug: model,
+			});
+			mock.restore();
+
+			expect(mock.calls[0]?.bodyJson?.reasoning?.effort).toBe(expected);
+		},
+	);
+
+	it("leaves Chat-only fields out of a request rerouted to Responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_chat_only",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.5-pro",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.5-pro", stop: ["END"], seed: 7, frequencyPenalty: 0.5, presencePenalty: 0.5, logprobs: true } as any),
+			providerModelSlug: "gpt-5.5-pro",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		const body = mock.calls[0]?.bodyJson ?? {};
+		for (const field of ["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias", "logprobs"]) {
+			expect(body).not.toHaveProperty(field);
+		}
+		expect(body.include).toContain("message.output_text.logprobs");
+	});
+
+	it.each([
+		["request level", { promptCacheOptions: { ttl: "12h" } }],
+		["a breakpoint", {
+			messages: [{ role: "user", content: [{ type: "text", text: "Shared manual", cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit", ttl: "12h" } }] }],
+		}],
+	] as const)("routes a GPT-5.6 Chat request asking for a 12-hour cache at %s through Responses", async (_where, overrides) => {
+		// OpenAI documents the 12-hour lifetime on the Responses API only:
+		// https://developers.openai.com/api/docs/guides/prompt-caching
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_cache_12h",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.6-sol",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.6-sol", ...(overrides as any) }),
+			providerModelSlug: "gpt-5.6-sol",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(JSON.stringify(mock.calls[0]?.bodyJson)).toContain("\"ttl\":\"12h\"");
+	});
+
+	it("keeps a 30-minute GPT-5.6 Chat request on Chat Completions", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/chat/completions",
+			response: new Response("data: [DONE]\n\n", { status: 200, headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.6-sol", stream: true, promptCacheOptions: { ttl: "30m" } }),
+			providerModelSlug: "gpt-5.6-sol",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/chat/completions");
+		expect(mock.calls[0]?.bodyJson?.prompt_cache_options).toEqual({ ttl: "30m" });
+	});
+
+	it("sends OpenAI EU the documented service_tier name for standard", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/chat/completions"),
+			response: jsonResponse({
+				id: "chatcmpl_eu",
+				object: "chat.completion",
+				created: Math.floor(Date.now() / 1000),
+				model: "gpt-5.4",
+				choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
+				usage: { prompt_tokens: 4, completion_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.4", serviceTier: "standard" }),
+			providerId: "openai-eu",
+			providerModelSlug: "gpt-5.4",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson?.service_tier).toBe("default");
 	});
 
 	it("preserves GPT-6.1 Sol max reasoning effort", async () => {
@@ -238,6 +483,35 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.tools).toEqual([
 			expect.objectContaining({ type: "function", name: "lookup", async: true }),
 		]);
+	});
+
+	it("routes Chat Completions hosted web search through OpenAI Responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_hosted_tool_1",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				tools: [{ name: "web_search", type: "web_search", parameters: {}, raw: { type: "web_search", search_context_size: "low" } }],
+			}),
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(mock.calls[0]?.bodyJson?.tools).toEqual([{ type: "web_search", search_context_size: "low" }]);
 	});
 
 	it("streams over HTTP responses endpoint when tools are present", async () => {

@@ -4,15 +4,41 @@ const sendEmailMock = vi.fn();
 const suppressionReasonMock = vi.fn();
 
 vi.mock("@/lib/email/resend", () => ({ sendEmail: (...args: unknown[]) => sendEmailMock(...args) }));
+const supabaseMock = vi.hoisted(() => ({ client: null as unknown }));
+vi.mock("@/runtime/env", () => ({ getBindings: () => ({}), getSupabaseAdmin: () => supabaseMock.client }));
 vi.mock("@/pipeline/notifications/email-suppressions", () => ({ getEmailSuppressionReason: (...args: unknown[]) => suppressionReasonMock(...args) }));
 
-import { buildProviderRequest, deliverNotificationTest, eventContent, forEachPage, shouldNotifyModelDeprecation } from "./notification-delivery";
+import { buildProviderRequest, deliverNotificationTest, eventContent, forEachPage, runNotificationDeliveryJob, shouldNotifyModelDeprecation } from "./notification-delivery";
 
 const event = { id: "event-1", kind: "model_deprecation", subject: null, workspace_id: "workspace-1", created_at: "2026-08-23T12:00:00.000Z", payload: { model_name: "Example Model", retirement_date: "2026-09-30" } };
 
 beforeEach(() => {
 	sendEmailMock.mockReset();
 	suppressionReasonMock.mockReset().mockResolvedValue(null);
+});
+
+describe("notification routing job", () => {
+	it("reads only unrouted events and re-reads from the start until a short batch", async () => {
+		const unrouted = Array.from({ length: 130 }, (_, index) => ({ id: `event-${index}`, kind: "rate_limit_throttled", subject: null, workspace_id: "workspace-1", payload: {}, created_at: "2026-10-17T00:00:00.000Z" }));
+		const routed = new Set<string>();
+		const filters: unknown[][] = [];
+		const rpc = vi.fn(async (name: string, args: Record<string, unknown>) => {
+			if (name === "enqueue_notification_event_deliveries") { routed.add(String(args.p_event_id)); return { data: 1, error: null }; }
+			return { data: [], error: null };
+		});
+		const query: Record<string, unknown> = {};
+		for (const method of ["select", "in", "not", "gte", "order"]) query[method] = (...args: unknown[]) => { filters.push([method, ...args]); return query; };
+		query.is = (...args: unknown[]) => { filters.push(["is", ...args]); return query; };
+		query.limit = async (limit: number) => ({ data: unrouted.filter((event) => !routed.has(event.id)).slice(0, limit), error: null });
+		supabaseMock.client = { from: () => query, rpc };
+
+		await expect(runNotificationDeliveryJob()).resolves.toEqual({ queued: 130, sent: 0, failed: 0 });
+		expect(routed.size).toBe(130);
+		expect(filters).toContainEqual(["is", "notification_routed_events", null]);
+		expect(filters).toContainEqual(["in", "kind", expect.arrayContaining(["rate_limit_throttled", "spend_alert", "spend_blocked", "spend_report"])]);
+		expect(filters.filter(([method]) => method === "select")).toHaveLength(2);
+		expect(rpc).toHaveBeenLastCalledWith("claim_notification_delivery_attempts", { p_limit: 25 });
+	});
 });
 
 describe("notification provider payloads", () => {
@@ -29,12 +55,44 @@ describe("notification provider payloads", () => {
 		expect(ranges).toEqual([[0, 99], [100, 199], [200, 299]]);
 	});
 	it("formats model deprecation content", () => { expect(eventContent(event).message).toContain("Example Model has been deprecated"); });
-	it("notifies up to seven days before a scheduled deprecation", () => {
-		const now = new Date("2026-09-01T00:00:00.000Z");
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-09-08T00:00:00.000Z" }, now)).toBe(true);
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-09-09T00:00:00.000Z" }, now)).toBe(false);
-		expect(shouldNotifyModelDeprecation({ status: "deprecated", deprecated_at: null }, now)).toBe(true);
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-08-31T00:00:00.000Z" }, now)).toBe(true);
+	it("formats rate limit throttle content", () => {
+		const content = eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 47, window_minutes: 15, policies: [{ policy_name: "Batch keys", limit_scope: "key", throttled_requests: 42 }, { policy_name: null, limit_scope: "end_user", throttled_requests: 5 }] } });
+		expect(content.title).toBe("Rate limit alert");
+		expect(content.message).toBe("Rate limit policies rejected 47 requests in the last 15 minutes. Most rejected: Batch keys (key limit, 42), Deleted policy (end user limit, 5).");
+		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 1, window_minutes: 15, policies: [] } }).message).toBe("Rate limit policies rejected 1 request in the last 15 minutes.");
+		const five = Array.from({ length: 5 }, (_, index) => ({ policy_name: `Policy ${index + 1}`, limit_scope: "key", throttled_requests: 5 - index }));
+		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 15, window_minutes: 15, policies: five } }).message).toContain("Policy 4 (key limit, 2), Policy 5 (key limit, 1).");
+	});
+	it("titles spend rule events and prefers their rendered message", () => {
+		const spend = { ...event, subject: null };
+		expect(eventContent({ ...spend, kind: "spend_alert", payload: { rule_name: "Monthly cap", message: "Monthly cap reached 80% of $500.00." } })).toMatchObject({ title: "Spend alert", message: "Monthly cap reached 80% of $500.00." });
+		expect(eventContent({ ...spend, kind: "spend_alert", payload: { rule_name: "Monthly cap" } }).message).toBe('Spend rule "Monthly cap" crossed a threshold.');
+		expect(eventContent({ ...spend, kind: "spend_blocked", payload: { state: "started" } }).title).toBe("Requests blocked by a spend rule");
+		expect(eventContent({ ...spend, kind: "spend_blocked", payload: { state: "lifted" } }).title).toBe("Spend block lifted");
+		expect(eventContent({ ...spend, kind: "spend_report", payload: {} }).title).toBe("Spend report");
+	});
+	it("formats Broadcast destination failing content", () => {
+		const content = eventContent({ ...event, kind: "broadcast_destination_failing", payload: {
+			failing_destinations: 2,
+			destinations: [
+				{ name: "Langfuse prod", consecutive_failures: 12, last_error: "OTLP endpoint returned 401" },
+				{ name: "<!channel> Datadog", consecutive_failures: 1, last_error: null },
+			],
+		} });
+		expect(content.title).toBe("Broadcast destination failing");
+		expect(content.settingsUrl).toBe("https://phaseo.app/settings/broadcast");
+		expect(content.message).toBe("Broadcast could not deliver traces to 2 destinations. Langfuse prod: 12 requests failed in a row (OTLP endpoint returned 401). !channel Datadog: 1 request failed in a row.");
+		const seven = Array.from({ length: 5 }, (_, index) => ({ name: `Destination ${index + 1}`, consecutive_failures: 5, last_error: "x".repeat(300) }));
+		const long = eventContent({ ...event, kind: "broadcast_destination_failing", payload: { failing_destinations: 7, destinations: seven } }).message;
+		expect(long).toContain("x".repeat(199) + "…)");
+		expect(long.endsWith(" 2 more failing.")).toBe(true);
+	});
+	it("notifies as soon as a model is marked deprecated or retiring", () => {
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-12-01T00:00:00.000Z" })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: null, retired_at: "2026-12-01T00:00:00.000Z" })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "deprecated", deprecated_at: null })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "retired", deprecated_at: null })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: null, retired_at: null })).toBe(false);
 	});
 	it("sends an email notification test directly to the configured recipient", async () => {
 		await expect(deliverNotificationTest({ workspaceId: "workspace-1", type: "email", target: JSON.stringify(["user@example.com"]) })).resolves.toBe(202);

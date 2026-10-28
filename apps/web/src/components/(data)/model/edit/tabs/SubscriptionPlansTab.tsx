@@ -99,18 +99,9 @@ export default function SubscriptionPlansTab({
         nextSelected[row.plan_uuid] = {
           plan_uuid: row.plan_uuid,
           effective_to: row.effective_to,
-          model_info:
-            row.model_info && typeof row.model_info === "object"
-              ? row.model_info
-              : {},
-          rate_limit:
-            row.rate_limit && typeof row.rate_limit === "object"
-              ? row.rate_limit
-              : {},
-          other_info:
-            row.other_info && typeof row.other_info === "object"
-              ? row.other_info
-              : {},
+          model_info: row.model_info ?? {},
+          rate_limit: row.rate_limit ?? {},
+          other_info: row.other_info ?? {},
         }
       }
       setSelectedRows(nextSelected)
@@ -170,7 +161,11 @@ export default function SubscriptionPlansTab({
 
     setCreatingPlan(true)
     try {
-      await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, frequency, price: newPlan.price ?? 0, currency, organisation_id: modelOrganisationId })
+      await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, organisation_id: modelOrganisationId,
+        offer: { billing_interval: ({ monthly: "month", quarterly: "month", yearly: "year", weekly: "week", daily: "day" } as Record<string, string>)[frequency] ?? null,
+          billing_interval_count: frequency === "quarterly" ? 3 : 1, currency,
+          components: [{ component_key: "base", pricing_type: frequency === "custom" ? "custom" : frequency === "usage" ? "usage_based" : newPlan.price === 0 ? "free" : "fixed",
+            amount: frequency === "custom" || frequency === "usage" ? null : newPlan.price, charge_basis: "account" }] } })
       setPlans((prev) =>
         [...prev, newPlan].sort((a, b) =>
           formatPlanLabel(a, frequencyLabel).localeCompare(formatPlanLabel(b, frequencyLabel), undefined, {

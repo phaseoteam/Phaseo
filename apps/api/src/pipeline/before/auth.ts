@@ -12,6 +12,11 @@ import {
 } from "@/lib/security/keyPepper";
 import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
 import { isKeyIpAllowed } from "@/lib/security/keyIpAllowlist";
+import {
+	authenticateWorkloadIdentity,
+	isWorkloadIdentityAuthEnabled,
+	isWorkloadIdentityToken,
+} from "./workload-identity-auth";
 
 const enc = new TextEncoder();
 // Ignore cache entries created before IP policies were included in key rows.
@@ -459,6 +464,20 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     // do not identify a concrete gateway key for key-scoped policy/billing.
     if (isJWTFormat(token)) {
         if (!isGatewayOAuthJwt(token)) {
+            const bindings = getBindings();
+            if (isWorkloadIdentityAuthEnabled(bindings) && isWorkloadIdentityToken(token)) {
+                const workload = await authenticateWorkloadIdentity(req, token, { kv: getCache() });
+                const usageTask = workload.usageTask;
+                if (workload.result.ok && usageTask) dispatchAuthenticationUsage(req, async () => {
+                    configureRuntime(bindings);
+                    try {
+                        await usageTask();
+                    } finally {
+                        clearRuntime();
+                    }
+                });
+                return workload.result;
+            }
             return { ok: false, reason: "invalid_key_format" };
         }
         if (options.allowOAuthJwt) {
@@ -533,6 +552,10 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     if (!keyRow || keyRow.status !== "active") {
+        return { ok: false, reason: "key_not_found_or_revoked" };
+    }
+    // Workload identity keys have no usable secret; only their OIDC tokens authenticate.
+    if (String(keyRow.key_kind ?? "standard") === "workload_identity") {
         return { ok: false, reason: "key_not_found_or_revoked" };
     }
     if (isExpiredKey(keyRow.expires_at)) {

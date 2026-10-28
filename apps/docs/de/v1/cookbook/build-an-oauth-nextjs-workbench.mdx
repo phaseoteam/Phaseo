@@ -1,5 +1,6 @@
 ---
 title: "Eine OAuth-Next.js-Workbench erstellen"
+sidebarTitle: "OAuth-Workbench mit Next.js"
 icon: "key-round"
 description: "Nutze das vollständige OAuth-Next.js-Beispiel als Anleitung für eine angemeldete Gateway-App mit einem einheitlichen Proxy."
 ---
@@ -68,12 +69,22 @@ Starte nicht hier, wenn:
 
 ## Wichtige Dateien
 
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
+<Tree>
+
+- app/
+  - page.tsx
+  - dashboard/
+    - page.tsx
+    - GatewayWorkbench.tsx
+  - api/
+    - gateway/
+      - [...surface]/
+        - route.ts
+- lib/
+  - oauth.ts
+  - session.ts
+
+</Tree>
 
 ## Warum das Beispiel so aufgebaut ist
 

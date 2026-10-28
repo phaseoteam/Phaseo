@@ -11,7 +11,9 @@ const state = vi.hoisted(() => ({
 	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", scopes: [] as string[] } } as any,
 	tables: {} as Record<string, any[]>,
 	audit: vi.fn(),
+	publish: vi.fn(async (_workspaceId: string) => true),
 	nextId: 100,
+	actor: vi.fn(async (_token: string): Promise<{ userId: string } | null> => null),
 }));
 
 // Unique targets enforced by the database's partial unique indexes.
@@ -78,19 +80,25 @@ vi.mock("@/runtime/env", () => ({
 	}),
 }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
+vi.mock("@/lib/oauth/service", () => ({ getSupabaseActor: state.actor }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: state.audit }));
+vi.mock("@core/rate-limit-policies", () => ({ publishRateLimitPlan: state.publish }));
 vi.mock("@/routes/utils", () => ({
 	json: (body: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } }),
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
 }));
 
-async function call(path: string, method = "GET", body?: unknown) {
+async function call(path: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
 	const { rateLimitsRoutes } = await import("./rate-limits");
 	return rateLimitsRoutes.request(`https://example.com${path}`, {
 		method,
-		...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+		headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...headers },
+		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 }
+
+const SESSION = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signature";
+const DASHBOARD = { authorization: `Bearer ${SESSION}`, "x-phaseo-workspace-id": WORKSPACE };
 
 describe("rate limit policy management", () => {
 	beforeEach(() => {
@@ -111,8 +119,15 @@ describe("rate limit policy management", () => {
 				{ id: OTHER_KEY, workspace_id: OTHER_WORKSPACE, status: "active" },
 			],
 			workspace_guardrails: [],
+			workspaces: [{ id: WORKSPACE, owner_user_id: "owner-user" }],
+			workspace_members: [
+				{ workspace_id: WORKSPACE, user_id: "admin-user", role: "admin" },
+				{ workspace_id: WORKSPACE, user_id: "member-user", role: "member" },
+			],
 		};
+		state.actor.mockReset().mockResolvedValue(null);
 		state.audit.mockReset();
+		state.publish.mockClear();
 	});
 
 	it("lists only the caller's workspace policies", async () => {
@@ -223,10 +238,85 @@ describe("rate limit policy management", () => {
 		expect((await call("/policies?offset=-1")).status).toBe(400);
 	});
 
+	it("republishes the enforcement plan after every successful write, and only then", async () => {
+		const policyId = "00000000-0000-4000-8000-000000000002";
+		const created = await call("/policies", "POST", { name: "Interactive", requests_per_minute: 30 });
+		const newPolicy = (await created.json() as any).data.id;
+		await call(`/policies/${newPolicy}`, "PATCH", { requests_per_minute: 20 });
+		const assigned = await call("/assignments", "POST", { policy_id: policyId, target_type: "key", target_id: KEY });
+		const assignmentId = (await assigned.json() as any).data.id;
+		await call(`/assignments/${assignmentId}`, "PATCH", { policy_id: newPolicy });
+		await call(`/assignments/${assignmentId}`, "DELETE");
+		await call(`/policies/${newPolicy}`, "DELETE");
+		expect(state.publish).toHaveBeenCalledTimes(6);
+		expect(state.publish.mock.calls.every(([workspaceId]) => workspaceId === WORKSPACE)).toBe(true);
+
+		state.publish.mockClear();
+		await call("/policies", "POST", { name: "Invalid" });
+		await call("/assignments", "POST", { policy_id: policyId, target_type: "key", target_id: OTHER_KEY });
+		await call("/policies");
+		expect(state.publish).not.toHaveBeenCalled();
+	});
+
+	it("still succeeds when the plan cannot be published", async () => {
+		state.publish.mockResolvedValueOnce(false);
+		const response = await call("/policies", "POST", { name: "Unpublished", requests_per_minute: 5 });
+		expect(response.status).toBe(201);
+	});
+
 	it("requires the matching rate_limits scope", async () => {
 		state.auth.value.scopes = ["rate_limits:read"];
 		const response = await call("/policies", "POST", { name: "Denied", requests_per_minute: 1 });
 		expect(response.status).toBe(403);
 		expect(state.tables.workspace_rate_limit_policies).toHaveLength(2);
+	});
+
+	it("lets a workspace admin manage policies from the dashboard session", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		state.auth.value.scopes = [];
+		state.actor.mockResolvedValue({ userId: "admin-user" });
+		const response = await call("/policies", "POST", { name: "Dashboard", requests_per_minute: 30 }, DASHBOARD);
+		expect(response.status).toBe(201);
+		expect(state.actor).toHaveBeenCalledWith(SESSION);
+		expect(guardManagementAuth).not.toHaveBeenCalled();
+		expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: WORKSPACE, actorUserId: "admin-user", action: "rate_limit_policy.created" }));
+		expect(state.publish).toHaveBeenCalledWith(WORKSPACE);
+	});
+
+	it("treats the workspace owner as a manager even without a member row", async () => {
+		state.actor.mockResolvedValue({ userId: "owner-user" });
+		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(200);
+	});
+
+	it("refuses dashboard members and outsiders", async () => {
+		state.actor.mockResolvedValue({ userId: "member-user" });
+		expect((await call("/policies", "POST", { name: "Member", requests_per_minute: 1 }, DASHBOARD)).status).toBe(403);
+		state.actor.mockResolvedValue({ userId: "stranger" });
+		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(403);
+		expect(state.tables.workspace_rate_limit_policies).toHaveLength(2);
+		expect(state.publish).not.toHaveBeenCalled();
+	});
+
+	it("keeps management keys working when they also send the workspace header", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		const headers = { authorization: "Bearer phaseo_mk_test", "x-phaseo-workspace-id": WORKSPACE };
+		expect((await call("/policies", "GET", undefined, headers)).status).toBe(200);
+		expect(state.actor).not.toHaveBeenCalled();
+		expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+	});
+
+	it("falls back to management authentication when Supabase rejects the token", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		state.auth = { ok: false, response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) };
+		try {
+			expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(401);
+			expect(state.actor).toHaveBeenCalledWith(SESSION);
+			expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+		} finally {
+			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES] } };
+		}
 	});
 });

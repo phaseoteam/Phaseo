@@ -1,30 +1,63 @@
 ---
 icon: "files"
 title: "फ़ाइलें"
-description: "Java SDK से files upload करें और उनके metadata व content प्राप्त करें।"
+description: "Java से बैच प्रोसेसिंग की JSONL फ़ाइल अपलोड करें।"
 ---
 
-**तरीके**: `Phaseo#uploadFile(...)`, `Phaseo#listFiles(...)`, `Phaseo#retrieveFile(...)`, `Phaseo#retrieveFileContent(...)`
+Java से बैच प्रोसेसिंग की JSONL फ़ाइल अपलोड करें।
+
+<Note>Java SDK के JSON मेथड multipart अपलोड एन्कोड नहीं करते। नीचे दिखाए अनुसार फ़ाइल के बाइट भेजने के लिए Java का मानक HTTP क्लाइंट इस्तेमाल करें।</Note>
+
+अपने बैच अनुरोध वर्किंग डायरेक्टरी में `requests.jsonl` के रूप में सेव करें।
+
+```java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"requests.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("requests.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+## SDK से फ़ाइल प्राप्त करें
+
+`file_123` को अपलोड के बाद मिले ID से बदलें।
 
 ```java
 import app.phaseo.sdk.Phaseo;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
-Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
-
-Object uploaded = client.uploadFile("""
-  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
-  """);
-
-Object file = client.retrieveFile("file_123");
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"),
+    System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1"));
+var file = client.retrieveFile("file_123");
 byte[] content = client.retrieveFileContent("file_123");
-
-System.out.println(String.valueOf(file));
-System.out.println(new String(content));
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
 ```
 
-<Note>
-SDK में `listFiles(...)` उपलब्ध है, लेकिन shared gateway key पर `GET /files` अभी `file_list_not_supported_with_shared_gateway_key` लौटाता है।
-अपलोड की गई files के IDs सहेजें और उन्हें सीधे प्राप्त करें।
-</Note>
+<Note>फ़ाइल एंडपॉइंट अभी प्रीव्यू में हैं और इनके लिए सक्षम प्रोवाइडर चाहिए। साझा गेटवे की से फ़ाइल सूची उपलब्ध नहीं है; मिले हुए फ़ाइल ID सेव करें और फ़ाइल सीधे प्राप्त करें।</Note>

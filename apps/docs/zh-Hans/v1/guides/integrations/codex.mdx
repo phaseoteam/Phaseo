@@ -10,20 +10,20 @@ Codex 通过 `config.toml` 支持自定义模型提供商。这样你可以将 C
 
 <Visibility for="humans">
 <Note>
-除了配置提供商，还需要可复用的智能体设置帮助？从 [`phaseoteam/skills`](https://github.com/phaseoteam/skills) 安装 Phaseo 公开技能：
+除了配置提供商，还需要可复用的智能体设置帮助？从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 安装 Phaseo 公开技能：
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>
 
 <Visibility for="agents">
 <Note>
-可复用的 Phaseo 技能可从 [`phaseoteam/skills`](https://github.com/phaseoteam/skills) 获取。为 Codex 安装时，请使用：
+可复用的 Phaseo 技能可从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 获取。为 Codex 安装时，请使用：
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>

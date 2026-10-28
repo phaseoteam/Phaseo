@@ -15,6 +15,8 @@ icon: "bell-ring"
 5. 設定した各チャンネルで**テストを送信**します。
 6. すべてのテストが成功したら通知先を作成します。
 
+カスタム Webhook には作成時に署名シークレットが発行されます。表示されるダイアログからコピーしてください。表示されるのは一度だけです。
+
 Phaseoで利用できる通知先:
 
 - メールアドレスと配布リスト
@@ -26,9 +28,13 @@ Phaseoで利用できる通知先:
 
 認証情報とWebhook URLは保存前に暗号化されます。チャンネルの認証情報は通知配信に限定し、漏えいした場合はローテーションしてください。
 
+<span id="enable-product-alerts"></span>
+
 ## 製品アラートを有効にする
 
-通知ページには、ワークスペースで利用できるアラートの種類が表示されます。**モデル廃止アラート**を有効にすると、ワークスペースで使用中のモデルが廃止される前に通知を受け取れます。
+通知ページには、ワークスペースで利用できるアラートの種類が表示されます。**モデル非推奨アラート**を有効にすると、ワークスペースで使用中のモデルが提供終了になる前に通知を受け取れます。
+
+**代替モデルの通知**は、[提供終了モデルのルーティング](./model-retirement.mdx#route-requests-to-a-replacement-automatically)が有効で、どのプロバイダーも提供しなくなったモデルへのワークスペースのリクエストに代替モデルが応答したときに送信されます。通知はモデルと代替モデルの組み合わせごとに 1 回、代替モデルが初めて正常に応答したときに送信されます。ワークスペースのオーナーには常にメールが届きます。チームにも通知を送るには、通知先を選択してください。
 
 アラートは、ダッシュボードに表示される組み込みの宛先に加えて、設定した通知先にも送信されます。
 
@@ -47,3 +53,72 @@ Phaseoで利用できる通知先:
 認証情報をローテーションした後やチャンネル設定を変更した後は、既存の通知先の横にある**テストを送信**を使います。監視されなくなった通知先は削除し、放置されたチャンネルにアラートが届いているように見える状態を避けます。
 
 カスタムWebhookではHTTPSを使用し、リクエストを処理する前に検証してください。速やかに成功応答を返し、時間のかかる処理はバックグラウンドジョブに移します。
+
+## Webhook 署名を検証する
+
+Phaseo は、保存済みの通知先から送信するテストを含め、すべてのカスタム Webhook 配信に [動画とバッチの Webhook](./async-video-and-batch.mdx) と同じ方式で署名します。各リクエストには次のヘッダーが含まれます。
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` は、`x-phaseo-timestamp` の値、ドット（`.`）、**変更されていないリクエストボディ**を連結し、通知先の署名シークレット（`whsec_…`）をキーにして計算した HMAC-SHA256 の 16 進文字列です。`x-phaseo-timestamp` は Unix 秒です。
+
+配信を検証するには:
+
+1. JSON として解析する前に、生のボディを読み取ります。
+2. 署名を再計算し、定数時間で比較します。
+3. 自分の時計と 5 分以上ずれたタイムスタンプは拒否します。
+4. `x-phaseo-event-id` で重複を除外します。失敗した配信は再試行され、試行ごとに新しいタイムスタンプで署名し直されます。
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody は受信したままのリクエストボディ（文字列）です。
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body は受信したままのリクエストボディ（bytes）です。
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### シークレットを生成またはローテーションする
+
+シークレットは通知先の作成時に一度だけ表示されます。置き換えるには、**設定 → 通知** で通知先の横にある **シークレットをローテーション** を選ぶか、[`POST /v1/notifications/destinations/{id}/rotate-secret`](/ja/v1/api-reference/endpoint/notifications-destination-rotate-secret) を呼び出します。次の配信から新しいシークレットで署名され、古いシークレットは使えなくなるため、すぐに受信側を更新してください。
+
+署名機能の導入前に作成されたカスタム Webhook にはシークレットがなく、引き続き署名なしで配信されます。設定では **署名なし** と表示されます。**シークレットを生成** を選び、受信側にシークレットを設定してから、テストを送信して検証を確認してください。**通知先を追加** パネルから保存前に送信したテストは、まだシークレットがないため署名されません。
+
+メール、Slack、Discord、Microsoft Teams の通知先は署名されません。これらのサービスは Webhook URL やボットトークンを自ら認証します。

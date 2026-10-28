@@ -11,6 +11,13 @@ vi.mock("@core/wallet-reservations", () => ({ reserveWalletCredits: (...args: an
 import { estimateInputQuadTokens, estimateInputTokenUpperBound, reserveBatchCredits } from "./batch-reservations";
 
 describe("batch credit reservations", () => {
+	it("reserves Vertex generateContent input before submission", async () => {
+		await expect(reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "vertex_batch",
+			providerId: "google-vertex", requests: [{ endpoint: "/v1/generateContent", body: { model: "google/gemini-3.1-flash-lite",
+				contents: [{ role: "user", parts: [{ text: "hello" }] }], generationConfig: { maxOutputTokens: 64 } } }],
+		})).resolves.toMatchObject({ held: true });
+		expect(reserveWalletCreditsMock).toHaveBeenCalledOnce();
+	});
 	it.each(["/v1/responses", "/v1/chat/completions"])("reserves Xiaomi text batch credits for %s", async endpoint => {
 		await expect(reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "xiaomi_batch",
 			providerId: "xiaomi", requests: [{ endpoint, body: { model: "xiaomi/mimo", input: "hello", max_output_tokens: 10 } }],

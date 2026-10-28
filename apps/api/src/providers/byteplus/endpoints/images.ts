@@ -5,7 +5,7 @@
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import type { ImagesEditRequest, ImagesGenerationRequest } from "@core/schemas";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { sanitizePayload } from "../../utils";
@@ -108,7 +108,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		};
 	}
 	const keyInfo = await resolveOpenAICompatKey(args);
-	const res = await fetch(openAICompatUrl(args.providerId, "/images/generations"), {
+	// The timing tracker counts a 2xx so a later pricing failure is not retried on another provider.
+	const fetcher = args.upstreamTiming?.fetch ?? fetch;
+	const res = await fetcher(openAICompatUrl(args.providerId, "/images/generations"), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
 		body: JSON.stringify(request),
@@ -133,7 +135,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		if (typeof usageMeters.output_image !== "number") usageMeters.output_image = outputImageCount;
 		if (typeof usageMeters.input_image !== "number") usageMeters.input_image = resolveInputImageCount(pricingInput);
 
-		const pricedUsage = computeBill(
+		const pricedUsage = computeBillAfterProviderCharge(
 			usageMeters as Record<string, any>,
 			args.pricingCard,
 			buildImagePricingRequestOptions(pricingInput, usageMeters),

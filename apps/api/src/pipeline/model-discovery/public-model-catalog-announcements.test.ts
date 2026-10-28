@@ -102,7 +102,8 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(await runPublicModelAnnouncementCheck({ runId: "private-run", notify: true })).toMatchObject({ notified: 0, pending: 0, skipped: 1, error: null });
 		expect(supabase.client.rpc).toHaveBeenCalledWith("catalog_model_is_public", { p_model_slug: model.model_slug });
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
-		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "skipped", claim_run_id: null });
+		// "skipped" is not an allowed status; the claim goes back to baseline as not public.
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "baseline", public_visibility_snapshot: false, claim_run_id: null });
 	});
 	beforeEach(() => {
 		mocks.bindings = {};

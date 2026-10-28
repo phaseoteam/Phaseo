@@ -1,6 +1,6 @@
 ---
 title: "إنشاء رسالة"
-sidebarTitle: "إنشاء رسالة"
+sidebarTitle: "إنشاء رسالة (Anthropic)"
 openapi: "/ar/openapi/v1/openapi.localized.yaml POST /messages"
 description: "نقطة Messages المتوافقة مع Anthropic على `/v1/messages`."
 ---
@@ -9,6 +9,31 @@ description: "نقطة Messages المتوافقة مع Anthropic على `/v1/me
 ## البث
 
 اضبط `stream: true` لتلقي أحداث مرسلة من الخادم بتنسيق Anthropic (`message_start` و`content_block_*` و`message_delta` و`message_stop`).
+
+## رسائل النظام في منتصف المحادثة
+
+أضف رسالة `role: "system"` إلى `messages` لتعليمة تنطبق من تلك النقطة في المحادثة. يبقى الحقل `system` على المستوى الأعلى كما هو، لذا يظل التخزين المؤقت للبادئة يعمل.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- تقبل رسالة النظام سلسلة نصية أو كتلًا نصية. يجب أن تأتي مباشرةً بعد دور المستخدم (أو بعد دور المساعد الذي ينتهي بنتيجة أداة خادم)، وأن تكون الرسالة الأخيرة أو يليها دور المساعد. تُرجع المواضع الأخرى الخطأ 400.
+- تتلقاها نماذج Claude Fable 5 و5.1 وMythos 5 و5.1 وOpus 4.8 وOpus 5 و5.5 وSonnet 5.5 وHaiku 5.5 في موضعها. أما نماذج Claude الأخرى، ومنها Sonnet 5، وكل نماذج Claude على Microsoft Foundry، فتتلقاها جزءًا من موجّه النظام على المستوى الأعلى. ويتلقاها المزوّدون الآخرون رسالةَ نظام، كما لو أُرسلت إلى Chat Completions.
+- لا يُدعم `clear_at` ولا `output_config` ولا كتل `tool_addition` أو `tool_removal`.
 
 ## ملاحظات
 

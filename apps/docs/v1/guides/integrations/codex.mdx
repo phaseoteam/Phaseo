@@ -2,6 +2,7 @@
 title: "Codex"
 icon: "/icons/brands/codex.svg"
 description: "Use the Phaseo Gateway as a custom provider for Codex CLI, Codex App, and the Codex IDE extension."
+"og:image": "https://phaseo.app/og/dynamic?title=Codex&description=Use%20the%20Phaseo%20Gateway%20as%20a%20custom%20provider%20for%20Codex%20CLI%2C%20Codex%20App%2C%20and%20the%20Codex%20IDE%20extension.&pathname=/docs/v1/guides/integrations/codex"
 ---
 
 Codex supports custom model providers through `config.toml`, so you can route Codex requests through Phaseo while keeping the same CLI, app, or IDE workflow.
@@ -10,20 +11,20 @@ If you also want Codex to read the live Phaseo documentation while it works, add
 
 <Visibility for="humans">
 <Note>
-Need reusable agent setup help as well as provider wiring? Install the public Phaseo skills from [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+Need reusable agent setup help as well as provider wiring? Install the public Phaseo skills from [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>
 
 <Visibility for="agents">
 <Note>
-Reusable Phaseo skills are available from [`phaseoteam/skills`](https://github.com/phaseoteam/skills). For Codex installs, use:
+Reusable Phaseo skills are available from [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). For Codex installs, use:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>

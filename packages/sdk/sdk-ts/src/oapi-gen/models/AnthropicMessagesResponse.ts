@@ -20,6 +20,11 @@ export interface AnthropicMessagesResponse {
     tool_use_id?: string;
     type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
+  context_management?: {
+    applied_edits?: {
+      [key: string]: unknown;
+    }[];
+  };
   id?: string;
   model?: string;
   role?: "assistant";
@@ -27,6 +32,16 @@ export interface AnthropicMessagesResponse {
   stop_sequence?: string;
   type?: string;
   usage?: {
+    cache_creation?: {
+      ephemeral_1h_input_tokens?: number;
+      ephemeral_5m_input_tokens?: number;
+    };
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     output_tokens?: number;
   };

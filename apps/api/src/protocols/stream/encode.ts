@@ -3,6 +3,8 @@
 // How: Maps UnifiedStreamEvent -> protocol event name + JSON payload.
 
 import type { UnifiedStreamEvent } from "@pipeline/after/stream-events";
+import { anthropicStopReasonFor, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
+import { chatStreamErrorFrame } from "@core/error-object";
 
 export type StreamProtocol =
 	| "openai.chat.completions"
@@ -21,21 +23,8 @@ export type EncodeStreamContext = {
 };
 
 function mapStopToAnthropic(stop: string | null | undefined): string | null {
-	switch (String(stop ?? "").toLowerCase()) {
-		case "tool_calls":
-			return "tool_use";
-		case "length":
-			return "max_tokens";
-		case "content_filter":
-			return "refusal";
-		case "stop":
-		case "end_turn":
-			return "end_turn";
-		case "error":
-			return null;
-		default:
-			return stop == null ? null : String(stop);
-	}
+	const { finishReason, finishDetail } = normalizeFinishReason(stop);
+	return anthropicStopReasonFor(finishReason, finishDetail);
 }
 
 function encodeOpenAIChat(
@@ -46,12 +35,10 @@ function encodeOpenAIChat(
 		return { frame: event.payload as Record<string, any> };
 	}
 	if (event.type === "error") {
-		return {
-			frame: {
-				object: "error",
-				message: event.message ?? "stream_error",
-			},
-		};
+		const message = event.message ?? "stream_error";
+		const rawCode = event.payload?.error?.code ?? event.payload?.error?.type ?? event.payload?.response?.error?.code ?? event.payload?.code;
+		const code = typeof rawCode === "string" && rawCode && rawCode !== "error" ? rawCode : null;
+		return { frame: chatStreamErrorFrame({ message, code }) };
 	}
 	if (event.type === "start") {
 		return {
@@ -80,10 +67,25 @@ function encodeOpenAIChat(
 				choices: [
 					{
 						index: event.choiceIndex ?? 0,
+						// Reasoning text goes out under both names Chat clients read.
 						delta:
 							event.channel === "reasoning_text"
-								? { reasoning_content: event.text }
+								? { reasoning_content: event.text, reasoning: event.text }
 								: { content: event.text },
+						finish_reason: null,
+					},
+				],
+			},
+		};
+	}
+	if (event.type === "reasoning_state") {
+		return {
+			frame: {
+				object: "chat.completion.chunk",
+				choices: [
+					{
+						index: event.choiceIndex ?? 0,
+						delta: { reasoning_details: event.details },
 						finish_reason: null,
 					},
 				],
@@ -176,14 +178,17 @@ function encodeOpenAIChat(
 		};
 	}
 	if (event.type === "stop") {
+		// A stop without a reason (Anthropic message_stop) follows the one that has it.
+		if (event.finishReason === null) return null;
 		return {
 			frame: {
 				object: "chat.completion.chunk",
 				choices: [
 					{
-						index: 0,
+						index: event.choiceIndex ?? 0,
 						delta: {},
-						finish_reason: event.finishReason ?? "stop",
+						// Chat documents stop | length | tool_calls | content_filter.
+						finish_reason: normalizeFinishReason(event.finishReason).finishReason,
 					},
 				],
 			},
@@ -354,6 +359,11 @@ function encodeOpenAIResponses(
 		};
 	}
 	if (event.type === "stop") {
+		// A stop without a reason (Anthropic message_stop) follows the one that has it.
+		if (event.finishReason === null) return null;
+		const { status, incompleteDetails } = responsesStatusFor(
+			normalizeFinishReason(event.finishReason).finishReason,
+		);
 		return {
 			eventName: "response.completed",
 			frame: {
@@ -361,7 +371,8 @@ function encodeOpenAIResponses(
 					id: ctx.requestId ?? undefined,
 					object: "response",
 					model: ctx.model ?? undefined,
-					status: event.finishReason === "error" ? "failed" : "completed",
+					status,
+					...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 				},
 			},
 		};

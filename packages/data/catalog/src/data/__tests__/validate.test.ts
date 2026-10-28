@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     checkApiProviderModelEntrySafety,
+    checkAutoCacheReadCoverage,
+    hasCachedReadRule,
     checkPreviousModelReference,
     checkPricingEntrySafety,
     checkSubscriptionPlanModels,
@@ -944,5 +946,24 @@ describe('api provider model safety checks', () => {
             expect.stringContaining('availability.unknown_country'),
             expect.stringContaining('uppercase ISO 3166-1 alpha-2'),
         ]));
+    });
+});
+
+describe('auto-caching cached-read coverage', () => {
+    test('warns for active text routes on auto-caching providers without a cached-read rule', () => {
+        const warnings = checkAutoCacheReadCoverage(
+            ['google-ai-studio:google/gemini-3.1-pro-preview', 'openai:openai/gpt-5.6-sol', 'anthropic:anthropic/claude-sonnet-5'],
+            new Set(['openai:openai/gpt-5.6-sol']),
+        );
+        expect(warnings).toEqual([
+            expect.stringContaining('no cached-read rule for auto-caching text route google-ai-studio:google/gemini-3.1-pro-preview'),
+        ]);
+        expect(warnings.every((warning) => !isMajorError(warning))).toBe(true);
+    });
+
+    test('accepts cached-read and implicit cached-input meters as coverage', () => {
+        expect(hasCachedReadRule({ rules: [{ meter: 'cached_read_text_tokens' }] })).toBe(true);
+        expect(hasCachedReadRule({ rules: [{ meter: 'implicit_cached_input_text_tokens' }] })).toBe(true);
+        expect(hasCachedReadRule({ rules: [{ meter: 'input_text_tokens' }] })).toBe(false);
     });
 });

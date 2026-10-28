@@ -1,4 +1,22 @@
 export const logoManifest = {
+	nace: {
+		light: "/logos/nace_light.svg",
+		dark: "/logos/nace_dark.svg",
+	},
+	pioneer: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
+	fastino: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
+	"abliteration-ai": {
+		color: "/logos/abliteration-ai.svg",
+	},
+	dealignai: {
+		color: "/logos/dealignai.svg",
+	},
 	apodex: {
 		light: "/logos/apodex_light.svg",
 		dark: "/logos/apodex_dark.svg",
@@ -108,6 +126,10 @@ export const logoManifest = {
 	},
 	baseten: {
 		color: "/logos/baseten.svg",
+	},
+	baselabs: {
+		// Lossless vector of the official grid icon: https://labs.baseten.co/favicon.ico.
+		color: "/logos/baselabs.svg",
 	},
 	"black-forest-labs": {
 		light: "/logos/black-forest-labs_light.svg",
@@ -614,9 +636,18 @@ export const logoManifest = {
 		dark: "/logos/runinfra_dark.svg",
 	},
 	wandb: {
-		color: "/logos/weights-and-biases.svg",
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
 	},
 	"weights-and-biases": {
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
+	},
+	"coreweave-forge": {
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
+	},
+	"wandb-weave": {
 		color: "/logos/weights-and-biases.svg",
 	},
 	zenmux: {

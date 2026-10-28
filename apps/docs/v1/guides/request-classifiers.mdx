@@ -1,0 +1,98 @@
+---
+title: "Request Classifiers"
+description: "Label every request with a model you choose, using your own categories, and filter logs and usage by the results."
+"og:image": "https://phaseo.app/og/dynamic?title=Request%20Classifiers&description=Label%20every%20request%20with%20a%20model%20you%20choose%2C%20using%20your%20own%20categories%2C%20and%20filter%20logs%20and%20usage%20by%20the%20results.&pathname=/docs/v1/guides/request-classifiers"
+icon: "list-tree"
+---
+
+<Note>
+Request classifiers are in beta. Owners and admins manage them in **Settings → Classifiers** or with the `/v1/classifiers` management API, using a [management key](/v1/developers/management-api-keys) with the `classifiers:*` scopes.
+</Note>
+
+A classifier describes a taxonomy, such as department, audience, or task type, and names the model that applies it. After each eligible request finishes, Phaseo sends the request to that model, which picks a value for every dimension. Each answer is added to the request as a [request label](/v1/guides/request-labels), so you can filter and group logs, usage, and analytics by it exactly like labels your code sends.
+
+Use classifiers when the category is not known in your code: who a prompt was written for, what kind of work an agent is doing, or whether a request touches a regulated topic.
+
+## How a request is classified
+
+1. The request finishes and its response is returned to your application. Classification never adds latency.
+2. Phaseo builds a transcript of the request: system instructions, messages, tool names (not their schemas), and tool results. Each turn is limited to 4,000 characters and secrets such as API keys are redacted. If the classifier includes the response, the generated output is added too.
+3. The classifier model picks from your values. Anything it answers outside them is dropped (see [Choose a model](#choose-a-model)).
+4. The answers are stored as labels on the request, along with each answer's confidence, before the request appears in your logs.
+
+Classifiers run on `chat/completions`, `responses`, and `messages` requests that succeed. If classification fails or times out, the request is still logged, just without those labels.
+
+## Create a classifier
+
+Start from a preset in the dashboard or send the taxonomy yourself:
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| Field | Meaning |
+| --- | --- |
+| `dimensions` | 1 to 12 questions. Each `key` becomes the label key; each dimension lists 2 to 50 values (1 with `allow_other`). |
+| `multiple` | Allow more than one value for a dimension. Each value becomes its own label with the same key. |
+| `allow_other` | Let the model answer `other` when nothing fits. |
+| `instructions` | Extra guidance added to the classification prompt. |
+| `sample_rate` | Share of eligible requests to classify, from `0.0001` to `1`. |
+| `sample_by` | `request` samples each request. `session` keeps a session in or out together and reuses its answers for an hour, so a long agent run is classified once. |
+| `input_scope` | `prompt` classifies the request. `prompt_and_response` also shows the model the response. |
+| `scope` | Only classify requests from these `key_ids`, `app_ids`, or `models`. |
+| `monthly_budget_usd` | Pause the classifier for the rest of the UTC month once it has spent this much. |
+
+A workspace can have up to five classifiers. Changes reach the gateway within about a minute.
+
+## Choose a model
+
+Any text model or [decision model](/v1/api-reference/endpoint/decisions) can classify. Phaseo picks how to ask it from what the model's providers support:
+
+| Model | How it is asked |
+| --- | --- |
+| Text model with structured outputs | A `responses` request with a strict JSON schema, so every answer is one of your values. |
+| Decision model | A `decisions` request with one choice question per dimension. A dimension with `multiple` asks a yes/no question per value and keeps every value with a probability of at least 0.5 (if a classifier would need more than 128 questions, such a dimension gets its single best value instead). Confidence is the model's own probability. |
+| Other text models | A `responses` request that asks for the same JSON in the prompt. Answers outside your values are dropped, so a dimension can stay unlabelled more often. It is also the fallback when a provider refuses the schema. |
+
+A small, fast model is usually enough. Use **Try it on a sample** in the classifier editor to check a model before saving.
+
+## Filter and group by the results
+
+Classifier answers are ordinary request labels:
+
+- In **Logs** and **Usage**, filter by a label such as `department` = `legal`.
+- With the API, use `label_key` and `label_value`:
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- [Broadcast](/v1/guides/integrations/observability) destinations receive labels as `phaseo.label.<key>` span attributes.
+
+If your code already sends a label with a dimension's key, Phaseo keeps your value and skips that dimension. When two classifiers use the same key, the one created first wins.
+
+## Cost and privacy
+
+- Each classification is a separate request to the classifier model, made with the same API key or OAuth token as the original request. It is billed at that model's normal price and follows your workspace's provider, data retention, and BYOK settings.
+- Classifier requests carry the label `phaseo.classifier` set to the classifier ID, so you can see their spend in **Usage**. They are not classified themselves and do not count toward your rate limit policies.
+- Keep costs low with a small, fast model, a sample rate, session sampling, a scope, or a monthly budget.
+- The transcript goes only to the classifier model. The classifier request is logged like any other request, so whether its input is stored follows your workspace's logging settings.

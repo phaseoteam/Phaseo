@@ -1,0 +1,356 @@
+---
+title: "Prompt-Vorlagen"
+description: "Speichere Prompts in einer Voreinstellung und sende pro Anfrage nur die Werte, die sich ändern."
+icon: "braces"
+---
+
+Eine Prompt-Vorlage ist eine Liste von Nachrichten mit `{{variables}}`, die in einer [Voreinstellung](./presets.mdx) gespeichert ist. Deine Anwendung sendet den Verweis auf die Voreinstellung und die Werte der Variablen. Phaseo prüft die Werte, füllt die Nachrichten aus und sendet die Anfrage an das Modell der Voreinstellung.
+
+So bleibt der Prompt-Text aus dem Anwendungscode heraus. Du kannst den Prompt im Dashboard ohne Deployment ändern, und alle Aufrufer verwenden denselben Wortlaut, dieselben Tools und dasselbe Antwortformat.
+
+Vorlagen funktionieren mit `POST /v1/chat/completions`, `POST /v1/responses` und `POST /v1/messages`.
+
+## Schnellstart
+
+<Steps>
+<Step title="Vorlage schreiben">
+
+Öffne **Einstellungen -> Voreinstellungen**, erstelle oder öffne eine Voreinstellung, wähle ihr Modell und öffne den Tab **Prompt-Vorlage**. Füge Nachrichten hinzu und schreibe Variablen in doppelte geschweifte Klammern:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+Der Editor listet jede gefundene Variable auf. Lege ihren Typ fest, ob sie erforderlich ist, einen Standardwert und eine Beschreibung. Fülle das Panel **Ausprobieren** aus, um genau die Nachrichten zu sehen, die das Gateway senden wird, und speichere dann.
+
+Sobald die Voreinstellung gespeichert ist, sendet **Gespeichertes Preset ausführen** eine echte Anfrage mit deinen Testwerten und zeigt die Antwort, das Modell und die Token-Zahlen an. Dabei werden die Credits deines Workspace verbraucht. Dasselbe Panel enthält cURL-, TypeScript- und Python-Code für die Anfrage, ausgefüllt mit deinen Testwerten.
+
+</Step>
+
+<Step title="Variablen senden">
+
+Gib die Voreinstellung in `prompt.id` an und lege die Werte in `prompt.variables` ab. Lass `model` weg oder setze es auf denselben Verweis.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Anfrage prüfen">
+
+Öffne **Gateway -> Protokolle**, um die Anfrage, das Modell, das sie ausgeführt hat, und ihre Kosten zu sehen. Die Metadaten der Anfrage enthalten die Voreinstellung, die Namen der Variablen und die Anzahl der erzeugten Nachrichten, aber nicht die Werte der Variablen.
+
+</Step>
+</Steps>
+
+## Vorlagen über die einzelnen Endpunkte nutzen
+
+Dasselbe `prompt`-Objekt funktioniert auf allen drei Endpunkten. Die System- und Entwicklernachrichten der Vorlage werden zu den Systemanweisungen des Endpunkts, und ihre übrigen Nachrichten stehen vor jeder Unterhaltung, die deine Anfrage sendet.
+
+| Endpunkt | Systemnachrichten der Vorlage landen in | Unterhaltung der Vorlage steht vor |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (bleiben Systemnachrichten) | deinen `messages` |
+| `/v1/responses` | `instructions` | deinem `input` |
+| `/v1/messages` | `system` | deinen `messages` |
+
+Du kannst zusammen mit der Vorlage eine Unterhaltung senden. Eine Chat-Anfrage kann zum Beispiel die Folgebeiträge des Nutzers nach den Nachrichten der Vorlage anhängen:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## Vorlagensyntax
+
+Vorlagen verwenden eine kleine, logikfreie Teilmenge von Mustache. Nichts in einer Vorlage wird jemals als Code ausgeführt.
+
+| Syntax | Wirkung |
+| --- | --- |
+| `{{name}}` | Fügt einen Wert ein. Text wird unverändert eingefügt, Zahlen und boolesche Werte als Text, Listen und Objekte als JSON. Ein fehlender optionaler Wert fügt nichts ein. |
+| `{{customer.name}}` | Fügt ein Feld einer Objektvariable ein. |
+| `{{#name}}...{{/name}}` | Gibt den Block einmal aus, wenn der Wert gesetzt und nicht `false` ist, oder einmal für jedes Element einer Liste. Darin ist `{{.}}` das aktuelle Element, und seine Felder lassen sich über ihren Namen verwenden. |
+| `{{^name}}...{{/name}}` | Gibt den Block aus, wenn der Wert fehlt, `false` ist, leerer Text oder eine leere Liste ist. |
+| `{{! note }}` | Ein Kommentar. Er wird entfernt. |
+| `\{{` | Ein wörtliches `{{`. |
+
+Werte werden als reiner Text ohne HTML-Escaping eingefügt. Ein Wert kann den Text einer Nachricht ändern, aber niemals die Struktur der Anfrage.
+
+Besteht eine Nachricht nach dem Ausfüllen nur aus Leerraum, wird sie verworfen. So lässt sich eine ganze Nachricht optional machen:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Um Text für jedes Element einer Liste zu wiederholen, öffne einen Abschnitt für die Liste und verwende `{{.}}` für das aktuelle Element:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+Partials (`{{> name}}`), nicht maskierte Tags (`{{{name}}}` und `{{& name}}`), geänderte Trennzeichen und Lambdas werden nicht unterstützt; Editor und API lehnen Vorlagen ab, die sie verwenden.
+
+## Variablen
+
+Jede Variable hat einen Typ. Du musst eine Variable nur deklarieren, um ihre Standards zu ändern; Variablen, die in den Nachrichten vorkommen, aber nicht deklariert sind, gelten als erforderlicher Text.
+
+| Typ | Akzeptiert |
+| --- | --- |
+| `string` | Text. Mit `max_length` begrenzt du die Länge. |
+| `number` | Eine Zahl. |
+| `boolean` | `true` oder `false`. |
+| `enum` | Einen der in `enum` aufgeführten Strings. |
+| `array` | Eine Liste. |
+| `object` | Ein JSON-Objekt. |
+| `any` | Einen beliebigen JSON-Wert. |
+| `image` | Ein Bild für eine Nutzernachricht. Siehe [Bildvariablen](#bildvariablen). |
+
+Jede Variable kann außerdem Folgendes haben:
+
+- `required`: Die Anfrage schlägt fehl, wenn der Wert fehlt. Eine erforderliche Variable kann keinen Standardwert haben.
+- `default`: Wird verwendet, wenn die Anfrage den Wert weglässt. Er muss zum Typ passen.
+- `description`: Wird im Editor und in Fehlermeldungen angezeigt, bis zu 500 Zeichen.
+
+Ein Name, der nur Abschnitte öffnet, wie `notes` und `examples` oben, ist optional und akzeptiert jeden Wert.
+
+Anfragen werden streng geprüft. Ein fehlender erforderlicher Wert, ein Wert vom falschen Typ oder ein Name, den die Vorlage nicht kennt, führt zu einem `400`, der alle Probleme auf einmal auflistet. So kann ein Tippfehler nicht unbemerkt einen Teil des Prompts entfallen lassen.
+
+## Bildvariablen
+
+Eine Bildvariable füllt einen ganzen Inhaltsteil einer Nutzernachricht. Die Vorlage legt also fest, wo das Bild steht. Wähle im Editor **Bild hinzufügen** innerhalb einer Nutzernachricht. In der API verwendest du einen `variable`-Teil:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+Die Anfrage kann jedes Bild als `https`-URL, als `data:image/...`-URL oder als Bildteil im Format von Chat Completions, Responses oder Messages senden. Phaseo wandelt es in das Format des aufgerufenen Endpunkts um. Das ausgewählte Modell muss Bildeingaben unterstützen.
+
+## Tools und Antwortformat
+
+Eine Vorlage kann `tools`, `tool_choice` und `response_format` im Chat-Completions-Format enthalten. Phaseo wandelt sie für die Endpunkte Responses und Messages um.
+
+Wenn beide dasselbe festlegen, hat die Anfrage immer Vorrang:
+
+- Tools werden nach Funktionsnamen zusammengeführt. Definiert die Anfrage ein Tool mit demselben Namen, wird die Definition der Anfrage verwendet.
+- `tool_choice` und das Antwortformat der Anfrage (`response_format`, `text.format` oder `output_config.format`) ersetzen die der Vorlage.
+
+Anfrageparameter wie `temperature` und `max_tokens` funktionieren wie gewohnt. Die eigenen Standards der Voreinstellung füllen nur die Felder, die die Anfrage weglässt.
+
+## Vorlage über die API erstellen
+
+Vorlagen werden in `config.prompt` der Voreinstellung gespeichert. Erstelle oder aktualisiere die Voreinstellung mit einem [Management-API-Schlüssel](../developers/management-api-keys.mdx), der `presets:write` besitzt:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo prüft die Vorlage beim Speichern. Eine Vorlage mit einem Syntaxfehler, einem unbekannten Typ oder einem Standardwert, der nicht zu seinem Typ passt, wird mit `400 invalid_prompt_template` und der Position jedes Problems abgelehnt, sowohl hier als auch im Editor.
+
+Gespeicherte Änderungen wirken sich nach etwa zwei Minuten auf Anfragen aus.
+
+## Versionen und Labels
+
+Jedes Mal, wenn du eine Voreinstellung veröffentlichst, speichert Phaseo eine unveränderliche Version (siehe [Voreinstellungen](./presets.mdx)). Anfragen führen die zuletzt veröffentlichte Version aus, sofern sie keine Version pinnen. Eine gepinnte Anfrage nutzt Modelle, Parameter und Vorlage dieser Version gemeinsam.
+
+Pinne eine Version mit `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` akzeptiert ein Versionslabel wie `v3`, `1.2.0` oder `2026.10.27` oder ein Label wie `production`. Du kannst die Version auch in die Modell-ID schreiben, mit oder ohne Vorlage:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Öffentliche Voreinstellungen verwenden `@publisher/support-triage@production`. Wenn `model` und `prompt.version` beide eine Version pinnen, müssen sie dieselbe nennen.
+
+### Labels
+
+Ein Label ist ein Name wie `production` oder `staging`, der auf eine veröffentlichte Version zeigt. Labels bestehen aus 1 bis 32 Kleinbuchstaben, Ziffern, Bindestrichen oder Unterstrichen, beginnen mit einem Buchstaben und dürfen nicht wie ein Versionslabel aussehen (`v1`, `v2`).
+
+Öffne in **Einstellungen -> Voreinstellungen** die Voreinstellung und nutze **Label setzen** an einer Version, um ein Label hinzuzufügen oder dorthin zu verschieben. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins. Mit einem [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+Der Body akzeptiert `version` (ein Versionslabel oder ein anderes Label, dessen Ziel übernommen wird) oder `version_id`. `GET /v1/presets/{id}/labels` listet die Labels auf, `DELETE /v1/presets/{id}/labels/{label}` entfernt eines. Anfragen, die ein entferntes Label pinnen, schlagen fehl, bis es wieder hinzugefügt wird.
+
+### Zurückrollen
+
+Zum Zurückrollen verschiebst du das Label auf die frühere Version: Wähle **production hierher verschieben** an dieser Version oder sende dieselbe Anfrage mit `"version": "v2"`. Anfragen, die `production` pinnen, führen wieder v2 aus, ohne dass sich an deiner Anwendung etwas ändert.
+
+Label-Änderungen erreichen Anfragen innerhalb von etwa zwei Minuten, wie andere Änderungen an der Voreinstellung.
+
+## Fehler
+
+Vorlagenprobleme in einer Anfrage liefern `400` mit dem Code `validation_error`. `reason` enthält den Code des ersten Problems, und `details` listet alle Probleme mit ihrem Pfad auf:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Grund | Ursache |
+| --- | --- |
+| `template_variable_required` | Eine erforderliche Variable fehlt. |
+| `template_variable_type` | Ein Wert passt nicht zu seinem Typ, seiner `enum`-Liste oder seiner `max_length`. |
+| `template_variable_unknown` | Die Anfrage hat eine Variable gesendet, die die Vorlage nicht kennt, oder die Voreinstellung hat keine Vorlage. |
+| `template_variables_invalid` | `prompt.variables` ist kein Objekt. |
+| `template_limit_exceeded` | Die Variablen oder der erzeugte Text überschreiten die unten genannten Limits. |
+| `template_rendered_empty` | Die Vorlage hat keine Nutzer- oder Assistentennachricht erzeugt, und die Anfrage hat keine gesendet. |
+| `template_endpoint_unsupported` | Die Voreinstellung hat eine Vorlage und wurde über einen anderen als die drei oben genannten Endpunkte aufgerufen. |
+| `prompt_model_conflict` | `model` nennt eine andere Voreinstellung oder ein anderes Modell als `prompt.id` oder pinnt eine andere Version als `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` ist leer, länger als 64 Zeichen oder enthält andere Zeichen als Buchstaben, Ziffern, `.`, `_`, `+` und `-`. |
+| `prompt_model_fallbacks_unsupported` | Die Anfrage hat Fallbacks in `models` gesetzt. Führe Fallback-Modelle stattdessen in der Voreinstellung auf. |
+
+Eine `prompt.id`, die keiner Voreinstellung in deinem Workspace entspricht, liefert `404`.
+
+Eine gepinnte Version oder ein gepinntes Label, das nicht existiert oder das der Schlüssel nicht nutzen darf, liefert `404` mit dem Grund `preset_version_not_found`.
+
+## Limits
+
+| Limit | Wert |
+| --- | --- |
+| Nachrichten pro Vorlage | 64 |
+| Variablen pro Vorlage | 64 |
+| Vorlagentext über alle Nachrichten | 48.000 Zeichen |
+| Verschachtelungstiefe von Abschnitten | 8 |
+| Abschnittswiederholungen pro Anfrage | 1.000 |
+| Erzeugter Text pro Anfrage | 1.000.000 Zeichen |
+| Größe von `prompt.variables` | 256 KB |
+| Werte pro `enum` | 100 |
+
+## Guardrails und Protokolle
+
+[Guardrails](../cookbook/guardrails-for-api-keys.mdx) prüfen Variablenwerte als Nutzerinhalt, auch wenn die Vorlage sie in eine Systemnachricht einsetzt. Ein Guardrail, der einen Wert schwärzt, schwärzt ihn überall dort, wo die Vorlage ihn eingefügt hat, und einer, der einen Wert blockiert, blockiert die Anfrage.
+
+Die Metadaten der Anfrage enthalten die Voreinstellung, die Namen der Variablen und die Anzahl der erzeugten Nachrichten. Die Werte selbst werden nur dort gespeichert, wo auch der Anfrage-Body gespeichert wird, gemäß den üblichen Protokollierungseinstellungen deines Workspace.
+
+## Aktuelle Einschränkungen
+
+- Fallbacks in `models` lassen sich nicht mit einer Vorlage kombinieren. Füge Fallback-Modelle stattdessen der Voreinstellung hinzu.
+- Vorlagen gelten nur für Anfragen an Chat Completions, Responses und Messages.
+
+## Zugehörige Anleitungen
+
+- [Voreinstellungen](./presets.mdx)
+- [Strukturierte Ausgaben](./structured-outputs.mdx)
+- [Tool-Aufrufe](./tool-calling.mdx)
+- [Multimodalität](./multimodality.mdx)

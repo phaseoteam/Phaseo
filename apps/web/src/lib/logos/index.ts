@@ -38,6 +38,9 @@ const normalisedAliasMap = new Map<string, KnownLogoId>();
 const pathToKeyMap = new Map<string, KnownLogoId>();
 
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
+	baselabs: "Base Labs",
+	nace: "Nace.AI",
+	"abliteration-ai": "Abliteration AI",
 	ai21: "AI21",
 	"alibaba-cn": "Alibaba Cloud",
 	"alibaba-cloud": "Alibaba Cloud",
@@ -47,6 +50,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	crofai: "CrofAI",
 	continue: "Continue",
 	"deepseek-harness": "DeepSeek Harness",
+	dealignai: "dealign.ai",
 	digitalocean: "DigitalOcean",
 	empiriolabs: "EmpirioLabs AI",
 	github: "GitHub",
@@ -79,7 +83,10 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	tinyfish: "TinyFish",
 	typesafe: "TypeSafe",
 	"tencent-cloud": "Tencent Cloud",
-	wandb: "Weights & Biases",
+	wandb: "CoreWeave Forge",
+	"weights-and-biases": "CoreWeave Forge",
+	"coreweave-forge": "CoreWeave Forge",
+	"wandb-weave": "W&B Weave",
 	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",
 	zenmux: "ZenMux",
@@ -136,6 +143,7 @@ normalisedAliasMap.set(normalise("minimax-cn"), "minimax");
 normalisedAliasMap.set(normalise("minimax-coding-plan"), "minimax");
 normalisedAliasMap.set(normalise("minimax-cn-coding-plan"), "minimax");
 normalisedAliasMap.set(normalise("moonshot"), "moonshotai");
+normalisedAliasMap.set(normalise("kimi"), "moonshotai");
 normalisedAliasMap.set(normalise("moonshotai-cn"), "moonshotai");
 normalisedAliasMap.set(normalise("ollama-cloud"), "ollama");
 normalisedAliasMap.set(normalise("cline-pass"), "cline");

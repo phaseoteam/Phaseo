@@ -21,6 +21,8 @@ function text(value: unknown): string {
 function questionBody(name: string, question: IRDecisionQuestion): Record<string, unknown> {
 	const instructions = text(question.instructions);
 	switch (question.type) {
+		case "box":
+			throw new Error("Box questions are unsupported on OpenAI Decisions routes.");
 		case "noul":
 			return {
 				name, type: "predicate",

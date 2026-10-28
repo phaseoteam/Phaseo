@@ -9,8 +9,20 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
+import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
+import {
+	anthropicStopReasonFor,
+	normalizeFinishReason,
+	readGatewayContextManagement,
+	readGatewayStop,
+	responsesOutputHasRefusal,
+	type AnthropicStopReason,
+} from "@core/finish-reason";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
+import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
+import { inlineAudioUrlsForProvider } from "./inline-audio";
+import { isMistralProvider, normalizeMistralStreamChunk, splitContentChunks } from "./providers/mistral/quirks";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -19,19 +31,30 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
+import { cloudflareAccountAiBase, cloudflareByokCredential, cloudflareByokHeaders } from "@providers/cloudflare/credentials";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
+import { toAnthropicCitations } from "@protocols/shared/citations";
 import {
 	transformChatStream,
 	transformChatStreamToResponses,
 	transformResponsesStreamToChat,
+	normalizeTerminalResponsesFrames,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
 	readErrorPayload,
 } from "./retry-policy";
 import { SseParser } from "@core/sse-parser";
+import { readUpstreamStreamError } from "@core/stream-errors";
+import {
+	ANTHROPIC_REASONING_FORMAT,
+	isSealedReasoningValue,
+	openReasoningState,
+	reasoningFormatForRoute,
+	sealReasoningState,
+} from "@core/reasoning-state";
 
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
@@ -66,6 +89,29 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Providers that keep prompt caches per replica and route on a session header, by the
+// header each one documents. The value is the workspace-namespaced cache key, never the
+// raw client key.
+// - Fireworks: https://docs.fireworks.ai/guides/prompt-caching
+// - Cloudflare: https://developers.cloudflare.com/workers-ai/features/prompt-caching
+// - Baseten: "Reuse the same x-session-affinity value for related requests to improve
+//   cached input tokens reuse" (https://docs.baseten.co/inference/model-apis/pricing-and-limits)
+// - Morph: "x-session-id ... Use this one: it reaches both region and worker placement"
+//   (https://docs.morphllm.com/sdk/components/caching)
+const SESSION_AFFINITY_HEADERS: ReadonlyMap<string, string> = new Map([
+	["fireworks", "x-session-affinity"],
+	["cloudflare", "x-session-affinity"],
+	["baseten", "x-session-affinity"],
+	["morph", "x-session-id"],
+]);
+
+export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
+	const key = args.meta?.cacheAffinityKey;
+	if (typeof key !== "string" || key.length === 0) return {};
+	const header = SESSION_AFFINITY_HEADERS.get(String(args.providerId ?? "").trim().toLowerCase());
+	return header ? { [header]: key } : {};
+}
+
 export type OpenAIWirePolicy = {
 	forceChat?: boolean;
 	useClientStreamingMode?: boolean;
@@ -89,6 +135,11 @@ export async function executeOpenAIWire(
 			byokMeta: args.byokMeta,
 		} as any);
 
+	// A Cloudflare BYOK key runs on the customer's own account with their token.
+	const cloudflareByok = args.providerId === "cloudflare" && !args.privateEndpoint
+		? cloudflareByokCredential(keyInfo)
+		: null;
+
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = resolveOpenAICompatModel(
 		args.providerId,
@@ -102,17 +153,30 @@ export async function executeOpenAIWire(
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
 		targetRoute === "responses" ? "/responses" : "/chat/completions";
 
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
+	const encodeIr = inlinedAudio.ir;
+
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
-			? irToOpenAIResponses(args.ir, modelForRouting, args.providerId, args.capabilityParams)
-			: irToOpenAIChat(args.ir, modelForRouting, args.providerId, args.capabilityParams);
+			? irToOpenAIResponses(encodeIr, modelForRouting, args.providerId, args.capabilityParams)
+			: irToOpenAIChat(encodeIr, modelForRouting, args.providerId, args.capabilityParams);
 
 		const upstreamStream = policy.useClientStreamingMode ? args.ir.stream : true;
 		const payload: Record<string, any> = {
 			...requestPayload,
 			stream: upstreamStream,
 		};
-		if (targetRoute === "chat" && upstreamStream && args.providerId !== "ai21" && args.providerId !== "mancer") {
+		// Never re-add stream_options for providers whose profile rejects it
+		// (their quirks have already removed any client value).
+		if (
+			targetRoute === "chat" &&
+			upstreamStream &&
+			args.providerId !== "ai21" &&
+			args.providerId !== "mancer" &&
+			providerAcceptsStreamOptions(args.providerId)
+		) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,
@@ -152,11 +216,13 @@ export async function executeOpenAIWire(
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
 		const upstreamUrl = args.privateEndpoint
 			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
-			: openAICompatUrl(
-				policy.urlProviderId ?? args.providerId,
-				endpointForRoute(targetRoute),
-				modelForRouting,
-			);
+			: cloudflareByok
+				? `${cloudflareAccountAiBase(cloudflareByok.accountId)}/v1${endpointForRoute(targetRoute)}`
+				: openAICompatUrl(
+					policy.urlProviderId ?? args.providerId,
+					endpointForRoute(targetRoute),
+					modelForRouting,
+				);
 		const upstreamHeaders = args.privateEndpoint
 			? {
 				Authorization: `Bearer ${keyInfo.key}`,
@@ -165,12 +231,13 @@ export async function executeOpenAIWire(
 			}
 			: openAICompatHeaders(args.providerId, keyInfo.key, {
 				...upstreamTestHeaders(args.meta),
+				...sessionAffinityHeaders(args),
 				...(bytePlusMcpBeta ? { "ark-beta-mcp": "true" } : {}),
 			});
 		const response = await fetchUpstream(args, upstreamUrl, {
 			method: "POST",
 			...(args.privateEndpoint ? { redirect: "manual" as const } : {}),
-			headers: upstreamHeaders,
+			headers: cloudflareByok ? cloudflareByokHeaders(cloudflareByok, upstreamHeaders) : upstreamHeaders,
 			body: requestBody,
 		});
 
@@ -399,6 +466,8 @@ export async function executeOpenAIWire(
 type StreamAdapterState = {
 	requestId: string;
 	providerId: string;
+	/** Gateway model id of the request, recorded on sealed reasoning state. */
+	model?: string | null;
 	choiceStates: Map<number, { reasoningChunks: string[] }>;
 	aionStates?: Map<number, any>;
 };
@@ -407,6 +476,7 @@ function createStreamAdapterState(args: ExecutorExecuteArgs): StreamAdapterState
 	return {
 		requestId: args.requestId,
 		providerId: args.providerId,
+		model: args.ir.model,
 		choiceStates: new Map(),
 	};
 }
@@ -462,17 +532,22 @@ export function resolveStreamForProtocol(
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
 	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
+	// A native Responses upstream reaches clients unparsed; provider quirks fix its terminal
+	// response (usage) so streamed clients and billing match a buffered response.
+	const body = route === "responses" && !canonicalResponses
+		? normalizeTerminalResponsesFrames(res.body, args.providerId)
+		: res.body;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
-			return transformResponsesStreamToChat(res.body, args, state);
+			return transformResponsesStreamToChat(body, args, state);
 		}
-		return transformChatStream(res.body, args, state);
+		return transformChatStream(body, args, state);
 	}
 
 	if (protocol === "openai.responses") {
-		if (canonicalResponses) return res.body;
-		return transformChatStreamToResponses(res.body, args, state);
+		if (canonicalResponses) return body;
+		return transformChatStreamToResponses(body, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
@@ -480,13 +555,13 @@ export function resolveStreamForProtocol(
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
 		const responsesStream = canonicalResponses
-			? res.body
-			: transformChatStreamToResponses(res.body, args, state);
+			? body
+			: transformChatStreamToResponses(body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)
-	return res.body;
+	return body;
 }
 
 function transformResponsesStreamToAnthropic(
@@ -518,6 +593,7 @@ function transformResponsesStreamToAnthropic(
 				emittedContent: boolean;
 				toolId?: string;
 				toolName?: string;
+				emittedCitations?: boolean;
 			};
 			const blocksByAlias = new Map<string, AnthropicBlock>();
 			const blocks: AnthropicBlock[] = [];
@@ -578,7 +654,7 @@ function transformResponsesStreamToAnthropic(
 				}
 				ensureMessageStart();
 				if (activeBlock) stopBlock(activeBlock);
-				const block = {
+				const block: AnthropicBlock = {
 					index: nextBlockIndex++,
 					type,
 					open: true,
@@ -606,6 +682,107 @@ function transformResponsesStreamToAnthropic(
 				return block;
 			};
 
+			// Finish a reasoning item as a Messages block: Claude's own signature
+			// goes out raw in a signature_delta, redacted thinking as a
+			// redacted_thinking block, and other providers' state sealed.
+			const completedReasoning = new Set<AnthropicBlock>();
+			const completeReasoningItem = (item: any, aliases: string[]) => {
+				const existing = aliases.map((alias) => blocksByAlias.get(alias)).find(Boolean);
+				if (existing && completedReasoning.has(existing)) return;
+				const model = args.providerModelSlug ?? args.ir.model;
+				const state = openReasoningState(item?.encrypted_content, {
+					format: reasoningFormatForRoute(args.providerId, model),
+					kind: "encrypted",
+				});
+				if (state?.format === ANTHROPIC_REASONING_FORMAT && state.kind === "redacted" && !existing) {
+					ensureMessageStart();
+					if (activeBlock) stopBlock(activeBlock);
+					const block: AnthropicBlock = { index: nextBlockIndex++, type: "thinking", open: false, emittedContent: true };
+					blocks.push(block);
+					for (const alias of aliases) blocksByAlias.set(alias, block);
+					completedReasoning.add(block);
+					emit(controller, "content_block_start", {
+						type: "content_block_start",
+						index: block.index,
+						content_block: { type: "redacted_thinking", data: state.value },
+					});
+					emit(controller, "content_block_stop", { type: "content_block_stop", index: block.index });
+					return;
+				}
+				const block = existing ?? ensureBlock(aliases, "thinking");
+				completedReasoning.add(block);
+				if (!block.emittedContent) {
+					const text = extractOutputText(item?.content) || extractOutputText(item?.summary);
+					if (text) {
+						emit(controller, "content_block_delta", {
+							type: "content_block_delta",
+							index: block.index,
+							delta: { type: "thinking_delta", thinking: text },
+						});
+					}
+					block.emittedContent = true;
+				}
+				if (state && block.open) {
+					const signature = state.format === ANTHROPIC_REASONING_FORMAT && state.kind === "signature"
+						? state.value
+						: sealReasoningState({
+							format: state.format,
+							kind: state.kind,
+							value: state.value,
+							model: state.model ?? model,
+							provider: state.provider ?? args.providerId,
+							...(state.callId ? { callId: state.callId } : {}),
+						});
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index: block.index,
+						delta: { type: "signature_delta", signature },
+					});
+				}
+				stopBlock(block);
+			};
+
+			// Citations go on the text block they cite. Only Claude's own citations
+			// have a valid Messages form; plain URL citations are left off (see
+			// toAnthropicCitations). When the cited block has already closed, they
+			// wait for the end of the message and go on an empty text block of their
+			// own; the gateway drops empty text blocks when the conversation is
+			// replayed to Claude.
+			const lateCitations: Array<Record<string, any>> = [];
+			const emitCitations = (block: AnthropicBlock, annotations: unknown[]) => {
+				const citations = toAnthropicCitations(annotations);
+				if (citations.length === 0) return;
+				block.emittedCitations = true;
+				if (!block.open) {
+					lateCitations.push(...citations);
+					return;
+				}
+				for (const citation of citations) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index: block.index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+			};
+			const flushLateCitations = () => {
+				if (lateCitations.length === 0) return;
+				const index = nextBlockIndex++;
+				emit(controller, "content_block_start", {
+					type: "content_block_start",
+					index,
+					content_block: { type: "text", text: "" },
+				});
+				for (const citation of lateCitations.splice(0)) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+				emit(controller, "content_block_stop", { type: "content_block_stop", index });
+			};
+
 			function stopBlock(block: { index: number; open: boolean }) {
 				if (!block.open) return;
 				block.open = false;
@@ -628,11 +805,15 @@ function transformResponsesStreamToAnthropic(
 				for (let outputIndex = 0; outputIndex < outputItems.length; outputIndex += 1) {
 					const item = outputItems[outputIndex];
 					const itemType = String(item?.type ?? "").toLowerCase();
-					if (itemType === "reasoning" || itemType === "message") {
-						const blockType = itemType === "reasoning" ? "thinking" : "text";
+					if (itemType === "reasoning") {
+						completeReasoningItem(item, aliasesFor({ id: item?.id, outputIndex }));
+						continue;
+					}
+					if (itemType === "message") {
+						const blockType = "text" as "text" | "thinking";
 						const block = ensureBlock(aliasesFor({ id: item?.id, outputIndex }), blockType);
 						if (!block.emittedContent) {
-							const text = extractOutputText(item?.content);
+							const text = extractOutputText(item?.content) || extractRefusalText(item?.content);
 							if (text) {
 								emit(controller, "content_block_delta", {
 									type: "content_block_delta",
@@ -643,6 +824,10 @@ function transformResponsesStreamToAnthropic(
 								});
 								block.emittedContent = true;
 							}
+						}
+						if (!block.emittedCitations) {
+							emitCitations(block, (Array.isArray(item?.content) ? item.content : [])
+								.flatMap((part: any) => (part?.type === "output_text" && Array.isArray(part.annotations) ? part.annotations : [])));
 						}
 						stopBlock(block);
 						continue;
@@ -672,15 +857,21 @@ function transformResponsesStreamToAnthropic(
 				}
 
 				for (const block of blocks) stopBlock(block);
+				flushLateCitations();
 				hasToolUse ||= blocks.some((block) => block.type === "tool_use");
 				const usage = normalizeUsageToAnthropic(response?.usage);
+				const stopReason = mapResponsesStatusToAnthropicStopReason(response, hasToolUse);
+				const stopSequence = stopReason === "stop_sequence" ? readGatewayStop(response)?.sequence ?? null : null;
+				// Context editing reports its applied edits on the final message_delta.
+				const contextManagement = readGatewayContextManagement(response);
 				emit(controller, "message_delta", {
 					type: "message_delta",
 					delta: {
-						stop_reason: mapResponsesStatusToAnthropicStopReason(response, hasToolUse),
-						stop_sequence: null,
+						stop_reason: stopReason,
+						stop_sequence: stopSequence,
 					},
 					usage,
+					...(contextManagement ? { context_management: contextManagement } : {}),
 				});
 				emit(controller, "message_stop", { type: "message_stop" });
 			};
@@ -716,6 +907,29 @@ function transformResponsesStreamToAnthropic(
 								delta: { type: "text_delta", text: payload.delta },
 							});
 							block.emittedContent = true;
+							continue;
+						}
+						// Messages has no refusal field: refusal text is the assistant's text.
+						if (normalizedEvent === "response.refusal.delta" && typeof payload?.delta === "string" && payload.delta.length > 0) {
+							const block = ensureBlock(aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							}), "text");
+							emit(controller, "content_block_delta", {
+								type: "content_block_delta",
+								index: block.index,
+								delta: { type: "text_delta", text: payload.delta },
+							});
+							block.emittedContent = true;
+							continue;
+						}
+						if (normalizedEvent === "response.output_text.annotation.added" && payload?.annotation) {
+							const aliases = aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							});
+							const closed = aliases.map((alias) => blocksByAlias.get(alias)).find((candidate) => candidate && !candidate.open);
+							emitCitations(closed ?? ensureBlock(aliases, "text"), [payload.annotation]);
 							continue;
 						}
 						if (normalizedEvent === "response.reasoning_text.delta" && typeof payload?.delta === "string") {
@@ -760,6 +974,14 @@ function transformResponsesStreamToAnthropic(
 							block.emittedContent = true;
 							continue;
 						}
+						if (normalizedEvent === "response.output_item.done" && payload?.item?.type === "reasoning") {
+							completeReasoningItem(payload.item, aliasesFor({
+								id: payload.item?.id,
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index,
+							}));
+							continue;
+						}
 						if (
 							normalizedEvent === "response.output_text.done" ||
 							normalizedEvent === "response.reasoning_text.done" ||
@@ -775,7 +997,21 @@ function transformResponsesStreamToAnthropic(
 							if (block) stopBlock(block);
 							continue;
 						}
-						if (normalizedEvent === "response.completed") {
+						if (normalizedEvent === "error" || normalizedEvent === "response.failed") {
+							// Messages clients receive a failure after output began as an
+							// `error` event with no message_delta or message_stop.
+							if (terminalEmitted) continue;
+							const failure = readUpstreamStreamError(payload);
+							emit(controller, "error", {
+								type: "error",
+								error: { type: anthropicStreamErrorType(failure.code), message: failure.message },
+							});
+							terminalEmitted = true;
+							continue;
+						}
+						// response.incomplete is terminal too: its response carries the
+						// usage and the max_output_tokens or content_filter reason.
+						if (normalizedEvent === "response.completed" || normalizedEvent === "response.incomplete") {
 							latestResponse = payload?.response ?? payload;
 							finishMessage(latestResponse);
 							continue;
@@ -798,7 +1034,35 @@ function transformResponsesStreamToAnthropic(
 	});
 }
 
-function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_tokens: number } {
+const ANTHROPIC_STREAM_ERROR_TYPES = new Set([
+	"invalid_request_error",
+	"authentication_error",
+	"permission_error",
+	"not_found_error",
+	"request_too_large",
+	"rate_limit_error",
+	"api_error",
+	"overloaded_error",
+]);
+
+function anthropicStreamErrorType(code: string | null): string {
+	const value = String(code ?? "").toLowerCase();
+	if (ANTHROPIC_STREAM_ERROR_TYPES.has(value)) return value;
+	if (value.includes("overload")) return "overloaded_error";
+	if (value.includes("rate_limit")) return "rate_limit_error";
+	return "api_error";
+}
+
+function normalizeUsageToAnthropic(usage: any): {
+	input_tokens: number;
+	output_tokens: number;
+	cache_read_input_tokens?: number;
+	cache_creation_input_tokens?: number;
+	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
+	cached_write_text_tokens_30m?: number;
+	cached_write_text_tokens_12h?: number;
+	server_tool_use?: Record<string, number>;
+} {
 	const inputTokens = Number(
 		usage?.input_tokens ??
 		usage?.prompt_tokens ??
@@ -811,9 +1075,31 @@ function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_t
 		usage?.outputTokens ??
 		0,
 	);
+	const safeInput = Number.isFinite(inputTokens) ? inputTokens : 0;
+	// Responses usage counts cache reads and writes inside input_tokens; Anthropic reports
+	// them separately, on top of input_tokens.
+	const cache = resolveCacheTokenUsage(usage, safeInput, { readSubsetDefault: true });
+	const read = cache.readTokens;
+	const write = cache.writeTokens;
 	return {
-		input_tokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+		input_tokens: uncachedInputTokens(safeInput, cache),
 		output_tokens: Number.isFinite(outputTokens) ? outputTokens : 0,
+		...(typeof read === "number" ? { cache_read_input_tokens: read } : {}),
+		...(typeof write === "number" ? { cache_creation_input_tokens: write } : {}),
+		...(typeof cache.write5mTokens === "number" || typeof cache.write1hTokens === "number"
+			? {
+				cache_creation: {
+					ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+					ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+				},
+			}
+			: {}),
+		// Messages has no field for OpenAI write lifetimes; these internal meters carry the
+		// split to billing and are not part of the client usage.
+		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
+		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
+		// Messages usage has its own server_tool_use counts; billing reads web searches from it.
+		...(usage?.server_tool_use && typeof usage.server_tool_use === "object" ? { server_tool_use: usage.server_tool_use } : {}),
 	};
 }
 
@@ -822,6 +1108,13 @@ function extractOutputText(content: any): string {
 	return content
 		.map((part) => extractTextPart(part))
 		.filter((part) => part.length > 0)
+		.join("");
+}
+
+function extractRefusalText(content: any): string {
+	if (!Array.isArray(content)) return "";
+	return content
+		.map((part) => (part?.type === "refusal" && typeof part.refusal === "string" ? part.refusal : ""))
 		.join("");
 }
 
@@ -835,16 +1128,25 @@ function extractTextPart(part: any): string {
 function mapResponsesStatusToAnthropicStopReason(
 	response: any,
 	hasToolUse: boolean,
-): "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | "refusal" | null {
+): AnthropicStopReason | null {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return null;
-	if (hasToolUse) return "tool_use";
+	// An incomplete response wins over a tool call: the call's arguments may have been cut
+	// off (max_output_tokens), and reporting tool_use would invite the client to run them.
 	if (status === "incomplete") {
 		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
 		if (reason.includes("stop_sequence")) return "stop_sequence";
 		if (reason.includes("content")) return "refusal";
 		return "max_tokens";
 	}
+	if (hasToolUse) return "tool_use";
+	// Responses has no status for Anthropic's stop_sequence, pause_turn or refusal;
+	// the canonical stream carries them internally (core/finish-reason.ts).
+	const gatewayStop = readGatewayStop(response);
+	if (gatewayStop) {
+		return anthropicStopReasonFor(normalizeFinishReason(gatewayStop.reason).finishReason, gatewayStop.reason);
+	}
+	if (responsesOutputHasRefusal(response)) return "refusal";
 	return "end_turn";
 }
 
@@ -863,7 +1165,9 @@ export async function bufferStreamToIR(
 	const parser = new SseParser();
 	let finalResponse: any = null;
 	let sawDone = false;
+	const mistralStreamState = isMistralProvider(args.providerId) ? createStreamAdapterState(args) : null;
 	const applyStreamPayload = (payload: any) => {
+		if (mistralStreamState) normalizeMistralStreamChunk(payload, mistralStreamState);
 		// Responses API sends response in payload.response
 		if (route === "responses" && payload?.response) {
 			finalResponse = payload.response;
@@ -903,7 +1207,9 @@ export async function bufferStreamToIR(
 			applyStreamPayload(payload);
 			if (
 				payload?.type === "response.completed" ||
+				payload?.type === "response.incomplete" ||
 				payload?.response?.status === "completed" ||
+				payload?.response?.status === "incomplete" ||
 				payload?.choices?.some?.((choice: any) => choice?.finish_reason != null)
 			) {
 				terminalAtMs = Date.now();
@@ -965,6 +1271,7 @@ export async function bufferStreamToIR(
 		throw new Error("openai_stream_missing_response");
 	}
 
+	finaliseChatAudio(finalResponse);
 	const isChatLikeResponse = isChatCompletionResponse(finalResponse);
 
 	// Convert to IR using appropriate transformer
@@ -1108,6 +1415,43 @@ function mergeUsageSnapshots(prev: any, next: any): any {
 	return merged;
 }
 
+const CHAT_AUDIO_DATA_CHUNKS = Symbol("chatAudioDataChunks");
+
+/**
+ * OpenAI streams Chat audio output as `choices[].delta.audio` pieces: the id and
+ * expires_at once, and base64 `data` and `transcript` in fragments
+ * (https://platform.openai.com/docs/api-reference/chat-streaming/streaming).
+ */
+function appendChatAudioDelta(message: any, delta: any): void {
+	const audio = message.audio && typeof message.audio === "object" ? message.audio : (message.audio = {});
+	if (typeof delta.id === "string" && delta.id) audio.id = delta.id;
+	if (typeof delta.expires_at === "number") audio.expires_at = delta.expires_at;
+	if (typeof delta.transcript === "string") audio.transcript = (audio.transcript ?? "") + delta.transcript;
+	if (typeof delta.data === "string" && delta.data) {
+		(audio[CHAT_AUDIO_DATA_CHUNKS] ??= []).push(delta.data);
+	}
+}
+
+/** Each base64 fragment is encoded on its own, so padded fragments are re-encoded as one. */
+export function joinBase64Chunks(chunks: string[]): string {
+	if (chunks.slice(0, -1).every((chunk) => chunk.length % 4 === 0 && !chunk.includes("="))) {
+		return chunks.join("");
+	}
+	let binary = "";
+	for (const chunk of chunks) binary += atob(chunk);
+	return btoa(binary);
+}
+
+function finaliseChatAudio(response: any): void {
+	for (const choice of Array.isArray(response?.choices) ? response.choices : []) {
+		const audio = choice?.message?.audio;
+		const chunks: string[] | undefined = audio?.[CHAT_AUDIO_DATA_CHUNKS];
+		if (!chunks) continue;
+		audio.data = joinBase64Chunks(chunks);
+		delete audio[CHAT_AUDIO_DATA_CHUNKS];
+	}
+}
+
 function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	if (!payload || !Array.isArray(payload?.choices)) {
 		if (payload?.usage && finalResponse) {
@@ -1149,6 +1493,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(message.audio && typeof message.audio === "object" ? { audio: message.audio } : previousMessage.audio ? { audio: previousMessage.audio } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1157,7 +1502,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			};
 		}
 
-		if (chunk.delta?.content) {
+		// A chunk-list delta (Mistral ThinkChunk + TextChunk) splits into text and
+		// reasoning; appending the list to the string would give "[object Object]".
+		const contentChunks = splitContentChunks(chunk.delta?.content);
+		if (contentChunks) {
+			if (contentChunks.text) choice.message.content = (choice.message.content || "") + contentChunks.text;
+			if (contentChunks.reasoning) {
+				choice.message.reasoning_content = (choice.message.reasoning_content || "") + contentChunks.reasoning;
+			}
+		} else if (chunk.delta?.content) {
 			choice.message.content = (choice.message.content || "") + chunk.delta.content;
 		}
 		if (chunk.delta?.reasoning_content) {
@@ -1167,6 +1520,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 		if (chunk.delta?.reasoning) {
 			choice.message.reasoning =
 				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		// Keep reasoning state the gateway sealed into stream deltas (Mistral
+		// ThinkChunk signatures) for the final response.
+		if (Array.isArray(chunk.delta?.reasoning_details)) {
+			const sealedDetails = chunk.delta.reasoning_details.filter((entry: any) =>
+				isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+			if (sealedDetails.length > 0) {
+				choice.message.reasoning_details = [...(choice.message.reasoning_details ?? []), ...sealedDetails];
+			}
 		}
 		if (chunk.delta?.tool_calls) {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];
@@ -1197,6 +1559,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				choice.message.audios = [];
 			}
 			choice.message.audios.push(...chunk.delta.audios);
+		}
+		if (chunk.delta?.audio && typeof chunk.delta.audio === "object") {
+			appendChatAudioDelta(choice.message, chunk.delta.audio);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

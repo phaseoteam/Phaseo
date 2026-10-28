@@ -8,15 +8,22 @@ import { decryptBroadcastConfig, encryptBroadcastConfig } from "./broadcast-conf
 import {
 	AVAILABLE_BROADCAST_DESTINATION_IDS,
 	BROADCAST_RULE_CONDITIONS,
+	broadcastDelivery,
 	BROADCAST_RULE_FIELDS,
+	broadcastWebhookSignatureHeaders,
+	broadcastWebhookSigningSecretError,
 	broadcastDestinationEndpoint as endpointFor,
 	isBroadcastDestinationLimitError,
 	normalizeBroadcastDestinationId as destinationId,
+	applyOtlpTarget,
+	gzipBytes,
 	OTLP_PROTOCOLS,
 	otlpProtocol,
-	otlpTracesEndpoint,
+	resolveOtlpTarget,
 } from "./broadcast-destinations";
+import { broadcastRows, broadcastRowsEndpoint, sendBroadcastRows } from "./broadcast-rows";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { compileSafeRegex } from "./safe-regex";
 
 const RULE_FIELDS = new Set<string>(BROADCAST_RULE_FIELDS);
 const RULE_CONDITIONS = new Set<string>(BROADCAST_RULE_CONDITIONS);
@@ -37,6 +44,17 @@ function headers(config: Record<string, any>): Record<string, string> {
 	if (config.auth_header && !result.Authorization && !(result as any).authorization) result.Authorization = String(config.auth_header);
 	return result;
 }
+// Test and sample requests are signed like real deliveries, so a receiver that
+// checks signatures accepts them.
+async function webhookRequest(config: Record<string, any>, payload: unknown, extra: Record<string, string> = {}): Promise<RequestInit> {
+	const body = JSON.stringify(payload);
+	return {
+		method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST",
+		headers: { ...headers(config), ...extra, ...(await broadcastWebhookSignatureHeaders(config, body)) },
+		body,
+		signal: AbortSignal.timeout(10_000),
+	};
+}
 export async function fetchBroadcastEndpoint(url: URL, init: RequestInit): Promise<Response> {
 	const response = await fetch(url, { ...init, redirect: "manual" });
 	if (response.status >= 300 && response.status < 400) {
@@ -45,10 +63,13 @@ export async function fetchBroadcastEndpoint(url: URL, init: RequestInit): Promi
 	return response;
 }
 function validateDestinationConfig(id: string, config: Record<string, any>) {
+	if (broadcastDelivery(id) === "rows") return safeEndpoint(broadcastRowsEndpoint(id, config));
 	const target = safeEndpoint(endpointFor(id, config));
 	if (id === "webhook") {
 		const method = String(config.method ?? "POST").trim().toUpperCase();
 		if (!["POST", "PUT"].includes(method)) throw new Error("Webhook method must be POST or PUT");
+		const secretError = broadcastWebhookSigningSecretError(config.signing_secret);
+		if (secretError) throw new Error(secretError);
 		if (typeof config.headers_json === "string" && config.headers_json.trim()) {
 			let parsed: unknown;
 			try { parsed = JSON.parse(config.headers_json); } catch { throw new Error("Webhook headers must be valid JSON"); }
@@ -56,6 +77,14 @@ function validateDestinationConfig(id: string, config: Record<string, any>) {
 		}
 	} else if (!otlpProtocol(config)) throw new Error(`Protocol must be ${OTLP_PROTOCOLS.join(" or ")}`);
 	return target;
+}
+function ruleRegexError(groups: Array<{ rules: Array<{ condition: string; value: string | null }> }>): string | null {
+	for (const rule of groups.flatMap((group) => group.rules)) {
+		if (rule.condition !== "matches_regex") continue;
+		const compiled = compileSafeRegex(rule.value ?? "");
+		if (compiled.ok === false) return compiled.error;
+	}
+	return null;
 }
 function sampleTrace(name: string, privateMode: boolean) {
 	const now = BigInt(Date.now()) * 1_000_000n;
@@ -67,23 +96,33 @@ function sampleTrace(name: string, privateMode: boolean) {
 		{ key: "gen_ai.usage.input_tokens", value: { intValue: "50" } },
 		{ key: "gen_ai.usage.output_tokens", value: { intValue: "100" } },
 	];
+	// Messages in the gateway's gen_ai form, so each preset's renames and
+	// message format apply to the sample as they do to real traces.
 	if (!privateMode) attributes.push(
-		{ key: "trace.input", value: { stringValue: "What is the capital of France?" } },
-		{ key: "trace.output", value: { stringValue: "Paris" } },
+		{ key: "gen_ai.input.messages", value: { stringValue: JSON.stringify([{ role: "user", parts: [{ type: "text", content: "What is the capital of France?" }] }]) } },
+		{ key: "gen_ai.output.messages", value: { stringValue: JSON.stringify([{ role: "assistant", parts: [{ type: "text", content: "Paris" }], finish_reason: "stop" }]) } },
 	);
 	return { resourceSpans: [{ resource: { attributes: [{ key: "service.name", value: { stringValue: "phaseo-gateway" } }] }, scopeSpans: [{ scope: { name: "phaseo" }, spans: [{ traceId: crypto.randomUUID().replaceAll("-", ""), spanId: crypto.randomUUID().replaceAll("-", "").slice(0, 16), name: "Test Generation", kind: 3, startTimeUnixNano: now.toString(), endTimeUnixNano: (now + 1_500_000_000n).toString(), status: { code: 1 }, attributes }] }] }] };
 }
 
-async function sendOtlpSample(config: Record<string, any>, payload: unknown) {
-	const protocol = otlpProtocol(config);
-	if (!protocol) throw new Error(`Protocol must be ${OTLP_PROTOCOLS.join(" or ")}`);
-	const protobuf = protocol === "http/protobuf";
-	const response = await fetchBroadcastEndpoint(safeEndpoint(otlpTracesEndpoint(config)), {
+// Sends a sample trace the way the gateway exporter would for this destination.
+async function sendOtlpSample(id: string, config: Record<string, any>, payload: unknown) {
+	const target = resolveOtlpTarget(id, config);
+	const protobuf = target.protocol === "http/protobuf";
+	const request = applyOtlpTarget(payload, target);
+	const encoded = protobuf ? encodeOtlpTraceRequest(request) : JSON.stringify(request);
+	const gzip = target.compression === "gzip";
+	const requestHeaders = new Headers({ "Content-Type": "application/json", Accept: "application/json" });
+	for (const [key, value] of Object.entries(target.headers)) requestHeaders.set(key, value);
+	if (protobuf) {
+		requestHeaders.set("Content-Type", "application/x-protobuf");
+		requestHeaders.set("Accept", "application/x-protobuf");
+	}
+	if (gzip) requestHeaders.set("Content-Encoding", "gzip");
+	const response = await fetchBroadcastEndpoint(safeEndpoint(target.endpoint), {
 		method: "POST",
-		headers: protobuf
-			? { ...headers(config), "Content-Type": "application/x-protobuf", Accept: "application/x-protobuf" }
-			: { Accept: "application/json", ...headers(config) },
-		body: protobuf ? encodeOtlpTraceRequest(payload) : JSON.stringify(payload),
+		headers: requestHeaders,
+		body: gzip ? await gzipBytes(encoded) as Uint8Array<ArrayBuffer> : encoded as BodyInit,
 		signal: AbortSignal.timeout(10_000),
 	});
 	const bytes = new Uint8Array(await response.arrayBuffer());
@@ -101,6 +140,14 @@ async function sendOtlpSample(config: Record<string, any>, payload: unknown) {
 	return response.status;
 }
 
+// Writes a sample trace the way the gateway exporter would for a row destination.
+async function sendRowsSample(id: string, config: Record<string, any>, payload: unknown) {
+	const rows = broadcastRows(payload, `sample:${crypto.randomUUID()}`);
+	const result = await sendBroadcastRows(id, config, rows, (url, init) => fetchBroadcastEndpoint(safeEndpoint(url.toString()), { ...init, signal: AbortSignal.timeout(10_000) }));
+	if (!result.ok) throw new Error(result.error ?? `Destination returned ${result.status}`);
+	return result.status;
+}
+
 async function adminContext(c: any, workspaceId: unknown) { const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(workspaceId ?? "") }); return context && ["owner", "admin"].includes(context.role.toLowerCase()) ? context : null; }
 async function loadedDestination(c: any) {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return null;
@@ -115,6 +162,8 @@ accountSettingsBroadcastRouter.post("/broadcast", async (c) => {
 	const id = destinationId(body.destinationId); const name = String(body.name ?? "").trim(); const samplingRate = Number(body.samplingRate ?? 1); if (!EXECUTABLE_DESTINATIONS.has(id) || !name || !Number.isFinite(samplingRate) || samplingRate < 0 || samplingRate > 1) return c.json({ error: "This Broadcast destination is not available yet" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const config = Object.fromEntries(Object.entries(object(body.config)).filter((entry): entry is [string, string] => Boolean(entry[0].trim()) && typeof entry[1] === "string"));
 	const groups = (Array.isArray(body.ruleGroups) ? body.ruleGroups : []).map((group: any) => ({ match: group?.match === "and" ? "and" : "or", rules: (Array.isArray(group?.rules) ? group.rules : []).filter((rule: any) => RULE_FIELDS.has(String(rule?.field)) && RULE_CONDITIONS.has(String(rule?.condition))).map((rule: any) => ({ field: String(rule.field), condition: String(rule.condition), value: ["exists", "not_exists"].includes(rule.condition) ? null : String(rule.value ?? "").trim() || null })) })).filter((group: any) => group.rules.length);
+	const regexError = ruleRegexError(groups);
+	if (regexError) return c.json({ error: regexError }, 400, PRIVATE_NO_STORE_HEADERS);
 	let createdId: string | null = null;
 	try {
 		validateDestinationConfig(id, config);
@@ -137,6 +186,6 @@ accountSettingsBroadcastRouter.post("/broadcast", async (c) => {
 accountSettingsBroadcastRouter.put("/broadcast/:destinationId/disable", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await loaded.context.client.from("workspace_broadcast_destinations").update({ enabled: false, updated_at: new Date().toISOString() }).eq("id", loaded.row.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "broadcast_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS); });
 accountSettingsBroadcastRouter.put("/broadcast/:destinationId/enable", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (!EXECUTABLE_DESTINATIONS.has(String(loaded.row.destination_id))) return c.json({ error: "This Broadcast destination is not available yet" }, 409, PRIVATE_NO_STORE_HEADERS); const result = await loaded.context.client.from("workspace_broadcast_destinations").update({ enabled: true, updated_at: new Date().toISOString() }).eq("id", loaded.row.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "broadcast_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS); });
 accountSettingsBroadcastRouter.delete("/broadcast/:destinationId", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await loaded.context.client.from("workspace_broadcast_destinations").delete().eq("id", loaded.row.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "broadcast_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS); });
-accountSettingsBroadcastRouter.post("/broadcast/:destinationId/status", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); try { const config = await decryptBroadcastConfig(c.env, loaded.row); if (loaded.row.destination_id === "otel_collector") { const status = await sendOtlpSample(config, sampleTrace(String(loaded.row.name ?? "OpenTelemetry"), true)); return c.json({ ok: true, status: "Connected", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } if (loaded.row.destination_id !== "webhook") return c.json({ ok: false, status: "Coming soon" }, 200, PRIVATE_NO_STORE_HEADERS); const url = safeEndpoint(endpointFor("webhook", config)); const response = await fetchBroadcastEndpoint(url, { method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST", headers: { ...headers(config), "X-Test-Connection": "true" }, body: JSON.stringify({ resourceSpans: [] }), signal: AbortSignal.timeout(10_000) }); return c.json({ ok: response.ok || response.status === 400, status: response.ok || response.status === 400 ? "Connected" : `Failed (${response.status})`, httpStatus: response.status }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ ok: false, status: error instanceof Error ? error.message : "Connection check failed" }, 200, PRIVATE_NO_STORE_HEADERS); } });
-accountSettingsBroadcastRouter.post("/broadcast/:destinationId/sample", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (!EXECUTABLE_DESTINATIONS.has(String(loaded.row.destination_id))) return c.json({ error: "Sample trace is not implemented for this destination." }, 409, PRIVATE_NO_STORE_HEADERS); try { const config = await decryptBroadcastConfig(c.env, loaded.row); const payload = sampleTrace(String(loaded.row.name ?? "Broadcast"), Boolean(loaded.row.privacy_exclude_prompts_and_outputs)); if (loaded.row.destination_id === "otel_collector") { const status = await sendOtlpSample(config, payload); return c.json({ ok: true, status: "Sample trace sent", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } const url = safeEndpoint(endpointFor("webhook", config)); const response = await fetchBroadcastEndpoint(url, { method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST", headers: headers(config), body: JSON.stringify(payload), signal: AbortSignal.timeout(10_000) }); const text = await response.text(); if (!response.ok) throw new Error(`Destination returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`); return c.json({ ok: true, status: "Sample trace sent", httpStatus: response.status }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Failed to send sample trace" }, 409, PRIVATE_NO_STORE_HEADERS); } });
-accountSettingsBroadcastRouter.post("/broadcast/test-config", async (c) => { const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const context = await adminContext(c, body.workspaceId); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); try { const id = destinationId(body.destinationId); if (!EXECUTABLE_DESTINATIONS.has(id)) return c.json({ error: "This Broadcast destination is not available yet" }, 400, PRIVATE_NO_STORE_HEADERS); const config = object(body.config); const endpoint = validateDestinationConfig(id, config); if (id === "webhook") { const response = await fetchBroadcastEndpoint(endpoint, { method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST", headers: { ...headers(config), "X-Test-Connection": "true" }, body: JSON.stringify({ resourceSpans: [] }), signal: AbortSignal.timeout(10_000) }); if (!response.ok && response.status !== 400) throw new Error(`Webhook returned ${response.status}`); return c.json({ ok: true, status: "Connection verified", httpStatus: response.status, endpoint: endpoint.toString(), headerCount: Object.keys(headers(config)).length }, 200, PRIVATE_NO_STORE_HEADERS); } return c.json({ ok: true, status: "Endpoint validated", httpStatus: null, endpoint: endpoint.toString(), headerCount: Object.keys(headers(config)).length }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Invalid destination" }, 400, PRIVATE_NO_STORE_HEADERS); } });
+accountSettingsBroadcastRouter.post("/broadcast/:destinationId/status", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); try { const config = await decryptBroadcastConfig(c.env, loaded.row); if (broadcastDelivery(loaded.row.destination_id) === "otlp") { const status = await sendOtlpSample(String(loaded.row.destination_id), config, sampleTrace(String(loaded.row.name ?? "OpenTelemetry"), true)); return c.json({ ok: true, status: "Connected", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } if (broadcastDelivery(loaded.row.destination_id) === "rows") { const status = await sendRowsSample(String(loaded.row.destination_id), config, sampleTrace(String(loaded.row.name ?? "Broadcast"), true)); return c.json({ ok: true, status: "Connected", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } if (broadcastDelivery(loaded.row.destination_id) !== "webhook") return c.json({ ok: false, status: "Coming soon" }, 200, PRIVATE_NO_STORE_HEADERS); const url = safeEndpoint(endpointFor("webhook", config)); const response = await fetchBroadcastEndpoint(url, await webhookRequest(config, { resourceSpans: [] }, { "X-Test-Connection": "true" })); return c.json({ ok: response.ok || response.status === 400, status: response.ok || response.status === 400 ? "Connected" : `Failed (${response.status})`, httpStatus: response.status }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ ok: false, status: error instanceof Error ? error.message : "Connection check failed" }, 200, PRIVATE_NO_STORE_HEADERS); } });
+accountSettingsBroadcastRouter.post("/broadcast/:destinationId/sample", async (c) => { const loaded = await loadedDestination(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (!EXECUTABLE_DESTINATIONS.has(String(loaded.row.destination_id))) return c.json({ error: "Sample trace is not implemented for this destination." }, 409, PRIVATE_NO_STORE_HEADERS); try { const config = await decryptBroadcastConfig(c.env, loaded.row); const payload = sampleTrace(String(loaded.row.name ?? "Broadcast"), Boolean(loaded.row.privacy_exclude_prompts_and_outputs)); if (broadcastDelivery(loaded.row.destination_id) === "otlp") { const status = await sendOtlpSample(String(loaded.row.destination_id), config, payload); return c.json({ ok: true, status: "Sample trace sent", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } if (broadcastDelivery(loaded.row.destination_id) === "rows") { const status = await sendRowsSample(String(loaded.row.destination_id), config, payload); return c.json({ ok: true, status: "Sample trace sent", httpStatus: status }, 200, PRIVATE_NO_STORE_HEADERS); } const url = safeEndpoint(endpointFor("webhook", config)); const response = await fetchBroadcastEndpoint(url, await webhookRequest(config, payload)); const text = await response.text(); if (!response.ok) throw new Error(`Destination returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`); return c.json({ ok: true, status: "Sample trace sent", httpStatus: response.status }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Failed to send sample trace" }, 409, PRIVATE_NO_STORE_HEADERS); } });
+accountSettingsBroadcastRouter.post("/broadcast/test-config", async (c) => { const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const context = await adminContext(c, body.workspaceId); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); try { const id = destinationId(body.destinationId); if (!EXECUTABLE_DESTINATIONS.has(id)) return c.json({ error: "This Broadcast destination is not available yet" }, 400, PRIVATE_NO_STORE_HEADERS); const config = object(body.config); const endpoint = validateDestinationConfig(id, config); if (id === "webhook") { const response = await fetchBroadcastEndpoint(endpoint, await webhookRequest(config, { resourceSpans: [] }, { "X-Test-Connection": "true" })); if (!response.ok && response.status !== 400) throw new Error(`Webhook returned ${response.status}`); return c.json({ ok: true, status: "Connection verified", httpStatus: response.status, endpoint: endpoint.toString(), headerCount: Object.keys(headers(config)).length }, 200, PRIVATE_NO_STORE_HEADERS); } if (broadcastDelivery(id) === "rows") { const httpStatus = await sendRowsSample(id, config, sampleTrace("Connection test", true)); return c.json({ ok: true, status: "Connection verified", httpStatus, endpoint: endpoint.toString(), headerCount: 0 }, 200, PRIVATE_NO_STORE_HEADERS); } const httpStatus = await sendOtlpSample(id, config, sampleTrace("Connection test", true)); return c.json({ ok: true, status: "Connection verified", httpStatus, endpoint: endpoint.toString(), headerCount: Object.keys(resolveOtlpTarget(id, config).headers).length }, 200, PRIVATE_NO_STORE_HEADERS); } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Invalid destination" }, 400, PRIVATE_NO_STORE_HEADERS); } });

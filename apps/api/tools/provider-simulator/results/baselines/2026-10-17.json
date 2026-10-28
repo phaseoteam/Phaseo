@@ -1,0 +1,5532 @@
+{
+ "note": "Expected-outcome gate on origin/main 6551de1fa3 (17 October, before the cache fix stack), executor layer only; routing:affinity and coverage cases were added after this run.",
+ "summary": {
+  "total": 27217,
+  "allowed": 0,
+  "failing": 27217,
+  "byKind": {
+   "dropped": {
+    "total": 5438,
+    "failing": 5438
+   },
+   "invented": {
+    "total": 5339,
+    "failing": 5339
+   },
+   "renamed": {
+    "total": 128,
+    "failing": 128
+   },
+   "wrong_value": {
+    "total": 2711,
+    "failing": 2711
+   },
+   "wrong_type": {
+    "total": 5479,
+    "failing": 5479
+   },
+   "billing_over": {
+    "total": 236,
+    "failing": 236
+   },
+   "billing_under": {
+    "total": 1081,
+    "failing": 1081
+   },
+   "stream_order": {
+    "total": 1999,
+    "failing": 1999
+   },
+   "error_mapping": {
+    "total": 4790,
+    "failing": 4790
+   },
+   "nondeterminism": {
+    "total": 16,
+    "failing": 16
+   }
+  },
+  "byAllowEntry": {},
+  "unusedAllowEntries": []
+ },
+ "groups": [
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.cache_control|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.cache_control|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.session_id|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.reasoning|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.provider_options|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.cache_control|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.file_data|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.file_id|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.assistant-null-content|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.cache.anthropic-agent-scope|client.status",
+   "providers": 104,
+   "count": 162,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.agentN.stepN|upstream.body(client $.messages[].content[].text)",
+   "providers": 98,
+   "count": 2280,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.agentN.stepN|upstream.body(client $.input[].output[].text)",
+   "providers": 98,
+   "count": 2280,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.citations",
+   "providers": 98,
+   "count": 154,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:finish:refusal|client.refusal",
+   "providers": 98,
+   "count": 154,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.citations",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.citations",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:finish:content_filter|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:finish:stop_sequence|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:finish:stop_sequence|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:finish:pause_turn|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:finish:pause_turn|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:finish:refusal|client.refusal",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:finish:refusal|client.finish",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:finish:refusal|client.refusal",
+   "providers": 98,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.agent.step2|upstream.body(client $.messages[].content[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.agent.step3|upstream.body(client $.messages[].content[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.agent.step2|upstream.body(client $.input[].output[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.agent.step3|upstream.body(client $.input[].output[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.agentN.step9|upstream.body(client $.messages[].content[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.agentN.step9|upstream.body(client $.input[].output[].text)",
+   "providers": 98,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:finish:refusal|client.finish",
+   "providers": 98,
+   "count": 151,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.content.system-parts|upstream.body(client $.messages[].name)",
+   "providers": 97,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat|buffered|resp:error:mid-stream|client.error",
+   "providers": 97,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat|buffered|resp:error:mid-stream|client.finish",
+   "providers": 97,
+   "count": 153,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:finish:length|client.finish",
+   "providers": 97,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages|stream|resp:error:mid-stream|client.error",
+   "providers": 97,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages|stream|resp:error:mid-stream|client.finish",
+   "providers": 97,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages|buffered|resp:error:mid-stream|client.error",
+   "providers": 97,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages|buffered|resp:error:mid-stream|client.finish",
+   "providers": 97,
+   "count": 152,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:finish:refusal|client.stream",
+   "providers": 95,
+   "count": 187,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:text|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:max|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:finish:length|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:finish:content_filter|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:finish:stop_sequence|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|chat|stream|resp:finish:pause_turn|client.stream",
+   "providers": 95,
+   "count": 183,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.temperature",
+   "providers": 91,
+   "count": 144,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.usage.prompt_tokens_details.cached_tokens",
+   "providers": 88,
+   "count": 137,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.usage.cache_read_input_tokens",
+   "providers": 88,
+   "count": 137,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.usage.cache_read_input_tokens",
+   "providers": 88,
+   "count": 137,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.parallel_tool_calls",
+   "providers": 85,
+   "count": 135,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.prompt_cache_key",
+   "providers": 85,
+   "count": 133,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.image_config|upstream.body.$.image_config",
+   "providers": 83,
+   "count": 132,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.image_config|upstream.body.$.image_config",
+   "providers": 83,
+   "count": 132,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:max|client.usage.input_tokens",
+   "providers": 83,
+   "count": 128,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:max|client.usage.input_tokens",
+   "providers": 83,
+   "count": 128,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.safety_identifier",
+   "providers": 82,
+   "count": 128,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.max_tool_calls|upstream.body.$.max_tool_calls",
+   "providers": 75,
+   "count": 122,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:max|client.citations",
+   "providers": 75,
+   "count": 118,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.citations",
+   "providers": 75,
+   "count": 118,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:finish:refusal|client.refusal",
+   "providers": 75,
+   "count": 118,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:finish:refusal|client.refusal",
+   "providers": 75,
+   "count": 118,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:text|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:max|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:finish:length|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:finish:content_filter|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:finish:stop_sequence|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|responses|stream|resp:finish:pause_turn|client.stream",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses|stream|resp:error:mid-stream|client.error",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses|buffered|resp:error:mid-stream|client.error",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses|buffered|resp:error:mid-stream|client.finish",
+   "providers": 74,
+   "count": 117,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.logprobs",
+   "providers": 73,
+   "count": 113,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses|stream|resp:error:mid-stream|client.finish",
+   "providers": 70,
+   "count": 111,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.max_tool_calls|upstream.body.$.max_tool_calls",
+   "providers": 69,
+   "count": 114,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.background|upstream.body.$.background",
+   "providers": 67,
+   "count": 110,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.min_p|upstream.body.$.min_p",
+   "providers": 65,
+   "count": 97,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.usage.completion_tokens_details.reasoning_tokens",
+   "providers": 64,
+   "count": 98,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.read",
+   "providers": 59,
+   "count": 97,
+   "nanos": -825488885
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.read",
+   "providers": 59,
+   "count": 97,
+   "nanos": -825488885
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.web_search_options|upstream.body.$.web_search_options",
+   "providers": 59,
+   "count": 95,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.repetition_penalty|upstream.body.$.repetition_penalty",
+   "providers": 59,
+   "count": 89,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.top_k|upstream.body.$.top_k",
+   "providers": 56,
+   "count": 85,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.modalities|upstream.body.$.modalities",
+   "providers": 55,
+   "count": 91,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|messages|stream|resp:max|billing.uncachedInput",
+   "providers": 54,
+   "count": 90,
+   "nanos": 1999976392
+  },
+  {
+   "key": "executor|billing_over|text|messages|buffered|resp:max|billing.uncachedInput",
+   "providers": 54,
+   "count": 90,
+   "nanos": 1999976392
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.top_k|upstream.body.$.top_k",
+   "providers": 53,
+   "count": 80,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.modalities|upstream.body.$.modalities",
+   "providers": 50,
+   "count": 84,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|messages||messages.param.metadata|upstream.body.$.user",
+   "providers": 50,
+   "count": 78,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.top_k|upstream.body.$.top_k",
+   "providers": 50,
+   "count": 77,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.usage.completion_tokens_details.reasoning_tokens",
+   "providers": 50,
+   "count": 68,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 48,
+   "count": 69,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.seed|upstream.body.$.seed",
+   "providers": 47,
+   "count": 71,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.logit_bias|upstream.body.$.logit_bias",
+   "providers": 47,
+   "count": 68,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 47,
+   "count": 68,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.reasoning.text",
+   "providers": 46,
+   "count": 74,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.metadata|upstream.body.$.metadata.sim_meta_key",
+   "providers": 44,
+   "count": 75,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.metadata|upstream.body.$.metadata.sim_meta_key",
+   "providers": 44,
+   "count": 75,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.store|upstream.body.$.store",
+   "providers": 44,
+   "count": 69,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 42,
+   "count": 73,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 41,
+   "count": 72,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.seed|upstream.body.$.seed",
+   "providers": 41,
+   "count": 63,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 41,
+   "count": 63,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.logprobs|upstream.body.$.logprobs",
+   "providers": 41,
+   "count": 62,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 40,
+   "count": 62,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 40,
+   "count": 61,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 39,
+   "count": 60,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 39,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 38,
+   "count": 57,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 37,
+   "count": 64,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 36,
+   "count": 63,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 59,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=flex|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.user_id|upstream.body.$.user",
+   "providers": 36,
+   "count": 56,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.user|upstream.body.$.user",
+   "providers": 36,
+   "count": 56,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.user|upstream.body.$.user",
+   "providers": 36,
+   "count": 56,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 36,
+   "count": 56,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.tools|upstream.body.$.tools.0.function.name",
+   "providers": 35,
+   "count": 58,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.tools|upstream.body.$.tools.0.function.name",
+   "providers": 35,
+   "count": 57,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.read",
+   "providers": 35,
+   "count": 56,
+   "nanos": -681485611
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 35,
+   "count": 55,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.tools|upstream.body.$.tools.0.function.name",
+   "providers": 34,
+   "count": 57,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.stop_sequences|upstream.body.$.stop",
+   "providers": 34,
+   "count": 56,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 34,
+   "count": 55,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.metadata|upstream.body.$.metadata.user_id",
+   "providers": 34,
+   "count": 52,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 34,
+   "count": 52,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.top_logprobs|upstream.body.$.top_logprobs",
+   "providers": 33,
+   "count": 54,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.frequency_penalty|upstream.body.$.frequency_penalty",
+   "providers": 33,
+   "count": 51,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.presence_penalty|upstream.body.$.presence_penalty",
+   "providers": 33,
+   "count": 51,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.stop|upstream.body.$.stop",
+   "providers": 32,
+   "count": 55,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.top_logprobs|upstream.body.$.top_logprobs",
+   "providers": 32,
+   "count": 53,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 31,
+   "count": 50,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 30,
+   "count": 49,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.thinking|upstream.body.$.reasoning_effort",
+   "providers": 29,
+   "count": 40,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.parallel_tool_calls|upstream.body.$.parallel_tool_calls",
+   "providers": 28,
+   "count": 48,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.parallel_tool_calls|upstream.body.$.parallel_tool_calls",
+   "providers": 28,
+   "count": 48,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.store|upstream.body.$.store",
+   "providers": 28,
+   "count": 46,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.stream_options",
+   "providers": 28,
+   "count": 43,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.stream_options",
+   "providers": 28,
+   "count": 43,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.stream_options",
+   "providers": 28,
+   "count": 42,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.stream_options|upstream.body.$.stream_options.include_usage",
+   "providers": 27,
+   "count": 42,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.stream_options|upstream.body.$.stream_options.include_usage",
+   "providers": 26,
+   "count": 41,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.uncachedInput",
+   "providers": 26,
+   "count": 40,
+   "nanos": -3095348389
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.uncachedInput",
+   "providers": 26,
+   "count": 40,
+   "nanos": -3095118139
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=none|upstream.body.$.reasoning_effort",
+   "providers": 26,
+   "count": 39,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.citations",
+   "providers": 24,
+   "count": 37,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=minimal|upstream.body.$.reasoning_effort",
+   "providers": 24,
+   "count": 36,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|buffered|resp:finish:content_filter|client.finish",
+   "providers": 24,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort|upstream.body.$.reasoning_effort",
+   "providers": 23,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=low|upstream.body.$.reasoning_effort",
+   "providers": 23,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=medium|upstream.body.$.reasoning_effort",
+   "providers": 23,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=xhigh|upstream.body.$.reasoning_effort",
+   "providers": 23,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.usage.prompt_tokens_details.cached_tokens",
+   "providers": 23,
+   "count": 35,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.uncachedInput",
+   "providers": 22,
+   "count": 36,
+   "nanos": -2648996417
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.output",
+   "providers": 22,
+   "count": 36,
+   "nanos": -708055848
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.read",
+   "providers": 22,
+   "count": 35,
+   "nanos": -593456336
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.output",
+   "providers": 22,
+   "count": 35,
+   "nanos": -665592885
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.read",
+   "providers": 22,
+   "count": 35,
+   "nanos": -593456336
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.output",
+   "providers": 22,
+   "count": 35,
+   "nanos": -665592885
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=max|upstream.body.$.reasoning_effort",
+   "providers": 22,
+   "count": 34,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 22,
+   "count": 32,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.read",
+   "providers": 21,
+   "count": 35,
+   "nanos": -594101576
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.output",
+   "providers": 20,
+   "count": 32,
+   "nanos": -682290398
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.uncachedInput",
+   "providers": 19,
+   "count": 31,
+   "nanos": -2472143597
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 19,
+   "count": 27,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:finish:length|client.finish",
+   "providers": 17,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|buffered|resp:finish:length|client.finish",
+   "providers": 17,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:finish:content_filter|client.finish",
+   "providers": 17,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 16,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 16,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 16,
+   "count": 28,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|chat|stream|resp:max|billing.uncachedInput",
+   "providers": 15,
+   "count": 22,
+   "nanos": 451842580
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.prompt|upstream.body.$.prompt.id",
+   "providers": 15,
+   "count": 19,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=max|upstream.body.$.reasoning_effort",
+   "providers": 14,
+   "count": 18,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.response_format|upstream.body.$.response_format.type",
+   "providers": 13,
+   "count": 22,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.text|upstream.body.$.response_format.type",
+   "providers": 13,
+   "count": 22,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.format.json_object|upstream.body.$.response_format.type",
+   "providers": 13,
+   "count": 22,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.format.json_object|upstream.body.$.response_format.type",
+   "providers": 13,
+   "count": 22,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|chat|buffered|resp:max|billing.uncachedInput",
+   "providers": 13,
+   "count": 17,
+   "nanos": 392910770
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.reasoning|upstream.body.$.reasoning.effort",
+   "providers": 12,
+   "count": 21,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:finish:length|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:finish:length|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:finish:length|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:finish:length|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:finish:content_filter|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:finish:content_filter|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:finish:content_filter|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:finish:content_filter|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:finish:length|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:finish:length|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:finish:length|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:finish:length|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:finish:content_filter|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:finish:content_filter|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:finish:content_filter|billing.uncachedInput",
+   "providers": 12,
+   "count": 21,
+   "nanos": -2334820043
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:finish:content_filter|billing.output",
+   "providers": 12,
+   "count": 21,
+   "nanos": -553119173
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation_input_tokens",
+   "providers": 12,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.usage.cache_creation_input_tokens",
+   "providers": 12,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=xhigh|upstream.body.$.reasoning_effort",
+   "providers": 12,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.thinking|upstream.body.$.reasoning.effort",
+   "providers": 11,
+   "count": 20,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.base|upstream.url",
+   "providers": 11,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.base|upstream.url",
+   "providers": 11,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.base|upstream.url",
+   "providers": 11,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.reasoning.state",
+   "providers": 11,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.reasoning.state",
+   "providers": 11,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=minimal|upstream.body.$.reasoning_effort",
+   "providers": 11,
+   "count": 14,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.usage.prompt_tokens_details.cache_write_tokens",
+   "providers": 11,
+   "count": 13,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.usage.prompt_tokens_details.cache_write_tokens",
+   "providers": 11,
+   "count": 13,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:max|client.usage.input_tokens_details.cache_write_tokens",
+   "providers": 11,
+   "count": 13,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.usage.input_tokens_details.cache_write_tokens",
+   "providers": 11,
+   "count": 13,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning|upstream.body.$.reasoning.effort",
+   "providers": 10,
+   "count": 17,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort|upstream.body.$.reasoning.effort",
+   "providers": 10,
+   "count": 17,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=low|upstream.body.$.reasoning.effort",
+   "providers": 10,
+   "count": 17,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=medium|upstream.body.$.reasoning.effort",
+   "providers": 10,
+   "count": 17,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.top_p|upstream.body.$.top_p",
+   "providers": 10,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.top_p|upstream.body.$.top_p",
+   "providers": 10,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.top_p|upstream.body.$.top_p",
+   "providers": 10,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=none|upstream.body.$.reasoning.effort",
+   "providers": 9,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=minimal|upstream.body.$.reasoning.effort",
+   "providers": 9,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=xhigh|upstream.body.$.reasoning.effort",
+   "providers": 9,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=max|upstream.body.$.reasoning.effort",
+   "providers": 9,
+   "count": 15,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.stream_options|upstream.body.$.stream_options.include_obfuscation",
+   "providers": 9,
+   "count": 10,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.conversation|upstream.body.$.conversation",
+   "providers": 8,
+   "count": 17,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=none|upstream.body.$.reasoning_effort",
+   "providers": 8,
+   "count": 10,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:finish:content_filter|client.finish",
+   "providers": 8,
+   "count": 10,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.reasoning.state",
+   "providers": 8,
+   "count": 10,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.reasoning.state",
+   "providers": 8,
+   "count": 10,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.thinking",
+   "providers": 8,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.temperature|upstream.body.$.temperature",
+   "providers": 8,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.top_p|upstream.body.$.top_p",
+   "providers": 8,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.top_k|upstream.body.$.top_k",
+   "providers": 8,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.stream_options|upstream.body.$.stream_options.include_obfuscation",
+   "providers": 7,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.image_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.image_data_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.input_audio|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_image_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_image_data_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_file_data|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_file_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_file_id|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_audio|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.hosted|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.mcp|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.image_baseN|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.image_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_pdf|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_text|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_url|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.search_result|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.server|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step1|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step2|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step3|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.reasoning.redacted_thinking",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation.ephemeral_5m_input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation.ephemeral_1h_input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.reasoning.redacted_thinking",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.usage.cache_creation.ephemeral_5m_input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.usage.cache_creation.ephemeral_1h_input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.thinking_signature",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.redacted_thinking",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|stream|resp:max|client.usage.prompt_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|buffered|resp:max|client.usage.prompt_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:finish:refusal|client.refusal",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:max|client.reasoning.state",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|stream|resp:max|client.usage.input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.reasoning.state",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|buffered|resp:max|client.usage.input_tokens",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=none|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=instant|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=minimal|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.reasoning.effort-none|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.reasoning.effort-minimal|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.reasoning.effort-none|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.reasoning.effort-minimal|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.reasoning.disabled|upstream.call",
+   "providers": 7,
+   "count": 9,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.base|upstream.dialect",
+   "providers": 7,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.thinking|upstream.body.$.thinking.budget_tokens",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.thinking",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.temperature|upstream.body.$.temperature",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_p|upstream.body.$.top_p",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_k|upstream.body.$.top_k",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.thinking",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.temperature|upstream.body.$.temperature",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_p|upstream.body.$.top_p",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_k|upstream.body.$.top_k",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|stream|resp:finish:content_filter|client.finish",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|stream|resp:finish:content_filter|client.finish",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|buffered|resp:finish:content_filter|client.finish",
+   "providers": 7,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agentN.stepN|upstream.call",
+   "providers": 6,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agentN.stepN|upstream.call",
+   "providers": 6,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agentN.stepN|upstream.call",
+   "providers": 6,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.tool_call.id",
+   "providers": 6,
+   "count": 12,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.text|upstream.body.$.text.format.type",
+   "providers": 6,
+   "count": 11,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.tools|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.max_tool_calls|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.parallel_tool_calls|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.tool_choice|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.response_format|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.parallel_tool_calls|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.text|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.tool_choice|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.tools|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.max_tool_calls|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.tools|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.tool_choice|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.probe|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.tool_choice.function|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.tool_choice.none|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.tool_choice.auto|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.custom|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.tools.part-cache-control|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.probe|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.tool_choice.function|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.tool_choice.allowed_tools|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.tool_choice.auto|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.tools.custom|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.cache.part-cache-control|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.probe|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.tool|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.none|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.auto|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.cache.blocks|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agent.step1|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agent.step2|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agent.step3|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agent.step1|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agent.step2|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agent.step3|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agent3.step2|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agent3.step2|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent3.step2|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agent3.step3|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agent3.step3|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent3.step3|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.agentN.step9|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.agentN.step9|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agentN.step9|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=instant|upstream.body.$.reasoning_effort",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat|stream|resp:error:mid-stream|client.error",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.web_search_options|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.provider_options|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.provider_options|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=xhigh|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=max|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.reasoning|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.thinking|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.reasoning.enabled-only|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.reasoning.exclude|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.stop|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.store|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.stop_sequences|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||byok:messages.base|upstream.call",
+   "providers": 6,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.write5m",
+   "providers": 6,
+   "count": 7,
+   "nanos": -36052670
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.write1h",
+   "providers": 6,
+   "count": 7,
+   "nanos": -114121340
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.write5m",
+   "providers": 6,
+   "count": 7,
+   "nanos": -36052670
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.write1h",
+   "providers": 6,
+   "count": 7,
+   "nanos": -114121340
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.base|upstream.dialect",
+   "providers": 6,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.base|upstream.dialect",
+   "providers": 6,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=instant|upstream.body.$.reasoning_effort",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.parallel_tool_calls|upstream.body.$.tool_choice.disable_parallel_tool_use",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.user_id|upstream.body.$.metadata.user_id",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|chat||chat.param.user|upstream.body.$.metadata.user_id",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.parallel_tool_calls|upstream.body.$.tool_choice.disable_parallel_tool_use",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|responses||responses.param.user|upstream.body.$.metadata.user_id",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.content.developer-role|upstream.body(client $.messages[].content)",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.content.second-system|upstream.body(client $.messages[].content)",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.content.developer-role|upstream.body(client $.input[].content)",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.thinking_signature",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.redacted_thinking",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.thinking_signature",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.redacted_thinking",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.assistant_tool_call",
+   "providers": 6,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.response_format|client.status",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.text|client.status",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.format.json_object|client.status",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.format.json_object|client.status",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.base|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=low|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.reasoning_effort=medium|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.frequency_penalty|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.logit_bias|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.max_completion_tokens|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.max_tokens|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.metadata|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.session_id|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.presence_penalty|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.seed|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.store|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.stream_options|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.temperature|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.logprobs|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.top_logprobs|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.top_p|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.modalities|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.image_config|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.usage|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.user_id|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.user|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=standard|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=default|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=fast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=ultrafast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=priority|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.service_tier=batch|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.prompt_cache_key|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.safety_identifier|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.meta|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.echo_upstream_request|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.top_k|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.min_p|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.max_output_tokens|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.repetition_penalty|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.n|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.prompt_cache_retention|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.base|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.background|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.include|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.max_output_tokens|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.metadata|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.session_id|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.previous_response_id|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=standard|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=default|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=fast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=ultrafast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=priority|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.service_tier=batch|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.temperature|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.top_p|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.truncation|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.truncation=disabled|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.user|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.prompt_cache_key|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.safety_identifier|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.modalities|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.image_config|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.usage|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.meta|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.echo_upstream_request|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.top_k|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.seed|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.top_logprobs|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.prompt_cache_retention|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.conversation|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.prompt|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.stream_options|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.base|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.max_tokens|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=standard|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=default|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=fast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=ultrafast|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=priority|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=flex|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=batch|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.temperature|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.top_p|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.top_k|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.metadata|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.usage|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.meta|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.echo_upstream_request|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.part.text|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.developer-role|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.system-parts|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.content.second-system|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.cache.prompt_cache_breakpoint|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.cache.prompt_cache_breakpoint-user|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.cache.anthropic-agent-scope|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.format.json_object|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.stream.include_usage|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_text|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.part.input_image_file_id|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.content.developer-role|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.cache.anthropic-agent-scope|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.format.json_object|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.stream.flag|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.reasoning.adaptive|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.stream.flag|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||byok:chat.base|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||byok:responses.base|upstream.call",
+   "providers": 5,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.write5m",
+   "providers": 5,
+   "count": 5,
+   "nanos": -33429000
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.write1h",
+   "providers": 5,
+   "count": 5,
+   "nanos": -105916800
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.write5m",
+   "providers": 5,
+   "count": 5,
+   "nanos": -33429000
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.write1h",
+   "providers": 5,
+   "count": 5,
+   "nanos": -105916800
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.write5m",
+   "providers": 5,
+   "count": 5,
+   "nanos": -33429000
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.write1h",
+   "providers": 5,
+   "count": 5,
+   "nanos": -105916800
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.write5m",
+   "providers": 5,
+   "count": 5,
+   "nanos": -33429000
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.write1h",
+   "providers": 5,
+   "count": 5,
+   "nanos": -105916800
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.store",
+   "providers": 5,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.custom|upstream.body(client $.tools[].description)",
+   "providers": 4,
+   "count": 14,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 4,
+   "count": 11,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 4,
+   "count": 11,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 4,
+   "count": 11,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.tool_call.arguments",
+   "providers": 4,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|messages||messages.param.thinking|upstream.body.$.reasoning_effort",
+   "providers": 4,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.input_items",
+   "providers": 4,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.format.json_object|upstream.body.$.text.format.type",
+   "providers": 4,
+   "count": 7,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.max_completion_tokens|upstream.body.$.max_tokens",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.max_tokens|upstream.body.$.max_tokens",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.temperature|upstream.body.$.temperature",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.max_output_tokens|upstream.body.$.max_tokens",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.max_output_tokens|upstream.body.$.max_tokens",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.temperature|upstream.body.$.temperature",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.max_tokens|upstream.body.$.max_tokens",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.temperature|upstream.body.$.temperature",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.metadata|upstream.body.$.metadata.sim_meta_key",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.custom|upstream.body(client $.tools[].custom.description)",
+   "providers": 4,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=none|upstream.body.$.reasoning.effort",
+   "providers": 4,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.store|upstream.body.$.store",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.encrypted_reasoning",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=medium|upstream.body.$.reasoning_effort",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.store",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.store",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.tool_call_id",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=minimal|upstream.body.$.reasoning.effort",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=max|upstream.body.$.reasoning.effort",
+   "providers": 4,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.stepN|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.stepN|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.stepN|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 24,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.stepN|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 12,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.stepN|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 12,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.stepN|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 12,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.probe|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.function|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.none|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.auto|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.custom|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.part-cache-control|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.probe|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.function|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.allowed_tools|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.auto|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.hosted|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.cache.part-cache-control|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.probe|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.tool|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.none|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.auto|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.server|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.cache.blocks|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step1|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step2|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step3|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step1|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step2|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step3|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step1|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step2|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step3|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step2|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step2|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step2|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step3|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step3|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step3|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.step9|upstream.body(client $.tools[].function.description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.step9|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.step9|upstream.body(client $.tools[].description)",
+   "providers": 3,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.input_items",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.response_format|upstream.body.$.text.format.type",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.include|upstream.body.$.include.0",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.input_items",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.format.json_object|upstream.body.$.text.format.type",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.tools|upstream.body.$.tools.0.name",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|responses||responses.param.tools|upstream.body.$.tools.0.name",
+   "providers": 3,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|responses|stream|resp:max|billing.uncachedInput",
+   "providers": 3,
+   "count": 5,
+   "nanos": 62000453
+  },
+  {
+   "key": "executor|billing_over|text|responses|buffered|resp:max|billing.uncachedInput",
+   "providers": 3,
+   "count": 5,
+   "nanos": 62000453
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.write",
+   "providers": 3,
+   "count": 5,
+   "nanos": -74169283
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.write",
+   "providers": 3,
+   "count": 5,
+   "nanos": -74169283
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=default|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=fast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=ultrafast|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=flex|upstream.body.$.service_tier",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.metadata",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.metadata",
+   "providers": 3,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.write",
+   "providers": 3,
+   "count": 4,
+   "nanos": -28884283
+  },
+  {
+   "key": "executor|billing_under|text|chat|buffered|resp:max|billing.write",
+   "providers": 3,
+   "count": 4,
+   "nanos": -28884283
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.probe|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.function|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.none|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.tool_choice.auto|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.custom|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.tools.part-cache-control|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.probe|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.function|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.allowed_tools|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.tool_choice.auto|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.hosted|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.tools.custom|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.cache.part-cache-control|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.probe|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.tool|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.none|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.tool_choice.auto|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.tools.server|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.cache.blocks|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step1|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step2|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step3|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step1|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step2|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step3|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step1|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step2|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step3|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step2|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step2|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step2|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step3|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step3|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step3|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.step9|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.step9|upstream.body(client $.tools[].parameters.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.step9|upstream.body(client $.tools[].input_schema.properties.sim_arg_city.description)",
+   "providers": 3,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.prompt_cache_retention|upstream.body.$.prompt_cache_retention",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.prompt_cache_retention|upstream.body.$.prompt_cache_retention",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.content.part.input_image_file_id|upstream.body(client $.input[].content[].file_id)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=low|upstream.body.$.reasoning_effort",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.response_format|upstream.body.$.text.format.type",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.text|upstream.body.$.text.format.type",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.content.part.input_file_data|upstream.body(client $.input[].content[].filename)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.content.part.document_pdf|upstream.body(client $.messages[].content[].title)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.content.part.document_pdf|upstream.body(client $.messages[].content[].context)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.content.part.document_text|upstream.body(client $.messages[].content[].source.data)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.content.part.search_result|upstream.body(client $.messages[].content[].title)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.content.part.search_result|upstream.body(client $.messages[].content[].content[].text)",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|stream|resp:max|client.usage.completion_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|buffered|resp:max|client.usage.completion_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|stream|resp:max|client.usage.output_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|buffered|resp:max|client.usage.output_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:max|client.usage.output_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.output",
+   "providers": 3,
+   "count": 3,
+   "nanos": -14306100
+  },
+  {
+   "key": "executor|wrong_value|text|messages|buffered|resp:max|client.usage.output_tokens",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.output",
+   "providers": 3,
+   "count": 3,
+   "nanos": -14306100
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.store|upstream.body.$.store",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.encrypted_reasoning",
+   "providers": 3,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.stepN|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 344,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.stepN|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 344,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.stepN|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 172,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.stepN|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 172,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agentN.step9|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 32,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agentN.step9|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 32,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.step9|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agentN.step9|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 16,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step3|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step3|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 8,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.previous_response_id|upstream.body.$.previous_response_id",
+   "providers": 2,
+   "count": 6,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.tools|upstream.body.$.tools.0.name",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.tools|upstream.body.$.tools.0.name",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=priority|upstream.body.$.service_tier",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.truncation|upstream.body.$.truncation",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.truncation=disabled|upstream.body.$.truncation",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|chat||chat.param.tools|upstream.body.$.tools.0.name",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|messages||messages.param.tools|upstream.body.$.tools.0.name",
+   "providers": 2,
+   "count": 5,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|chat||chat.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|responses||responses.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.tools|upstream.body.$.tools[0].function.description",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.tools|upstream.body.$.tools[0].function.description",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.tools|upstream.body.$.tools[0].function.description",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.max_tool_calls|upstream.body.$.max_tool_calls",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.parallel_tool_calls|upstream.body.$.parallel_tool_calls",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.background|upstream.body.$.background",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.metadata|upstream.body.$.metadata.sim_meta_key",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.parallel_tool_calls|upstream.body.$.parallel_tool_calls",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.max_tool_calls|upstream.body.$.max_tool_calls",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.metadata|upstream.body.$.user",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step2|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent.step3|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step2|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent.step3|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.agent3.step2|upstream.body(client $.messages[].tool_calls[].function.arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.agent3.step2|upstream.body(client $.input[].arguments)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step3|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step3|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|stream|resp:max|client.tool_call.id",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|resp:max|client.tool_call.id",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:max|client.tool_call.id",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|stream|resp:max|client.tool_call.id",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.tool_call.id",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.tool_call.arguments",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.frequency_penalty|upstream.body.$.frequency_penalty",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.presence_penalty|upstream.body.$.presence_penalty",
+   "providers": 2,
+   "count": 4,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|responses|stream|resp:max|billing.write",
+   "providers": 2,
+   "count": 4,
+   "nanos": -66621783
+  },
+  {
+   "key": "executor|billing_under|text|responses|buffered|resp:max|billing.write",
+   "providers": 2,
+   "count": 4,
+   "nanos": -66621783
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=instant|upstream.body.$.reasoning.effort",
+   "providers": 2,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.inference_geo",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.inference_geo",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.inference_geo",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=none|upstream.body.$.generationConfig.thinkingConfig.thinkingLevel",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=instant|upstream.body.$.generationConfig.thinkingConfig.thinkingLevel",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.frequency_penalty|upstream.body.$.generationConfig.frequencyPenalty",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.presence_penalty|upstream.body.$.generationConfig.presencePenalty",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.seed|upstream.body.$.generationConfig.seed",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.logprobs|upstream.body.$.generationConfig.responseLogprobs",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_logprobs|upstream.body.$.generationConfig.logprobs",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.modalities|upstream.body.$.generationConfig.responseModalities",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.image_config|upstream.body.$.generationConfig.imageConfig",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.modalities|upstream.body.$.generationConfig.responseModalities",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.image_config|upstream.body.$.generationConfig.imageConfig",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.seed|upstream.body.$.generationConfig.seed",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_logprobs|upstream.body.$.generationConfig.logprobs",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.format.json_object|upstream.body.$.generationConfig.responseJsonSchema",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.format.json_object|upstream.body.$.generationConfig.responseJsonSchema",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step2|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step2|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step3|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step3|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step2|upstream.body(client $.messages[].content[].input.sim_arg_city)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent3.step2|upstream.body(client $.messages[].content[].input.sim_arg_query)",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat|stream|resp:finish:refusal|client.finish",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|stream|resp:finish:refusal|client.finish",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|buffered|resp:finish:refusal|client.finish",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.assistant_tool_call",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.function_call_thought_signature",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.function_call_thought_signature",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.assistant_tool_call",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.function_call_thought_signature",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.seed|upstream.body.$.random_seed",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.seed|upstream.body.$.random_seed",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.safety_identifier",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=xhigh|upstream.body.$.reasoning.effort",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|responses||responses.base|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.safety_identifier",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|messages||messages.base|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|responses||responses.agent.step2|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|messages||messages.agent.step2|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|responses||responses.agent3.step2|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|messages||messages.agent3.step2|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|responses||responses.agentN.stepN|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|nondeterminism|text|messages||messages.agentN.stepN|upstream.body.$.metadata.phaseo_request_id",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 2,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|messages||messages.base|upstream.header.authorization",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agentN.stepN|client.status",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.metadata",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.truncation|upstream.body.$.truncation",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.format.json_object|upstream.body.$.text.format.type",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.format.json_object|upstream.body.$.text.format.type",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.previous_response_id|upstream.body.$.previous_response_id",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=standard|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.service_tier=batch|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.store|upstream.body.$.store",
+   "providers": 1,
+   "count": 3,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.reasoning_effort=instant|upstream.body.$.reasoning.effort",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.content.second-system|upstream.body(client $.messages[].content)",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:text|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:max|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:finish:length|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:finish:content_filter|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:finish:stop_sequence|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|stream_order|text|messages|stream|resp:finish:pause_turn|client.stream",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.truncation|upstream.body.$.truncation",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.truncation=disabled|upstream.body.$.truncation",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.stream_options|upstream.body.$.stream_options.include_usage",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.tool_choice|upstream.body.$.tool_choice",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.include|upstream.body.$.include.0",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|chat||chat.content.part.text|upstream.body(client $.messages[].content[].text)",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.content.part.input_text|upstream.body(client $.input[].content[].text)",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_logprobs|upstream.body.$.top_logprobs",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_logprobs|upstream.body.$.top_logprobs",
+   "providers": 1,
+   "count": 2,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort|upstream.body.$.reasoning_effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|chat|stream|resp:max|billing.read",
+   "providers": 1,
+   "count": 1,
+   "nanos": 5002750
+  },
+  {
+   "key": "executor|billing_over|text|chat|buffered|resp:max|billing.read",
+   "providers": 1,
+   "count": 1,
+   "nanos": 5002750
+  },
+  {
+   "key": "executor|billing_over|text|responses|stream|resp:max|billing.read",
+   "providers": 1,
+   "count": 1,
+   "nanos": 5002750
+  },
+  {
+   "key": "executor|billing_over|text|responses|buffered|resp:max|billing.read",
+   "providers": 1,
+   "count": 1,
+   "nanos": 5002750
+  },
+  {
+   "key": "executor|renamed|text|responses||responses.param.reasoning|upstream.body.$.reasoning.effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|chat||chat.param.user_id|upstream.body.$.user",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|chat||chat.param.user|upstream.body.$.user",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|renamed|text|responses||responses.param.user|upstream.body.$.user",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.prompt_cache_key|upstream.body.$.prompt_cache_key",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.safety_identifier|upstream.body.$.safety_identifier",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.reasoning|upstream.body.$.chat_template_kwargs.thinking_budget",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.reasoning|upstream.body.$.chat_template_kwargs.thinking_budget",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.param.thinking|upstream.body.$.chat_template_kwargs.thinking_budget",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.temperature|upstream.body.$.generation_config.temperature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_p|upstream.body.$.generation_config.top_p",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.top_k|upstream.body.$.generation_config.top_k",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.temperature|upstream.body.$.generation_config.temperature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_p|upstream.body.$.generation_config.top_p",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses||responses.param.top_k|upstream.body.$.generation_config.top_k",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.temperature|upstream.body.$.generation_config.temperature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.top_p|upstream.body.$.generation_config.top_p",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.param.top_k|upstream.body.$.generation_config.top_k",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|stream|resp:finish:length|client.finish",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses|buffered|resp:finish:length|client.finish",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages|stream|resp:text|client.finish",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.uncachedInput",
+   "providers": 1,
+   "count": 1,
+   "nanos": -300750
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|resp:max|client.reasoning.text",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.uncachedInput",
+   "providers": 1,
+   "count": 1,
+   "nanos": -70500
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.thought_signature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|roundtrip:responses|roundtrip.upstream.thought_signature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages|buffered|roundtrip:messages|roundtrip.upstream.thought_signature",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.reasoning_effort|upstream.body.$.reasoning_effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.param.reasoning|upstream.body.$.reasoning_effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.n|upstream.body.$.n",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.param.session_id|upstream.body.$.session_id",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.reasoning",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|billing_over|text|chat|stream|resp:max|billing.output",
+   "providers": 1,
+   "count": 1,
+   "nanos": 2079375
+  },
+  {
+   "key": "executor|billing_under|text|chat|stream|resp:max|billing.reasoning",
+   "providers": 1,
+   "count": 1,
+   "nanos": -2079375
+  },
+  {
+   "key": "executor|billing_over|text|messages|stream|resp:max|billing.output",
+   "providers": 1,
+   "count": 1,
+   "nanos": 2079375
+  },
+  {
+   "key": "executor|billing_under|text|messages|stream|resp:max|billing.reasoning",
+   "providers": 1,
+   "count": 1,
+   "nanos": -2079375
+  },
+  {
+   "key": "executor|billing_over|text|messages|buffered|resp:max|billing.output",
+   "providers": 1,
+   "count": 1,
+   "nanos": 2079375
+  },
+  {
+   "key": "executor|billing_under|text|messages|buffered|resp:max|billing.reasoning",
+   "providers": 1,
+   "count": 1,
+   "nanos": -2079375
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.max_completion_tokens|upstream.body.$.max_tokens",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|chat||chat.param.max_tokens|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|responses||responses.param.max_output_tokens|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.max_tokens|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=standard|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=default|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=fast|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=ultrafast|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=priority|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=flex|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.service_tier=batch|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.temperature|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.top_p|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.top_k|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.tools|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.tool_choice|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.metadata|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.stop_sequences|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.usage|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.meta|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.param.echo_upstream_request|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.image_baseN|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.image_url|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_pdf|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_text|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.document_url|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.content.part.search_result|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.probe|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.tool|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.none|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.tool_choice.auto|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.tools.server|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.cache.blocks|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.reasoning.adaptive|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.reasoning.disabled|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step1|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step2|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent.step3|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent3.step2|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agent3.step3|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|error_mapping|text|messages||messages.agentN.step9|client.status",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|chat||chat.base|upstream.body.$.stream",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.messages",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|responses||responses.base|upstream.body.$.stream",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|invented|text|messages||messages.base|upstream.body.$.stream",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_type|text|responses||responses.content.part.input_image_file_id|upstream.body(client $.input[].content[].text)",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step2|upstream.body(client $.messages[].content[].data)",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|messages||messages.agent.step3|upstream.body(client $.messages[].content[].data)",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.format.json_object|upstream.body.$.response_format.type",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.format.json_object|upstream.body.$.response_format.type",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=low|upstream.body.$.reasoning.effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.reasoning_effort=medium|upstream.body.$.reasoning.effort",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.service_tier|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat||chat.param.min_p|upstream.body.$.min_p",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.service_tier|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|messages||messages.param.service_tier=flex|upstream.body.$.service_tier",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|chat|buffered|roundtrip:chat|roundtrip.upstream.encrypted_reasoning",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|stream|resp:max|client.usage.input_tokens_details.cached_tokens",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|dropped|text|responses|buffered|resp:max|client.usage.input_tokens_details.cached_tokens",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|chat||chat.param.response_format|upstream.body.$.response_format.type",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  },
+  {
+   "key": "executor|wrong_value|text|responses||responses.param.text|upstream.body.$.response_format.type",
+   "providers": 1,
+   "count": 1,
+   "nanos": 0
+  }
+ ]
+}

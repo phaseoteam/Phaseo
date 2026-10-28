@@ -6,6 +6,7 @@ export const GLOBAL_ACTION_ITEMS: readonly PaletteItem[] = [
 	{ id: "action-create-key", title: "Create an API key", subtitle: "Open API key settings", href: "/settings/keys", keywords: ["new key", "gateway key", "token", "credential"] },
 	{ id: "action-create-preset", title: "Create a routing preset", subtitle: "Configure a reusable gateway route", href: "/settings/presets/new", keywords: ["new preset", "route", "routing"] },
 	{ id: "action-create-guardrail", title: "Create a guardrail", subtitle: "Add a request or response policy", href: "/settings/guardrails/new", keywords: ["new guardrail", "safety", "policy", "validation"] },
+	{ id: "action-create-classifier", title: "Create a classifier", subtitle: "Label requests by department, task or audience", href: "/settings/classifiers/new", keywords: ["new classifier", "labels", "taxonomy", "tagging"] },
 	{ id: "action-copy-page-link", title: "Copy current page link", subtitle: "Copy this page URL to the clipboard", action: "copy-current-url", keywords: ["copy url", "share page", "clipboard"], shortcut: ["Y", "Y"] },
 	{ id: "action-theme-toggle", title: "Toggle light or dark theme", subtitle: "Switch the current colour theme", action: "theme-toggle", keywords: ["appearance", "colour", "color", "mode", "dark mode", "light mode"], shortcut: ["T", "T"] },
 	{ id: "action-theme-system", title: "Use system theme", subtitle: "Follow this device's appearance setting", action: "theme-system", keywords: ["appearance", "automatic theme", "auto mode"] },

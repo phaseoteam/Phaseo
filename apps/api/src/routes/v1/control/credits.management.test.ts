@@ -12,7 +12,9 @@ type GuardOk = {
 const state = vi.hoisted(() => ({
 	guardManagementAuthResult: null as GuardOk | { ok: false; response: Response } | null,
 	walletRow: null as Record<string, unknown> | null,
-	ledgerRows: [] as Array<Record<string, unknown>>,
+	ledgerNet: 0 as number | null,
+	ledgerNetError: null as { message: string } | null,
+	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 	requestRows: [] as Array<Record<string, unknown>>,
 	requestCount: 0,
 }));
@@ -29,6 +31,13 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 
 function buildCreditsSupabaseMock() {
 	return {
+		async rpc(name: string, args: Record<string, unknown>) {
+			state.rpcCalls.push({ name, args });
+			if (name === "get_workspace_credit_ledger_net") {
+				return { data: state.ledgerNetError ? null : state.ledgerNet, error: state.ledgerNetError };
+			}
+			throw new Error(`Unexpected rpc: ${name}`);
+		},
 		from(table: string) {
 			if (table === "wallets") {
 				return {
@@ -41,19 +50,6 @@ function buildCreditsSupabaseMock() {
 						}),
 					}),
 				};
-			}
-
-			if (table === "credit_ledger") {
-				const query: any = {
-					select: () => query,
-					eq: () => query,
-					gte: () => query,
-					order: async () => ({
-						data: state.ledgerRows,
-						error: null,
-					}),
-				};
-				return query;
 			}
 
 			if (table === "gateway_requests") {
@@ -107,7 +103,9 @@ describe("management credits and activity routes", () => {
 			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
 		};
 		state.walletRow = { balance_nanos: 2_000_000_000, reserved_nanos: 500_000_000 };
-		state.ledgerRows = [{ amount_nanos: 250_000_000 }, { amount_nanos: 750_000_000 }];
+		state.ledgerNet = 1_000_000_000;
+		state.ledgerNetError = null;
+		state.rpcCalls = [];
 		state.requestRows = [
 			{
 				request_id: "req_1",
@@ -155,6 +153,36 @@ describe("management credits and activity routes", () => {
 				thirty_day_requests: 3,
 			},
 		});
+	});
+
+	it("sums thirty_day_usage in the database instead of reading ledger rows", async () => {
+		// A busy workspace: more ledger rows than PostgREST returns in one page.
+		state.ledgerNet = -1_500_000_000_000;
+		const before = Date.now();
+		const { creditsRoutes } = await import("./credits");
+		const response = await creditsRoutes.request("https://example.com/");
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.credits.thirty_day_usage).toBe(-1_500_000_000_000);
+		expect(state.rpcCalls).toHaveLength(1);
+		expect(state.rpcCalls[0].name).toBe("get_workspace_credit_ledger_net");
+		expect(state.rpcCalls[0].args.p_workspace_id).toBe("ws_1");
+		const sinceMs = Date.parse(String(state.rpcCalls[0].args.p_since));
+		const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+		expect(sinceMs).toBeGreaterThanOrEqual(before - thirtyDaysMs - 1000);
+		expect(sinceMs).toBeLessThanOrEqual(Date.now() - thirtyDaysMs);
+	});
+
+	it("reports thirty_day_usage as null when the ledger total cannot be read", async () => {
+		state.ledgerNetError = { message: "rpc failed" };
+		const { creditsRoutes } = await import("./credits");
+		const response = await creditsRoutes.request("https://example.com/");
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.credits.thirty_day_usage).toBeNull();
+		expect(body.credits.balance_nanos).toBe(2_000_000_000);
 	});
 
 	it("rejects cross-workspace activity access for non-internal management keys", async () => {

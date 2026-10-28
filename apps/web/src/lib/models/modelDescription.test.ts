@@ -10,6 +10,13 @@ import {
 } from "./modelDescription";
 
 describe("modelDescription", () => {
+	it("preserves Markdown block structure for both description sources", () => {
+		const markdown = "Summary.\n\n### Images\n\n- PNG\n- JPEG\n\n```json\n{\"enabled\": true}\n```";
+		expect(getExplicitModelDescription({ description: `  ${markdown}  ` })).toBe(markdown);
+		expect(getExplicitModelDescription({ model_details: [{ detail_name: "description", detail_value: markdown }] })).toBe(markdown);
+		expect(markdownToPlainText("Summary.\n\n### Images\n\n- PNG\n- JPEG")).toBe("Summary. Images PNG JPEG");
+	});
+
 	it("counts distinct providers rather than model routes and capabilities", () => {
 		const providers = Array.from({ length: 77 }, (_, index) => ({
 			api_provider_id: `provider-${index % 22}`,
@@ -24,6 +31,14 @@ describe("modelDescription", () => {
 			.toBe("GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo");
 		expect(buildModelOverviewMetadataDescription({ modelName: "GPT 5.6 Luna", providerCount, hasPricing: true }))
 			.toContain("22 providers");
+	});
+
+	it("doesn't offer to compare a single provider in translated titles", () => {
+		const translate = (key: string, values?: Record<string, unknown>) => `${key}:${values?.model}:${values?.count}`;
+		expect(buildModelOverviewMetadataTitle("Qwen Max", { providerCount: 1, hasPricing: true }, translate as never))
+			.toBe("pricing:Qwen Max:1");
+		expect(buildModelOverviewMetadataTitle("Qwen Max", { providerCount: 2, hasPricing: true }, translate as never))
+			.toBe("pricingWithProviders:Qwen Max:2");
 	});
 
 	it("ignores empty provider identifiers and missing metadata", () => {

@@ -56,3 +56,20 @@ Bei Verwendung eines Servertools enthält die Nutzungsübersicht:
 ## Hinweis zu Streaming
 
 `stream: true` wird ebenfalls unterstützt. Bei vom Gateway verwalteten Servertools kann Phaseo den Upstream-Tool-Aufruf-Zug materialisieren, die Schleife fortsetzen und anschließend einen synthetischen Stream erneut ausgeben.
+
+## Reasoning in Tool-Schleifen
+
+Reasoning-Modelle geben ihr Reasoning in zwei Feldern der Assistant-Nachricht zurück:
+
+- `reasoning_content`: der Reasoning-Text, sofern der Anbieter einen liefert.
+- `reasoning_details`: ein Array von Reasoning-Blöcken im Format, das OpenRouter verwendet. Jeder Eintrag hat einen `type` (`reasoning.text`, `reasoning.summary` oder `reasoning.encrypted`), einen `index` und ein `format`, das die Anbieterfamilie nennt, zum Beispiel `anthropic-claude-v1` oder `google-gemini-v1`.
+
+Einträge können Anbieterzustand enthalten, den das Modell im nächsten Schritt einer Tool-Schleife braucht:
+
+- Claude-Thinking-Signaturen in `signature` bei `reasoning.text`-Einträgen.
+- Geschwärztes Claude-Thinking und verschlüsseltes OpenAI-Reasoning in `data` bei `reasoning.encrypted`-Einträgen.
+- Gemini-Thought-Signaturen in `data` bei `reasoning.encrypted`-Einträgen, deren `id` der zugehörige Tool-Aufruf ist.
+
+Beim Streaming kommt ein `reasoning_details`-Delta, sobald ein Reasoning-Block vollständig ist.
+
+Damit das Modell sein Reasoning zwischen den Schritten behält, sende die Assistant-Nachricht mit unverändertem `reasoning_details` zurück. Die Werte in `signature` und `data` sind undurchsichtig und vermerken Anbieter und Modell, die sie erzeugt haben. Phaseo sendet sie nur an diese Anbieterfamilie und dieses Modell. Ein Fallback auf einen anderen Anbieter verwirft sie daher, statt fehlzuschlagen. Claude-Modelle im manuellen Thinking-Modus brauchen ihr Thinking zurück, um während einer Tool-Schleife weiter zu denken; fehlt es, läuft dieser Schritt ohne Thinking.

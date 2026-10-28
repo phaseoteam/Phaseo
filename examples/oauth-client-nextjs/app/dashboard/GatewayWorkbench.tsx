@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+  /** Local error notice: shown in the transcript, never sent to the model. */
+  failed?: boolean;
 };
 
 type TesterPreset = {
@@ -158,7 +160,6 @@ export default function GatewayWorkbench() {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatBusy, setChatBusy] = useState(false);
-  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
 
   const [testerPreset, setTesterPreset] = useState<TesterPreset>(TESTER_PRESETS[0]);
@@ -227,13 +228,14 @@ export default function GatewayWorkbench() {
     setChatError(null);
 
     try {
+      // The gateway does not store responses, so each turn resends the history.
+      const history = [...chatMessages, userMessage]
+        .filter((message) => !message.failed)
+        .map(({ role, content }) => ({ role, content }));
       const body: Record<string, unknown> = {
         model: selectedModel,
-        input: userMessage.content,
+        input: history,
       };
-      if (previousResponseId) {
-        body.previous_response_id = previousResponseId;
-      }
 
       const response = await fetchJson('/api/gateway/responses', {
         method: 'POST',
@@ -245,22 +247,17 @@ export default function GatewayWorkbench() {
         setChatError(`Responses API error (${response.status})`);
         setChatMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: `Request failed (${response.status}). Check gateway permissions for this model.` },
+          { role: 'assistant', content: `Request failed (${response.status}). Check gateway permissions for this model.`, failed: true },
         ]);
         return;
       }
 
       const assistantText = extractResponseText(response.data);
       setChatMessages((prev) => [...prev, { role: 'assistant', content: assistantText }]);
-
-      const maybeId = (response.data as any)?.id;
-      if (typeof maybeId === 'string' && maybeId.trim()) {
-        setPreviousResponseId(maybeId);
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       setChatError(message);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: `Request failed: ${message}` }]);
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: `Request failed: ${message}`, failed: true }]);
     } finally {
       setChatBusy(false);
     }
@@ -268,7 +265,6 @@ export default function GatewayWorkbench() {
 
   function clearConversation() {
     setChatMessages([]);
-    setPreviousResponseId(null);
     setChatError(null);
   }
 

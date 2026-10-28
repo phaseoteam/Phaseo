@@ -188,7 +188,7 @@ La même page propose aussi des options pour les canaux bêta et alpha. Vous pou
 
 ### Le repli BYOK est explicite
 
-Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête BYOK qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
+Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête <Tooltip tip="Apportez votre propre clé : Phaseo route la requête avec votre clé API du fournisseur, et le fournisseur vous facture directement l’utilisation du modèle.">BYOK</Tooltip> qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
 
 ### Les routes dynamiques associent une politique aux clés d’API
 
@@ -221,6 +221,19 @@ Les métadonnées personnalisées sont disponibles sur les surfaces d’inféren
 
 Si un fournisseur renvoie des erreurs ou des limites de débit, Gateway peut réessayer ou acheminer la requête vers un autre fournisseur prenant en charge le même modèle. Vous devez tout de même traiter les réponses `429` et `5xx` avec un délai exponentiel.
 
+```mermaid
+flowchart TD
+  req["Requête"] --> pol["Appliquer les préréglages, les garde-fous et la politique des fournisseurs"]
+  pol --> rnk["Classer les fournisseurs éligibles selon le mode de routage"]
+  rnk --> prov["Appeler le fournisseur le mieux classé"]
+  prov -->|"Succès"| resp["Renvoyer la réponse"]
+  prov -->|"Erreur ou limite de débit du fournisseur"| nextProv{{"Un autre fournisseur éligible ?"}}
+  nextProv -->|"Oui"| prov
+  nextProv -->|"Non"| fallbackCheck{{"Statut réessayable et un modèle de secours restant ?"}}
+  fallbackCheck -->|"Oui : relancer avec le modèle suivant"| pol
+  fallbackCheck -->|"Non"| err["Renvoyer l’erreur"]
+```
+
 Les nœuds de modèle d’une route dynamique peuvent également définir une liste ordonnée de modèles de repli. Phaseo épuise d’abord les tentatives auprès des fournisseurs éligibles pour le modèle sélectionné. Si la réponse obtenue permet une nouvelle tentative (`429`, `500`, `502`, `503` ou `504`), Gateway relance l’ensemble du processus de politique et de sélection des fournisseurs pour chaque modèle de repli, dans l’ordre. Les erreurs client sont renvoyées immédiatement sans changer de modèle.
 
 Chaque modèle de repli est vérifié indépendamment au regard des restrictions de modèles de l’espace de travail, des garde-fous, de la politique fournisseur, des prix et des capacités prises en charge. Une route peut enregistrer jusqu’à huit modèles de repli.
@@ -240,7 +253,7 @@ Chaque modèle de repli est vérifié indépendamment au regard des restrictions
 
 Une requête qui envoie `models` sans `model` est rejetée avec `400`. Les replis au niveau de la requête reposent sur le même mécanisme que les replis des routes dynamiques :
 
-- **Déclencheurs.** Le modèle suivant n’est essayé que si la tentative précédente, après ses propres nouvelles tentatives auprès des fournisseurs, se termine par `429`, `500`, `502`, `503` ou `504`. Les erreurs client comme `400`, `401`, `402`, `403`, `404`, `408`, `413` et `422` sont renvoyées sans changer de modèle. Une réponse `429` due à un budget Phaseo ou au quota d’un modèle gratuit atteint pendant l’exécution de la requête fait également passer au modèle suivant, car un autre modèle peut tenir dans la limite restante. L’authentification, les limites de débit des clés d’API et les autres vérifications qui échouent avant l’exécution du modèle principal sont renvoyées immédiatement.
+- **Déclencheurs.** Le modèle suivant n’est essayé que si la tentative précédente, après ses propres nouvelles tentatives auprès des fournisseurs, se termine par `429`, `500`, `502`, `503` ou `504`. Les erreurs client comme `400`, `401`, `402`, `403`, `404`, `408`, `413` et `422` sont renvoyées sans changer de modèle. Une réponse `429` due à un budget Phaseo ou au quota d’un modèle gratuit atteint pendant l’exécution de la requête fait également passer au modèle suivant, car un autre modèle peut tenir dans la limite restante. Lorsqu’aucun fournisseur ne sert le modèle principal, par exemple parce qu’il est [retiré](#retired-models), Phaseo passe également au modèle suivant. L’authentification, les limites de débit des clés d’API et les autres vérifications qui échouent avant l’exécution du modèle principal sont renvoyées immédiatement.
 - **Limites.** `models` accepte de 1 à 25 entrées. Les doublons et les entrées identiques à `model` sont ignorés. Les routes dynamiques conservent leur propre limite de huit modèles de repli.
 - **Validation.** Chaque entrée peut être un identifiant de modèle, un identifiant de modèle qualifié par fournisseur ou un préréglage tel que `@support`. Chaque tentative est validée comme une requête distincte : prise en charge du point de terminaison et de la modalité, paramètres demandés, restrictions de modèles de l’espace de travail, garde-fous, préréglages, prix et identifiants BYOK. Un modèle de repli qui ne peut pas traiter la requête est ignoré et consigné dans les journaux de requêtes ; il ne remplace jamais l’erreur que vous auriez reçue autrement. Un modèle de repli qui aboutit à une tentative déjà effectuée, avec le même modèle et les mêmes fournisseurs éligibles, est ignoré.
 - **Journalisation et facturation.** Chaque tentative apparaît comme une requête distincte dans vos journaux, avec sa propre utilisation et sa propre ligne de facturation. Chaque tentative est donc facturée exactement comme elle le serait sans repli.
@@ -273,11 +286,19 @@ Pour en savoir plus :
 - [Limites de débit](../api-reference/limits.mdx)
 - [Gestion des erreurs](../api-reference/errors.mdx)
 
+<span id="retired-models"></span>
+
+## Modèles retirés
+
+Un modèle retiré reste servi tant qu’un fournisseur le sert. Dès qu’aucun ne le sert, les requêtes échouent avec `410 model_retired`, sauf si l’espace de travail a activé le routage des modèles retirés pour les envoyer à un remplaçant. Votre propre liste `models` est toujours essayée avant un remplaçant. Consultez [Dépréciation et retrait des modèles](./model-retirement.mdx).
+
 ## Affinité liée au cache et à la session
 
-Le routage tenant compte du cache est activé par défaut sur les points de terminaison de génération de texte. Lorsqu’un fournisseur signale une véritable lecture du cache de prompt, Phaseo épingle le contexte correspondant à ce fournisseur pendant 15 minutes, à condition qu’il reste sain et autorisé par la route, le préréglage, les garde-fous et la politique de requête actifs.
+Le routage tenant compte du cache est activé par défaut sur les points de terminaison de génération de texte. Les requêtes qui envoient `prompt_cache_key` ou `session_id`, ou qui activent la mise en cache avec `cache_control` (au premier niveau, dans `provider_options.anthropic.cache_control` ou sous forme de marque `cache_control` ou `prompt_cache_breakpoint` sur un bloc de message ou un outil), sont épinglées au fournisseur et à la route qui ont servi leur première requête réussie. Les autres requêtes sont épinglées pendant 15 minutes dès qu’un fournisseur signale une lecture ou une écriture du cache de prompts pour le même contexte initial, à condition que l’entrée en cache de ce fournisseur coûte moins cher que son entrée standard.
 
-Lorsque `session_id` est présent, l’affinité du cache est associée à la session et non uniquement au contexte initial. Phaseo la renouvelle lorsqu’il observe une nouvelle lecture du cache et la conserve pendant 24 heures maximum d’activité de session. Les disjoncteurs et les filtres de politique restent toujours prioritaires sur l’affinité.
+Les épinglages sont conservés par espace de travail et durent de 15 minutes à 24 heures, selon la rétention du cache du fournisseur. Un épinglage ne change que lorsque le disjoncteur de son fournisseur s’ouvre, que son taux d’erreur récent est élevé, que le quota géré par Phaseo chez ce fournisseur est épuisé, ou que la route, le préréglage, les garde-fous ou la politique de requête actifs ne l’autorisent plus.
+
+Lorsque `session_id` est présent, l’affinité du cache est associée à la session et non uniquement au contexte initial, et elle est conservée pendant 24 heures maximum d’activité de session. Consultez [Affinité au fournisseur](./prompt-caching.mdx#provider-affinity) pour la durée des épinglages et les indications d’affinité que Phaseo envoie à chaque fournisseur.
 
 Désactivez cette option pour une seule requête sans modifier les valeurs par défaut de l’espace de travail ou de la route dynamique :
 
@@ -321,5 +342,6 @@ Pour les charges de production, journalisez les identifiants de requête, les co
 ## Guides associés
 
 - [Préréglages](./presets.mdx)
+- [Dépréciation et retrait des modèles](./model-retirement.mdx)
 - [Matrice de parité des fonctionnalités](../migration-guides/feature-parity-matrix.mdx)
 

@@ -16,6 +16,7 @@ function normalizeModalityStyleKey(value: string): string {
 		return "rerank";
 	}
 	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("extract")) return "extraction";
 	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -62,6 +63,13 @@ const DEFAULT_MODALITY_TONE: ModalityTone = {
 };
 
 const MODALITY_TONES: Record<string, ModalityTone> = {
+	extraction: {
+		badgeClassName: "border-transparent bg-[#D1FAE5] text-[#047857] dark:border-transparent dark:bg-[#052E26] dark:text-[#6EE7B7]",
+		iconClassName: "text-[#047857] dark:text-[#6EE7B7]",
+		ghostIconHoverClassName: "group-hover:text-[#047857] dark:group-hover:text-[#6EE7B7]",
+		sidebarIconHoverClassName: "group-hover:border-transparent group-hover:bg-[#D1FAE5] group-hover:text-[#047857] dark:group-hover:border-transparent dark:group-hover:bg-[#052E26] dark:group-hover:text-[#6EE7B7]",
+		sidebarIconSelectedClassName: "border-transparent bg-[#D1FAE5] text-[#047857] dark:border-transparent dark:bg-[#052E26] dark:text-[#6EE7B7]",
+	},
 	text: {
 		badgeClassName:
 			"border-transparent bg-[#DBEAFE] text-[#1E40AF] dark:border-transparent dark:bg-[#0F1E3A] dark:text-[#93C5FD]",

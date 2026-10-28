@@ -26,7 +26,7 @@ function normalizeText(value: unknown): string | null {
 }
 
 export function markdownToPlainText(value: string | null | undefined): string | null {
-	const normalized = normalizeText(value);
+	const normalized = value?.trim();
 	if (!normalized) return null;
 
 	return normalizeText(
@@ -40,17 +40,9 @@ export function markdownToPlainText(value: string | null | undefined): string | 
 			.replace(/_([^_]+)_/g, "$1")
 			.replace(/^#{1,6}\s+/gm, "")
 			.replace(/^\s*>\s*/gm, "")
+			.replace(/^\s*[-*+]\s+/gm, "")
 			.replace(/\n+/g, " "),
 	);
-}
-
-function getDetailValue(
-	model: Pick<ModelDescriptionSource, "model_details">,
-	detailName: string,
-): string | null {
-	const detail = model.model_details?.find((item) => item.detail_name === detailName);
-	if (!detail) return null;
-	return normalizeText(detail.detail_value == null ? null : String(detail.detail_value));
 }
 
 function normalizeModality(value: string): string {
@@ -180,7 +172,10 @@ function buildModalitySentence(model: ModelDescriptionSource): string | null {
 export function getExplicitModelDescription(
 	model: Pick<ModelDescriptionSource, "description" | "model_details">,
 ): string | null {
-	return normalizeText(model.description) ?? getDetailValue(model, "description");
+	const description = model.description?.trim();
+	if (description) return description;
+	const detail = model.model_details?.find((item) => item.detail_name === "description");
+	return detail?.detail_value == null ? null : String(detail.detail_value).trim() || null;
 }
 
 export function buildGeneratedModelDescription(
@@ -268,7 +263,8 @@ export function buildModelOverviewMetadataTitle(
 			count: providerCount,
 			context: formatContextLength(signals.contextLength ?? 0),
 		};
-		const fullKey = signals.hasPricing && providerCount > 0
+		// "Compare {count} Providers" only reads right for two or more.
+		const fullKey = signals.hasPricing && providerCount > 1
 			? "pricingWithProviders"
 			: signals.hasPricing
 				? "pricing"

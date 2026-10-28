@@ -11,6 +11,7 @@ import { lazyRouter } from "@/routes/lazy";
 import { runWithRequestScope, type GatewayBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
+import { withErrorObject } from "@/core/error-object";
 import { enforceRegionalSurface } from "@/regional-surface";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
@@ -84,7 +85,7 @@ app.onError((error, c) => {
 	});
 
 	return c.json(
-		{ error: "internal_error", message: "An unexpected error occurred.", request_id: requestId },
+		withErrorObject({ error: "internal_error", message: "An unexpected error occurred.", request_id: requestId }, 500),
 		500,
 		{ "x-request-id": requestId },
 	);

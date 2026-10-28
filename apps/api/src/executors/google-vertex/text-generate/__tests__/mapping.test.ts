@@ -36,6 +36,28 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it.each([
+		["flex", "ON_DEMAND_FLEX"],
+		["priority", "ON_DEMAND_PRIORITY"],
+		["fast", "ON_DEMAND_PRIORITY"],
+	])("selects Vertex Gemini %s using PayGo headers and preserves its actual tier", async (tier, trafficType) => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/publishers/google/models/gemini-3.6-flash:streamGenerateContent"),
+			response: new Response(`data: ${JSON.stringify({ candidates: [{ content: { role: "model", parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 2, totalTokenCount: 7, trafficType } })}\r\n\r\n`, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const args = buildExecuteArgs();
+			(args.ir as IRChatRequest).serviceTier = tier;
+			const result = await execute(args);
+			expect(mock.calls[0].headers["X-Vertex-AI-LLM-Request-Type"]).toBe("shared");
+			expect(mock.calls[0].headers["X-Vertex-AI-LLM-Shared-Request-Type"]).toBe(tier === "fast" ? "priority" : tier);
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("serviceTier");
+			if (result.kind !== "completed") throw new Error("Expected a buffered Vertex response");
+			expect(result.ir?.usage?.serviceTier).toBe(tier === "fast" ? "priority" : tier);
+			expect(result.bill?.usage?.service_tier).toBe(tier === "fast" ? "priority" : tier);
+		} finally { mock.restore(); }
+	});
+
 	it.each(["google-vertex", "google-vertex-eu"])("sends Haiku 5.5 adaptive thinking through %s", async (providerId) => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
@@ -74,6 +96,9 @@ describe("google-vertex route resolution", () => {
 		expect(() => resolveVertexApiBase(bindings, "google-vertex-eu", "gemini")).toThrow("google-vertex_eu_location_required");
 		expect(() => resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global" }, "google-vertex-eu", "anthropic")).toThrow("google-vertex_endpoint_region_mismatch");
 		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini")).toContain("europe-west4-aiplatform.googleapis.com");
+		// Gemini 3.1 Flash-Lite is served on the eu multi-region only, not in europe-west4.
+		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini", "gemini-3.1-flash-lite"))
+			.toContain("aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu");
 	});
 	it.each(["us", "eu"])("uses the %s multi-region Claude streaming endpoint", async location => {
 		teardownTestRuntime();
@@ -93,6 +118,48 @@ describe("google-vertex route resolution", () => {
 			response: new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "hi" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }), { headers: { "Content-Type": "application/json" } }),
 		}]);
 		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
+		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: url => url === `https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/${model.replace(/^google\//, "")}:streamGenerateContent?alt=sse`,
+			response: Response.json({ candidates: [{ content: { parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }),
+		}]);
+		try { expect((await execute({ ...buildExecuteArgs(), providerId: "google-vertex", providerModelSlug: model })).kind).toBe("completed"); }
+		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+	// Gemini 3 and later are served on global and the us/eu multi-regions, not us-central1
+	// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash).
+	it.each(["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.1-flash-image", "gemini-2.5-flash"])(
+		"serves %s from global with Phaseo's credential whatever region is configured",
+		model => {
+			const bindings = { GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1" };
+			const global = "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global";
+			expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", model)).toBe(global);
+			expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://us-central1-aiplatform.googleapis.com" }, "google-vertex", "gemini", model)).toBe(global);
+			expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/locations/us-central1" }, "google-vertex", "gemini", model)).toBe(global);
+		},
+	);
+	it("keeps EU Gemini in Europe, a customer's region, and regional non-Gemini models", () => {
+		const bindings = { GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1" };
+		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini", "gemini-3.6-flash"))
+			.toBe("https://europe-west4-aiplatform.googleapis.com/v1/projects/test-project/locations/europe-west4");
+		expect(() => resolveVertexApiBase(bindings, "google-vertex-eu", "gemini", "gemini-3.6-flash")).toThrow("google-vertex_eu_location_required");
+		expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", "gemini-3.6-flash", { project: "customer", location: "us" }))
+			.toBe("https://aiplatform.us.rep.googleapis.com/v1/projects/customer/locations/us");
+		expect(resolveVertexApiBase(bindings, "google-vertex", "openapi_chat", "meta/llama-4-scout-17b-16e-instruct")).toContain("locations/us-central1");
+		expect(resolveVertexApiBase(bindings, "google-vertex", "openapi_chat", "openai/gpt-oss-20b-maas")).toContain("locations/us-central1");
+	});
+	it("streams Gemini 3.6 Flash from global when the configured region is us-central1", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: url => url === "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/gemini-3.6-flash:streamGenerateContent?alt=sse",
+			response: Response.json({ candidates: [{ content: { parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }),
+		}]);
+		try { expect((await execute({ ...buildExecuteArgs(), providerId: "google-vertex" })).kind).toBe("completed"); }
 		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
 	});
 	it("routes prefixed models by family", () => {
@@ -131,7 +198,17 @@ describe("google-vertex empty response handling", () => {
 });
 
 describe("google-vertex irToGemini", () => {
-	it("maps Gemini 3.8 service tier and structured output", async () => {
+	it("sends seed as generationConfig.seed", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.8-flash",
+			stream: false,
+			seed: 42,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+		} as any);
+		expect(request.generationConfig?.seed).toBe(42);
+	});
+
+	it("keeps Vertex tier controls out of the Gemini body while mapping structured output", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.8-flash",
 			stream: false,
@@ -144,7 +221,7 @@ describe("google-vertex irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.serviceTier).toBe("flex");
+		expect(request).not.toHaveProperty("serviceTier");
 		expect(request.generationConfig).toMatchObject({
 			responseMimeType: "application/json",
 			responseSchema: { type: "object", properties: { answer: { type: "string" } } },
@@ -287,5 +364,62 @@ describe("google-vertex geminiToIR", () => {
 			type: "text",
 			text: "final answer",
 		});
+	});
+});
+
+// https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/4-argon: "Supports
+// thinking levels LOW, MEDIUM (default), and HIGH. Setting thinking_budget or
+// thinking_level="MINIMAL" returns an HTTP 400 validation error."
+describe("google-vertex Gemini thinking levels", () => {
+	async function thinkingConfigFor(model: string, reasoning: IRChatRequest["reasoning"]): Promise<any> {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: url => url.includes(`/publishers/google/models/${model}:streamGenerateContent`),
+			response: Response.json({ candidates: [{ content: { parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }),
+		}]);
+		try {
+			const args = buildExecuteArgs();
+			await execute({ ...args, ir: { ...args.ir, model: `google/${model}`, reasoning } as IRChatRequest, providerModelSlug: model });
+			expect(mock.calls).toHaveLength(1);
+			return mock.calls[0].bodyJson.generationConfig?.thinkingConfig;
+		} finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	}
+
+	it.each([
+		["minimal", "LOW"],
+		["low", "LOW"],
+		["medium", "MEDIUM"],
+		["high", "HIGH"],
+		["max", "HIGH"],
+	])("maps Argon effort %s to thinkingLevel %s", async (effort, level) => {
+		const config = await thinkingConfigFor("gemini-4-argon", { effort: effort as any });
+		expect(config.thinkingLevel).toBe(level);
+		expect(config).not.toHaveProperty("thinkingBudget");
+	});
+
+	it.each([[{ enabled: true }, "HIGH"], [{ maxTokens: 4096 }, "HIGH"], [{ maxTokens: 0 }, "LOW"]] as const)(
+		"never sends Argon a thinkingBudget (%j)",
+		async (reasoning, level) => {
+			const config = await thinkingConfigFor("gemini-4-argon", { ...reasoning });
+			expect(config.thinkingLevel).toBe(level);
+			expect(config).not.toHaveProperty("thinkingBudget");
+		},
+	);
+
+	it("keeps thinkingBudget for Gemini 3 models that still accept it", async () => {
+		const config = await thinkingConfigFor("gemini-3.6-flash", { maxTokens: 4096 });
+		expect(config.thinkingBudget).toBe(4096);
+	});
+
+	it.each([["gemini-4-argon", "LOW"], ["gemini-3.7-flash", "LOW"], ["gemini-3.1-pro-preview", "LOW"], ["gemini-3.6-flash", "MINIMAL"]])(
+		"turns %s thinking down to %s when it is disabled",
+		async (model, level) => {
+			expect(await thinkingConfigFor(model, { enabled: false })).toEqual({ includeThoughts: false, thinkingLevel: level });
+		},
+	);
+
+	it("still sends no thinkingConfig when reasoning is absent", async () => {
+		expect(await thinkingConfigFor("gemini-4-argon", undefined)).toBeUndefined();
 	});
 });

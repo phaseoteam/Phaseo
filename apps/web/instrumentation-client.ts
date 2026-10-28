@@ -13,6 +13,7 @@ import {
 	ANALYTICS_CONSENT_EVENT,
 	ANALYTICS_CONSENT_STORAGE_KEY,
 	type AnalyticsConsent,
+	isAnalyticsBlockedForPageLoad,
 	parseAnalyticsConsent,
 	readAnalyticsConsent,
 } from "@/lib/cookieConsent";
@@ -21,6 +22,7 @@ import {
 	type ClientErrorPayload,
 	isAnalyticsCaptureAllowed,
 } from "@/lib/clientErrorReporting";
+import { matchClientErrorNoise } from "@/lib/clientErrorNoise";
 import {
 	PRODUCT_ANALYTICS_EVENT,
 	type ProductAnalyticsPayload,
@@ -141,6 +143,11 @@ function captureClientError(payloadInput: ClientErrorPayload) {
 	const payload = normalizeErrorPayload(payloadInput);
 
 	if (!isAnalyticsCaptureAllowed()) {
+		return;
+	}
+
+	// Third-party noise (wallets, extensions, opaque cross-origin errors).
+	if (matchClientErrorNoise(payload)) {
 		return;
 	}
 
@@ -370,7 +377,7 @@ function disablePosthog() {
 }
 
 function applyPosthogConsent(consent: AnalyticsConsent | null) {
-	if (consent === "accepted") {
+	if (consent === "accepted" && !isAnalyticsBlockedForPageLoad()) {
 		enablePosthog();
 		return;
 	}

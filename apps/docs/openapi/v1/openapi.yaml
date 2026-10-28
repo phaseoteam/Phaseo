@@ -263,9 +263,21 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: >-
+            ETag from an earlier JSON or OpenAI-format response for the same
+            URL. If it still matches, the response is 304 Not Modified with no
+            body. Accepts a comma-separated list, weak (W/) validators, and *.
+          schema:
+            type: string
       responses:
         '200':
           description: List of models
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -280,6 +292,14 @@ paths:
               schema:
                 type: string
                 description: Atom XML feed
+        '304':
+          description: >-
+            Not modified. If-None-Match still matches the current model list, so
+            the response has no body. It repeats the ETag, Cache-Control, and
+            Vary headers of the 200 response.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Invalid request parameters
           content:
@@ -753,6 +773,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -793,6 +821,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -911,6 +947,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1005,6 +1049,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: Extract typed values
+      description: >-
+        Extracts text, numbers, dates, times, durations and typed lists from
+        text or embedded images. Returns typed values and model-reported
+        uncertainty. Estimates, forecasts, streaming and remote image URLs are
+        not supported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: Typed extraction answers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -4621,6 +4690,288 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listDepartmentBudgets
+      summary: List department budgets
+      description: >-
+        Lists department spend budgets with each department's spend so far in
+        the current UTC period. Spend comes from an hourly rollup, so it can lag
+        by up to an hour.
+      parameters:
+        - name: department_id
+          in: query
+          required: false
+          description: Only list budgets for this department.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Department budgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createDepartmentBudget
+      summary: Create a department budget
+      description: >-
+        Creates a daily, weekly, or monthly spend budget for one department.
+        Owners and admins get a mobile push at about 80% and at 100%. Department
+        budgets do not block requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetInput'
+      responses:
+        '201':
+          description: Department budget created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getDepartmentBudget
+      summary: Get a department budget
+      description: Returns one department budget with the department's spend so far.
+      responses:
+        '200':
+          description: Department budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateDepartmentBudget
+      summary: Update a department budget
+      description: Changes the period or USD amount of a department budget.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetUpdateInput'
+      responses:
+        '200':
+          description: Department budget updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteDepartmentBudget
+      summary: Delete a department budget
+      description: Removes a department budget and its alerts.
+      responses:
+        '200':
+          description: Department budget deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceBudgetDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: >-
+        Lists the workspace's trusted workload policies: which Vercel
+        deployments and GitHub Actions workflows may call the gateway with their
+        OIDC token instead of an API key. Requires keys:read on management keys
+        and OAuth tokens, or a workspace owner or admin. Available only to
+        workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: >-
+        Creates a policy and its secretless key. Tokens must be issued for the
+        audience https://api.phaseo.app and match the pinned owner and every
+        claim condition. A workspace can have up to 50 policies; more returns
+        409 limit_reached. Requires keys:write on management keys and OAuth
+        tokens, or a workspace owner or admin. Available only to workspaces in
+        the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: >-
+        Returns one trusted workload policy. Requires keys:read on management
+        keys and OAuth tokens, or a workspace owner or admin. Available only to
+        workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: >-
+        Changes a policy's name, status, claim conditions or maximum token
+        lifetime. The provider, issuer and owner cannot change; create a new
+        policy instead. Changes reach the gateway within a minute. Requires
+        keys:write on management keys and OAuth tokens, or a workspace owner or
+        admin. Available only to workspaces in the trusted workloads beta; other
+        workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: >-
+        Revokes the policy's key, then deletes the policy. Matching tokens are
+        refused within a minute. Past requests keep their key in logs and usage.
+        Requires keys:delete on management keys and OAuth tokens, or a workspace
+        owner or admin. Available only to workspaces in the trusted workloads
+        beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -4647,9 +4998,9 @@ paths:
             maximum: 250
       summary: List rate limit policies
       description: >-
-        Lists the workspace's named rate limit policies. The gateway does not
-        enforce rate limit policies yet; they are saved for the upcoming
-        enforcement release.
+        Lists the workspace's named rate limit policies. The gateway enforces
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -4671,8 +5022,9 @@ paths:
       summary: Create a rate limit policy
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
-        concurrent request limits. The gateway does not enforce rate limit
-        policies yet; they are saved for the upcoming enforcement release.
+        concurrent request limits. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4708,8 +5060,9 @@ paths:
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
       description: >-
-        Returns one rate limit policy. The gateway does not enforce rate limit
-        policies yet; they are saved for the upcoming enforcement release.
+        Returns one rate limit policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -4732,8 +5085,9 @@ paths:
       description: >-
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
-        gateway does not enforce rate limit policies yet; they are saved for the
-        upcoming enforcement release.
+        gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4760,9 +5114,9 @@ paths:
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
       description: >-
-        Deletes a policy and every assignment that uses it. The gateway does not
-        enforce rate limit policies yet; they are saved for the upcoming
-        enforcement release.
+        Deletes a policy and every assignment that uses it. The gateway enforces
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4785,8 +5139,9 @@ paths:
       summary: List rate limit assignments
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
-        target type. The gateway does not enforce rate limit policies yet; they
-        are saved for the upcoming enforcement release.
+        target type. The gateway enforces requests_per_minute, tokens_per_minute
+        and concurrent_requests for key, member, department, guardrail and
+        end-user-default assignments.
       parameters:
         - name: policy_id
           in: query
@@ -4840,8 +5195,9 @@ paths:
       description: >-
         Applies a policy to one API key, workspace member, department, or
         guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway does not enforce rate limit policies
-        yet; they are saved for the upcoming enforcement release.
+        can have one policy. The gateway enforces requests_per_minute,
+        tokens_per_minute and concurrent_requests for key, member, department,
+        guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4877,8 +5233,9 @@ paths:
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
       description: >-
-        Returns one rate limit assignment. The gateway does not enforce rate
-        limit policies yet; they are saved for the upcoming enforcement release.
+        Returns one rate limit assignment. The gateway enforces
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -4899,9 +5256,9 @@ paths:
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
       description: >-
-        Switches the policy applied to an assignment's target. The gateway does
-        not enforce rate limit policies yet; they are saved for the upcoming
-        enforcement release.
+        Switches the policy applied to an assignment's target. The gateway
+        enforces requests_per_minute, tokens_per_minute and concurrent_requests
+        for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4928,8 +5285,9 @@ paths:
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
       description: >-
-        Removes a policy from its target. The gateway does not enforce rate
-        limit policies yet; they are saved for the upcoming enforcement release.
+        Removes a policy from its target. The gateway enforces
+        requests_per_minute, tokens_per_minute and concurrent_requests for key,
+        member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -4937,6 +5295,464 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRules
+      summary: List spend rules
+      description: >-
+        Lists the workspace's spend rules. A rule notifies at thresholds in
+        dollars or percent over a scope and a calendar or rolling period. Every
+        workspace member can read them.
+      responses:
+        '200':
+          description: Spend rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createSpendRule
+      summary: Create a spend rule
+      description: >-
+        Creates a spend rule and sets its notification destinations. Every
+        metric is accepted; rules returned with evaluated false are saved and
+        fire from a later release. Blocking is best effort and acts minutes
+        after the threshold; use key limits and workspace budgets for exact
+        caps. A workspace can have 50 spend rules.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleInput'
+      responses:
+        '201':
+          description: Spend rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend rule id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getSpendRule
+      summary: Get a spend rule
+      description: Returns one spend rule.
+      responses:
+        '200':
+          description: Spend rule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateSpendRule
+      summary: Update a spend rule
+      description: >-
+        Changes a spend rule. The fields sent are merged over the stored rule
+        and the whole rule is checked again. destination_ids replaces the rule's
+        destinations; leave it out to keep them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleUpdateInput'
+      responses:
+        '200':
+          description: Spend rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteSpendRule
+      summary: Delete a spend rule
+      description: >-
+        Deletes a spend rule. It is no longer evaluated and no longer counts
+        toward the limit of 50 rules.
+      responses:
+        '200':
+          description: Spend rule deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/test:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend rule id.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testSpendRule
+      summary: Send a test spend alert
+      description: >-
+        Renders the rule's alert from its current value, marked TEST, and sends
+        it now to the rule's destinations, or to the Spend Alerts route when the
+        rule has none. Nothing is recorded. A workspace can send 5 tests a
+        minute.
+      responses:
+        '200':
+          description: Test alert sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleTestResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend rule id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: previewSpendRule
+      summary: Preview a spend rule
+      description: >-
+        Returns the rule's current period, spend so far, base, percent and next
+        threshold, computed as the evaluator computes them, without sending or
+        recording anything.
+      responses:
+        '200':
+          description: Spend rule preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRulePreviewResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend rule id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRuleHistory
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of events to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of events to return.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: List spend rule history
+      description: >-
+        Lists the alerts and block events the rule has queued, newest first,
+        with delivery counts, and its most recent period records.
+      responses:
+        '200':
+          description: Spend rule history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Also return lifted blocks, newest first.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of blocks to return.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: List spend blocks
+      description: >-
+        Lists the workspace's spend blocks, newest first: the blocks that spend
+        rules with action block have started once spend reached their block
+        point. Active blocks only, unless include_lifted is true. Owners and
+        admins only.
+      responses:
+        '200':
+          description: Spend blocks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend block id.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Lift a spend block
+      description: >-
+        Lifts an active spend block so requests in its scope are accepted again
+        within about a minute. The rule does not block again until its period
+        resets, but it keeps sending alerts. Owners and admins only; the lift is
+        recorded in the audit log and queues a spend_blocked event with state
+        lifted. Returns 404 for an unknown block and 409 spend_block_not_active
+        when it was already lifted.
+      responses:
+        '200':
+          description: The lifted spend block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: >-
+        Lists the workspace's request classifiers. A workspace can have up to
+        five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: >-
+        Creates a classifier. After each eligible request finishes, the chosen
+        model places it in every dimension and the answers are added to the
+        request as labels, so they can be filtered and grouped in logs, usage
+        and analytics. Classification runs after the response is sent and is
+        billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: Classifier created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: >-
+        Updates the fields you send. Changes reach the gateway within about a
+        minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: Classifier updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
         default:
           description: Request failed
           content:
@@ -5079,6 +5895,38 @@ paths:
                 $ref: '#/components/schemas/WorkspaceNotificationTestResponse'
         default:
           description: Test failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotate a notification webhook signing secret
+      description: >-
+        Generates a new signing secret for a custom webhook destination and
+        returns it once. Destinations created before signing get their first
+        secret this way. Later deliveries are signed with the new secret and the
+        previous secret stops being used.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signing secret rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: Request failed
           content:
             application/json:
               schema:
@@ -8462,6 +9310,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: List preset labels
+      description: >-
+        Lists the named labels, such as production or staging, and the published
+        version each one points at.
+      responses:
+        '200':
+          description: Preset label list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Set a preset label
+      description: >-
+        Points a label at a published version, creating the label or moving it.
+        Requests that pin the label, such as @support-triage@production, use the
+        new version within about 2 minutes. Moving a label back to an earlier
+        version is a rollback.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Label saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Invalid label, or neither or both of version_id and version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Remove a preset label
+      description: >-
+        Removes a label. Requests that still pin it fail with
+        preset_version_not_found.
+      responses:
+        '200':
+          description: Label removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Invalid label
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -8905,10 +9862,52 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: >-
+        The model the request asked for. Sent only when retired model routing
+        answered the request with a replacement model.
+      schema:
+        type: string
+    ModelSubstitution:
+      description: >-
+        Why and how the requested model was replaced, for example
+        `reason=unserved; from=lab/old-model; to=lab/new-model`. Sent only when
+        retired model routing answered the request with a replacement model.
+      schema:
+        type: string
+    DroppedParams:
+      description: >-
+        Request parameters the client sent that the serving provider does not
+        support, which the gateway removed instead of sending them upstream or
+        rejecting the request, for example `top_k, min_p`. Sent only on
+        successful responses, and only when at least one parameter from the
+        request body was dropped. Parameters that come from a preset or a
+        default value are not listed.
+      schema:
+        type: string
+    SpendWarning:
+      description: >-
+        Sent while a spend rule that blocks covers the request and spend has
+        passed its last alert threshold but not yet its block point. Lists up to
+        three rules as rule_id, scope and resets_at, for example `rule_id=...;
+        scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Once spend reaches
+        the block point, requests in scope get a 429 with code
+        spend_rule_blocked.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: >-
         BYOK-only provider quota metadata. Omitted for managed-provider
         requests.
+      schema:
+        type: string
+    ModelListETag:
+      description: >-
+        Weak validator (W/ prefix) for the model list at this URL, covering the
+        page, limit, offset, total, and format. It ignores gateway_region, so
+        the same catalogue served from another region has the same value;
+        responses that share it are equivalent, but their bytes can differ. Not
+        sent with RSS, Atom, or error responses.
       schema:
         type: string
   parameters:
@@ -8963,6 +9962,17 @@ components:
       description: Preset UUID, slug, or canonical name.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: >-
+        Label name, such as production. 1 to 32 lowercase letters, numbers,
+        hyphens or underscores, starting with a letter; it cannot look like a
+        version label (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9048,6 +10058,9 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: >-
+            `allow` (the default) filters nothing. `deny` is not supported yet
+            and returns 400 unsupported_routing_filter.
           enum:
             - allow
             - deny
@@ -9057,6 +10070,9 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: >-
+            `false` (the default) filters nothing. `true` is not supported yet
+            and returns 400 unsupported_routing_filter.
         quantizations:
           type: array
           nullable: true
@@ -9124,6 +10140,12 @@ components:
             - full
     CacheControl:
       type: object
+      description: >-
+        Prompt cache control. Use type ephemeral with an optional ttl of 5m or
+        1h. scope applies only to a top-level Claude cache policy. Amazon
+        Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet and 3
+        Opus for 5 minutes only; there the ttl is removed and a removed 1h is
+        reported in X-Phaseo-Dropped-Params as cache_control.ttl.
       properties:
         type:
           type: string
@@ -9131,6 +10153,48 @@ components:
           type: string
         scope:
           type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: >-
+        OpenAI cache breakpoint. Caches everything up to and including this
+        block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to
+        DeepInfra; Claude routes receive it as cache_control. Only OpenAI
+        receives its ttl.
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+        ttl:
+          type: string
+          description: >-
+            Minimum cache lifetime for this breakpoint on OpenAI GPT-5.6 and
+            later: 30m or 12h. Without it the breakpoint uses
+            prompt_cache_options.ttl. A 12h write is billed at 2.5x the input
+            rate; a route that cannot take 12h receives the request without it,
+            and the removal is reported in X-Phaseo-Dropped-Params.
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: >-
+        Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later
+        (ttl 30m, or 12h on OpenAI) and for DeepInfra (ttl 5m or 1h). Removed
+        for other providers.
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
+          type: string
+          description: >-
+            Minimum cache lifetime. OpenAI GPT-5.6 and later: 30m (default) or
+            12h; a request asking for 12h runs on OpenAI's Responses API. Azure
+            OpenAI: 30m. DeepInfra: 5m or 1h. A route that cannot take 12h
+            receives the request without it, and the removal is reported in
+            X-Phaseo-Dropped-Params.
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -9153,11 +10217,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI conversation ID, sent as the x-grok-conv-id header.
         google:
           type: object
           properties:
@@ -9473,6 +10545,20 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: >-
+            Service tiers this offer accepts, sorted alphabetically. A tier is
+            listed when the provider route has active, currently effective
+            pricing for it; priority is the Fast tier. Other tiers may also be
+            available through separate tier-specific provider routes.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -9715,6 +10801,9 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -9723,6 +10812,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         messages:
           type: array
           minItems: 1
@@ -9803,6 +10894,16 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: >
+            Gateway plugins for this request. `web` adds web search and
+            `web-fetch` adds page fetching to any model; `response-healing`
+            repairs malformed JSON in buffered structured-output responses.
+            Workspace and preset defaults are merged with this list. An unknown
+            plugin id returns 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -9864,8 +10965,40 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: >-
+            Accepted for compatibility. Reasoning is returned whenever the model
+            produces it (`reasoning_content` and `reasoning_details`), whatever
+            this is set to.
+        prediction:
+          type: object
+          description: >-
+            Predicted output, for faster responses when most of the reply is
+            known in advance. Forwarded to OpenAI, Mistral and Moonshot models;
+            other providers ignore it.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: >-
+            Selects a supported routing or pricing tier. `auto` (or null) asks
+            for no particular tier and is routed and billed as if the field were
+            unset; `scale` is treated as `default`, the standard tier.
           enum:
             - standard
             - default
@@ -9874,9 +11007,28 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: >-
+            Prompt cache retention for OpenAI and Azure OpenAI models before
+            GPT-5.6. Takes precedence over
+            provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9901,8 +11053,14 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9920,17 +11078,174 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: >-
+            An earlier audio response, sent back on an assistant message by its
+            id (message.audio.id) to continue an audio conversation. OpenAI and
+            Azure OpenAI routes take it; other providers drop it and report
+            messages.audio as a dropped parameter.
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
+        reasoning_content:
+          type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: >-
+            Spoken audio on an assistant message when the request asks for audio
+            output: the audio id, base64 audio in the requested format, when the
+            audio expires (Unix seconds) and its transcript. Streamed as
+            delta.audio pieces.
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+    ChatReasoningDetail:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning.text
+            - reasoning.summary
+            - reasoning.encrypted
+        id:
+          type: string
+        index:
+          type: integer
+        format:
+          type: string
+        text:
+          type: string
+        summary:
+          type: string
+        signature:
+          type: string
+        data:
+          type: string
     MessageContentPart:
       oneOf:
         - $ref: '#/components/schemas/TextContentPart'
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: >-
+        File input, such as a PDF. Set file_data to a base64 data URL, or
+        file_id to a file uploaded to the provider that serves the request.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -9943,6 +11258,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -10107,6 +11426,8 @@ components:
             Lets supported OpenAI models continue while the caller executes this
             tool. Accepted on all text API surfaces and ignored by other
             providers.
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -10237,6 +11558,166 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: >
+        Adds the `phaseo:web_search` server tool to the request, so any model
+        can search the web. The request runs, and searches are counted and
+        billed, exactly as with a `phaseo:web_search` tool. If the request
+        already has a web search tool, the plugin adds nothing. Other options
+        are ignored.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: >
+        Adds the `phaseo:web_fetch` server tool to the request, so any model can
+        read web pages. The request runs, and fetches are counted and billed,
+        exactly as with a `phaseo:web_fetch` tool. If the request already has a
+        web fetch tool, the plugin adds nothing.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: >
+        Repairs malformed JSON in buffered responses that requested
+        `json_object` or `json_schema` output. Skipped on streams.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: >
+        OpenAI's hosted web search tool. OpenAI, Azure OpenAI (Responses) and
+        xAI run it natively. On models whose providers cannot run it, the
+        gateway runs it as `phaseo:web_search`: `search_context_size`,
+        `filters.allowed_domains`, `max_results` and `engine` carry over, and
+        searches are billed as `phaseo:web_search` searches. Other OpenAI hosted
+        tools (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`,
+        `image_generation`, `shell`, `local_shell`, `apply_patch`) fail with 400
+        `unsupported_hosted_tool` on models whose providers cannot run them.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -10246,6 +11727,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -10300,7 +11782,12 @@ components:
     TextToolChoice:
       description: >
         Tool selection strategy. Phaseo server-tool types are accepted and
-        rewritten into upstream function/tool targets.
+        rewritten into upstream function/tool targets. An allowed_tools object
+        is sent as is to OpenAI, with every tool. Other providers are sent only
+        the allowed tools and its mode (auto or required), or a forced call when
+        required allows exactly one tool. If allowed_tools lists a tool that
+        tools does not define, only OpenAI can serve the request; otherwise it
+        returns a 400 error.
       oneOf:
         - type: string
           enum:
@@ -10361,7 +11848,10 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: >-
+            Reasoning effort. When omitted or null, `max_tokens`, `enabled` or
+            the model's own default decides how much the model reasons.
         mode:
           type: string
           enum:
@@ -10393,7 +11883,10 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: >-
+            Reasoning effort. When omitted or null, `max_tokens`, `enabled` or
+            the model's own default decides how much the model reasons.
         mode:
           type: string
           enum:
@@ -10473,7 +11966,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
@@ -10486,14 +11979,88 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: Input tokens, including cache reads and cache writes.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: Input tokens, including cache reads and cache writes.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: >-
+            What the request costs you, in US dollars: the amount charged to
+            your credits, the same figure as `cost_nanos`, after any
+            data-sharing discount or zero-output waiver. Returned on Chat
+            Completions, Responses, Messages and embeddings responses once the
+            request is priced. On a stream it is on the final usage frame (on
+            Messages, the final `message_delta`) and covers the whole stream. A
+            stream leaves it out when the charge is not known as that frame is
+            sent: on a BYOK stream, whose service fee is worked out when the
+            stream ends (`cost_details.upstream_inference_cost` gives the model
+            price instead), and on a stream that has already failed, which is
+            not charged.
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Breakdown of the request's cost.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            On a BYOK request, what the provider charges your own key for the
+            inference, in US dollars, at the model's listed prices. Null when
+            the request runs on Phaseo credits, where `cost` is the whole
+            charge.
+          example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: >-
+        Cache writes split by lifetime, on Responses usage from OpenAI GPT-5.6
+        and later. The two counts sum to cache_write_tokens. Not returned in
+        Chat Completions prompt_tokens_details.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: >-
+            Input tokens written to the cache with a 30-minute lifetime, billed
+            at 1.25x the input rate.
+        ttl_12h_tokens:
+          type: integer
+          description: >-
+            Input tokens written to the cache with a 12-hour lifetime, billed at
+            2.5x the input rate.
+    InputTokensDetails:
+      type: object
+      description: Breakdown of the input tokens.
+      properties:
+        cached_tokens:
+          type: integer
+          description: Input tokens read from the provider's prompt cache.
+        cache_write_tokens:
+          type: integer
+          description: Input tokens written to the provider's prompt cache.
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -10503,6 +12070,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         system:
           oneOf:
             - type: string
@@ -10522,7 +12091,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -10537,6 +12114,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0
@@ -10568,6 +12147,16 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: >
+            Gateway plugins for this request. `web` adds web search and
+            `web-fetch` adds page fetching to any model; `response-healing`
+            repairs malformed JSON in buffered structured-output responses.
+            Workspace and preset defaults are merged with this list. An unknown
+            plugin id returns 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10581,10 +12170,44 @@ components:
             conversation or agent workflow) for observability.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: >-
+            Anthropic context editing. `edits` takes `clear_tool_uses_*` and
+            `clear_thinking_*` strategies and is sent to Anthropic with its beta
+            header. Other providers run the request without it and list
+            `context_management` in `X-Phaseo-Dropped-Params`. Compaction edits
+            (`compact_*`) return 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: >-
+            End-user identifier, as on Chat Completions. Claude models receive
+            it as `metadata.user_id` unless `metadata.user_id` is set.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         stop_sequences:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10620,6 +12243,18 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: >-
+            Present when the request used `context_management` and Anthropic
+            applied an edit. `applied_edits` lists each edit with what it
+            cleared. Streams carry it on the final `message_delta` event.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10637,6 +12272,44 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: >-
+            Use `system` for an instruction that applies from this point in the
+            conversation. A system message takes a string or text blocks, must
+            come straight after a user turn (or an assistant turn ending in a
+            server tool result), and must be the last message or be followed by
+            an assistant turn.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -10693,10 +12366,50 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: >-
+            Uncached input tokens. As on Anthropic, this excludes cache reads
+            and cache writes.
+        cache_read_input_tokens:
+          type: integer
+          description: Input tokens read from the provider's prompt cache.
+        cache_creation_input_tokens:
+          type: integer
+          description: Input tokens written to the provider's prompt cache.
+        cache_creation:
+          type: object
+          description: Cache writes split by cache lifetime.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: Input tokens written with a 5-minute cache lifetime.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: Input tokens written with a 1-hour cache lifetime.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: >-
+            What the request costs you, in US dollars: the amount charged to
+            your credits, the same figure as `cost_nanos`, after any
+            data-sharing discount or zero-output waiver. Returned on Chat
+            Completions, Responses, Messages and embeddings responses once the
+            request is priced. On a stream it is on the final usage frame (on
+            Messages, the final `message_delta`) and covers the whole stream. A
+            stream leaves it out when the charge is not known as that frame is
+            sent: on a BYOK stream, whose service fee is worked out when the
+            stream ends (`cost_details.upstream_inference_cost` gives the model
+            price instead), and on a stream that has already failed, which is
+            not charged.
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - input
@@ -10705,6 +12418,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         input:
           oneOf:
             - type: string
@@ -10737,10 +12452,19 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: >-
+            Not supported. Phaseo does not store responses, so requests that set
+            previous_response_id or conversation return 400 unsupported_param.
+            Send the full conversation in input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: >-
+            Selects a supported routing or pricing tier. `auto` (or null) asks
+            for no particular tier and is routed and billed as if the field were
+            unset; `scale` is treated as `default`, the standard tier.
           enum:
             - standard
             - default
@@ -10749,6 +12473,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:
@@ -10759,6 +12485,16 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: >
+            Gateway plugins for this request. `web` adds web search and
+            `web-fetch` adds page fetching to any model; `response-healing`
+            repairs malformed JSON in buffered structured-output responses.
+            Workspace and preset defaults are merged with this list. An unknown
+            plugin id returns 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:
@@ -10783,6 +12519,23 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: >-
+            Prompt cache retention for OpenAI and Azure OpenAI models before
+            GPT-5.6. Takes precedence over
+            provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -10875,6 +12628,8 @@ components:
       properties:
         type:
           type: string
+        id:
+          type: string
         role:
           type: string
           enum:
@@ -10889,11 +12644,38 @@ components:
               items:
                 type: object
             - type: object
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+          description: >-
+            Reasoning state from an earlier response, sent back unchanged. A raw
+            value is read as OpenAI's unless format names another provider.
+        signature:
+          type: string
+          description: >-
+            On a reasoning item, a raw provider signature, such as a Claude
+            thinking signature or a Gemini thought signature. Requires format.
+        format:
+          type: string
+          description: >-
+            On a reasoning item, the provider format of signature or
+            encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API output item.
       properties:
         type:
+          type: string
+        id:
           type: string
         role:
           type: string
@@ -10907,11 +12689,43 @@ components:
           type: string
         arguments:
           type: string
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+    ResponsesReasoningSummaryPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - summary_text
+        text:
+          type: string
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: Reasoning text in the content of a reasoning output item.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
@@ -11404,6 +13218,312 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Model ID with the extraction.extract capability.
+        input:
+          type: string
+          maxLength: 16384
+          description: Source text. May be empty when images are supplied.
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: Field names match ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: >-
+            Embedded PNG, JPEG or WebP images; 4 MiB each and 8 MiB combined
+            decoded.
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: Explicit date context for incomplete dates.
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64-encoded image bytes, without a data URL prefix.
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: Whether the provider truncated source input.
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: Extracted text or ISO date/time, or null when undetermined.
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Model-reported confidence; not a guarantee of correctness.
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Probability that the value is undetermined.
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: Provider-reported aggregate input tokens across all passes.
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: >-
         OpenAI-compatible input and ordered questions are the preferred format.
@@ -11451,6 +13571,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11470,6 +13593,39 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: >-
+                Opt in to experimental Jev long context: 262k tokens per request
+                and per question, instead of 64k per request and 32k per
+                question. Default false. Requires a supporting TypeSafe route.
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Phaseo extension for a single bounding box. Requires image input and a
+        supporting route, such as Jev 1.14. No criteria or not-found result.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11733,6 +13889,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11761,6 +13920,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Single bounding-box question for image-capable Box routes. No criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11867,6 +14040,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11875,6 +14049,58 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+          description: >-
+            Confidence in the box, from 0 to 1, or null when the model gives
+            none.
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: >-
+        Edges as fractions of image dimensions from the top-left corner. top
+        must be less than bottom; left must be less than right.
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:
@@ -14215,6 +16441,7 @@ components:
         - cursor
         - cyfragovpl
         - databricks
+        - dealignai
         - decart
         - deepseek
         - dots-studio
@@ -15079,11 +17306,23 @@ components:
           type: boolean
           example: false
         error:
+          description: >-
+            The error object (`code`, `message`, `type`, `param` and optional
+            `metadata`) that OpenAI-compatible SDKs read. Earlier responses
+            returned the code string here; it is now also returned as top-level
+            `code`.
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: The error code, the same value as `error.code`.
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -15160,6 +17399,54 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: >-
+        A gateway error in the shape OpenAI's SDKs read. `type` is set from the
+        HTTP status: invalid_request_error for most 4xx, authentication_error
+        (401), insufficient_quota (402), permission_error (403), not_found_error
+        (404), rate_limit_error (429), service_unavailable (503), overloaded
+        (529) and server_error for other 5xx.
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+          example: validation_error
+        message:
+          type: string
+          description: Human-readable explanation of the failure.
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: The error type, following OpenAI's documented error types.
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: The request parameter that caused the error, when known.
+          example: foo
+        metadata:
+          type: object
+          description: >-
+            Structured detail also returned at the top level, such as the
+            failing provider, `reason`, `failed_statuses`, `retry_after_seconds`
+            or `upstream_error`.
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object
@@ -15417,6 +17704,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: >-
@@ -15571,8 +17860,15 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: >-
+            Plaintext API key, the same value as `data.key`. Returned only once,
+            at creation time.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
@@ -15628,6 +17924,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -15672,7 +17970,31 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: >-
+        Where you keep this key, such as the hosting platform whose environment
+        variables hold it. Optional. If one of these places reports a breach,
+        you can find and revoke every key stored there. Known ids: railway,
+        vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase,
+        digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo,
+        deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud,
+        scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password,
+        bitwarden, hashicorp-vault, doppler, infisical, local-machine,
+        own-server, other.
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -16059,7 +18381,128 @@ components:
       description: >-
         Bounded gateway request defaults, including prompts, parameters,
         routing, and plugins.
+      properties:
+        prompt:
+          $ref: '#/components/schemas/PresetPromptTemplate'
       additionalProperties: true
+    PresetPromptTemplate:
+      type: object
+      description: >-
+        Messages with variable placeholders that the gateway fills in for each
+        request, and the variables they take.
+      required:
+        - messages
+      properties:
+        syntax:
+          type: string
+          enum:
+            - mustache-v1
+        messages:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PresetPromptTemplateMessage'
+        variables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PresetPromptVariable'
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          type: object
+          additionalProperties: true
+    PresetPromptTemplateMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - variable
+                  text:
+                    type: string
+                  name:
+                    type: string
+    PresetPromptVariable:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - enum
+            - array
+            - object
+            - any
+            - image
+        required:
+          type: boolean
+        default: {}
+        description:
+          type: string
+          maxLength: 500
+        enum:
+          type: array
+          items:
+            type: string
+        max_length:
+          type: integer
+          minimum: 1
+    PromptTemplateReference:
+      type: object
+      description: >-
+        Fills in the prompt template saved on a preset. Leave out model or set
+        it to the same reference, and send an empty conversation or the turns to
+        add after the template.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: >-
+            Preset reference starting with @, such as @support-triage or
+            @publisher/support-triage.
+        variables:
+          type: object
+          additionalProperties: true
+          description: >-
+            Values for the template variables. Image variables take an https
+            URL, a data URL or an image part.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            Runs this published version of the preset instead of the current
+            one: its models, parameters and template. Use a version label such
+            as v3, 1.2.0 or 2026.10.27, or a label such as production. The same
+            as setting model to @support-triage@production.
     Preset:
       type: object
       required:
@@ -16252,6 +18695,13 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: >-
+            Named labels, such as production, that point at this version.
+            Returned when listing versions.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -16280,6 +18730,82 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Send exactly one of version_id and version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: The published version to point the label at.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            A version label such as v3, 1.2.0 or 2026.10.27, or another label
+            such as staging to copy where it points.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -16435,11 +18961,29 @@ components:
         provider_restriction_enforce_allowed:
           type: boolean
           nullable: true
+        model_successor_redirect_enabled:
+          type: boolean
+          nullable: true
+        model_successor_price_policy:
+          allOf:
+            - $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+          nullable: true
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          nullable: true
         updated_at:
           type: string
           format: date-time
           nullable: true
       additionalProperties: false
+    WorkspaceModelSuccessorPricePolicy:
+      type: string
+      enum:
+        - never
+        - limit
+        - any
     WorkspaceSettingsUpdateRequest:
       type: object
       minProperties: 1
@@ -16485,6 +19029,14 @@ components:
             maxLength: 128
         provider_restriction_enforce_allowed:
           type: boolean
+        model_successor_redirect_enabled:
+          type: boolean
+        model_successor_price_policy:
+          $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
       additionalProperties: false
     WorkspaceSettingsResponse:
       type: object
@@ -16965,7 +19517,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -19911,6 +22485,671 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    DepartmentBudgetInterval:
+      type: string
+      enum:
+        - daily
+        - weekly
+        - monthly
+    DepartmentBudget:
+      type: object
+      description: >-
+        A department's spend budget. A department's spend is what the API keys
+        linked to it cost, plus the keys its members created and their OAuth
+        requests when those keys are not linked to a department. A member in
+        several departments counts toward each.
+      required:
+        - id
+        - workspace_id
+        - department_id
+        - department_name
+        - interval
+        - limit
+        - limit_nanos
+        - usage
+        - usage_nanos
+        - remaining
+        - remaining_nanos
+        - exceeded
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+          nullable: true
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+        limit_nanos:
+          type: integer
+          format: int64
+        usage:
+          type: number
+          format: double
+        usage_nanos:
+          type: integer
+          format: int64
+        remaining:
+          type: number
+          format: double
+        remaining_nanos:
+          type: integer
+          format: int64
+        exceeded:
+          type: boolean
+        window_start:
+          type: string
+          format: date-time
+          nullable: true
+        reset_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    DepartmentBudgetInput:
+      type: object
+      required:
+        - department_id
+        - interval
+        - limit
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
+    DepartmentBudgetListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: >-
+        One question the classifier answers about each request. The answer is
+        written as a request label whose key is this dimension's key. If the
+        caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          description: >-
+            Between 2 and 50 values. A single value is allowed only when
+            allow_other is true.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: >-
+        Limits which requests are classified. Leave a list out to include
+        everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: >-
+        request samples each request on its own. session keeps every request in
+        a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: >-
+        prompt classifies the request messages. prompt_and_response also shows
+        the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: >-
+        A workspace taxonomy that a chosen model applies to requests after they
+        finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: >-
+            Model that classifies requests, for example
+            google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Most the classifier may spend in a UTC calendar month.
+            Classification pauses for the rest of the month once it is reached.
+            null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: >-
+        A trusted workload: tokens from this issuer, for the pinned owner and
+        matching every claim condition, authenticate as the policy's key.
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: >-
+            Token issuer, for example https://oidc.vercel.com/acme or
+            https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: >-
+            The pinned Vercel team ID (owner_id claim) or GitHub organisation or
+            user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: >-
+            The policy's key. Requests, usage and limits are recorded against
+            it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: >-
+            Required for Vercel: https://oidc.vercel.com/ followed by the team
+            slug, or https://oidc.vercel.com for the global issuer. Defaults to
+            https://token.actions.githubusercontent.com for GitHub Actions.
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     RateLimitPolicy:
       type: object
       description: >-
@@ -19953,8 +23192,8 @@ components:
           format: int64
           nullable: true
           description: >-
-            Input and output tokens allowed per minute. Null means tokens are
-            not limited.
+            Input and output tokens allowed per minute, counted when each
+            request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -20006,8 +23245,8 @@ components:
           maximum: 9007199254740991
           nullable: true
           description: >-
-            Input and output tokens allowed per minute. Null means tokens are
-            not limited.
+            Input and output tokens allowed per minute, counted when each
+            request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -20050,8 +23289,8 @@ components:
           maximum: 9007199254740991
           nullable: true
           description: >-
-            Input and output tokens allowed per minute. Null means tokens are
-            not limited.
+            Input and output tokens allowed per minute, counted when each
+            request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -20209,6 +23448,941 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    SpendRuleMetric:
+      type: string
+      description: >-
+        spend: spend reached threshold_amount. budget_percent: spend reached
+        threshold_percents of the base. forecast: spend projected to the period
+        end reaches the threshold. spike: spend over the last window_hours is at
+        least spike_multiplier times the usual level and at least spike_floor.
+        balance: the workspace balance or runway falls below the threshold.
+      enum:
+        - spend
+        - budget_percent
+        - forecast
+        - spike
+        - balance
+    SpendRuleScope:
+      type: string
+      enum:
+        - workspace
+        - key
+        - member
+        - department
+        - model
+        - provider
+    SpendRulePeriod:
+      type: string
+      description: >-
+        day, week (from Monday) or month in the rule's time zone, or rolling
+        over the last window_hours.
+      enum:
+        - day
+        - week
+        - month
+        - rolling
+    SpendRuleAction:
+      type: string
+      description: >-
+        notify, or notify and then block once spend reaches block_at_percent of
+        the base or block_at_amount. Blocking is best effort and acts minutes
+        after the threshold. While blocking is switched off for the gateway, a
+        rule that would start blocking is refused with a 400, and a rule that
+        already blocks only notifies.
+      enum:
+        - notify
+        - block
+    SpendRule:
+      type: object
+      description: >-
+        A spend rule: thresholds in dollars or percent over a scope and a period
+        that notify, or notify and then block. Amounts are returned in
+        nanodollars and in USD.
+      required:
+        - id
+        - workspace_id
+        - name
+        - enabled
+        - metric
+        - evaluated
+        - scope_type
+        - scope_id
+        - period
+        - window_hours
+        - time_zone
+        - base_kind
+        - base_ref
+        - base_amount_nanos
+        - base_amount_usd
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - runway_days
+        - spike_multiplier
+        - spike_floor_nanos
+        - spike_floor_usd
+        - action
+        - block_at_percent
+        - block_at_amount_nanos
+        - block_at_amount_usd
+        - block_free_models
+        - cooldown_minutes
+        - destination_ids
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: >-
+            False for rules the evaluator does not handle yet (forecast, spike
+            and balance metrics, rolling periods and previous_period bases).
+            They are saved and fire from a later release.
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: >-
+            Null for the workspace scope; otherwise a key id, a member's user
+            id, a department id, a model id or a provider id.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: >-
+            Hours in a rolling window: the spike window for spike rules and the
+            burn-rate lookback for balance rules. Null for calendar periods.
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: >-
+            IANA time zone for calendar periods. Null uses the workspace's
+            billing time zone.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: >-
+            What threshold_percents are percentages of: amount (base_amount),
+            workspace_budget or key_limit (the base_ref interval, which must
+            match the period), or previous_period.
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: >-
+            Up to five whole percentages of the base, sorted. Each fires at most
+            once per period; crossing several at once sends one alert naming the
+            highest.
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: Whether a block also stops requests to free models.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: Minimum minutes between alerts for rolling, spike and balance rules.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: >-
+            Notification destinations for this rule's alerts. Empty means the
+            workspace's Spend Alerts route.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SpendRuleUpdateInput:
+      type: object
+      description: >-
+        Spend rule fields to change; at least one. Give amounts as *_usd or as
+        *_nanos (exact nanodollars), not both. Set a field to null to clear it.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: >-
+            Null for the workspace scope; otherwise a key id, a member's user
+            id, a department id, a model id or a provider id.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: >-
+            Hours in a rolling window: the spike window for spike rules and the
+            burn-rate lookback for balance rules. Null for calendar periods.
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: >-
+            IANA time zone for calendar periods. Null uses the workspace's
+            billing time zone.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: >-
+            What threshold_percents are percentages of: amount (base_amount),
+            workspace_budget or key_limit (the base_ref interval, which must
+            match the period), or previous_period.
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: >-
+            Up to five whole percentages of the base, sorted. Each fires at most
+            once per period; crossing several at once sends one alert naming the
+            highest.
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: Whether a block also stops requests to free models.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: Minimum minutes between alerts for rolling, spike and balance rules.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: >-
+            Notification destinations for this rule's alerts. Empty means the
+            workspace's Spend Alerts route.
+      additionalProperties: false
+    SpendRuleInput:
+      description: >-
+        A spend rule to create. name, metric and period are required. spike
+        rules default to a 3x multiplier and a $5 floor.
+      allOf:
+        - $ref: '#/components/schemas/SpendRuleUpdateInput'
+        - type: object
+          required:
+            - name
+            - metric
+            - period
+    SpendRuleResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRule'
+    SpendRuleListResponse:
+      type: object
+      required:
+        - data
+        - max_rules
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendRule'
+        max_rules:
+          type: integer
+          example: 50
+    SpendRuleDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+    SpendRulePreview:
+      type: object
+      description: >-
+        Where a spend rule stands now. Rules without a calendar period have
+        period, value and alert null.
+      required:
+        - rule_id
+        - metric
+        - evaluated
+        - computed_at
+        - time_zone
+        - period
+        - value_nanos
+        - value_usd
+        - base_kind
+        - base_ref
+        - base_nanos
+        - base_usd
+        - percent
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - reached_threshold_percent
+        - next_threshold
+        - block_at_nanos
+        - block_at_usd
+        - state
+        - alert
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: >-
+            False for rules the evaluator does not handle yet (forecast, spike
+            and balance metrics, rolling periods and previous_period bases).
+            They are saved and fire from a later release.
+        computed_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+        period:
+          type: object
+          nullable: true
+          required:
+            - kind
+            - start
+            - end
+          properties:
+            kind:
+              $ref: '#/components/schemas/SpendRulePeriod'
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        value_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        value_usd:
+          type: number
+          nullable: true
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_usd:
+          type: number
+          nullable: true
+        percent:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        reached_threshold_percent:
+          type: integer
+          nullable: true
+        next_threshold:
+          type: object
+          nullable: true
+          description: >-
+            The next threshold the value has not reached: a percent of the base
+            (null for amount thresholds) and its amount.
+          required:
+            - percent
+            - amount_nanos
+            - amount_usd
+          properties:
+            percent:
+              type: integer
+              nullable: true
+            amount_nanos:
+              type: integer
+              format: int64
+            amount_usd:
+              type: number
+        block_at_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_usd:
+          type: number
+          nullable: true
+        state:
+          type: object
+          nullable: true
+          required:
+            - highest_percent_fired
+            - amount_fired_at
+            - last_fired_at
+            - fire_count
+          properties:
+            highest_percent_fired:
+              type: integer
+              nullable: true
+            amount_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            last_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            fire_count:
+              type: integer
+        alert:
+          type: object
+          nullable: true
+          description: >-
+            The text an alert would carry now, naming the highest threshold
+            reached, or the first.
+          required:
+            - scope_label
+            - title
+            - message
+          properties:
+            scope_label:
+              type: string
+            title:
+              type: string
+            message:
+              type: string
+    SpendRulePreviewResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRulePreview'
+    SpendRuleTestResult:
+      type: object
+      description: The test alert and what happened at each destination.
+      required:
+        - rule_id
+        - rule_name
+        - test
+        - title
+        - message
+        - source
+        - delivered
+        - failed
+        - deliveries
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        test:
+          type: boolean
+        title:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+          enum:
+            - rule
+            - routes
+          description: >-
+            rule: the rule's own destinations. routes: the workspace's Spend
+            Alerts route.
+        delivered:
+          type: integer
+        failed:
+          type: integer
+        deliveries:
+          type: array
+          items:
+            type: object
+            required:
+              - destination_id
+              - name
+              - type
+              - delivered
+              - status
+              - error
+            properties:
+              destination_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              type:
+                type: string
+              delivered:
+                type: boolean
+              status:
+                type: integer
+                nullable: true
+              error:
+                type: string
+                nullable: true
+    SpendRuleTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleTestResult'
+    SpendRuleHistory:
+      type: object
+      description: >-
+        Events newest first, with has_more for the next page, and the rule's 12
+        most recent period records.
+      required:
+        - events
+        - has_more
+        - periods
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - kind
+              - created_at
+              - deliveries
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - spend_alert
+                  - spend_blocked
+              created_at:
+                type: string
+                format: date-time
+              title:
+                type: string
+                nullable: true
+              message:
+                type: string
+                nullable: true
+              state:
+                type: string
+                nullable: true
+              threshold_percent:
+                type: integer
+                nullable: true
+              thresholds_crossed:
+                type: array
+                items:
+                  type: integer
+                nullable: true
+              threshold_amount_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              threshold_amount_usd:
+                type: number
+                nullable: true
+              value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              value_usd:
+                type: number
+                nullable: true
+              base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              base_usd:
+                type: number
+                nullable: true
+              percent:
+                type: number
+                nullable: true
+              period:
+                type: object
+                nullable: true
+                additionalProperties: true
+              deliveries:
+                type: object
+                description: Delivery attempts by status.
+                required:
+                  - sent
+                  - failed
+                  - pending
+                properties:
+                  sent:
+                    type: integer
+                  failed:
+                    type: integer
+                  pending:
+                    type: integer
+        has_more:
+          type: boolean
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+              - period_start
+              - period_end
+              - highest_percent_fired
+              - amount_fired_at
+              - last_fired_at
+              - fire_count
+              - last_value_nanos
+              - last_value_usd
+              - last_base_nanos
+              - last_base_usd
+            properties:
+              period_start:
+                type: string
+                format: date-time
+                nullable: true
+              period_end:
+                type: string
+                format: date-time
+                nullable: true
+              highest_percent_fired:
+                type: integer
+                nullable: true
+              amount_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              last_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              fire_count:
+                type: integer
+              last_value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_value_usd:
+                type: number
+                nullable: true
+              last_base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_base_usd:
+                type: number
+                nullable: true
+    SpendRuleHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: >-
+        Why a spend block was lifted: manual (an owner or admin), period_reset,
+        below_limit (spend is under the block point again, for example after a
+        budget was raised), rule_changed, rule_disabled or rule_deleted.
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: >-
+        A block a spend rule started once spend reached its block point. While
+        it is active, requests in its scope get a 429 with code
+        spend_rule_blocked and Retry-After set to resets_at. Free models are
+        exempt unless block_free_models is true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The rule that started the block; null once the rule was deleted
+            outright.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: >-
+            Display name of the scope (key, department or model name, member
+            email, or the id).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the block lifts by itself (the end of the rule's period).
+        spend_nanos:
+          type: integer
+          description: Spend in the rule's scope when the block started, in nanodollars.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: The block point, in nanodollars.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: The owner or admin who lifted the block, for manual lifts.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: Not lifted, and its reset has not passed.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:
@@ -20399,12 +24573,42 @@ components:
         model_deprecation:
           type: boolean
       additionalProperties: false
+    WorkspaceSpendAttribution:
+      type: string
+      description: >-
+        How spend rules count a person's spend toward departments when their key
+        has no department of its own: all counts it toward every department they
+        belong to; primary counts it toward their primary department only. A
+        key's own department always wins.
+      enum:
+        - all
+        - primary
+    WorkspaceBillingTimeZone:
+      type: string
+      maxLength: 64
+      description: >-
+        IANA time zone for the calendar periods of spend rules that have no time
+        zone of their own, and for spend reports. Defaults to UTC. Enforced key
+        limits and workspace budgets always use UTC.
+      example: Europe/London
+    WorkspaceSpendSettings:
+      type: object
+      required:
+        - department_attribution
+        - billing_time_zone
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+      additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
       required:
         - auto_top_up
         - low_balance_email
         - email_preferences
+        - spend
       properties:
         auto_top_up:
           $ref: '#/components/schemas/WorkspaceAutoTopUpSettings'
@@ -20412,6 +24616,8 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailSettings'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferences'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettings'
       additionalProperties: false
     WorkspaceNotificationSettingsResponse:
       type: object
@@ -20475,6 +24681,17 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettingsUpdate'
+      additionalProperties: false
+    WorkspaceSpendSettingsUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -20508,6 +24725,22 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: >-
+            Whether deliveries are signed with x-phaseo-signature. Only custom
+            webhook destinations are signed; ones created before signing stay
+            unsigned until a secret is generated.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the current signing secret was generated.
+        signing_secret:
+          type: string
+          description: >-
+            The webhook signing secret. Returned only when a custom webhook
+            destination is created or its secret is rotated; store it securely.
         created_at:
           type: string
           format: date-time
@@ -20594,6 +24827,12 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
+        - rate_limit_throttled
+        - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20601,6 +24840,12 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
+        - rate_limit_throttled
+        - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
       properties:
         low_balance:
           type: array
@@ -20618,6 +24863,36 @@ components:
             type: string
             format: uuid
         model_deprecation:
+          type: array
+          items:
+            type: string
+            format: uuid
+        model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_alert:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_blocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_report:
           type: array
           items:
             type: string
@@ -22528,6 +26803,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
+        - deepseek/deepseek-v4.1-flash-1017
         - deepseek/deepseek-v4.1-flash-beta
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b

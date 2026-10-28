@@ -2,6 +2,7 @@
 title: "Build a Next.js Web Chat App"
 icon: "messages-square"
 description: "Use the existing Next.js sample chat app as a full walkthrough, with a copyable build prompt at the top."
+"og:image": "https://phaseo.app/og/dynamic?title=Build%20a%20Next.js%20Web%20Chat%20App&description=Use%20the%20existing%20Next.js%20sample%20chat%20app%20as%20a%20full%20walkthrough%2C%20with%20a%20copyable%20build%20prompt%20at%20the%20top.&pathname=/docs/v1/cookbook/build-a-nextjs-web-chat-app"
 ---
 
 Use this page when you want a small Next.js chat app that feels real, but still keeps your Phaseo API key on the server.
@@ -53,10 +54,20 @@ Verification:
 
 ## Key files
 
-- `app/api/models/route.ts`
-- `app/api/responses/route.ts`
-- `app/components/ChatClient.tsx`
-- `lib/gateway.ts`
+<Tree>
+
+- app/
+  - api/
+    - models/
+      - route.ts
+    - responses/
+      - route.ts
+  - components/
+    - ChatClient.tsx
+- lib/
+  - gateway.ts
+
+</Tree>
 
 ## Why the sample is structured this way
 

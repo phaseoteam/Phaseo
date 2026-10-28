@@ -3,6 +3,11 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { getSupabaseAdmin } from "@/runtime/env";
+// Every successful write republishes the workspace's enforcement plan; it
+// reaches every isolate within about a minute. A failed publish is logged
+// (rate_limit_plan_publish_failed) and does not fail the request, because the
+// database change has already been made.
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -13,6 +18,8 @@ import {
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+import { authenticateDashboardSession } from "./dashboard-session";
+import { handleGetRateLimitTier, handleRaiseRateLimitTier } from "./rate-limit-raise";
 
 const POLICY_COLUMNS = "id,workspace_id,name,description,requests_per_minute,tokens_per_minute,concurrent_requests,fail_closed,created_by,created_at,updated_at";
 const ASSIGNMENT_COLUMNS = "id,workspace_id,policy_id,target_type,key_id,user_id,department_id,guardrail_id,created_by,created_at,updated_at";
@@ -180,7 +187,19 @@ function formatAssignment(row: AssignmentRow) {
 	};
 }
 
+const DASHBOARD_SCOPES = [CAPABILITIES.RATE_LIMITS_READ, CAPABILITIES.RATE_LIMITS_WRITE, CAPABILITIES.RATE_LIMITS_DELETE];
+
 async function authorize(req: Request, capability: string) {
+	// Settings → Rate limits writes through web-api with the user's session, so
+	// the dashboard gets the same validation, audit and plan publish as the API.
+	const session = await authenticateDashboardSession(req, DASHBOARD_SCOPES);
+	if (session instanceof Response) return { response: session } as const;
+	if (session) {
+		if (!["owner", "admin"].includes(session.role)) {
+			return { response: json({ error: "forbidden", message: "Only workspace owners and admins can manage rate limits" }, 403, NO_STORE) } as const;
+		}
+		return { auth: session.auth } as const;
+	}
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);
@@ -267,6 +286,7 @@ async function handleCreatePolicy(req: Request) {
 			throw error;
 		}
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "created", row);
 		return json({ data: formatPolicy(row) }, 201, NO_STORE);
 	} catch (error) {
@@ -318,6 +338,7 @@ async function handleUpdatePolicy(req: Request) {
 		}
 		if (!data) return notFound("Rate limit policy not found");
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "updated", row);
 		return json({ data: formatPolicy(row) }, 200, NO_STORE);
 	} catch (error) {
@@ -336,6 +357,7 @@ async function handleDeletePolicy(req: Request) {
 		if (error) throw error;
 		if (!data) return notFound("Rate limit policy not found");
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "deleted", row);
 		return json({ data: { id: row.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
@@ -423,6 +445,7 @@ async function handleCreateAssignment(req: Request) {
 			throw error;
 		}
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "created", row);
 		return json({ data: formatAssignment(row) }, 201, NO_STORE);
 	} catch (error) {
@@ -464,6 +487,7 @@ async function handleUpdateAssignment(req: Request) {
 		}
 		if (!data) return notFound("Rate limit assignment not found");
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "updated", row);
 		return json({ data: formatAssignment(row) }, 200, NO_STORE);
 	} catch (error) {
@@ -482,6 +506,7 @@ async function handleDeleteAssignment(req: Request) {
 		if (error) throw error;
 		if (!data) return notFound("Rate limit assignment not found");
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "deleted", row);
 		return json({ data: { id: row.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
@@ -500,3 +525,6 @@ rateLimitsRoutes.post("/assignments", withRuntime(handleCreateAssignment));
 rateLimitsRoutes.get("/assignments/:id", withRuntime(handleGetAssignment));
 rateLimitsRoutes.patch("/assignments/:id", withRuntime(handleUpdateAssignment));
 rateLimitsRoutes.delete("/assignments/:id", withRuntime(handleDeleteAssignment));
+// Dashboard only: the workspace's trust-ladder tier and self-serve raises.
+rateLimitsRoutes.get("/tier", withRuntime(handleGetRateLimitTier));
+rateLimitsRoutes.post("/tier/raise", withRuntime(handleRaiseRateLimitTier));

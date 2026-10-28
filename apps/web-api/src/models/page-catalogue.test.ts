@@ -259,6 +259,25 @@ describe("buildModelsPageFacets", () => {
 			{ value: "audio_stt", count: 1 },
 		]);
 	});
+
+	it("counts licences under one label per licence and skips unknown ones", () => {
+		const facets = buildModelsPageFacets([
+			{ license: "Apache 2.0" },
+			{ license: "Apache-2.0" },
+			{ license: "Apache License 2.0" },
+			{ license: "proprietary" },
+			{ license: "MIT" },
+			{ license: "Unknown" },
+			{ license: null },
+			{},
+		]);
+
+		expect(facets.licenseOptions).toEqual([
+			{ value: "Apache 2.0", count: 3 },
+			{ value: "MIT", count: 1 },
+			{ value: "Proprietary", count: 1 },
+		]);
+	});
 });
 
 describe("attachModelsPageVariants", () => {
@@ -313,6 +332,23 @@ describe("attachModelsPageVariants", () => {
 				},
 			}),
 		]);
+	});
+
+	it("normalises licences and gives variants without one the base model's licence", () => {
+		const rows = attachModelsPageVariants([
+			{ model_id: "poolside/laguna-s-2.1", name: "Laguna S 2.1", license: " Apache-2.0 " },
+			{
+				model_id: "poolside/laguna-s-2.1:free",
+				name: "Laguna S 2.1 (Free)",
+				variant_kind: "free",
+				base_model_id: "poolside/laguna-s-2.1",
+				license: null,
+			},
+			{ model_id: "catalogue/unlicensed", name: "Unlicensed", license: "" },
+		]);
+
+		expect(rows.map((row) => row.license)).toEqual(["Apache 2.0", "Apache 2.0", undefined]);
+		expect(JSON.parse(JSON.stringify(rows[2]))).not.toHaveProperty("license");
 	});
 });
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { guardContext, keyLimitRetryAfterSeconds } from "./guards";
+import { formatUsdFromNanos, guardContext, keyLimitRetryAfterSeconds } from "./guards";
 import { fetchGatewayContext } from "./context";
 
 vi.mock("./context", () => ({
@@ -174,7 +174,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("allows :free model requests with zero credits", async () => {
@@ -220,15 +220,49 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
-	it("keeps insufficient_funds when standard pricing is zero-cost", async () => {
+	// Production, 2026-10-18: a $0 workspace got 402 for :free models and
+	// phaseo/free. The v2 catalogue labels a SKU's rules with its service tier,
+	// so a $0 free route can arrive as pricing_plan "standard".
+	it("allows a :free model whose $0 route is labelled with the standard plan", async () => {
 		fetchGatewayContextMock.mockResolvedValue(
 			makeContext({
-				model: "provider/model-no-suffix",
+				model: "google/gemma-4-26b-a4b:free",
 				creditOk: false,
-				pricingRules: [{ pricing_plan: "standard", price_per_unit: "0" }],
+				providers: [{ providerId: "google-ai-studio" }],
+				pricingByProvider: {
+					"google-ai-studio": [
+						{ pricing_plan: "standard", price_per_unit: "0" },
+						{ pricing_plan: "standard", price_per_unit: 0 },
+					],
+				},
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "chat.completions",
+			capability: "text.generate",
+			model: "google/gemma-4-26b-a4b:free",
+			requestId: "req_free_standard_label",
+		});
+
+		expect(result.ok).toBe(true);
+	});
+
+	it("allows a model whose every routable route is all-zero priced", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "apodex/apodex-1.1-mini:free",
+				creditOk: false,
+				providers: [{ providerId: "novita" }, { providerId: "gmicloud" }],
+				pricingByProvider: {
+					novita: [{ pricing_plan: "standard", price_per_unit: "0" }],
+					gmicloud: [{ pricing_plan: "free", price_per_unit: "0" }],
+				},
 			}) as any,
 		);
 
@@ -237,15 +271,93 @@ describe("guardContext credit gating for free models", () => {
 			apiKeyId: "key_123",
 			endpoint: "responses",
 			capability: "text.generate",
-			model: "provider/model-no-suffix",
-			requestId: "req_free_2",
+			model: "apodex/apodex-1.1-mini:free",
+			requestId: "req_free_all_zero",
+		});
+
+		expect(result.ok).toBe(true);
+	});
+
+	it("allows the phaseo/free router when its pool is all-zero priced", async () => {
+		fetchGatewayContextMock.mockResolvedValue({
+			...makeContext({
+				model: "phaseo/free",
+				creditOk: false,
+				providers: [{ providerId: "google-ai-studio" }, { providerId: "novita" }],
+				pricingByProvider: {
+					"google-ai-studio": [{ pricing_plan: "free", price_per_unit: "0" }],
+					novita: [{ pricing_plan: "standard", price_per_unit: "0" }],
+				},
+			}),
+			resolvedModel: "phaseo/free",
+		} as any);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "chat.completions",
+			capability: "text.generate",
+			model: "phaseo/free",
+			requestId: "req_free_router",
+		});
+
+		expect(result.ok).toBe(true);
+	});
+
+	it("keeps insufficient_funds when one routable route of the model is paid", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "google/gemma-4-31b",
+				creditOk: false,
+				providers: [{ providerId: "google-ai-studio" }, { providerId: "novita" }],
+				pricingByProvider: {
+					"google-ai-studio": [{ pricing_plan: "standard", price_per_unit: "0" }],
+					novita: [{ pricing_plan: "standard", price_per_unit: "0.0000002" }],
+				},
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "chat.completions",
+			capability: "text.generate",
+			model: "google/gemma-4-31b",
+			requestId: "req_mixed",
 		});
 
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
+	});
+
+	it("keeps insufficient_funds for a workspace private model's $0 placeholder card", async () => {
+		// makeContext sets each card's provider to its provider ID.
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "acme/private-model",
+				creditOk: false,
+				providers: [{ providerId: "private-model" }],
+				pricingByProvider: {
+					"private-model": [{ pricing_plan: "standard", price_per_unit: "0" }],
+				},
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "acme/private-model",
+			requestId: "req_private_model",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(402);
 	});
 
 	it("keeps insufficient_funds for free-plan pricing with a positive price", async () => {
@@ -270,7 +382,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("fails closed when a routable provider has missing pricing", async () => {
@@ -301,7 +413,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("ignores providers that are not routable for free-credit bypass", async () => {
@@ -374,7 +486,7 @@ describe("guardContext credit gating for free models", () => {
 		expect(result.response.headers.get("Retry-After")).toBe("43199");
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
-			error: "key_limit_exceeded",
+			code: "key_limit_exceeded",
 			reason: "daily_request_limit_reached",
 			reset_at: "2026-05-09T23:59:59.000Z",
 			now: "2026-05-09T12:00:00.000Z",
@@ -420,6 +532,63 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(429);
 		expect(result.response.headers.get("Retry-After")).toBeNull();
+	});
+});
+
+describe("monthly key spend cap", () => {
+	it("describes the cap in dollars and keeps a Retry-After beyond a day", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "openai/text-embedding-3-small",
+				creditOk: true,
+				keyLimit: {
+					ok: false,
+					reason: "monthly_cost_limit_reached",
+					resetAt: "2026-11-01T00:00:00.000Z",
+					now: "2026-10-27T12:00:00.000Z",
+					limitWindow: "monthly",
+					limitMetric: "cost",
+					currentValue: 11_660_720,
+					limitValue: 10_000_000,
+				},
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "embeddings",
+			capability: "embeddings",
+			model: "openai/text-embedding-3-small",
+			requestId: "req_key_spend_cap",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(429);
+		// 4.5 days to the reset, well past the 24h ceiling for provider values.
+		expect(result.response.headers.get("Retry-After")).toBe("388800");
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			code: "key_limit_exceeded",
+			current_value: 11_660_720,
+			limit_value: 10_000_000,
+			description: "This API key has reached its monthly spend limit ($0.0117 of $0.01).",
+		});
+	});
+});
+
+describe("formatUsdFromNanos", () => {
+	it.each([
+		[11_660_720, "$0.0117"],
+		[10_000_000, "$0.01"],
+		[1, "$0.000000001"],
+		[0, "$0.00"],
+		[500_000_000, "$0.50"],
+		[1_000_000_000, "$1.00"],
+		[1_234_500_000_000, "$1,234.50"],
+	])("formats %d nanos as %s", (nanos, expected) => {
+		expect(formatUsdFromNanos(nanos)).toBe(expected);
 	});
 });
 

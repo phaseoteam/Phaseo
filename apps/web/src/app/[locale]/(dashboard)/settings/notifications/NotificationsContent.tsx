@@ -5,6 +5,7 @@ import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSet
 import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";
 import NotificationDestinationsClient from "@/components/(gateway)/settings/notifications/NotificationDestinationsClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import SpendAlertsSection from "@/components/(gateway)/settings/spend-rules/SpendAlertsSection";
 export default withSettingsResource("notifications", function NotificationsContent({ initialData: data }) {
 	const t = useTranslations("SettingsUI");
 	return (
@@ -18,9 +19,14 @@ export default withSettingsResource("notifications", function NotificationsConte
 				destinations={data.notificationDestinations}
 				notificationRoutes={data.notificationRoutes}
 			/>
+			<SpendAlertsSection
+				destinations={data.notificationDestinations}
+				departmentSpendAttribution={data.departmentSpendAttribution === "primary" ? "primary" : "all"}
+			/>
 			<NotificationDestinationsClient
 				initialDestinations={data.notificationDestinations}
 				initialModelDeprecationEnabled={data.modelDeprecationAlertsEnabled}
+				initialModelDeprecationIncludeAdmins={data.modelDeprecationAlertsIncludeAdmins}
 				initialNotificationRoutes={data.notificationRoutes}
 			/>
 		</div>

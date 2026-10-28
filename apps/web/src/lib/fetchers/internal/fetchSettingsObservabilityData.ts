@@ -1,23 +1,30 @@
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "./serverAccountContext";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import type { UsageLabelFacet, UsageLabelSummary } from "./settingsTypes";
+import type { RequestClassifierSummary, UsageLabelFacet, UsageLabelSummary } from "./settingsTypes";
+import type { UsageDay } from "@/lib/gateway/usage/periodUsageKpis";
 
-export type ObservabilityRequestRow = {
-	created_at: string;
-	model_id: string | null;
+/** Exact usage for one bucket, model, provider, key, app and BYOK, summed in the database. */
+export type ObservabilityUsageCell = {
+	/** The bucket's start, or null for a window summed whole. */
+	bucket: string | null;
+	modelId: string | null;
 	provider: string | null;
-	app_id: string | null;
-	key_id: string | null;
-	usage: unknown;
-	cost_nanos: number | string | null;
-	success: boolean | null;
-	error_payload: Record<string, unknown> | null;
-	error_message: string | null;
-	pricing_lines: unknown;
+	keyId: string | null;
+	appId: string | null;
+	byok: boolean;
+	requests: number;
+	successfulRequests: number;
+	guardrailBlocked: number;
+	costNanos: number;
+	tokens: number;
+	inputTokens: number;
+	outputTokens: number;
+	reasoningTokens: number;
+	cachedTokens: number;
 };
 
-export type ObservabilityRequestResult = { rows: ObservabilityRequestRow[]; isSampled: boolean; limit: number };
+export type ObservabilityUsageWindow = { from: string; to: string; cells: ObservabilityUsageCell[] };
 
 export type SettingsObservabilityData = {
 	currentUserId?: string;
@@ -25,12 +32,20 @@ export type SettingsObservabilityData = {
 	creatorFilter: { id: string; name: string | null; avatarUrl: string | null } | null;
 	appMetadataEntries: Array<[string, { id: string; title: string; appKey: string | null; imageUrl: string | null }]>;
 	appNameEntries: Array<[string, string]>;
-	current: ObservabilityRequestResult;
+	current: ObservabilityUsageWindow;
 	keys: Array<{ id: string; name: string | null; prefix: string | null }>;
 	labelFacets: UsageLabelFacet[];
 	labelSummary: UsageLabelSummary | null;
 	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string }]>;
-	previous: ObservabilityRequestResult;
+	/** Exact daily workspace usage since the start of last month; null for filtered views. */
+	monthUsage?: { observedAt: number; days: UsageDay[] } | null;
+	/** When the windows were read. */
+	observedAt?: number;
+	previous: ObservabilityUsageWindow;
+	/** The last 7 days under the same filters, which set the forecasts' pace. */
+	recent?: ObservabilityUsageWindow;
+	/** Classifier names for label keys and classifier calls. */
+	requestClassifiers?: RequestClassifierSummary[];
 	signedIn: boolean;
 	workspaceId: string | null;
 };

@@ -82,7 +82,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | 已配置时使用 Firecrawl 搜索。 |
 | `perplexity` | 已配置时使用 Perplexity 官方 Search API。支持排序结果、`search_context_size`、根据 `user_location.country` 进行区域搜索，以及允许或排除域名。 |
 | `tinyfish` | 配置 `TINYFISH_API_KEY` 时使用 TinyFish Search。支持本地化、分页的排序结果，并将 `allowed_domains` / `excluded_domains` 转换为搜索运算符。TinyFish Search 不提供页面全文；需要更完整内容时，请使用 `phaseo:web_fetch`。 |
-| `native` | 如果请求接口支持，会在调用上游模型之前将声明转换为供应商原生网页搜索工具。 |
+| `native` | 如果请求接口支持，会在调用上游模型之前将声明转换为供应商原生网页搜索工具。在 Chat Completions 和 Responses 上，请求只会发送给自行运行网页搜索的供应商；如果没有这样的供应商提供该模型，Phaseo 会改为运行其默认搜索引擎，并按托管搜索计费。 |
 
 `engine: "native"` 只能用于工具声明。如果模型在已发出的网关搜索调用中传入 `engine: "native"`，Phaseo 会返回工具错误，因为必须在发送上游请求之前选择原生工具。
 

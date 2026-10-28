@@ -6,6 +6,7 @@ import {
   ANALYTICS_CONSENT_EVENT,
   ANALYTICS_CONSENT_STORAGE_KEY,
   type AnalyticsConsent,
+  isAnalyticsBlockedForPageLoad,
   parseAnalyticsConsent,
   readAnalyticsConsent,
 } from "@/lib/cookieConsent"
@@ -40,7 +41,7 @@ export function DeferredVercelAnalytics() {
   }, [])
 
   useEffect(() => {
-    if (consent !== "accepted") {
+    if (consent !== "accepted" || isAnalyticsBlockedForPageLoad()) {
       setEnabled(false)
       return
     }

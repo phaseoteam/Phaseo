@@ -4,6 +4,7 @@ sidebarTitle: "Create private model"
 badge: "Beta"
 openapi: "/openapi/v1/openapi.yaml POST /private-models"
 description: "Connect an OpenAI-compatible endpoint to the authenticated workspace."
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20a%20private%20model&description=Connect%20an%20OpenAI-compatible%20endpoint%20to%20the%20authenticated%20workspace.&pathname=/docs/v1/api-reference/endpoint/private-models-create"
 ---
 
 Requires `private_models:write` and an owner or admin identity. Supply `model_reference` as either an exact catalogue model ID or a short workspace-local slug. Phaseo assigns the final model ID; `credential` is encrypted and write-only.

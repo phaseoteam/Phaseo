@@ -2,6 +2,8 @@ jest.mock("@supabase/ssr", () => ({
 	createServerClient: jest.fn(),
 }));
 
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { createServerClient } from "@supabase/ssr";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest } from "next/server";
@@ -9,6 +11,7 @@ import { publicLocales } from "@/i18n/routing";
 import {
 	config,
 	getLegacyModelPageRedirect,
+	getRetiredLocaleRedirect,
 	isLocalizedAuthPath,
 	isLocalizedPagePath,
 	proxy,
@@ -17,6 +20,26 @@ import {
 const origin = "https://phaseo.app";
 const localizedAuthRoutes = ["sign-in", "sign-up", "error"] as const;
 const mockCreateServerClient = jest.mocked(createServerClient);
+const WRITE_HANDLER_EXPORT = /export (?:async )?(?:function|const) (?:POST|PUT|PATCH|DELETE)\b|\bas (?:POST|PUT|PATCH|DELETE)\b/;
+
+/** URL paths of route handlers that accept writes, with dynamic segments filled in. */
+function writeRouteHandlerPaths(appDir: string): string[] {
+	const files: string[] = [];
+	const visit = (dir: string) => {
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			const fullPath = path.join(dir, entry.name);
+			if (entry.isDirectory()) visit(fullPath);
+			else if (/^route\.tsx?$/.test(entry.name)) files.push(fullPath);
+		}
+	};
+	visit(appDir);
+	return files
+		.filter((file) => WRITE_HANDLER_EXPORT.test(readFileSync(file, "utf8")))
+		.map((file) => path.relative(appDir, path.dirname(file)).split(path.sep)
+			.filter((segment) => !/^\(.+\)$/.test(segment))
+			.map((segment) => (segment.startsWith("[") ? "sample" : segment)))
+		.map((segments) => `/${segments.join("/")}`);
+}
 
 function configureSupabase({
 	user = null,
@@ -169,7 +192,7 @@ describe("public localisation proxy", () => {
 	it.each([
 		["/models/openai/gpt-5/ja", "/models/openai/gpt-5"],
 		["/models/vercel/v0-1.0-md/performance", "/models/vercel/v0-1.0-md"],
-		["/en-US/models/z-ai/glm-5/playground", "/en-US/models/z-ai/glm-5"],
+		["/en-US/models/z-ai/glm-5/playground", "/models/z-ai/glm-5"],
 		["/de-DE/models/openai/gpt-4.1/benchmarks/extra", "/de-DE/models/openai/gpt-4.1"],
 		["/en-GB/models/openai/gpt-5/fr-FR", "/models/openai/gpt-5"],
 	])("redirects legacy model sub-path %s before rendering", async (pathname, expected) => {
@@ -193,6 +216,100 @@ describe("public localisation proxy", () => {
 		"/benchmarks/openai/gpt-5/ja",
 	])("leaves %s to the normal page routing", (pathname) => {
 		expect(getLegacyModelPageRedirect(pathname)).toBeNull();
+	});
+
+	it.each([
+		["/en-US", "/"],
+		["/en-US/", "/"],
+		["/en-US/models/openai/gpt-5", "/models/openai/gpt-5"],
+		["/en-us/compare", "/compare"],
+		["/EN-US/benchmarks/gpqa", "/benchmarks/gpqa"],
+		["/en-US/settings/keys", "/settings/keys"],
+	])("sends retired English (US) URL %s to the English page", async (pathname, expected) => {
+		expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${pathname}` })).toBe(true);
+
+		const response = await proxy(new NextRequest(`${origin}${pathname}?ref=old`));
+		const location = new URL(response.headers.get("location")!);
+
+		expect(response.status).toBe(308);
+		expect(location.pathname).toBe(expected);
+		expect(location.search).toBe("?ref=old");
+		expect(mockCreateServerClient).not.toHaveBeenCalled();
+	});
+
+	it.each(["/en-GB/models", "/en-USA/models", "/models/en-US", "/fr-FR/models"])(
+		"keeps %s out of the retired-locale redirect",
+		(pathname) => {
+			expect(getRetiredLocaleRedirect(pathname)).toBeNull();
+		},
+	);
+
+	it.each([
+		["an English browser", { "accept-language": "en-US,en;q=0.9" }],
+		["a visitor who chose English (US) before", { "accept-language": "en-US", cookie: "PHASEO_LOCALE=en-US" }],
+	])("serves %s the unprefixed English pages", async (_visitor, headers) => {
+		const response = await proxy(new NextRequest(`${origin}/models`, { headers }));
+
+		expect(response.headers.get("location")).toBeNull();
+		expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe("/en-GB/models");
+	});
+
+	const writesWithoutServerAction: Array<[string, string, Record<string, string>]> = [
+		["POST", "/models/openai/gpt-5", {}],
+		["POST", "/ja/models/openai/gpt-5", { "content-type": "application/x-www-form-urlencoded" }],
+		["POST", "/en-US/compare", { "content-type": "text/plain;charset=UTF-8" }],
+		["POST", "/ja/chat", { "content-type": "application/json" }],
+		["POST", "/models/openai/gpt-5/benchmarks", {}],
+		["PUT", "/models", {}],
+		["DELETE", "/de-DE/models", { "next-action": "7f0a1b" }],
+	];
+
+	it.each(writesWithoutServerAction)("rejects %s %s without a server action before rendering", async (method, pathname, headers) => {
+		const response = await proxy(new NextRequest(`${origin}${pathname}`, { method, headers }));
+
+		expect(response.status).toBe(405);
+		expect(response.headers.get("allow")).toBe("GET, HEAD");
+		expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+		expect(mockCreateServerClient).not.toHaveBeenCalled();
+	});
+
+	const serverActionPosts: Array<[string, Record<string, string>]> = [
+		["a Next-Action header", { "next-action": "7f0a1b", "content-type": "text/plain;charset=UTF-8" }],
+		["a form submitted before hydration", { "content-type": "multipart/form-data; boundary=----phaseo" }],
+	];
+
+	it.each(serverActionPosts)("lets server action POSTs with %s reach the page", async (_label, headers) => {
+		const response = await proxy(
+			new NextRequest(`${origin}/models/openai/gpt-5`, { method: "POST", headers }),
+		);
+
+		expect(response.status).toBe(200);
+		expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe(
+			"/en-GB/models/openai/gpt-5",
+		);
+	});
+
+	it.each(["/oauth/consent/submit", "/api/chat/completions"])(
+		"leaves POSTs to the %s route handler alone",
+		async (pathname) => {
+			configureSupabase({ session: { access_token: "session-token" } });
+			const response = await proxy(
+				new NextRequest(`${origin}${pathname}`, {
+					method: "POST",
+					headers: { "content-type": "application/x-www-form-urlencoded", origin },
+					body: "decision=approve",
+				}),
+			);
+
+			expect(response.status).not.toBe(405);
+		},
+	);
+
+	it("never rejects writes meant for a route handler", () => {
+		const pathnames = writeRouteHandlerPaths(path.join(__dirname, "app"));
+
+		expect(pathnames).toContain("/oauth/consent/submit");
+		expect(pathnames.filter((pathname) => isLocalizedPagePath(pathname))).toEqual([]);
 	});
 
 	it.each([

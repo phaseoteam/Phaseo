@@ -1,5 +1,6 @@
 ---
 title: "Coding-Agenten mit SKILL.md einrichten"
+sidebarTitle: "Coding-Agenten mit SKILL.md"
 icon: "file-code"
 description: "Kombiniere das SDK mit einer SKILL.md-Datei, damit lokale Coding-Agenten deine Phaseo-Integration einheitlich verwenden."
 ---
@@ -8,10 +9,10 @@ Diese Anleitung richtet sich an Teams, die interne Tools, CLIs oder Coding-Agent
 
 <Visibility for="humans">
 <Note>
-Wenn du eine wiederverwendbare Grundlage nutzen möchtest, statt jede Skill-Datei selbst zu schreiben, installiere die öffentlichen Phaseo-Skills aus [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+Wenn du eine wiederverwendbare Grundlage nutzen möchtest, statt jede Skill-Datei selbst zu schreiben, installiere die öffentlichen Phaseo-Skills aus [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Halte projektspezifische Anweisungen anschließend in deiner lokalen Datei `SKILL.md` fest.
@@ -20,10 +21,10 @@ Halte projektspezifische Anweisungen anschließend in deiner lokalen Datei `SKIL
 
 <Visibility for="agents">
 <Note>
-Wiederverwendbare Phaseo-Skills findest du unter [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Installiere sie zuerst mit:
+Wiederverwendbare Phaseo-Skills findest du unter [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). Installiere sie zuerst mit:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Ergänze anschließend projektspezifische Anweisungen in der `SKILL.md` des Repositorys.

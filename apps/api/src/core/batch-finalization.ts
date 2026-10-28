@@ -8,6 +8,7 @@ import { enqueueAsyncGenAiOtlpExport } from "@/observability/otlp-export";
 import type { Endpoint } from "@core/types";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
+import { CACHED_WRITE_12H_TOKEN_PATHS, CACHED_WRITE_30M_TOKEN_PATHS } from "@core/cache-usage";
 import {
 	getBatchJobRecord,
 	isBatchJobBilled,
@@ -54,6 +55,8 @@ type BatchUsageAggregate = {
 	cached_write_text_tokens: number;
 	cached_write_text_tokens_5m: number;
 	cached_write_text_tokens_1h: number;
+	cached_write_text_tokens_30m: number;
+	cached_write_text_tokens_12h: number;
 };
 
 type BatchPricingLineAggregate = {
@@ -170,6 +173,7 @@ function resolvePricingCapabilityCandidates(endpoint: unknown): string[] {
 		normalizedPath === "/responses" ||
 		normalizedPath === "/chat/completions" ||
 		normalizedPath === "/messages" ||
+		normalizedPath === "/generateContent" ||
 		normalizedPath === "/completions"
 	) {
 		candidates.push("batch");
@@ -224,6 +228,7 @@ async function emitBatchFinalizationTelemetry(args: {
 		costNanos: args.costNanos,
 		currency: "USD",
 		linkContext: args.meta.otelSubmissionContext ?? null,
+		metadata: args.meta.otelMetadata ?? null,
 	}).catch((error) => console.error("batch_otel_finalize_failed", {
 		batchId: args.batchId,
 		error: error instanceof Error ? error.message : String(error),
@@ -253,6 +258,8 @@ function createUsageAggregate(): BatchUsageAggregate {
 		cached_write_text_tokens: 0,
 		cached_write_text_tokens_5m: 0,
 		cached_write_text_tokens_1h: 0,
+		cached_write_text_tokens_30m: 0,
+		cached_write_text_tokens_12h: 0,
 	};
 }
 
@@ -305,9 +312,15 @@ function addUsageSample(target: BatchUsageAggregate, usageRaw: any): void {
 		"cache_creation_1h_input_tokens",
 		"cache_creation_ephemeral_1h_input_tokens",
 	]);
-	target.cached_write_text_tokens += cachedWriteTokens ?? (cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0);
+	// OpenAI GPT-5.6+ writes by lifetime (Responses cache_write_tokens_details).
+	const cachedWriteTokens30m = pickFirstFiniteNumber(usageRaw, [...CACHED_WRITE_30M_TOKEN_PATHS]);
+	const cachedWriteTokens12h = pickFirstFiniteNumber(usageRaw, [...CACHED_WRITE_12H_TOKEN_PATHS]);
+	target.cached_write_text_tokens += cachedWriteTokens ??
+		(cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0) + (cachedWriteTokens30m ?? 0) + (cachedWriteTokens12h ?? 0);
 	target.cached_write_text_tokens_5m += cachedWriteTokens5m ?? 0;
 	target.cached_write_text_tokens_1h += cachedWriteTokens1h ?? 0;
+	target.cached_write_text_tokens_30m += cachedWriteTokens30m ?? 0;
+	target.cached_write_text_tokens_12h += cachedWriteTokens12h ?? 0;
 }
 
 function buildAggregatePricedUsage(args: {
@@ -330,6 +343,8 @@ function buildAggregatePricedUsage(args: {
 		cached_write_text_tokens: args.usage.cached_write_text_tokens,
 		cached_write_text_tokens_5m: args.usage.cached_write_text_tokens_5m,
 		cached_write_text_tokens_1h: args.usage.cached_write_text_tokens_1h,
+		...(args.usage.cached_write_text_tokens_30m > 0 ? { cached_write_text_tokens_30m: args.usage.cached_write_text_tokens_30m } : {}),
+		...(args.usage.cached_write_text_tokens_12h > 0 ? { cached_write_text_tokens_12h: args.usage.cached_write_text_tokens_12h } : {}),
 		pricing: {
 			total_nanos: costNanos,
 			total_usd_str: (costNanos / 1e9).toFixed(9),
@@ -431,7 +446,7 @@ function shouldInspectTerminalOutput(meta: BatchJobMeta | null | undefined): boo
 	if ((meta?.requestCounts?.completed ?? 0) > 0) return true;
 	if (normalizeText(meta?.outputFileId)) return true;
 	const providerId = normalizeText(meta?.provider);
-	return providerId === "anthropic" || providerId === "google-ai-studio" || providerId === "x-ai";
+	return providerId === "anthropic" || providerId === "google-ai-studio" || providerId === "google-vertex" || providerId === "x-ai";
 }
 
 async function resolveBatchPriceCard(args: {
@@ -704,6 +719,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 	const supportsNativeResults =
 		providerId === "anthropic" ||
 		providerId === "google-ai-studio" ||
+		providerId === "google-vertex" ||
 		providerId === "mistral" ||
 		providerId === "x-ai";
 	if (!outputFileId && !supportsNativeResults) {
@@ -736,13 +752,18 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 	}
 	const inputEntriesByCustomId = new Map<string, any>();
 	const canonicalModelsByCustomId = new Map<string, string>();
+	const submittedCustomIds = new Set<string>();
 	for (let offset = 0; ; offset += 1000) {
 		const rows = await listBatchRequestRows({ workspaceId, batchId, limit: 1000, offset });
 		for (const row of rows) {
+			submittedCustomIds.add(row.customId);
 			const canonicalModel = normalizeText(row.meta?.canonical_model);
 			if (canonicalModel) canonicalModelsByCustomId.set(row.customId, canonicalModel);
 		}
 		if (rows.length < 1000) break;
+	}
+	if (providerId === "google-vertex" && entries.some((entry) => !submittedCustomIds.has(extractCustomId(entry) ?? ""))) {
+		return { ok: false, reason: "unknown_output_custom_id" };
 	}
 	if (
 		providerId === OPENAI_BATCH_PROVIDER_ID &&

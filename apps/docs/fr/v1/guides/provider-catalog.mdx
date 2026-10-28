@@ -1,6 +1,6 @@
 ---
 title: "Publier un catalogue fournisseur"
-description: "Publiez des flux de modèles V1 ou V1.1 avec des offres par niveau de service normalisées et des limites de débit."
+description: "Publiez des flux de modèles V1, V1.1 ou V1.2 avec des offres par niveau de service normalisées, des politiques de données et des limites de débit."
 icon: "list"
 ---
 
@@ -12,7 +12,41 @@ Les flux V1 existants continuent de fonctionner sans modification. Un document `
 
 V1.1 déclare `"schema_version": "1.1"` et publie `service_tiers` dans chaque modèle. L’importateur détermine le format à partir du document. Les paramètres de requête d’URL tels que `?format=phaseo-v1.1` sont des conventions facultatives propres à votre endpoint ; Phaseo ne déduit pas la version à partir de l’URL.
 
-Téléchargez le [schéma V1](https://phaseo.app/api/internal/provider-catalog/schema) ou le [schéma V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Les versions non prises en charge sont explicitement rejetées.
+Téléchargez le [schéma V1](https://phaseo.app/api/internal/provider-catalog/schema), le [schéma V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) ou le [schéma V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). Les versions non prises en charge sont explicitement rejetées.
+
+### Politiques de données V1.2
+
+V1.2 ajoute à chaque niveau de service des déclarations d’entraînement et de conservation propres à chaque capacité. Vous pouvez publier V1.2 à tout moment. Phaseo valide les déclarations à l’importation, mais elles n’accordent aucune garantie tant que Phaseo n’a pas approuvé votre source de politique. Les flux V1 et V1.1 restent pris en charge.
+
+V1.2 accepte aussi des `declarations` facultatives au niveau du modèle ou du niveau de service pour l’identité du modèle, les limites typées d’entrée/sortie, les descriptions de paramètres, les prix et capacités par périmètre, les remises et les détails de déploiement. Elles sont validées et conservées pour examen. Elles n’activent pas automatiquement les paramètres et ne modifient ni les prix facturables, ni l’application des limites de capacité, ni les garanties de résidence. Les résultats de validation identifient les déclarations stockées ; continuez à publier les prix et capacités effectifs dans leurs champs existants.
+
+Définissez `schema_version` sur `"1.2"` et ajoutez un objet `data_policy` à chaque niveau concerné :
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+Cet exemple représente la valeur `data_policy` du niveau, pas un flux complet. Les identifiants de capacité sont canoniques : utilisez `text.generate` même si le modèle déclare `responses` ou `chat.completions`.
+
+La déclaration couvre les requêtes et les sorties sur toute la chaîne de traitement en amont. Elle ne décrit pas les métadonnées de facturation. Les valeurs d’entraînement sont `unknown`, `may_train`, `no_train`, `opt_out_available` et `enterprise_no_train`. Les modes de conservation sont `unknown`, `none`, `transient`, `fixed` et `until_deleted`. Utilisez zéro jour pour none, une durée maximale positive pour transient/fixed et null pour unknown/until-deleted.
+
+Déclarez les accords requis avec `contract_mode` : `none`, `customer_agreement` ou `enterprise_agreement`. Les paramètres de compte requis sont des objets contenant `id`, `description` et une `documentation_url` HTTPS dans le tableau `account_settings`. Les programmes conditionnels utilisent `zdr_eligibility: "conditional"` et ne peuvent pas déclarer une garantie active à true. Ils restent informatifs tant que Phaseo ne peut pas vérifier que les conditions sont remplies.
+
+Phaseo approuve indépendamment la source de la politique. Le flux ne peut pas marquer une déclaration comme vérifiée. Cette version n’accorde le ZDR actif qu’à la génération de texte inconditionnelle sur des offres hors batch, sans entraînement ni conservation du contenu. Héberger soi-même un modèle ne constitue pas en soi une déclaration de ZDR.
+
+Après l’adoption d’une politique gérée par le flux, définir false, envoyer null, omettre la déclaration ou revenir à une version antérieure du flux retire cette garantie. Les dérogations manuelles de Phaseo sont gérées séparément. Les déclarations positives expirent après 24 heures sans validation réussie du catalogue ; la révocation de l’approbation ne nécessite pas de nouvelle récupération auprès du fournisseur.
 
 ## Publier des niveaux normalisés
 

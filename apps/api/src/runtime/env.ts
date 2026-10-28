@@ -163,6 +163,19 @@ export function dispatchBackground(promise: Promise<unknown>) {
     promise.catch((err) => console.error(err));
 }
 
+/**
+ * The background dispatcher in effect now, for work that will be started after
+ * the request's runtime is cleared (for example when a response body finishes
+ * streaming). Falls back to running the promise unawaited.
+ */
+export function captureBackgroundDispatcher(): (promise: Promise<unknown>) => void {
+    const handler = requestScope.getStore()?.waitUntil ?? waitUntilHandler;
+    return (promise) => {
+        if (handler) handler(promise.catch((err) => console.error(err)));
+        else promise.catch((err) => console.error(err));
+    };
+}
+
 export function getCache(): KVNamespace {
     return ensureRuntime().cache;
 }

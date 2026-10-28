@@ -67,6 +67,7 @@ response = client.generate_response({
 ## प्रीसेट में क्या हो सकता है
 
 - ऐसा सिस्टम प्रॉम्प्ट जो हर अनुरोध से पहले जोड़ा जाए।
+- [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx): `{{variables}}` वाले संदेश, जिन्हें हर अनुरोध भरता है।
 - अनुमति-प्राप्त मॉडल या मॉडल परिवार।
 - रूटिंग प्राथमिकताओं के लिए प्रदाता की अनुमति/अनदेखी सूचियाँ।
 - `temperature`, `top_p`, `max_tokens` और मिलती-जुलती सेटिंग के डिफ़ॉल्ट पैरामीटर।
@@ -74,7 +75,7 @@ response = client.generate_response({
 
 प्रीसेट नाम `@` से शुरू होते हैं, ताकि उन्हें आसानी से पहचाना जा सके।
 
-प्रीसेट को केवल request के `model` फ़ील्ड से बुलाएँ। Phaseo अलग `preset` request फ़ील्ड नहीं देता।
+प्रीसेट को request के `model` फ़ील्ड से बुलाएँ, या प्रीसेट में [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx) हो तो `prompt.id` से। Phaseo अलग `preset` request फ़ील्ड नहीं देता।
 
 - Private और workspace presets `@{slug}` उपयोग करते हैं और API key के workspace में resolve होते हैं।
 - Public presets `@{username}/{slug}` उपयोग करते हैं और किसी भी workspace से resolve हो सकते हैं। उदाहरण: `@octavia/release-summary`।
@@ -97,6 +98,8 @@ Marketplace copies उसी सटीक upstream version पर pinned रह�
 
 Phaseo हर fork का immediate source और पूरी ancestry दोनों बनाए रखता है। इसलिए marketplace pages direct forks और सभी descendants में अंतर कर सकते हैं, भले ही किसी preset को कई बार कॉपी करके फिर से प्रकाशित किया गया हो।
 
+अनुरोध किसी प्रकाशित संस्करण को उसके लेबल से pin कर सकते हैं, जैसे `@support-triage@v3`, या `production` जैसे नाम वाले लेबल से, जिसे आप किसी संस्करण पर लगाते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है। [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx) देखें।
+
 ## प्रीसेट कैसे merge होते हैं
 
 Gateway context में अनुरोध प्रीसेट के साथ resolve हो, तो provider routing से पहले प्रीसेट लागू होता है:
@@ -113,6 +116,7 @@ Gateway context में अनुरोध प्रीसेट के सा
 Dashboard में preset flow जानबूझकर request shaping के एक स्थिर और स्पष्ट उपसमूह तक सीमित है:
 
 - सिस्टम प्रॉम्प्ट जोड़ना
+- टाइप किए गए वेरिएबल वाले प्रॉम्प्ट टेम्पलेट
 - अनुमत मॉडल की सूचियाँ
 - प्रदाता की अनुमति/अनदेखी से जुड़ी रूटिंग सीमाएँ
 - डिकोडिंग और जनरेशन के डिफ़ॉल्ट
@@ -133,6 +137,7 @@ Dashboard में preset flow जानबूझकर request shaping के 
 
 ## संबंधित गाइड
 
+- [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx)
 - [प्रीसेट पर प्रतिक्रिया लें](./preset-feedback.mdx)
 - [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
 - [इन्फ़रेंस पैरामीटर](./inference-parameters.mdx)

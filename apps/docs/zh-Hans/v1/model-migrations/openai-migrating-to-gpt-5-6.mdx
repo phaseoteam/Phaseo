@@ -37,7 +37,7 @@ Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-lat
 - GPT-5.6 通过 `reasoning.context` 增加了持久化推理控制。
 - GPT-5.6 为符合条件且大量使用工具的工作流新增了多代理支持和 Programmatic Tool Calling（测试版）。
 - 提示缓存分别计算未缓存输入、缓存读取、缓存写入和输出的费用。
-- 显式提示缓存通过 `prompt_cache_options` 支持；OpenAI 目前建议使用 `prompt_cache_options.ttl`，而不是 `prompt_cache_retention`。
+- 显式提示缓存通过缓存断点和 `prompt_cache_options` 支持。在 GPT-5.6 上，`prompt_cache_options.ttl` 取代了 `prompt_cache_retention`，Phaseo 不会把 `prompt_cache_retention` 发送给 GPT-5.6 模型。
 
 ## 更新请求
 
@@ -92,7 +92,7 @@ Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-lat
 | Terra | $2.50 | $0.25 | $3.125 | $15.00 |
 | Luna | $1.00 | $0.10 | $1.25 | $6.00 |
 
-缓存读取与缓存写入分别计费。在当前目录中，缓存读取比未缓存输入便宜 90%，而缓存写入的价格是未缓存输入的 1.25 倍。
+缓存读取与缓存写入分别计费。在当前目录中，缓存读取比未缓存输入便宜 90%，而缓存写入的价格是未缓存输入的 1.25 倍。每个输入 token 只按这三种价格中的一种计费。用量会把缓存读取和写入计入 `input_tokens`（在 Chat Completions 中为 `prompt_tokens`），并在 `cache_write_tokens` 中报告写入量；请参阅[用量与定价字段](../guides/prompt-caching.mdx#usage-and-pricing-fields)。
 
 ## 有意识地使用提示缓存
 
@@ -108,9 +108,8 @@ Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-lat
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
           }
         },
         {
@@ -122,12 +121,12 @@ Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-lat
   ],
   "prompt_cache_options": {
     "mode": "explicit",
-    "ttl": "24h"
+    "ttl": "30m"
   }
 }
 ```
 
-如果需要与提供商无关的缓存提示或显式缓存断点，请使用 `cache_control`。如果需要直接传递 OpenAI 缓存模式和 TTL 选项，请使用 `prompt_cache_options`。
+`prompt_cache_breakpoint` 会缓存到其所在块为止（含该块）的全部内容。块级 `cache_control`（例如 `{"type": "ephemeral"}`）同样有效，Phaseo 会以 `prompt_cache_breakpoint` 的形式将其发送给 GPT-5.6。两种标记都会作为缓存断点发送到 Claude，因此回退到 Claude 时也能使用缓存。在 `explicit` 模式下，OpenAI 只缓存你放置的断点。`ttl` 为 `30m`（默认）或 `12h`，OpenAI 只在其 Responses API 上接受 `12h`；请参阅 [OpenAI 的 12 小时缓存](../guides/prompt-caching.mdx#12-hour-cache-on-openai)。Phaseo 不会把 `prompt_cache_retention` 发送给 GPT-5.6。请参阅[提示缓存](../guides/prompt-caching.mdx#openai-retention-and-options)。
 
 ## 测试内容
 

@@ -150,7 +150,7 @@ const runtime = vi.hoisted(() => {
                 }),
             };
         }
-        if (table === "v2_route_capabilities") {
+        if (table === "v2_effective_route_capabilities") {
             return {
                 select: () => ({
                     eq: () => ({
@@ -303,5 +303,44 @@ describe("fetchGatewayContext free router", () => {
         expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-free-a", "text.generate", "gpt-free-a");
         expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-free-b", "text.generate", "gpt-free-b");
         expect(loadPriceCardMock).toHaveBeenCalledWith("google-ai-studio", "google/gemini-free", "text.generate", "gemini-free");
+    });
+
+    it("pools only routes that bill nothing, so the router never incurs cost", async () => {
+        const rule = (pricingPlan: string, price: string) => ({
+            pricing_plan: pricingPlan,
+            meter: "input_text_tokens",
+            unit: "token",
+            unit_size: 1,
+            price_per_unit: price,
+            currency: "USD",
+            match: [],
+            priority: 1,
+        });
+        const rulesByModel: Record<string, ReturnType<typeof rule>[] | null> = {
+            // A $0 free route written on the standard tier stays in the pool.
+            "openai/gpt-free-a": [rule("standard", "0")],
+            // A promo whose card also carries paid rules, and a route whose
+            // price is missing (an expired free window), are not free.
+            "openai/gpt-free-b": [rule("free", "0"), rule("standard", "0.000001")],
+            "google/gemini-free": null,
+        };
+        loadPriceCardMock.mockImplementation(async (providerId: string, model: string, endpoint: string) => {
+            const rules = rulesByModel[model];
+            return rules ? { provider: providerId, model, endpoint, effective_from: null, effective_to: null, currency: "USD", version: "1", rules } : null;
+        });
+
+        const { fetchGatewayContext } = await import("./context");
+        const context = await fetchGatewayContext({
+            workspaceId: "team_free",
+            model: "phaseo/free",
+            endpoint: "text.generate",
+            apiKeyId: "key_free",
+            disableCache: true,
+            includeTestingMode: true,
+        });
+
+        expect(context.resolvedModel).toBe("phaseo/free");
+        expect(context.providers.map((provider) => provider.apiModelId)).toEqual(["openai/gpt-free-a"]);
+        expect(Object.keys(context.pricing)).toEqual(["openai:openai/gpt-free-a:gpt-free-a"]);
     });
 });

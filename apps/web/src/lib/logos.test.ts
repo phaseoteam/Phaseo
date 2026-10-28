@@ -1,6 +1,41 @@
 import { getLogoLabel, resolveLogo } from "@/lib/logos";
 
 describe("logos", () => {
+	test("resolves AA's Kimi creator slug to Moonshot in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("kimi", { theme })).toMatchObject({
+				id: "moonshotai",
+				src: `/logos/moonshotai_${theme}.svg`,
+			});
+		}
+	});
+	test("resolves the Base Labs icon in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("baselabs", { theme })).toMatchObject({
+				id: "baselabs", label: "Base Labs", src: "/logos/baselabs.svg", variant: "color",
+			});
+		}
+	});
+	test("resolves Nace's official mark in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("nace", { theme })).toMatchObject({
+				id: "nace",
+				label: "Nace.AI",
+				src: `/logos/nace_${theme}.svg`,
+			});
+		}
+	});
+	test("keeps Pioneer and Fastino as separate identities sharing their official mark", () => {
+		for (const id of ["pioneer", "fastino"]) {
+			for (const theme of ["light", "dark"] as const) {
+				expect(resolveLogo(id, { theme })).toMatchObject({
+					id,
+					label: id === "pioneer" ? "Pioneer" : "Fastino",
+					src: `/logos/fastino_${theme}.svg`,
+				});
+			}
+		}
+	});
 	test("resolves the DigitalOcean logo asset by provider id", () => {
 		expect(resolveLogo("digitalocean")).toMatchObject({
 			id: "digitalocean",
@@ -159,7 +194,9 @@ describe("logos", () => {
 		["siliconflow-cn", "Siliconflow Cn", "/logos/siliconflow.svg"],
 		["submodel", "SubModel", "/logos/submodel.svg"],
 		["togetherai", "Together AI", "/logos/together.svg"],
-		["wandb", "Weights & Biases", "/logos/weights-and-biases.svg"],
+		["wandb", "CoreWeave Forge", "/logos/coreweave_light.svg"],
+		["weights-and-biases", "CoreWeave Forge", "/logos/coreweave_light.svg"],
+		["coreweave-forge", "CoreWeave Forge", "/logos/coreweave_light.svg"],
 		["zenmux", "ZenMux", "/logos/zenmux_light.svg"],
 	])("resolves the %s logo mapping", (id, label, src) => {
 		expect(resolveLogo(id, { variant: ["github-models", "kilo", "lmstudio", "nebius", "zenmux"].includes(id) ? "light" : "auto" })).toMatchObject({

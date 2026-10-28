@@ -3,6 +3,7 @@ icon: "clapperboard"
 title: "Video and batch jobs"
 badge: "Beta"
 description: "Track asynchronous jobs, receive webhooks, and pass provider-specific video options."
+"og:image": "https://phaseo.app/og/dynamic?title=Video%20and%20batch%20jobs&description=Track%20asynchronous%20jobs%2C%20receive%20webhooks%2C%20and%20pass%20provider-specific%20video%20options.&pathname=/docs/v1/guides/async-video-and-batch"
 ---
 
 <Note>
@@ -35,6 +36,17 @@ Verify `x-phaseo-signature` using the endpoint secret: the signature is the hexa
 After saving an endpoint, use **Send test event** in Settings to deliver a signed `webhook.test` payload. Test deliveries make one attempt and are not retried or added to job delivery history.
 
 Treat `completed`, `failed`, `cancelled`, and `expired` lifecycle states as terminal. Keep a polling recovery path even when using webhooks.
+
+```mermaid
+flowchart TD
+  newJob["Create a video or batch job"] --> store["Store id and polling_url"]
+  store --> waiting["Wait for an update"]
+  waiting -->|"Webhook event"| terminal{{"Terminal state?"}}
+  waiting -->|"Poll polling_url"| terminal
+  terminal -->|"No"| waiting
+  terminal -->|"completed"| fetchOut["Fetch the outputs or results"]
+  terminal -->|"failed / cancelled / expired"| outcome["Handle the outcome"]
+```
 
 For each event, Phaseo makes one initial delivery attempt. A successful 2xx response ends delivery; no retries are needed. Failed deliveries receive up to three retries, scheduled after 1, 5, and 15 minutes. Background sweeps process eligible retries, so actual delivery can be later than the scheduled time. Each attempt records its number, time, HTTP status, error and next retry time. After the fourth unsuccessful attempt, delivery is marked permanently failed. Receivers must still deduplicate events: a lost acknowledgement or worker interruption can make delivery uncertain.
 
@@ -112,6 +124,10 @@ MiniMax H3 uses V2: 4–15 whole seconds at `768P` or `2K`. H3 Max supports 5–
 Batch requests also accept `provider_options`: OpenAI supports `output_expires_after`, and Mistral supports `metadata`. Use canonical provider IDs and do not duplicate these fields at the top level. For example, `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` sets OpenAI output retention. Row inputs, models, endpoints, and webhook destinations cannot be overridden through options.
 
 Mistral already has a native batch adapter. Anthropic message batches are polled; other providers may combine polling with native completion notifications. Availability depends on the provider's supported endpoints and the deployment's batch allowlist. Check the batch capability response before submitting a file or inline requests.
+
+Vertex Gemini batches accept inline `requests` with `/v1/generateContent`, or `model` and `prompts`. Select `provider: "google-vertex"` to use Vertex. Successful rows are charged at Batch rates. This adapter requires managed credentials; BYOK, uploaded Files, embeddings and `google-vertex-eu` batches are unavailable. Input is limited to 20 MB and 10,000 requests. Stored input and output expire after 30 days.
+
+Vertex results use `custom_id` to identify each submitted row, with a successful generation in `response.body` or a per-request `error`. Output order can differ from input order. A submission with an uncertain provider outcome remains under manual review with its credit hold retained; avoid creating a replacement until its outcome is confirmed.
 
 Batch completion can include failed rows. Inspect each result using its custom ID instead of assuming that every row succeeded. Keep the original input and job ID until results and billing are reconciled. An uncertain submission must be investigated before resubmitting, because a provider may have accepted the original request.
 

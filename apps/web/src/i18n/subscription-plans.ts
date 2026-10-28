@@ -9,9 +9,9 @@ import pt from "../../messages/pt-BR/subscription-plans.json";
 import ja from "../../messages/ja/subscription-plans.json";
 import ar from "../../messages/ar-SA/subscription-plans.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import { isPublicLocale, type PublicLocale } from "./routing";
+import { isPublicLocale, type PublicLocale, type ShippedLocale } from "./routing";
 export type SubscriptionPlansMessages = typeof en;
-const catalogs: Record<PublicLocale, SubscriptionPlansMessages> = { "en-GB": en, "en-US": mergeCatalogMessages(en, enUsOverlay), "zh-Hans": zhHans as SubscriptionPlansMessages, hi: hi as SubscriptionPlansMessages, "es-ES": es as SubscriptionPlansMessages, "fr-FR": fr as SubscriptionPlansMessages, "de-DE": de as SubscriptionPlansMessages, "pt-BR": pt as SubscriptionPlansMessages, ja: ja as SubscriptionPlansMessages, "ar-SA": ar as SubscriptionPlansMessages };
+const catalogs: Record<ShippedLocale, SubscriptionPlansMessages> = { "en-GB": en, "en-US": mergeCatalogMessages(en, enUsOverlay), "zh-Hans": zhHans as SubscriptionPlansMessages, hi: hi as SubscriptionPlansMessages, "es-ES": es as SubscriptionPlansMessages, "fr-FR": fr as SubscriptionPlansMessages, "de-DE": de as SubscriptionPlansMessages, "pt-BR": pt as SubscriptionPlansMessages, ja: ja as SubscriptionPlansMessages, "ar-SA": ar as SubscriptionPlansMessages };
 export function getSubscriptionPlansMessages(locale: PublicLocale): SubscriptionPlansMessages { return catalogs[locale]; }
 export function getSubscriptionPlansMessagesFor(locale: string): SubscriptionPlansMessages {
 	return isPublicLocale(locale) ? catalogs[locale] : catalogs["en-GB"];

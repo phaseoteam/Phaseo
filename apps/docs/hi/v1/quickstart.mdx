@@ -6,19 +6,35 @@ icon: "rocket"
 
 इस ट्यूटोरियल से सफल Phaseo अनुरोध करें—जनरेट किया गया टेक्स्ट या संरचित निर्णय—और देखें कि प्रतिक्रिया कहाँ आती है।
 
-<Note>
-**कोडिंग एजेंट इस्तेमाल कर रहे हैं?** शुरू करने से पहले यह प्रॉम्प्ट कॉपी और पेस्ट करें:
+<Prompt description="**कोडिंग एजेंट इस्तेमाल कर रहे हैं?** शुरू करने से पहले यह प्रॉम्प्ट कॉपी और पेस्ट करें" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 इसमें आप:
 - API कुंजी बनाएँगे
 - टेक्स्ट अनुरोध या संरचित निर्णय भेजना
 - जनरेट टेक्स्ट या प्रकारयुक्त उत्तर पढ़ना
 - अनुरोध विफल होने पर पहले क्या जाँचना है, यह जानेंगे
+
+<Visibility for="agents">
+एजेंट के लिए क्विकस्टार्ट चेकलिस्ट:
+
+- कुंजियाँ डैशबोर्ड में https://phaseo.app/settings/keys पर बनाई जाती हैं। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
+- पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। `phaseo/free` वॉलेट बैलेंस के बिना भी काम करता है।
+- जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
+- अनुरोध विफल होने पर https://phaseo.app/docs/v1/api-reference/errors.md में बताए अनुसार JSON के `error` कोड के आधार पर निर्णय लें।
+</Visibility>
 
 ---
 
@@ -43,6 +59,26 @@ API कुंजी को पासवर्ड की तरह सुरक�
 ## 2. टेक्स्ट अनुरोध भेजें
 
 पहले अनुरोध के लिए `POST /v1/responses` इस्तेमाल करें। नए टेक्स्ट जनरेशन इंटीग्रेशन के लिए यही सुझाया गया endpoint है।
+
+### SDK इंस्टॉल करें
+
+cURL और JavaScript उदाहरणों के लिए कुछ भी इंस्टॉल करने की ज़रूरत नहीं है। TypeScript या Python SDK इस्तेमाल करने के लिए, पहले उसे इंस्टॉल करें:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+रनटाइम ज़रूरतों और दूसरे SDK के लिए [TypeScript](./sdk-reference/typescript/installation) और [Python](./sdk-reference/python/installation) के इंस्टॉलेशन पेज देखें।
 
 ### अनुरोध
 
@@ -201,6 +237,29 @@ response = client.generate_response(
 puts response
 ```
 
+```java Java SDK
+// Build from source: https://phaseo.app/docs/hi/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
+```
+
 ```rust Rust SDK
 use phaseo::Phaseo;
 use serde_json::{json, Value};
@@ -281,6 +340,43 @@ console.log(result.text);
 Responses API को सीधे कॉल करने पर असिस्टेंट का जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
 
 अगर आप Vercel AI SDK इस्तेमाल करते हैं, तो जवाब `result.text` से पढ़ें।
+
+### जवाब स्ट्रीम करें
+
+जवाब बनते-बनते प्रिंट करने के लिए उसे स्ट्रीम करें। हर chunk के `text` में सिर्फ़ नया टेक्स्ट होता है, इसलिए यह लूप जवाब एक ही बार प्रिंट करता है। `response.output_text.done` जैसे समापन events में `text` खाली होता है; उनका पूरा टेक्स्ट `fullText` (TypeScript) या `full_text` (Python) में होता है।
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+अगर जवाब दो बार प्रिंट हो, तो SDK अपडेट करें: पुराने रिलीज़ समापन event में भी पूरा टेक्स्ट डालते थे।
 
 ---
 

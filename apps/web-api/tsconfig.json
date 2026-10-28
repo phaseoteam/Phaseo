@@ -4,9 +4,8 @@
     "lib": ["ES2022", "WebWorker", "DOM.Iterable"],
     "outDir": "./dist",
     "rootDir": "src",
-    "baseUrl": "src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
     "skipLibCheck": true,
     "types": ["@cloudflare/workers-types", "node"]

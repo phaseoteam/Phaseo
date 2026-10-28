@@ -1,0 +1,54 @@
+{
+	"id": "baidu",
+	"source": {
+		"url": null,
+		"docs": "https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page in Chinese. response_format: text, json_object, json_schema. tool_choice: none, auto, required, or {type: function, function: {name}}. stop up to 4 entries of max 20 chars. max_completion_tokens overrides max_tokens; both count reasoning. cached_tokens documented as only for ERNIE-4.0-Turbo-8K. Response may also include search_results, reasoning_content, flag, ban_round."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"stream_options": {},
+					"temperature": {},
+					"top_p": {},
+					"penalty_score": {},
+					"max_tokens": {},
+					"max_completion_tokens": {},
+					"seed": {},
+					"stop": {},
+					"frequency_penalty": {},
+					"presence_penalty": {},
+					"repetition_penalty": {},
+					"tools": {},
+					"tool_choice": {},
+					"parallel_tool_calls": {},
+					"web_search": {},
+					"response_format": {},
+					"metadata": {},
+					"thinking": {},
+					"enable_thinking": {},
+					"thinking_budget": {},
+					"thinking_strategy": {},
+					"reasoning_effort": {},
+					"user": {},
+					"appid": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

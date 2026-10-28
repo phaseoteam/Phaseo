@@ -34,9 +34,26 @@ function getByPath(obj: any, path?: string | null): any {
     return cur;
 }
 
+/**
+ * Some catalogue rows spell a condition `{ key, operator }` or `{ field, operator }`
+ * (Upstage document-parse's enhanced-mode page price) instead of `{ path, op }`. Read
+ * both, so those rules can match instead of never being selected.
+ */
+function conditionPath(cond: Condition): string | undefined {
+    const raw = cond as Condition & { key?: unknown; field?: unknown };
+    const path = raw.path ?? raw.field ?? raw.key;
+    return typeof path === "string" && path ? path : undefined;
+}
+
+function conditionOp(cond: Condition): string | undefined {
+    const raw = cond as Condition & { operator?: unknown };
+    const op = raw.op ?? raw.operator;
+    return typeof op === "string" ? op : undefined;
+}
+
 function evalCondition(cond: Condition, ctx: Record<string, any>): boolean {
-    const val = getByPath(ctx, cond.path);
-    switch (cond.op) {
+    const val = getByPath(ctx, conditionPath(cond));
+    switch (conditionOp(cond)) {
         case "exists": return val !== undefined;
         case "not_exists": return val === undefined;
         case "eq": return val === cond.value;

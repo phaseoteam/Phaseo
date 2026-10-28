@@ -6,10 +6,19 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+GOOGLE_VERTEX_PROJECT_NUMBER = "916177560808"
+GOOGLE_VERTEX_BATCH_LOCATION = "global"
+GOOGLE_VERTEX_BATCH_BUCKET = "ai-stats-469110-phaseo-vertex-batch-us-central1"
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 # Publishes trust-ladder tiers to KV every 5 minutes (see wrangler.toml).
 CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "true"
+# Reconciles rate limit policy plans and refreshes throttle rollups (see wrangler.toml).
+RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
@@ -34,7 +43,7 @@ BATCH_RECONCILIATION_ENABLED = "true"
 BATCH_RECONCILIATION_LIMIT = "500"
 BATCH_RECONCILIATION_CONCURRENCY = "12"
 BATCH_RECONCILIATION_LEASE_SECONDS = "300"
-BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral,together"
+BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,google-vertex,mistral,together"
 BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED = "true"
 BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT = "100"
 OTEL_EXPORT_ENABLED = "true"
@@ -54,6 +63,9 @@ ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
 STATSIG_ENVIRONMENT_TIER = "production"
 EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
+FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+MOBILE_PUSH_ENABLED = "false"
+FEEDBACK_REQUEST_FROM_EMAIL = "Daniel at Phaseo <daniel@phaseo.app>"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "false"
 PRICING_PAGE_MONITOR_ENABLED = "true"

@@ -18,6 +18,15 @@ const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
  * fresh allowance, at a bounded number of billed row writes rather than one
  * per admission. Daily free-model admissions stay in SQLite exactly.
  *
+ * Rate limit policy scopes also keep a rolling minute of token usage, charged
+ * after each request attempt completes with its real usage, in one-second
+ * buckets (at most 60, however busy the scope) checkpointed the same way.
+ *
+ * Policy scopes with a concurrency limit hold one slot per request in flight.
+ * Slots live in memory only: a restart forgets them, so a scope may briefly
+ * admit more than its limit, rather than keep slots whose release was lost
+ * until they expire. Every slot carries an expiry for the same reason.
+ *
  * Limits are supplied by the caller (see `resolveCustomerLimits`); this object
  * performs no KV or network reads.
  */
@@ -26,8 +35,14 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	/** Admission ID -> start time, in arrival order. */
 	private readonly minute = new Map<string, number>();
 	private lastMinuteCheckpoint = 0;
+	/** Second (epoch ms) -> tokens charged in it, oldest first. */
+	private readonly tokens = new Map<number, number>();
+	private tokensUsed = 0;
+	private lastTokenCheckpoint = 0;
 	private freeDay = -1;
 	private freeUsed = 0;
+	/** Lease ID -> expiry (epoch ms) of a concurrency slot in use. */
+	private readonly slots = new Map<string, number>();
 
 	constructor(ctx: DurableObjectState, env: GatewayBindings) {
 		super(ctx, env);
@@ -35,9 +50,11 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			const sql = ctx.storage.sql;
 			sql.exec("CREATE TABLE IF NOT EXISTS free_requests (admission_id TEXT PRIMARY KEY, day INTEGER NOT NULL)");
 			sql.exec("CREATE TABLE IF NOT EXISTS minute_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), entries TEXT NOT NULL)");
+			sql.exec("CREATE TABLE IF NOT EXISTS token_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), entries TEXT NOT NULL)");
 			// Earlier versions persisted one row per minute admission.
 			sql.exec("DROP TABLE IF EXISTS minute_requests");
 			this.restoreMinute(Date.now());
+			this.restoreTokens(Date.now());
 			this.rollFreeDay(Math.floor(Date.now() / DAY_MS));
 		});
 	}
@@ -62,6 +79,109 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			"INSERT OR REPLACE INTO minute_checkpoint (id, entries) VALUES (1, ?)",
 			JSON.stringify([...this.minute]),
 		);
+	}
+
+	private restoreTokens(now: number): void {
+		const row = this.ctx.storage.sql.exec<{ entries: string }>("SELECT entries FROM token_checkpoint WHERE id = 1").toArray()[0];
+		if (!row) return;
+		try {
+			const entries = JSON.parse(row.entries) as Array<[number, number]>;
+			for (const [second, tokens] of entries) {
+				if (!Number.isFinite(second) || !Number.isSafeInteger(tokens) || tokens <= 0 || second <= now - MINUTE_MS) continue;
+				this.tokens.set(second, tokens);
+				this.tokensUsed += tokens;
+			}
+		} catch {
+			console.warn("customer_rate_limit_token_checkpoint_unreadable");
+		}
+	}
+
+	private checkpointTokens(now: number): void {
+		if (now - this.lastTokenCheckpoint < MINUTE_CHECKPOINT_INTERVAL_MS) return;
+		this.lastTokenCheckpoint = now;
+		this.ctx.storage.sql.exec(
+			"INSERT OR REPLACE INTO token_checkpoint (id, entries) VALUES (1, ?)",
+			JSON.stringify([...this.tokens]),
+		);
+	}
+
+	private expireTokens(now: number): void {
+		for (const [second, tokens] of this.tokens) {
+			if (second > now - MINUTE_MS) break;
+			this.tokens.delete(second);
+			this.tokensUsed -= tokens;
+		}
+	}
+
+	/** Seconds until usage falls below `limit` as buckets leave the rolling minute. */
+	private tokenRetryAfter(now: number, limit: number): number {
+		let used = this.tokensUsed;
+		for (const [second, tokens] of this.tokens) {
+			used -= tokens;
+			if (used < limit) return Math.max(1, Math.ceil((second + MINUTE_MS - now) / 1000));
+		}
+		return 1;
+	}
+
+	private tokenStatus(now: number, limit: number): CustomerAdmission {
+		const remaining = Math.max(0, limit - this.tokensUsed);
+		return { allowed: remaining > 0, limit, remaining, retryAfterSeconds: remaining ? 0 : this.tokenRetryAfter(now, limit) };
+	}
+
+	/**
+	 * Charges one completed attempt's token usage to the rolling minute and
+	 * reports what is left. The caller charges each attempt once.
+	 */
+	async chargeTokens(scopeKey: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const limit = Number.isSafeInteger(tokensPerMinute) && tokensPerMinute > 0 ? tokensPerMinute : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireTokens(now);
+		if (Number.isSafeInteger(tokens) && tokens > 0) {
+			const second = Math.floor(now / 1000) * 1000;
+			this.tokens.set(second, (this.tokens.get(second) ?? 0) + tokens);
+			this.tokensUsed += tokens;
+			this.checkpointTokens(now);
+		}
+		return this.tokenStatus(now, limit);
+	}
+
+	/** The scope's token allowance left in the rolling minute, without charging anything. */
+	async peekTokens(scopeKey: string, tokensPerMinute: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const limit = Number.isSafeInteger(tokensPerMinute) && tokensPerMinute > 0 ? tokensPerMinute : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireTokens(now);
+		return this.tokenStatus(now, limit);
+	}
+
+	private expireSlots(now: number): void {
+		for (const [leaseId, expiresAt] of this.slots) if (expiresAt <= now) this.slots.delete(leaseId);
+	}
+
+	/**
+	 * Takes a concurrency slot for one request, unless `limit` slots are in use.
+	 * Taking a slot the lease already holds succeeds without taking another, so
+	 * every attempt of a request shares one slot.
+	 */
+	async acquireConcurrency(scopeKey: string, leaseId: string, limit: number, ttlMs: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const max = Number.isSafeInteger(limit) && limit > 0 ? limit : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireSlots(now);
+		if (!this.slots.has(leaseId) && this.slots.size >= max) {
+			return { allowed: false, limit: max, remaining: 0, retryAfterSeconds: 1 };
+		}
+		this.slots.set(leaseId, now + (Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : MINUTE_MS));
+		return { allowed: true, limit: max, remaining: Math.max(0, max - this.slots.size), retryAfterSeconds: 0 };
+	}
+
+	async releaseConcurrency(scopeKey: string, leaseId: string): Promise<void> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.slots.delete(leaseId);
 	}
 
 	private rollFreeDay(day: number): void {

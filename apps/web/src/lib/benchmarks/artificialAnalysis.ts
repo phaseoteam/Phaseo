@@ -1,5 +1,6 @@
 import type { BenchmarkPage, BenchmarkResult } from "@/lib/fetchers/benchmarks/types";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry, PublicIntelligenceValue, PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelBenchmarkRanks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { parseBenchmarkScore } from "@/lib/benchmarks/scoreFormat";
 
 export const artificialAnalysisMetrics = [
@@ -102,8 +103,17 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 
 export type ArtificialAnalysisRankSummary = {
 	lowerIsBetter: boolean;
-	entries: Array<{ modelId: string; version: string | null; scores: number[] }>;
+	/** `modelId` is null for other models' scores pooled by the web API. */
+	entries: Array<{ modelId: string | null; version: string | null; scores: number[] }>;
 };
+
+/** Rank summaries from the web API's per-model view; ranks match the full leaderboards'. */
+export function artificialAnalysisRankSummaries(ranks: ModelBenchmarkRanks["artificial_analysis"]): Record<string, ArtificialAnalysisRankSummary> {
+	return Object.fromEntries(Object.entries(ranks).map(([benchmarkId, summary]) => [benchmarkId, {
+		lowerIsBetter: summary.lower_is_better,
+		entries: summary.entries.map((entry) => ({ modelId: entry.model_id, version: entry.version, scores: entry.scores })),
+	} satisfies ArtificialAnalysisRankSummary]));
+}
 
 export function summarizeArtificialAnalysisRankings(rankings: PublicBenchmarkRanking[]) {
 	return Object.fromEntries(rankings.filter((ranking) => isArtificialAnalysisBenchmark(ranking.benchmark_id)).map((ranking) => [ranking.benchmark_id, {
@@ -173,6 +183,7 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
   const lowerIsBetter = isArtificialAnalysisCostBenchmark(benchmark.id);
   const latestVersion = latestArtificialAnalysisVersion(benchmark.results);
   const bestByModel = new Map<string, PublicBenchmarkRankingEntry>();
+  const configurations = new Map<string, NonNullable<PublicBenchmarkRankingEntry["configurations"]>>();
 
   for (const result of benchmark.results) {
     if (latestVersion && artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null) !== latestVersion) continue;
@@ -180,6 +191,10 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
     if (score == null) continue;
 
     const candidate = candidateFromResult(result, score);
+    const modelConfigurations = configurations.get(result.model_id) ?? [];
+    modelConfigurations.push({ variant: result.variant ?? null, result_key: result.result_key ?? result.id, score,
+      other_info: candidate.other_info ?? null, source_link: candidate.source_link ?? null, updated_at: candidate.updated_at ?? null });
+    configurations.set(result.model_id, modelConfigurations);
     const current = bestByModel.get(result.model_id);
     if (!current || (lowerIsBetter ? candidate.score < current.score : candidate.score > current.score)) bestByModel.set(result.model_id, candidate);
   }
@@ -188,6 +203,7 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
   let previousScore: number | null = null;
   let previousRank = 0;
   entries.forEach((entry, index) => {
+    entry.configurations = configurations.get(entry.model_id);
     if (previousScore !== entry.score) {
       previousRank = index + 1;
       previousScore = entry.score;

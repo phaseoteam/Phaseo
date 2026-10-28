@@ -13,6 +13,16 @@ function setup(role = "admin") {
 }
 const request = (path: string, body?: unknown) => app.request(`https://phaseo.app/api/account/models/catalog/${path}`, { headers: { authorization: "Bearer session-token", "content-type": "application/json" }, ...(body === undefined ? {} : { method: "POST", body: JSON.stringify(body) }) }, env);
 describe("catalog registries", () => {
+  it("publishes subscription changes to plan, model and comparison caches", async () => {
+    setup();
+    const purge = vi.fn(async () => ({ success: true }));
+    const response = await app.request("https://phaseo.app/api/account/models/catalog/registries/offer-prices", {
+      method: "POST", headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+      body: JSON.stringify({ values: { price_uuid: "11111111-1111-4111-8111-111111111111", offer_uuid: "22222222-2222-4222-8222-222222222222", component_key: "base", pricing_type: "fixed", amount: 40, charge_basis: "seat", unit_quantity: 1, phase: "standard", starts_at_cycle: 1 }, before: null }),
+    }, env, { waitUntil() {}, passThroughOnException() {}, props: {}, cache: { purge } } as any);
+    expect(response.status).toBe(200);
+    expect(purge).toHaveBeenCalledWith({ tags: ["web-api-models", "web-api-gateway-models", "web-api-reference-data", "web-api-compare"] });
+  });
   it("denies non-admin registry reads and writes", async () => { const calls = setup("member"); expect((await request("registries")).status).toBe(403); expect((await request("registries/families", {})).status).toBe(403); expect(calls.some((call) => call.url.includes("rpc/"))).toBe(false); });
   it.each(["constructor", "__proto__", "users"])("rejects unknown registry %s", async (key) => { setup(); expect((await request(`registries/${key}`)).status).toBe(404); });
   it("rejects unknown writable columns", async () => { const calls = setup(); const response = await request("registries/families", { values: { family_slug: "test", name: "Test", lab_slug: "test", role: "admin" }, before: null }); expect(response.status).toBe(400); expect(calls.some((call) => call.url.includes("rpc/"))).toBe(false); });

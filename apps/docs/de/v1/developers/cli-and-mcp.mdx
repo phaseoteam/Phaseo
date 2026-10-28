@@ -13,6 +13,7 @@ Nutze Phaseo im Terminal mit der CLI oder verbinde einen KI-Client über MCP. Be
 | Phaseo CLI | Terminal-Workflows, CI, Verwaltung und Automatisierung | Lesen und Schreiben, beschränkt durch deine Scopes und Workspace-Rolle |
 | Phaseo MCP | Live-Phaseo-Daten in Codex, Claude, ChatGPT und anderen MCP-Clients | Authentifiziert und schreibgeschützt |
 | Docs MCP | Aktuelle Phaseo-Dokumentation beim Programmieren nachschlagen | Nur Dokumentation und schreibgeschützt |
+| Phaseo-Plugin | Phaseo MCP, Docs MCP und die Phaseo-Skills in einem Schritt in Claude Code oder Codex installieren | Wie beim jeweiligen MCP-Server |
 
 ## Phaseo CLI
 
@@ -95,9 +96,33 @@ Verwende ihn, wenn ein Coding-Assistent aktuelle API-Beispiele, Integrationshinw
 	Verbinde den Dokumentationsserver mit Codex, Claude Code, Cursor, OpenCode oder VS Code.
 </Card>
 
+## Phaseo-Plugin
+
+Das Phaseo-Plugin bündelt Phaseo MCP, Docs MCP und die Phaseo-Agent-Skills für Integration, Migration, Modellauswahl, Nutzungsüberwachung, die SDKs und die CLI. Installiere es einmal, statt jeden Teil selbst zu verbinden.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+Führe `/mcp` aus und melde dich bei `plugin:phaseo:phaseo` an, um dein Phaseo-Konto zu verbinden. Skills werden geladen, wenn eine Anfrage zu ihnen passt, oder du rufst einen direkt auf, zum Beispiel `/phaseo:phaseo-gateway`.
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+Der letzte Befehl öffnet Phaseo OAuth für Phaseo MCP. Skills werden geladen, wenn eine Anfrage zu ihnen passt.
+
 ## Die passende Schnittstelle auswählen
 
 - Verwende die **CLI**, um Schlüssel zu erstellen, Einstellungen zu ändern, Workspaces zu verwalten oder administrative Abläufe zu automatisieren.
 - Verwende **Phaseo MCP**, um einem KI-Client sicheren Zugriff auf aktuelle Phaseo-Daten zu geben.
 - Verwende **Docs MCP**, um einem Coding-Assistenten aktuelle Phaseo-Dokumentation bereitzustellen, ohne Kontozugriff zu gewähren.
+- Verwende das **Phaseo-Plugin**, um beide MCP-Server und die Phaseo-Skills in einem Schritt in Claude Code oder Codex einzurichten.
 

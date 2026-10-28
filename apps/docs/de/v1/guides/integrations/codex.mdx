@@ -10,20 +10,20 @@ Wenn Codex während der Arbeit auch die aktuelle Phaseo-Dokumentation lesen soll
 
 <Visibility for="humans">
 <Note>
-Brauchst du neben der Anbieterkonfiguration auch Hilfe beim Einrichten wiederverwendbarer Agenten? Installiere die öffentlichen Phaseo-Skills aus [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+Brauchst du neben der Anbieterkonfiguration auch Hilfe beim Einrichten wiederverwendbarer Agenten? Installiere die öffentlichen Phaseo-Skills aus [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>
 
 <Visibility for="agents">
 <Note>
-Wiederverwendbare Phaseo-Skills sind unter [`phaseoteam/skills`](https://github.com/phaseoteam/skills) verfügbar. Verwende für Codex-Installationen:
+Wiederverwendbare Phaseo-Skills sind unter [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) verfügbar. Verwende für Codex-Installationen:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 </Note>
 </Visibility>

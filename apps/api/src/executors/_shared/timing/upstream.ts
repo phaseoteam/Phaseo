@@ -110,14 +110,17 @@ export function isStreamingProviderRequest(input: RequestInfo | URL, init?: Requ
  * to build a synthetic stream, so a deadline would cut off long reasoning or
  * media generations and fail them over (paying for the same work twice).
  */
-export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean } = {}): {
+export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean; minimumHeadersTimeoutMs?: number } = {}): {
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
 	isProviderTransportFailure: (error: unknown) => boolean;
+	/** Provider-phase responses with a 2xx status: the provider did the (billable) work. */
+	providerSuccessCount: () => number;
 } {
 	const executorStartedAt = performance.now();
 	const responseTimings = new WeakMap<Response, UpstreamResponseTiming>();
 	const providerTransportFailures = new Set<unknown>();
+	let providerSuccesses = 0;
 	let sequence = 0;
 	let firstProviderFetchAt: number | undefined;
 	let firstProviderFetchEpochMs: number | undefined;
@@ -150,8 +153,12 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options:
 		}
 		let response: Response;
 		try {
+			const configuredTimeout = resolveUpstreamHeadersTimeoutMs();
+			const headersTimeout = configuredTimeout > 0
+				? Math.max(configuredTimeout, options.minimumHeadersTimeoutMs ?? 0)
+				: 0;
 			response = phase === "provider" && options.applyHeadersDeadline && isStreamingProviderRequest(input, init)
-				? await fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
+				? await fetchWithHeadersDeadline(input, init, headersTimeout)
 				: await globalThis.fetch(input, init);
 		} catch (error) {
 			// Preserve the original error identity and adapter retry semantics.
@@ -177,11 +184,13 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options:
 		if (phase === "provider" && firstProviderHeadersMs === undefined) {
 			firstProviderHeadersMs = headersMs;
 		}
+		if (phase === "provider" && response.ok) providerSuccesses += 1;
 		return response;
 	};
 
 	return {
 		isProviderTransportFailure: (error) => providerTransportFailures.has(error),
+		providerSuccessCount: () => providerSuccesses,
 		timing: {
 			fetch: timedFetch,
 			timingFor: (response) => responseTimings.get(response),

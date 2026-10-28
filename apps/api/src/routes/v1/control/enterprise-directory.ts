@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import { json, withRuntime } from "@/routes/utils";
 import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 
@@ -93,6 +94,8 @@ async function updateMemberOverride(req: Request) {
 	if (!userId || (role !== null && !["member", "admin"].includes(role)) || !["directory", "department", "none"].includes(mode) || (mode === "department" && !departmentId)) return json({ error: "bad_request", message: "Invalid member override" }, 400, NO_STORE);
 	const { error } = await getSupabaseAdmin().rpc("apply_workspace_member_override", { p_workspace_id: access.auth.workspaceId, p_user_id: userId, p_access_role: role, p_department_override_enabled: mode !== "directory", p_department_id: departmentId, p_department_position: String(body.department_position ?? "member"), p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE);
+	// Department membership decides which department rate limits apply.
+	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.directory_member.updated", "workspace_member", userId, { access_role: role, department_mode: mode, department_id: departmentId });
 	return json({ data: { updated: true } }, 200, NO_STORE);
 }
@@ -133,6 +136,7 @@ async function deleteDepartment(req: Request) {
 	const id = pathParam(req, "departments");
 	const { data, error } = await getSupabaseAdmin().rpc("management_delete_workspace_department", { p_workspace_id: access.auth.workspaceId, p_department_id: id, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
 	if (error) return json({ error: String(error.message ?? "").includes("not found") ? "not_found" : "directory_update_failed" }, String(error.message ?? "").includes("not found") ? 404 : 503, NO_STORE);
+	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.department.deleted", "workspace_department", id, { name: data.name }); return json({ deleted: true }, 200, NO_STORE);
 }
 
@@ -143,7 +147,9 @@ async function setDepartmentMember(req: Request) {
 	if (!departmentId || !userId || !["member", "lead"].includes(position)) return json({ error: "bad_request" }, 400, NO_STORE);
 	const client = getSupabaseAdmin();
 	const { data, error } = await client.rpc("management_set_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_position: position, p_primary: body.primary === true, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
-	if (error) return json({ error: "invalid_membership" }, 400, NO_STORE); await audit(access.auth, "identity.department_member.updated", "workspace_member", userId, { department_id: departmentId, position, primary: body.primary === true }); return json({ data }, 200, NO_STORE);
+	if (error) return json({ error: "invalid_membership" }, 400, NO_STORE);
+	await publishRateLimitPlan(access.auth.workspaceId);
+	await audit(access.auth, "identity.department_member.updated", "workspace_member", userId, { department_id: departmentId, position, primary: body.primary === true }); return json({ data }, 200, NO_STORE);
 }
 
 async function deleteDepartmentMember(req: Request) {
@@ -151,6 +157,7 @@ async function deleteDepartmentMember(req: Request) {
 	const departmentId = pathParam(req, "departments"); const userId = pathParam(req, "members");
 	const { data, error } = await getSupabaseAdmin().rpc("management_delete_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_actor_user_id: access.auth.userId });
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE); if (data !== true) return json({ error: "not_found" }, 404, NO_STORE);
+	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.department_member.deleted", "workspace_member", userId, { department_id: departmentId }); return json({ deleted: true }, 200, NO_STORE);
 }
 

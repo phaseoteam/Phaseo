@@ -1,0 +1,53 @@
+{
+	"metaTitle": "Envie sua opinião",
+	"invalidTitle": "Este link de feedback não funciona",
+	"invalidBody": "Verifique se o link foi copiado inteiro ou simplesmente responda ao e-mail. As respostas também chegam ao Daniel.",
+	"unavailable": "O feedback não está disponível agora. Tente novamente mais tarde ou responda ao e-mail.",
+	"intro": "Obrigado por dedicar um minuto. Suas respostas vão direto para o Daniel, que desenvolve o Phaseo.",
+	"rewardNote": "Como um pequeno agradecimento, você receberá um código de crédito de uso único ao enviar suas respostas.",
+	"titles": {
+		"never_requested": "O que impediu você de começar?",
+		"used_not_paid": "O que impediu você de adicionar créditos?",
+		"paid": "O que você acha do Phaseo?"
+	},
+	"reasonLabel": "Escolha o motivo mais próximo",
+	"reasons": {
+		"setup_unclear": "A configuração não estava clara",
+		"pricing_unclear": "Os preços não estavam claros",
+		"model_missing": "O modelo que eu queria não estava disponível",
+		"model_choice_unclear": "Eu não sabia qual modelo usar",
+		"payment_issue": "Tive um problema para pagar",
+		"chose_alternative": "Escolhi outra ferramenta",
+		"just_exploring": "Eu só estava explorando",
+		"not_ready_yet": "Ainda não estou pronto",
+		"other": "Outro motivo"
+	},
+	"detailsLabel": "Conte mais (opcional)",
+	"npsLabel": "Qual a probabilidade de você recomendar o Phaseo a um amigo ou colega?",
+	"npsLow": "Pouco provável",
+	"npsHigh": "Muito provável",
+	"likesLabel": "Do que você mais gosta? (opcional)",
+	"improveLabel": "O que devemos melhorar ou adicionar? (opcional)",
+	"required": "Responda à primeira pergunta.",
+	"submit": "Enviar feedback",
+	"submitting": "Enviando…",
+	"submitError": "Não foi possível enviar seu feedback. Tente novamente.",
+	"thanksTitle": "Obrigado!",
+	"thanksBody": "O Daniel lê todas as respostas.",
+	"rewardIssued": "Aqui está seu código de crédito de agradecimento. Ele pode ser usado uma vez e expira em 90 dias.",
+	"redeem": "Resgatar código",
+	"copy": "Copiar código",
+	"copied": "Copiado",
+	"rewardExhausted": "Os créditos de agradecimento desta rodada já foram todos resgatados, mas suas respostas ajudam muito.",
+	"alreadyAnswered": "Você já respondeu. Obrigado!",
+	"unsubscribeLink": "Não quer receber e-mails como este? Cancelar inscrição",
+	"unsubscribe": {
+		"metaTitle": "Cancelar inscrição",
+		"title": "Cancelar inscrição nos e-mails de feedback",
+		"body": "Você deixará de receber e-mails não essenciais, como pedidos de feedback. E-mails sobre conta e cobrança continuarão chegando.",
+		"button": "Cancelar inscrição",
+		"working": "Cancelando…",
+		"done": "Sua inscrição foi cancelada.",
+		"error": "Não funcionou. Tente novamente."
+	}
+}

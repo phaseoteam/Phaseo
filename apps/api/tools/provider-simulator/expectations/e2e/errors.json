@@ -1,0 +1,494 @@
+{
+	"group": "errors",
+	"description": "Upstream HTTP errors from one provider per upstream dialect (DeepInfra chat, OpenAI responses, Anthropic messages, Vertex Gemini), with no failover candidate: client status, error body shape and Retry-After. Expected outcomes come from Phaseo's errors and limits pages.",
+	"entries": [
+		{
+			"id": "errors-always-present-fields",
+			"cases": "re:^errors.",
+			"description": "Every error response follows the same JSON format.",
+			"checks": [
+				{
+					"path": "client.body.generation_id",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.status_code",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.error",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.error_type",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.error_origin",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.description",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Fields you will always get."
+					}
+				},
+				{
+					"path": "client.body.error_origin",
+					"op": "equals",
+					"value": "upstream",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+					}
+				},
+				{
+					"path": "client.body.reason",
+					"op": "equals",
+					"value": "all_candidates_failed",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Example error response: reason all_candidates_failed when the request reached a provider."
+					}
+				},
+				{
+					"path": "client.body.attempt_count",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+					}
+				},
+				{
+					"path": "client.body.upstream_error.code",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+					}
+				},
+				{
+					"path": "client.body.upstream_error.message",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "upstream_error.message in the example response."
+					}
+				},
+				{
+					"path": "client.body.failure_sample",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failure_sample in the example response."
+					}
+				},
+				{
+					"path": "client.headers.x-phaseo-upstream-ratelimit-remaining-requests",
+					"op": "absent",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "BYOK responses can include X-Phaseo-Upstream-RateLimit-* headers; these quota headers are omitted for managed requests."
+					}
+				},
+				{
+					"path": "client.headers.x-ratelimit-remaining-requests",
+					"op": "absent",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "Other upstream headers are not forwarded."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 0,
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider rejected the request before producing output or usage, so nothing is billable."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-non-throttling-map-to-502",
+			"cases": "re:^errors.[a-z-]+.(400|401|403|404|408|413|422|500|503|529)$",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 502,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+					}
+				},
+				{
+					"path": "client.body.status_code",
+					"op": "equals",
+					"value": 502,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "status_code mirrors the HTTP status code."
+					}
+				},
+				{
+					"path": "client.body.error",
+					"op": "equals",
+					"value": "upstream_error",
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "Example error response."
+					}
+				},
+				{
+					"path": "client.headers.retry-after",
+					"op": "absent",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "Retry-After is forwarded only when the provider supplies one."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-throttling-keeps-429",
+			"cases": "re:^errors.[a-z-]+.429$",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 429,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "A request can be throttled by the selected provider ... Routing and fallbacks can reduce provider failures, but a request can still return 429. errors.mdx status table: 429 = provider or route-level throttling; respect Retry-After."
+					}
+				},
+				{
+					"path": "client.body.status_code",
+					"op": "equals",
+					"value": 429,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "status_code mirrors the HTTP status code."
+					}
+				},
+				{
+					"path": "client.headers.retry-after",
+					"op": "equals",
+					"value": "7",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "Phaseo forwards a validated Retry-After value when the routed provider supplies one."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-400",
+			"cases": "re:^errors.[a-z-]+.400$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						400
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-401",
+			"cases": "re:^errors.[a-z-]+.401$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						401
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "credentials_invalid_or_forbidden",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-403",
+			"cases": "re:^errors.[a-z-]+.403$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						403
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-404",
+			"cases": "re:^errors.[a-z-]+.404$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						404
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "model_unavailable_for_endpoint",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-408",
+			"cases": "re:^errors.[a-z-]+.408$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						408
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-413",
+			"cases": "re:^errors.[a-z-]+.413$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						413
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-422",
+			"cases": "re:^errors.[a-z-]+.422$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						422
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-429",
+			"cases": "re:^errors.[a-z-]+.429$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						429
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "rate_limited",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-500",
+			"cases": "re:^errors.[a-z-]+.500$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						500
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "server_error",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-503",
+			"cases": "re:^errors.[a-z-]+.503$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						503
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "server_error",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		},
+		{
+			"id": "errors-status-529",
+			"cases": "re:^errors.[a-z-]+.529$",
+			"checks": [
+				{
+					"path": "client.body.failed_statuses",
+					"op": "equals",
+					"value": [
+						529
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "failed_statuses in the example response lists the provider HTTP statuses."
+					}
+				},
+				{
+					"path": "client.body.provider_failure_diagnostics.category",
+					"op": "equals",
+					"value": "server_error",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/errors.mdx",
+						"note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+					}
+				}
+			]
+		}
+	]
+}

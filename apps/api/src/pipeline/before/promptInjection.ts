@@ -1,3 +1,4 @@
+import { replaceRenderedValue, type TemplateVariableTarget } from "./promptTemplate";
 import type { Endpoint } from "@core/types";
 import { err } from "./http";
 import type {
@@ -530,11 +531,26 @@ function collectGenericPromptTargets(body: any): TextTarget[] {
 	return targets;
 }
 
+function collectExtractionTargets(body: any): TextTarget[] {
+	const targets = collectGenericPromptTargets(body);
+	if (body?.fields && typeof body.fields === "object") {
+		for (const [name, field] of Object.entries(body.fields)) {
+			collectDecisionTargetsFromValue(
+				(field as { instructions?: unknown })?.instructions,
+				["fields", name, "instructions"],
+				targets,
+			);
+		}
+	}
+	return targets;
+}
+
 function collectPromptInjectionTargets(endpoint: Endpoint, body: any): TextTarget[] {
 	if (endpoint === "chat.completions") return collectChatTargets(body);
 	if (endpoint === "messages") return collectAnthropicTargets(body);
 	if (endpoint === "responses") return collectResponsesTargets(body);
 	if (endpoint === "decisions") return collectDecisionTargets(body);
+	if (endpoint === "extractions") return collectExtractionTargets(body);
 	return collectGenericPromptTargets(body);
 }
 
@@ -588,6 +604,8 @@ export function applyPromptInjectionGuardrails(args: {
 	workspacePolicy: WorkspacePolicy | null;
 	requestId: string;
 	workspaceId: string;
+	/** Text values of prompt template variables, scanned as user content. */
+	templateVariables?: TemplateVariableTarget[];
 }):
 	| {
 			ok: true;
@@ -611,7 +629,8 @@ export function applyPromptInjectionGuardrails(args: {
 	}
 
 	const targets = collectPromptInjectionTargets(args.endpoint, args.body);
-	if (targets.length === 0) {
+	const variableTargets = args.templateVariables ?? [];
+	if (targets.length === 0 && variableTargets.length === 0) {
 		return {
 			ok: true,
 			body: args.body,
@@ -620,7 +639,7 @@ export function applyPromptInjectionGuardrails(args: {
 		};
 	}
 
-	const detections = targets.flatMap((target) => analyzePromptInjectionText(target.text));
+	const detections = [...targets, ...variableTargets].flatMap((target) => analyzePromptInjectionText(target.text));
 	if (detections.length === 0) {
 		return {
 			ok: true,
@@ -686,7 +705,26 @@ export function applyPromptInjectionGuardrails(args: {
 		if (redactedText === target.text) continue;
 		redactionCount += targetMatches.length;
 		setPathValue(nextBody, target.path, redactedText);
-		setPathValue(nextRawBody, target.path, redactedText);
+		if (!args.templateVariables) setPathValue(nextRawBody, target.path, redactedText);
+	}
+	// A template adds turns ahead of the caller's input, so merged-body paths do not
+	// line up with the raw body. Redact the caller's own content at its own paths.
+	if (args.templateVariables) {
+		for (const target of collectPromptInjectionTargets(args.endpoint, args.rawBody)) {
+			const targetMatches = analyzePromptInjectionText(target.text);
+			if (targetMatches.length === 0) continue;
+			const redactedText = redactText(target.text, targetMatches);
+			if (redactedText !== target.text) setPathValue(nextRawBody, target.path, redactedText);
+		}
+	}
+	for (const target of variableTargets) {
+		const targetMatches = analyzePromptInjectionText(target.text);
+		if (targetMatches.length === 0) continue;
+		const redactedText = redactText(target.text, targetMatches);
+		if (redactedText === target.text) continue;
+		redactionCount += targetMatches.length;
+		replaceRenderedValue(nextBody, target.text, redactedText);
+		setPathValue(nextRawBody, target.rawPath, redactedText);
 	}
 
 	return {

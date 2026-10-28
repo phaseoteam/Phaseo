@@ -1,4 +1,5 @@
 import {
+	REQUEST_COLUMNS,
 	defaultRequestColumns,
 	formatRequestMetric,
 	normalizeRequestColumns,
@@ -42,8 +43,8 @@ describe("request column preferences", () => {
 			{ id: "overhead", visible: true },
 			{ id: "date", visible: false },
 		]);
-		expect(columns).toHaveLength(12);
-		expect(new Set(columns.map(({ id }) => id)).size).toBe(12);
+		expect(columns).toHaveLength(REQUEST_COLUMNS.length);
+		expect(new Set(columns.map(({ id }) => id)).size).toBe(REQUEST_COLUMNS.length);
 	});
 	it("recovers corrupt preferences and retains at least one visible column", () => {
 		expect(normalizeRequestColumns({})).toEqual(defaultRequestColumns());

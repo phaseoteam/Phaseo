@@ -17,6 +17,21 @@ Wenn du Tipps zur Abstimmung statt Felddefinitionen suchst, findest du sie unter
 
 Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbieter. Die Schnellstarttabelle des Modells fasst die Unterstützung der aktuell aktiven Anbieter für eine bestimmte Route zusammen.
 
+## Nicht unterstützte Parameter
+
+Unterstützt der Anbieter, der eine Anfrage bedient, einen ihrer Sampling-Parameter nicht, entfernt Phaseo diesen Parameter. Er wird nicht an den Anbieter gesendet, und die Anfrage wird nicht abgelehnt, sodass Clients, die immer die OpenAI-Standardwerte senden, weiter funktionieren. Die Unterstützung wird pro Anbieter anhand der Anbieterprofile von Phaseo und der Katalogparameter der Route bestimmt. Gibt eine Route keine Parameter an, entfällt nur die Katalogprüfung: Parameter, die das Anbieterprofil als nicht unterstützt kennzeichnet, werden trotzdem entfernt, zum Beispiel `top_k` bei Cohere oder `stop` bei Reflection.
+
+Nur diese Parameter können entfernt werden: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` bei `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` und `image_config`. Nachrichten, Tools, `tool_choice`, `response_format`, Reasoning-Einstellungen und Ausgabelimits werden nie entfernt.
+
+Unabhängig davon wird eine Prompt-Cache-`ttl` von `12h` auf Routen entfernt, die den 12-Stunden-Cache von OpenAI nicht annehmen, und an denselben Stellen als `prompt_cache_options.ttl` oder `prompt_cache_breakpoint.ttl` gemeldet; siehe [Zwischenspeicherung von Prompts](../guides/prompt-caching.mdx).
+
+Bei erfolgreichen Antworten meldet Phaseo die entfernten Parameter, die die Anfrage selbst gesendet hat:
+
+- im Antwort-Header `X-Phaseo-Dropped-Params`, zum Beispiel `X-Phaseo-Dropped-Params: top_k, min_p`
+- in `meta.routing.dropped_params`, wenn die Anfrage `meta: true` setzt, zum Beispiel `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Ein Parameter, der aus einem Preset oder einem Standardwert stammt und nicht aus dem Anfrage-Body, kann entfernt werden, ohne an einer dieser Stellen zu erscheinen. Er wird trotzdem in den Routing-Diagnosen erfasst, die Phaseo mit der Anfrage speichert.
+
 ## Schnellübersicht
 
 | Parameter | Typ | Zweck |
@@ -46,10 +61,10 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-spezifisches Token-Limit oder Abrechnungsfeld. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Reasoning-Inhalte oder Zusammenfassungen zurückgeben, sofern unterstützt. |
 | [`service_tier`](#service_tier) | `string` | Eine unterstützte Anfragestufe wie `fast`, `ultrafast` oder `flex` wählen. |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | Cache-bewusstes Routing für zusammengehörige Anfragen beibehalten. |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI-Promptcache-Modus und TTL-Steuerung festlegen. |
-| [`cache_control`](#cache_control) | `object` | Anbieterneutrale Prompt-Cache-Hinweise oder Trennpunkte anwenden. |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Die OpenAI-kompatible Aufbewahrungsdauer des Prompt-Caches festlegen. |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | Zusammengehörige Anfragen bei dem Anbieter halten, der ihren Prompt-Cache hat. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Prompt-Cache-Modus und TTL bei OpenAI ab GPT-5.6 festlegen. |
+| [`cache_control`](#cache_control) | `object` | Eine Standard-Cache-Richtlinie für Claude festlegen oder Cache-Breakpoints auf Inhaltsblöcken markieren. |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Die Prompt-Cache-Aufbewahrung bei OpenAI-Modellen vor GPT-5.6 festlegen. |
 | [`provider`](#provider) | `object` | Routing und Anbieterauswahl beeinflussen. |
 | [`provider_options`](#provider_options) | `object` | Anbietereigene Einstellungen durch das Gateway weitergeben. |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | Zusätzliche Metadaten oder Nutzungsdaten in der Antwort zurückgeben. |
@@ -423,14 +438,14 @@ Je nach Route kann dies ein Anfrage-Regler, ein Limit oder ein Abrechnungsfeld d
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Fordert nach Möglichkeit Reasoning-Inhalte oder Zusammenfassungen in Antworten an.
+Wird auf Chat Completions aus Kompatibilitätsgründen akzeptiert. Reasoning-Inhalte und -Zusammenfassungen werden immer zurückgegeben, wenn das Modell sie erzeugt, unabhängig vom Wert dieses Felds.
 
 | Feld | Wert |
 | --- | --- |
 | Typ | `boolean` |
-| Standard | `false` |
+| Standard | `true` |
 
-Verwende den Parameter mit Bedacht. Reasoning-Payloads können größer sein, sind möglicherweise nicht für jedes Modell verfügbar und eignen sich oft nicht für Produktionsantworten ohne zusätzlichen Diagnosebedarf.
+Reasoning-Payloads können groß sein und sind nicht für jedes Modell verfügbar. Um das Reasoning zu reduzieren, senke `reasoning.effort` oder setze `reasoning.enabled` auf `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -451,6 +466,7 @@ Hinweise:
 
 - `Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
 - Die Unterstützung variiert je nach Endpunkt und Anbieter.
+- Die Werte von OpenAI werden ebenfalls akzeptiert: `auto` (oder `null`) fordert keine bestimmte Stufe an und wird wie ein weggelassenes Feld behandelt, und `scale` wird als `default` behandelt, die Standardstufe.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -462,48 +478,54 @@ Stellt einen stabilen Cache-Affinitätsschlüssel für prompt-cache-bewusstes Ro
 | Typ | `string` |
 | Zweck | Affinitätsrouting für zusammengehörige gecachte Prompts |
 
-Nutze den Parameter, wenn mehrere Anfragen stabile Prompt-Präfixe teilen und nach Möglichkeit denselben Upstream-Anbieter oder dieselbe Region verwenden sollen. Phaseo kann die Cache-Affinität auch aus dem Anfragekontext ableiten; ein expliziter Schlüssel eignet sich jedoch besser für lange Gespräche, Agent-Sitzungen und wiederholte Workflows.
+Nutze den Parameter, wenn mehrere Anfragen stabile Prompt-Präfixe teilen, etwa die Schritte einer Agentenschleife. Phaseo legt den Schlüssel auf den Anbieter und die Route (Deployment oder Region) fest, die die erste erfolgreiche Anfrage bedient haben, und hält spätere Anfragen mit demselben Schlüssel dort, bis dieser Anbieter ausfällt, das von Phaseo verwaltete Kontingent bei ihm aufgebraucht ist oder deine Routing-Richtlinie ihn nicht mehr zulässt. Festlegungen gelten pro Workspace, und ihre Dauer richtet sich nach der Cache-Aufbewahrung des Anbieters. Siehe [Provider-Affinität](../guides/prompt-caching.mdx#provider-affinity).
+
+Chat Completions, Responses und Anthropic Messages akzeptieren den Parameter. Phaseo sendet einen Hash aus deiner Workspace-ID und dem Schlüssel an den Anbieter, nie den Rohschlüssel. Workspaces, die denselben Schlüssel wählen, teilen sich daher keinen Anbieter-Cache. Antworten geben den Schlüssel zurück, den du gesendet hast. Anbieter, deren API das Feld ablehnt, erhalten es nicht, und das Senden schließt nie einen Anbieter vom Routing aus. Phaseo kann die Affinität auch aus dem Anfragekontext ableiten; ein expliziter Schlüssel eignet sich jedoch besser für lange Gespräche, Agent-Sitzungen und wiederholte Workflows.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-Leitet OpenAI-Promptcache-Steuerung über unterstützte OpenAI-Routen weiter.
+Leitet Prompt-Cache-Steuerungen an OpenAI und Azure OpenAI ab GPT-5.6, einschließlich GPT-6 Astra, an DeepInfra und an Moonshot AI weiter.
 
 | Feld | Wert |
 | --- | --- |
 | Typ | `object` |
-| Häufige Felder | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| Häufige Felder | `mode` (`implicit` oder `explicit`), `ttl` |
+| OpenAI-TTL | `30m`, bei der Responses API von OpenAI auch `12h` |
 
-Für GPT-6 Astra nutzt du `{"mode":"explicit","ttl":"30m"}` für explizites Promptcaching. Phaseo behält das Objekt bei der Anfragenormalisierung bei und sendet es unverändert an OpenAI.
+Nutze `{"mode":"explicit","ttl":"30m"}`, wenn OpenAI nur die Breakpoints cachen soll, die du setzt. OpenAI akzeptiert als `ttl` `30m` (Standard) oder `12h`, Azure OpenAI nur `30m`; siehe [12-Stunden-Cache bei OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). DeepInfra akzeptiert `5m` oder `1h` und braucht `prompt_cache_key` bei jeder Anfrage der Sitzung. Moonshot AI akzeptiert `mode: "implicit"` und als `ttl` `5m` oder, bei Kimi K3, `1h`.
+
+Phaseo sendet das Objekt an diese Routen. Eine Lebensdauer, die eine Route nicht annehmen kann, etwa `12h` bei Azure OpenAI oder `1h` bei einem Moonshot-AI-Modell ohne 1-Stunden-Preis, wird entfernt und im Header `X-Phaseo-Dropped-Params` gemeldet. Für alle anderen Anbieter und für OpenAI-Modelle vor GPT-5.6, die stattdessen [`prompt_cache_retention`](#prompt_cache_retention) verwenden, entfernt Phaseo das Objekt. `provider_options.openai.prompt_cache_options` wird ebenfalls akzeptiert; der Wert auf oberster Ebene hat Vorrang.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-Wendet eine anbieterneutrale Prompt-Cache-Richtlinie auf unterstützten Textanfrage-Schnittstellen an.
+Legt eine Standard-Prompt-Cache-Richtlinie für Claude fest oder markiert einen Cache-Breakpoint auf einem Inhaltsblock.
 
 | Feld | Wert |
 | --- | --- |
 | Typ | `object` |
 | Gemeinsame Felder | `type`, `ttl`, `scope` |
-| Zweck | Automatisches Prompt-Caching und explizite Cache-Trennpunkte |
+| Zweck | Claude-Cache-Richtlinien und explizite Cache-Breakpoints |
 
-Verwende `cache_control` auf der obersten Ebene von Chat-Completions-, Responses- und Anthropic-Messages-Anfragen, wenn derselbe Cache-Hinweis das gemeinsame Gateway-Schema durchlaufen soll. Bei Bedarf kannst du `cache_control` auch auf unterstützten Inhaltsblöcken setzen, um Cache-Trennpunkte festzulegen.
+`cache_control` auf oberster Ebene wird bei Chat-Completions-, Responses- und Anthropic-Messages-Anfragen akzeptiert. Es gilt für Claude bei Anthropic, Claude on AWS, Amazon Bedrock und Google Vertex AI: Phaseo setzt je nach `scope` (`all_text`, `last_user_message`, `agent` oder `none`) bis zu vier Breakpoints. Andere Anbieter ignorieren es. `provider_options.anthropic.cache_control` ist dieselbe Einstellung und hat Vorrang, wenn beides gesendet wird.
 
-Übliche TTL-Werte sind `5m` und `1h`, abhängig von der Unterstützung durch Anbieter und Modell. Anbieterspezifische Aliase wie `provider_options.anthropic.cache_control` und `provider_options.google.cache_control` werden für native Integrationen weiterhin akzeptiert.
+Auf einem Inhaltsblock, einer Tool-Definition oder einem Tool-Ergebnis markiert `cache_control` einen Cache-Breakpoint. Phaseo sendet ihn an Claude-Routen, Alibaba Model Studio und Venice, wandelt ihn für OpenAI und Azure OpenAI ab GPT-5.6 in `prompt_cache_breakpoint` um und entfernt ihn für andere Anbieter. OpenAIs eigenes `prompt_cache_breakpoint: {"mode": "explicit"}` wird auf denselben Blöcken akzeptiert und hat Vorrang, wenn ein Block beides trägt.
+
+Verwende `type: "ephemeral"` mit einer `ttl` von `5m` (Standard) oder `1h`. Anthropic akzeptiert höchstens vier Breakpoints pro Anfrage; setzt du mehr, behält Phaseo den ersten und die letzten drei. Die Scopes und was jeder Anbieter erhält, findest du unter [Prompt-Caching](../guides/prompt-caching.mdx#cache-controls).
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-Legt die OpenAI-kompatible Aufbewahrungsrichtlinie für den Prompt-Cache bei unterstützten OpenAI-Anfragen fest.
+Legt die Aufbewahrungsrichtlinie für den Prompt-Cache bei OpenAI- und Azure-OpenAI-Modellen vor GPT-5.6 fest.
 
 | Feld | Wert |
 | --- | --- |
 | Typ | `string` |
-| Beispiel | `24h` |
+| Unterstützte Werte | `in_memory`, `24h` |
 | Zweck | OpenAI-Prompt-Cache-Aufbewahrung |
 
-Nutze den Parameter, um OpenAI-Optionen zur Cache-Aufbewahrung ohne Verschachtelung in anbieterspezifischen Optionen zu übergeben. Der anbieterbezogene Alias `provider_options.openai.prompt_cache_retention` wird weiterhin akzeptiert. Sind beide vorhanden, hat der Wert der obersten Ebene `prompt_cache_retention` Vorrang.
+Phaseo sendet dieses Feld nur an OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6, und `24h` akzeptieren nur die Modelle, die OpenAI auflistet. Ab GPT-5.6 gilt stattdessen [`prompt_cache_options.ttl`](#prompt_cache_options), und andere Anbieter erhalten das Feld nicht. Der anbieterbezogene Alias `provider_options.openai.prompt_cache_retention` wird weiterhin akzeptiert. Sind beide vorhanden, hat der Wert der obersten Ebene `prompt_cache_retention` Vorrang.
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +571,12 @@ Beispiele:
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-Nutze den Parameter für anbietereigene Funktionen, wenn der Rest der Anfrage im gemeinsamen Gateway-Schema bleiben soll. Für allgemeine Cache-Hinweise solltest du `cache_control` auf oberster Ebene verwenden, für die OpenAI-kompatible Aufbewahrung `prompt_cache_retention`.
+Nutze den Parameter für anbietereigene Funktionen, wenn der Rest der Anfrage im gemeinsamen Gateway-Schema bleiben soll. Für Claude-Cache-Richtlinien solltest du `cache_control` auf oberster Ebene verwenden, für die OpenAI-Aufbewahrung `prompt_cache_options` auf oberster Ebene ab GPT-5.6 oder `prompt_cache_retention` auf oberster Ebene bei älteren Modellen.
+
+`google.cached_content` benennt einen expliziten Gemini-Cache. Er funktioniert nur mit deinen eigenen Anmeldedaten: einem Google-API-Schlüssel bei Google AI Studio oder Vertex-AI-Anmeldedaten bei Vertex AI. Bei Vertex AI sendet Phaseo die Anfrage an das Projekt und den Standort im vollständigen Namen des Caches (`projects/{project}/locations/{location}/cachedContents/{id}`); ein kurzer Name verwendet `project_id` und `region` aus deinem Dienstkonto-JSON. Mit den Anmeldedaten von Phaseo gibt die Anfrage 400 zurück. `google.cache_control` und `google.cache_ttl` werden akzeptiert, aber nicht an Google gesendet.
 
 Beispiele zum Prompt-Caching einzelner Anbieter für Chat Completions, Responses und Anthropic Messages findest du unter [Prompt-Caching](../guides/prompt-caching.mdx).
 
@@ -642,9 +666,10 @@ Wenn du ausführlichere Hinweise zur Abstimmung statt einer reinen Feldreferenz 
 - [Fehler und Debugging](./errors.mdx)
 
 <Visibility for="agents">
-Wenn du die Parameterverarbeitung als Agent implementierst:
+Regeln zum Umgang mit Parametern für Agenten:
 
-- nutze Repository-Skills zur Schema-Validierung und Prüfung der Anfrageform
-- erhalte unbekannte anbieterspezifische Schlüssel in Passthrough-Abläufen, sofern zulässig
-- prüfe die Endpunktkompatibilität, bevor du erweiterte Felder wie Tools, Streaming oder Debug-Optionen kombinierst
+- Prüfe Anfragetexte gegen den API-Vertrag unter https://phaseo.app/docs/openapi/v1/openapi.yaml, statt Feldnamen zu raten.
+- Lies die API-Referenzseite des Endpunkts, bevor du erweiterte Felder wie Tools, Streaming und Debug-Optionen kombinierst.
+- Behalte unbekannte anbieterspezifische Schlüssel in Durchreich-Abläufen bei, wenn der Endpunkt sie erlaubt.
+- Für erprobte Muster zur Anfragestruktur installiere den Skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

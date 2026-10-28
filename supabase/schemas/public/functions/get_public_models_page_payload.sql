@@ -13,7 +13,8 @@ CREATE OR REPLACE FUNCTION public.get_public_models_page_payload (
     select coalesce(
       jsonb_agg(
         payload || jsonb_build_object('organisation_colour',
-          coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')))
+          coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')),
+          'license', nullif(btrim(model.license), ''))
         order by nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
           model.created_at desc nulls last, position
       ), '[]'::jsonb
@@ -26,7 +27,8 @@ CREATE OR REPLACE FUNCTION public.get_public_models_page_payload (
     select coalesce(
       jsonb_agg(
         payload || jsonb_build_object('organisation_colour',
-          coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')))
+          coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')),
+          'license', nullif(btrim(model.license), ''))
         order by nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
           model.created_at desc nulls last, position
       ), '[]'::jsonb

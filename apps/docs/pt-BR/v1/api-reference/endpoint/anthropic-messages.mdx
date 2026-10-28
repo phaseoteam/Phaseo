@@ -1,6 +1,6 @@
 ---
 title: "Criar uma mensagem"
-sidebarTitle: "Criar uma mensagem"
+sidebarTitle: "Criar uma mensagem (Anthropic)"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /messages"
 description: "Endpoint Messages compatível com Anthropic em `/v1/messages`."
 ---
@@ -9,6 +9,31 @@ description: "Endpoint Messages compatível com Anthropic em `/v1/messages`."
 ## Transmissão contínua
 
 Defina `stream: true` para receber eventos enviados pelo servidor no formato Anthropic (`message_start`, `content_block_*`, `message_delta`, `message_stop`).
+
+## Mensagens de sistema no meio da conversa
+
+Adicione uma mensagem com `role: "system"` a `messages` para uma instrução que vale a partir desse ponto da conversa. O campo `system` de nível superior não muda, então um prefixo em cache continua sendo aproveitado.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- Uma mensagem de sistema aceita uma string ou blocos de texto. Ela deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e ser a última mensagem ou ser seguida por um turno do assistente. Outras posições retornam 400.
+- Claude Fable 5 e 5.1, Mythos 5 e 5.1, Opus 4.8, Opus 5 e 5.5, Sonnet 5.5 e Haiku 5.5 a recebem na posição em que foi enviada. Os outros modelos Claude, incluindo o Sonnet 5, e todos os modelos Claude no Microsoft Foundry a recebem como parte do prompt de sistema de nível superior. Os outros provedores a recebem como uma mensagem de sistema, igual a uma enviada para Chat Completions.
+- `clear_at`, `output_config` e os blocos `tool_addition` ou `tool_removal` não são compatíveis.
 
 ## Observações
 

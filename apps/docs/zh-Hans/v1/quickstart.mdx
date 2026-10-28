@@ -6,19 +6,35 @@ icon: "rocket"
 
 本教程帮助你成功发送 Phaseo 请求，生成文本或结构化决策，并确认响应出现的位置。
 
-<Note>
-**使用编程智能体？** 开始前请复制并粘贴此提示：
+<Prompt description="**使用编程智能体？** 开始前请复制并粘贴此提示" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 你将完成以下操作：
 - 创建 API 密钥
 - 发送文本请求或结构化决策请求
 - 读取生成文本或带类型的答案
 - 了解请求失败时应先检查什么
+
+<Visibility for="agents">
+面向智能体的快速开始清单：
+
+- 密钥在控制台 https://phaseo.app/settings/keys 中创建。不要生成或猜测密钥。只能在服务端代码中以 `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` 的形式发送。
+- 第一个请求使用 `POST https://api.phaseo.app/v1/responses`，发送 `model` 和 `input`。`phaseo/free` 无需钱包余额即可使用。
+- 从 `output[].content[]` 中 `type` 为 `output_text` 的项读取回复。
+- 如果请求失败，请按照 https://phaseo.app/docs/v1/api-reference/errors.md 中的说明，根据 JSON 中的 `error` 代码分支处理。
+</Visibility>
 
 ---
 
@@ -43,6 +59,26 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ## 2. 发送文本请求
 
 首次请求使用 `POST /v1/responses`。这是新文本生成集成的推荐端点。
+
+### 安装 SDK
+
+cURL 和 JavaScript 示例无需安装任何内容。如需使用 TypeScript 或 Python SDK，请先安装：
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+运行环境要求和其他 SDK 请参阅 [TypeScript](./sdk-reference/typescript/installation) 和 [Python](./sdk-reference/python/installation) 安装页面。
 
 ### 请求
 
@@ -201,6 +237,29 @@ response = client.generate_response(
 puts response
 ```
 
+```java Java SDK
+// Build from source: https://phaseo.app/docs/zh-Hans/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
+```
+
 ```rust Rust SDK
 use phaseo::Phaseo;
 use serde_json::{json, Value};
@@ -281,6 +340,43 @@ console.log(result.text);
 直接调用 Responses API 时，请从 `output[].content[]` 中 `type` 为 `output_text` 的内容读取助手回复。
 
 如果使用 Vercel AI SDK，请从 `result.text` 读取回复。
+
+### 流式输出回复
+
+如需在生成过程中打印回复，请使用流式输出。每个分块的 `text` 只包含新增文本，因此这个循环只会打印一次答案。`response.output_text.done` 等结束事件的 `text` 为空；其完整文本位于 `fullText`（TypeScript）或 `full_text`（Python）中。
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+如果答案被打印了两次，请更新 SDK：旧版本也会把完整文本放在结束事件中。
 
 ---
 

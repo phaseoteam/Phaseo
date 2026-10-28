@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: उसी URL के लिए पिछली JSON या OpenAI प्रारूप वाली प्रतिक्रिया का ETag। अगर यह अब भी मेल खाता है, तो प्रतिक्रिया बिना बॉडी के 304 Not Modified होती है। कॉमा से अलग की गई सूची, कमज़ोर (W/) वैलिडेटर और * स्वीकार करता है।
+          schema:
+            type: string
       responses:
         '200':
           description: मॉडल की सूची
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML फ़ीड
+        '304':
+          description: कोई बदलाव नहीं। If-None-Match अब भी मौजूदा मॉडल सूची से मेल खाता है, इसलिए प्रतिक्रिया में कोई बॉडी नहीं होती। यह 200 प्रतिक्रिया के ETag, Cache-Control और Vary हेडर दोहराती है।
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: अमान्य अनुरोध पैरामीटर
           content:
@@ -732,6 +746,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -778,6 +800,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -895,6 +925,14 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -986,6 +1024,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: टाइप किए गए मान निकालें
+      description: टेक्स्ट या एम्बेड की गई इमेज से टेक्स्ट, संख्याएँ, तारीखें, समय, अवधियाँ और टाइप की गई सूचियाँ निकालता है। टाइप किए गए मान और मॉडल द्वारा बताई गई अनिश्चितता लौटाता है। अनुमान, पूर्वानुमान, स्ट्रीमिंग और रिमोट इमेज URL समर्थित नहीं हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: टाइप किए गए निष्कर्षण उत्तर
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -4408,6 +4467,257 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listDepartmentBudgets
+      summary: List department budgets
+      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      parameters:
+        - name: department_id
+          in: query
+          required: false
+          description: Only list budgets for this department.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Department budgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createDepartmentBudget
+      summary: Create a department budget
+      description: Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetInput'
+      responses:
+        '201':
+          description: Department budget created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /department-budgets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getDepartmentBudget
+      summary: Get a department budget
+      description: Returns one department budget with the department's spend so far.
+      responses:
+        '200':
+          description: Department budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateDepartmentBudget
+      summary: Update a department budget
+      description: Changes the period or USD amount of a department budget.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentBudgetUpdateInput'
+      responses:
+        '200':
+          description: Department budget updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBudgetResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteDepartmentBudget
+      summary: Delete a department budget
+      description: Removes a department budget and its alerts.
+      responses:
+        '200':
+          description: Department budget deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceBudgetDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -4433,7 +4743,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -4453,7 +4763,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4488,7 +4798,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -4508,7 +4818,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4534,7 +4844,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4555,7 +4865,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       parameters:
         - name: policy_id
           in: query
@@ -4606,7 +4916,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4641,7 +4951,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -4661,7 +4971,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -4687,7 +4997,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -4695,6 +5005,423 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRules
+      summary: खर्च नियमों की सूची देखें
+      description: वर्कस्पेस के खर्च नियमों की सूची देता है। कोई नियम किसी दायरे और कैलेंडर या रोलिंग अवधि में डॉलर या प्रतिशत की सीमाओं पर सूचना देता है। वर्कस्पेस का हर सदस्य इन्हें पढ़ सकता है।
+      responses:
+        '200':
+          description: खर्च नियम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createSpendRule
+      summary: खर्च नियम बनाएँ
+      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleInput'
+      responses:
+        '201':
+          description: खर्च नियम बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getSpendRule
+      summary: खर्च नियम प्राप्त करें
+      description: एक खर्च नियम लौटाता है।
+      responses:
+        '200':
+          description: खर्च नियम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateSpendRule
+      summary: खर्च नियम अपडेट करें
+      description: एक खर्च नियम बदलता है। भेजे गए फ़ील्ड सहेजे गए नियम पर मिलाए जाते हैं और पूरे नियम की फिर से जाँच होती है। destination_ids नियम के गंतव्यों को बदल देता है; उन्हें रखने के लिए इसे छोड़ दें।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleUpdateInput'
+      responses:
+        '200':
+          description: खर्च नियम अपडेट किया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteSpendRule
+      summary: खर्च नियम हटाएँ
+      description: एक खर्च नियम हटाता है। उसका मूल्यांकन बंद हो जाता है और वह 50 नियमों की सीमा में नहीं गिना जाता।
+      responses:
+        '200':
+          description: खर्च नियम हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/test:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testSpendRule
+      summary: परीक्षण खर्च अलर्ट भेजें
+      description: नियम का अलर्ट उसके मौजूदा मान से TEST चिह्न के साथ बनाता है और उसे अभी नियम के गंतव्यों पर भेजता है, या कोई गंतव्य न होने पर Spend Alerts रूट पर। कुछ भी रिकॉर्ड नहीं होता। एक वर्कस्पेस प्रति मिनट 5 परीक्षण भेज सकता है।
+      responses:
+        '200':
+          description: परीक्षण अलर्ट भेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleTestResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: previewSpendRule
+      summary: खर्च नियम का पूर्वावलोकन करें
+      description: नियम की मौजूदा अवधि, अब तक का खर्च, आधार, प्रतिशत और अगली सीमा लौटाता है, जिनकी गणना मूल्यांकन की तरह ही होती है, बिना कुछ भेजे या रिकॉर्ड किए।
+      responses:
+        '200':
+          description: खर्च नियम का पूर्वावलोकन
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRulePreviewResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च नियम का ID.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRuleHistory
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: पेजिनेशन के लिए छोड़े जाने वाले इवेंट की संख्या।
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+        - name: limit
+          in: query
+          required: false
+          description: लौटाए जाने वाले इवेंट की अधिकतम संख्या।
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: खर्च नियम का इतिहास देखें
+      description: नियम द्वारा कतार में डाले गए अलर्ट और ब्लॉक इवेंट, सबसे नए पहले, डिलीवरी गिनती के साथ, और उसकी सबसे हाल की अवधि के रिकॉर्ड की सूची देता है।
+      responses:
+        '200':
+          description: खर्च नियम का इतिहास
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: हटाए गए ब्लॉक भी लौटाएँ, नए पहले।
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: लौटाए जाने वाले ब्लॉक की अधिकतम संख्या।
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: खर्च ब्लॉक की सूची
+      description: 'वर्कस्पेस के खर्च ब्लॉक की सूची देता है, नए पहले: वे ब्लॉक जो block ऐक्शन वाले खर्च नियमों ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किए। केवल सक्रिय ब्लॉक, जब तक include_lifted true न हो। केवल ओनर और एडमिन।'
+      responses:
+        '200':
+          description: खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च ब्लॉक की ID।
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: खर्च ब्लॉक हटाएँ
+      description: सक्रिय खर्च ब्लॉक हटाता है, ताकि उसके दायरे के अनुरोध लगभग एक मिनट में फिर से स्वीकार हों। अवधि रीसेट होने तक नियम फिर से ब्लॉक नहीं करता, लेकिन अलर्ट भेजता रहता है। केवल ओनर और एडमिन; हटाना ऑडिट लॉग में दर्ज होता है और lifted स्थिति वाला spend_blocked इवेंट कतार में डालता है। अज्ञात ब्लॉक के लिए 404 और पहले से हटाए गए ब्लॉक के लिए 409 spend_block_not_active लौटाता है।
+      responses:
+        '200':
+          description: हटाया गया खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: Classifier बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: Classifier अपडेट किया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
         default:
           description: अनुरोध विफल हुआ
           content:
@@ -4827,6 +5554,34 @@ paths:
                 $ref: '#/components/schemas/WorkspaceNotificationTestResponse'
         default:
           description: परीक्षण विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: सूचना वेबहुक का साइनिंग सीक्रेट बदलें
+      description: कस्टम वेबहुक गंतव्य के लिए नया साइनिंग सीक्रेट बनाता है और उसे केवल एक बार लौटाता है। साइनिंग से पहले बने गंतव्यों को इसी तरह पहला सीक्रेट मिलता है। आगे की डिलीवरी नए सीक्रेट से साइन होती हैं और पिछला सीक्रेट उपयोग में नहीं रहता।
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: साइनिंग सीक्रेट बदल दिया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: अनुरोध विफल हुआ
           content:
             application/json:
               schema:
@@ -8116,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: प्रीसेट लेबल सूचीबद्ध करें
+      description: production या staging जैसे नाम वाले लेबल और हर लेबल जिस प्रकाशित संस्करण पर है, उसे सूचीबद्ध करता है।
+      responses:
+        '200':
+          description: प्रीसेट लेबल की सूची
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: प्रीसेट नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: प्रीसेट लेबल सेट करें
+      description: किसी लेबल को प्रकाशित संस्करण पर लगाता है, लेबल बनाकर या उसे वहाँ ले जाकर। लेबल को pin करने वाले अनुरोध, जैसे @support-triage@production, लगभग 2 मिनट में नए संस्करण का उपयोग करते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: लेबल सहेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: अमान्य लेबल, या version_id और version में से कोई नहीं या दोनों
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या संस्करण नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: प्रीसेट लेबल हटाएँ
+      description: एक लेबल हटाता है। जो अनुरोध अब भी उसे pin करते हैं, वे preset_version_not_found के साथ विफल होते हैं।
+      responses:
+        '200':
+          description: लेबल हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: अमान्य लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या लेबल नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -8534,8 +9386,28 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: वह मॉडल जिसका अनुरोध किया गया था। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
+    ModelSubstitution:
+      description: अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
+    DroppedParams:
+      description: क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।
+      schema:
+        type: string
+    SpendWarning:
+      description: तब भेजा जाता है जब कोई ब्लॉक करने वाला खर्च नियम अनुरोध को कवर करता है और खर्च उसकी आख़िरी अलर्ट सीमा पार कर चुका है, लेकिन अभी ब्लॉक बिंदु तक नहीं पहुँचा। अधिकतम तीन नियम rule_id, scope और resets_at के रूप में बताता है, जैसे `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`। खर्च के ब्लॉक बिंदु तक पहुँचने पर दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
+      schema:
+        type: string
+    ModelListETag:
+      description: इस URL पर मॉडल सूची का कमज़ोर वैलिडेटर (W/ प्रीफ़िक्स), जिसमें पेज, limit, offset, total और प्रारूप शामिल हैं। यह gateway_region को अनदेखा करता है, इसलिए किसी दूसरे क्षेत्र से दिए गए उसी कैटलॉग का मान भी वही रहता है; एक ही मान वाली प्रतिक्रियाएँ समान होती हैं, लेकिन उनके बाइट अलग हो सकते हैं। RSS, Atom या त्रुटि वाली प्रतिक्रियाओं के साथ नहीं भेजा जाता।
       schema:
         type: string
   parameters:
@@ -8590,6 +9462,14 @@ components:
       description: प्रीसेट का UUID, slug या canonical नाम।
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: लेबल का नाम, जैसे production। 1 से 32 छोटे अंग्रेज़ी अक्षर, अंक, हाइफ़न या अंडरस्कोर, अक्षर से शुरू; यह संस्करण लेबल (v1, v2) जैसा नहीं दिख सकता।
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -8675,6 +9555,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow` (डिफ़ॉल्ट) कुछ भी फ़िल्टर नहीं करता। `deny` अभी समर्थित नहीं है और 400 unsupported_routing_filter लौटाता है।'
           enum:
             - allow
             - deny
@@ -8684,6 +9565,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false` (डिफ़ॉल्ट) कुछ भी फ़िल्टर नहीं करता। `true` अभी समर्थित नहीं है और 400 unsupported_routing_filter लौटाता है।'
         quantizations:
           type: array
           nullable: true
@@ -8749,6 +9631,7 @@ components:
             - full
     CacheControl:
       type: object
+      description: प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है। Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं; वहाँ ttl हटा दिया जाता है, और हटाया गया 1h X-Phaseo-Dropped-Params में cache_control.ttl के रूप में रिपोर्ट किया जाता है।
       properties:
         type:
           type: string
@@ -8756,6 +9639,31 @@ components:
           type: string
         scope:
           type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं। इसका ttl केवल OpenAI को भेजा जाता है।
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+        ttl:
+          type: string
+          description: 'GPT-5.6 और बाद के OpenAI मॉडलों पर इस ब्रेकपॉइंट के लिए कैश की न्यूनतम अवधि: 30m या 12h। इसके बिना ब्रेकपॉइंट prompt_cache_options.ttl का उपयोग करता है। 12h वाले लेखन पर इनपुट दर का 2.5x शुल्क लगता है; जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।'
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m, या OpenAI पर 12h) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
+          type: string
+          description: 'कैश की न्यूनतम अवधि। GPT-5.6 और बाद के OpenAI मॉडल: 30m (डिफ़ॉल्ट) या 12h; 12h माँगने वाला अनुरोध OpenAI के Responses API पर चलता है। Azure OpenAI: 30m। DeepInfra: 5m या 1h। जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -8778,11 +9686,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI बातचीत ID, जिसे x-grok-conv-id हेडर में भेजा जाता है।
         google:
           type: object
           properties:
@@ -9098,6 +10014,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: वे सेवा स्तर जिन्हें यह ऑफ़र स्वीकार करता है, वर्णानुक्रम में। कोई स्तर तब सूचीबद्ध होता है जब प्रदाता रूट के पास उसके लिए सक्रिय और अभी प्रभावी मूल्य निर्धारण हो; priority, Fast स्तर है। दूसरे स्तर अलग, स्तर-विशिष्ट प्रदाता रूट के ज़रिए भी उपलब्ध हो सकते हैं।
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -9327,6 +10253,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'
       required:
         - model
         - messages
@@ -9335,6 +10262,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         messages:
           type: array
           minItems: 1
@@ -9409,6 +10338,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -9468,8 +10402,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: संगतता के लिए स्वीकार किया जाता है। मॉडल जब भी रीज़निंग देता है, वह लौटाई जाती है (`reasoning_content` और `reasoning_details`), चाहे इसका मान कुछ भी हो।
+        prediction:
+          type: object
+          description: पूर्वानुमानित आउटपुट, ताकि जवाब का ज़्यादातर हिस्सा पहले से पता होने पर प्रतिक्रियाएँ तेज़ी से मिलें। इसे OpenAI, Mistral और Moonshot मॉडलों को भेजा जाता है; अन्य प्रदाता इसे अनदेखा करते हैं।
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: समर्थित रूटिंग या मूल्य स्तर चुनता है। `auto` (या null) कोई खास स्तर नहीं माँगता और उसे ऐसे रूट और बिल किया जाता है मानो फ़ील्ड सेट ही न हो; `scale` को `default`, यानी मानक स्तर, माना जाता है।
           enum:
             - standard
             - default
@@ -9478,9 +10435,22 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9505,8 +10475,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 'संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9524,17 +10496,150 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: पिछला ऑडियो जवाब, जिसे ऑडियो बातचीत जारी रखने के लिए असिस्टेंट संदेश पर उसकी id (message.audio.id) से वापस भेजा जाता है। OpenAI और Azure OpenAI रूट इसे लेते हैं; दूसरे प्रोवाइडर इसे हटा देते हैं और messages.audio को हटाए गए पैरामीटर के रूप में रिपोर्ट करते हैं।
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
+        reasoning_content:
+          type: string
+          description: मॉडल का रीज़निंग टेक्स्ट, जब प्रदाता उसे लौटाता है। स्ट्रीमिंग में delta.reasoning_content के रूप में भेजा जाता है।
+        reasoning:
+          type: string
+          description: reasoning_content वाला ही रीज़निंग टेक्स्ट, उस नाम से जिसे कुछ क्लाइंट पढ़ते हैं। स्ट्रीमिंग में delta.reasoning के रूप में भेजा जाता है। इनपुट में reasoning_content के alias के रूप में स्वीकार किया जाता है।
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: 'संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।'
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'जब अनुरोध ऑडियो आउटपुट माँगता है, तब असिस्टेंट संदेश पर बोला गया ऑडियो: ऑडियो id, अनुरोधित फ़ॉर्मैट में base64 ऑडियो, ऑडियो की समाप्ति का समय (Unix सेकंड) और उसका ट्रांसक्रिप्ट। delta.audio हिस्सों में स्ट्रीम होता है।'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: मॉडल का रीज़निंग टेक्स्ट, जब प्रदाता उसे लौटाता है। स्ट्रीमिंग में delta.reasoning_content के रूप में भेजा जाता है।
+        reasoning:
+          type: string
+          description: reasoning_content वाला ही रीज़निंग टेक्स्ट, उस नाम से जिसे कुछ क्लाइंट पढ़ते हैं। स्ट्रीमिंग में delta.reasoning के रूप में भेजा जाता है। इनपुट में reasoning_content के alias के रूप में स्वीकार किया जाता है।
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+    ChatReasoningDetail:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning.text
+            - reasoning.summary
+            - reasoning.encrypted
+        id:
+          type: string
+        index:
+          type: integer
+        format:
+          type: string
+        text:
+          type: string
+        summary:
+          type: string
+        signature:
+          type: string
+        data:
+          type: string
     MessageContentPart:
       oneOf:
         - $ref: '#/components/schemas/TextContentPart'
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: फ़ाइल इनपुट, जैसे PDF। file_data को base64 डेटा URL पर सेट करें, या file_id को उस प्रदाता पर अपलोड की गई फ़ाइल पर जो अनुरोध पूरा करता है।
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -9547,6 +10652,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9708,6 +10817,8 @@ components:
         async:
           type: boolean
           description: कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। सभी टेक्स्ट API पर स्वीकार किया जाता है और अन्य प्रदाता इसे अनदेखा करते हैं।
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -9831,6 +10942,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: अनुरोध में `phaseo:web_search` सर्वर टूल जोड़ता है, ताकि कोई भी मॉडल वेब खोज सके। अनुरोध ठीक वैसे ही चलता है, और खोजें वैसे ही गिनी और बिल की जाती हैं, जैसे `phaseo:web_search` टूल के साथ। यदि अनुरोध में पहले से वेब खोज टूल है, तो प्लगइन कुछ नहीं जोड़ता। अन्य विकल्पों को अनदेखा किया जाता है।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: अनुरोध में `phaseo:web_fetch` सर्वर टूल जोड़ता है, ताकि कोई भी मॉडल वेब पेज पढ़ सके। अनुरोध ठीक वैसे ही चलता है, और फ़ेच वैसे ही गिने और बिल किए जाते हैं, जैसे `phaseo:web_fetch` टूल के साथ। यदि अनुरोध में पहले से वेब फ़ेच टूल है, तो प्लगइन कुछ नहीं जोड़ता।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: उन बिना स्ट्रीमिंग वाले रिस्पॉन्स में खराब JSON ठीक करता है जिनमें `json_object` या `json_schema` आउटपुट माँगा गया था। स्ट्रीम पर इसे छोड़ दिया जाता है।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: 'OpenAI का होस्टेड वेब खोज टूल। OpenAI, Azure OpenAI (Responses) और xAI इसे नेटिव रूप से चलाते हैं। जिन मॉडलों के प्रदाता इसे नहीं चला सकते, उन पर गेटवे इसे `phaseo:web_search` के रूप में चलाता है: `search_context_size`, `filters.allowed_domains`, `max_results` और `engine` बने रहते हैं, और खोजें `phaseo:web_search` खोजों की तरह बिल की जाती हैं। OpenAI के अन्य होस्टेड टूल (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`, `image_generation`, `shell`, `local_shell`, `apply_patch`) उन मॉडलों पर 400 `unsupported_hosted_tool` के साथ विफल होते हैं जिनके प्रदाता उन्हें नहीं चला सकते।'
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -9840,6 +11092,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -9892,7 +11145,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं।
+      description: टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं। allowed_tools ऑब्जेक्ट सभी टूल के साथ OpenAI को बिना बदलाव भेजा जाता है। अन्य प्रदाताओं को केवल अनुमत टूल और उसका मोड (auto या required) भेजा जाता है, या जब required ठीक एक टूल की अनुमति देता है तो उस टूल की अनिवार्य कॉल। यदि allowed_tools में ऐसा टूल है जिसे tools परिभाषित नहीं करता, तो केवल OpenAI अनुरोध पूरा कर सकता है; अन्यथा 400 त्रुटि लौटाई जाती है।
       oneOf:
         - type: string
           enum:
@@ -9953,7 +11206,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: रीज़निंग प्रयास। छोड़े जाने या null होने पर, `max_tokens`, `enabled` या मॉडल का अपना डिफ़ॉल्ट तय करता है कि मॉडल कितनी रीज़निंग करे।
         mode:
           type: string
           enum:
@@ -9985,7 +11239,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: रीज़निंग प्रयास। छोड़े जाने या null होने पर, `max_tokens`, `enabled` या मॉडल का अपना डिफ़ॉल्ट तय करता है कि मॉडल कितनी रीज़निंग करे।
         mode:
           type: string
           enum:
@@ -10065,7 +11320,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
@@ -10078,14 +11333,64 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'अनुरोध की आपकी लागत, US डॉलर में: आपके क्रेडिट से काटी गई राशि, `cost_nanos` के बराबर, किसी भी डेटा योगदान छूट या शून्य आउटपुट पर शुल्क माफ़ी के बाद। अनुरोध का मूल्य तय होते ही Chat Completions, Responses, Messages और embeddings रिस्पॉन्स में लौटाया जाता है। स्ट्रीम में यह अंतिम उपयोग फ़्रेम में होता है (Messages में, अंतिम `message_delta` में) और पूरी स्ट्रीम को कवर करता है। जब वह फ़्रेम भेजते समय शुल्क ज्ञात नहीं होता, तब स्ट्रीम इसे छोड़ देती है: BYOK स्ट्रीम पर, जिसका सेवा शुल्क स्ट्रीम खत्म होने पर तय होता है (इसके बजाय `cost_details.upstream_inference_cost` मॉडल की कीमत देता है), और पहले से विफल हो चुकी स्ट्रीम पर, जिसका शुल्क नहीं लिया जाता।'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: अनुरोध की लागत का विवरण।
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: BYOK अनुरोध पर, प्रदाता इनफ़रेंस के लिए आपकी अपनी कुंजी से जितना शुल्क लेता है, US डॉलर में, मॉडल की सूचीबद्ध कीमतों पर। जब अनुरोध Phaseo क्रेडिट पर चलता है तब null होता है, क्योंकि तब `cost` ही पूरा शुल्क है।
+          example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6 और बाद के OpenAI मॉडलों के Responses उपयोग में अवधि के अनुसार बँटे कैश लेखन। दोनों संख्याओं का योग cache_write_tokens होता है। Chat Completions के prompt_tokens_details में नहीं लौटाया जाता।
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 30 मिनट की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 1.25x शुल्क लगता है।
+        ttl_12h_tokens:
+          type: integer
+          description: 12 घंटे की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 2.5x शुल्क लगता है।
+    InputTokensDetails:
+      type: object
+      description: इनपुट टोकन का विवरण।
+      properties:
+        cached_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_write_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
+      description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'
       required:
         - model
         - messages
@@ -10095,6 +11400,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         system:
           oneOf:
             - type: string
@@ -10114,7 +11421,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -10129,6 +11444,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0
@@ -10157,6 +11474,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10168,10 +11490,34 @@ components:
           description: ऑब्ज़र्वेबिलिटी के लिए संबंधित अनुरोधों (जैसे बातचीत या एजेंट वर्कफ़्लो) को समूहित करने वाला विशिष्ट पहचानकर्ता।
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Anthropic का कॉन्टेक्स्ट एडिटिंग। `edits` में `clear_tool_uses_*` और `clear_thinking_*` रणनीतियाँ दी जा सकती हैं, और इसे उसके beta हेडर के साथ Anthropic को भेजा जाता है। अन्य प्रदाता इसके बिना अनुरोध चलाते हैं और `context_management` को `X-Phaseo-Dropped-Params` में सूचीबद्ध करते हैं। कॉम्पैक्शन एडिट (`compact_*`) पर 400 लौटता है।
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: अंतिम-उपयोगकर्ता पहचानकर्ता, जैसा Chat Completions में होता है। Claude मॉडल इसे `metadata.user_id` के रूप में पाते हैं, जब तक कि `metadata.user_id` सेट न हो।
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
         stop_sequences:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10207,6 +11553,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: तब मौजूद होता है जब अनुरोध में `context_management` का उपयोग हुआ हो और Anthropic ने कोई एडिट लागू किया हो। `applied_edits` हर एडिट को इस जानकारी के साथ सूचीबद्ध करता है कि उसने क्या हटाया। स्ट्रीम में यह अंतिम `message_delta` इवेंट में आता है।
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10224,6 +11579,39 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए।
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -10278,10 +11666,35 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: बिना कैश वाले इनपुट टोकन। Anthropic की तरह, इसमें कैश से पढ़े और कैश में लिखे गए टोकन शामिल नहीं होते।
+        cache_read_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_creation_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
+        cache_creation:
+          type: object
+          description: कैश की अवधि के अनुसार बाँटे गए कैश लेखन।
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 5 मिनट की कैश अवधि के साथ लिखे गए इनपुट टोकन।
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 1 घंटे की कैश अवधि के साथ लिखे गए इनपुट टोकन।
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'अनुरोध की आपकी लागत, US डॉलर में: आपके क्रेडिट से काटी गई राशि, `cost_nanos` के बराबर, किसी भी डेटा योगदान छूट या शून्य आउटपुट पर शुल्क माफ़ी के बाद। अनुरोध का मूल्य तय होते ही Chat Completions, Responses, Messages और embeddings रिस्पॉन्स में लौटाया जाता है। स्ट्रीम में यह अंतिम उपयोग फ़्रेम में होता है (Messages में, अंतिम `message_delta` में) और पूरी स्ट्रीम को कवर करता है। जब वह फ़्रेम भेजते समय शुल्क ज्ञात नहीं होता, तब स्ट्रीम इसे छोड़ देती है: BYOK स्ट्रीम पर, जिसका सेवा शुल्क स्ट्रीम खत्म होने पर तय होता है (इसके बजाय `cost_details.upstream_inference_cost` मॉडल की कीमत देता है), और पहले से विफल हो चुकी स्ट्रीम पर, जिसका शुल्क नहीं लिया जाता।'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
+      description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'
       required:
         - model
         - input
@@ -10290,6 +11703,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         input:
           oneOf:
             - type: string
@@ -10320,10 +11735,13 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: समर्थित नहीं। Phaseo जवाबों को संग्रहीत नहीं करता, इसलिए previous_response_id या conversation सेट करने वाले अनुरोध 400 unsupported_param लौटाते हैं। पूरी बातचीत input में भेजें।
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: समर्थित रूटिंग या मूल्य स्तर चुनता है। `auto` (या null) कोई खास स्तर नहीं माँगता और उसे ऐसे रूट और बिल किया जाता है मानो फ़ील्ड सेट ही न हो; `scale` को `default`, यानी मानक स्तर, माना जाता है।
           enum:
             - standard
             - default
@@ -10332,6 +11750,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:
@@ -10342,6 +11762,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:
@@ -10363,6 +11788,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -10455,6 +11891,8 @@ components:
       properties:
         type:
           type: string
+        id:
+          type: string
         role:
           type: string
           enum:
@@ -10469,11 +11907,32 @@ components:
               items:
                 type: object
             - type: object
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+          description: पिछली प्रतिक्रिया की रीज़निंग स्थिति, जिसे बिना बदलाव वापस भेजा जाता है। कच्चे मान को OpenAI का माना जाता है, जब तक format किसी दूसरे प्रदाता का नाम न दे।
+        signature:
+          type: string
+          description: रीज़निंग आइटम पर, प्रदाता का कच्चा सिग्नेचर, जैसे Claude का thinking सिग्नेचर या Gemini का थॉट सिग्नेचर। format आवश्यक है।
+        format:
+          type: string
+          description: रीज़निंग आइटम पर, signature या encrypted_content का प्रदाता फ़ॉर्मैट।
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API का आउटपुट आइटम।
       properties:
         type:
+          type: string
+        id:
           type: string
         role:
           type: string
@@ -10487,11 +11946,43 @@ components:
           type: string
         arguments:
           type: string
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+    ResponsesReasoningSummaryPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - summary_text
+        text:
+          type: string
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: रीज़निंग आउटपुट आइटम की सामग्री में रीज़निंग टेक्स्ट।
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
@@ -10976,6 +12467,310 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: extraction.extract क्षमता वाला मॉडल ID।
+        input:
+          type: string
+          maxLength: 16384
+          description: स्रोत टेक्स्ट। इमेज दिए जाने पर खाली हो सकता है।
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: फ़ील्ड नाम ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$ से मेल खाते हैं।
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: एम्बेड की गई PNG, JPEG या WebP इमेज; डिकोड करने के बाद प्रति इमेज 4 MiB और कुल 8 MiB।
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: अधूरी तारीखों के लिए स्पष्ट तारीख संदर्भ।
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64 में एन्कोड किए गए इमेज बाइट, डेटा URL प्रीफ़िक्स के बिना।
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: बताता है कि प्रदाता ने स्रोत टेक्स्ट काटा है या नहीं।
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: निकाला गया टेक्स्ट या ISO तारीख/समय; मान अनिर्धारित होने पर null।
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: मॉडल द्वारा बताया गया विश्वास; शुद्धता की गारंटी नहीं।
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: मान अनिर्धारित होने की संभावना।
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: सभी पास के कुल इनपुट टोकन, जैसा प्रदाता ने बताया है।
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: OpenAI प्रारूप पसंदीदा है। पुराना प्रारूप समर्थित है। उत्तर अनुरोध जैसा होता है; प्रारूप न मिलाएँ।
       oneOf:
@@ -11015,6 +12810,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +12832,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 'Jev के प्रयोगात्मक लंबे संदर्भ को चालू करें: प्रति अनुरोध 64k और प्रति प्रश्न 32k के बजाय दोनों के लिए 262k टोकन। डिफ़ॉल्ट रूप से बंद। समर्थित TypeSafe रूट आवश्यक है।'
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: एक bounding box के लिए Phaseo एक्सटेंशन। छवि और Jev 1.14 जैसे समर्थित रूट आवश्यक हैं। criteria या लक्ष्य न मिलने का परिणाम नहीं है।
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +13108,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +13134,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: छवियों वाले Box रूट के लिए एक bounding box का प्रश्न। criteria नहीं है।
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +13248,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +13257,54 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+          description: बॉक्स पर विश्वास, 0 से 1 तक, या null जब मॉडल इसे नहीं बताता।
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: ऊपरी बाएँ कोने से छवि के आयामों के अनुपात के रूप में किनारे। top, bottom से कम होना चाहिए; left, right से कम होना चाहिए।
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:
@@ -13647,6 +15539,7 @@ components:
         - cursor
         - cyfragovpl
         - databricks
+        - dealignai
         - decart
         - deepseek
         - dots-studio
@@ -14505,11 +16398,19 @@ components:
           type: boolean
           example: false
         error:
+          description: त्रुटि ऑब्जेक्ट (`code`, `message`, `type`, `param` और वैकल्पिक `metadata`) जिसे OpenAI-संगत SDK पढ़ते हैं। पहले के रिस्पॉन्स यहाँ कोड स्ट्रिंग लौटाते थे; अब वह शीर्ष स्तर के `code` के रूप में भी लौटाई जाती है।
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: त्रुटि कोड, `error.code` के समान मान।
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -14584,6 +16485,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 'गेटवे त्रुटि, उस रूप में जिसे OpenAI के SDK पढ़ते हैं। `type` HTTP स्टेटस से तय होता है: अधिकांश 4xx के लिए invalid_request_error, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) और अन्य 5xx के लिए server_error।'
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: मशीन द्वारा पढ़ा जा सकने वाला त्रुटि कोड।
+          example: validation_error
+        message:
+          type: string
+          description: विफलता की मानव-पठनीय व्याख्या।
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: त्रुटि का प्रकार, OpenAI के प्रलेखित त्रुटि प्रकारों के अनुसार।
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: अनुरोध का वह पैरामीटर जिससे त्रुटि हुई, यदि ज्ञात हो।
+          example: foo
+        metadata:
+          type: object
+          description: संरचित विवरण जो शीर्ष स्तर पर भी लौटाए जाते हैं, जैसे विफल प्रदाता, `reason`, `failed_statuses`, `retry_after_seconds` या `upstream_error`।
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object
@@ -14838,6 +16779,8 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: बताता है कि प्रदाता क्रेडेंशियल कुंजी की खर्च सीमा में गिने जाते हैं या नहीं। वर्तमान में यह हमेशा false होता है।
@@ -14990,8 +16933,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API कुंजी का plaintext मान, `data.key` के समान। केवल बनाते समय एक बार लौटाया जाता है।
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
@@ -15042,6 +16990,8 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -15081,7 +17031,22 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'आप यह कुंजी कहाँ रखते हैं, जैसे वह होस्टिंग प्लेटफ़ॉर्म जिसके environment variables में यह है। वैकल्पिक। अगर इनमें से कोई जगह डेटा उल्लंघन की सूचना देती है, तो आप वहाँ रखी हर कुंजी ढूँढकर रद्द कर सकते हैं। ज्ञात ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other।'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -15466,7 +17431,115 @@ components:
     PresetConfig:
       type: object
       description: प्रॉम्प्ट, पैरामीटर, रूटिंग और प्लगइन सहित गेटवे अनुरोधों के सीमित डिफ़ॉल्ट।
+      properties:
+        prompt:
+          $ref: '#/components/schemas/PresetPromptTemplate'
       additionalProperties: true
+    PresetPromptTemplate:
+      type: object
+      description: वेरिएबल प्लेसहोल्डर वाले संदेश, जिन्हें गेटवे हर अनुरोध के लिए भरता है, और वे वेरिएबल जो वे लेते हैं।
+      required:
+        - messages
+      properties:
+        syntax:
+          type: string
+          enum:
+            - mustache-v1
+        messages:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PresetPromptTemplateMessage'
+        variables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PresetPromptVariable'
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          type: object
+          additionalProperties: true
+    PresetPromptTemplateMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - variable
+                  text:
+                    type: string
+                  name:
+                    type: string
+    PresetPromptVariable:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - enum
+            - array
+            - object
+            - any
+            - image
+        required:
+          type: boolean
+        default: {}
+        description:
+          type: string
+          maxLength: 500
+        enum:
+          type: array
+          items:
+            type: string
+        max_length:
+          type: integer
+          minimum: 1
+    PromptTemplateReference:
+      type: object
+      description: किसी प्रीसेट पर सहेजे गए प्रॉम्प्ट टेम्पलेट को भरता है। model छोड़ दें या उसे इसी संदर्भ पर सेट करें, और खाली बातचीत भेजें या वे टर्न भेजें जो टेम्पलेट के बाद जोड़ने हैं।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: '@ से शुरू होने वाला प्रीसेट संदर्भ, जैसे @support-triage या @publisher/support-triage।'
+        variables:
+          type: object
+          additionalProperties: true
+          description: टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।
+        version:
+          type: string
+          maxLength: 64
+          description: 'मौजूदा संस्करण की जगह प्रीसेट का यह प्रकाशित संस्करण चलाता है: उसके मॉडल, पैरामीटर और टेम्पलेट। v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या production जैसा लेबल दें। यह model को @support-triage@production पर सेट करने जैसा है।'
     Preset:
       type: object
       required:
@@ -15659,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: production जैसे नाम वाले लेबल जो इस संस्करण पर हैं। संस्करण सूचीबद्ध करते समय लौटाए जाते हैं।
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -15687,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id और version में से ठीक एक भेजें।
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: वह प्रकाशित संस्करण जिस पर लेबल लगाना है।
+        version:
+          type: string
+          maxLength: 64
+          description: v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या staging जैसा कोई दूसरा लेबल जिसकी जगह कॉपी करनी है।
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -15842,11 +17994,29 @@ components:
         provider_restriction_enforce_allowed:
           type: boolean
           nullable: true
+        model_successor_redirect_enabled:
+          type: boolean
+          nullable: true
+        model_successor_price_policy:
+          allOf:
+            - $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+          nullable: true
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          nullable: true
         updated_at:
           type: string
           format: date-time
           nullable: true
       additionalProperties: false
+    WorkspaceModelSuccessorPricePolicy:
+      type: string
+      enum:
+        - never
+        - limit
+        - any
     WorkspaceSettingsUpdateRequest:
       type: object
       minProperties: 1
@@ -15892,6 +18062,14 @@ components:
             maxLength: 128
         provider_restriction_enforce_allowed:
           type: boolean
+        model_successor_redirect_enabled:
+          type: boolean
+        model_successor_price_policy:
+          $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
       additionalProperties: false
     WorkspaceSettingsResponse:
       type: object
@@ -16372,7 +18550,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -19306,6 +21506,620 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    DepartmentBudgetInterval:
+      type: string
+      enum:
+        - daily
+        - weekly
+        - monthly
+    DepartmentBudget:
+      type: object
+      description: A department's spend budget. A department's spend is what the API keys linked to it cost, plus the keys its members created and their OAuth requests when those keys are not linked to a department. A member in several departments counts toward each.
+      required:
+        - id
+        - workspace_id
+        - department_id
+        - department_name
+        - interval
+        - limit
+        - limit_nanos
+        - usage
+        - usage_nanos
+        - remaining
+        - remaining_nanos
+        - exceeded
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+          nullable: true
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+        limit_nanos:
+          type: integer
+          format: int64
+        usage:
+          type: number
+          format: double
+        usage_nanos:
+          type: integer
+          format: int64
+        remaining:
+          type: number
+          format: double
+        remaining_nanos:
+          type: integer
+          format: int64
+        exceeded:
+          type: boolean
+        window_start:
+          type: string
+          format: date-time
+          nullable: true
+        reset_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    DepartmentBudgetInput:
+      type: object
+      required:
+        - department_id
+        - interval
+        - limit
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        interval:
+          $ref: '#/components/schemas/DepartmentBudgetInterval'
+        limit:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+      additionalProperties: false
+    DepartmentBudgetResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
+    DepartmentBudgetListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartmentBudget'
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: Limits which requests are classified. Leave a list out to include everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: request samples each request on its own. session keeps every request in a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: prompt classifies the request messages. prompt_and_response also shows the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: A workspace taxonomy that a chosen model applies to requests after they finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: Model that classifies requests, for example google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: Most the classifier may spend in a UTC calendar month. Classification pauses for the rest of the month once it is reached. null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     RateLimitPolicy:
       type: object
       description: A named set of gateway rate limits. When several policies apply to a request, the most restrictive limit wins.
@@ -19345,7 +22159,7 @@ components:
           type: integer
           format: int64
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: Input and output tokens allowed per minute, counted when each request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -19392,7 +22206,7 @@ components:
           minimum: 1
           maximum: 9007199254740991
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: Input and output tokens allowed per minute, counted when each request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -19430,7 +22244,7 @@ components:
           minimum: 1
           maximum: 9007199254740991
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: Input and output tokens allowed per minute, counted when each request completes. Null means tokens are not limited.
         concurrent_requests:
           type: integer
           format: int32
@@ -19576,6 +22390,867 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    SpendRuleMetric:
+      type: string
+      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
+      enum:
+        - spend
+        - budget_percent
+        - forecast
+        - spike
+        - balance
+    SpendRuleScope:
+      type: string
+      enum:
+        - workspace
+        - key
+        - member
+        - department
+        - model
+        - provider
+    SpendRulePeriod:
+      type: string
+      description: नियम के समय क्षेत्र में day, week (सोमवार से) या month, या पिछले window_hours पर rolling।
+      enum:
+        - day
+        - week
+        - month
+        - rolling
+    SpendRuleAction:
+      type: string
+      description: notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। जब तक गेटवे पर ब्लॉक करना बंद है, ब्लॉक करना शुरू करने वाला नियम 400 के साथ अस्वीकार किया जाता है, और पहले से ब्लॉक करने वाला नियम केवल सूचना देता है।
+      enum:
+        - notify
+        - block
+    SpendRule:
+      type: object
+      description: 'एक खर्च नियम: किसी दायरे और अवधि में डॉलर या प्रतिशत की सीमाएँ जो सूचना देती हैं, या सूचना देकर फिर ब्लॉक करती हैं। राशियाँ नैनोडॉलर और USD दोनों में लौटाई जाती हैं।'
+      required:
+        - id
+        - workspace_id
+        - name
+        - enabled
+        - metric
+        - evaluated
+        - scope_type
+        - scope_id
+        - period
+        - window_hours
+        - time_zone
+        - base_kind
+        - base_ref
+        - base_amount_nanos
+        - base_amount_usd
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - runway_days
+        - spike_multiplier
+        - spike_floor_nanos
+        - spike_floor_usd
+        - action
+        - block_at_percent
+        - block_at_amount_nanos
+        - block_at_amount_usd
+        - block_free_models
+        - cooldown_minutes
+        - destination_ids
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: वर्कस्पेस दायरे के लिए null; अन्यथा कुंजी ID, सदस्य का उपयोगकर्ता ID, विभाग ID, मॉडल ID या प्रदाता ID।
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: कैलेंडर अवधियों के लिए IANA समय क्षेत्र। null होने पर वर्कस्पेस का बिलिंग समय क्षेत्र इस्तेमाल होता है।
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'threshold_percents किसके प्रतिशत हैं: amount (base_amount), workspace_budget या key_limit (base_ref अंतराल, जो अवधि से मेल खाना चाहिए), या previous_period।'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: आधार के अधिकतम पाँच पूर्ण प्रतिशत, क्रम में। हर एक प्रति अवधि अधिकतम एक बार ट्रिगर होता है; एक साथ कई पार होने पर सबसे ऊँचे का नाम लेकर एक अलर्ट भेजा जाता है।
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: क्या ब्लॉक मुफ़्त मॉडल के अनुरोध भी रोकता है।
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: rolling, spike और balance नियमों के लिए अलर्ट के बीच न्यूनतम मिनट।
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: इस नियम के अलर्ट के सूचना गंतव्य। खाली होने का मतलब वर्कस्पेस का Spend Alerts रूट है।
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SpendRuleUpdateInput:
+      type: object
+      description: बदलने के लिए खर्च नियम के फ़ील्ड; कम से कम एक। राशियाँ *_usd या *_nanos (सटीक नैनोडॉलर) में दें, दोनों नहीं। किसी फ़ील्ड को साफ़ करने के लिए उसे null करें।
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: वर्कस्पेस दायरे के लिए null; अन्यथा कुंजी ID, सदस्य का उपयोगकर्ता ID, विभाग ID, मॉडल ID या प्रदाता ID।
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: कैलेंडर अवधियों के लिए IANA समय क्षेत्र। null होने पर वर्कस्पेस का बिलिंग समय क्षेत्र इस्तेमाल होता है।
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'threshold_percents किसके प्रतिशत हैं: amount (base_amount), workspace_budget या key_limit (base_ref अंतराल, जो अवधि से मेल खाना चाहिए), या previous_period।'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: आधार के अधिकतम पाँच पूर्ण प्रतिशत, क्रम में। हर एक प्रति अवधि अधिकतम एक बार ट्रिगर होता है; एक साथ कई पार होने पर सबसे ऊँचे का नाम लेकर एक अलर्ट भेजा जाता है।
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: क्या ब्लॉक मुफ़्त मॉडल के अनुरोध भी रोकता है।
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: rolling, spike और balance नियमों के लिए अलर्ट के बीच न्यूनतम मिनट।
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: इस नियम के अलर्ट के सूचना गंतव्य। खाली होने का मतलब वर्कस्पेस का Spend Alerts रूट है।
+      additionalProperties: false
+    SpendRuleInput:
+      description: बनाया जाने वाला खर्च नियम। name, metric और period ज़रूरी हैं। spike नियमों में डिफ़ॉल्ट रूप से 3x गुणक और $5 की न्यूनतम सीमा होती है।
+      allOf:
+        - $ref: '#/components/schemas/SpendRuleUpdateInput'
+        - type: object
+          required:
+            - name
+            - metric
+            - period
+    SpendRuleResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRule'
+    SpendRuleListResponse:
+      type: object
+      required:
+        - data
+        - max_rules
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendRule'
+        max_rules:
+          type: integer
+          example: 50
+    SpendRuleDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+    SpendRulePreview:
+      type: object
+      description: खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।
+      required:
+        - rule_id
+        - metric
+        - evaluated
+        - computed_at
+        - time_zone
+        - period
+        - value_nanos
+        - value_usd
+        - base_kind
+        - base_ref
+        - base_nanos
+        - base_usd
+        - percent
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - reached_threshold_percent
+        - next_threshold
+        - block_at_nanos
+        - block_at_usd
+        - state
+        - alert
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+        computed_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+        period:
+          type: object
+          nullable: true
+          required:
+            - kind
+            - start
+            - end
+          properties:
+            kind:
+              $ref: '#/components/schemas/SpendRulePeriod'
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        value_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        value_usd:
+          type: number
+          nullable: true
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_usd:
+          type: number
+          nullable: true
+        percent:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        reached_threshold_percent:
+          type: integer
+          nullable: true
+        next_threshold:
+          type: object
+          nullable: true
+          description: 'अगली सीमा जिस तक मान अभी नहीं पहुँचा: आधार का प्रतिशत (राशि सीमाओं के लिए null) और उसकी राशि।'
+          required:
+            - percent
+            - amount_nanos
+            - amount_usd
+          properties:
+            percent:
+              type: integer
+              nullable: true
+            amount_nanos:
+              type: integer
+              format: int64
+            amount_usd:
+              type: number
+        block_at_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_usd:
+          type: number
+          nullable: true
+        state:
+          type: object
+          nullable: true
+          required:
+            - highest_percent_fired
+            - amount_fired_at
+            - last_fired_at
+            - fire_count
+          properties:
+            highest_percent_fired:
+              type: integer
+              nullable: true
+            amount_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            last_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            fire_count:
+              type: integer
+        alert:
+          type: object
+          nullable: true
+          description: अभी किसी अलर्ट में जो पाठ होगा, जिसमें पहुँची गई सबसे ऊँची सीमा, या पहली सीमा का नाम होगा।
+          required:
+            - scope_label
+            - title
+            - message
+          properties:
+            scope_label:
+              type: string
+            title:
+              type: string
+            message:
+              type: string
+    SpendRulePreviewResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRulePreview'
+    SpendRuleTestResult:
+      type: object
+      description: परीक्षण अलर्ट और हर गंतव्य पर क्या हुआ।
+      required:
+        - rule_id
+        - rule_name
+        - test
+        - title
+        - message
+        - source
+        - delivered
+        - failed
+        - deliveries
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        test:
+          type: boolean
+        title:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+          enum:
+            - rule
+            - routes
+          description: 'rule: नियम के अपने गंतव्य। routes: वर्कस्पेस का Spend Alerts रूट।'
+        delivered:
+          type: integer
+        failed:
+          type: integer
+        deliveries:
+          type: array
+          items:
+            type: object
+            required:
+              - destination_id
+              - name
+              - type
+              - delivered
+              - status
+              - error
+            properties:
+              destination_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              type:
+                type: string
+              delivered:
+                type: boolean
+              status:
+                type: integer
+                nullable: true
+              error:
+                type: string
+                nullable: true
+    SpendRuleTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleTestResult'
+    SpendRuleHistory:
+      type: object
+      description: इवेंट सबसे नए पहले, अगले पेज के लिए has_more के साथ, और नियम की 12 सबसे हाल की अवधि के रिकॉर्ड।
+      required:
+        - events
+        - has_more
+        - periods
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - kind
+              - created_at
+              - deliveries
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - spend_alert
+                  - spend_blocked
+              created_at:
+                type: string
+                format: date-time
+              title:
+                type: string
+                nullable: true
+              message:
+                type: string
+                nullable: true
+              state:
+                type: string
+                nullable: true
+              threshold_percent:
+                type: integer
+                nullable: true
+              thresholds_crossed:
+                type: array
+                items:
+                  type: integer
+                nullable: true
+              threshold_amount_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              threshold_amount_usd:
+                type: number
+                nullable: true
+              value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              value_usd:
+                type: number
+                nullable: true
+              base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              base_usd:
+                type: number
+                nullable: true
+              percent:
+                type: number
+                nullable: true
+              period:
+                type: object
+                nullable: true
+                additionalProperties: true
+              deliveries:
+                type: object
+                description: स्थिति के अनुसार डिलीवरी प्रयास।
+                required:
+                  - sent
+                  - failed
+                  - pending
+                properties:
+                  sent:
+                    type: integer
+                  failed:
+                    type: integer
+                  pending:
+                    type: integer
+        has_more:
+          type: boolean
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+              - period_start
+              - period_end
+              - highest_percent_fired
+              - amount_fired_at
+              - last_fired_at
+              - fire_count
+              - last_value_nanos
+              - last_value_usd
+              - last_base_nanos
+              - last_base_usd
+            properties:
+              period_start:
+                type: string
+                format: date-time
+                nullable: true
+              period_end:
+                type: string
+                format: date-time
+                nullable: true
+              highest_percent_fired:
+                type: integer
+                nullable: true
+              amount_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              last_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              fire_count:
+                type: integer
+              last_value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_value_usd:
+                type: number
+                nullable: true
+              last_base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_base_usd:
+                type: number
+                nullable: true
+    SpendRuleHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'खर्च ब्लॉक क्यों हटाया गया: manual (कोई ओनर या एडमिन), period_reset, below_limit (खर्च फिर से ब्लॉक बिंदु से नीचे है, जैसे बजट बढ़ाने के बाद), rule_changed, rule_disabled या rule_deleted।'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: वह ब्लॉक जो किसी खर्च नियम ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किया। सक्रिय रहने तक उसके दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है और Retry-After resets_at पर सेट होता है। मुफ़्त मॉडल छूट में रहते हैं, जब तक block_free_models true न हो।
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: वह नियम जिसने ब्लॉक शुरू किया; नियम पूरी तरह हटाए जाने पर null।
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: दायरे का दिखने वाला नाम (कुंजी, विभाग या मॉडल का नाम, सदस्य का ईमेल, या ID)।
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ब्लॉक अपने आप कब हटता है (नियम की अवधि का अंत)।
+        spend_nanos:
+          type: integer
+          description: ब्लॉक शुरू होते समय नियम के दायरे में खर्च, नैनोडॉलर में।
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: ब्लॉक बिंदु, नैनोडॉलर में।
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: मैन्युअल रूप से हटाने पर, ब्लॉक हटाने वाला ओनर या एडमिन।
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: हटाया नहीं गया, और इसका रीसेट समय अभी नहीं बीता।
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:
@@ -19766,12 +23441,35 @@ components:
         model_deprecation:
           type: boolean
       additionalProperties: false
+    WorkspaceSpendAttribution:
+      type: string
+      description: 'जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम उसके खर्च को विभागों में कैसे गिनते हैं: all उसे उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग हमेशा प्राथमिकता पाता है।'
+      enum:
+        - all
+        - primary
+    WorkspaceBillingTimeZone:
+      type: string
+      maxLength: 64
+      description: उन खर्च नियमों की कैलेंडर अवधियों के लिए IANA समय क्षेत्र जिनका अपना कोई समय क्षेत्र नहीं है, और खर्च रिपोर्ट के लिए। डिफ़ॉल्ट UTC है। लागू की गई कुंजी सीमाएँ और वर्कस्पेस बजट हमेशा UTC का उपयोग करते हैं।
+      example: Europe/London
+    WorkspaceSpendSettings:
+      type: object
+      required:
+        - department_attribution
+        - billing_time_zone
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+      additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
       required:
         - auto_top_up
         - low_balance_email
         - email_preferences
+        - spend
       properties:
         auto_top_up:
           $ref: '#/components/schemas/WorkspaceAutoTopUpSettings'
@@ -19779,6 +23477,8 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailSettings'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferences'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettings'
       additionalProperties: false
     WorkspaceNotificationSettingsResponse:
       type: object
@@ -19842,6 +23542,17 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettingsUpdate'
+      additionalProperties: false
+    WorkspaceSpendSettingsUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -19875,6 +23586,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: क्या डिलीवरी x-phaseo-signature से साइन होती हैं। केवल कस्टम वेबहुक गंतव्य साइन होते हैं; साइनिंग से पहले बने गंतव्य सीक्रेट बनने तक बिना साइन के रहते हैं।
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: मौजूदा साइनिंग सीक्रेट कब बनाया गया था।
+        signing_secret:
+          type: string
+          description: वेबहुक साइनिंग सीक्रेट। यह केवल कस्टम वेबहुक गंतव्य बनाते समय या उसका सीक्रेट बदलते समय लौटाया जाता है; इसे सुरक्षित रखें।
         created_at:
           type: string
           format: date-time
@@ -19959,6 +23681,12 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
+        - rate_limit_throttled
+        - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -19966,6 +23694,12 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
+        - rate_limit_throttled
+        - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
       properties:
         low_balance:
           type: array
@@ -19983,6 +23717,36 @@ components:
             type: string
             format: uuid
         model_deprecation:
+          type: array
+          items:
+            type: string
+            format: uuid
+        model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_alert:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_blocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_report:
           type: array
           items:
             type: string
@@ -21865,6 +25629,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
+        - deepseek/deepseek-v4.1-flash-1017
         - deepseek/deepseek-v4.1-flash-beta
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b

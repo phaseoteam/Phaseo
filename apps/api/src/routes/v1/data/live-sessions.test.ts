@@ -59,7 +59,7 @@ it("explains an unresolved billing admission block without starting a provider c
 it.each([true, false])("rejects models fallbacks for realtime sessions (live=%s)", async (live) => {
 	const response = await post({ ...request, models: ["openai/gpt-realtime-mini"] }, live);
 	expect(response.status).toBe(400);
-	expect(await response.json()).toMatchObject({ error: "validation_error", reason: "models_not_supported_for_endpoint" });
+	expect(await response.json()).toMatchObject({ code: "validation_error", reason: "models_not_supported_for_endpoint" });
 	expect(mocks.context).not.toHaveBeenCalled();
 	expect(mocks.create).not.toHaveBeenCalled();
 });

@@ -4,13 +4,16 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	confirmModelRemovals,
 	collapseDiscordProviderChanges,
+	createSharedProviderModelsFetcher,
 	extractDiscoveredModels,
+	extractListedModels,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
 	formatPricingSample,
 	getDiscordProviderFamilyId,
 	loadLatestDiscordNotificationFingerprint,
 	saveDiscordNotificationFingerprint,
+	resolveDiscoveryApiKey,
 	resolveProviderModelsEndpoint,
 } from "./helpers";
 import {
@@ -103,6 +106,72 @@ describe("resolveProviderModelsEndpoint", () => {
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
 			"https://poolside.example/v1/models",
 		);
+	});
+});
+
+describe("createSharedProviderModelsFetcher", () => {
+	const venice = { providerId: "venice", providerName: "Venice", baseUrl: "https://api.venice.ai/api/v1", apiKeyEnv: ["VENICE_API_KEY"] };
+	const veniceE2ee = { ...venice, providerId: "venice-e2ee", providerName: "Venice E2EE" };
+
+	it("makes one upstream request for entries that share a URL and key", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.venice.ai/api/v1/models",
+			response: () => jsonResponse({ data: [{ id: "venice-uncensored" }, { id: "qwen3-235b" }] }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			const [plain, e2ee] = await Promise.all([
+				fetchProviderModels(venice, "venice-key", fetchPayload),
+				fetchProviderModels(veniceE2ee, "venice-key", fetchPayload),
+			]);
+
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(plain.map((model) => model.id)).toEqual(["qwen3-235b", "venice-uncensored"]);
+			expect(e2ee.map((model) => model.id)).toEqual(["qwen3-235b", "venice-uncensored"]);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("keeps requests separate when the key or URL differs", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url.endsWith("/models"),
+			response: () => jsonResponse({ data: [{ id: "model" }] }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			await fetchProviderModels(venice, "key-a", fetchPayload);
+			await fetchProviderModels(veniceE2ee, "key-b", fetchPayload);
+			await fetchProviderModels({ ...venice, providerId: "venice-eu", baseUrl: "https://eu.venice.ai/api/v1" }, "key-a", fetchPayload);
+
+			expect(fetchMock.calls.map((call) => call.url)).toEqual([
+				"https://api.venice.ai/api/v1/models",
+				"https://api.venice.ai/api/v1/models",
+				"https://eu.venice.ai/api/v1/models",
+			]);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("names each provider in a shared upstream error", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.venice.ai/api/v1/models",
+			response: () => jsonResponse({ status_code: 1004, status_msg: "invalid api key" }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			const results = await Promise.allSettled([
+				fetchProviderModels(venice, "venice-key", fetchPayload),
+				fetchProviderModels(veniceE2ee, "venice-key", fetchPayload),
+			]);
+
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(results.map((result) => result.status === "rejected" ? String(result.reason?.message).split(" response error")[0] : "ok"))
+				.toEqual(["Venice (venice)", "Venice E2EE (venice-e2ee)"]);
+		} finally {
+			fetchMock.restore();
+		}
 	});
 });
 
@@ -399,6 +468,30 @@ describe("extractDiscoveredModels", () => {
 			id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
 			pricingDetails: { pricing: { input: 0.88, output: 0.88 } },
 		});
+	});
+
+	it("keeps AtlasCloud text models now that its /models omits categories", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			code: 200,
+			msg: "success",
+			data: [
+				{ id: "deepseek-ai/DeepSeek-V3.2-Exp", input_modalities: ["text"], output_modalities: ["text"] },
+				{ id: "black-forest-labs/flux-dev", input_modalities: ["text"], output_modalities: ["image"] },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["deepseek-ai/DeepSeek-V3.2-Exp"]);
+	});
+
+	it("still honours AtlasCloud categories when they are sent", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			data: [
+				{ id: "llm-model", categories: ["LLM"], output_modalities: ["text"] },
+				{ id: "video-model", categories: ["Video"], output_modalities: ["text"] },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["llm-model"]);
 	});
 });
 
@@ -852,6 +945,44 @@ describe("assertSafeDiscoverySnapshot", () => {
 
 	it("accepts normal provider churn", () => {
 		expect(() => assertSafeDiscoverySnapshot("provider", ["a", "b", "c", "d", "e"], ["a", "b", "c", "f"])).not.toThrow();
+	});
+
+	it("accepts zero models only from an explicitly empty model list", () => {
+		expect(extractListedModels("ai21", { data: [] })).toEqual([]);
+		expect(extractListedModels("provider", [])).toEqual([]);
+		expect(() => extractListedModels("provider", { object: "list" })).toThrow("has no recognisable model list");
+		expect(() => extractListedModels("provider", "<html>maintenance</html>")).toThrow("has no recognisable model list");
+		// A filter that drops every listed entry is a discovery bug, not an empty provider.
+		expect(() => extractListedModels("atlascloud", { data: [{ id: "video-model", categories: ["Video"] }] }))
+			.toThrow("atlascloud listed 1 entries but none were usable models");
+	});
+
+	it("accepts an empty list when there is no previous snapshot to lose", () => {
+		// AI21's /models returns {"data":[]}; that is a provider state, not a failed check.
+		expect(() => assertSafeDiscoverySnapshot("ai21", [], [])).not.toThrow();
+	});
+});
+
+describe("resolveDiscoveryApiKey", () => {
+	it("prefers the provider's configured binding", () => {
+		setupRuntimeFromEnv({ MISTRAL_API_KEY: "primary", MISTRAL_AI_API_KEY: "alias" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("primary");
+	});
+
+	it("falls back to the gateway's binding aliases so routable providers stay watched", () => {
+		setupRuntimeFromEnv({ MISTRAL_AI_API_KEY: "mistral-alias", META_MODEL_API_KEY: "meta-alias" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("mistral-alias");
+		expect(resolveDiscoveryApiKey({ providerId: "mistral-eu", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("mistral-alias");
+		expect(resolveDiscoveryApiKey({ providerId: "meta", apiKeyEnv: ["MODEL_API_KEY"] })).toBe("meta-alias");
+	});
+
+	it("returns null when neither discovery nor the gateway has a key", () => {
+		setupRuntimeFromEnv({ MISTRAL_API_KEY: "your-mistral-key" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBeNull();
+		expect(resolveDiscoveryApiKey({ providerId: "not-a-provider", apiKeyEnv: ["NOT_A_PROVIDER_KEY"] })).toBeNull();
 	});
 });
 

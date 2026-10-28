@@ -7,12 +7,32 @@ import {
 	resolveCanonicalTokenUsage,
 	resolveRequestCountUsage,
 } from "@core/usage-normalization";
+import { CACHED_WRITE_TOKEN_PATHS, resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 
 type TextUsageNormalizationOptions = {
 	// When true, cached-read tokens are treated as a subset of input tokens.
 	// Pricing then uses uncached input meter + cached-read meter (no double count).
 	cachedReadTokensAreSubsetOfInput?: boolean;
+	// When true, cache-write tokens are already counted inside input tokens (OpenAI,
+	// Kimi, Alibaba). Anthropic reports writes on top of input, so it passes false.
+	cachedWriteTokensAreSubsetOfInput?: boolean;
 };
+
+function withOptionHints(usageRaw: any, options?: TextUsageNormalizationOptions): any {
+	if (typeof options?.cachedReadTokensAreSubsetOfInput !== "boolean" &&
+		typeof options?.cachedWriteTokensAreSubsetOfInput !== "boolean") {
+		return usageRaw;
+	}
+	return {
+		...usageRaw,
+		...(typeof options.cachedReadTokensAreSubsetOfInput === "boolean"
+			? { cached_read_tokens_are_subset_of_input: options.cachedReadTokensAreSubsetOfInput }
+			: {}),
+		...(typeof options.cachedWriteTokensAreSubsetOfInput === "boolean"
+			? { cached_write_tokens_are_subset_of_input: options.cachedWriteTokensAreSubsetOfInput }
+			: {}),
+	};
+}
 
 function pickNumber(source: any, path: string): number | undefined {
 	if (!source || typeof source !== "object") return undefined;
@@ -37,43 +57,12 @@ export function normalizeTextUsageForPricing(
 
 	const tokenUsage = resolveCanonicalTokenUsage(usageRaw);
 
-	const cachedReadTokensFromOpenAICompatDetails = pickFirstNumber(usageRaw, [
-		"input_tokens_details.cached_tokens",
-		"prompt_tokens_details.cached_tokens",
-	]);
-	const cachedReadTokens = pickFirstNumber(usageRaw, [
-		"cached_read_text_tokens",
-		"cache_read_input_tokens",
-		"cached_tokens",
-		"prompt_cache_hit_tokens",
-		"cachedInputTokens",
-		"cachedContentTokenCount",
-	]) ?? cachedReadTokensFromOpenAICompatDetails;
-	const cachedWriteTokens = pickFirstNumber(usageRaw, [
-		"cached_write_text_tokens",
-		"cache_creation_input_tokens",
-		"input_tokens_details.cache_creation_input_tokens",
-		"prompt_tokens_details.cache_creation_input_tokens",
-		"input_tokens_details.cache_creation_tokens",
-		"prompt_tokens_details.cache_creation_tokens",
-		"_ext.cachedWriteTokens",
-		"output_tokens_details.cached_tokens",
-		"completion_tokens_details.cached_tokens",
-	]);
-	const cachedWrite5mTokens = pickFirstNumber(usageRaw, [
-		"cached_write_text_tokens_5m",
-		"_ext.cachedWriteTokens5m",
-		"cache_creation.ephemeral_5m_input_tokens",
-		"cache_creation_5m_input_tokens",
-		"cache_creation_ephemeral_5m_input_tokens",
-	]);
-	const cachedWrite1hTokens = pickFirstNumber(usageRaw, [
-		"cached_write_text_tokens_1h",
-		"_ext.cachedWriteTokens1h",
-		"cache_creation.ephemeral_1h_input_tokens",
-		"cache_creation_1h_input_tokens",
-		"cache_creation_ephemeral_1h_input_tokens",
-	]);
+	const usageForCache = withOptionHints(usageRaw, options);
+	const cache = resolveCacheTokenUsage(usageForCache, tokenUsage.inputTokens);
+	const cachedReadTokens = cache.readTokens;
+	const cachedWrite5mTokens = cache.write5mTokens;
+	const cachedWrite1hTokens = cache.write1hTokens;
+	const cachedWriteTokens = pickFirstNumber(usageRaw, [...CACHED_WRITE_TOKEN_PATHS]);
 	const reasoningTokens = pickFirstNumber(usageRaw, [
 		"reasoning_tokens",
 		"reasoningTokens",
@@ -123,28 +112,9 @@ export function normalizeTextUsageForPricing(
 		"num_search_queries",
 		"_ext.numSearchQueries",
 	]);
-	const usageRecord = usageRaw as Record<string, any>;
-	const explicitSubsetHint =
-		usageRecord.cached_read_tokens_are_subset_of_input ??
-		usageRecord.cachedReadTokensAreSubsetOfInput;
-	const cachedReadAsSubset =
-		options?.cachedReadTokensAreSubsetOfInput === true ||
-		(
-			options?.cachedReadTokensAreSubsetOfInput !== false &&
-			explicitSubsetHint !== false &&
-			(
-				explicitSubsetHint === true ||
-				typeof cachedReadTokensFromOpenAICompatDetails === "number"
-			)
-		);
-	const cachedReadValue = typeof cachedReadTokens === "number" ? Math.max(0, Math.round(cachedReadTokens)) : 0;
-	const uncachedInputTokens = cachedReadAsSubset
-		? Math.max(0, tokenUsage.inputTokens - cachedReadValue)
-		: tokenUsage.inputTokens;
-
 	const meters: Record<string, number> = {
 		input_tokens: tokenUsage.inputTokens,
-		input_text_tokens: uncachedInputTokens,
+		input_text_tokens: Math.round(uncachedInputTokens(tokenUsage.inputTokens, cache)),
 		output_tokens: tokenUsage.outputTokens,
 		output_text_tokens: tokenUsage.outputTokens,
 		total_tokens: tokenUsage.totalTokens,
@@ -160,6 +130,15 @@ export function normalizeTextUsageForPricing(
 	) {
 		meters.cached_write_text_tokens = (cachedWrite5mTokens ?? 0) + (cachedWrite1hTokens ?? 0);
 	}
+	// OpenAI 30-minute / 12-hour split. The aggregate above stays the write total.
+	if (typeof cache.write30mTokens === "number") meters.cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") meters.cached_write_text_tokens_12h = cache.write12hTokens;
+	if (
+		typeof meters.cached_write_text_tokens !== "number" &&
+		(typeof cache.write30mTokens === "number" || typeof cache.write12hTokens === "number")
+	) {
+		meters.cached_write_text_tokens = (cache.write30mTokens ?? 0) + (cache.write12hTokens ?? 0);
+	}
 	if (typeof reasoningTokens === "number") meters.reasoning_tokens = reasoningTokens;
 	if (typeof inputImageTokens === "number") meters.input_image_tokens = inputImageTokens;
 	if (typeof inputAudioTokens === "number") meters.input_audio_tokens = inputAudioTokens;
@@ -169,8 +148,13 @@ export function normalizeTextUsageForPricing(
 	if (typeof outputVideoTokens === "number") meters.output_video_tokens = outputVideoTokens;
 	if (typeof requests === "number") meters.requests = requests;
 	if (typeof nativeWebSearchRequests === "number") meters.native_web_search_requests = nativeWebSearchRequests;
-	if (cachedReadAsSubset && typeof cachedReadTokens === "number") {
-		(meters as Record<string, any>).cached_read_tokens_are_subset_of_input = true;
+	// State both semantics explicitly: later stages merge this with protocol-encoded usage
+	// and must not re-infer them from field names.
+	if (typeof cachedReadTokens === "number") {
+		(meters as Record<string, any>).cached_read_tokens_are_subset_of_input = cache.readSubset;
+	}
+	if (typeof meters.cached_write_text_tokens === "number") {
+		(meters as Record<string, any>).cached_write_tokens_are_subset_of_input = cache.writeSubset;
 	}
 	const observedServiceTier =
 		typeof usageRaw.service_tier === "string"
@@ -182,6 +166,15 @@ export function normalizeTextUsageForPricing(
 		meters.service_tier = observedServiceTier;
 		meters.serviceTier = observedServiceTier;
 	}
+	// Where Claude ran the request (`usage.inference_geo`, "global" or "us"). US-only inference
+	// is priced at 1.1x on Claude 4.6+ (https://platform.claude.com/docs/en/manage-claude/data-residency),
+	// so price rows match on it.
+	const inferenceGeo = typeof usageRaw.inference_geo === "string"
+		? usageRaw.inference_geo
+		: typeof usageRaw._ext?.inferenceGeo === "string"
+			? usageRaw._ext.inferenceGeo
+			: undefined;
+	if (inferenceGeo) (meters as Record<string, any>).inference_geo = inferenceGeo.trim().toLowerCase();
 
 	return meters;
 }

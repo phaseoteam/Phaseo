@@ -36,6 +36,17 @@ Após salvar um endpoint, use **Enviar evento de teste** nas Configurações par
 
 Trate os estados de ciclo de vida `completed`, `failed`, `cancelled` e `expired` como terminais. Mantenha um caminho de recuperação por consultas periódicas mesmo ao usar webhooks.
 
+```mermaid
+flowchart TD
+  newJob["Criar uma tarefa de vídeo ou em lote"] --> store["Guardar id e polling_url"]
+  store --> waiting["Aguardar uma atualização"]
+  waiting -->|"Evento de webhook"| terminal{{"Estado terminal?"}}
+  waiting -->|"Consultar polling_url"| terminal
+  terminal -->|"Não"| waiting
+  terminal -->|"completed"| fetchOut["Buscar as saídas ou os resultados"]
+  terminal -->|"failed / cancelled / expired"| outcome["Tratar o resultado"]
+```
+
 Para cada evento, o Phaseo faz uma tentativa inicial de entrega. Uma resposta 2xx bem-sucedida encerra a entrega sem novas tentativas. Entregas com falha recebem até três novas tentativas, agendadas após 1, 5 e 15 minutos. Varreduras em segundo plano processam as tentativas elegíveis, portanto a entrega real pode ocorrer depois do horário agendado. Cada tentativa registra número, horário, status HTTP, erro e horário da próxima tentativa. Após a quarta tentativa sem sucesso, a entrega é marcada como permanentemente falha. Os receptores ainda devem remover eventos duplicados: uma confirmação perdida ou interrupção do worker pode tornar a entrega incerta.
 
 ## Ver logs de trabalhos e solicitações
@@ -112,6 +123,10 @@ MiniMax H3 usa V2: 4–15 segundos inteiros em `768P` ou `2K`. H3 Max permite 5�
 Solicitações em lote também aceitam `provider_options`: OpenAI permite `output_expires_after` e Mistral permite `metadata`. Use IDs canônicos de provedores e não duplique esses campos no nível superior. Por exemplo, `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` define a retenção de saídas da OpenAI. Entradas das linhas, modelos, endpoints e destinos de webhook não podem ser sobrescritos por opções.
 
 Mistral já tem um adaptador nativo de lotes. Lotes de mensagens Anthropic são consultados periodicamente; outros provedores podem combinar consultas com notificações nativas de conclusão. A disponibilidade depende dos endpoints compatíveis do provedor e da lista de permissões de lotes da implantação. Verifique a resposta de capacidades de lote antes de enviar um arquivo ou solicitações embutidas.
+
+Os lotes Gemini no Vertex aceitam `requests` embutidas com `/v1/generateContent`, ou `model` e `prompts`. Selecione `provider: "google-vertex"` para usar o Vertex. As linhas bem-sucedidas são cobradas pelas tarifas Batch. Este adaptador exige credenciais gerenciadas; BYOK, arquivos enviados, embeddings e lotes `google-vertex-eu` não estão disponíveis. A entrada é limitada a 20 MB e 10.000 solicitações. As entradas e saídas armazenadas expiram após 30 dias.
+
+Os resultados do Vertex identificam cada linha enviada com `custom_id`, com a geração bem-sucedida em `response.body` ou um `error` por solicitação. A ordem de saída pode diferir da ordem de entrada. Um envio cujo resultado no provedor seja incerto permanece em revisão manual com a reserva de créditos mantida; evite criar uma substituição até confirmar seu resultado.
 
 A conclusão de um lote pode incluir linhas com falha. Inspecione cada resultado pelo ID personalizado em vez de assumir que todas as linhas tiveram sucesso. Guarde a entrada original e o ID do trabalho até reconciliar resultados e faturamento. Um envio incerto deve ser investigado antes de repetir, pois o provedor pode ter aceitado a solicitação original.
 

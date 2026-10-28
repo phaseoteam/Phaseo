@@ -8,17 +8,18 @@ import type {
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
-import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isArtificialAnalysisBenchmark, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
-import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
 	benchmarkTableData?: Record<string, ModelBenchmarkResult[]>;
 	benchmarkResults?: ModelBenchmarkResult[];
-	benchmarkRankings?: PublicBenchmarkRanking[];
+	/** Artificial Analysis rank inputs, keyed by benchmark. */
+	rankSummaries?: Record<string, ArtificialAnalysisRankSummary>;
+	epochRanking?: PublicBenchmarkRanking | null;
 	modelId?: string;
 	modelName?: string;
 	mode?: "summary" | "full";
@@ -28,7 +29,8 @@ export default async function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
 	benchmarkResults = [],
-	benchmarkRankings = [],
+	rankSummaries,
+	epochRanking,
 	modelId,
 	modelName,
 	mode = "full",
@@ -41,7 +43,6 @@ export default async function ModelBenchmarks({
 	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
 	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
 	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
-	const epochRanking = benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id));
 	const otherBenchmarks = otherHighlights.length ? (
 		<ModelBenchmarksGrid highlights={otherHighlights} />
 	) : (
@@ -52,7 +53,7 @@ export default async function ModelBenchmarks({
 
 	return (
 		<div className="space-y-8">
-			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={summarizeArtificialAnalysisRankings(benchmarkRankings)} loadRankings modelId={modelId} modelName={modelName} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={rankSummaries} loadRankings modelId={modelId} modelName={modelName} />
 			<EpochCapabilitiesIndex highlights={highlightCards} ranking={epochRanking ? { ...epochRanking, entries: selectEpochLeaderboardEntries(epochRanking.entries, modelId) } : undefined} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (

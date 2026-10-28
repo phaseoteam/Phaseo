@@ -59,10 +59,18 @@ describe("managed Bedrock Opus 5.5 Mantle contract", () => {
 		try {
 			const result = await executor(args(protocol));
 			expect(mock.calls).toHaveLength(1);
-			expect(mock.calls[0].bodyJson).toMatchObject({ model: "anthropic.claude-opus-5-5", stream: false, thinking: { type: "adaptive" } });
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: "anthropic.claude-opus-5-5", stream: false });
+			// No reasoning settings from the client: thinking is left to the model default.
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("thinking");
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed" || !result.ir) throw new Error("expected completion");
-			expect(result.ir.choices[0].message.content).toContainEqual({ type: "provider_block", block: opusMessage.content[0] });
+			// The thinking block keeps its signature, tagged as Claude reasoning from Bedrock.
+			expect(result.ir.choices[0].message.content).toContainEqual(expect.objectContaining({
+				type: "reasoning_text",
+				thoughtSignature: opusMessage.content[0].signature,
+				reasoningFormat: "anthropic-claude-v1",
+				reasoningProvider: "amazon-bedrock",
+			}));
 			const wire = JSON.stringify(encodeProtocol(protocol, result.ir, "req_opus_bedrock"));
 			expect(wire).toContain("Answer");
 			expect(wire).toContain("call_lookup");
@@ -94,7 +102,7 @@ describe("managed Bedrock Opus 5.5 Mantle contract", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ AMAZON_BEDROCK_API_KEY: JSON.stringify({ accessKeyId: "mock-access", secretAccessKey: "mock-secret", region: "ap-southeast-4", baseUrl: "https://bedrock-mantle.ap-southeast-4.api.aws/openai/v1" }), AMAZON_BEDROCK_REGION: "us-west-2" } as any);
 		const mock = installFetchMock([{ match: url => url === "https://bedrock-mantle.ap-southeast-4.api.aws/anthropic/v1/messages", response: Response.json(opusMessage) }]);
-		try { await executor(request); expect(mock.calls[0].headers.Authorization).toContain("/ap-southeast-4/bedrock/aws4_request"); }
+		try { await executor(request); expect(mock.calls[0].headers.Authorization).toContain("/ap-southeast-4/bedrock-mantle/aws4_request"); }
 		finally { mock.restore(); }
 	});
 
