@@ -52,6 +52,15 @@ Never name competitors, customers, internal tools, Statsig gates or code names.
 
 Anything people use in phaseo.app, the desktop and mobile apps, and the docs site.
 
+### Screenshots
+
+A Product entry for a large visible change can have one screenshot of the real UI.
+- **Placement:** at the top of that date's Product section, straight after the label.
+- **What to capture:** crop to the part that changed, with no sidebars or other noise, in light mode.
+- **File:** save it as `apps/docs/images/changelog/YYYY-MM-DD--<slug>.png`.
+- **Links and alt text:** link it the same way as release artwork (`../images/...` in English, `/images/...` on locale pages), with alt text describing what it shows, translated on locale pages.
+- **Small changes** don't get one.
+
 ### New feature
 
 Name the feature, say what it does and where it is.
