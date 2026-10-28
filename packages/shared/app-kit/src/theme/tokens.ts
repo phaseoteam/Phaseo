@@ -154,12 +154,12 @@ export const PALETTE_TOKENS: { light: Record<LightPalette, Record<SurfaceToken, 
 	},
 };
 
-export const STATUS_TOKENS = ["destructive", "destructive-foreground", "success", "warning"] as const;
+export const STATUS_TOKENS = ["destructive", "destructive-foreground", "success", "warning", "info"] as const;
 export type StatusToken = (typeof STATUS_TOKENS)[number];
 
 /**
- * Status colours, the same in every palette. Success and warning are Tailwind's emerald and amber,
- * 600 in light and 500 in dark, as the mobile app has them.
+ * Status colours, the same in every palette, from Tailwind's palette: success is emerald, warning
+ * amber and info sky, 600 in light (sky-400, emerald-500 and amber-500 in dark).
  */
 export const STATUS_COLOURS: Record<Scheme, Record<StatusToken, string>> = {
 	light: {
@@ -167,12 +167,14 @@ export const STATUS_COLOURS: Record<Scheme, Record<StatusToken, string>> = {
 		"destructive-foreground": "#ffffff",
 		success: "oklch(0.596 0.145 163.225)",
 		warning: "oklch(0.666 0.179 58.318)",
+		info: "oklch(0.588 0.158 241.966)",
 	},
 	dark: {
 		destructive: "oklch(0.704 0.191 22.216)",
 		"destructive-foreground": "#ffffff",
 		success: "oklch(0.696 0.17 162.48)",
 		warning: "oklch(0.769 0.188 70.08)",
+		info: "oklch(0.746 0.16 232.661)",
 	},
 };
 

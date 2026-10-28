@@ -108,8 +108,8 @@ test("the website's palettes are the shared ones", () => {
 	// website's own.
 	for (const [scheme, selector] of [["light", ":root"], ["dark", ".dark"]]) {
 		compare(`${WEB} ${selector}`, declarations(WEB, selector), { ...palette[scheme], ...STATUS_COLOURS[scheme] }, {
-			// Not settled yet: the website has no success or warning tokens.
-			absent: ["destructive-foreground", "success", "warning"],
+			// destructive-foreground is the mobile app's: the other apps tint destructive buttons instead of filling them.
+			absent: ["destructive-foreground"],
 		});
 	}
 	for (const name of LIGHT_PALETTES.filter((name) => name !== "phaseo")) {
@@ -152,31 +152,17 @@ test("the website's first-paint script knows the shared palettes", () => {
 	assert.deepEqual(list("dp"), [...DARK_PALETTES]);
 });
 
-for (const [app, file, radiusAbsent] of [["desktop app", DESKTOP, []], ["Factory", FACTORY, ["2xl"]]]) {
+for (const [app, file] of [["desktop app", DESKTOP], ["Factory", FACTORY]]) {
 	test(`the ${app}'s tokens are the shared ones`, () => {
 		const light = declarations(file, ":root");
 		const dark = declarations(file, ".dark");
+		// No charts, and no destructive-foreground (see the website's test).
 		const own = { absent: ["destructive-foreground", "chart-1", "chart-2", "chart-3", "chart-4", "chart-5"] };
-		// Not settled yet: the sidebar hover is a little darker, the dark sidebar darker still, and
-		// success and warning are the app's own greens and ambers. info is the app's own.
-		compare(`${file} :root`, light, { ...palette.light, ...STATUS_COLOURS.light, ...accentTokens("light") }, {
-			...own,
-			exceptions: { "sidebar-accent": "oklch(0.95 0 0)", success: "oklch(0.6 0.15 150)", warning: "oklch(0.7 0.15 70)" },
-		});
-		compare(`${file} .dark`, dark, { ...palette.dark, ...STATUS_COLOURS.dark, ...accentTokens("dark") }, {
-			...own,
-			exceptions: {
-				sidebar: "oklch(0.17 0 0)",
-				"sidebar-accent": "oklch(0.25 0 0)",
-				"sidebar-border": "oklch(1 0 0 / 8%)",
-				success: "oklch(0.72 0.17 150)",
-				warning: "oklch(0.8 0.15 80)",
-			},
-		});
+		compare(`${file} :root`, light, { ...palette.light, ...STATUS_COLOURS.light, ...accentTokens("light") }, own);
+		compare(`${file} .dark`, dark, { ...palette.dark, ...STATUS_COLOURS.dark, ...accentTokens("dark") }, own);
 		const base = radiusPx(light.radius, 0);
 		assert.equal(base, RADIUS_BASE_PX);
-		// Not settled yet: Factory keeps Tailwind's 2xl (16px).
-		compareRadii(`${file} @theme inline`, declarations(file, "@theme inline"), base, { absent: radiusAbsent });
+		compareRadii(`${file} @theme inline`, declarations(file, "@theme inline"), base);
 	});
 }
 
