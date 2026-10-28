@@ -1,0 +1,356 @@
+---
+title: "قوالب المطالبات"
+description: "احفظ المطالبات في إعداد مسبق وأرسل مع كل طلب القيم التي تتغير فقط."
+icon: "braces"
+---
+
+قالب المطالبة هو قائمة رسائل تحتوي على `{{variables}}`، محفوظة في [إعداد مسبق](./presets.mdx). يرسل تطبيقك مرجع الإعداد المسبق وقيم المتغيرات. تتحقق Phaseo من القيم، وتملأ بها الرسائل، ثم ترسل الطلب إلى نموذج الإعداد المسبق.
+
+بهذا يبقى نص المطالبة خارج شيفرة التطبيق. يمكنك تغيير المطالبة من لوحة التحكم دون نشر جديد، وتستخدم كل الجهات المستدعية الصياغة والأدوات وتنسيق الاستجابة نفسها.
+
+تعمل القوالب على `POST /v1/chat/completions` و`POST /v1/responses` و`POST /v1/messages`.
+
+## البدء السريع
+
+<Steps>
+<Step title="كتابة القالب">
+
+افتح **الإعدادات -> الإعدادات المسبقة**، وأنشئ إعدادًا مسبقًا أو افتح إعدادًا موجودًا، واختر نموذجه، ثم افتح علامة التبويب **قالب الموجّه**. أضف الرسائل واكتب المتغيرات بين قوسين معقوفين مزدوجين:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+يعرض المحرر كل متغير يعثر عليه. حدّد لكل متغير نوعه، وهل هو مطلوب، وقيمته الافتراضية، ووصفه. املأ لوحة **جرّبه** لترى الرسائل نفسها التي سترسلها Gateway، ثم احفظ.
+
+بعد حفظ الإعداد المسبق، يرسل زر **تشغيل الإعداد المسبق المحفوظ** طلبًا حقيقيًا بقيم الاختبار ويعرض الرد والنموذج وعدد الرموز. يستخدم ذلك أرصدة مساحة العمل. وتحتوي اللوحة نفسها على شيفرة الطلب بلغات cURL وTypeScript وPython، معبأة بقيم الاختبار.
+
+</Step>
+
+<Step title="إرسال المتغيرات">
+
+أشر إلى الإعداد المسبق في `prompt.id` وضع القيم في `prompt.variables`. احذف `model`، أو اضبطه على المرجع نفسه.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="التحقق من الطلب">
+
+افتح **Gateway -> السجلات** لترى الطلب والنموذج الذي نفّذه وتكلفته. تسجّل بيانات الطلب الوصفية الإعداد المسبق وأسماء المتغيرات وعدد الرسائل الناتجة، لكنها لا تسجّل قيم المتغيرات.
+
+</Step>
+</Steps>
+
+## استخدام القوالب من كل نقطة نهاية
+
+يعمل كائن `prompt` نفسه على نقاط النهاية الثلاث. تصبح رسائل system وdeveloper في القالب تعليمات النظام لنقطة النهاية، وتأتي رسائله الأخرى قبل أي محادثة يرسلها طلبك.
+
+| نقطة النهاية | وجهة رسائل system في القالب | تأتي محادثة القالب قبل |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (تبقى رسائل system) | `messages` الخاصة بك |
+| `/v1/responses` | `instructions` | `input` الخاص بك |
+| `/v1/messages` | `system` | `messages` الخاصة بك |
+
+يمكنك إرسال محادثة مع القالب. على سبيل المثال، يمكن لطلب chat إضافة أدوار المتابعة من المستخدم بعد رسائل القالب:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## صيغة القالب
+
+تستخدم القوالب مجموعة فرعية صغيرة من Mustache خالية من المنطق. لا يُشغَّل أي شيء في القالب بوصفه شيفرة.
+
+| الصيغة | ما تفعله |
+| --- | --- |
+| `{{name}}` | تُدرج قيمة. يُدرج النص كما هو، والأرقام والقيم المنطقية بوصفها نصًا، والقوائم والكائنات بوصفها JSON. لا تُدرج القيمة الاختيارية الغائبة شيئًا. |
+| `{{customer.name}}` | تُدرج حقلًا من متغير كائن. |
+| `{{#name}}...{{/name}}` | تعرض الكتلة مرة واحدة عندما تكون القيمة معيّنة وليست `false`، أو مرة لكل عنصر في قائمة. داخل الكتلة، يمثل `{{.}}` العنصر الحالي ويمكن استخدام حقوله بأسمائها. |
+| `{{^name}}...{{/name}}` | تعرض الكتلة عندما تكون القيمة غائبة أو `false` أو نصًا فارغًا أو قائمة فارغة. |
+| `{{! note }}` | تعليق يُزال. |
+| `\{{` | `{{` حرفية. |
+
+تُدرج القيم نصًا عاديًا دون تهريب HTML. يمكن للقيمة أن تغيّر نص الرسالة، لكنها لا تغيّر بنية الطلب أبدًا.
+
+إذا لم يبقَ من الرسالة بعد عرضها سوى مسافات بيضاء، فإنها تُحذف. استخدم ذلك لجعل رسالة كاملة اختيارية:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+لتكرار نص لكل عنصر في قائمة، افتح قسمًا على القائمة واستخدم `{{.}}` للعنصر الحالي:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+لا تُدعم الأجزاء الجزئية (`{{> name}}`)، ولا الوسوم غير المهرّبة (`{{{name}}}` و`{{& name}}`)، ولا تغيير المحددات، ولا دوال lambda، ويرفض المحرر وواجهة API القوالب التي تستخدمها.
+
+## المتغيرات
+
+لكل متغير نوع. لا تحتاج إلى التصريح بمتغير إلا لتغيير إعداداته الافتراضية؛ فالمتغيرات المستخدمة في الرسائل دون تصريح هي نص مطلوب.
+
+| النوع | يقبل |
+| --- | --- |
+| `string` | نصًا. اضبط `max_length` لتحديد طوله. |
+| `number` | رقمًا. |
+| `boolean` | `true` أو `false`. |
+| `enum` | إحدى السلاسل المدرجة في `enum`. |
+| `array` | قائمة. |
+| `object` | كائن JSON. |
+| `any` | أي قيمة JSON. |
+| `image` | صورة لرسالة user. راجع قسم «متغيرات الصور» أدناه. |
+
+ويمكن أن يحتوي كل متغير أيضًا على:
+
+- `required`: يفشل الطلب عند غياب القيمة. لا يمكن أن تكون للمتغير المطلوب قيمة افتراضية.
+- `default`: تُستخدم عندما يحذف الطلب القيمة. يجب أن تطابق النوع.
+- `description`: يظهر في المحرر وفي رسائل الخطأ، بحد أقصى 500 حرف.
+
+الاسم المستخدم لفتح قسم فقط، مثل `notes` و`examples` أعلاه، اختياري ويقبل أي قيمة.
+
+تُفحص الطلبات بصرامة. يؤدي غياب قيمة مطلوبة، أو قيمة من نوع خاطئ، أو اسم غير موجود في القالب إلى إرجاع `400` يسرد كل المشكلات دفعة واحدة، فلا يمكن لخطأ إملائي أن يُسقط جزءًا من المطالبة دون أن تلاحظ.
+
+## متغيرات الصور
+
+يملأ متغير الصورة جزء محتوى كاملًا في رسالة user، لذا يحدد القالب موضع الصورة. في المحرر، اختر **إضافة صورة** داخل رسالة user. وفي واجهة API، استخدم جزءًا من نوع `variable`:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+يمكن للطلب إرسال كل صورة بوصفها عنوان URL من نوع `https`، أو عنوان `data:image/...`، أو جزء صورة بصيغة chat completions أو Responses أو Messages. تحوّلها Phaseo إلى تنسيق نقطة النهاية التي استدعيتها. يجب أن يقبل النموذج المحدد إدخال الصور.
+
+## الأدوات وتنسيق الاستجابة
+
+يمكن أن يتضمن القالب `tools` و`tool_choice` و`response_format` مكتوبة بصيغة chat completions. تحوّلها Phaseo لنقطتي النهاية Responses وMessages.
+
+عندما يضبط كلاهما الشيء نفسه، تكون الأولوية دائمًا للطلب:
+
+- تُدمج الأدوات حسب اسم الدالة. إذا عرّف الطلب أداة بالاسم نفسه، يُستخدم تعريف الطلب.
+- يحل `tool_choice` وتنسيق الاستجابة (`response_format` أو `text.format` أو `output_config.format`) من الطلب محل ما في القالب.
+
+تعمل معلمات الطلب مثل `temperature` و`max_tokens` كالمعتاد. ولا تملأ القيم الافتراضية الخاصة بالإعداد المسبق إلا الحقول التي يحذفها الطلب.
+
+## إنشاء قالب عبر واجهة API
+
+تُخزَّن القوالب في `config.prompt` الخاص بالإعداد المسبق. أنشئ الإعداد المسبق أو حدّثه باستخدام [مفتاح API للإدارة](../developers/management-api-keys.mdx) يملك الصلاحية `presets:write`:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+تتحقق Phaseo من القالب عند حفظه. يُرفض القالب الذي يحتوي على خطأ في الصيغة أو نوع غير معروف أو قيمة افتراضية لا تطابق نوعها، مع `400 invalid_prompt_template` وموضع كل مشكلة، سواء هنا أو في المحرر.
+
+تصل التغييرات المحفوظة إلى الطلبات خلال دقيقتين تقريبًا.
+
+## الإصدارات والتسميات
+
+في كل مرة تنشر فيها إعدادًا مسبقًا، يحفظ Phaseo إصدارًا غير قابل للتغيير (راجع [الإعدادات المسبقة](./presets.mdx)). تشغّل الطلبات أحدث إصدار منشور ما لم تثبّت إصدارًا. يستخدم الطلب المثبَّت نماذج ذلك الإصدار ومعاملاته وقالبه معًا.
+
+ثبّت إصدارًا باستخدام `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+يقبل `prompt.version` تسمية إصدار مثل `v3` أو `1.2.0` أو `2026.10.27`، أو تسمية مثل `production`. يمكنك أيضًا وضع الإصدار في معرّف النموذج، مع قالب أو بدونه:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+تستخدم الإعدادات المسبقة العامة `@publisher/support-triage@production`. إذا ثبّت كل من `model` و`prompt.version` إصدارًا، فيجب أن يشيرا إلى الإصدار نفسه.
+
+### التسميات
+
+التسمية اسم مثل `production` أو `staging` يشير إلى إصدار منشور واحد. تتكون التسميات من 1 إلى 32 حرفًا لاتينيًا صغيرًا أو رقمًا أو شرطة أو شرطة سفلية، وتبدأ بحرف، ولا يمكن أن تشبه تسمية إصدار (`v1`، `v2`).
+
+في **الإعدادات -> الإعدادات المسبقة**، افتح الإعداد المسبق. يحفظ زر **نشر**، بجانب **حفظ المسودة**، تغييراتك وينشرها بوصفها الإصدار التالي. افتح **الإصدارات والتسميات** لإدارة التسميات: لكل تسمية منتقي إصدار، فاختيار إصدار آخر ينقل التسمية، واختيار إصدار سابق هو تراجع. استخدم **إضافة تسمية** لإنشاء تسمية جديدة. افتح إصدارًا لترى نماذجه ورسائل قالبه وما يختلف فيه عن الإصدار الافتراضي (الذي تشغّله الطلبات التي لا تثبّت إصدارًا)، واستخدم **تشغيل** لتجربة ذلك الإصدار بقيم الاختبار من **قالب الموجّه**. يمكن لمنشئ الإعداد المسبق تغيير تسمياته، وكذلك مالكو مساحة العمل ومسؤولوها عندما يكون الإعداد المسبق مشتركًا. باستخدام [مفتاح API للإدارة](../developers/management-api-keys.mdx) يملك `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+يقبل نص الطلب `version` (تسمية إصدار، أو تسمية أخرى لنسخ الإصدار الذي تشير إليه) أو `version_id`. يسرد `GET /v1/presets/{id}/labels` التسميات، ويزيل `DELETE /v1/presets/{id}/labels/{label}` تسمية. تفشل الطلبات المثبّتة على تسمية أُزيلت حتى تُضاف مرة أخرى.
+
+### التراجع
+
+للتراجع، انقل التسمية إلى الإصدار السابق: اختر **نقل production إلى هنا** على ذلك الإصدار، أو أرسل الطلب نفسه مع `"version": "v2"`. تعود الطلبات المثبّتة على `production` إلى تشغيل v2 دون أي تغيير في تطبيقك.
+
+تصل تغييرات التسميات إلى الطلبات خلال دقيقتين تقريبًا، مثل تغييرات الإعداد المسبق الأخرى.
+
+## الأخطاء
+
+تُرجع مشكلات القالب في الطلب `400` مع الرمز `validation_error`. يحتوي `reason` على رمز المشكلة الأولى، ويسرد `details` كل المشكلات مع مساراتها:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| السبب | الحالة |
+| --- | --- |
+| `template_variable_required` | متغير مطلوب غائب. |
+| `template_variable_type` | قيمة لا تطابق نوعها أو قائمة enum أو `max_length`. |
+| `template_variable_unknown` | أرسل الطلب متغيرًا غير موجود في القالب، أو لا يحتوي الإعداد المسبق على قالب. |
+| `template_variables_invalid` | `prompt.variables` ليس كائنًا. |
+| `template_limit_exceeded` | المتغيرات أو النص الناتج أكبر من الحدود أدناه. |
+| `template_rendered_empty` | لم يُنتج القالب أي رسالة user أو assistant ولم يرسل الطلب أي رسالة. |
+| `template_endpoint_unsupported` | الإعداد المسبق يحتوي على قالب واستُدعي من نقطة نهاية غير النقاط الثلاث أعلاه. |
+| `prompt_model_conflict` | يحدد `model` إعدادًا مسبقًا أو نموذجًا مختلفًا عن `prompt.id`، أو يثبّت إصدارًا مختلفًا عن `prompt.version`. |
+| `prompt_version_invalid` | قيمة `prompt.version` فارغة، أو أطول من 64 حرفًا، أو تحتوي على أحرف غير الحروف والأرقام و`.` و`_` و`+` و`-`. |
+| `prompt_model_fallbacks_unsupported` | ضبط الطلب بدائل احتياطية في `models`. أدرج النماذج الاحتياطية في الإعداد المسبق بدلًا من ذلك. |
+
+يُرجع `prompt.id` الذي لا يشير إلى أي إعداد مسبق في مساحة عملك `404`.
+
+تُرجع النسخة أو التسمية المثبّتة غير الموجودة، أو التي لا يمكن للمفتاح استخدامها، `404` مع السبب `preset_version_not_found`.
+
+## الحدود
+
+| الحد | القيمة |
+| --- | --- |
+| الرسائل لكل قالب | 64 |
+| المتغيرات لكل قالب | 64 |
+| نص القالب في كل الرسائل | 48,000 حرف |
+| عمق تداخل الأقسام | 8 |
+| تكرارات الأقسام لكل طلب | 1,000 |
+| النص الناتج لكل طلب | 1,000,000 حرف |
+| حجم `prompt.variables` | 256 KB |
+| القيم لكل `enum` | 100 |
+
+## الضوابط والسجلات
+
+تفحص [الضوابط](../cookbook/guardrails-for-api-keys.mdx) قيم المتغيرات بوصفها محتوى مستخدم، حتى عندما يضعها القالب في رسالة system. الضابط الذي يحجب قيمة يحجبها في كل موضع أدرجها فيه القالب، والضابط الذي يمنع قيمة يمنع الطلب.
+
+تسجّل بيانات الطلب الوصفية الإعداد المسبق وأسماء المتغيرات وعدد الرسائل الناتجة. أما القيم نفسها فلا تُحفظ إلا حيث يُحفظ جسم الطلب، وفق إعدادات التسجيل المعتادة لمساحة عملك.
+
+## القيود الحالية
+
+- لا يمكن الجمع بين البدائل الاحتياطية في `models` والقالب. أضف النماذج الاحتياطية إلى الإعداد المسبق بدلًا من ذلك.
+- تنطبق القوالب على طلبات chat completions وResponses وMessages فقط.
+
+## أدلة ذات صلة
+
+- [الإعدادات المسبقة](./presets.mdx)
+- [المخرجات المنظّمة](./structured-outputs.mdx)
+- [استدعاء الأدوات](./tool-calling.mdx)
+- [تعدد الوسائط](./multimodality.mdx)

@@ -110,8 +110,16 @@ try {
   await db.exec("insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v5','Future');");
   await db.exec(`insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric) values ('${id(900)}','lab/one','aa-intelligence-index-v5',99);`);
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v5'")).rows[0].published, false, 'partial future import cannot become current');
+  const v4State = async () => ({
+    results: (await db.query("select result_id, score_numeric, other_info, effective_to from public.v2_benchmark_results where benchmark_id like '%-v4' order by result_id")).rows,
+    coverage: (await db.query("select benchmark_id, total_models, published from public.get_artificial_analysis_coverage() where benchmark_id like '%-v4' order by benchmark_id")).rows,
+  });
+  const lastV4 = await v4State();
   await publish(snapshot(4, 5));
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v5'")).rows[0].published, true);
+  assert.deepEqual(await v4State(), lastV4, 'v5 publication leaves the final v4 scores and coverage unchanged');
+  await rejects(publish(snapshot(6)), /stale/);
+  assert.deepEqual(await v4State(), lastV4, 'v4 cannot be republished once v5 exists');
   assert.equal(await count('artificial_analysis_snapshots'), 4);
   const future = { ...snapshot(5, 5), fetched_at: new Date(Date.now() + 1000).toISOString() };
   await publish(future);

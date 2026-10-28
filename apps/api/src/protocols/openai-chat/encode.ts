@@ -9,6 +9,7 @@ import type { IRChatResponse, IRChoice, IRUsage, IRContentPart } from "@core/ir"
 import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
 import { encodeChatReasoningDetails, type ReasoningResponseOrigin } from "../shared/reasoning";
+import { toChatAnnotations } from "../shared/citations";
 
 /**
  * Encode IR response to OpenAI Chat Completions format (Gateway response)
@@ -56,6 +57,9 @@ function encodeChoice(
 ): GatewayCompletionsResponse["choices"][0] {
 	const { text, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
+	const contentParts: IRContentPart[] = Array.isArray(choice.message.content) ? choice.message.content : [];
+	const annotations = toChatAnnotations(contentParts.flatMap((part) =>
+		part.type === "text" && Array.isArray(part.annotations) ? part.annotations : []));
 	// Signatures and encrypted reasoning travel in reasoning_details so agent
 	// clients can send them back on the next tool-loop step.
 	const reasoningDetails: GatewayReasoningDetail[] = encodeChatReasoningDetails(
@@ -74,7 +78,17 @@ function encodeChoice(
 		},
 		...(part.mimeType ? { mime_type: part.mimeType } : {}),
 	}));
-	const audios = audioParts.map((part) => {
+	// OpenAI's documented audio output: one `message.audio` object per message.
+	const messageAudioPart = audioParts.find(isChatMessageAudioPart);
+	const messageAudio = messageAudioPart
+		? {
+			...(messageAudioPart.audioId ? { id: messageAudioPart.audioId } : {}),
+			data: messageAudioPart.data,
+			...(typeof messageAudioPart.expiresAt === "number" ? { expires_at: messageAudioPart.expiresAt } : {}),
+			transcript: messageAudioPart.transcript ?? "",
+		}
+		: undefined;
+	const audios = audioParts.filter((part) => !isChatMessageAudioPart(part)).map((part) => {
 		const mimeType = (() => {
 			if (part.format === "wav") return "audio/wav";
 			if (part.format === "mp3") return "audio/mpeg";
@@ -105,7 +119,9 @@ function encodeChoice(
 			content: text,
 			...(images.length > 0 ? { images } : {}),
 			...(audios.length > 0 ? { audios } : {}),
+			...(messageAudio ? { audio: messageAudio } : {}),
 			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
+			...(annotations.length > 0 ? { annotations } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
 				...(tc.type === "custom"
@@ -121,13 +137,18 @@ function encodeChoice(
 						},
 					}),
 			})) as any,
-			// Per-message reasoning fields (MiniMax/Aion format)
-			...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+			// Per-message reasoning fields (MiniMax/Aion format). `reasoning` carries the
+			// same text for clients that read that name.
+			...(reasoningContent ? { reasoning_content: reasoningContent, reasoning: reasoningContent } : {}),
 			...(reasoningDetails.length > 0 ? { reasoning_details: reasoningDetails } : {}),
 		},
 		finish_reason: choice.finishReason,
 		logprobs: choice.logprobs as any, // Type compatibility
 	};
+}
+
+function isChatMessageAudioPart(part: Extract<IRContentPart, { type: "audio" }>): boolean {
+	return Boolean(part.audioId) || part.transcript !== undefined;
 }
 
 function splitContentParts(parts: IRContentPart[]): {
@@ -217,6 +238,9 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	}
 	if (typeof cache.write5mTokens === "number") (result as any).cached_write_text_tokens_5m = cache.write5mTokens;
 	if (typeof cache.write1hTokens === "number") (result as any).cached_write_text_tokens_1h = cache.write1hTokens;
+	// Internal meters only: Chat Completions documents no per-lifetime write field.
+	if (typeof cache.write30mTokens === "number") (result as any).cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") (result as any).cached_write_text_tokens_12h = cache.write12hTokens;
 
 	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens) {
 		result.output_tokens_details = {

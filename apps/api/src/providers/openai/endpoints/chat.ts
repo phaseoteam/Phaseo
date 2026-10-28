@@ -11,6 +11,7 @@ import { computeBill } from "@pipeline/pricing/engine";
 import type { ResolvedKey } from "../../keys";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { upstreamTestHeaders } from "../../shared/testing";
+import { chatStreamErrorFrame } from "@core/error-object";
 
 
 type GatewayToolCall = {
@@ -798,10 +799,7 @@ function createOpenAIStreamResponse(
                 });
             }
             console.error("OpenAI streaming error:", err);
-            await emit({
-                object: "error",
-                message: err instanceof Error ? err.message : "stream_error",
-            });
+            await emit(chatStreamErrorFrame({ message: err instanceof Error ? err.message : "stream_error" }));
         } finally {
             try { await writer.close(); } catch { }
         }

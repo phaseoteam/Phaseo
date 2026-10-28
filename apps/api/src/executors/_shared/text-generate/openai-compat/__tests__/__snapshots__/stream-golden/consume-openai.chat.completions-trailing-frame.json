@@ -36,7 +36,8 @@
         "inputTokens": 10,
         "outputTokens": 20,
         "totalTokens": 30,
-        "cachedInputTokens": 4
+        "cachedInputTokens": 4,
+        "cachedReadTokensAreSubsetOfInput": true
       }
     },
     "rawResponse": {

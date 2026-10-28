@@ -11,16 +11,20 @@ import { guardUpstreamStatus } from "./guards";
 import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
+import { handleSpeechStreamResponse } from "./speech-stream";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
+import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient } from "../usage";
+import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
+import { cachedDroppedParams, droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -32,6 +36,7 @@ import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -56,6 +61,31 @@ export function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
 		return false;
 	}
 	return true;
+}
+
+const PLAIN_TRANSCRIPT_FORMATS = new Set(["text", "srt", "vtt"]);
+
+// OpenAI returns `response_format` text, srt and vtt transcripts and translations
+// as the bare body rather than JSON. Usage is priced before this point, so only
+// the client body changes.
+export function resolvePlainTranscriptBody(
+	ctx: PipelineContext,
+	upstream: Response | undefined,
+	payload: any,
+): { body: string; contentType: string } | null {
+	if (ctx.endpoint !== "audio.transcription" && ctx.endpoint !== "audio.translations") return null;
+	const format = String((ctx.body as any)?.response_format ?? "").trim().toLowerCase();
+	if (!PLAIN_TRANSCRIPT_FORMATS.has(format)) return null;
+	if (typeof payload?.text !== "string") return null;
+	const upstreamType = String(upstream?.headers.get("content-type") ?? "").trim();
+	const upstreamIsJson = upstreamType.toLowerCase().includes("json");
+	// A provider that answered a subtitle request with JSON gave us no subtitle
+	// body to return, so keep the JSON rather than mislabel plain text as srt/vtt.
+	if (upstreamIsJson && format !== "text") return null;
+	return {
+		body: payload.text,
+		contentType: !upstreamIsJson && upstreamType ? upstreamType : "text/plain; charset=utf-8",
+	};
 }
 
 export async function settleNonBillableFailure(
@@ -197,6 +227,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
                         routingMode: ctx.routingMode ?? null,
                         presetId: ctx.preset?.id ?? null,
                         presetSlug: ctx.preset?.slug ?? null,
+                        // Cache hits report the same X-Phaseo-Dropped-Params as this response.
+                        droppedParams: cachedDroppedParams(ctx),
                         ttlSeconds: cacheState.ttlSeconds,
                     });
                     await responseCache.set(
@@ -227,6 +259,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     byokKeyId: result.byokKeyId ?? null,
                     usage: usageForSticky,
                     enabled: cacheAwareRoutingEnabled,
+                    twelveHourCacheDropped: twelveHourCacheDroppedFor(ctx, result.provider),
                 });
             } catch (error) {
                 console.warn("[gateway] sticky routing write failed", {
@@ -249,6 +282,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
 				usage: usageForBilling,
 				reservation: result.providerRateLimitReservation,
 			});
+			chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
             await handleSuccessAudit(
                 ctx,
@@ -295,6 +329,8 @@ export function attachGatewaySuccessMeta(args: {
                     provider: entry.providerId,
                     unsupported_params: entry.unsupportedParams,
                 })) ?? [],
+            // Parameters the serving provider does not support, removed before the call.
+            dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
         },
         ...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
         ...(ctx.guardrailEnforcement
@@ -373,13 +409,19 @@ export async function finalizeRequest(args: {
         return await handleNonStreamResponse(ctx, result, args.timingHeader);
     }
 
-    // 4) Passthrough fallback for endpoints where binary/media passthrough is expected
+    // 4) Speech audio streamed straight from the provider: forward the bytes, then price,
+    // charge and audit once the body has ended (or the client has gone).
+    if (ctx.endpoint === "audio.speech" && result.kind === "stream" && result.stream) {
+        return await handleSpeechStreamResponse(ctx, result, args.timingHeader);
+    }
+
+    // 5) Passthrough fallback for endpoints where binary/media passthrough is expected
     const passthroughOk = ["audio.speech", "audio.transcription", "audio.translations", "video.generation", "images.edits"].includes(ctx.endpoint);
     if (passthroughOk) {
         return handlePassthroughFallback(result.upstream);
     }
 
-    // 5) If we reach this state without a normalized payload, treat as failure.
+    // 6) If we reach this state without a normalized payload, treat as failure.
     const status = 502;
     const errorCode = "normalization_failed";
     const errorMessage = "Gateway could not normalize upstream response.";
@@ -439,18 +481,14 @@ async function handleNonStreamResponse(
     payload = pluginOutcome.payload;
     result.normalized = payload;
     ctx.pluginExecutions = pluginOutcome.executions;
-    const usageFromPayload = payload?.usage ?? null;
-    const usageFromBill = result.bill?.usage ?? null;
-    const payloadUsageObject =
-        usageFromPayload && typeof usageFromPayload === "object" ? usageFromPayload : null;
-    const billUsageObject =
-        usageFromBill && typeof usageFromBill === "object" ? usageFromBill : null;
     // Keep payload usage authoritative for overlapping fields, but preserve
     // bill-only meters (for providers that meter requests/non-token dimensions).
-    const usageNormalized = {
-        ...(billUsageObject ?? {}),
-        ...(payloadUsageObject ?? {}),
-    };
+    // Cache hints follow the payload's input_tokens (Anthropic semantics on Messages).
+    const usageNormalized = keepStreamServerToolMeters(
+        mergeBillAndPayloadUsage(result.bill?.usage, payload?.usage),
+        result.bill?.usage,
+        result.usageFinalizerAuthoritative === true,
+    );
     result.bill.usage = usageNormalized;
     result.bill.finish_reason = finishReason;
     const toolUsage = summarizeToolUsage({
@@ -488,6 +526,7 @@ async function handleNonStreamResponse(
         tier,
         ctx.meta
     ));
+    alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
         workspaceId: ctx.workspaceId,
@@ -591,6 +630,7 @@ async function handleNonStreamResponse(
         includeMeta,
     });
     if (responseBody && typeof responseBody === "object" && !Array.isArray(responseBody)) {
+        withServedModel(responseBody, ctx);
         attachRoutingDiagnosticsToPayload({
             ctx,
             payload: responseBody,
@@ -631,6 +671,16 @@ async function handleNonStreamResponse(
                 headers,
             });
         }
+    }
+
+    const plainTranscript = resolvePlainTranscriptBody(ctx, result.upstream, payload);
+    if (plainTranscript) {
+        const headers = makeHeaders(timingHeader);
+        headers.set("Content-Type", plainTranscript.contentType);
+        return new Response(plainTranscript.body, {
+            status: result.upstream.status,
+            headers,
+        });
     }
 
     if (ctx.meta?.debug?.enabled) {

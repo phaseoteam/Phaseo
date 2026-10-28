@@ -39,7 +39,7 @@ const MANAGEMENT_ROUTE_PREFIXES = [
 	"/activity", "/analytics", "/apps", "/audit-events", "/budgets", "/byok", "/credits",
 	"/data-contribution", "/events", "/feedback", "/guardrails", "/identity", "/key", "/keys",
 	"/logs", "/management-keys", "/notifications", "/oauth-clients", "/observability", "/presets",
-	"/preset-test-runs", "/rate-limits", "/routing", "/security", "/settings", "/webhook-endpoints", "/workspaces",
+	"/preset-test-runs", "/classifiers", "/rate-limits", "/routing", "/security", "/settings", "/spend-blocks", "/spend-rules", "/webhook-endpoints", "/workload-identity", "/workspaces",
 ] as const;
 
 const INTERNAL_DATA_OPERATIONS = new Set([
@@ -50,6 +50,9 @@ const INTERNAL_DATA_OPERATIONS = new Set([
 	"POST /audio/realtime/sessions/{param}/finalize",
 	"POST /audio/realtime/sessions/{param}/usage",
 	"POST /security/report-leaked-key",
+	// Dashboard sessions only (the workspace owner raising its own rate limit); keys are refused.
+	"GET /rate-limits/tier",
+	"POST /rate-limits/tier/raise",
 ]);
 
 const SPEC_PATH = path.resolve(

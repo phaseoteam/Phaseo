@@ -37,7 +37,7 @@ describe("progressive model catalogue", () => {
 		controller.abort(new DOMException("Enrichment deadline", "TimeoutError"));
 		const response = await pending;
 		expect(response.status).toBe(200);
-		expect(timeout).toHaveBeenCalledWith(2_000);
+		expect(timeout).toHaveBeenCalledWith(6_000);
 		expect(await response.json()).toMatchObject({ gateway_data_complete: false });
 	});
 	it("returns model metadata with incomplete gateway data when monitor enrichment times out", async () => {
@@ -48,8 +48,23 @@ describe("progressive model catalogue", () => {
 		}));
 		const response = await app.request("/api/_web/models?limit=10", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cache-control")).toContain("no-store");
+		// Cached briefly at the edge, never served stale, so a slow database
+		// costs about one miss per minute instead of one per request.
+		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=60");
+		expect(response.headers.get("cache-tag")).toContain("web-api-models");
 		expect(await response.json()).toMatchObject({ gateway_data_complete: false, total: 1, models: [{ model_id: "public/model", gateway_monitor_rows: [] }] });
+	});
+	it("keeps the normal catalogue cache policy when gateway enrichment succeeds", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([{ model_id: "public/model", provider_api_model_id: "route", provider_id: "provider" }]));
+			if (String(input).includes("v2_models?")) return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+			return new Response("[]");
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
+		expect(await response.json()).toMatchObject({ gateway_data_complete: true, models: [{ model_id: "public/model" }] });
 	});
 	it("returns a usable catalogue and router card without querying usage", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -628,8 +643,104 @@ describe("public model routes", () => {
 				model: "Laguna S 2.1 (Free)",
 				modelId: "poolside/laguna-s-2.1:free",
 				tier: "free",
+				provider: { inputPrice: 0, outputPrice: 0 },
 			}],
 		});
+	});
+
+	it("gives free table rows their base model's licence when they have none", async () => {
+		const base = {
+			model_name: "Laguna S 2.1", organisation_id: "poolside", organisation_name: "Poolside",
+			provider_id: "poolside", api_provider_name: "Poolside", capability_id: "text.generate",
+			capability_status: "active", is_active_gateway: true,
+			input_modalities: ["text"], output_modalities: ["text"],
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([
+				{ ...base, model_id: "poolside/laguna-s-2.1:free", api_model_id: "poolside/laguna-s-2.1:free",
+					provider_api_model_id: "poolside:laguna:free", is_free_variant: true, model_license: null },
+				{ ...base, model_id: "poolside/laguna-s-2.1", api_model_id: "poolside/laguna-s-2.1",
+					provider_api_model_id: "poolside:laguna", model_license: "Apache-2.0" },
+			]), { status: 200 });
+			if (url.includes("v2_providers?")) return new Response(JSON.stringify([
+				{ provider_slug: "poolside", status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&shape=table&projection=2&limit=10000",
+			{},
+			env,
+		);
+
+		const payload = await response.json() as { models: Array<{ modelId: string; license?: string }> };
+		expect(Object.fromEntries(payload.models.map((model) => [model.modelId, model.license]))).toEqual({
+			"poolside/laguna-s-2.1": "Apache 2.0",
+			"poolside/laguna-s-2.1:free": "Apache 2.0",
+		});
+	});
+
+	it("reports unlisted token prices as null and keeps per-unit charges in the table projection", async () => {
+		const base = {
+			organisation_id: "alibaba", organisation_name: "Alibaba", provider_id: "venice",
+			api_provider_name: "Venice", capability_status: "active", is_active_gateway: true,
+			input_modalities: ["text"], output_modalities: ["video"],
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([
+				{ ...base, model_id: "alibaba/happyhorse-1.0", api_model_id: "alibaba/happyhorse-1.0",
+					model_name: "HappyHorse 1.0", provider_api_model_id: "venice:happyhorse",
+					capability_id: "video.generate", input_price: null, output_price: null,
+					standard_input_price: null, standard_output_price: null,
+					from_price: 0.14, from_price_unit: "second" },
+				{ ...base, model_id: "openai/gpt-image-test", api_model_id: "openai/gpt-image-test",
+					model_name: "GPT Image Test", provider_api_model_id: "venice:gpt-image",
+					capability_id: "image.generate", input_price: 5, output_price: null,
+					standard_input_price: 5, standard_output_price: 40, standard_output_price_label: "Image Output",
+					from_price: null, from_price_unit: null },
+				{ ...base, model_id: "openai/embed-test", api_model_id: "openai/embed-test",
+					model_name: "Embed Test", provider_api_model_id: "venice:embed",
+					capability_id: "text.embed", input_price: 0.02, output_price: null,
+					standard_input_price: 0.02, standard_output_price: null,
+					from_price: 0.02, from_price_unit: "1M tokens" },
+				{ ...base, model_id: "black-forest-labs/flux-at-cost", api_model_id: "black-forest-labs/flux-at-cost",
+					model_name: "Flux At Cost", provider_api_model_id: "venice:flux-at-cost",
+					capability_id: "image.generate", input_price: null, output_price: null,
+					from_price: 1, from_price_unit: "usd" },
+				{ ...base, model_id: "openai/listed-zero", api_model_id: "openai/listed-zero",
+					model_name: "Listed Zero", provider_api_model_id: "venice:listed-zero",
+					capability_id: "text.generate", input_price: 0, output_price: 0,
+					from_price: 0, from_price_unit: "1M tokens" },
+			]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("v2_providers?")) return new Response(JSON.stringify([
+				{ provider_slug: "venice", status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&shape=table&projection=2&limit=10000",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { models: Array<{ modelId: string; provider: Record<string, unknown> }> };
+		const provider = (modelId: string) => payload.models.find((model) => model.modelId === modelId)?.provider;
+		expect(provider("alibaba/happyhorse-1.0")).toMatchObject({
+			inputPrice: null, outputPrice: null, usagePrice: 0.14, usageUnit: "second",
+		});
+		expect(provider("openai/gpt-image-test")).toMatchObject({ inputPrice: 5, outputPrice: 40 });
+		expect(provider("openai/gpt-image-test")).not.toHaveProperty("usagePrice");
+		expect(provider("openai/embed-test")).toMatchObject({ inputPrice: 0.02, outputPrice: null });
+		expect(provider("openai/embed-test")).not.toHaveProperty("usagePrice");
+		expect(provider("black-forest-labs/flux-at-cost")).toMatchObject({ inputPrice: null, outputPrice: null });
+		expect(provider("black-forest-labs/flux-at-cost")).not.toHaveProperty("usagePrice");
+		expect(provider("openai/listed-zero")).toMatchObject({ inputPrice: 0, outputPrice: 0 });
 	});
 
 	it("does not fall back to the V1 catalogue when the complete V2 page RPC is unavailable", async () => {
@@ -811,7 +922,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
@@ -1258,6 +1369,7 @@ describe("public model routes", () => {
 		);
 
 		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		await expect(response.json()).resolves.toMatchObject({
 			providers: [{
 				provider: { routing_status: "active" },
@@ -1330,6 +1442,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-details");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(response.json()).resolves.toMatchObject({
 			model: {

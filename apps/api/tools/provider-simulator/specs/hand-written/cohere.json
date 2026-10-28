@@ -1,0 +1,40 @@
+{
+	"id": "cohere",
+	"source": {
+		"url": null,
+		"docs": "https://docs.cohere.com/docs/compatibility-api",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. reasoning_effort accepts only none and high (maps to Cohere thinking off/on); low and medium \"not supported at this time\". Cohere-native params (connectors, documents, citation_options, ...) are not available through this API. System prompts are sent with the developer role. tools[].function.strict supported. Structured output: response_format type json_object plus a schema. The native v2 Chat API"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"reasoning_effort": {},
+					"response_format": {},
+					"tools": {},
+					"temperature": {},
+					"max_tokens": {},
+					"stop": {},
+					"seed": {},
+					"top_p": {},
+					"frequency_penalty": {},
+					"presence_penalty": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

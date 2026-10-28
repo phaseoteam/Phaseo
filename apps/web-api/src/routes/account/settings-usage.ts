@@ -3,12 +3,22 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
 import { parseUsageLabelFacets, parseUsageOverviewCells, usageOverviewBucket, usageOverviewTimeZone } from "./usageOverview";
+import {
+	applyRequestLabelFilter,
+	isExactLabelFilter,
+	loadRequestClassifierSummaries,
+	parseRequestLabelFilter,
+	parseUsageLabelBreakdown,
+	REQUEST_LABEL_KEY,
+} from "@/usage/requestClassifiers";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -128,17 +138,6 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 
 function stringParam(url: URL, name: string) { return url.searchParams.get(name)?.trim() || null; }
 
-const REQUEST_LABEL_KEY = /^[A-Za-z0-9_.:-]+$/;
-
-function requestLabelFilter(url: URL): { key: string; value: string } | { error: string } | null {
-	const key = stringParam(url, "label_key");
-	const value = stringParam(url, "label_value");
-	if (!key && !value) return null;
-	if (!key || !value) return { error: "label_key and label_value must be provided together" };
-	if (key.length > 64 || !REQUEST_LABEL_KEY.test(key)) return { error: "label_key is invalid" };
-	if (value.length > 256) return { error: "label_value is too long" };
-	return { key, value };
-}
 
 export function sortUpstreamRequestsNewestFirst<
 	T extends { attempt_number?: number | null; created_at?: string | null; request_id?: string | null },
@@ -212,9 +211,12 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 	if (![from, to, previousFrom, previousTo].every((value) => value && Number.isFinite(Date.parse(value)))) {
 		return c.json({ error: "invalid_time_range" }, 400, PRIVATE_NO_STORE_HEADERS);
 	}
-	const labelFilterResult = requestLabelFilter(url);
+	const labelFilterResult = parseRequestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
-	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
+	// The overview totals come from a rollup keyed by exact key and value. "Any value"
+	// and "is not" filters, which only the logs support, leave the overview unfiltered.
+	const parsedLabelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
+	const labelFilter = isExactLabelFilter(parsedLabelFilter) ? parsedLabelFilter : null;
 	let scope;
 	try { scope = await usageKeyScope(context, url); } catch { return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 	const creator = scope.creatorId && scope.hasCreatorKeys ? await workspaceUserProfile(context, scope.creatorId) : null;
@@ -259,14 +261,15 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
 		};
 		const monthUsageQuery = scope.creatorId || keyId || labelFilter ? null : loadMonthUsage();
-		const [keysResult, current, previous, recent, labelFacetsResult, monthUsage] = await Promise.all([
+		const [keysResult, current, previous, recent, labelFacetsResult, monthUsage, requestClassifiers] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
-				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 			loadWindow(from!, to!, bucket),
 			loadWindow(previousFrom!, previousTo!, null),
 			loadWindow(recentFrom, new Date(observedAt).toISOString(), null),
 			labelFacetsQuery,
 			monthUsageQuery,
+			loadRequestClassifierSummaries(context.client, workspaceId),
 		]);
 		if (keysResult.error) throw keysResult.error;
 		// An error only empties the label filter's list; the rest of the overview still loads.
@@ -298,12 +301,54 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			observedAt,
 			previous,
 			recent,
+			requestClassifiers,
 			signedIn: true,
 			workspaceId,
 		}, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/settings] observability failed", error);
 		return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
+
+// Usage per value of one label key ("group by label"), summed in the database from
+// the 15-minute label rollup and the requests at the window's edges.
+accountSettingsUsageRouter.get("/usage/labels/breakdown", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const url = new URL(c.req.url);
+	const workspaceId = stringParam(url, "workspaceId");
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const labelKey = stringParam(url, "label_key");
+	if (!labelKey || labelKey.length > 64 || !REQUEST_LABEL_KEY.test(labelKey)) return c.json({ error: "invalid_label_key" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const from = stringParam(url, "from");
+	const to = stringParam(url, "to");
+	if (![from, to].every((value) => value && Number.isFinite(Date.parse(value))) || Date.parse(from!) > Date.parse(to!)) {
+		return c.json({ error: "invalid_time_range" }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const creatorId = stringParam(url, "user");
+	// The same rule as the overview: members only see other people's keys as a whole.
+	if (creatorId && creatorId !== user.id && !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const requestedLimit = Number.parseInt(stringParam(url, "limit") ?? "100", 10);
+	const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(500, requestedLimit)) : 100;
+	try {
+		const result = await context.client.rpc("get_private_usage_label_breakdown", {
+			p_workspace_id: workspaceId,
+			p_from: new Date(from!).toISOString(),
+			p_to: new Date(to!).toISOString(),
+			p_label_key: labelKey,
+			p_key_id: stringParam(url, "key"),
+			p_exclude_key: url.searchParams.get("key_op") === "is_not",
+			p_creator_id: creatorId,
+			p_limit: limit,
+		});
+		if (result.error) throw result.error;
+		return c.json({ key: labelKey, from, to, rows: parseUsageLabelBreakdown(result.data), workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("[web-api/settings] label breakdown failed", error);
+		return c.json({ error: "usage_label_breakdown_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 });
 
@@ -407,6 +452,13 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			// Legacy rows can hold captured payloads; apply the workspace's contents setting to them.
+			if (upstreamRequests.some((row) => row.request_payload != null || row.response_payload != null)) {
+				const access = await readIoLogContentsAccess(context.client, workspaceId);
+				if (!canReadIoLogContents(access, context.role)) {
+					upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_payload: null, response_payload: null }));
+				}
+			}
 			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
 			if (requestIds.length) {
 				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
@@ -417,7 +469,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
 		const providers = Array.from(new Set(upstreamRequests.map((row) => String(row.provider ?? "").trim()).filter(Boolean)));
 		const metadata = await metadataForIds(context, { models, providers });
-		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true });
+		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true });
 		return c.json({ data: { availableKeys: keysResult.data ?? [], modelMetadataEntries: metadata.modelMetadataEntries, providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, upstreamRequests }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (view === "jobs") {
@@ -470,11 +522,13 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const page = 1;
 	const requestedPageSize = Number.parseInt(stringParam(url, "per_page") ?? "50", 10);
 	const pageSize = [25, 50, 100].includes(requestedPageSize) ? requestedPageSize : 50;
-	const labelFilterResult = requestLabelFilter(url);
+	const labelFilterResult = parseRequestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
-	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
-	if (labelFilter) requestQuery = requestQuery.contains("detail_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] });
+	// Only an exact key and value has totals in the label rollup.
+	const exactLabelFilter = isExactLabelFilter(labelFilter) ? labelFilter : null;
+	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline,labels:detail_metadata->labels").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
+	requestQuery = applyRequestLabelFilter(requestQuery, labelFilter);
 	for (const [param, column, operatorParam = `${param}_op`] of [
 		["model", "model_id"], ["provider", "provider"], ["app", "app_id"],
 		["endpoint", "endpoint"], ["finish_reason", "finish_reason", "finish_op"],
@@ -526,12 +580,12 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	if (requestsResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	// The label list and the selected label's totals cover the whole range, summed in the database.
 	const labelFacetsQuery = context.client.rpc("get_private_usage_label_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to });
-	const labelTotalsQuery = labelFilter
-		? context.client.rpc("get_private_usage_overview", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to, p_label_key: labelFilter.key, p_label_value: labelFilter.value })
+	const labelTotalsQuery = exactLabelFilter
+		? context.client.rpc("get_private_usage_overview", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to, p_label_key: exactLabelFilter.key, p_label_value: exactLabelFilter.value })
 		: null;
-	const [rollupResult, keysResult, facetsResult, labelFacetsResult, labelTotalsResult] = await Promise.all([
+	const [rollupResult, keysResult, facetsResult, labelFacetsResult, labelTotalsResult, requestClassifiers] = await Promise.all([
 		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
-		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
 			p_from: timeRange.from,
@@ -540,6 +594,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		}),
 		labelFacetsQuery,
 		labelTotalsQuery,
+		loadRequestClassifierSummaries(context.client, workspaceId),
 	]);
 	if (rollupResult.error || !Array.isArray(rollupResult.data)) return c.json({ error: "usage_facets_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const requestRows = requestsResult.data ?? [];
@@ -565,14 +620,14 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const labelFacets = labelFacetsResult.error ? [] : parseUsageLabelFacets(labelFacetsResult.data);
 	const labelCells = labelTotalsResult && !labelTotalsResult.error ? parseUsageOverviewCells(labelTotalsResult.data) : null;
 	// Without its totals, the summary card is left out rather than shown as zero.
-	const labelSummary = labelFilter && labelCells ? {
-		key: labelFilter.key,
-		value: labelFilter.value,
+	const labelSummary = exactLabelFilter && labelCells ? {
+		key: exactLabelFilter.key,
+		value: exactLabelFilter.value,
 		requestCount: labelCells.reduce((total, cell) => total + cell.requests, 0),
 		totalCostNanos: labelCells.reduce((total, cell) => total + cell.costNanos, 0),
 		isSampled: false,
 	} : null;
-	return c.json({ data: { appNameEntries: metadata.appNameEntries, availableKeys: keysResult.data ?? [], clientSources, dedupedModels: models, dedupedProviders: providers, labelFacets, labelSummary, logAppIds: apps, logEndpoints, logFinishReasons, logErrorCodes, logStatusCodes, initialRequestsPage: { data: visibleRequestRows, page, pageSize, hasMore: hasMoreRequests, nextCursor: nextRequestCursor }, modelMetadataEntries: metadata.modelMetadataEntries, modelProviderEntries: Array.from(providerSets.entries()).map(([id, values]) => [id, Array.from(values)]), providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ data: { appNameEntries: metadata.appNameEntries, availableKeys: keysResult.data ?? [], clientSources, dedupedModels: models, dedupedProviders: providers, labelFacets, labelSummary, logAppIds: apps, logEndpoints, logFinishReasons, logErrorCodes, logStatusCodes, initialRequestsPage: { data: visibleRequestRows, page, pageSize, hasMore: hasMoreRequests, nextCursor: nextRequestCursor }, modelMetadataEntries: metadata.modelMetadataEntries, modelProviderEntries: Array.from(providerSets.entries()).map(([id, values]) => [id, Array.from(values)]), providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, requestClassifiers }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsUsageRouter.get("/usage/alerts", async (c) => {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -58,10 +58,8 @@ try {
   await db.exec(alertsMigration);
 
   assert.ok(alertsMigration.includes(await schema('public/functions/enqueue_rate_limit_throttle_alerts.sql')), 'enqueue function matches the declarative definition');
-  assert.ok(alertsMigration.includes(await schema('public/functions/set_notification_event_destinations.sql')), 'route setter matches the declarative definition');
-  const table = await schema('public/tables/notification_event_destinations.sql');
-  const check = alertsMigration.match(/CHECK \(\(event_kind = ANY \(ARRAY\[[^\]]+\]\)\)\)/)?.[0];
-  assert.ok(check && table.includes(check), 'event kind constraint matches the declarative definition');
+  // The route setter and event kind constraint were last redefined by the Broadcast
+  // destination alerts migration, whose test checks them against the declarative schema.
 
   // Workspaces: 1 routed and throttled; 2 throttled, no route; 3 routed to a paused destination; 4 routed, many policies; 5 routed, no throttles.
   for (let n = 1; n <= 5; n += 1) {

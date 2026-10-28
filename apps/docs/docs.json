@@ -91,6 +91,7 @@
                 "expanded": false,
                 "pages": [
                   "v1/guides/presets",
+                  "v1/guides/prompt-templates",
                   "v1/guides/preset-feedback",
                   "v1/guides/service-tiers",
                   "v1/guides/prompt-caching",
@@ -141,7 +142,11 @@
                   },
                   "v1/guides/app-attribution",
                   "v1/guides/request-labels",
-                  "v1/guides/workspace-notifications"
+                  "v1/guides/request-classifiers",
+                  "v1/guides/broadcast",
+                  "v1/guides/open-requests-in-chat",
+                  "v1/guides/workspace-notifications",
+                  "v1/guides/slack-agent"
                 ]
               },
               {
@@ -214,7 +219,8 @@
                 "pages": [
                   "v1/guides/workspaces",
                   "v1/guides/workspace-audit-log",
-                  "v1/developers/management-api-keys"
+                  "v1/developers/management-api-keys",
+                  "v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -386,7 +392,8 @@
                 "group": "Decisions",
                 "icon": "signpost",
                 "pages": [
-                  "v1/api-reference/endpoint/decisions"
+                  "v1/api-reference/endpoint/decisions",
+                  "v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -529,6 +536,9 @@
                       "v1/api-reference/endpoint/presets-update",
                       "v1/api-reference/endpoint/presets-version-publish",
                       "v1/api-reference/endpoint/presets-versions-list",
+                      "v1/api-reference/endpoint/presets-labels-list",
+                      "v1/api-reference/endpoint/presets-label-set",
+                      "v1/api-reference/endpoint/presets-label-delete",
                       "v1/api-reference/endpoint/presets-fork",
                       "v1/api-reference/endpoint/presets-upstream-apply",
                       "v1/api-reference/endpoint/presets-delete",
@@ -754,6 +764,7 @@
                       "v1/api-reference/endpoint/notifications-destination-create",
                       "v1/api-reference/endpoint/notifications-destination-config-test",
                       "v1/api-reference/endpoint/notifications-destination-test",
+                      "v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "v1/api-reference/endpoint/notifications-destination-delete",
                       "v1/api-reference/endpoint/notifications-destinations-list",
                       "v1/api-reference/endpoint/notifications-routes-list",
@@ -1745,6 +1756,7 @@
                 "expanded": false,
                 "pages": [
                   "es/v1/guides/presets",
+                  "es/v1/guides/prompt-templates",
                   "es/v1/guides/preset-feedback",
                   "es/v1/guides/service-tiers",
                   "es/v1/guides/prompt-caching",
@@ -1795,7 +1807,11 @@
                   },
                   "es/v1/guides/app-attribution",
                   "es/v1/guides/request-labels",
-                  "es/v1/guides/workspace-notifications"
+                  "es/v1/guides/request-classifiers",
+                  "es/v1/guides/broadcast",
+                  "es/v1/guides/open-requests-in-chat",
+                  "es/v1/guides/workspace-notifications",
+                  "es/v1/guides/slack-agent"
                 ]
               },
               {
@@ -1868,7 +1884,8 @@
                 "pages": [
                   "es/v1/guides/workspaces",
                   "es/v1/guides/workspace-audit-log",
-                  "es/v1/developers/management-api-keys"
+                  "es/v1/developers/management-api-keys",
+                  "es/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -2040,7 +2057,8 @@
                 "group": "Decisiones",
                 "icon": "signpost",
                 "pages": [
-                  "es/v1/api-reference/endpoint/decisions"
+                  "es/v1/api-reference/endpoint/decisions",
+                  "es/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -2183,6 +2201,9 @@
                       "es/v1/api-reference/endpoint/presets-update",
                       "es/v1/api-reference/endpoint/presets-version-publish",
                       "es/v1/api-reference/endpoint/presets-versions-list",
+                      "es/v1/api-reference/endpoint/presets-labels-list",
+                      "es/v1/api-reference/endpoint/presets-label-set",
+                      "es/v1/api-reference/endpoint/presets-label-delete",
                       "es/v1/api-reference/endpoint/presets-fork",
                       "es/v1/api-reference/endpoint/presets-upstream-apply",
                       "es/v1/api-reference/endpoint/presets-delete",
@@ -2408,6 +2429,7 @@
                       "es/v1/api-reference/endpoint/notifications-destination-create",
                       "es/v1/api-reference/endpoint/notifications-destination-config-test",
                       "es/v1/api-reference/endpoint/notifications-destination-test",
+                      "es/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "es/v1/api-reference/endpoint/notifications-destination-delete",
                       "es/v1/api-reference/endpoint/notifications-destinations-list",
                       "es/v1/api-reference/endpoint/notifications-routes-list",
@@ -3433,6 +3455,7 @@
                 "expanded": false,
                 "pages": [
                   "fr/v1/guides/presets",
+                  "fr/v1/guides/prompt-templates",
                   "fr/v1/guides/preset-feedback",
                   "fr/v1/guides/service-tiers",
                   "fr/v1/guides/prompt-caching",
@@ -3483,7 +3506,11 @@
                   },
                   "fr/v1/guides/app-attribution",
                   "fr/v1/guides/request-labels",
-                  "fr/v1/guides/workspace-notifications"
+                  "fr/v1/guides/request-classifiers",
+                  "fr/v1/guides/broadcast",
+                  "fr/v1/guides/open-requests-in-chat",
+                  "fr/v1/guides/workspace-notifications",
+                  "fr/v1/guides/slack-agent"
                 ]
               },
               {
@@ -3556,7 +3583,8 @@
                 "pages": [
                   "fr/v1/guides/workspaces",
                   "fr/v1/guides/workspace-audit-log",
-                  "fr/v1/developers/management-api-keys"
+                  "fr/v1/developers/management-api-keys",
+                  "fr/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -3728,7 +3756,8 @@
                 "group": "Décisions",
                 "icon": "signpost",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/decisions"
+                  "fr/v1/api-reference/endpoint/decisions",
+                  "fr/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -3871,6 +3900,9 @@
                       "fr/v1/api-reference/endpoint/presets-update",
                       "fr/v1/api-reference/endpoint/presets-version-publish",
                       "fr/v1/api-reference/endpoint/presets-versions-list",
+                      "fr/v1/api-reference/endpoint/presets-labels-list",
+                      "fr/v1/api-reference/endpoint/presets-label-set",
+                      "fr/v1/api-reference/endpoint/presets-label-delete",
                       "fr/v1/api-reference/endpoint/presets-fork",
                       "fr/v1/api-reference/endpoint/presets-upstream-apply",
                       "fr/v1/api-reference/endpoint/presets-delete",
@@ -4096,6 +4128,7 @@
                       "fr/v1/api-reference/endpoint/notifications-destination-create",
                       "fr/v1/api-reference/endpoint/notifications-destination-config-test",
                       "fr/v1/api-reference/endpoint/notifications-destination-test",
+                      "fr/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "fr/v1/api-reference/endpoint/notifications-destination-delete",
                       "fr/v1/api-reference/endpoint/notifications-destinations-list",
                       "fr/v1/api-reference/endpoint/notifications-routes-list",
@@ -5121,6 +5154,7 @@
                 "expanded": false,
                 "pages": [
                   "de/v1/guides/presets",
+                  "de/v1/guides/prompt-templates",
                   "de/v1/guides/preset-feedback",
                   "de/v1/guides/service-tiers",
                   "de/v1/guides/prompt-caching",
@@ -5171,7 +5205,11 @@
                   },
                   "de/v1/guides/app-attribution",
                   "de/v1/guides/request-labels",
-                  "de/v1/guides/workspace-notifications"
+                  "de/v1/guides/request-classifiers",
+                  "de/v1/guides/broadcast",
+                  "de/v1/guides/open-requests-in-chat",
+                  "de/v1/guides/workspace-notifications",
+                  "de/v1/guides/slack-agent"
                 ]
               },
               {
@@ -5244,7 +5282,8 @@
                 "pages": [
                   "de/v1/guides/workspaces",
                   "de/v1/guides/workspace-audit-log",
-                  "de/v1/developers/management-api-keys"
+                  "de/v1/developers/management-api-keys",
+                  "de/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -5416,7 +5455,8 @@
                 "group": "Entscheidungen",
                 "icon": "signpost",
                 "pages": [
-                  "de/v1/api-reference/endpoint/decisions"
+                  "de/v1/api-reference/endpoint/decisions",
+                  "de/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -5559,6 +5599,9 @@
                       "de/v1/api-reference/endpoint/presets-update",
                       "de/v1/api-reference/endpoint/presets-version-publish",
                       "de/v1/api-reference/endpoint/presets-versions-list",
+                      "de/v1/api-reference/endpoint/presets-labels-list",
+                      "de/v1/api-reference/endpoint/presets-label-set",
+                      "de/v1/api-reference/endpoint/presets-label-delete",
                       "de/v1/api-reference/endpoint/presets-fork",
                       "de/v1/api-reference/endpoint/presets-upstream-apply",
                       "de/v1/api-reference/endpoint/presets-delete",
@@ -5784,6 +5827,7 @@
                       "de/v1/api-reference/endpoint/notifications-destination-create",
                       "de/v1/api-reference/endpoint/notifications-destination-config-test",
                       "de/v1/api-reference/endpoint/notifications-destination-test",
+                      "de/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "de/v1/api-reference/endpoint/notifications-destination-delete",
                       "de/v1/api-reference/endpoint/notifications-destinations-list",
                       "de/v1/api-reference/endpoint/notifications-routes-list",
@@ -6809,6 +6853,7 @@
                 "expanded": false,
                 "pages": [
                   "pt-BR/v1/guides/presets",
+                  "pt-BR/v1/guides/prompt-templates",
                   "pt-BR/v1/guides/preset-feedback",
                   "pt-BR/v1/guides/service-tiers",
                   "pt-BR/v1/guides/prompt-caching",
@@ -6859,7 +6904,11 @@
                   },
                   "pt-BR/v1/guides/app-attribution",
                   "pt-BR/v1/guides/request-labels",
-                  "pt-BR/v1/guides/workspace-notifications"
+                  "pt-BR/v1/guides/request-classifiers",
+                  "pt-BR/v1/guides/broadcast",
+                  "pt-BR/v1/guides/open-requests-in-chat",
+                  "pt-BR/v1/guides/workspace-notifications",
+                  "pt-BR/v1/guides/slack-agent"
                 ]
               },
               {
@@ -6932,7 +6981,8 @@
                 "pages": [
                   "pt-BR/v1/guides/workspaces",
                   "pt-BR/v1/guides/workspace-audit-log",
-                  "pt-BR/v1/developers/management-api-keys"
+                  "pt-BR/v1/developers/management-api-keys",
+                  "pt-BR/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -7104,7 +7154,8 @@
                 "group": "Decisões",
                 "icon": "signpost",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/decisions"
+                  "pt-BR/v1/api-reference/endpoint/decisions",
+                  "pt-BR/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -7247,6 +7298,9 @@
                       "pt-BR/v1/api-reference/endpoint/presets-update",
                       "pt-BR/v1/api-reference/endpoint/presets-version-publish",
                       "pt-BR/v1/api-reference/endpoint/presets-versions-list",
+                      "pt-BR/v1/api-reference/endpoint/presets-labels-list",
+                      "pt-BR/v1/api-reference/endpoint/presets-label-set",
+                      "pt-BR/v1/api-reference/endpoint/presets-label-delete",
                       "pt-BR/v1/api-reference/endpoint/presets-fork",
                       "pt-BR/v1/api-reference/endpoint/presets-upstream-apply",
                       "pt-BR/v1/api-reference/endpoint/presets-delete",
@@ -7472,6 +7526,7 @@
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-create",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-config-test",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-test",
+                      "pt-BR/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-delete",
                       "pt-BR/v1/api-reference/endpoint/notifications-destinations-list",
                       "pt-BR/v1/api-reference/endpoint/notifications-routes-list",
@@ -8497,6 +8552,7 @@
                 "expanded": false,
                 "pages": [
                   "ja/v1/guides/presets",
+                  "ja/v1/guides/prompt-templates",
                   "ja/v1/guides/preset-feedback",
                   "ja/v1/guides/service-tiers",
                   "ja/v1/guides/prompt-caching",
@@ -8547,7 +8603,11 @@
                   },
                   "ja/v1/guides/app-attribution",
                   "ja/v1/guides/request-labels",
-                  "ja/v1/guides/workspace-notifications"
+                  "ja/v1/guides/request-classifiers",
+                  "ja/v1/guides/broadcast",
+                  "ja/v1/guides/open-requests-in-chat",
+                  "ja/v1/guides/workspace-notifications",
+                  "ja/v1/guides/slack-agent"
                 ]
               },
               {
@@ -8620,7 +8680,8 @@
                 "pages": [
                   "ja/v1/guides/workspaces",
                   "ja/v1/guides/workspace-audit-log",
-                  "ja/v1/developers/management-api-keys"
+                  "ja/v1/developers/management-api-keys",
+                  "ja/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -8792,7 +8853,8 @@
                 "group": "判断",
                 "icon": "signpost",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/decisions"
+                  "ja/v1/api-reference/endpoint/decisions",
+                  "ja/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -8935,6 +8997,9 @@
                       "ja/v1/api-reference/endpoint/presets-update",
                       "ja/v1/api-reference/endpoint/presets-version-publish",
                       "ja/v1/api-reference/endpoint/presets-versions-list",
+                      "ja/v1/api-reference/endpoint/presets-labels-list",
+                      "ja/v1/api-reference/endpoint/presets-label-set",
+                      "ja/v1/api-reference/endpoint/presets-label-delete",
                       "ja/v1/api-reference/endpoint/presets-fork",
                       "ja/v1/api-reference/endpoint/presets-upstream-apply",
                       "ja/v1/api-reference/endpoint/presets-delete",
@@ -9160,6 +9225,7 @@
                       "ja/v1/api-reference/endpoint/notifications-destination-create",
                       "ja/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ja/v1/api-reference/endpoint/notifications-destination-test",
+                      "ja/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "ja/v1/api-reference/endpoint/notifications-destination-delete",
                       "ja/v1/api-reference/endpoint/notifications-destinations-list",
                       "ja/v1/api-reference/endpoint/notifications-routes-list",
@@ -10185,6 +10251,7 @@
                 "expanded": false,
                 "pages": [
                   "zh-Hans/v1/guides/presets",
+                  "zh-Hans/v1/guides/prompt-templates",
                   "zh-Hans/v1/guides/preset-feedback",
                   "zh-Hans/v1/guides/service-tiers",
                   "zh-Hans/v1/guides/prompt-caching",
@@ -10235,7 +10302,11 @@
                   },
                   "zh-Hans/v1/guides/app-attribution",
                   "zh-Hans/v1/guides/request-labels",
-                  "zh-Hans/v1/guides/workspace-notifications"
+                  "zh-Hans/v1/guides/request-classifiers",
+                  "zh-Hans/v1/guides/broadcast",
+                  "zh-Hans/v1/guides/open-requests-in-chat",
+                  "zh-Hans/v1/guides/workspace-notifications",
+                  "zh-Hans/v1/guides/slack-agent"
                 ]
               },
               {
@@ -10308,7 +10379,8 @@
                 "pages": [
                   "zh-Hans/v1/guides/workspaces",
                   "zh-Hans/v1/guides/workspace-audit-log",
-                  "zh-Hans/v1/developers/management-api-keys"
+                  "zh-Hans/v1/developers/management-api-keys",
+                  "zh-Hans/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -10480,7 +10552,8 @@
                 "group": "决策",
                 "icon": "signpost",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/decisions"
+                  "zh-Hans/v1/api-reference/endpoint/decisions",
+                  "zh-Hans/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -10623,6 +10696,9 @@
                       "zh-Hans/v1/api-reference/endpoint/presets-update",
                       "zh-Hans/v1/api-reference/endpoint/presets-version-publish",
                       "zh-Hans/v1/api-reference/endpoint/presets-versions-list",
+                      "zh-Hans/v1/api-reference/endpoint/presets-labels-list",
+                      "zh-Hans/v1/api-reference/endpoint/presets-label-set",
+                      "zh-Hans/v1/api-reference/endpoint/presets-label-delete",
                       "zh-Hans/v1/api-reference/endpoint/presets-fork",
                       "zh-Hans/v1/api-reference/endpoint/presets-upstream-apply",
                       "zh-Hans/v1/api-reference/endpoint/presets-delete",
@@ -10848,6 +10924,7 @@
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-create",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-config-test",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-test",
+                      "zh-Hans/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-delete",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destinations-list",
                       "zh-Hans/v1/api-reference/endpoint/notifications-routes-list",
@@ -11873,6 +11950,7 @@
                 "expanded": false,
                 "pages": [
                   "hi/v1/guides/presets",
+                  "hi/v1/guides/prompt-templates",
                   "hi/v1/guides/preset-feedback",
                   "hi/v1/guides/service-tiers",
                   "hi/v1/guides/prompt-caching",
@@ -11923,7 +12001,11 @@
                   },
                   "hi/v1/guides/app-attribution",
                   "hi/v1/guides/request-labels",
-                  "hi/v1/guides/workspace-notifications"
+                  "hi/v1/guides/request-classifiers",
+                  "hi/v1/guides/broadcast",
+                  "hi/v1/guides/open-requests-in-chat",
+                  "hi/v1/guides/workspace-notifications",
+                  "hi/v1/guides/slack-agent"
                 ]
               },
               {
@@ -11996,7 +12078,8 @@
                 "pages": [
                   "hi/v1/guides/workspaces",
                   "hi/v1/guides/workspace-audit-log",
-                  "hi/v1/developers/management-api-keys"
+                  "hi/v1/developers/management-api-keys",
+                  "hi/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -12168,7 +12251,8 @@
                 "group": "निर्णय",
                 "icon": "signpost",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/decisions"
+                  "hi/v1/api-reference/endpoint/decisions",
+                  "hi/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -12311,6 +12395,9 @@
                       "hi/v1/api-reference/endpoint/presets-update",
                       "hi/v1/api-reference/endpoint/presets-version-publish",
                       "hi/v1/api-reference/endpoint/presets-versions-list",
+                      "hi/v1/api-reference/endpoint/presets-labels-list",
+                      "hi/v1/api-reference/endpoint/presets-label-set",
+                      "hi/v1/api-reference/endpoint/presets-label-delete",
                       "hi/v1/api-reference/endpoint/presets-fork",
                       "hi/v1/api-reference/endpoint/presets-upstream-apply",
                       "hi/v1/api-reference/endpoint/presets-delete",
@@ -12536,6 +12623,7 @@
                       "hi/v1/api-reference/endpoint/notifications-destination-create",
                       "hi/v1/api-reference/endpoint/notifications-destination-config-test",
                       "hi/v1/api-reference/endpoint/notifications-destination-test",
+                      "hi/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "hi/v1/api-reference/endpoint/notifications-destination-delete",
                       "hi/v1/api-reference/endpoint/notifications-destinations-list",
                       "hi/v1/api-reference/endpoint/notifications-routes-list",
@@ -13561,6 +13649,7 @@
                 "expanded": false,
                 "pages": [
                   "ar/v1/guides/presets",
+                  "ar/v1/guides/prompt-templates",
                   "ar/v1/guides/preset-feedback",
                   "ar/v1/guides/service-tiers",
                   "ar/v1/guides/prompt-caching",
@@ -13611,7 +13700,11 @@
                   },
                   "ar/v1/guides/app-attribution",
                   "ar/v1/guides/request-labels",
-                  "ar/v1/guides/workspace-notifications"
+                  "ar/v1/guides/request-classifiers",
+                  "ar/v1/guides/broadcast",
+                  "ar/v1/guides/open-requests-in-chat",
+                  "ar/v1/guides/workspace-notifications",
+                  "ar/v1/guides/slack-agent"
                 ]
               },
               {
@@ -13684,7 +13777,8 @@
                 "pages": [
                   "ar/v1/guides/workspaces",
                   "ar/v1/guides/workspace-audit-log",
-                  "ar/v1/developers/management-api-keys"
+                  "ar/v1/developers/management-api-keys",
+                  "ar/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -13856,7 +13950,8 @@
                 "group": "القرارات",
                 "icon": "signpost",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/decisions"
+                  "ar/v1/api-reference/endpoint/decisions",
+                  "ar/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -13999,6 +14094,9 @@
                       "ar/v1/api-reference/endpoint/presets-update",
                       "ar/v1/api-reference/endpoint/presets-version-publish",
                       "ar/v1/api-reference/endpoint/presets-versions-list",
+                      "ar/v1/api-reference/endpoint/presets-labels-list",
+                      "ar/v1/api-reference/endpoint/presets-label-set",
+                      "ar/v1/api-reference/endpoint/presets-label-delete",
                       "ar/v1/api-reference/endpoint/presets-fork",
                       "ar/v1/api-reference/endpoint/presets-upstream-apply",
                       "ar/v1/api-reference/endpoint/presets-delete",
@@ -14224,6 +14322,7 @@
                       "ar/v1/api-reference/endpoint/notifications-destination-create",
                       "ar/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ar/v1/api-reference/endpoint/notifications-destination-test",
+                      "ar/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "ar/v1/api-reference/endpoint/notifications-destination-delete",
                       "ar/v1/api-reference/endpoint/notifications-destinations-list",
                       "ar/v1/api-reference/endpoint/notifications-routes-list",

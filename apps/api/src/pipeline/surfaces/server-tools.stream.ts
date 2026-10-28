@@ -2,10 +2,16 @@
 
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
 import { isSealedReasoningValue } from "@core/reasoning-state";
+import { resolveCacheTokenUsage } from "@core/cache-usage";
+import { normalizeFinishReason } from "@core/finish-reason";
 import type { Protocol } from "@protocols/detect";
+import { createStreamCitationCollector } from "./stream-citations";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
-import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { detectStreamProtocol, extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { accumulateStreamUsage } from "@core/usage-normalization";
 import { SseParser } from "@core/sse-parser";
+import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
+import { UpstreamStreamError } from "@core/stream-errors";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -222,7 +228,7 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 		if (itemType === "reasoning") {
 			const contentParts = Array.isArray(item?.content) ? item.content : [];
 			for (const part of contentParts) {
-				if (part?.type === "output_text" && typeof part?.text === "string" && part.text.length > 0) {
+				if ((part?.type === "reasoning_text" || part?.type === "output_text") && typeof part?.text === "string" && part.text.length > 0) {
 					events.push({
 						type: "delta_text",
 						channel: "reasoning_text",
@@ -312,6 +318,177 @@ function buildUnifiedEventsFromPayload(protocol: StreamProtocol, payload: any): 
 	}
 }
 
+export type ResponsesOutputFrame = { eventName: string; frame: Record<string, any> };
+
+function responsesFrame(eventName: string, frame: Record<string, any>): ResponsesOutputFrame {
+	return { eventName, frame: { type: eventName, ...frame } };
+}
+
+function isMediaPart(part: any): boolean {
+	const type = String(part?.type ?? "").toLowerCase();
+	return type === "output_image" || type === "image" || type === "image_url" ||
+		type === "output_audio" || type === "audio" || type === "audio_url";
+}
+
+/** A server tool call the gateway already ran, as the function_call item it streams. */
+export function serverToolTraceOutputItem(item: ServerToolTraceItem): Record<string, any> {
+	return {
+		type: "function_call",
+		id: item.id,
+		call_id: item.id,
+		name: item.name,
+		arguments: item.arguments ?? "",
+		status: item.isError ? "failed" : "completed",
+		...(item.output !== undefined ? { output: item.output } : {}),
+		...(item.isError ? { error: { message: "Server tool returned an error." } } : {}),
+	};
+}
+
+/**
+ * The stream events for finished Responses output items, in the order an upstream
+ * Responses stream sends them: the item added (empty), each content part added, its
+ * deltas and done events, then the item done. Items without an id get one, and the
+ * returned items carry it, so a final response can list exactly what streamed.
+ * Media parts keep the gateway's own form, an added message holding only that part,
+ * so stream readers see each one once and in order.
+ * https://platform.openai.com/docs/api-reference/responses-streaming
+ */
+export function responsesOutputItemFrames(
+	output: readonly any[],
+	opts: { firstOutputIndex: number; idPrefix: string },
+): { frames: ResponsesOutputFrame[]; items: Record<string, any>[] } {
+	const frames: ResponsesOutputFrame[] = [];
+	const items: Record<string, any>[] = [];
+	output.forEach((raw, offset) => {
+		const outputIndex = opts.firstOutputIndex + offset;
+		const item: Record<string, any> = raw && typeof raw === "object" ? { ...raw } : { type: "message", content: [] };
+		if (typeof item.id !== "string" || !item.id) item.id = `${opts.idPrefix}_${outputIndex}`;
+		const type = String(item.type ?? "");
+		if (!item.status && (type === "message" || type === "function_call" || type === "custom_tool_call")) item.status = "completed";
+		items.push(item);
+		const at = { item_id: item.id, output_index: outputIndex };
+		const added = (shell: Record<string, any>) =>
+			frames.push(responsesFrame("response.output_item.added", { output_index: outputIndex, item: shell }));
+		let done: Record<string, any> = item;
+
+		if (type === "message") {
+			const content: any[] = Array.isArray(item.content) ? item.content : [];
+			let announced = false;
+			content.forEach((part, contentIndex) => {
+				if (isMediaPart(part)) {
+					frames.push(responsesFrame("response.output_item.added", {
+						output_index: outputIndex,
+						item: { type: "message", role: item.role ?? "assistant", status: "in_progress", content: [part] },
+					}));
+					return;
+				}
+				const refusal = part?.type === "refusal" && typeof part.refusal === "string";
+				const text = part?.type === "output_text" && typeof part.text === "string";
+				if (!refusal && !text) return;
+				if (!announced) {
+					announced = true;
+					added({ id: item.id, type: "message", role: item.role ?? "assistant", status: "in_progress", content: [] });
+				}
+				const located = { ...at, content_index: contentIndex };
+				frames.push(responsesFrame("response.content_part.added", {
+					...located,
+					part: refusal ? { type: "refusal", refusal: "" } : { type: "output_text", text: "", annotations: [] },
+				}));
+				if (refusal) {
+					frames.push(responsesFrame("response.refusal.delta", { ...located, delta: part.refusal }));
+					frames.push(responsesFrame("response.refusal.done", { ...located, refusal: part.refusal }));
+				} else {
+					frames.push(responsesFrame("response.output_text.delta", { ...located, delta: part.text }));
+					(Array.isArray(part.annotations) ? part.annotations : []).forEach((annotation: any, annotationIndex: number) => {
+						frames.push(responsesFrame("response.output_text.annotation.added", { ...located, annotation_index: annotationIndex, annotation }));
+					});
+					frames.push(responsesFrame("response.output_text.done", { ...located, text: part.text }));
+				}
+				frames.push(responsesFrame("response.content_part.done", { ...located, part }));
+			});
+			// A message of media only was sent as its media parts.
+			if (!announced) return;
+			// Its media parts were their own added messages; listing them again would repeat them.
+			done = { ...item, status: "completed", content: content.filter((part) => !isMediaPart(part)) };
+		} else if (type === "reasoning") {
+			added({ id: item.id, type: "reasoning", summary: [], content: [] });
+			(Array.isArray(item.summary) ? item.summary : []).forEach((part: any, summaryIndex: number) => {
+				if (typeof part?.text !== "string") return;
+				const located = { ...at, summary_index: summaryIndex };
+				frames.push(responsesFrame("response.reasoning_summary_part.added", { ...located, part: { type: "summary_text", text: "" } }));
+				frames.push(responsesFrame("response.reasoning_summary_text.delta", { ...located, delta: part.text }));
+				frames.push(responsesFrame("response.reasoning_summary_text.done", { ...located, text: part.text }));
+				frames.push(responsesFrame("response.reasoning_summary_part.done", { ...located, part: { type: "summary_text", text: part.text } }));
+			});
+			(Array.isArray(item.content) ? item.content : []).forEach((part: any, contentIndex: number) => {
+				if ((part?.type !== "reasoning_text" && part?.type !== "output_text") || typeof part.text !== "string") return;
+				const located = { ...at, content_index: contentIndex };
+				frames.push(responsesFrame("response.content_part.added", { ...located, part: { type: "reasoning_text", text: "" } }));
+				frames.push(responsesFrame("response.reasoning_text.delta", { ...located, delta: part.text }));
+				frames.push(responsesFrame("response.reasoning_text.done", { ...located, text: part.text }));
+				frames.push(responsesFrame("response.content_part.done", { ...located, part: { type: "reasoning_text", text: part.text } }));
+			});
+		} else if (type === "function_call") {
+			const argumentsText = typeof item.arguments === "string" ? item.arguments : "";
+			added({ id: item.id, type: "function_call", call_id: item.call_id, name: item.name, arguments: "", status: "in_progress" });
+			if (argumentsText) frames.push(responsesFrame("response.function_call_arguments.delta", { ...at, delta: argumentsText }));
+			frames.push(responsesFrame("response.function_call_arguments.done", { ...at, name: item.name, arguments: argumentsText }));
+			done = { ...item, status: item.status ?? "completed" };
+		} else if (type === "custom_tool_call") {
+			const input = typeof item.input === "string" ? item.input : "";
+			added({ id: item.id, type: "custom_tool_call", call_id: item.call_id, name: item.name, input: "", status: "in_progress" });
+			if (input) frames.push(responsesFrame("response.custom_tool_call_input.delta", { ...at, delta: input }));
+			frames.push(responsesFrame("response.custom_tool_call_input.done", { ...at, input }));
+			done = { ...item, status: item.status ?? "completed" };
+		} else {
+			added({ ...item, ...(item.status ? { status: "in_progress" } : {}) });
+		}
+		frames.push(responsesFrame("response.output_item.done", { output_index: outputIndex, item: done }));
+	});
+	return { frames, items };
+}
+
+/**
+ * A finished Responses body as the stream an upstream sends: response.created, the
+ * server tools the gateway already ran (each with its result), the body's own output
+ * items, then the terminal event carrying the whole body. Every data object names its
+ * event in `type`, as clients that dispatch on `data.type` need.
+ */
+function buildSyntheticResponsesFrames(args: {
+	payload: any;
+	requestId: string;
+	model?: string | null;
+	serverToolTrace?: readonly ServerToolTraceItem[];
+}): ResponsesOutputFrame[] {
+	const payload = args.payload && typeof args.payload === "object" ? args.payload : {};
+	const id = typeof payload.id === "string" && payload.id ? payload.id : args.requestId;
+	const model = payload.model ?? args.model ?? undefined;
+	const frames: ResponsesOutputFrame[] = [responsesFrame("response.created", {
+		response: {
+			id,
+			object: "response",
+			...(typeof payload.created_at === "number" ? { created_at: payload.created_at } : {}),
+			model,
+			status: "in_progress",
+			output: [],
+		},
+	})];
+	const trace = (args.serverToolTrace ?? [])
+		.filter((item) => item.id && item.name && item.name !== "tool_call")
+		.map(serverToolTraceOutputItem);
+	const traced = responsesOutputItemFrames(trace, { firstOutputIndex: 0, idPrefix: `fc_${id}` });
+	const output = Array.isArray(payload.output) ? payload.output : [];
+	const final = responsesOutputItemFrames(output, { firstOutputIndex: traced.items.length, idPrefix: `item_${id}` });
+	frames.push(...traced.frames, ...final.frames);
+	// The terminal event carries the body as a buffered request returns it: the final
+	// turn's output (the server tools streamed above are not part of it).
+	const status = String(payload.status ?? "completed");
+	frames.push(responsesFrame(status === "incomplete" ? "response.incomplete" : "response.completed", {
+		response: { ...payload, id, model, output: final.items },
+	}));
+	return frames;
+}
+
 export function buildSyntheticServerToolStream(args: {
 	protocol: Protocol;
 	payload: any;
@@ -322,6 +499,19 @@ export function buildSyntheticServerToolStream(args: {
 }): ReadableStream<Uint8Array> | null {
 	const streamProtocol = toStreamProtocol(args.protocol);
 	if (!streamProtocol) return null;
+	if (streamProtocol === "openai.responses") {
+		const frames = buildSyntheticResponsesFrames(args);
+		const encoder = new TextEncoder();
+		return new ReadableStream<Uint8Array>({
+			start(controller) {
+				for (const { eventName, frame } of frames) {
+					controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(frame)}\n\n`));
+				}
+				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+				controller.close();
+			},
+		});
+	}
 	const payloadEvents = buildUnifiedEventsFromPayload(streamProtocol, args.payload);
 	const traceEvents = buildServerToolTraceEvents(args.serverToolTrace);
 	const events =
@@ -355,6 +545,8 @@ type StreamChoiceAccumulator = {
 	toolCallsByKey: Map<string, IRToolCall>;
 	toolCallOrder: string[];
 	finishReason?: IRChatResponse["choices"][number]["finishReason"];
+	finishDetail?: IRChatResponse["choices"][number]["finishDetail"];
+	stopSequence?: string;
 };
 
 type AccumulationState = {
@@ -363,17 +555,6 @@ type AccumulationState = {
 	sawToolDelta: boolean;
 	sawContentPartDelta: boolean;
 };
-
-function mapStopReasonToIr(reason: string | null | undefined): IRChatResponse["choices"][number]["finishReason"] {
-	const normalized = String(reason ?? "").trim().toLowerCase();
-	if (!normalized) return "stop";
-	if (normalized === "stop" || normalized === "end_turn" || normalized === "completed") return "stop";
-	if (normalized === "max_tokens" || normalized === "length") return "length";
-	if (normalized === "tool_use" || normalized === "tool_calls" || normalized.includes("tool")) return "tool_calls";
-	if (normalized.includes("content") || normalized.includes("refusal") || normalized.includes("safety")) return "content_filter";
-	if (normalized === "error" || normalized === "failed") return "error";
-	return "stop";
-}
 
 function parseUsageNumber(value: unknown): number | undefined {
 	if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -401,16 +582,24 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.total_tokens) ??
 		parseUsageNumber(usageRaw.totalTokens) ??
 		(inputTokens + outputTokens);
+	// The stream carries the client protocol's usage: OpenAI-style details (reads and writes
+	// inside input) for Chat and Responses, Anthropic's top-level cache fields (on top of
+	// input) for Messages. Keep that reading in IR, so the re-encoded body and the bill agree.
+	const cache = resolveCacheTokenUsage(usageRaw, inputTokens, { readSubsetDefault: true });
 	const cachedInputTokens =
+		cache.readTokens ??
 		parseUsageNumber(usageRaw.cached_read_tokens) ??
 		parseUsageNumber(usageRaw.cached_input_tokens) ??
 		parseUsageNumber(usageRaw.cached_tokens) ??
 		parseUsageNumber(usageRaw.prompt_cache_hit_tokens) ??
+		parseUsageNumber(usageRaw.cache_read_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cached_tokens) ??
-		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens);
+		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens) ??
+		parseUsageNumber(usageRaw.input_details?.cached_tokens);
 	const reasoningTokens =
 		parseUsageNumber(usageRaw.reasoning_tokens) ??
-		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens);
+		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens) ??
+		parseUsageNumber(usageRaw.completion_tokens_details?.reasoning_tokens);
 
 	const ext: NonNullable<IRUsage["_ext"]> = {};
 	const inputImageTokens =
@@ -438,6 +627,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.output_video_tokens);
 	if (outputVideoTokens != null) ext.outputVideoTokens = outputVideoTokens;
 	const cachedWriteTokens =
+		cache.writeTokens ??
 		parseUsageNumber(usageRaw.output_tokens_details?.cached_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens_details?.cache_creation_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cache_creation_input_tokens) ??
@@ -448,13 +638,18 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.cached_write_tokens);
 	if (cachedWriteTokens != null) ext.cachedWriteTokens = cachedWriteTokens;
 	const cachedWriteTokens5m =
+		cache.write5mTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_5m) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_5m_input_tokens);
 	if (cachedWriteTokens5m != null) ext.cachedWriteTokens5m = cachedWriteTokens5m;
 	const cachedWriteTokens1h =
+		cache.write1hTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_1h) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_1h_input_tokens);
 	if (cachedWriteTokens1h != null) ext.cachedWriteTokens1h = cachedWriteTokens1h;
+	// OpenAI 30-minute / 12-hour split (resolveCacheTokenUsage reads every documented shape).
+	if (cache.write30mTokens != null) ext.cachedWriteTokens30m = cache.write30mTokens;
+	if (cache.write12hTokens != null) ext.cachedWriteTokens12h = cache.write12hTokens;
 	const datetimeRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.datetime_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.datetime_requests);
@@ -507,6 +702,8 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		totalTokens,
 		...(typeof usageRaw.service_tier === "string" ? { serviceTier: usageRaw.service_tier } : {}),
 		...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+		...(cache.readTokens != null ? { cachedReadTokensAreSubsetOfInput: cache.readSubset } : {}),
+		...(cache.writeTokens != null ? { cachedWriteTokensAreSubsetOfInput: cache.writeSubset } : {}),
 		...(reasoningTokens != null ? { reasoningTokens } : {}),
 		...(Object.keys(ext).length > 0 ? { _ext: ext } : {}),
 	};
@@ -633,10 +830,18 @@ function applyUnifiedEventToAccumulators(args: {
 	}
 
 	if (event.type === "stop") {
-		const finishReason = mapStopReasonToIr(event.finishReason);
-		if (Number.isFinite(event.choiceIndex)) {
-			getChoiceAccumulator(choices, Number(event.choiceIndex)).finishReason = finishReason;
-		}
+		// A stop without a reason (Anthropic message_stop) only ends the stream; it
+		// must not replace the reason from the preceding message_delta.
+		if (event.finishReason == null) return;
+		const { finishReason, finishDetail } = normalizeFinishReason(event.finishReason);
+		const indexed = Number.isFinite(event.choiceIndex);
+		// Choice 0 carries the detail of a stream-wide stop (Messages and Responses).
+		const accumulator = getChoiceAccumulator(choices, indexed ? Number(event.choiceIndex) : 0);
+		if (indexed) accumulator.finishReason = finishReason;
+		accumulator.finishDetail = finishDetail;
+		accumulator.stopSequence = typeof event.stopSequence === "string" && event.stopSequence
+			? event.stopSequence
+			: undefined;
 		setGlobalFinishReason(finishReason);
 	}
 }
@@ -797,8 +1002,14 @@ function buildIRFromAccumulatedEvents(args: {
 		const toolCalls = accumulator.toolCallOrder
 			.map((key) => accumulator.toolCallsByKey.get(key))
 			.filter((value): value is IRToolCall => Boolean(value));
+		// A stream-wide truncation (Responses response.incomplete) wins over an accumulated
+		// tool call: its arguments may be cut off, and tool_calls would invite running them.
+		const truncated = args.globalFinishReason === "length" || args.globalFinishReason === "content_filter"
+			? args.globalFinishReason
+			: null;
 		const finishReason =
 			accumulator.finishReason ??
+			truncated ??
 			(toolCalls.length > 0 ? "tool_calls" : null) ??
 			args.globalFinishReason ??
 			"stop";
@@ -811,6 +1022,8 @@ function buildIRFromAccumulatedEvents(args: {
 				...(toolCalls.length > 0 ? { toolCalls } : {}),
 			},
 			finishReason,
+			...(accumulator.finishDetail ? { finishDetail: accumulator.finishDetail } : {}),
+			...(accumulator.stopSequence ? { stopSequence: accumulator.stopSequence } : {}),
 		};
 	});
 
@@ -854,12 +1067,20 @@ export async function consumeTextProtocolStreamToIR(args: {
 	let nativeId: string | undefined;
 	let modelFromStream: string | undefined;
 	let globalFinishReason: IRChatResponse["choices"][number]["finishReason"] | null = null;
+	let streamErrorMessage: string | null = null;
 	const choiceAccumulators = new Map<number, StreamChoiceAccumulator>();
+	const reasoningState = createStreamReasoningStateCollector(args.protocol);
 	const accumulationState: AccumulationState = {
 		sawOutputTextDelta: false,
 		sawReasoningTextDelta: false,
 		sawToolDelta: false,
 		sawContentPartDelta: false,
+	};
+	const citations = createStreamCitationCollector();
+	// Usage accumulates by the protocol of the frame that carried it.
+	const accumulateUsage = (eventName: string | null, frame: any, usage: any) => {
+		const frameProtocol = detectStreamProtocol({ protocol: undefined, eventName, frame }) ?? args.protocol;
+		usageRaw = accumulateStreamUsage(frameProtocol, usageRaw, usage);
 	};
 
 	while (true) {
@@ -887,9 +1108,11 @@ export async function consumeTextProtocolStreamToIR(args: {
 				firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 			}
 			lastPayload = payload;
+			reasoningState.push(eventName, payload);
 			const normalizedPayloadForMeta = resolveRawPayloadForUsage(payload);
 			nativeId = nativeId ?? resolveNativeId(normalizedPayloadForMeta);
 			modelFromStream = modelFromStream ?? resolveModelFromPayload(normalizedPayloadForMeta);
+			citations.observe(eventName, payload);
 			const events = extractUnifiedStreamEvents({
 				protocol: args.protocol,
 				eventName,
@@ -898,6 +1121,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 
 			for (const event of events) {
 				args.onEvent?.(event);
+				if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 				if (event.type === "snapshot" && event.isFinal) {
 					finalSnapshot = event.payload;
 					nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -906,7 +1130,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 				}
 
 				if (event.type === "usage") {
-					usageRaw = event.usage;
+					accumulateUsage(eventName, payload, event.usage);
 					continue;
 				}
 				applyUnifiedEventToAccumulators({
@@ -936,13 +1160,16 @@ export async function consumeTextProtocolStreamToIR(args: {
 					firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 				}
 				lastPayload = payload;
+				reasoningState.push(eventName, payload);
 				const events = extractUnifiedStreamEvents({
 					protocol: args.protocol,
 					eventName,
 					frame: payload,
 				});
+				citations.observe(eventName, payload);
 				for (const event of events) {
 					args.onEvent?.(event);
+					if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 					if (event.type === "snapshot" && event.isFinal) {
 						finalSnapshot = event.payload;
 						nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -950,7 +1177,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 						continue;
 					}
 					if (event.type === "usage") {
-						usageRaw = event.usage;
+						accumulateUsage(eventName, payload, event.usage);
 						continue;
 					}
 					applyUnifiedEventToAccumulators({
@@ -1026,9 +1253,12 @@ export async function consumeTextProtocolStreamToIR(args: {
 		nativeId,
 		modelFromStream,
 	});
+	reasoningState.apply(ir);
+	// The upstream reported a failure after output began: never a completion.
+	if (streamErrorMessage !== null) throw new UpstreamStreamError(streamErrorMessage, { ir, rawResponse: rawResponse ?? null, usageRaw: effectiveUsageRaw });
 
 	return {
-		ir,
+		ir: citations.apply(ir),
 		rawResponse: rawResponse ?? null,
 		usageRaw: effectiveUsageRaw,
 		frameCount,

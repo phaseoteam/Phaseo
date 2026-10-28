@@ -305,6 +305,7 @@ describe("OpenAI contract registry gateway E2E", () => {
             entry.kind === "parameter" &&
             entry.capability === "text.generate" &&
             executableParameters.has(entry.parameter ?? ""));
+        const RESPONSES_UNDEFINED_CHAT_FIELDS = new Set(["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias"]);
         const failures: string[] = [];
         for (const testCase of cases) {
             try {
@@ -329,8 +330,14 @@ describe("OpenAI contract registry gateway E2E", () => {
                 }
                 const paths = testCase.expected?.upstreamPaths ?? [];
                 const present = paths.some((path) => hasPath(request.body, path));
-                if (testCase.expected?.outcome === "dropped" ? present : !present) {
-                    failures.push(`${testCase.id}: expected ${testCase.expected?.outcome} at one of [${paths.join(", ")}]`);
+                // Chat requests the executor sends to /v1/responses (Responses-only and reasoning
+                // models) drop Chat fields that OpenAI's CreateResponse does not define.
+                const expectedOutcome = fixture.protocol === "openai.chat.completions" && request.path.endsWith("/responses") &&
+                    RESPONSES_UNDEFINED_CHAT_FIELDS.has(testCase.parameter ?? "")
+                    ? "dropped"
+                    : testCase.expected?.outcome;
+                if (expectedOutcome === "dropped" ? present : !present) {
+                    failures.push(`${testCase.id}: expected ${expectedOutcome} at one of [${paths.join(", ")}]`);
                 }
             } catch (error) {
                 failures.push(`${testCase.id}: ${error instanceof Error ? error.message : String(error)}`);

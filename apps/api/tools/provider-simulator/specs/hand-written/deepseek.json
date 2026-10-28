@@ -1,0 +1,45 @@
+{
+	"id": "deepseek",
+	"source": {
+		"url": null,
+		"docs": "https://api-docs.deepseek.com/api/create-chat-completion",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. response_format types: text, json_object. tool_choice: none, auto, required, named function. Models listed: deepseek-flash, deepseek-v4-pro. max_tokens 1-393216. prompt_cache_hit_tokens/miss are top-level in usage in the examples (schema indentation is ambiguous). Docs site uses docusaurus-openapi-docs but no spec download is exposed."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"thinking": {},
+					"reasoning_effort": {},
+					"max_tokens": {},
+					"response_format": {},
+					"stop": {},
+					"stream_options": {},
+					"temperature": {},
+					"top_p": {},
+					"tools": {},
+					"tool_choice": {},
+					"logprobs": {},
+					"top_logprobs": {},
+					"user_id": {},
+					"frequency_penalty": {},
+					"presence_penalty": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

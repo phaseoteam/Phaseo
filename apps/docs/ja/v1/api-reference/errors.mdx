@@ -6,15 +6,34 @@ icon: "bug"
 
 このページでは、Phaseo のエラーの意味と、次に取るべき対応を確認できます。
 
-すべてのエラーレスポンスは共通の JSON 形式です。モデルやプロバイダーにかかわらず、アプリケーションで一貫して失敗を処理できます。
+すべてのエラーレスポンスは共通の JSON 形式です。モデルやプロバイダーにかかわらず、アプリケーションで一貫して失敗を処理できます。 `error` フィールドは `code`、`message`、`type` を持つオブジェクトで、OpenAI 互換の SDK が読み取る形式です。そのため SDK の例外にゲートウェイのメッセージが含まれます。
 
 ## エラーレスポンスの例
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -53,7 +72,14 @@ icon: "bug"
 
 - `generation_id`: サポートに共有できる安定したリクエスト ID。
 - `status_code`: HTTP ステータスコードと同じ値。
-- `error`: `validation_error` などの機械可読なエラーコード。
+- `error`: 失敗内容を表すオブジェクト。
+  - `error.code`: `validation_error` などの機械可読なエラーコード。
+  - `error.message`: 何が起きたかのわかりやすい説明。
+  - `error.type`: エラーの種類（下の「エラーの種類」を参照）。
+  - `error.param`: エラーの原因となったリクエストパラメーター。ゲートウェイが特定できない場合は `null`。
+  - `error.metadata`（任意）: 失敗したプロバイダー、詳細な理由、失敗したステータス、`retry_after_seconds` などの構造化された詳細。同じ値はトップレベルにも返されます。
+- `code`: `error.code` と同じコード。以前のレスポンスはこのコードを文字列として `error` に返していました。クライアントがそこに文字列を想定していた場合は `code` を読んでください。
+- `message`: `error.message` と同じテキスト。
 - `error_type`: 通常 `user` または `system` の大分類。
 - `error_origin`: 主な原因が呼び出し元、Phaseo、上流プロバイダーのいずれかを示します。
 - `description`: 発生した内容を平易に説明します。
@@ -70,6 +96,24 @@ icon: "bug"
 - `upstream_error` と `failure_sample`: リクエストがプロバイダーまで届いた場合に、最初のプロバイダーエラーを可能な範囲で要約します。
 - `failed_providers`、`failed_statuses`、`attempt_count`: 再試行とフェイルオーバーに関する追加情報。
 
+## エラーの種類
+
+`error.type` は OpenAI の[文書化されたエラータイプ](https://platform.openai.com/docs/guides/error-codes)に従い、HTTP ステータスから決まります。
+
+| ステータス | `error.type` |
+| --- | --- |
+| `400`, `409`, `410`, `413`, `422` およびその他の 4xx | `invalid_request_error` |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `500`, `502` およびその他の 5xx | `server_error` |
+
+`/v1/messages` のエラーも同じボディを使うため、Anthropic の SDK も `error.type` と `error.message` を読み取れます。
+
 ## ステータスクラスの見方
 
 | ステータス | 意味 | 推奨する対応 |
@@ -80,18 +124,21 @@ icon: "bug"
 
 ## よくあるエラーコード
 
-| 種類 | HTTP ステータス | 説明 |
-| --- | --- | --- |
-| `authentication_error` | `401` | API キーがないか、無効です。 |
-| `authorization_error` | `403` | このキーには対象のリソースへのアクセス権がありません。 |
-| `not_found_error` | `404` | エンドポイントまたはリソースが見つかりません。 |
-| `model_retired` | `410` | モデルは提供終了しており、どのプロバイダーも提供していません。`replacement_model` に切り替えてください。 |
-| `rate_limit_error` | `429` | リクエストが多すぎます。指定された時間が経過してから再試行してください。 |
-| `phaseo_free_model_limit_exceeded` | `429` | Phaseoの無料モデル共通の日次上限に達しました（既定で1,500リクエスト）。`Retry-After`に従い、00:00 UTCのリセットを待つか、有料モデルを選択してください。 |
-| `rate_limit_exceeded` | `429` | ワークスペースの[レート制限ポリシー](./limits.mdx)の上限に達しました。`policy_id`と`limit_scope`で対象を特定できます。`Retry-After`に従うか、ワークスペース管理者にポリシーの変更を依頼してください。 |
-| `validation_error` | `400` | パラメーターまたはリクエスト本文が無効です。 |
-| `provider_error` | `502` | 上流のモデルプロバイダーが正しく応答しませんでした。 |
-| `server_error` | `500` | Phaseo 内部で予期しない問題が発生しました。 |
+| `error.code` | HTTP ステータス | `error.type` | 説明 |
+| --- | --- | --- | --- |
+| `unauthorised` | `401` | `authentication_error` | API キーがないか、無効です。 |
+| `guardrail_blocked` | `403` | `permission_error` | ワークスペースのガードレールまたはアクセスポリシーがリクエストをブロックしました。 |
+| `not_found` | `404` | `not_found_error` | エンドポイントまたはリソースが見つかりません。 |
+| `model_retired` | `410` | `invalid_request_error` | モデルは提供終了しており、どのプロバイダーも提供していません。`replacement_model` に切り替えてください。 |
+| `insufficient_funds` | `402` | `insufficient_quota` | ワークスペースのクレジットがリクエストに対して不足しています。 |
+| `key_limit_exceeded` | `429` | `rate_limit_error` | API キーが上限のいずれかに達しました。 |
+| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseoの無料モデル共通の日次上限に達しました（既定で1,500リクエスト）。`Retry-After`に従い、00:00 UTCのリセットを待つか、有料モデルを選択してください。 |
+| `rate_limit_exceeded` | `429` | `rate_limit_error` | ワークスペースの[レート制限ポリシー](./limits.mdx)の上限に達しました。`policy_id`と`limit_scope`で対象を特定できます。`Retry-After`に従うか、ワークスペース管理者にポリシーの変更を依頼してください。 |
+| `validation_error` | `400` | `invalid_request_error` | パラメーターまたはリクエスト本文が無効です。 `error.param` は最初の無効なフィールドを示します。 |
+| `upstream_error` | `429` | `rate_limit_error` | リクエストで試行したすべてのプロバイダーがレート制限を適用しました。`Retry-After` に従ってください。BYOK リクエストには `X-Phaseo-Upstream-RateLimit-*` ヘッダーも含まれます。 |
+| `upstream_error` | `502` | `server_error` | 上流のモデルプロバイダーが正しく応答しませんでした。 |
+| `upstream_stream_failure` | `502` | `server_error` | ストリーミングしないリクエストで、生成開始後にプロバイダーが失敗しました。部分的な出力は返されず、リクエストは課金されません。 |
+| `gateway_error` | `500` | `server_error` | Phaseo 内部で予期しない問題が発生しました。 |
 
 ## プロバイダーのエラー
 
@@ -147,9 +194,15 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -199,9 +252,19 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 
 ```json
 {
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
   "generation_id": "G-retired123",
   "status_code": 410,
-  "error": "model_retired",
   "reason": "model_retired_without_providers",
   "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
   "model": "lab/old-model",
@@ -253,7 +316,23 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 ## ストリーミング固有の注意点
 
 - ストリーミング開始前に失敗すると、通常の JSON エラーペイロードが返されます。
-- ストリームの途中で失敗した場合は、部分的なストリームを未完了として扱い、再試行を提案します。
+- ストリームの途中で失敗した場合、ストリームは通常の終了ではなくエンドポイントの失敗イベントで終わります。Chat Completions では `error` フレーム、Responses では `response.failed`（または `error`）、Messages では `error` イベントです。部分的なストリームを未完了として扱い、再試行を提案します。
+- Chat Completions の `error` フレームにも同じエラーオブジェクトが含まれ、`error.type` はコードから決まります。
+
+  ```json
+  {
+    "object": "error",
+    "message": "The upstream stream ended before the response completed.",
+    "code": "upstream_stream_failure",
+    "error": {
+      "code": "upstream_stream_failure",
+      "message": "The upstream stream ended before the response completed.",
+      "type": "server_error",
+      "param": null
+    }
+  }
+  ```
+- ストリーミングしないリクエストでプロバイダーが途中で失敗すると、部分的な応答ではなく `upstream_stream_failure` を伴う `502` が返されます。
 - 必ず `generation_id` とエンドポイント、モデルのメタデータをログに記録します。
 
 ## トラブルシューティングのヒント
@@ -291,7 +370,7 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 <Visibility for="agents">
 エージェント向けのエラー処理ルール（このページの要約）:
 
-- `description` の文言ではなく、JSON の `error` コードと `status_code` で分岐します。失敗のたびに `generation_id` を記録します。
+- メッセージの文面ではなく、`error.code`（トップレベルの `code` にも返されます）、`error.type`、`status_code` で分岐します。失敗ごとに `generation_id` を記録します。
 - `400`、`401`、`403`、`404`: まずリクエスト、キー、アクセス権を修正します。同じリクエストをそのまま再試行しないでください。
 - `410` と `model_retired`: `replacement_model` が `null` でなければ切り替えます。`null` の場合は `GET /v1/models` で新しいモデルを選びます。
 - `429`: `Retry-After`（秒数または HTTP 日付）がある場合は、その時間だけ待ってから再試行します。ない場合はジッター付き指数バックオフを使います。`Retry-After` のない `key_limit_exceeded` エラーは自動ではリセットされないため、再試行しないでください。

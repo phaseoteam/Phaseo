@@ -1,0 +1,10 @@
+---
+title: "Supprimer un libellé du préréglage"
+sidebarTitle: "Supprimer le libellé"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "Supprimer un libellé d’un préréglage."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `presets:write` et une identité utilisateur associée. Le créateur du préréglage peut modifier ses libellés, ainsi que les propriétaires et administrateurs de l’espace de travail lorsque le préréglage est partagé.</Note>
+
+Les requêtes qui épinglent encore le libellé échouent avec `preset_version_not_found` jusqu’à ce que vous l’ajoutiez de nouveau.

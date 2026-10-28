@@ -40,12 +40,12 @@ export type AnthropicMessagesRequest = {
 	metadata?: Record<string, any>;
 	service_tier?: string;
 	thinking?: {
-		type: "enabled" | "disabled" | "adaptive";
+		type: "enabled" | "disabled" | "adaptive" | "between_tools";
 		budget_tokens?: number;
 		display?: "summarized" | "omitted";
 	};
 	output_config?: {
-		effort?: "low" | "medium" | "high" | "max";
+		effort?: "low" | "medium" | "high" | "xhigh" | "max";
 		format?: { type: "json_schema"; schema: Record<string, any> } | null;
 	};
 	provider_options?: Record<string, any>;
@@ -57,11 +57,14 @@ export type AnthropicMessagesRequest = {
 	webSearchOptions?: Record<string, any>;
 	stop_sequences?: string[];
 	reasoning?: {
-		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-		enabled?: boolean;
-		summary?: "auto" | "concise" | "detailed";
-		max_tokens?: number;
+		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
+		enabled?: boolean | null;
+		summary?: "auto" | "concise" | "detailed" | null;
+		max_tokens?: number | null;
 	};
+	context_management?: Record<string, any>;
+	user?: string;
+	prompt_cache_key?: string | null;
 	image_config?: {
 		aspect_ratio?: string;
 		image_size?: "0.5K" | "1K" | "2K" | "4K";
@@ -70,10 +73,16 @@ export type AnthropicMessagesRequest = {
 	};
 };
 
-export type AnthropicMessage = {
-	role: "user" | "assistant";
-	content: string | AnthropicContentBlock[];
-};
+export type AnthropicMessage =
+	| {
+		role: "user" | "assistant";
+		content: string | AnthropicContentBlock[];
+	}
+	| {
+		// Mid-conversation system message: a string or text blocks.
+		role: "system";
+		content: string | Array<Extract<AnthropicContentBlock, { type: "text" }>>;
+	};
 
 export type AnthropicCacheControl = {
 	type?: string;
@@ -84,7 +93,7 @@ export type AnthropicCacheControl = {
 
 export type AnthropicContentBlock =
 	| { type: "text"; text: string; cache_control?: AnthropicCacheControl }
-	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url"; data?: string; url?: string; media_type?: string } }
+	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url" | "file"; data?: string; url?: string; media_type?: string; file_id?: string } }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
 	| { type: "tool_result"; tool_use_id: string; content: string | any[]; cache_control?: AnthropicCacheControl }
 	| { type: "server_tool_use"; id: string; name: string; input?: Record<string, any> }
@@ -137,7 +146,9 @@ export type AnthropicToolChoice = (
  * Decode Anthropic Messages request to IR format
  *
  * Anthropic differences:
- * - System message is a separate field (not in messages array)
+ * - System prompt is a separate field; a `role: "system"` entry in messages is
+ *   a mid-conversation instruction and stays where it was sent
+ *   (the executors decide whether the target model can take it in place)
  * - Tools use input_schema instead of parameters
  * - Tool calls are content blocks with type="tool_use"
  * - Tool results are in user messages as content blocks with type="tool_result"
@@ -163,6 +174,14 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 	// Transform messages
 	for (const msg of req.messages) {
+		if (msg.role === "system") {
+			const content =
+				typeof msg.content === "string"
+					? [{ type: "text" as const, text: msg.content }]
+					: msg.content.map(normalizeAnthropicContent).filter((part): part is IRContentPart => Boolean(part));
+			messages.push({ role: "system", content });
+			continue;
+		}
 		if (msg.role === "user") {
 			if (typeof msg.content === "string") {
 				messages.push({
@@ -177,10 +196,13 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 			for (const block of msg.content) {
 				if (block.type === "tool_result") {
+					const parts = toolResultParts(block.content);
 					toolResults.push({
 						toolCallId: block.tool_use_id,
 						content: normalizeToolResultContent(block.content),
 						cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
+						...(parts ? { parts } : {}),
+						...((block as any).is_error === true ? { isError: true } : {}),
 					});
 					continue;
 				}
@@ -262,6 +284,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
+	const providerOptions = req.provider_options ?? req.providerOptions;
+	const vendor = decodeVendorProviderOptions(providerOptions);
 	const providerGeo = normalizeProviderGeoPreferences(req as any);
 	const explicitInferenceGeo =
 		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
@@ -310,10 +334,26 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
-		serviceTier: resolveTextServiceTier({
-			service_tier: req.service_tier,
-		}),
+		// As on Chat; Claude routes send it as metadata.user_id unless metadata sets one.
+		userId: typeof req.user === "string" && req.user.length > 0 ? req.user : undefined,
+		anthropicContextManagement:
+			req.context_management && typeof req.context_management === "object" && !Array.isArray(req.context_management)
+				? { ...req.context_management }
+				: undefined,
+		// Anthropic's "auto" picks no gateway tier (routing and pricing read the
+		// body and ignore it) but is kept so the Anthropic executor sends it.
+		serviceTier: isAutoServiceTier(req.service_tier)
+			? "auto"
+			: resolveTextServiceTier({ service_tier: req.service_tier }),
+		// As on Chat and Responses: namespaced per workspace before it is sent upstream.
+		promptCacheKey: typeof req.prompt_cache_key === "string" ? req.prompt_cache_key : undefined,
+		// provider_options apply as they do on Chat and Responses.
+		promptCacheRetention: providerCacheOptions.promptCacheRetention,
+		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		googleCachedContent: providerCacheOptions.googleCachedContent,
+		xaiConversationId: providerCacheOptions.xaiConversationId,
+		vendor,
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
@@ -334,13 +374,31 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	};
 }
 
+function isAutoServiceTier(value: unknown): boolean {
+	return typeof value === "string" && value.trim().toLowerCase() === "auto";
+}
+
+/**
+ * Provider-scoped options that the Chat decoder passes to executors as
+ * vendor options. Each executor reads only its own entry.
+ */
+function decodeVendorProviderOptions(providerOptions: Record<string, any> | undefined): IRChatRequest["vendor"] {
+	if (!providerOptions || typeof providerOptions !== "object") return undefined;
+	const vendor: Record<string, Record<string, any>> = {};
+	for (const [key, target] of [["deepinfra", "deepinfra"], ["fireworks", "fireworks"], ["gmicloud", "gmicloud"], ["venice", "venice"], ["zai", "zai"], ["z-ai", "zai"]] as const) {
+		const value = providerOptions[key];
+		if (value && typeof value === "object" && !Array.isArray(value) && !vendor[target]) vendor[target] = { ...value };
+	}
+	return Object.keys(vendor).length > 0 ? vendor as IRChatRequest["vendor"] : undefined;
+}
+
 function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest["reasoning"] {
 	const reasoningReq = req.reasoning;
 	const effort = mapAnthropicEffortToIr(reasoningReq?.effort ?? req.output_config?.effort);
 	const enabled =
 		typeof reasoningReq?.enabled === "boolean"
 			? reasoningReq.enabled
-			: req.thinking?.type === "disabled"
+			: req.thinking?.type === "disabled" || req.thinking?.type === "between_tools"
 				? false
 				: req.thinking?.type === "enabled" || req.thinking?.type === "adaptive"
 					? true
@@ -401,6 +459,16 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 
 	if (block.type === "image") {
 		const cacheControl = normalizeAnthropicCacheControl((block as any).cache_control);
+		if (block.source.type === "file") {
+			// A Files API upload. https://platform.claude.com/docs/en/build-with-claude/files
+			return {
+				type: "image",
+				source: "id" as const,
+				data: block.source.file_id || "",
+				mimeType: block.source.media_type,
+				cacheControl,
+			};
+		}
 		if (block.source.type === "url") {
 			return {
 				type: "image",
@@ -437,14 +505,67 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 		};
 	}
 
-	// Preserve document/PDF/file, thinking, citations, and provider-native tool
-	// blocks losslessly so the native executor can forward them unchanged.
+	const document = documentBlockToIRFile(block as any);
+	if (document) return document;
+
+	// Preserve thinking, citations, and provider-native tool blocks (and
+	// documents with no file form) losslessly so the native executor can
+	// forward them unchanged.
 	if (block && typeof block === "object") {
 		return { type: "provider_block", block: { ...(block as any) } };
 	}
 	return { type: "text", text: String(block) };
 }
 
+
+function utf8ToBase64(text: string): string {
+	const bytes = new TextEncoder().encode(text);
+	let binary = "";
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(binary);
+}
+
+/**
+ * An Anthropic `document` block as an IR file part, keeping the block itself
+ * for Claude routes. Other providers then get a PDF or text file in their own
+ * shape instead of a block they reject. A `content` document of text blocks
+ * becomes a text file; any other source stays a provider block.
+ * https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * https://platform.claude.com/docs/en/build-with-claude/citations
+ */
+function documentBlockToIRFile(block: Record<string, any> | null | undefined): IRContentPart | null {
+	if (!block || block.type !== "document") return null;
+	const source = block.source;
+	if (!source || typeof source !== "object") return null;
+	const title = typeof block.title === "string" && block.title.trim() ? { filename: block.title.trim() } : {};
+	const cacheControl = normalizeAnthropicCacheControl(block.cache_control);
+	const common = { ...title, ...(cacheControl ? { cacheControl } : {}), nativeBlock: { ...block } };
+	if (source.type === "base64" && typeof source.data === "string" && source.data) {
+		const mimeType = typeof source.media_type === "string" && source.media_type ? source.media_type : "application/pdf";
+		return { type: "file", source: "data", data: source.data, mimeType, ...common };
+	}
+	if (source.type === "text" && typeof source.data === "string") {
+		const mimeType = typeof source.media_type === "string" && source.media_type ? source.media_type : "text/plain";
+		return { type: "file", source: "data", data: utf8ToBase64(source.data), mimeType, ...common };
+	}
+	if (source.type === "url" && typeof source.url === "string" && source.url) {
+		// URL documents are PDFs.
+		return { type: "file", source: "url", data: source.url, mimeType: "application/pdf", ...common };
+	}
+	if (source.type === "file" && typeof source.file_id === "string" && source.file_id) {
+		return { type: "file", source: "id", data: source.file_id, ...common };
+	}
+	if (
+		source.type === "content" && Array.isArray(source.content) && source.content.length > 0
+		&& source.content.every((entry: any) => entry?.type === "text" && typeof entry.text === "string")
+	) {
+		const text = source.content.map((entry: any) => entry.text).join("\n\n");
+		return { type: "file", source: "data", data: utf8ToBase64(text), mimeType: "text/plain", ...common };
+	}
+	return null;
+}
 
 function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl | undefined {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -454,6 +575,16 @@ function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl |
 	if (typeof next.scope === "string") next.scope = next.scope.trim();
 	return Object.keys(next).length > 0 ? next : undefined;
 }
+/** Text and image blocks of an array tool result, kept so they reach upstreams that take them. */
+function toolResultParts(content: unknown): IRContentPart[] | undefined {
+	if (!Array.isArray(content)) return undefined;
+	const parts = content
+		.filter((block) => block && (block.type === "text" || block.type === "image"))
+		.map((block) => normalizeAnthropicContent(block) as IRContentPart)
+		.filter(Boolean);
+	return parts.length > 0 ? parts : undefined;
+}
+
 function normalizeToolResultContent(content: string | any[]): string {
 	if (typeof content === "string") {
 		return content;

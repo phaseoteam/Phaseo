@@ -5,6 +5,39 @@ export interface BenchmarkCard {
 	metrics?: ArtificialAnalysisMetric[];
 }
 
+export interface ArtificialAnalysisPublicConfiguration {
+	id: string;
+	model_id: string;
+	name: string;
+	slug: string;
+	effort: string | null;
+	creator: { id: string; slug: string; name: string; color?: string } | null;
+	intelligenceIndex: number | null;
+	intelligenceIndexIsEstimated: boolean | null;
+	totalTokens: Record<string, number | null> | null;
+	outputTokensPerTask: Record<string, number | null> | null;
+	totalCostUsd: Record<string, number | null> | null;
+	costPerTaskUsd: Record<string, number | null> | null;
+	timePerTaskSeconds: number | null;
+	benchmarkScores: Record<string, number | null>;
+	capabilityScores: Record<string, number | null> | null;
+	modelDetails: Record<string, unknown>;
+	pricing: Record<string, number | null>;
+	performance: Record<string, unknown>;
+	breakdowns: Record<string, unknown>;
+	evaluations: Array<{ slug: string; score: number | null; outputTokensPerTask: number | null; costPerTaskUsd: number | null; timePerTaskSeconds: number | null }>;
+}
+
+export interface ArtificialAnalysisPublicData {
+	snapshot_id: string;
+	/** Intelligence Index methodology only; domain capability indices are versioned independently. */
+	methodology_version: string;
+	fetched_at: string;
+	source_url: string;
+	total: number;
+	models: ArtificialAnalysisPublicConfiguration[];
+}
+
 export interface ArtificialAnalysisMetric {
 	key: "intelligence" | "coding" | "agentic" | "cost";
 	id: string;
@@ -40,6 +73,8 @@ export interface BenchmarkModelInfo {
 }
 
 export interface BenchmarkResult {
+	variant?: string | null;
+	result_key?: string | null;
 	id: string;
 	model_id: string;
 	score: string | number | null;
@@ -53,6 +88,7 @@ export interface BenchmarkResult {
 }
 
 export interface BenchmarkPage {
+	comparison_benchmarks?: BenchmarkPage[];
 	suite?: ArtificialAnalysisSuite;
 	id: string;
 	name: string | null;

@@ -3,6 +3,7 @@ import {
 	awsSigningKeyCacheSize,
 	clearAwsSigningKeyCache,
 	getAwsSigningKey,
+	normalizePath,
 	signAwsV4Request,
 	toHex,
 } from "../bedrock-utils";
@@ -23,6 +24,13 @@ describe("AWS SigV4 signing", () => {
 		vi.useRealTimers();
 		vi.restoreAllMocks();
 		clearAwsSigningKeyCache();
+	});
+
+	it("encodes each path segment twice, as AWS requires outside S3", () => {
+		// A Bedrock Runtime model ID carries `:`, which the URL sends as %3A.
+		expect(normalizePath("/model/us.anthropic.claude-opus-4-1-20250805-v1%3A0/invoke"))
+			.toBe("/model/us.anthropic.claude-opus-4-1-20250805-v1%253A0/invoke");
+		expect(normalizePath("/v1/chat/completions")).toBe("/v1/chat/completions");
 	});
 
 	it("derives the AWS documented example signing key", async () => {

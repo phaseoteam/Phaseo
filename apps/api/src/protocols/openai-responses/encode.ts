@@ -6,13 +6,15 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
-import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
+import { responsesStatusFor } from "@core/finish-reason";
 import {
 	encodeResponsesReasoningItem,
 	encodeResponsesToolSignatureItem,
 	sealReasoningPart,
 	type ResponsesReasoningItem,
 } from "../shared/reasoning";
+import { toResponsesAnnotations } from "../shared/citations";
 
 /**
  * OpenAI Responses response type
@@ -40,6 +42,7 @@ export type OpenAIResponsesResponse = {
 		input_tokens_details?: {
 			cached_tokens?: number;
 			cache_write_tokens?: number;
+			cache_write_tokens_details?: { ttl_30m_tokens: number; ttl_12h_tokens: number };
 		};
 		output_tokens_details?: {
 			reasoning_tokens?: number;
@@ -56,6 +59,7 @@ export type OpenAIResponsesResponse = {
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
+	incomplete_details?: { reason: "max_output_tokens" | "content_filter" } | null;
 	status_details?: {
 		type: string;
 		reason: string;
@@ -116,7 +120,7 @@ export function encodeOpenAIResponsesResponse(
 					type: "reasoning",
 					id: `rs_${responseId}_${choice.index}_${reasoningIndex}`,
 					summary: [],
-					content: [{ type: "output_text", text: part.block.thinking, annotations: [] }],
+					content: [{ type: "reasoning_text", text: part.block.thinking }],
 				};
 			}
 			if (!item) continue;
@@ -143,7 +147,7 @@ export function encodeOpenAIResponsesResponse(
 					content.push({
 						type: "output_text",
 						text: part.text,
-						annotations: part.annotations ?? [],
+						annotations: toResponsesAnnotations(part.annotations),
 					});
 				}
 			}
@@ -230,12 +234,8 @@ export function encodeOpenAIResponsesResponse(
 	}
 
 	const mainChoice = ir.choices[0];
-	let status: "completed" | "failed" | "incomplete" = "completed";
-	if (mainChoice?.finishReason === "error") {
-		status = "failed";
-	} else if (mainChoice?.finishReason === "length") {
-		status = "incomplete";
-	}
+	// length and content_filter are incomplete, with the documented reason.
+	const { status, incompleteDetails } = responsesStatusFor(mainChoice?.finishReason);
 
 	return {
 		id: requestId ?? ir.id, // Gateway request ID as primary
@@ -247,6 +247,7 @@ export function encodeOpenAIResponsesResponse(
 		usage: encodeUsage(ir.usage),
 		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		status,
+		...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),
@@ -307,10 +308,15 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 					...(typeof cache.writeTokens === "number"
 						? { cache_write_tokens: cache.writeTokens }
 						: {}),
+					...(openAICacheWriteTtlDetails(cache)
+						? { cache_write_tokens_details: openAICacheWriteTtlDetails(cache) }
+						: {}),
 				}
 				: undefined,
 		...(typeof cache.write5mTokens === "number" ? { cached_write_text_tokens_5m: cache.write5mTokens } : {}),
 		...(typeof cache.write1hTokens === "number" ? { cached_write_text_tokens_1h: cache.write1hTokens } : {}),
+		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
+		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
 		output_tokens_details:
 			typeof usage.reasoningTokens === "number"
 				? { reasoning_tokens: usage.reasoningTokens }

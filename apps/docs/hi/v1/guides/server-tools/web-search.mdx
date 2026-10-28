@@ -82,7 +82,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | Configure होने पर Firecrawl search उपयोग करता है। |
 | `perplexity` | Configure होने पर first-party Perplexity Search API उपयोग करता है। Ranked results, `search_context_size`, `user_location.country` से regional search और allowed या excluded domains समर्थित हैं। |
 | `tinyfish` | `TINYFISH_API_KEY` सेट होने पर TinyFish Search इस्तेमाल करता है। स्थानीयकृत, पृष्ठों में विभाजित और क्रमबद्ध नतीजे देता है तथा `allowed_domains` / `excluded_domains` को खोज ऑपरेटर में बदलता है। TinyFish Search पूरा पेज टेक्स्ट नहीं देता; अधिक सामग्री के लिए `phaseo:web_fetch` इस्तेमाल करें। |
-| `native` | Request surface support करने पर upstream model call से पहले declaration को provider-native web-search tool में बदलता है। |
+| `native` | Request surface support करने पर upstream model call से पहले declaration को provider-native web-search tool में बदलता है। Chat Completions और Responses पर request सिर्फ़ उन providers को जाती है जो web search खुद चलाते हैं; अगर इनमें से कोई भी model serve नहीं करता, तो Phaseo इसकी जगह अपना default search engine चलाता है और इन searches को managed search के रूप में bill करता है। |
 
 `engine: "native"` केवल tool declaration में उपयोग करें। पहले से जारी gateway search call में मॉडल `engine: "native"` भेजे, तो Phaseo tool error देता है, क्योंकि upstream request भेजने से पहले native tools चुनने होते हैं।
 

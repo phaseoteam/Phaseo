@@ -51,18 +51,22 @@ class AnthropicMessage(TypedDict):
 
 class AnthropicMessagesRequest(TypedDict):
 	cache_control: NotRequired[CacheControl]
+	context_management: NotRequired[Dict[str, Any]]
 	debug: NotRequired[DebugOptions]
 	echo_upstream_request: NotRequired[bool]
 	max_tokens: int
-	messages: List[AnthropicMessage]
+	messages: List[Union[AnthropicMessage, AnthropicSystemMessage]]
 	meta: NotRequired[bool]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: str
 	models: NotRequired[List[str]]
+	plugins: NotRequired[List[Union[WebSearchPlugin, WebFetchPlugin, ResponseHealingPlugin]]]
+	prompt: NotRequired[PromptTemplateReference]
+	prompt_cache_key: NotRequired[Optional[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[ProviderOptions]
 	reasoning: NotRequired[ReasoningConfig]
-	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]]
+	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch", "auto", "standard_only"]]
 	session_id: NotRequired[str]
 	stop_sequences: NotRequired[List[str]]
 	stream: NotRequired[bool]
@@ -73,9 +77,11 @@ class AnthropicMessagesRequest(TypedDict):
 	top_k: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
+	user: NotRequired[str]
 
 class AnthropicMessagesResponse(TypedDict):
 	content: NotRequired[List[AnthropicContentBlock]]
+	context_management: NotRequired[Dict[str, Any]]
 	id: NotRequired[str]
 	model: NotRequired[str]
 	role: NotRequired[Literal["assistant"]]
@@ -83,6 +89,15 @@ class AnthropicMessagesResponse(TypedDict):
 	stop_sequence: NotRequired[str]
 	type: NotRequired[str]
 	usage: NotRequired[AnthropicUsage]
+
+class AnthropicSystemMessage(TypedDict):
+	content: Union[str, List[AnthropicSystemTextBlock]]
+	role: Literal["system"]
+
+class AnthropicSystemTextBlock(TypedDict):
+	cache_control: NotRequired[CacheControl]
+	text: str
+	type: Literal["text"]
 
 AnthropicTool = TypedDict("AnthropicTool", {
 	"async": NotRequired[bool],
@@ -95,6 +110,8 @@ class AnthropicUsage(TypedDict):
 	cache_creation: NotRequired[Dict[str, Any]]
 	cache_creation_input_tokens: NotRequired[int]
 	cache_read_input_tokens: NotRequired[int]
+	cost: NotRequired[float]
+	cost_details: NotRequired[UsageCostDetails]
 	input_tokens: NotRequired[int]
 	output_tokens: NotRequired[int]
 
@@ -119,6 +136,7 @@ class ApiKey(TypedDict):
 	scopes: Union[str, List[str]]
 	soft_blocked: bool
 	status: Optional[str]
+	storage_locations: NotRequired[List[str]]
 	updated_at: Optional[str]
 	usage: float
 	usage_daily: float
@@ -138,6 +156,7 @@ class ApiKeyCreateRequest(TypedDict):
 	name: str
 	scopes: NotRequired[Union[str, List[str]]]
 	soft_blocked: NotRequired[bool]
+	storage_locations: NotRequired[List[str]]
 	workspace_id: NotRequired[str]
 
 class ApiKeyLimitBucket(TypedDict):
@@ -175,6 +194,8 @@ class ApiKeyRotateResponse(TypedDict):
 
 ApiKeyScopeValue = Union[str, List[str]]
 
+ApiKeyStorageLocations = List[str]
+
 class ApiKeyUpdateRequest(TypedDict):
 	department_id: NotRequired[Optional[str]]
 	disabled: NotRequired[bool]
@@ -186,6 +207,7 @@ class ApiKeyUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	scopes: NotRequired[Union[str, List[str]]]
 	soft_blocked: NotRequired[bool]
+	storage_locations: NotRequired[Optional[Any]]
 
 class ApiKeyUsageBucket(TypedDict):
 	cost: float
@@ -219,6 +241,7 @@ class ApiKeyWithValue(TypedDict):
 	scopes: Union[str, List[str]]
 	soft_blocked: bool
 	status: Optional[str]
+	storage_locations: NotRequired[List[str]]
 	updated_at: Optional[str]
 	usage: float
 	usage_daily: float
@@ -229,6 +252,7 @@ class ApiKeyWithValue(TypedDict):
 
 class ApiKeyWithValueResponse(TypedDict):
 	data: ApiKeyWithValue
+	key: str
 
 class AsyncJobWebSocketClientEvent(TypedDict):
 	type: Literal["ping", "refresh"]
@@ -328,7 +352,7 @@ class BatchBillingSummary(TypedDict):
 	estimation_total_rows: NotRequired[Optional[int]]
 	estimation_truncated: NotRequired[Optional[bool]]
 	finalized_at: NotRequired[Optional[str]]
-	pricing_breakdown: NotRequired[Dict[str, Any]]
+	pricing_breakdown: NotRequired[OcrResponse]
 	reason: NotRequired[str]
 	reservation_id: NotRequired[Optional[str]]
 	reservation_status: NotRequired[Optional[str]]
@@ -350,7 +374,7 @@ class BatchModelCapability(TypedDict):
 	model: NotRequired[str]
 	name: NotRequired[str]
 	output_types: NotRequired[List[str]]
-	pricing: NotRequired[Dict[str, Any]]
+	pricing: NotRequired[OcrResponse]
 	providers: NotRequired[List[BatchModelProviderCapability]]
 	status: NotRequired[str]
 	supported_parameters: NotRequired[List[str]]
@@ -384,9 +408,9 @@ class BatchRequest(TypedDict):
 	debug: NotRequired[DebugOptions]
 	endpoint: NotRequired[Literal["/v1/chat/completions", "/v1/responses", "/v1/messages", "/v1/embeddings", "/v1/generateContent"]]
 	input_file_id: NotRequired[str]
-	items: NotRequired[List[Dict[str, Any]]]
+	items: NotRequired[List[OcrResponse]]
 	max_tokens: NotRequired[int]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: NotRequired[str]
 	prompts: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
@@ -404,7 +428,7 @@ class BatchRequestCounts(TypedDict):
 	total: NotRequired[int]
 
 class BatchRequestItem(TypedDict):
-	body: Dict[str, Any]
+	body: OcrResponse
 	custom_id: NotRequired[str]
 	method: NotRequired[Literal["POST"]]
 	url: NotRequired[str]
@@ -416,20 +440,20 @@ class BatchRequestRow(TypedDict):
 	created_at: NotRequired[Optional[str]]
 	custom_id: NotRequired[str]
 	endpoint: NotRequired[Optional[str]]
-	error_body: NotRequired[Optional[Dict[str, Any]]]
+	error_body: NotRequired[Optional[OcrResponse]]
 	id: NotRequired[str]
-	meta: NotRequired[Dict[str, Any]]
+	meta: NotRequired[OcrResponse]
 	method: NotRequired[Optional[str]]
 	model: NotRequired[Optional[str]]
 	native_batch_id: NotRequired[Optional[str]]
 	provider: NotRequired[str]
 	request_body_hash: NotRequired[Optional[str]]
 	request_index: NotRequired[int]
-	response_body: NotRequired[Optional[Dict[str, Any]]]
+	response_body: NotRequired[Optional[OcrResponse]]
 	response_status: NotRequired[Optional[int]]
 	status: NotRequired[str]
 	updated_at: NotRequired[Optional[str]]
-	usage: NotRequired[Optional[Dict[str, Any]]]
+	usage: NotRequired[Optional[OcrResponse]]
 
 class BatchResponse(TypedDict):
 	billing: NotRequired[BatchBillingSummary]
@@ -479,6 +503,10 @@ class CacheControl(TypedDict):
 	ttl: NotRequired[str]
 	type: NotRequired[str]
 
+class CacheWriteTokensDetails(TypedDict):
+	ttl_12h_tokens: NotRequired[int]
+	ttl_30m_tokens: NotRequired[int]
+
 class ChatAudioOutputPart(TypedDict):
 	audio_url: Dict[str, Any]
 	format: NotRequired[Literal["wav", "mp3", "flac", "m4a", "ogg", "pcm16", "pcm24"]]
@@ -488,7 +516,7 @@ class ChatAudioOutputPart(TypedDict):
 class ChatChoice(TypedDict):
 	finish_reason: NotRequired[Literal["stop", "length", "tool_calls", "content_filter"]]
 	index: NotRequired[int]
-	message: NotRequired[ChatMessage]
+	message: NotRequired[ChatResponseMessage]
 
 class ChatCompletionsRequest(TypedDict):
 	cache_control: NotRequired[CacheControl]
@@ -496,6 +524,7 @@ class ChatCompletionsRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	frequency_penalty: NotRequired[float]
 	image_config: NotRequired[ImageConfig]
+	include_reasoning: NotRequired[bool]
 	logit_bias: NotRequired[Dict[str, Any]]
 	logprobs: NotRequired[bool]
 	max_completion_tokens: NotRequired[int]
@@ -508,7 +537,10 @@ class ChatCompletionsRequest(TypedDict):
 	model: str
 	models: NotRequired[List[str]]
 	parallel_tool_calls: NotRequired[bool]
+	plugins: NotRequired[List[Union[WebSearchPlugin, WebFetchPlugin, ResponseHealingPlugin]]]
+	prediction: NotRequired[Dict[str, Any]]
 	presence_penalty: NotRequired[float]
+	prompt: NotRequired[PromptTemplateReference]
 	prompt_cache_key: NotRequired[Optional[str]]
 	prompt_cache_options: NotRequired[PromptCacheOptions]
 	prompt_cache_retention: NotRequired[Literal["in_memory", "24h"]]
@@ -519,7 +551,7 @@ class ChatCompletionsRequest(TypedDict):
 	response_format: NotRequired[Union[str, Dict[str, Any]]]
 	safety_identifier: NotRequired[Optional[str]]
 	seed: NotRequired[int]
-	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]]
+	service_tier: NotRequired[Optional[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch", "auto", "scale"]]]
 	session_id: NotRequired[str]
 	stop: NotRequired[Union[str, List[str]]]
 	store: NotRequired[bool]
@@ -527,7 +559,7 @@ class ChatCompletionsRequest(TypedDict):
 	stream_options: NotRequired[Dict[str, Any]]
 	temperature: NotRequired[float]
 	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "phaseo:datetime", "phaseo:web_search", "phaseo:web_fetch", "phaseo:subagent", "phaseo:fusion", "phaseo:search_models", "gateway:datetime", "gateway:web_search", "gateway:web_fetch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[FunctionToolDefinition, GatewayDatetimeToolDefinition, GatewayWebSearchToolDefinition, GatewayWebFetchToolDefinition, SubagentToolDefinition, FusionToolDefinition, SearchModelsToolDefinition]]]
+	tools: NotRequired[List[Union[FunctionToolDefinition, GatewayDatetimeToolDefinition, GatewayWebSearchToolDefinition, GatewayWebFetchToolDefinition, SubagentToolDefinition, FusionToolDefinition, SearchModelsToolDefinition, OpenAIWebSearchToolDefinition]]]
 	top_logprobs: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
@@ -550,10 +582,12 @@ class ChatImageOutputPart(TypedDict):
 	type: Literal["image_url"]
 
 class ChatMessage(TypedDict):
+	audio: NotRequired[Optional[Dict[str, Any]]]
 	audios: NotRequired[List[ChatAudioOutputPart]]
-	content: NotRequired[Union[str, List[Union[TextContentPart, Dict[str, Any], AudioContentPart, VideoContentPart, ToolCallContentPart]]]]
+	content: NotRequired[Union[Optional[str], List[Union[TextContentPart, Dict[str, Any], AudioContentPart, VideoContentPart, FileContentPart, ToolCallContentPart]]]]
 	images: NotRequired[List[ChatImageOutputPart]]
 	name: NotRequired[str]
+	reasoning: NotRequired[str]
 	reasoning_content: NotRequired[str]
 	reasoning_details: NotRequired[List[ChatReasoningDetail]]
 	role: Literal["system", "developer", "user", "assistant", "tool"]
@@ -569,6 +603,93 @@ class ChatReasoningDetail(TypedDict):
 	summary: NotRequired[str]
 	text: NotRequired[str]
 	type: Literal["reasoning.text", "reasoning.summary", "reasoning.encrypted"]
+
+class ChatResponseMessage(TypedDict):
+	audio: NotRequired[Dict[str, Any]]
+	audios: NotRequired[List[ChatAudioOutputPart]]
+	content: NotRequired[Union[Optional[str], List[Union[TextContentPart, Dict[str, Any], AudioContentPart, VideoContentPart, FileContentPart, ToolCallContentPart]]]]
+	images: NotRequired[List[ChatImageOutputPart]]
+	name: NotRequired[str]
+	reasoning: NotRequired[str]
+	reasoning_content: NotRequired[str]
+	reasoning_details: NotRequired[List[ChatReasoningDetail]]
+	role: Literal["system", "developer", "user", "assistant", "tool"]
+	tool_call_id: NotRequired[str]
+	tool_calls: NotRequired[List[ToolCall]]
+
+class Classifier(TypedDict):
+	created_at: str
+	created_by: Optional[str]
+	description: Optional[str]
+	dimensions: List[ClassifierDimension]
+	enabled: bool
+	id: str
+	input_scope: Literal["prompt", "prompt_and_response"]
+	instructions: str
+	model: str
+	monthly_budget_usd: Optional[float]
+	name: str
+	sample_by: Literal["request", "session"]
+	sample_rate: float
+	scope: ClassifierScope
+	updated_at: str
+	workspace_id: str
+
+class ClassifierCreateInput(TypedDict):
+	description: NotRequired[Optional[str]]
+	dimensions: List[ClassifierDimension]
+	enabled: NotRequired[bool]
+	input_scope: NotRequired[Literal["prompt", "prompt_and_response"]]
+	instructions: NotRequired[str]
+	model: str
+	monthly_budget_usd: NotRequired[Optional[float]]
+	name: str
+	sample_by: NotRequired[Literal["request", "session"]]
+	sample_rate: NotRequired[float]
+	scope: NotRequired[ClassifierScope]
+
+class ClassifierDeleteResponse(TypedDict):
+	data: Dict[str, Any]
+
+class ClassifierDimension(TypedDict):
+	allow_other: NotRequired[bool]
+	description: NotRequired[Optional[str]]
+	key: str
+	multiple: NotRequired[bool]
+	name: NotRequired[str]
+	values: List[ClassifierValue]
+
+ClassifierInputScope = Literal["prompt", "prompt_and_response"]
+
+class ClassifierListResponse(TypedDict):
+	data: List[Classifier]
+
+class ClassifierResponse(TypedDict):
+	data: Classifier
+
+ClassifierSampleBy = Literal["request", "session"]
+
+class ClassifierScope(TypedDict):
+	app_ids: NotRequired[List[str]]
+	key_ids: NotRequired[List[str]]
+	models: NotRequired[List[str]]
+
+class ClassifierUpdateInput(TypedDict):
+	description: NotRequired[Optional[str]]
+	dimensions: NotRequired[List[ClassifierDimension]]
+	enabled: NotRequired[bool]
+	input_scope: NotRequired[Literal["prompt", "prompt_and_response"]]
+	instructions: NotRequired[str]
+	model: NotRequired[str]
+	monthly_budget_usd: NotRequired[Optional[float]]
+	name: NotRequired[str]
+	sample_by: NotRequired[Literal["request", "session"]]
+	sample_rate: NotRequired[float]
+	scope: NotRequired[ClassifierScope]
+
+class ClassifierValue(TypedDict):
+	description: NotRequired[Optional[str]]
+	value: str
 
 class CreditsResponse(TypedDict):
 	credits: Dict[str, Any]
@@ -674,7 +795,7 @@ class DecisionBox(TypedDict):
 
 class DecisionBoxAnswer(TypedDict):
 	box: DecisionBox
-	confidence: float
+	confidence: Optional[float]
 	name: Optional[str]
 	type: Literal["box"]
 
@@ -692,7 +813,7 @@ class DecisionChoiceAnswer(TypedDict):
 
 class DecisionChoiceQuestion(TypedDict):
 	criteria: Dict[str, Any]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["choice"]
 
 DecisionCreateRequest = Union["OpenAIDecisionsRequest", Dict[str, Any]]
@@ -725,11 +846,11 @@ class DecisionInputVideo(TypedDict):
 	type: Literal["input_video"]
 	video_url: Union[str, Dict[str, Any]]
 
-DecisionInstructions = Union[str, Dict[str, Any], List[Any]]
+DecisionInstructions = Union[str, "OcrResponse", List[Any]]
 
 class DecisionNoulQuestion(TypedDict):
 	criteria: NotRequired[Dict[str, Any]]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["noul"]
 
 class DecisionPredicateAnswer(TypedDict):
@@ -758,7 +879,7 @@ class DecisionScoreAnswer(TypedDict):
 
 class DecisionScoreQuestion(TypedDict):
 	criteria: List[str]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["score"]
 
 class DecisionsRequest(TypedDict):
@@ -766,14 +887,14 @@ class DecisionsRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	images: NotRequired[List[Union[str, DecisionImage]]]
 	meta: NotRequired[bool]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[DecisionProviderOptions]
 	questions: Dict[str, Any]
 	routing: NotRequired[ProviderRoutingOptions]
-	state: Union[str, Dict[str, Any], List[Any]]
+	state: Union[str, OcrResponse, List[Any]]
 
 class DecisionsResponse(TypedDict):
 	answers: NotRequired[OcrResponse]
@@ -784,13 +905,49 @@ class DecisionsResponse(TypedDict):
 
 class DecisionsUsage(TypedDict):
 	input_tokens: NotRequired[int]
-	input_tokens_details: NotRequired[InputTokensDetails]
+	input_tokens_details: NotRequired[Dict[str, Any]]
 	output_tokens: NotRequired[int]
 	output_tokens_details: NotRequired[Dict[str, Any]]
 	total_tokens: NotRequired[int]
 
 class DeletedResponse(TypedDict):
 	deleted: Literal[true]
+
+class DepartmentBudget(TypedDict):
+	created_at: str
+	created_by: NotRequired[Optional[str]]
+	department_id: str
+	department_name: Optional[str]
+	exceeded: bool
+	id: str
+	interval: Literal["daily", "weekly", "monthly"]
+	limit: float
+	limit_nanos: int
+	remaining: float
+	remaining_nanos: int
+	reset_at: NotRequired[Optional[str]]
+	updated_at: str
+	usage: float
+	usage_nanos: int
+	window_start: NotRequired[Optional[str]]
+	workspace_id: str
+
+class DepartmentBudgetInput(TypedDict):
+	department_id: str
+	interval: Literal["daily", "weekly", "monthly"]
+	limit: float
+
+DepartmentBudgetInterval = Literal["daily", "weekly", "monthly"]
+
+class DepartmentBudgetListResponse(TypedDict):
+	data: List[DepartmentBudget]
+
+class DepartmentBudgetResponse(TypedDict):
+	data: DepartmentBudget
+
+class DepartmentBudgetUpdateInput(TypedDict):
+	interval: NotRequired[Literal["daily", "weekly", "monthly"]]
+	limit: NotRequired[float]
 
 class DynamicRoute(TypedDict):
 	config: DynamicRouteConfig
@@ -862,7 +1019,7 @@ class DynamicRouteListResponse(TypedDict):
 	total_count: int
 
 class DynamicRouteNode(TypedDict):
-	data: Dict[str, Any]
+	data: OcrResponse
 	id: str
 	position: NotRequired[Optional[Dict[str, Any]]]
 	type: Literal["start", "condition", "percentage", "model", "rate_limit", "budget_limit", "end"]
@@ -939,6 +1096,13 @@ class ErrorFailureSampleItem(TypedDict):
 	upstream_error_param: NotRequired[Optional[str]]
 	upstream_payload_preview: NotRequired[Optional[str]]
 
+class ErrorObject(TypedDict):
+	code: str
+	message: str
+	metadata: NotRequired[OcrResponse]
+	param: NotRequired[Optional[str]]
+	type: Literal["invalid_request_error", "authentication_error", "permission_error", "not_found_error", "rate_limit_error", "insufficient_quota", "server_error", "service_unavailable", "overloaded"]
+
 class ErrorProviderCandidateDiagnostics(TypedDict):
 	candidateCount: NotRequired[int]
 	droppedMissingAdapter: NotRequired[List[Dict[str, Any]]]
@@ -959,9 +1123,10 @@ class ErrorProviderFailureDiagnostics(TypedDict):
 
 class ErrorResponse(TypedDict):
 	attempt_count: NotRequired[int]
+	code: NotRequired[str]
 	description: NotRequired[str]
 	details: NotRequired[List[OcrResponse]]
-	error: Union[str, OcrResponse]
+	error: Union[str, ErrorObject]
 	error_origin: NotRequired[Literal["user", "gateway", "upstream"]]
 	error_type: NotRequired[Literal["user", "system"]]
 	failed_providers: NotRequired[List[str]]
@@ -989,6 +1154,90 @@ class ErrorUpstreamError(TypedDict):
 	description: NotRequired[Optional[str]]
 	message: NotRequired[Optional[str]]
 	param: NotRequired[Optional[str]]
+
+ExtractionAnswer = Union["ExtractionStringAnswer", "ExtractionNumberAnswer", "ExtractionListAnswer"]
+
+class ExtractionDateField(TypedDict):
+	instructions: NotRequired[str]
+	type: Literal["date"]
+
+class ExtractionDatetimeField(TypedDict):
+	instructions: NotRequired[str]
+	type: Literal["datetime"]
+
+class ExtractionDurationField(TypedDict):
+	decimals: NotRequired[int]
+	instructions: NotRequired[str]
+	integer: NotRequired[bool]
+	type: Literal["duration"]
+	unit: NotRequired[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]
+
+ExtractionField = Union["ExtractionTextField", "ExtractionNumberField", "ExtractionDateField", "ExtractionTimeField", "ExtractionDatetimeField", "ExtractionDurationField", "ExtractionListField"]
+
+class ExtractionImage(TypedDict):
+	base64: str
+	content_type: Literal["image/png", "image/jpeg", "image/webp"]
+
+class ExtractionListAnswer(TypedDict):
+	confidence: float
+	type: Literal["list"]
+	value: List[Union[str, float]]
+
+class ExtractionListField(TypedDict):
+	decimals: NotRequired[int]
+	instructions: NotRequired[str]
+	items: Literal["text", "number", "date"]
+	type: Literal["list"]
+
+class ExtractionNumberAnswer(TypedDict):
+	confidence: float
+	p_null: float
+	type: Literal["number", "duration"]
+	value: Optional[float]
+
+class ExtractionNumberField(TypedDict):
+	decimals: NotRequired[int]
+	instructions: NotRequired[str]
+	integer: NotRequired[bool]
+	type: Literal["number"]
+	unit: NotRequired[str]
+
+class ExtractionRequest(TypedDict):
+	fields: Dict[str, Any]
+	images: NotRequired[List[ExtractionImage]]
+	input: str
+	model: str
+	reference_date: NotRequired[str]
+
+class ExtractionResponse(TypedDict):
+	answers: Dict[str, Any]
+	model: str
+	truncated: bool
+	usage: ExtractionUsage
+
+class ExtractionStringAnswer(TypedDict):
+	confidence: float
+	p_null: float
+	type: Literal["text", "date", "time", "datetime"]
+	value: Optional[str]
+
+class ExtractionTextField(TypedDict):
+	instructions: NotRequired[str]
+	type: Literal["text"]
+
+class ExtractionTimeField(TypedDict):
+	instructions: NotRequired[str]
+	type: Literal["time"]
+
+class ExtractionUsage(TypedDict):
+	input_tokens: int
+	output_tokens: Literal[0]
+	total_tokens: int
+
+class FileContentPart(TypedDict):
+	cache_control: NotRequired[CacheControl]
+	file: Dict[str, Any]
+	type: Literal["file"]
 
 class FileResponse(TypedDict):
 	bytes: NotRequired[int]
@@ -1033,7 +1282,7 @@ class GatewayFeedback(TypedDict):
 	created_by_user_id: Optional[str]
 	end_user_id: Optional[str]
 	id: str
-	metadata: Dict[str, Any]
+	metadata: OcrResponse
 	metadata_dimensions: Dict[str, Any]
 	preset_id: Optional[str]
 	rating: Optional[str]
@@ -1049,8 +1298,8 @@ class GatewayFeedback(TypedDict):
 class GatewayFeedbackCreateRequest(TypedDict):
 	comment: NotRequired[str]
 	end_user_id: NotRequired[str]
-	metadata: NotRequired[Dict[str, Any]]
-	metadata_dimensions: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
+	metadata_dimensions: NotRequired[OcrResponse]
 	preset_id: NotRequired[str]
 	rating: NotRequired[str]
 	reason: NotRequired[str]
@@ -1131,7 +1380,7 @@ class GatewayObservabilityEvent(TypedDict):
 	end_user_id: Optional[str]
 	event_name: str
 	id: str
-	metadata: Dict[str, Any]
+	metadata: OcrResponse
 	metadata_dimensions: Dict[str, Any]
 	numeric_value: Optional[float]
 	occurred_at: str
@@ -1147,8 +1396,8 @@ class GatewayObservabilityEventCreateRequest(TypedDict):
 	category: NotRequired[Literal["feedback", "behavior", "outcome", "app", "test", "custom"]]
 	end_user_id: NotRequired[str]
 	event_name: str
-	metadata: NotRequired[Dict[str, Any]]
-	metadata_dimensions: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
+	metadata_dimensions: NotRequired[OcrResponse]
 	numeric_value: NotRequired[float]
 	occurred_at: NotRequired[str]
 	preset_id: NotRequired[str]
@@ -1163,6 +1412,8 @@ class GatewayObservabilityEventListResponse(TypedDict):
 
 class GatewayObservabilityEventResponse(TypedDict):
 	data: GatewayObservabilityEvent
+
+GatewayPlugin = Union["WebSearchPlugin", "WebFetchPlugin", "ResponseHealingPlugin"]
 
 class GatewayPricing(TypedDict):
 	meters: Dict[str, Any]
@@ -1189,7 +1440,7 @@ class GatewayRequestLog(TypedDict):
 	model_id: NotRequired[Optional[str]]
 	native_response_id: NotRequired[Optional[str]]
 	oauth_client_id: NotRequired[Optional[str]]
-	pricing_lines: NotRequired[Optional[List[Dict[str, Any]]]]
+	pricing_lines: NotRequired[Optional[List[OcrResponse]]]
 	provider: NotRequired[Optional[str]]
 	request_id: NotRequired[str]
 	requested_model_id: NotRequired[Optional[str]]
@@ -1198,7 +1449,7 @@ class GatewayRequestLog(TypedDict):
 	stream: NotRequired[Optional[bool]]
 	success: NotRequired[Optional[bool]]
 	throughput: NotRequired[Optional[float]]
-	usage: NotRequired[Optional[Dict[str, Any]]]
+	usage: NotRequired[Optional[OcrResponse]]
 
 class GatewayRequestLogListResponse(TypedDict):
 	data: List[GatewayRequestLog]
@@ -1280,7 +1531,7 @@ class Guardrail(TypedDict):
 	provider_restriction_provider_ids: NotRequired[Optional[List[str]]]
 	sensitive_info_default_action: NotRequired[Optional[Literal["flag", "redact", "block"]]]
 	sensitive_info_enabled: NotRequired[Optional[bool]]
-	sensitive_info_rules: NotRequired[Optional[List[Dict[str, Any]]]]
+	sensitive_info_rules: NotRequired[Optional[List[OcrResponse]]]
 	updated_at: NotRequired[Optional[str]]
 	weekly_limit_cost_nanos: NotRequired[Optional[int]]
 	weekly_limit_requests: NotRequired[Optional[int]]
@@ -1313,7 +1564,7 @@ class GuardrailCreateRequest(TypedDict):
 	providerRestrictionProviderIds: NotRequired[List[str]]
 	sensitiveInfoDefaultAction: NotRequired[Literal["flag", "redact", "block"]]
 	sensitiveInfoEnabled: NotRequired[bool]
-	sensitiveInfoRules: NotRequired[List[Dict[str, Any]]]
+	sensitiveInfoRules: NotRequired[List[OcrResponse]]
 
 class GuardrailDeleteResponse(TypedDict):
 	deleted: Literal[true]
@@ -1382,7 +1633,7 @@ class GuardrailPolicyInput(TypedDict):
 	providerRestrictionProviderIds: NotRequired[List[str]]
 	sensitiveInfoDefaultAction: NotRequired[Literal["flag", "redact", "block"]]
 	sensitiveInfoEnabled: NotRequired[bool]
-	sensitiveInfoRules: NotRequired[List[Dict[str, Any]]]
+	sensitiveInfoRules: NotRequired[List[OcrResponse]]
 
 class GuardrailRemoveResponse(TypedDict):
 	removed_count: int
@@ -1409,7 +1660,7 @@ class GuardrailUpdateRequest(TypedDict):
 	providerRestrictionProviderIds: NotRequired[List[str]]
 	sensitiveInfoDefaultAction: NotRequired[Literal["flag", "redact", "block"]]
 	sensitiveInfoEnabled: NotRequired[bool]
-	sensitiveInfoRules: NotRequired[List[Dict[str, Any]]]
+	sensitiveInfoRules: NotRequired[List[OcrResponse]]
 
 class GuardrailUserIdsRequest(TypedDict):
 	user_ids: List[str]
@@ -1424,7 +1675,7 @@ class ImageConfig(TypedDict):
 	font_inputs: NotRequired[List[Dict[str, Any]]]
 	image_size: NotRequired[Literal["0.5K", "1K", "2K", "4K"]]
 	include_rai_reason: NotRequired[bool]
-	reference_images: NotRequired[List[PresetConfig]]
+	reference_images: NotRequired[List[OcrResponse]]
 	super_resolution_references: NotRequired[List[str]]
 
 class ImageContentPart(TypedDict):
@@ -1486,6 +1737,7 @@ class ImagesGenerationResponse(TypedDict):
 
 class InputTokensDetails(TypedDict):
 	cache_write_tokens: NotRequired[int]
+	cache_write_tokens_details: NotRequired[CacheWriteTokensDetails]
 	cached_tokens: NotRequired[int]
 
 class InvalidRequestResponse(TypedDict):
@@ -1499,10 +1751,10 @@ class KeyInvalidateResponse(TypedDict):
 	message: str
 	ok: Literal[true]
 
-KnownModelId = Literal["ai21/jamba-1.5-large", "ai21/jamba-1.5-mini", "ai21/jamba-large-1.5", "ai21/jamba-mini-1.5", "aion-labs/aion-2.0", "aion-labs/aion-3.0", "aion-labs/aion-3.0-mini", "aion-labs/aion-rp-llama-3.1-8b", "allenai/molmo-2-8b", "amazon/nova-2-lite", "amazon/nova-lite-1.0", "amazon/nova-micro-1.0", "amazon/nova-premier", "amazon/nova-pro-1.0", "anthropic/claude-3-haiku", "anthropic/claude-3.5-haiku", "anthropic/claude-3.7-sonnet", "anthropic/claude-fable-5", "anthropic/claude-fable-5.1", "anthropic/claude-haiku-4.5", "anthropic/claude-opus-4", "anthropic/claude-opus-4.1", "anthropic/claude-opus-4.5", "anthropic/claude-opus-4.6", "anthropic/claude-opus-4.7", "anthropic/claude-opus-4.8", "anthropic/claude-opus-5", "anthropic/claude-sonnet-4", "anthropic/claude-sonnet-4.5", "anthropic/claude-sonnet-4.6", "anthropic/claude-sonnet-5", "arcee-ai/trinity-large", "arcee-ai/trinity-large-thinking", "arcee-ai/trinity-mini", "baai/bge-m3", "baai/bge-reranker-v2-m3", "baidu/cobuddy", "baidu/ernie-4.5-0.3b", "baidu/ernie-4.5-21b-a3b", "baidu/ernie-4.5-300b-a47b", "baidu/ernie-4.5-turbo", "baidu/ernie-4.5-vl-28b-a3b", "baidu/ernie-4.5-vl-424b-a47b", "baidu/ernie-5.0", "baidu/ernie-5.1", "baidu/ernie-x1.1", "black-forest-labs/flux-1-dev", "black-forest-labs/flux-1-kontext-max", "black-forest-labs/flux-1-kontext-pro", "black-forest-labs/flux-1-schnell", "black-forest-labs/flux-1.1-pro", "black-forest-labs/flux-1.1-pro-ultra", "black-forest-labs/flux-2-dev", "black-forest-labs/flux-2-flex", "black-forest-labs/flux-2-klein-4b", "black-forest-labs/flux-2-klein-9b", "black-forest-labs/flux-2-max", "black-forest-labs/flux-2-pro", "black-forest-labs/flux-3-video", "bytedance/seed-1.6", "bytedance/seed-1.6-2025-06-15", "bytedance/seed-1.6-2025-09-15", "bytedance/seed-1.6-2025-10-15", "bytedance/seed-1.6-250915", "bytedance/seed-1.6-flash", "bytedance/seed-1.6-flash-2025-06-15", "bytedance/seed-1.6-flash-2025-07-15", "bytedance/seed-1.6-flash-2025-08-28", "bytedance/seed-1.6-flash-250715", "bytedance/seed-1.8", "bytedance/seed-1.8-2025-12-28", "bytedance/seed-2.0-code-preview-2026-02-15", "bytedance/seed-2.0-lite", "bytedance/seed-2.0-lite-2026-04-28", "bytedance/seed-2.0-lite-260428", "bytedance/seed-2.0-mini", "bytedance/seed-2.0-mini-2026-04-28", "bytedance/seed-2.0-mini-260428", "bytedance/seed-2.0-pro", "bytedance/seed-2.1-turbo", "bytedance/seed-oss-36b-instruct", "bytedance/seed-translation", "bytedance/seedance-1.5-pro", "bytedance/seedance-2.0", "bytedance/seedance-2.0-fast", "bytedance/seedance-2.0-mini-260615", "bytedance/seedream-5.0-pro", "bytedance/ui-tars-1.5-7b", "cohere/command-a", "cohere/command-r", "cohere/command-r-7b", "cohere/command-r-plus", "cohere/command-r7b", "cohere/embed-english-v3", "cohere/embed-multilingual-v3", "cohere/embed-v4", "cohere/parse-v5.0", "cohere/rerank-v3.5", "cohere/rerank-v4.0-fast", "cohere/rerank-v4.0-pro", "crofai/greg-1-mini", "crofai/greg-2-super", "crofai/greg-2-ultra", "crofai/greg-rp", "deepseek/deepseek-ocr", "deepseek/deepseek-ocr-2", "deepseek/deepseek-r1", "deepseek/deepseek-r1-0528", "deepseek/deepseek-r1-2025-05-28", "deepseek/deepseek-r1-distill-llama-70b", "deepseek/deepseek-r1-turbo", "deepseek/deepseek-v3", "deepseek/deepseek-v3-0324", "deepseek/deepseek-v3-2025-03-24", "deepseek/deepseek-v3-turbo", "deepseek/deepseek-v3.1", "deepseek/deepseek-v3.1-terminus", "deepseek/deepseek-v3.2", "deepseek/deepseek-v3.2-exp", "deepseek/deepseek-v4-flash", "deepseek/deepseek-v4-flash-0731", "deepseek/deepseek-v4-flash-vision-exp", "deepseek/deepseek-v4-pro", "deepseek/deepseek-v4-pro-0813", "deepseek/deepseek-v4.1-flash-beta", "deepseek/deepseek-v4.1-flash-preview", "early-access/ea-29b-a4b", "eleven-labs/eleven-flash-v2", "eleven-labs/eleven-flash-v2.5", "eleven-labs/eleven-multilingual-v2", "eleven-labs/eleven-turbo-v2", "eleven-labs/eleven-turbo-v2.5", "eleven-labs/eleven-v3", "eleven-labs/eleven-v4", "eleven-labs/eleven-v4-turbo", "eleven-labs/music", "eleven-labs/scribe-v2", "essential-ai/rnj-1", "google/embeddinggemma-300m", "google/gemini-2.5-flash", "google/gemini-2.5-flash-image", "google/gemini-2.5-flash-lite", "google/gemini-2.5-pro", "google/gemini-3-flash-preview", "google/gemini-3-pro-image", "google/gemini-3.1-flash-image", "google/gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite-image", "google/gemini-3.1-flash-live-preview", "google/gemini-3.1-flash-tts-preview", "google/gemini-3.1-pro-preview", "google/gemini-3.1-pro-preview-customtools", "google/gemini-3.5-flash", "google/gemini-3.5-flash-lite", "google/gemini-3.5-transcribe", "google/gemini-3.6-flash", "google/gemini-3.7-flash", "google/gemini-3.8-flash", "google/gemini-embedding-001", "google/gemini-embedding-2", "google/gemini-robotics-er-2-preview", "google/gemma-3-12b", "google/gemma-3-27b", "google/gemma-3-27b-it", "google/gemma-3-4b", "google/gemma-4-12b", "google/gemma-4-26b-a4b", "google/gemma-4-26b-a4b-it", "google/gemma-4-26b-a4b:free", "google/gemma-4-31b", "google/gemma-4-31b-it", "google/gemma-4-31b:free", "google/imagen-4.0-preview", "google/lyria-3-clip-preview", "google/lyria-3-pro-preview", "google/veo-3.1", "google/veo-3.1-fast", "google/veo-3.1-fast-preview", "google/veo-3.1-lite-preview", "google/veo-3.1-preview", "hexgrad/kokoro-82m", "ibm/granite-4.1-8b", "ibm/granite-4.2-30b", "ibm/granite-4.2-3b", "ibm/granite-4.2-8b", "inception/mercury-2", "inception/mercury-2.5", "inception/mercury-edit-2", "inclusionai/ling-2.6-1t", "inclusionai/ling-2.6-flash", "inclusionai/ling-3.0-flash", "inclusionai/ling-3.0-flash-fin", "inclusionai/ling-3.0-flash-sante", "inclusionai/ling-3.0-flash-vl", "inclusionai/ling-flash-2.0", "inclusionai/ring-2.6-1t", "inclusionai/ring-flash-2.0", "inflection/inflection-3-pi", "inflection/inflection-3-productivity", "jetbrains/mellum2-12b-a2.5b", "kwaipilot/kat-coder-air-v2.5", "kwaipilot/kat-coder-pro", "kwaipilot/kat-coder-pro-v2", "kwaipilot/kat-coder-pro-v2.5", "lightricks/ltx-2.3-fast", "lightricks/ltx-2.3-pro", "lightricks/ltx-2.5-fast", "lightricks/ltx-2.5-pro", "liquid-ai/lfm-2-24b-a2b", "liquid-ai/lfm-2.5-8b-a1b", "ltx-2-3-fast", "ltx-2-3-pro", "ltx-2-5-fast", "ltx-2-5-pro", "medaibase/antangelmed", "meituan/longcat-2.0", "meituan/longcat-flash-lite", "meta/llama-3.1-70b", "meta/llama-3.1-8b", "meta/llama-3.2-3b", "meta/llama-3.3-70b", "meta/llama-3.3-70b-instruct", "meta/llama-4-maverick", "meta/llama-4-scout", "meta/llama-guard-4-12b", "meta/llama-prompt-guard-2-22m", "meta/llama-prompt-guard-2-86m", "meta/muse-glimmer-30b", "meta/muse-image-1.0", "meta/muse-spark-1.2", "meta/muse-spark-1.2-contributor", "meta/muse-spark-1.3", "meta/muse-spark-1.3-contributor", "meta/muse-voice-transcribe-1.0", "microsoft/phi-4", "microsoft/wizardlm-2-8x22b", "mindai/macaron-v1-tall", "mindai/macaron-v1-venti", "minimax/h3", "minimax/hailuo-02", "minimax/hailuo-2.3", "minimax/hailuo-2.3-fast", "minimax/image-01", "minimax/m2-her", "minimax/minimax-m1-80k", "minimax/minimax-m2", "minimax/minimax-m2-her", "minimax/minimax-m2.1", "minimax/minimax-m2.5", "minimax/minimax-m2.5-highspeed", "minimax/minimax-m2.7", "minimax/minimax-m3", "minimax/music-2.6", "minimax/music-3.0", "minimax/speech-2.6-hd", "minimax/speech-2.6-turbo", "minimax/speech-2.8-hd", "minimax/speech-2.8-turbo", "minimax/speech-2.8:free", "mistral/codestral", "mistral/codestral-embed", "mistral/devstral-2", "mistral/devstral-2.0", "mistral/devstral-medium-1.0", "mistral/devstral-small-1.1", "mistral/leanstral-1.5:free", "mistral/magistral-medium-1.2", "mistral/magistral-small-1.2", "mistral/ministral-3-14b", "mistral/ministral-3-3b", "mistral/ministral-3-8b", "mistral/ministral-3.0-14b", "mistral/ministral-3.0-3b", "mistral/ministral-3.0-8b", "mistral/mistral-embed", "mistral/mistral-large-2.0", "mistral/mistral-large-2.1", "mistral/mistral-large-3", "mistral/mistral-large-3.0", "mistral/mistral-medium-3.0", "mistral/mistral-medium-3.1", "mistral/mistral-medium-3.5", "mistral/mistral-moderation-2", "mistral/mistral-nemo", "mistral/mistral-nemo-12b", "mistral/mistral-nemo-2407", "mistral/mistral-small-24b-2501", "mistral/mistral-small-3.2", "mistral/mistral-small-3.2-24b-instruct", "mistral/mistral-small-4", "mistral/ocr-3", "mistral/ocr-4", "mistral/ocr-4.1", "mistral/pixtral-large", "mistral/voxtral-mini", "mistral/voxtral-mini-transcribe-2", "mistral/voxtral-small", "moonshotai/kimi-k2", "moonshotai/kimi-k2-0905", "moonshotai/kimi-k2-2025-07-11", "moonshotai/kimi-k2-thinking", "moonshotai/kimi-k2.5", "moonshotai/kimi-k2.6", "moonshotai/kimi-k2.7-code", "moonshotai/kimi-k2.7-code-highspeed", "moonshotai/kimi-k3", "moonshotai/kimi-k3-fast", "morph/morph-compactor", "morph/morph-v3-fast", "morph/morph-v3-large", "morph/morph-warp-grep-v2.1", "nex-agi/deepseek-v3.1-nex-n1", "nous/hermes-3-llama-3.1-405b", "nous/hermes-3-llama-3.1-70b", "nous/hermes-4-405b", "nousresearch/hermes-3-llama-3.1-70b", "nousresearch/hermes-4-405b", "nvidia/nemotron-3-nano-30b-a3b", "nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-lightning", "nvidia/nemotron-nano-12b-v2-vl", "nvidia/nemotron-nano-9b-v2", "nvidia/nvidia-nemotron-3-nano-30b-a3b", "nvidia/nvidia-nemotron-nano-12b-v2-vl", "nvidia/riva-tts-de-de", "nvidia/riva-tts-en-us", "nvidia/riva-tts-es-es", "nvidia/riva-tts-it-it", "openai/babbage-002", "openai/chat-latest", "openai/chatgpt-4o", "openai/davinci-002", "openai/gpt-3.5-turbo-0613", "openai/gpt-3.5-turbo-16k", "openai/gpt-3.5-turbo-2023-03-21", "openai/gpt-3.5-turbo-2023-11-06", "openai/gpt-4", "openai/gpt-4-2023-06-13", "openai/gpt-4.1", "openai/gpt-4.1-mini", "openai/gpt-4.1-nano", "openai/gpt-4o", "openai/gpt-4o-2024-05-13", "openai/gpt-4o-2024-08-06", "openai/gpt-4o-2024-11-20", "openai/gpt-4o-mini", "openai/gpt-4o-mini-transcribe", "openai/gpt-4o-mini-tts", "openai/gpt-4o-transcribe", "openai/gpt-5", "openai/gpt-5-mini", "openai/gpt-5-nano", "openai/gpt-5-pro", "openai/gpt-5.1", "openai/gpt-5.2", "openai/gpt-5.2-codex", "openai/gpt-5.2-pro", "openai/gpt-5.3-codex", "openai/gpt-5.4", "openai/gpt-5.4-mini", "openai/gpt-5.4-nano", "openai/gpt-5.4-pro", "openai/gpt-5.5", "openai/gpt-5.5-pro", "openai/gpt-5.6-luna", "openai/gpt-5.6-luna-pro", "openai/gpt-5.6-sol", "openai/gpt-5.6-sol-pro", "openai/gpt-5.6-terra", "openai/gpt-5.6-terra-pro", "openai/gpt-6-astra", "openai/gpt-6-astra-pro", "openai/gpt-image-1", "openai/gpt-image-1-mini", "openai/gpt-image-1.5", "openai/gpt-image-2", "openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "openai/gpt-oss-safeguard-120b", "openai/gpt-oss-safeguard-20b", "openai/gpt-realtime", "openai/gpt-realtime-1.5", "openai/gpt-realtime-2", "openai/gpt-realtime-2.1", "openai/gpt-realtime-2.1-mini", "openai/gpt-transcribe", "openai/o1", "openai/o1-mini", "openai/o1-pro", "openai/o3", "openai/o3-mini", "openai/o3-pro", "openai/o4-mini", "openai/omni-moderation", "openai/sora-2", "openai/sora-2-pro", "openai/text-embedding-3-large", "openai/text-embedding-3-small", "openai/text-embedding-ada-002", "openai/whisper-1", "openai/whisper-large-v3", "openai/whisper-large-v3-turbo", "opencompass/compassjudger-1-32b-instruct", "perplexity/pplx-embed-v1-0.6b", "perplexity/pplx-embed-v1-4b", "phaseo/auto", "phaseo/free", "poolside/laguna-m.1:free", "poolside/laguna-s-2.1:free", "poolside/laguna-xs-2.1:free", "qwen/qvq-max", "qwen/qwen-flash", "qwen/qwen-flash-character", "qwen/qwen-image", "qwen/qwen-image-edit", "qwen/qwen-image-edit-2025-10-30", "qwen/qwen-image-edit-2025-12-15", "qwen/qwen-image-edit-max", "qwen/qwen-image-max", "qwen/qwen-image-plus", "qwen/qwen-max", "qwen/qwen-mt-flash", "qwen/qwen-mt-lite", "qwen/qwen-mt-plus", "qwen/qwen-mt-turbo", "qwen/qwen-plus-2025-01-25", "qwen/qwen-plus-2025-04-28", "qwen/qwen-plus-2025-07-14", "qwen/qwen-plus-2025-07-28", "qwen/qwen-plus-2025-09-11", "qwen/qwen-plus-2025-12-01", "qwen/qwen-plus-character", "qwen/qwen-turbo-2024-11-01", "qwen/qwen-turbo-2025-04-28", "qwen/qwen-vl-max-2025-04-08", "qwen/qwen-vl-max-2025-08-13", "qwen/qwen-vl-plus-2025-01-25", "qwen/qwen-vl-plus-2025-05-07", "qwen/qwen-vl-plus-2025-08-15", "qwen/qwen2.5-14b", "qwen/qwen2.5-14b-1m", "qwen/qwen2.5-32b", "qwen/qwen2.5-72b", "qwen/qwen2.5-7b", "qwen/qwen2.5-7b-1m", "qwen/qwen2.5-coder-7b", "qwen/qwen2.5-vl-32b", "qwen/qwen2.5-vl-32b-instruct", "qwen/qwen2.5-vl-72b", "qwen/qwen2.5-vl-72b-instruct", "qwen/qwen2.5-vl-7b", "qwen/qwen3-0.6b", "qwen/qwen3-1.7b", "qwen/qwen3-14b", "qwen/qwen3-235b-a22b", "qwen/qwen3-235b-a22b-2507", "qwen/qwen3-235b-a22b-instruct-2507", "qwen/qwen3-235b-a22b-thinking-2507", "qwen/qwen3-30b-a3b", "qwen/qwen3-30b-a3b-2507", "qwen/qwen3-30b-a3b-instruct-2507", "qwen/qwen3-30b-a3b-thinking-2507", "qwen/qwen3-32b", "qwen/qwen3-4b", "qwen/qwen3-8b", "qwen/qwen3-asr-0.6b", "qwen/qwen3-asr-1.7b", "qwen/qwen3-coder", "qwen/qwen3-coder-30b-a3b", "qwen/qwen3-coder-480b-a35b", "qwen/qwen3-coder-flash", "qwen/qwen3-coder-next", "qwen/qwen3-coder-plus-2025-07-22", "qwen/qwen3-coder-plus-2025-09-23", "qwen/qwen3-embedding-0.6b", "qwen/qwen3-embedding-4b", "qwen/qwen3-embedding-8b", "qwen/qwen3-max", "qwen/qwen3-max-2025-09-23", "qwen/qwen3-max-2026-01-23", "qwen/qwen3-max-preview", "qwen/qwen3-max-thinking", "qwen/qwen3-next-80b", "qwen/qwen3-next-80b-a3b", "qwen/qwen3-next-80b-a3b-instruct", "qwen/qwen3-next-80b-a3b-thinking", "qwen/qwen3-omni-30b-a3b", "qwen/qwen3-omni-30b-a3b-thinking", "qwen/qwen3-reranker", "qwen/qwen3-reranker-0.6b", "qwen/qwen3-reranker-4b", "qwen/qwen3-reranker-8b", "qwen/qwen3-tts", "qwen/qwen3-tts-voicedesign", "qwen/qwen3-vl-235b-a22b", "qwen/qwen3-vl-235b-a22b-instruct", "qwen/qwen3-vl-235b-a22b-thinking", "qwen/qwen3-vl-30b-a3b", "qwen/qwen3-vl-30b-a3b-instruct", "qwen/qwen3-vl-30b-a3b-thinking", "qwen/qwen3-vl-32b-instruct", "qwen/qwen3-vl-32b-thinking", "qwen/qwen3-vl-8b", "qwen/qwen3-vl-8b-instruct", "qwen/qwen3-vl-8b-thinking", "qwen/qwen3-vl-flash-2025-10-15", "qwen/qwen3-vl-flash-2026-01-22", "qwen/qwen3-vl-plus-2025-09-23", "qwen/qwen3-vl-plus-2025-12-19", "qwen/qwen3.5-122b-a10b", "qwen/qwen3.5-27b", "qwen/qwen3.5-35b-a3b", "qwen/qwen3.5-397b-a17b", "qwen/qwen3.5-9b", "qwen/qwen3.5-flash", "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19", "qwen/qwen3.5-plus", "qwen/qwen3.5-plus-2026-02-15", "qwen/qwen3.5-plus-2026-04-20", "qwen/qwen3.6-27b", "qwen/qwen3.6-35b-a3b", "qwen/qwen3.6-flash", "qwen/qwen3.6-max-preview", "qwen/qwen3.6-plus", "qwen/qwen3.7-max", "qwen/qwen3.7-max-2026-05-17", "qwen/qwen3.7-plus", "qwen/qwen3.7-plus-2026-05-26", "qwen/qwen3.8-2.4t-a95b", "qwen/qwen3.8-27b", "qwen/qwen3.8-flash", "qwen/qwen3.8-max", "qwen/qwen3.8-max-0902", "qwen/qwq-32b", "qwen/qwq-plus", "qwen/text-embedding-v3", "qwen/text-embedding-v4", "qwen/wan2.7-t2v", "qwen/wan3.0-video", "qwen/wan3.0-video-prime", "reka-edge", "reka-edge-2603", "reka-flash", "reka-flash-research", "reka/reka-edge", "reka/reka-edge-2603", "reka/reka-flash", "reka/reka-flash-research", "relace/relace-rank", "relace/relace-search", "sakana/fugu-ultra", "sakana/namazu", "spacex-ai/grok-4.20", "spacex-ai/grok-4.20-multi-agent-beta", "spacex-ai/grok-4.20-multi-agent-beta-0309", "spacex-ai/grok-4.3", "spacex-ai/grok-4.5", "spacex-ai/grok-4.6", "spacex-ai/grok-build-0.1", "spacex-ai/grok-imagine-image", "spacex-ai/grok-imagine-image-2.0", "spacex-ai/grok-imagine-video", "spacex-ai/grok-imagine-video-1.5", "spacex-ai/grok-transcribe", "spacex-ai/grok-tts", "spacex-ai/grok-voice-think-fast-2.0", "stability-ai/stable-diffusion-xl-base-1.0", "stepfun/step-1-32k", "stepfun/step-1-8k", "stepfun/step-1o-audio", "stepfun/step-1o-turbo-vision", "stepfun/step-1o-vision-32k", "stepfun/step-1v-32k", "stepfun/step-1v-8k", "stepfun/step-1x-edit", "stepfun/step-1x-medium", "stepfun/step-2-16k", "stepfun/step-2-16k-exp", "stepfun/step-2-mini", "stepfun/step-2x-large", "stepfun/step-3", "stepfun/step-3.5-flash", "stepfun/step-3.7-flash", "stepfun/step-asr", "stepfun/step-asr-1.1-stream", "stepfun/step-audio-2", "stepfun/step-audio-r1.1", "stepfun/step-image-edit-2", "stepfun/step-r1-v-mini", "stepfun/step-tts-2", "stepfun/step-tts-mini", "stepfun/stepaudio-2-asr-pro", "stepfun/stepaudio-2.5-asr", "stepfun/stepaudio-2.5-tts", "tencent/hunyuan-a13b-instruct", "tencent/hy3", "tencent/hy3-preview", "tencent/hy3:free", "tencent/hy4-preview", "thedrummer/cydonia-24b-v4.1", "thedrummer/skyfall-36b-v2", "thinking-machines/inkling", "thinking-machines/inkling-small", "upstage/document-ocr", "upstage/document-parse", "upstage/solar-embedding-1-large-passage", "upstage/solar-embedding-1-large-query", "upstage/solar-embedding-2-passage", "upstage/solar-embedding-2-query", "upstage/solar-mini", "upstage/solar-pro-2", "upstage/solar-pro-3", "upstage/solar-pro-4", "venice/gemma-4-uncensored", "venice/venice-role-play-uncensored", "venice/venice-uncensored-1.2", "voyage/rerank-1", "voyage/rerank-2", "voyage/rerank-2-lite", "voyage/rerank-2.5", "voyage/rerank-2.5-lite", "voyage/rerank-lite-1", "voyage/voyage-01", "voyage/voyage-02", "voyage/voyage-2", "voyage/voyage-3", "voyage/voyage-3-large", "voyage/voyage-3-lite", "voyage/voyage-3.5", "voyage/voyage-3.5-lite", "voyage/voyage-4", "voyage/voyage-4-large", "voyage/voyage-4-lite", "voyage/voyage-code-2", "voyage/voyage-code-3", "voyage/voyage-code-4", "voyage/voyage-context-3", "voyage/voyage-finance-2", "voyage/voyage-large-2", "voyage/voyage-large-2-instruct", "voyage/voyage-law-2", "voyage/voyage-lite-01", "voyage/voyage-lite-01-instruct", "voyage/voyage-lite-02-instruct", "voyage/voyage-multilingual-2", "voyage/voyage-multimodal-3", "voyage/voyage-multimodal-3.5", "x-ai/grok-voice-think-fast-2.0", "xiaomi/mimo-v2.5", "xiaomi/mimo-v2.5-asr", "xiaomi/mimo-v2.5-pro", "xiaomi/mimo-v2.5-pro-ultraspeed", "xiaomi/mimo-v2.5-tts-voiceclone:free", "xiaomi/mimo-v2.5-tts-voicedesign:free", "xiaomi/mimo-v2.5-tts:free", "z-ai/autoglm-phone-9b-multilingual", "z-ai/glm-4-32b", "z-ai/glm-4.5", "z-ai/glm-4.5-air", "z-ai/glm-4.5-air-x", "z-ai/glm-4.5-x", "z-ai/glm-4.5v", "z-ai/glm-4.6", "z-ai/glm-4.6v", "z-ai/glm-4.6v-flash", "z-ai/glm-4.7", "z-ai/glm-4.7-flash", "z-ai/glm-4.7-flash-heretic", "z-ai/glm-5", "z-ai/glm-5-turbo", "z-ai/glm-5.1", "z-ai/glm-5.2", "z-ai/glm-5.3", "z-ai/glm-5.3-flash", "z-ai/glm-5v-turbo", "zai-org/glm-4.5-air", "zai/glm-5"]
+KnownModelId = Literal["ai21/jamba-1.5-large", "ai21/jamba-1.5-mini", "ai21/jamba-large-1.5", "ai21/jamba-mini-1.5", "aion-labs/aion-2.0", "aion-labs/aion-3.0", "aion-labs/aion-3.0-mini", "aion-labs/aion-rp-llama-3.1-8b", "allenai/molmo-2-8b", "amazon/nova-2-lite", "amazon/nova-lite-1.0", "amazon/nova-micro-1.0", "amazon/nova-premier", "amazon/nova-pro-1.0", "anthropic/claude-3-haiku", "anthropic/claude-3.5-haiku", "anthropic/claude-3.7-sonnet", "anthropic/claude-fable-5", "anthropic/claude-fable-5.1", "anthropic/claude-haiku-4.5", "anthropic/claude-opus-4", "anthropic/claude-opus-4.1", "anthropic/claude-opus-4.5", "anthropic/claude-opus-4.6", "anthropic/claude-opus-4.7", "anthropic/claude-opus-4.8", "anthropic/claude-opus-5", "anthropic/claude-sonnet-4", "anthropic/claude-sonnet-4.5", "anthropic/claude-sonnet-4.6", "anthropic/claude-sonnet-5", "arcee-ai/trinity-large", "arcee-ai/trinity-large-thinking", "arcee-ai/trinity-mini", "baai/bge-m3", "baai/bge-reranker-v2-m3", "baidu/cobuddy", "baidu/ernie-4.5-0.3b", "baidu/ernie-4.5-21b-a3b", "baidu/ernie-4.5-300b-a47b", "baidu/ernie-4.5-turbo", "baidu/ernie-4.5-vl-28b-a3b", "baidu/ernie-4.5-vl-424b-a47b", "baidu/ernie-5.0", "baidu/ernie-5.1", "baidu/ernie-x1.1", "black-forest-labs/flux-1-dev", "black-forest-labs/flux-1-kontext-max", "black-forest-labs/flux-1-kontext-pro", "black-forest-labs/flux-1-schnell", "black-forest-labs/flux-1.1-pro", "black-forest-labs/flux-1.1-pro-ultra", "black-forest-labs/flux-2-dev", "black-forest-labs/flux-2-flex", "black-forest-labs/flux-2-klein-4b", "black-forest-labs/flux-2-klein-9b", "black-forest-labs/flux-2-max", "black-forest-labs/flux-2-pro", "black-forest-labs/flux-3-video", "bytedance/seed-1.6", "bytedance/seed-1.6-2025-06-15", "bytedance/seed-1.6-2025-09-15", "bytedance/seed-1.6-2025-10-15", "bytedance/seed-1.6-250915", "bytedance/seed-1.6-flash", "bytedance/seed-1.6-flash-2025-06-15", "bytedance/seed-1.6-flash-2025-07-15", "bytedance/seed-1.6-flash-2025-08-28", "bytedance/seed-1.6-flash-250715", "bytedance/seed-1.8", "bytedance/seed-1.8-2025-12-28", "bytedance/seed-2.0-code-preview-2026-02-15", "bytedance/seed-2.0-lite", "bytedance/seed-2.0-lite-2026-04-28", "bytedance/seed-2.0-lite-260428", "bytedance/seed-2.0-mini", "bytedance/seed-2.0-mini-2026-04-28", "bytedance/seed-2.0-mini-260428", "bytedance/seed-2.0-pro", "bytedance/seed-2.1-turbo", "bytedance/seed-oss-36b-instruct", "bytedance/seed-translation", "bytedance/seedance-1.5-pro", "bytedance/seedance-2.0", "bytedance/seedance-2.0-fast", "bytedance/seedance-2.0-mini-260615", "bytedance/seedream-5.0-pro", "bytedance/ui-tars-1.5-7b", "cohere/command-a", "cohere/command-r", "cohere/command-r-7b", "cohere/command-r-plus", "cohere/command-r7b", "cohere/embed-english-v3", "cohere/embed-multilingual-v3", "cohere/embed-v4", "cohere/parse-v5.0", "cohere/rerank-v3.5", "cohere/rerank-v4.0-fast", "cohere/rerank-v4.0-pro", "crofai/greg-1-mini", "crofai/greg-2-super", "crofai/greg-2-ultra", "crofai/greg-rp", "deepseek/deepseek-ocr", "deepseek/deepseek-ocr-2", "deepseek/deepseek-r1", "deepseek/deepseek-r1-0528", "deepseek/deepseek-r1-2025-05-28", "deepseek/deepseek-r1-distill-llama-70b", "deepseek/deepseek-r1-turbo", "deepseek/deepseek-v3", "deepseek/deepseek-v3-0324", "deepseek/deepseek-v3-2025-03-24", "deepseek/deepseek-v3-turbo", "deepseek/deepseek-v3.1", "deepseek/deepseek-v3.1-terminus", "deepseek/deepseek-v3.2", "deepseek/deepseek-v3.2-exp", "deepseek/deepseek-v4-flash", "deepseek/deepseek-v4-flash-0731", "deepseek/deepseek-v4-flash-vision-exp", "deepseek/deepseek-v4-pro", "deepseek/deepseek-v4-pro-0813", "deepseek/deepseek-v4.1-flash-1017", "deepseek/deepseek-v4.1-flash-beta", "deepseek/deepseek-v4.1-flash-preview", "early-access/ea-29b-a4b", "eleven-labs/eleven-flash-v2", "eleven-labs/eleven-flash-v2.5", "eleven-labs/eleven-multilingual-v2", "eleven-labs/eleven-turbo-v2", "eleven-labs/eleven-turbo-v2.5", "eleven-labs/eleven-v3", "eleven-labs/eleven-v4", "eleven-labs/eleven-v4-turbo", "eleven-labs/music", "eleven-labs/scribe-v2", "essential-ai/rnj-1", "google/embeddinggemma-300m", "google/gemini-2.5-flash", "google/gemini-2.5-flash-image", "google/gemini-2.5-flash-lite", "google/gemini-2.5-pro", "google/gemini-3-flash-preview", "google/gemini-3-pro-image", "google/gemini-3.1-flash-image", "google/gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite-image", "google/gemini-3.1-flash-live-preview", "google/gemini-3.1-flash-tts-preview", "google/gemini-3.1-pro-preview", "google/gemini-3.1-pro-preview-customtools", "google/gemini-3.5-flash", "google/gemini-3.5-flash-lite", "google/gemini-3.5-transcribe", "google/gemini-3.6-flash", "google/gemini-3.7-flash", "google/gemini-3.8-flash", "google/gemini-embedding-001", "google/gemini-embedding-2", "google/gemini-robotics-er-2-preview", "google/gemma-3-12b", "google/gemma-3-27b", "google/gemma-3-27b-it", "google/gemma-3-4b", "google/gemma-4-12b", "google/gemma-4-26b-a4b", "google/gemma-4-26b-a4b-it", "google/gemma-4-26b-a4b:free", "google/gemma-4-31b", "google/gemma-4-31b-it", "google/gemma-4-31b:free", "google/imagen-4.0-preview", "google/lyria-3-clip-preview", "google/lyria-3-pro-preview", "google/veo-3.1", "google/veo-3.1-fast", "google/veo-3.1-fast-preview", "google/veo-3.1-lite-preview", "google/veo-3.1-preview", "hexgrad/kokoro-82m", "ibm/granite-4.1-8b", "ibm/granite-4.2-30b", "ibm/granite-4.2-3b", "ibm/granite-4.2-8b", "inception/mercury-2", "inception/mercury-2.5", "inception/mercury-edit-2", "inclusionai/ling-2.6-1t", "inclusionai/ling-2.6-flash", "inclusionai/ling-3.0-flash", "inclusionai/ling-3.0-flash-fin", "inclusionai/ling-3.0-flash-sante", "inclusionai/ling-3.0-flash-vl", "inclusionai/ling-flash-2.0", "inclusionai/ring-2.6-1t", "inclusionai/ring-flash-2.0", "inflection/inflection-3-pi", "inflection/inflection-3-productivity", "jetbrains/mellum2-12b-a2.5b", "kwaipilot/kat-coder-air-v2.5", "kwaipilot/kat-coder-pro", "kwaipilot/kat-coder-pro-v2", "kwaipilot/kat-coder-pro-v2.5", "lightricks/ltx-2.3-fast", "lightricks/ltx-2.3-pro", "lightricks/ltx-2.5-fast", "lightricks/ltx-2.5-pro", "liquid-ai/lfm-2-24b-a2b", "liquid-ai/lfm-2.5-8b-a1b", "ltx-2-3-fast", "ltx-2-3-pro", "ltx-2-5-fast", "ltx-2-5-pro", "medaibase/antangelmed", "meituan/longcat-2.0", "meituan/longcat-flash-lite", "meta/llama-3.1-70b", "meta/llama-3.1-8b", "meta/llama-3.2-3b", "meta/llama-3.3-70b", "meta/llama-3.3-70b-instruct", "meta/llama-4-maverick", "meta/llama-4-scout", "meta/llama-guard-4-12b", "meta/llama-prompt-guard-2-22m", "meta/llama-prompt-guard-2-86m", "meta/muse-glimmer-30b", "meta/muse-image-1.0", "meta/muse-spark-1.2", "meta/muse-spark-1.2-contributor", "meta/muse-spark-1.3", "meta/muse-spark-1.3-contributor", "meta/muse-voice-transcribe-1.0", "microsoft/phi-4", "microsoft/wizardlm-2-8x22b", "mindai/macaron-v1-tall", "mindai/macaron-v1-venti", "minimax/h3", "minimax/hailuo-02", "minimax/hailuo-2.3", "minimax/hailuo-2.3-fast", "minimax/image-01", "minimax/m2-her", "minimax/minimax-m1-80k", "minimax/minimax-m2", "minimax/minimax-m2-her", "minimax/minimax-m2.1", "minimax/minimax-m2.5", "minimax/minimax-m2.5-highspeed", "minimax/minimax-m2.7", "minimax/minimax-m3", "minimax/music-2.6", "minimax/music-3.0", "minimax/speech-2.6-hd", "minimax/speech-2.6-turbo", "minimax/speech-2.8-hd", "minimax/speech-2.8-turbo", "minimax/speech-2.8:free", "mistral/codestral", "mistral/codestral-embed", "mistral/devstral-2", "mistral/devstral-2.0", "mistral/devstral-medium-1.0", "mistral/devstral-small-1.1", "mistral/leanstral-1.5:free", "mistral/magistral-medium-1.2", "mistral/magistral-small-1.2", "mistral/ministral-3-14b", "mistral/ministral-3-3b", "mistral/ministral-3-8b", "mistral/ministral-3.0-14b", "mistral/ministral-3.0-3b", "mistral/ministral-3.0-8b", "mistral/mistral-embed", "mistral/mistral-large-2.0", "mistral/mistral-large-2.1", "mistral/mistral-large-3", "mistral/mistral-large-3.0", "mistral/mistral-medium-3.0", "mistral/mistral-medium-3.1", "mistral/mistral-medium-3.5", "mistral/mistral-moderation-2", "mistral/mistral-nemo", "mistral/mistral-nemo-12b", "mistral/mistral-nemo-2407", "mistral/mistral-small-24b-2501", "mistral/mistral-small-3.2", "mistral/mistral-small-3.2-24b-instruct", "mistral/mistral-small-4", "mistral/ocr-3", "mistral/ocr-4", "mistral/ocr-4.1", "mistral/pixtral-large", "mistral/voxtral-mini", "mistral/voxtral-mini-transcribe-2", "mistral/voxtral-small", "moonshotai/kimi-k2", "moonshotai/kimi-k2-0905", "moonshotai/kimi-k2-2025-07-11", "moonshotai/kimi-k2-thinking", "moonshotai/kimi-k2.5", "moonshotai/kimi-k2.6", "moonshotai/kimi-k2.7-code", "moonshotai/kimi-k2.7-code-highspeed", "moonshotai/kimi-k3", "moonshotai/kimi-k3-fast", "morph/morph-compactor", "morph/morph-v3-fast", "morph/morph-v3-large", "morph/morph-warp-grep-v2.1", "nex-agi/deepseek-v3.1-nex-n1", "nous/hermes-3-llama-3.1-405b", "nous/hermes-3-llama-3.1-70b", "nous/hermes-4-405b", "nousresearch/hermes-3-llama-3.1-70b", "nousresearch/hermes-4-405b", "nvidia/nemotron-3-nano-30b-a3b", "nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-lightning", "nvidia/nemotron-nano-12b-v2-vl", "nvidia/nemotron-nano-9b-v2", "nvidia/nvidia-nemotron-3-nano-30b-a3b", "nvidia/nvidia-nemotron-nano-12b-v2-vl", "nvidia/riva-tts-de-de", "nvidia/riva-tts-en-us", "nvidia/riva-tts-es-es", "nvidia/riva-tts-it-it", "openai/babbage-002", "openai/chat-latest", "openai/chatgpt-4o", "openai/davinci-002", "openai/gpt-3.5-turbo-0613", "openai/gpt-3.5-turbo-16k", "openai/gpt-3.5-turbo-2023-03-21", "openai/gpt-3.5-turbo-2023-11-06", "openai/gpt-4", "openai/gpt-4-2023-06-13", "openai/gpt-4.1", "openai/gpt-4.1-mini", "openai/gpt-4.1-nano", "openai/gpt-4o", "openai/gpt-4o-2024-05-13", "openai/gpt-4o-2024-08-06", "openai/gpt-4o-2024-11-20", "openai/gpt-4o-mini", "openai/gpt-4o-mini-transcribe", "openai/gpt-4o-mini-tts", "openai/gpt-4o-transcribe", "openai/gpt-5", "openai/gpt-5-mini", "openai/gpt-5-nano", "openai/gpt-5-pro", "openai/gpt-5.1", "openai/gpt-5.2", "openai/gpt-5.2-codex", "openai/gpt-5.2-pro", "openai/gpt-5.3-codex", "openai/gpt-5.4", "openai/gpt-5.4-mini", "openai/gpt-5.4-nano", "openai/gpt-5.4-pro", "openai/gpt-5.5", "openai/gpt-5.5-pro", "openai/gpt-5.6-luna", "openai/gpt-5.6-luna-pro", "openai/gpt-5.6-sol", "openai/gpt-5.6-sol-pro", "openai/gpt-5.6-terra", "openai/gpt-5.6-terra-pro", "openai/gpt-6-astra", "openai/gpt-6-astra-pro", "openai/gpt-image-1", "openai/gpt-image-1-mini", "openai/gpt-image-1.5", "openai/gpt-image-2", "openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "openai/gpt-oss-safeguard-120b", "openai/gpt-oss-safeguard-20b", "openai/gpt-realtime", "openai/gpt-realtime-1.5", "openai/gpt-realtime-2", "openai/gpt-realtime-2.1", "openai/gpt-realtime-2.1-mini", "openai/gpt-transcribe", "openai/o1", "openai/o1-mini", "openai/o1-pro", "openai/o3", "openai/o3-mini", "openai/o3-pro", "openai/o4-mini", "openai/omni-moderation", "openai/sora-2", "openai/sora-2-pro", "openai/text-embedding-3-large", "openai/text-embedding-3-small", "openai/text-embedding-ada-002", "openai/whisper-1", "openai/whisper-large-v3", "openai/whisper-large-v3-turbo", "opencompass/compassjudger-1-32b-instruct", "perplexity/pplx-embed-v1-0.6b", "perplexity/pplx-embed-v1-4b", "phaseo/auto", "phaseo/free", "poolside/laguna-m.1:free", "poolside/laguna-s-2.1:free", "poolside/laguna-xs-2.1:free", "qwen/qvq-max", "qwen/qwen-flash", "qwen/qwen-flash-character", "qwen/qwen-image", "qwen/qwen-image-edit", "qwen/qwen-image-edit-2025-10-30", "qwen/qwen-image-edit-2025-12-15", "qwen/qwen-image-edit-max", "qwen/qwen-image-max", "qwen/qwen-image-plus", "qwen/qwen-max", "qwen/qwen-mt-flash", "qwen/qwen-mt-lite", "qwen/qwen-mt-plus", "qwen/qwen-mt-turbo", "qwen/qwen-plus-2025-01-25", "qwen/qwen-plus-2025-04-28", "qwen/qwen-plus-2025-07-14", "qwen/qwen-plus-2025-07-28", "qwen/qwen-plus-2025-09-11", "qwen/qwen-plus-2025-12-01", "qwen/qwen-plus-character", "qwen/qwen-turbo-2024-11-01", "qwen/qwen-turbo-2025-04-28", "qwen/qwen-vl-max-2025-04-08", "qwen/qwen-vl-max-2025-08-13", "qwen/qwen-vl-plus-2025-01-25", "qwen/qwen-vl-plus-2025-05-07", "qwen/qwen-vl-plus-2025-08-15", "qwen/qwen2.5-14b", "qwen/qwen2.5-14b-1m", "qwen/qwen2.5-32b", "qwen/qwen2.5-72b", "qwen/qwen2.5-7b", "qwen/qwen2.5-7b-1m", "qwen/qwen2.5-coder-7b", "qwen/qwen2.5-vl-32b", "qwen/qwen2.5-vl-32b-instruct", "qwen/qwen2.5-vl-72b", "qwen/qwen2.5-vl-72b-instruct", "qwen/qwen2.5-vl-7b", "qwen/qwen3-0.6b", "qwen/qwen3-1.7b", "qwen/qwen3-14b", "qwen/qwen3-235b-a22b", "qwen/qwen3-235b-a22b-2507", "qwen/qwen3-235b-a22b-instruct-2507", "qwen/qwen3-235b-a22b-thinking-2507", "qwen/qwen3-30b-a3b", "qwen/qwen3-30b-a3b-2507", "qwen/qwen3-30b-a3b-instruct-2507", "qwen/qwen3-30b-a3b-thinking-2507", "qwen/qwen3-32b", "qwen/qwen3-4b", "qwen/qwen3-8b", "qwen/qwen3-asr-0.6b", "qwen/qwen3-asr-1.7b", "qwen/qwen3-coder", "qwen/qwen3-coder-30b-a3b", "qwen/qwen3-coder-480b-a35b", "qwen/qwen3-coder-flash", "qwen/qwen3-coder-next", "qwen/qwen3-coder-plus-2025-07-22", "qwen/qwen3-coder-plus-2025-09-23", "qwen/qwen3-embedding-0.6b", "qwen/qwen3-embedding-4b", "qwen/qwen3-embedding-8b", "qwen/qwen3-max", "qwen/qwen3-max-2025-09-23", "qwen/qwen3-max-2026-01-23", "qwen/qwen3-max-preview", "qwen/qwen3-max-thinking", "qwen/qwen3-next-80b", "qwen/qwen3-next-80b-a3b", "qwen/qwen3-next-80b-a3b-instruct", "qwen/qwen3-next-80b-a3b-thinking", "qwen/qwen3-omni-30b-a3b", "qwen/qwen3-omni-30b-a3b-thinking", "qwen/qwen3-reranker", "qwen/qwen3-reranker-0.6b", "qwen/qwen3-reranker-4b", "qwen/qwen3-reranker-8b", "qwen/qwen3-tts", "qwen/qwen3-tts-voicedesign", "qwen/qwen3-vl-235b-a22b", "qwen/qwen3-vl-235b-a22b-instruct", "qwen/qwen3-vl-235b-a22b-thinking", "qwen/qwen3-vl-30b-a3b", "qwen/qwen3-vl-30b-a3b-instruct", "qwen/qwen3-vl-30b-a3b-thinking", "qwen/qwen3-vl-32b-instruct", "qwen/qwen3-vl-32b-thinking", "qwen/qwen3-vl-8b", "qwen/qwen3-vl-8b-instruct", "qwen/qwen3-vl-8b-thinking", "qwen/qwen3-vl-flash-2025-10-15", "qwen/qwen3-vl-flash-2026-01-22", "qwen/qwen3-vl-plus-2025-09-23", "qwen/qwen3-vl-plus-2025-12-19", "qwen/qwen3.5-122b-a10b", "qwen/qwen3.5-27b", "qwen/qwen3.5-35b-a3b", "qwen/qwen3.5-397b-a17b", "qwen/qwen3.5-9b", "qwen/qwen3.5-flash", "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19", "qwen/qwen3.5-plus", "qwen/qwen3.5-plus-2026-02-15", "qwen/qwen3.5-plus-2026-04-20", "qwen/qwen3.6-27b", "qwen/qwen3.6-35b-a3b", "qwen/qwen3.6-flash", "qwen/qwen3.6-max-preview", "qwen/qwen3.6-plus", "qwen/qwen3.7-max", "qwen/qwen3.7-max-2026-05-17", "qwen/qwen3.7-plus", "qwen/qwen3.7-plus-2026-05-26", "qwen/qwen3.8-2.4t-a95b", "qwen/qwen3.8-27b", "qwen/qwen3.8-flash", "qwen/qwen3.8-max", "qwen/qwen3.8-max-0902", "qwen/qwq-32b", "qwen/qwq-plus", "qwen/text-embedding-v3", "qwen/text-embedding-v4", "qwen/wan2.7-t2v", "qwen/wan3.0-video", "qwen/wan3.0-video-prime", "reka-edge", "reka-edge-2603", "reka-flash", "reka-flash-research", "reka/reka-edge", "reka/reka-edge-2603", "reka/reka-flash", "reka/reka-flash-research", "relace/relace-rank", "relace/relace-search", "sakana/fugu-ultra", "sakana/namazu", "spacex-ai/grok-4.20", "spacex-ai/grok-4.20-multi-agent-beta", "spacex-ai/grok-4.20-multi-agent-beta-0309", "spacex-ai/grok-4.3", "spacex-ai/grok-4.5", "spacex-ai/grok-4.6", "spacex-ai/grok-build-0.1", "spacex-ai/grok-imagine-image", "spacex-ai/grok-imagine-image-2.0", "spacex-ai/grok-imagine-video", "spacex-ai/grok-imagine-video-1.5", "spacex-ai/grok-transcribe", "spacex-ai/grok-tts", "spacex-ai/grok-voice-think-fast-2.0", "stability-ai/stable-diffusion-xl-base-1.0", "stepfun/step-1-32k", "stepfun/step-1-8k", "stepfun/step-1o-audio", "stepfun/step-1o-turbo-vision", "stepfun/step-1o-vision-32k", "stepfun/step-1v-32k", "stepfun/step-1v-8k", "stepfun/step-1x-edit", "stepfun/step-1x-medium", "stepfun/step-2-16k", "stepfun/step-2-16k-exp", "stepfun/step-2-mini", "stepfun/step-2x-large", "stepfun/step-3", "stepfun/step-3.5-flash", "stepfun/step-3.7-flash", "stepfun/step-asr", "stepfun/step-asr-1.1-stream", "stepfun/step-audio-2", "stepfun/step-audio-r1.1", "stepfun/step-image-edit-2", "stepfun/step-r1-v-mini", "stepfun/step-tts-2", "stepfun/step-tts-mini", "stepfun/stepaudio-2-asr-pro", "stepfun/stepaudio-2.5-asr", "stepfun/stepaudio-2.5-tts", "tencent/hunyuan-a13b-instruct", "tencent/hy3", "tencent/hy3-preview", "tencent/hy3:free", "tencent/hy4-preview", "thedrummer/cydonia-24b-v4.1", "thedrummer/skyfall-36b-v2", "thinking-machines/inkling", "thinking-machines/inkling-small", "upstage/document-ocr", "upstage/document-parse", "upstage/solar-embedding-1-large-passage", "upstage/solar-embedding-1-large-query", "upstage/solar-embedding-2-passage", "upstage/solar-embedding-2-query", "upstage/solar-mini", "upstage/solar-pro-2", "upstage/solar-pro-3", "upstage/solar-pro-4", "venice/gemma-4-uncensored", "venice/venice-role-play-uncensored", "venice/venice-uncensored-1.2", "voyage/rerank-1", "voyage/rerank-2", "voyage/rerank-2-lite", "voyage/rerank-2.5", "voyage/rerank-2.5-lite", "voyage/rerank-lite-1", "voyage/voyage-01", "voyage/voyage-02", "voyage/voyage-2", "voyage/voyage-3", "voyage/voyage-3-large", "voyage/voyage-3-lite", "voyage/voyage-3.5", "voyage/voyage-3.5-lite", "voyage/voyage-4", "voyage/voyage-4-large", "voyage/voyage-4-lite", "voyage/voyage-code-2", "voyage/voyage-code-3", "voyage/voyage-code-4", "voyage/voyage-context-3", "voyage/voyage-finance-2", "voyage/voyage-large-2", "voyage/voyage-large-2-instruct", "voyage/voyage-law-2", "voyage/voyage-lite-01", "voyage/voyage-lite-01-instruct", "voyage/voyage-lite-02-instruct", "voyage/voyage-multilingual-2", "voyage/voyage-multimodal-3", "voyage/voyage-multimodal-3.5", "x-ai/grok-voice-think-fast-2.0", "xiaomi/mimo-v2.5", "xiaomi/mimo-v2.5-asr", "xiaomi/mimo-v2.5-pro", "xiaomi/mimo-v2.5-pro-ultraspeed", "xiaomi/mimo-v2.5-tts-voiceclone:free", "xiaomi/mimo-v2.5-tts-voicedesign:free", "xiaomi/mimo-v2.5-tts:free", "z-ai/autoglm-phone-9b-multilingual", "z-ai/glm-4-32b", "z-ai/glm-4.5", "z-ai/glm-4.5-air", "z-ai/glm-4.5-air-x", "z-ai/glm-4.5-x", "z-ai/glm-4.5v", "z-ai/glm-4.6", "z-ai/glm-4.6v", "z-ai/glm-4.6v-flash", "z-ai/glm-4.7", "z-ai/glm-4.7-flash", "z-ai/glm-4.7-flash-heretic", "z-ai/glm-5", "z-ai/glm-5-turbo", "z-ai/glm-5.1", "z-ai/glm-5.2", "z-ai/glm-5.3", "z-ai/glm-5.3-flash", "z-ai/glm-5v-turbo", "zai-org/glm-4.5-air", "zai/glm-5"]
 
 class LegacyDecisionBoxQuestion(TypedDict):
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["box"]
 
 class LegacyDecisionsRequest(TypedDict):
@@ -1510,14 +1762,14 @@ class LegacyDecisionsRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	images: NotRequired[List[Union[str, DecisionImage]]]
 	meta: NotRequired[bool]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[DecisionProviderOptions]
 	questions: Dict[str, Any]
 	routing: NotRequired[ProviderRoutingOptions]
-	state: Union[str, Dict[str, Any], List[Any]]
+	state: Union[str, OcrResponse, List[Any]]
 
 class LegacyDecisionsResponse(TypedDict):
 	answers: NotRequired[OcrResponse]
@@ -1640,7 +1892,7 @@ class ManagementKeyUpdateResponse(TypedDict):
 	message: str
 	ok: Literal[true]
 
-MessageContentPart = Union["TextContentPart", "ImageContentPart", "AudioContentPart", "VideoContentPart", "ToolCallContentPart"]
+MessageContentPart = Union["TextContentPart", "ImageContentPart", "AudioContentPart", "VideoContentPart", "FileContentPart", "ToolCallContentPart"]
 
 class Model(TypedDict):
 	aliases: List[str]
@@ -1902,7 +2154,7 @@ class ObservabilityDestination(TypedDict):
 	privacy_mode: bool
 	rule_groups: List[ObservabilityRuleGroup]
 	sampling_rate: float
-	type: Literal["otel_collector", "webhook"]
+	type: Literal["arize", "axiom", "bigquery", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "snowflake", "wandb_weave", "webhook"]
 	updated_at: NotRequired[Optional[str]]
 	workspace_id: str
 
@@ -1919,7 +2171,7 @@ class ObservabilityDestinationCreateRequest(TypedDict):
 	privacy_mode: NotRequired[bool]
 	rule_groups: NotRequired[List[ObservabilityRuleGroup]]
 	sampling_rate: NotRequired[float]
-	type: Literal["otel_collector", "webhook"]
+	type: Literal["arize", "axiom", "bigquery", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "snowflake", "wandb_weave", "webhook"]
 
 class ObservabilityDestinationListResponse(TypedDict):
 	data: List[ObservabilityDestination]
@@ -1941,7 +2193,7 @@ class ObservabilityDestinationPolicyInput(TypedDict):
 class ObservabilityDestinationResponse(TypedDict):
 	data: ObservabilityDestination
 
-ObservabilityDestinationType = Literal["otel_collector", "webhook"]
+ObservabilityDestinationType = Literal["arize", "axiom", "bigquery", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "snowflake", "wandb_weave", "webhook"]
 
 class ObservabilityDestinationUpdateRequest(TypedDict):
 	config: NotRequired[Dict[str, Any]]
@@ -2017,7 +2269,7 @@ class OpenAIDecisionsRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	input: Union[str, List[DecisionInputMessage]]
 	meta: NotRequired[bool]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
@@ -2044,15 +2296,21 @@ class OpenAIModelsResponse(TypedDict):
 	object: Literal["list"]
 
 class OpenAIReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	effort: NotRequired[Optional[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	mode: NotRequired[Literal["standard", "pro"]]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]
 
-OrganisationId = Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthracite-org", "anthropic", "arcee-ai", "baai", "baichuan", "baidu", "bigcode", "black-forest-labs", "bytedance", "bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor", "cyfragovpl", "databricks", "decart", "deepseek", "dots-studio", "early-access", "eleven-labs", "essential-ai", "fastino", "fish-audio", "github", "google", "gryphe", "hexgrad", "ibm", "ibm-granite", "inception", "inclusionai", "inference-net", "inflection", "intfloat", "jetbrains", "kblab", "kling", "kuaishou", "kwaipilot", "kwaivgi", "lg", "lightricks", "liquid-ai", "mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax", "mistral", "mistralai", "moonshotai", "morph", "naver-hyperclova", "near-ai", "nex-agi", "nous", "nousresearch", "novasearch", "nvidia", "openai", "openbmb", "opencompass", "opengvlab", "orcarouter", "ornith", "perceptron", "perplexity", "phala", "pixverse", "poe", "poolside", "prime-intellect", "prism-ml", "qwen", "reka", "relace", "runway", "sakana", "sao10k", "sapiens-ai", "sentence-transformers", "sference", "shanghai-ai-laboratory", "shengshu-ai", "snowflake", "sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun", "suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage", "venice", "vercel", "villanova-ai", "voyage", "windsurf", "writer", "xai", "xgenerationlab", "xiaomi", "z-ai", "zyphra"]
+class OpenAIWebSearchToolDefinition(TypedDict):
+	filters: NotRequired[Dict[str, Any]]
+	search_context_size: NotRequired[Literal["low", "medium", "high"]]
+	type: Literal["web_search", "web_search_2025_08_26", "web_search_preview", "web_search_preview_2025_03_11"]
+	user_location: NotRequired[OcrResponse]
 
-OrganisationIdList = List[Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthracite-org", "anthropic", "arcee-ai", "baai", "baichuan", "baidu", "bigcode", "black-forest-labs", "bytedance", "bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor", "cyfragovpl", "databricks", "decart", "deepseek", "dots-studio", "early-access", "eleven-labs", "essential-ai", "fastino", "fish-audio", "github", "google", "gryphe", "hexgrad", "ibm", "ibm-granite", "inception", "inclusionai", "inference-net", "inflection", "intfloat", "jetbrains", "kblab", "kling", "kuaishou", "kwaipilot", "kwaivgi", "lg", "lightricks", "liquid-ai", "mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax", "mistral", "mistralai", "moonshotai", "morph", "naver-hyperclova", "near-ai", "nex-agi", "nous", "nousresearch", "novasearch", "nvidia", "openai", "openbmb", "opencompass", "opengvlab", "orcarouter", "ornith", "perceptron", "perplexity", "phala", "pixverse", "poe", "poolside", "prime-intellect", "prism-ml", "qwen", "reka", "relace", "runway", "sakana", "sao10k", "sapiens-ai", "sentence-transformers", "sference", "shanghai-ai-laboratory", "shengshu-ai", "snowflake", "sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun", "suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage", "venice", "vercel", "villanova-ai", "voyage", "windsurf", "writer", "xai", "xgenerationlab", "xiaomi", "z-ai", "zyphra"]]
+OrganisationId = Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthracite-org", "anthropic", "arcee-ai", "baai", "baichuan", "baidu", "bigcode", "black-forest-labs", "bytedance", "bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor", "cyfragovpl", "databricks", "dealignai", "decart", "deepseek", "dots-studio", "early-access", "eleven-labs", "essential-ai", "fastino", "fish-audio", "github", "google", "gryphe", "hexgrad", "ibm", "ibm-granite", "inception", "inclusionai", "inference-net", "inflection", "intfloat", "jetbrains", "kblab", "kling", "kuaishou", "kwaipilot", "kwaivgi", "lg", "lightricks", "liquid-ai", "mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax", "mistral", "mistralai", "moonshotai", "morph", "naver-hyperclova", "near-ai", "nex-agi", "nous", "nousresearch", "novasearch", "nvidia", "openai", "openbmb", "opencompass", "opengvlab", "orcarouter", "ornith", "perceptron", "perplexity", "phala", "pixverse", "poe", "poolside", "prime-intellect", "prism-ml", "qwen", "reka", "relace", "runway", "sakana", "sao10k", "sapiens-ai", "sentence-transformers", "sference", "shanghai-ai-laboratory", "shengshu-ai", "snowflake", "sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun", "suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage", "venice", "vercel", "villanova-ai", "voyage", "windsurf", "writer", "xai", "xgenerationlab", "xiaomi", "z-ai", "zyphra"]
+
+OrganisationIdList = List[Literal["01-ai", "adept", "ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthracite-org", "anthropic", "arcee-ai", "baai", "baichuan", "baidu", "bigcode", "black-forest-labs", "bytedance", "bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor", "cyfragovpl", "databricks", "dealignai", "decart", "deepseek", "dots-studio", "early-access", "eleven-labs", "essential-ai", "fastino", "fish-audio", "github", "google", "gryphe", "hexgrad", "ibm", "ibm-granite", "inception", "inclusionai", "inference-net", "inflection", "intfloat", "jetbrains", "kblab", "kling", "kuaishou", "kwaipilot", "kwaivgi", "lg", "lightricks", "liquid-ai", "mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax", "mistral", "mistralai", "moonshotai", "morph", "naver-hyperclova", "near-ai", "nex-agi", "nous", "nousresearch", "novasearch", "nvidia", "openai", "openbmb", "opencompass", "opengvlab", "orcarouter", "ornith", "perceptron", "perplexity", "phala", "pixverse", "poe", "poolside", "prime-intellect", "prism-ml", "qwen", "reka", "relace", "runway", "sakana", "sao10k", "sapiens-ai", "sentence-transformers", "sference", "shanghai-ai-laboratory", "shengshu-ai", "snowflake", "sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun", "suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage", "venice", "vercel", "villanova-ai", "voyage", "windsurf", "writer", "xai", "xgenerationlab", "xiaomi", "z-ai", "zyphra"]]
 
 ParseBlock = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any]]
 
@@ -2108,7 +2366,7 @@ class Preset(TypedDict):
 	workspace_id: str
 
 class PresetConfig(TypedDict):
-	pass
+	prompt: NotRequired[PresetPromptTemplate]
 
 class PresetCreateRequest(TypedDict):
 	config: NotRequired[PresetConfig]
@@ -2125,9 +2383,52 @@ class PresetCreateResponse(TypedDict):
 class PresetForkRequest(TypedDict):
 	source_version_id: NotRequired[str]
 
+class PresetLabel(TypedDict):
+	created_at: NotRequired[Optional[str]]
+	label: str
+	updated_at: NotRequired[Optional[str]]
+	updated_by: NotRequired[Optional[str]]
+	version_id: str
+	version_label: Optional[str]
+	version_number: Optional[int]
+
+class PresetLabelDeleteResponse(TypedDict):
+	deleted: bool
+	label: str
+
+class PresetLabelListResponse(TypedDict):
+	data: List[PresetLabel]
+
+class PresetLabelResponse(TypedDict):
+	data: PresetLabel
+
+class PresetLabelSetRequest(TypedDict):
+	version: NotRequired[str]
+	version_id: NotRequired[str]
+
 class PresetListResponse(TypedDict):
 	data: List[Preset]
 	total_count: int
+
+class PresetPromptTemplate(TypedDict):
+	messages: List[PresetPromptTemplateMessage]
+	response_format: NotRequired[OcrResponse]
+	syntax: NotRequired[Literal["mustache-v1"]]
+	tool_choice: NotRequired[Any]
+	tools: NotRequired[List[OcrResponse]]
+	variables: NotRequired[Dict[str, Any]]
+
+class PresetPromptTemplateMessage(TypedDict):
+	content: Union[str, List[Dict[str, Any]]]
+	role: Literal["system", "developer", "user", "assistant"]
+
+class PresetPromptVariable(TypedDict):
+	default: NotRequired[Any]
+	description: NotRequired[str]
+	enum: NotRequired[List[str]]
+	max_length: NotRequired[int]
+	required: NotRequired[bool]
+	type: Literal["string", "number", "boolean", "enum", "array", "object", "any", "image"]
 
 class PresetPublisher(TypedDict):
 	handle: Optional[str]
@@ -2145,7 +2446,7 @@ class PresetResponse(TypedDict):
 class PresetTestRun(TypedDict):
 	baseline_preset_id: Optional[str]
 	completed_at: Optional[str]
-	config: PresetConfig
+	config: OcrResponse
 	created_at: str
 	created_by_user_id: Optional[str]
 	dataset_name: Optional[str]
@@ -2155,21 +2456,21 @@ class PresetTestRun(TypedDict):
 	preset_id: Optional[str]
 	started_at: Optional[str]
 	status: Literal["pending", "running", "completed", "failed", "cancelled"]
-	summary: PresetConfig
+	summary: OcrResponse
 	updated_at: str
 	workspace_id: str
 
 class PresetTestRunCreateRequest(TypedDict):
 	baseline_preset_id: NotRequired[str]
 	completed_at: NotRequired[str]
-	config: NotRequired[PresetConfig]
+	config: NotRequired[OcrResponse]
 	dataset_name: NotRequired[str]
 	description: NotRequired[str]
 	name: NotRequired[str]
 	preset_id: NotRequired[str]
 	started_at: NotRequired[str]
 	status: NotRequired[Literal["pending", "running", "completed", "failed", "cancelled"]]
-	summary: NotRequired[PresetConfig]
+	summary: NotRequired[OcrResponse]
 
 class PresetTestRunDetailResponse(TypedDict):
 	data: PresetTestRun
@@ -2187,7 +2488,7 @@ class PresetTestRunUpdateRequest(TypedDict):
 	name: NotRequired[Optional[str]]
 	started_at: NotRequired[Optional[str]]
 	status: NotRequired[Literal["pending", "running", "completed", "failed", "cancelled"]]
-	summary: NotRequired[PresetConfig]
+	summary: NotRequired[OcrResponse]
 
 class PresetUpdateRequest(TypedDict):
 	config: NotRequired[PresetConfig]
@@ -2210,6 +2511,7 @@ class PresetVersion(TypedDict):
 	created_by: str
 	description: NotRequired[Optional[str]]
 	id: str
+	labels: NotRequired[List[str]]
 	name: str
 	preset_id: str
 	release_notes: NotRequired[Optional[str]]
@@ -2302,10 +2604,16 @@ class PrivateModelUpdateRequest(TypedDict):
 
 class PromptCacheBreakpoint(TypedDict):
 	mode: NotRequired[Literal["explicit"]]
+	ttl: NotRequired[str]
 
 class PromptCacheOptions(TypedDict):
 	mode: NotRequired[Literal["implicit", "explicit"]]
 	ttl: NotRequired[str]
+
+class PromptTemplateReference(TypedDict):
+	id: str
+	variables: NotRequired[OcrResponse]
+	version: NotRequired[str]
 
 class Provider(TypedDict):
 	api_provider_id: NotRequired[str]
@@ -2395,7 +2703,7 @@ class ProviderRoutingOptions(TypedDict):
 	require_zero_data_retention: NotRequired[Optional[bool]]
 	required_data_region: NotRequired[Optional[str]]
 	required_execution_region: NotRequired[Optional[str]]
-	sort: NotRequired[Union[str, Dict[str, Any]]]
+	sort: NotRequired[Union[str, OcrResponse]]
 	zdr: NotRequired[Optional[bool]]
 
 class ProvisioningKey(TypedDict):
@@ -2495,23 +2803,23 @@ class RateLimitPolicyUpdateInput(TypedDict):
 RateLimitTargetType = Literal["key", "member", "department", "guardrail", "end_user_default"]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	effort: NotRequired[Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	mode: NotRequired[Literal["standard", "pro"]]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]
 
-RerankDocument = Union[str, Dict[str, Any]]
+RerankDocument = Union[str, "OcrResponse"]
 
 class RerankRequest(TypedDict):
 	debug: NotRequired[DebugOptions]
-	documents: Union[List[str], List[Dict[str, Any]]]
+	documents: Union[List[str], List[OcrResponse]]
 	max_chunks_per_doc: NotRequired[int]
 	metadata: NotRequired[Dict[str, Any]]
 	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
-	provider_options: NotRequired[Dict[str, Any]]
+	provider_options: NotRequired[OcrResponse]
 	query: str
 	rank_fields: NotRequired[List[str]]
 	return_documents: NotRequired[bool]
@@ -2528,15 +2836,22 @@ class RerankResponse(TypedDict):
 	usage: NotRequired[Usage]
 
 class RerankResult(TypedDict):
-	document: NotRequired[Union[str, Dict[str, Any]]]
+	document: NotRequired[Union[str, OcrResponse]]
 	index: NotRequired[int]
 	relevance_score: NotRequired[float]
+
+class ResponseHealingPlugin(TypedDict):
+	enabled: NotRequired[bool]
+	id: Literal["response-healing"]
+	mode: NotRequired[Literal["safe", "strict"]]
 
 class ResponsesInputItem(TypedDict):
 	content: NotRequired[Union[str, List[Dict[str, Any]], Dict[str, Any]]]
 	encrypted_content: NotRequired[str]
+	format: NotRequired[Literal["anthropic-claude-v1", "openai-responses-v1", "azure-openai-responses-v1", "xai-responses-v1", "google-gemini-v1"]]
 	id: NotRequired[str]
 	role: NotRequired[Literal["user", "assistant", "system", "developer"]]
+	signature: NotRequired[str]
 	summary: NotRequired[List[ResponsesReasoningSummaryPart]]
 	type: NotRequired[str]
 
@@ -2547,7 +2862,7 @@ class ResponsesOutputAudioPart(TypedDict):
 	mime_type: NotRequired[str]
 	type: Literal["output_audio"]
 
-ResponsesOutputContentPart = Union["ResponsesOutputTextPart", "ResponsesOutputImagePart", "ResponsesOutputAudioPart"]
+ResponsesOutputContentPart = Union["ResponsesOutputTextPart", "ResponsesReasoningTextPart", "ResponsesOutputImagePart", "ResponsesOutputAudioPart"]
 
 class ResponsesOutputImagePart(TypedDict):
 	b64_json: NotRequired[str]
@@ -2558,7 +2873,7 @@ class ResponsesOutputImagePart(TypedDict):
 class ResponsesOutputItem(TypedDict):
 	arguments: NotRequired[str]
 	call_id: NotRequired[str]
-	content: NotRequired[List[Union[ResponsesOutputTextPart, ResponsesOutputImagePart, ResponsesOutputAudioPart]]]
+	content: NotRequired[List[Union[ResponsesOutputTextPart, ResponsesReasoningTextPart, ResponsesOutputImagePart, ResponsesOutputAudioPart]]]
 	encrypted_content: NotRequired[str]
 	id: NotRequired[str]
 	name: NotRequired[str]
@@ -2574,6 +2889,10 @@ class ResponsesOutputTextPart(TypedDict):
 class ResponsesReasoningSummaryPart(TypedDict):
 	text: str
 	type: Literal["summary_text"]
+
+class ResponsesReasoningTextPart(TypedDict):
+	text: str
+	type: Literal["reasoning_text"]
 
 class ResponsesRequest(TypedDict):
 	background: NotRequired[bool]
@@ -2591,7 +2910,9 @@ class ResponsesRequest(TypedDict):
 	model: str
 	models: NotRequired[List[str]]
 	parallel_tool_calls: NotRequired[bool]
+	plugins: NotRequired[List[Union[WebSearchPlugin, WebFetchPlugin, ResponseHealingPlugin]]]
 	previous_response_id: NotRequired[str]
+	prompt: NotRequired[PromptTemplateReference]
 	prompt_cache_key: NotRequired[Optional[str]]
 	prompt_cache_options: NotRequired[PromptCacheOptions]
 	prompt_cache_retention: NotRequired[Literal["in_memory", "24h"]]
@@ -2599,14 +2920,14 @@ class ResponsesRequest(TypedDict):
 	provider_options: NotRequired[ProviderOptions]
 	reasoning: NotRequired[OpenAIReasoningConfig]
 	safety_identifier: NotRequired[Optional[str]]
-	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]]
+	service_tier: NotRequired[Optional[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch", "auto", "scale"]]]
 	session_id: NotRequired[str]
 	store: NotRequired[bool]
 	stream: NotRequired[bool]
 	temperature: NotRequired[float]
 	text: NotRequired[Dict[str, Any]]
 	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "phaseo:datetime", "phaseo:web_search", "phaseo:web_fetch", "phaseo:subagent", "phaseo:fusion", "phaseo:search_models", "gateway:datetime", "gateway:web_search", "gateway:web_fetch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[FunctionToolDefinition, GatewayDatetimeToolDefinition, GatewayWebSearchToolDefinition, GatewayWebFetchToolDefinition, SubagentToolDefinition, FusionToolDefinition, SearchModelsToolDefinition]]]
+	tools: NotRequired[List[Union[FunctionToolDefinition, GatewayDatetimeToolDefinition, GatewayWebSearchToolDefinition, GatewayWebFetchToolDefinition, SubagentToolDefinition, FusionToolDefinition, SearchModelsToolDefinition, OpenAIWebSearchToolDefinition]]]
 	top_p: NotRequired[float]
 	truncation: NotRequired[Literal["auto", "disabled"]]
 	usage: NotRequired[bool]
@@ -2650,8 +2971,194 @@ class ServerToolUsage(TypedDict):
 	web_fetch_requests: NotRequired[int]
 	web_search_requests: NotRequired[int]
 
+class SpendBlock(TypedDict):
+	active: bool
+	block_free_models: bool
+	id: str
+	lift_reason: Optional[Any]
+	lifted_at: Optional[str]
+	lifted_by: Optional[str]
+	limit_nanos: int
+	limit_usd: float
+	period_start: str
+	resets_at: Optional[str]
+	rule_id: Optional[str]
+	rule_name: Optional[str]
+	scope_id: Optional[str]
+	scope_label: str
+	scope_type: Literal["workspace", "key", "member", "department", "model", "provider"]
+	spend_nanos: int
+	spend_usd: float
+	started_at: str
+	workspace_id: str
+
+SpendBlockLiftReason = Literal["manual", "period_reset", "below_limit", "rule_changed", "rule_disabled", "rule_deleted"]
+
+class SpendBlockListResponse(TypedDict):
+	data: List[SpendBlock]
+
+class SpendBlockResponse(TypedDict):
+	data: SpendBlock
+
+class SpendRule(TypedDict):
+	action: Literal["notify", "block"]
+	base_amount_nanos: Optional[int]
+	base_amount_usd: Optional[float]
+	base_kind: Optional[Literal["amount", "workspace_budget", "key_limit", "previous_period"]]
+	base_ref: Optional[Literal["daily", "weekly", "monthly"]]
+	block_at_amount_nanos: Optional[int]
+	block_at_amount_usd: Optional[float]
+	block_at_percent: int
+	block_free_models: bool
+	cooldown_minutes: int
+	created_at: str
+	created_by: Optional[str]
+	destination_ids: List[str]
+	enabled: bool
+	evaluated: bool
+	id: str
+	metric: Literal["spend", "budget_percent", "forecast", "spike", "balance"]
+	name: str
+	period: Literal["day", "week", "month", "rolling"]
+	runway_days: Optional[int]
+	scope_id: Optional[str]
+	scope_type: Literal["workspace", "key", "member", "department", "model", "provider"]
+	spike_floor_nanos: Optional[int]
+	spike_floor_usd: Optional[float]
+	spike_multiplier: Optional[float]
+	threshold_amount_nanos: Optional[int]
+	threshold_amount_usd: Optional[float]
+	threshold_percents: Optional[List[int]]
+	time_zone: Optional[str]
+	updated_at: str
+	window_hours: Optional[int]
+	workspace_id: str
+
+SpendRuleAction = Literal["notify", "block"]
+
+class SpendRuleDeleteResponse(TypedDict):
+	data: Dict[str, Any]
+
+class SpendRuleHistory(TypedDict):
+	events: List[Dict[str, Any]]
+	has_more: bool
+	periods: List[Dict[str, Any]]
+
+class SpendRuleHistoryResponse(TypedDict):
+	data: SpendRuleHistory
+
+class SpendRuleInput(TypedDict):
+	action: NotRequired[Literal["notify", "block"]]
+	base_amount_nanos: NotRequired[Optional[int]]
+	base_amount_usd: NotRequired[Optional[float]]
+	base_kind: NotRequired[Optional[Literal["amount", "workspace_budget", "key_limit", "previous_period"]]]
+	base_ref: NotRequired[Optional[Literal["daily", "weekly", "monthly"]]]
+	block_at_amount_nanos: NotRequired[Optional[int]]
+	block_at_amount_usd: NotRequired[Optional[float]]
+	block_at_percent: NotRequired[int]
+	block_free_models: NotRequired[bool]
+	cooldown_minutes: NotRequired[int]
+	destination_ids: NotRequired[List[str]]
+	enabled: NotRequired[bool]
+	metric: Literal["spend", "budget_percent", "forecast", "spike", "balance"]
+	name: str
+	period: Literal["day", "week", "month", "rolling"]
+	runway_days: NotRequired[Optional[int]]
+	scope_id: NotRequired[Optional[str]]
+	scope_type: NotRequired[Literal["workspace", "key", "member", "department", "model", "provider"]]
+	spike_floor_nanos: NotRequired[Optional[int]]
+	spike_floor_usd: NotRequired[Optional[float]]
+	spike_multiplier: NotRequired[Optional[float]]
+	threshold_amount_nanos: NotRequired[Optional[int]]
+	threshold_amount_usd: NotRequired[Optional[float]]
+	threshold_percents: NotRequired[Optional[List[int]]]
+	time_zone: NotRequired[Optional[str]]
+	window_hours: NotRequired[Optional[int]]
+
+class SpendRuleListResponse(TypedDict):
+	data: List[SpendRule]
+	max_rules: int
+
+SpendRuleMetric = Literal["spend", "budget_percent", "forecast", "spike", "balance"]
+
+SpendRulePeriod = Literal["day", "week", "month", "rolling"]
+
+class SpendRulePreview(TypedDict):
+	alert: Optional[Dict[str, Any]]
+	base_kind: Optional[Literal["amount", "workspace_budget", "key_limit", "previous_period"]]
+	base_nanos: Optional[int]
+	base_ref: Optional[Literal["daily", "weekly", "monthly"]]
+	base_usd: Optional[float]
+	block_at_nanos: Optional[int]
+	block_at_usd: Optional[float]
+	computed_at: str
+	evaluated: bool
+	metric: Literal["spend", "budget_percent", "forecast", "spike", "balance"]
+	next_threshold: Optional[Dict[str, Any]]
+	percent: Optional[float]
+	period: Optional[Dict[str, Any]]
+	reached_threshold_percent: Optional[int]
+	rule_id: str
+	state: Optional[Dict[str, Any]]
+	threshold_amount_nanos: Optional[int]
+	threshold_amount_usd: Optional[float]
+	threshold_percents: Optional[List[int]]
+	time_zone: str
+	value_nanos: Optional[int]
+	value_usd: Optional[float]
+
+class SpendRulePreviewResponse(TypedDict):
+	data: SpendRulePreview
+
+class SpendRuleResponse(TypedDict):
+	data: SpendRule
+
+SpendRuleScope = Literal["workspace", "key", "member", "department", "model", "provider"]
+
+class SpendRuleTestResponse(TypedDict):
+	data: SpendRuleTestResult
+
+class SpendRuleTestResult(TypedDict):
+	delivered: int
+	deliveries: List[Dict[str, Any]]
+	failed: int
+	message: str
+	rule_id: str
+	rule_name: str
+	source: Literal["rule", "routes"]
+	test: bool
+	title: str
+
+class SpendRuleUpdateInput(TypedDict):
+	action: NotRequired[Literal["notify", "block"]]
+	base_amount_nanos: NotRequired[Optional[int]]
+	base_amount_usd: NotRequired[Optional[float]]
+	base_kind: NotRequired[Optional[Literal["amount", "workspace_budget", "key_limit", "previous_period"]]]
+	base_ref: NotRequired[Optional[Literal["daily", "weekly", "monthly"]]]
+	block_at_amount_nanos: NotRequired[Optional[int]]
+	block_at_amount_usd: NotRequired[Optional[float]]
+	block_at_percent: NotRequired[int]
+	block_free_models: NotRequired[bool]
+	cooldown_minutes: NotRequired[int]
+	destination_ids: NotRequired[List[str]]
+	enabled: NotRequired[bool]
+	metric: NotRequired[Literal["spend", "budget_percent", "forecast", "spike", "balance"]]
+	name: NotRequired[str]
+	period: NotRequired[Literal["day", "week", "month", "rolling"]]
+	runway_days: NotRequired[Optional[int]]
+	scope_id: NotRequired[Optional[str]]
+	scope_type: NotRequired[Literal["workspace", "key", "member", "department", "model", "provider"]]
+	spike_floor_nanos: NotRequired[Optional[int]]
+	spike_floor_usd: NotRequired[Optional[float]]
+	spike_multiplier: NotRequired[Optional[float]]
+	threshold_amount_nanos: NotRequired[Optional[int]]
+	threshold_amount_usd: NotRequired[Optional[float]]
+	threshold_percents: NotRequired[Optional[List[int]]]
+	time_zone: NotRequired[Optional[str]]
+	window_hours: NotRequired[Optional[int]]
+
 class SubagentToolDefinition(TypedDict):
-	parameters: NotRequired[Dict[str, Any]]
+	parameters: NotRequired[OcrResponse]
 	type: Literal["phaseo:subagent"]
 
 class SupportedParameterDetails(TypedDict):
@@ -2659,26 +3166,26 @@ class SupportedParameterDetails(TypedDict):
 
 class SystemOneChoiceQuestion(TypedDict):
 	criteria: Dict[str, Any]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["choice"]
 
-SystemOneInstructions = Union[str, Dict[str, Any], List[Any]]
+SystemOneInstructions = Union[str, "OcrResponse", List[Any]]
 
 class SystemOneNoulQuestion(TypedDict):
 	criteria: NotRequired[Dict[str, Any]]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["noul"]
 
 class SystemOneRequest(TypedDict):
 	debug: NotRequired[DebugOptions]
 	echo_upstream_request: NotRequired[bool]
 	meta: NotRequired[bool]
-	metadata: NotRequired[Dict[str, Any]]
+	metadata: NotRequired[OcrResponse]
 	model: str
 	provider: NotRequired[ProviderRoutingOptions]
 	questions: Dict[str, Any]
 	routing: NotRequired[ProviderRoutingOptions]
-	state: Union[str, Dict[str, Any], List[Any]]
+	state: Union[str, OcrResponse, List[Any]]
 
 class SystemOneResponse(TypedDict):
 	answers: NotRequired[OcrResponse]
@@ -2689,7 +3196,7 @@ class SystemOneResponse(TypedDict):
 
 class SystemOneScoreQuestion(TypedDict):
 	criteria: List[str]
-	instructions: Union[str, Dict[str, Any], List[Any]]
+	instructions: Union[str, OcrResponse, List[Any]]
 	type: Literal["score"]
 
 class SystemOneUsage(TypedDict):
@@ -2703,7 +3210,7 @@ class TextContentPart(TypedDict):
 	text: str
 	type: Literal["text"]
 
-TextGenerateTool = Union["FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayWebSearchToolDefinition", "GatewayWebFetchToolDefinition", "SubagentToolDefinition", "FusionToolDefinition", "SearchModelsToolDefinition"]
+TextGenerateTool = Union["FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayWebSearchToolDefinition", "GatewayWebFetchToolDefinition", "SubagentToolDefinition", "FusionToolDefinition", "SearchModelsToolDefinition", "OpenAIWebSearchToolDefinition"]
 
 class TextModerationInput(TypedDict):
 	text: str
@@ -2726,6 +3233,8 @@ class UpdatedResponse(TypedDict):
 
 class Usage(TypedDict):
 	completion_tokens: NotRequired[int]
+	cost: NotRequired[float]
+	cost_details: NotRequired[UsageCostDetails]
 	input_tokens: NotRequired[int]
 	input_tokens_details: NotRequired[InputTokensDetails]
 	output_tokens: NotRequired[int]
@@ -2733,6 +3242,9 @@ class Usage(TypedDict):
 	prompt_tokens_details: NotRequired[InputTokensDetails]
 	server_tool_use: NotRequired[ServerToolUsage]
 	total_tokens: NotRequired[int]
+
+class UsageCostDetails(TypedDict):
+	upstream_inference_cost: NotRequired[Optional[float]]
 
 class VideoBillingSummary(TypedDict):
 	billable: NotRequired[bool]
@@ -2778,7 +3290,7 @@ class VideoGenerationRequest(TypedDict):
 	prompt: str
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[SupportedParameterDetails]
-	provider_params: NotRequired[Dict[str, Any]]
+	provider_params: NotRequired[OcrResponse]
 	resize_mode: NotRequired[str]
 	resolution: NotRequired[str]
 	sample_count: NotRequired[int]
@@ -2838,7 +3350,7 @@ class VideoModelCapability(TypedDict):
 	model: NotRequired[str]
 	name: NotRequired[str]
 	output_types: NotRequired[List[str]]
-	pricing: NotRequired[Dict[str, Any]]
+	pricing: NotRequired[OcrResponse]
 	providers: NotRequired[List[VideoModelProviderCapability]]
 	status: NotRequired[str]
 	supported_parameters: NotRequired[List[str]]
@@ -2867,6 +3379,15 @@ class VideoOutput(TypedDict):
 
 class VideoOutputConfig(TypedDict):
 	access: NotRequired[Literal["bytes", "signed_url", "both"]]
+
+class WebFetchPlugin(TypedDict):
+	allowed_domains: NotRequired[List[str]]
+	blocked_domains: NotRequired[List[str]]
+	enabled: NotRequired[bool]
+	engine: NotRequired[Literal["auto", "native", "direct", "exa", "firecrawl", "parallel"]]
+	id: Literal["web-fetch"]
+	max_content_tokens: NotRequired[int]
+	max_uses: NotRequired[int]
 
 class WebhookEndpoint(TypedDict):
 	createdAt: NotRequired[Optional[str]]
@@ -2929,6 +3450,58 @@ class WebhookEndpointUpdateRequest(TypedDict):
 	status: NotRequired[Literal["active", "disabled"]]
 	url: NotRequired[str]
 
+class WebSearchPlugin(TypedDict):
+	enabled: NotRequired[bool]
+	engine: NotRequired[Literal["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]]
+	exclude_domains: NotRequired[List[str]]
+	id: Literal["web"]
+	include_domains: NotRequired[List[str]]
+	max_results: NotRequired[int]
+	max_uses: NotRequired[int]
+	search_context_size: NotRequired[Literal["low", "medium", "high"]]
+
+class WorkloadIdentityPolicy(TypedDict):
+	audience: str
+	claim_conditions: DataContributionCategories
+	created_at: str
+	created_by: Optional[str]
+	id: str
+	issuer: str
+	key_id: str
+	last_used_at: Optional[str]
+	max_token_lifetime_seconds: int
+	name: str
+	owner_id: str
+	provider: Literal["vercel", "github_actions"]
+	status: Literal["active", "disabled"]
+	updated_at: str
+
+class WorkloadIdentityPolicyDeleteResponse(TypedDict):
+	data: Dict[str, Any]
+
+class WorkloadIdentityPolicyInput(TypedDict):
+	claim_conditions: NotRequired[DataContributionCategories]
+	issuer: NotRequired[str]
+	max_token_lifetime_seconds: NotRequired[int]
+	name: str
+	owner_id: str
+	provider: Literal["vercel", "github_actions"]
+
+class WorkloadIdentityPolicyListResponse(TypedDict):
+	audience: str
+	data: List[WorkloadIdentityPolicy]
+
+class WorkloadIdentityPolicyResponse(TypedDict):
+	data: WorkloadIdentityPolicy
+
+class WorkloadIdentityPolicyUpdateInput(TypedDict):
+	claim_conditions: NotRequired[DataContributionCategories]
+	max_token_lifetime_seconds: NotRequired[int]
+	name: NotRequired[str]
+	status: NotRequired[Literal["active", "disabled"]]
+
+WorkloadIdentityProvider = Literal["vercel", "github_actions"]
+
 class Workspace(TypedDict):
 	created_at: Optional[str]
 	created_by: Optional[str]
@@ -2945,7 +3518,7 @@ class WorkspaceActivityEntry(TypedDict):
 	provider: Optional[str]
 	request_id: Optional[str]
 	timestamp: Optional[str]
-	usage: Optional[Dict[str, Any]]
+	usage: Optional[OcrResponse]
 
 class WorkspaceActivityResponse(TypedDict):
 	activity: List[WorkspaceActivityEntry]
@@ -3051,6 +3624,8 @@ class WorkspaceAutoTopUpUpdate(TypedDict):
 	mfa_bypass_acknowledged: NotRequired[bool]
 	mfa_bypass_phrase: NotRequired[str]
 	payment_method_id: NotRequired[Optional[str]]
+
+WorkspaceBillingTimeZone = str
 
 class WorkspaceBudget(TypedDict):
 	created_at: str
@@ -3282,8 +3857,11 @@ WorkspaceModelSuccessorPricePolicy = Literal["never", "limit", "any"]
 
 class WorkspaceNotificationDestination(TypedDict):
 	created_at: NotRequired[Optional[str]]
+	has_signing_secret: NotRequired[bool]
 	id: str
 	name: str
+	signing_secret: NotRequired[str]
+	signing_secret_rotated_at: NotRequired[Optional[str]]
 	status: Literal["active", "disabled"]
 	target_preview: str
 	type: Literal["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"]
@@ -3316,19 +3894,23 @@ class WorkspaceNotificationEmailPreferencesUpdate(TypedDict):
 	model_deprecation: NotRequired[bool]
 	payment_method_expiring: NotRequired[bool]
 
-WorkspaceNotificationEventKind = Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"]
+WorkspaceNotificationEventKind = Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"]
 
 class WorkspaceNotificationRoute(TypedDict):
 	destination_ids: List[str]
-	event_kind: Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"]
+	event_kind: Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"]
 
 class WorkspaceNotificationRouteMap(TypedDict):
 	auto_top_up_failed: List[str]
+	broadcast_destination_failing: List[str]
 	low_balance: List[str]
 	model_deprecation: List[str]
 	model_substitution: List[str]
 	payment_method_expiring: List[str]
 	rate_limit_throttled: List[str]
+	spend_alert: List[str]
+	spend_blocked: List[str]
+	spend_report: List[str]
 
 class WorkspaceNotificationRouteResponse(TypedDict):
 	data: WorkspaceNotificationRoute
@@ -3343,6 +3925,7 @@ class WorkspaceNotificationSettings(TypedDict):
 	auto_top_up: WorkspaceAutoTopUpSettings
 	email_preferences: WorkspaceNotificationEmailPreferences
 	low_balance_email: WorkspaceLowBalanceEmailSettings
+	spend: WorkspaceSpendSettings
 
 class WorkspaceNotificationSettingsResponse(TypedDict):
 	data: WorkspaceNotificationSettings
@@ -3351,6 +3934,7 @@ class WorkspaceNotificationSettingsUpdateRequest(TypedDict):
 	auto_top_up: NotRequired[WorkspaceAutoTopUpUpdate]
 	email_preferences: NotRequired[WorkspaceNotificationEmailPreferencesUpdate]
 	low_balance_email: NotRequired[WorkspaceLowBalanceEmailUpdate]
+	spend: NotRequired[WorkspaceSpendSettingsUpdate]
 
 class WorkspaceNotificationTestResponse(TypedDict):
 	data: Dict[str, Any]
@@ -3380,7 +3964,7 @@ class WorkspaceScimEvent(TypedDict):
 	action: NotRequired[str]
 	correlation_id: NotRequired[Optional[str]]
 	created_at: NotRequired[str]
-	detail: NotRequired[Optional[Dict[str, Any]]]
+	detail: NotRequired[Optional[OcrResponse]]
 	http_status: NotRequired[int]
 	id: NotRequired[str]
 	outcome: NotRequired[str]
@@ -3460,6 +4044,16 @@ class WorkspaceSettingsUpdateRequest(TypedDict):
 	response_healing_mode: NotRequired[Literal["safe", "strict"]]
 	routing_mode: NotRequired[Literal["balanced", "price", "latency", "throughput"]]
 
+WorkspaceSpendAttribution = Literal["all", "primary"]
+
+class WorkspaceSpendSettings(TypedDict):
+	billing_time_zone: str
+	department_attribution: Literal["all", "primary"]
+
+class WorkspaceSpendSettingsUpdate(TypedDict):
+	billing_time_zone: NotRequired[str]
+	department_attribution: NotRequired[Literal["all", "primary"]]
+
 class WorkspaceSsoResponse(TypedDict):
 	data: WorkspaceSsoSettings
 
@@ -3481,4 +4075,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnalyticsResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyLimitBucket", "ApiKeyLimitInputBucket", "ApiKeyLimitInputWindows", "ApiKeyLimitWindows", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyRotateRequest", "ApiKeyRotateResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyUsageBucket", "ApiKeyUsageWindows", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchProviderCapability", "BatchRequest", "BatchRequestCounts", "BatchRequestItem", "BatchRequestRow", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "ChatReasoningDetail", "CreditsResponse", "DataContributionCategories", "DataContributionClassifier", "DataContributionClassifierCreateRequest", "DataContributionClassifierDeleteResponse", "DataContributionClassifierInput", "DataContributionClassifierResponse", "DataContributionClassifierUpdateRequest", "DataContributionConsentRequest", "DataContributionConsentResponse", "DataContributionOverviewResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DecisionAudioSource", "DecisionBox", "DecisionBoxAnswer", "DecisionBoxQuestion", "DecisionChoiceAnswer", "DecisionChoiceQuestion", "DecisionCreateRequest", "DecisionCreateResponse", "DecisionImage", "DecisionInputAudio", "DecisionInputImage", "DecisionInputMessage", "DecisionInputText", "DecisionInputVideo", "DecisionInstructions", "DecisionNoulQuestion", "DecisionPredicateAnswer", "DecisionPredicateQuestion", "DecisionProviderOptions", "DecisionRefusalAnswer", "DecisionScoreAnswer", "DecisionScoreQuestion", "DecisionsRequest", "DecisionsResponse", "DecisionsUsage", "DeletedResponse", "DynamicRoute", "DynamicRouteAction", "DynamicRouteCondition", "DynamicRouteConfig", "DynamicRouteCreateRequest", "DynamicRouteDeleteResponse", "DynamicRouteDeployResponse", "DynamicRouteEdge", "DynamicRouteKeysResponse", "DynamicRouteKeysUpdateRequest", "DynamicRouteListResponse", "DynamicRouteNode", "DynamicRouteResponse", "DynamicRouteRule", "DynamicRouteUpdateRequest", "DynamicRouteVersion", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "EndpointCatalogueEntry", "EndpointCatalogueResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "FusionToolDefinition", "GatewayCapabilities", "GatewayCapabilityStatus", "GatewayDatetimeToolDefinition", "GatewayFeedback", "GatewayFeedbackCreateRequest", "GatewayFeedbackListResponse", "GatewayFeedbackResponse", "GatewayFeedbackSummaryResponse", "GatewayFeedbackSummaryRow", "GatewayModalities", "GatewayModelLifecycle", "GatewayModelLimits", "GatewayModelOffer", "GatewayModelOrganization", "GatewayModelsResponse", "GatewayObservabilityEvent", "GatewayObservabilityEventCreateRequest", "GatewayObservabilityEventListResponse", "GatewayObservabilityEventResponse", "GatewayPricing", "GatewayPricingMeter", "GatewayProviderAvailabilityReason", "GatewayRequestLog", "GatewayRequestLogListResponse", "GatewayRequestLogResponse", "GatewayRoutingStatus", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Guardrail", "GuardrailBudgetInput", "GuardrailCreateRequest", "GuardrailDeleteResponse", "GuardrailDetailResponse", "GuardrailKeyAddResponse", "GuardrailKeyAssignment", "GuardrailKeyIdsReplaceRequest", "GuardrailKeyIdsRequest", "GuardrailKeyListResponse", "GuardrailKeySetResponse", "GuardrailListResponse", "GuardrailMemberAddResponse", "GuardrailMemberAssignment", "GuardrailMemberListResponse", "GuardrailPolicyInput", "GuardrailRemoveResponse", "GuardrailResponse", "GuardrailUpdateRequest", "GuardrailUserIdsRequest", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InputTokensDetails", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "LegacyDecisionBoxQuestion", "LegacyDecisionsRequest", "LegacyDecisionsResponse", "ListFilesResponse", "ManagementKeyCollectionResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyRuntime", "ManagementKeyRuntimeCreated", "ManagementKeyRuntimeCreateRequest", "ManagementKeyRuntimeCreateResponse", "ManagementKeyRuntimeDeleteResponse", "ManagementKeyRuntimeResponse", "ManagementKeyRuntimeUpdateRequest", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelEndpointCapability", "ModelEndpointsResponse", "ModelFallbacks", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OAuthClient", "OAuthClientCreateRequest", "OAuthClientCreateResponse", "OAuthClientDeleteResponse", "OAuthClientInput", "OAuthClientListResponse", "OAuthClientSecretResponse", "OAuthClientUpdateRequest", "ObservabilityDestination", "ObservabilityDestinationCreateRequest", "ObservabilityDestinationListResponse", "ObservabilityDestinationPolicyInput", "ObservabilityDestinationResponse", "ObservabilityDestinationType", "ObservabilityDestinationUpdateRequest", "ObservabilityKeyFilter", "ObservabilityLoggingPolicy", "ObservabilityLoggingPolicyResponse", "ObservabilityLoggingPolicyUpdateRequest", "ObservabilityRule", "ObservabilityRuleGroup", "OcrRequest", "OcrResponse", "OpenAIDecisionChoiceQuestion", "OpenAIDecisionScoreQuestion", "OpenAIDecisionsRequest", "OpenAIDecisionsResponse", "OpenAIModel", "OpenAIModelsResponse", "OpenAIReasoningConfig", "OrganisationId", "OrganisationIdList", "ParseBlock", "ParseBoundingBox", "ParseImage", "ParsePage", "ParseRequest", "ParseResponse", "Preset", "PresetConfig", "PresetCreateRequest", "PresetCreateResponse", "PresetForkRequest", "PresetListResponse", "PresetPublisher", "PresetPublisherResponse", "PresetPublisherUpdateRequest", "PresetResponse", "PresetTestRun", "PresetTestRunCreateRequest", "PresetTestRunDetailResponse", "PresetTestRunListResponse", "PresetTestRunResponse", "PresetTestRunUpdateRequest", "PresetUpdateRequest", "PresetUpstreamApplyRequest", "PresetUpstreamApplyResponse", "PresetVersion", "PresetVersioningMethod", "PresetVersionListResponse", "PresetVersionPublishRequest", "PresetVersionResponse", "PresetVisibility", "PrivateModel", "PrivateModelCreateRequest", "PrivateModelDeleteResponse", "PrivateModelListResponse", "PrivateModelResponse", "PrivateModelUpdateRequest", "PromptCacheBreakpoint", "PromptCacheOptions", "Provider", "ProviderCredential", "ProviderCredentialCreateRequest", "ProviderCredentialDeleteResponse", "ProviderCredentialListResponse", "ProviderCredentialReorderRequest", "ProviderCredentialReorderResponse", "ProviderCredentialResponse", "ProviderCredentialRoutingMode", "ProviderCredentialUpdateRequest", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RateLimitAssignment", "RateLimitAssignmentInput", "RateLimitAssignmentListResponse", "RateLimitAssignmentResponse", "RateLimitAssignmentUpdateInput", "RateLimitDeleteResponse", "RateLimitPolicy", "RateLimitPolicyInput", "RateLimitPolicyListResponse", "RateLimitPolicyResponse", "RateLimitPolicyUpdateInput", "RateLimitTargetType", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesReasoningSummaryPart", "ResponsesRequest", "ResponsesResponse", "SearchModelsToolDefinition", "ServerToolUsage", "SubagentToolDefinition", "SupportedParameterDetails", "SystemOneChoiceQuestion", "SystemOneInstructions", "SystemOneNoulQuestion", "SystemOneRequest", "SystemOneResponse", "SystemOneScoreQuestion", "SystemOneUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "UpdatedResponse", "Usage", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "WebhookEndpoint", "WebhookEndpointCreateRequest", "WebhookEndpointDeleteResponse", "WebhookEndpointEvent", "WebhookEndpointInput", "WebhookEndpointListResponse", "WebhookEndpointSecretResponse", "WebhookEndpointTestResponse", "WebhookEndpointUpdateRequest", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceApp", "WorkspaceAppListResponse", "WorkspaceAppMergeRequest", "WorkspaceAppMergeResponse", "WorkspaceAppResponse", "WorkspaceAppUpdateRequest", "WorkspaceAssignableRole", "WorkspaceAuditEvent", "WorkspaceAuditEventActor", "WorkspaceAuditEventLimits", "WorkspaceAuditEventListResponse", "WorkspaceAuditEventMetadata", "WorkspaceAutoTopUpSettings", "WorkspaceAutoTopUpUpdate", "WorkspaceBudget", "WorkspaceBudgetDeleteResponse", "WorkspaceBudgetInput", "WorkspaceBudgetInterval", "WorkspaceBudgetListResponse", "WorkspaceBudgetResponse", "WorkspaceBudgetUpdateInput", "WorkspaceCreateRequest", "WorkspaceDepartment", "WorkspaceDepartmentCreateRequest", "WorkspaceDepartmentInput", "WorkspaceDepartmentListResponse", "WorkspaceDepartmentMember", "WorkspaceDepartmentMemberRequest", "WorkspaceDepartmentMemberResponse", "WorkspaceDepartmentResponse", "WorkspaceDepartmentUpdateRequest", "WorkspaceDirectoryMember", "WorkspaceDirectoryMemberUpdateRequest", "WorkspaceDirectoryResponse", "WorkspaceGroupMapping", "WorkspaceGroupMappingCreateRequest", "WorkspaceGroupMappingListResponse", "WorkspaceGroupMappingResponse", "WorkspaceGroupMappingUpdateRequest", "WorkspaceInvite", "WorkspaceInviteCreateRequest", "WorkspaceInviteCreateResponse", "WorkspaceInviteListResponse", "WorkspaceJoinRequest", "WorkspaceJoinRequestListResponse", "WorkspaceJoinRequestResponse", "WorkspaceJoinRequestStatus", "WorkspaceListResponse", "WorkspaceLowBalanceEmailSettings", "WorkspaceLowBalanceEmailUpdate", "WorkspaceMember", "WorkspaceMemberAddResponse", "WorkspaceMemberBulkRequest", "WorkspaceMemberListResponse", "WorkspaceMemberRemoveRequest", "WorkspaceMemberRemoveResponse", "WorkspaceMemberResponse", "WorkspaceMemberRoleUpdateRequest", "WorkspaceModelSuccessorPricePolicy", "WorkspaceNotificationDestination", "WorkspaceNotificationDestinationCreateRequest", "WorkspaceNotificationDestinationListResponse", "WorkspaceNotificationDestinationResponse", "WorkspaceNotificationDestinationTestRequest", "WorkspaceNotificationDestinationType", "WorkspaceNotificationEmailPreferences", "WorkspaceNotificationEmailPreferencesUpdate", "WorkspaceNotificationEventKind", "WorkspaceNotificationRoute", "WorkspaceNotificationRouteMap", "WorkspaceNotificationRouteResponse", "WorkspaceNotificationRoutesResponse", "WorkspaceNotificationRouteUpdateRequest", "WorkspaceNotificationSettings", "WorkspaceNotificationSettingsResponse", "WorkspaceNotificationSettingsUpdateRequest", "WorkspaceNotificationTestResponse", "WorkspaceProviderRestrictionMode", "WorkspaceResponse", "WorkspaceRole", "WorkspaceRoutingMode", "WorkspaceScimAuditResponse", "WorkspaceScimEndpoint", "WorkspaceScimEndpointResponse", "WorkspaceScimEvent", "WorkspaceScimResponse", "WorkspaceScimToken", "WorkspaceScimTokenCreateRequest", "WorkspaceScimTokenCreateResponse", "WorkspaceScimUpdateRequest", "WorkspaceSettings", "WorkspaceSettingsResponse", "WorkspaceSettingsUpdateRequest", "WorkspaceSsoResponse", "WorkspaceSsoSettings", "WorkspaceSsoUpdateRequest", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnalyticsResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicSystemMessage", "AnthropicSystemTextBlock", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyLimitBucket", "ApiKeyLimitInputBucket", "ApiKeyLimitInputWindows", "ApiKeyLimitWindows", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyRotateRequest", "ApiKeyRotateResponse", "ApiKeyScopeValue", "ApiKeyStorageLocations", "ApiKeyUpdateRequest", "ApiKeyUsageBucket", "ApiKeyUsageWindows", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchProviderCapability", "BatchRequest", "BatchRequestCounts", "BatchRequestItem", "BatchRequestRow", "BatchResponse", "BenchmarkId", "CacheControl", "CacheWriteTokensDetails", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "ChatReasoningDetail", "ChatResponseMessage", "Classifier", "ClassifierCreateInput", "ClassifierDeleteResponse", "ClassifierDimension", "ClassifierInputScope", "ClassifierListResponse", "ClassifierResponse", "ClassifierSampleBy", "ClassifierScope", "ClassifierUpdateInput", "ClassifierValue", "CreditsResponse", "DataContributionCategories", "DataContributionClassifier", "DataContributionClassifierCreateRequest", "DataContributionClassifierDeleteResponse", "DataContributionClassifierInput", "DataContributionClassifierResponse", "DataContributionClassifierUpdateRequest", "DataContributionConsentRequest", "DataContributionConsentResponse", "DataContributionOverviewResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DecisionAudioSource", "DecisionBox", "DecisionBoxAnswer", "DecisionBoxQuestion", "DecisionChoiceAnswer", "DecisionChoiceQuestion", "DecisionCreateRequest", "DecisionCreateResponse", "DecisionImage", "DecisionInputAudio", "DecisionInputImage", "DecisionInputMessage", "DecisionInputText", "DecisionInputVideo", "DecisionInstructions", "DecisionNoulQuestion", "DecisionPredicateAnswer", "DecisionPredicateQuestion", "DecisionProviderOptions", "DecisionRefusalAnswer", "DecisionScoreAnswer", "DecisionScoreQuestion", "DecisionsRequest", "DecisionsResponse", "DecisionsUsage", "DeletedResponse", "DepartmentBudget", "DepartmentBudgetInput", "DepartmentBudgetInterval", "DepartmentBudgetListResponse", "DepartmentBudgetResponse", "DepartmentBudgetUpdateInput", "DynamicRoute", "DynamicRouteAction", "DynamicRouteCondition", "DynamicRouteConfig", "DynamicRouteCreateRequest", "DynamicRouteDeleteResponse", "DynamicRouteDeployResponse", "DynamicRouteEdge", "DynamicRouteKeysResponse", "DynamicRouteKeysUpdateRequest", "DynamicRouteListResponse", "DynamicRouteNode", "DynamicRouteResponse", "DynamicRouteRule", "DynamicRouteUpdateRequest", "DynamicRouteVersion", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "EndpointCatalogueEntry", "EndpointCatalogueResponse", "ErrorFailureSampleItem", "ErrorObject", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "ExtractionAnswer", "ExtractionDateField", "ExtractionDatetimeField", "ExtractionDurationField", "ExtractionField", "ExtractionImage", "ExtractionListAnswer", "ExtractionListField", "ExtractionNumberAnswer", "ExtractionNumberField", "ExtractionRequest", "ExtractionResponse", "ExtractionStringAnswer", "ExtractionTextField", "ExtractionTimeField", "ExtractionUsage", "FileContentPart", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "FusionToolDefinition", "GatewayCapabilities", "GatewayCapabilityStatus", "GatewayDatetimeToolDefinition", "GatewayFeedback", "GatewayFeedbackCreateRequest", "GatewayFeedbackListResponse", "GatewayFeedbackResponse", "GatewayFeedbackSummaryResponse", "GatewayFeedbackSummaryRow", "GatewayModalities", "GatewayModelLifecycle", "GatewayModelLimits", "GatewayModelOffer", "GatewayModelOrganization", "GatewayModelsResponse", "GatewayObservabilityEvent", "GatewayObservabilityEventCreateRequest", "GatewayObservabilityEventListResponse", "GatewayObservabilityEventResponse", "GatewayPlugin", "GatewayPricing", "GatewayPricingMeter", "GatewayProviderAvailabilityReason", "GatewayRequestLog", "GatewayRequestLogListResponse", "GatewayRequestLogResponse", "GatewayRoutingStatus", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Guardrail", "GuardrailBudgetInput", "GuardrailCreateRequest", "GuardrailDeleteResponse", "GuardrailDetailResponse", "GuardrailKeyAddResponse", "GuardrailKeyAssignment", "GuardrailKeyIdsReplaceRequest", "GuardrailKeyIdsRequest", "GuardrailKeyListResponse", "GuardrailKeySetResponse", "GuardrailListResponse", "GuardrailMemberAddResponse", "GuardrailMemberAssignment", "GuardrailMemberListResponse", "GuardrailPolicyInput", "GuardrailRemoveResponse", "GuardrailResponse", "GuardrailUpdateRequest", "GuardrailUserIdsRequest", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InputTokensDetails", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "LegacyDecisionBoxQuestion", "LegacyDecisionsRequest", "LegacyDecisionsResponse", "ListFilesResponse", "ManagementKeyCollectionResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyRuntime", "ManagementKeyRuntimeCreated", "ManagementKeyRuntimeCreateRequest", "ManagementKeyRuntimeCreateResponse", "ManagementKeyRuntimeDeleteResponse", "ManagementKeyRuntimeResponse", "ManagementKeyRuntimeUpdateRequest", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelEndpointCapability", "ModelEndpointsResponse", "ModelFallbacks", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OAuthClient", "OAuthClientCreateRequest", "OAuthClientCreateResponse", "OAuthClientDeleteResponse", "OAuthClientInput", "OAuthClientListResponse", "OAuthClientSecretResponse", "OAuthClientUpdateRequest", "ObservabilityDestination", "ObservabilityDestinationCreateRequest", "ObservabilityDestinationListResponse", "ObservabilityDestinationPolicyInput", "ObservabilityDestinationResponse", "ObservabilityDestinationType", "ObservabilityDestinationUpdateRequest", "ObservabilityKeyFilter", "ObservabilityLoggingPolicy", "ObservabilityLoggingPolicyResponse", "ObservabilityLoggingPolicyUpdateRequest", "ObservabilityRule", "ObservabilityRuleGroup", "OcrRequest", "OcrResponse", "OpenAIDecisionChoiceQuestion", "OpenAIDecisionScoreQuestion", "OpenAIDecisionsRequest", "OpenAIDecisionsResponse", "OpenAIModel", "OpenAIModelsResponse", "OpenAIReasoningConfig", "OpenAIWebSearchToolDefinition", "OrganisationId", "OrganisationIdList", "ParseBlock", "ParseBoundingBox", "ParseImage", "ParsePage", "ParseRequest", "ParseResponse", "Preset", "PresetConfig", "PresetCreateRequest", "PresetCreateResponse", "PresetForkRequest", "PresetLabel", "PresetLabelDeleteResponse", "PresetLabelListResponse", "PresetLabelResponse", "PresetLabelSetRequest", "PresetListResponse", "PresetPromptTemplate", "PresetPromptTemplateMessage", "PresetPromptVariable", "PresetPublisher", "PresetPublisherResponse", "PresetPublisherUpdateRequest", "PresetResponse", "PresetTestRun", "PresetTestRunCreateRequest", "PresetTestRunDetailResponse", "PresetTestRunListResponse", "PresetTestRunResponse", "PresetTestRunUpdateRequest", "PresetUpdateRequest", "PresetUpstreamApplyRequest", "PresetUpstreamApplyResponse", "PresetVersion", "PresetVersioningMethod", "PresetVersionListResponse", "PresetVersionPublishRequest", "PresetVersionResponse", "PresetVisibility", "PrivateModel", "PrivateModelCreateRequest", "PrivateModelDeleteResponse", "PrivateModelListResponse", "PrivateModelResponse", "PrivateModelUpdateRequest", "PromptCacheBreakpoint", "PromptCacheOptions", "PromptTemplateReference", "Provider", "ProviderCredential", "ProviderCredentialCreateRequest", "ProviderCredentialDeleteResponse", "ProviderCredentialListResponse", "ProviderCredentialReorderRequest", "ProviderCredentialReorderResponse", "ProviderCredentialResponse", "ProviderCredentialRoutingMode", "ProviderCredentialUpdateRequest", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RateLimitAssignment", "RateLimitAssignmentInput", "RateLimitAssignmentListResponse", "RateLimitAssignmentResponse", "RateLimitAssignmentUpdateInput", "RateLimitDeleteResponse", "RateLimitPolicy", "RateLimitPolicyInput", "RateLimitPolicyListResponse", "RateLimitPolicyResponse", "RateLimitPolicyUpdateInput", "RateLimitTargetType", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponseHealingPlugin", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesReasoningSummaryPart", "ResponsesReasoningTextPart", "ResponsesRequest", "ResponsesResponse", "SearchModelsToolDefinition", "ServerToolUsage", "SpendBlock", "SpendBlockLiftReason", "SpendBlockListResponse", "SpendBlockResponse", "SpendRule", "SpendRuleAction", "SpendRuleDeleteResponse", "SpendRuleHistory", "SpendRuleHistoryResponse", "SpendRuleInput", "SpendRuleListResponse", "SpendRuleMetric", "SpendRulePeriod", "SpendRulePreview", "SpendRulePreviewResponse", "SpendRuleResponse", "SpendRuleScope", "SpendRuleTestResponse", "SpendRuleTestResult", "SpendRuleUpdateInput", "SubagentToolDefinition", "SupportedParameterDetails", "SystemOneChoiceQuestion", "SystemOneInstructions", "SystemOneNoulQuestion", "SystemOneRequest", "SystemOneResponse", "SystemOneScoreQuestion", "SystemOneUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "UpdatedResponse", "Usage", "UsageCostDetails", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "WebFetchPlugin", "WebhookEndpoint", "WebhookEndpointCreateRequest", "WebhookEndpointDeleteResponse", "WebhookEndpointEvent", "WebhookEndpointInput", "WebhookEndpointListResponse", "WebhookEndpointSecretResponse", "WebhookEndpointTestResponse", "WebhookEndpointUpdateRequest", "WebSearchPlugin", "WorkloadIdentityPolicy", "WorkloadIdentityPolicyDeleteResponse", "WorkloadIdentityPolicyInput", "WorkloadIdentityPolicyListResponse", "WorkloadIdentityPolicyResponse", "WorkloadIdentityPolicyUpdateInput", "WorkloadIdentityProvider", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceApp", "WorkspaceAppListResponse", "WorkspaceAppMergeRequest", "WorkspaceAppMergeResponse", "WorkspaceAppResponse", "WorkspaceAppUpdateRequest", "WorkspaceAssignableRole", "WorkspaceAuditEvent", "WorkspaceAuditEventActor", "WorkspaceAuditEventLimits", "WorkspaceAuditEventListResponse", "WorkspaceAuditEventMetadata", "WorkspaceAutoTopUpSettings", "WorkspaceAutoTopUpUpdate", "WorkspaceBillingTimeZone", "WorkspaceBudget", "WorkspaceBudgetDeleteResponse", "WorkspaceBudgetInput", "WorkspaceBudgetInterval", "WorkspaceBudgetListResponse", "WorkspaceBudgetResponse", "WorkspaceBudgetUpdateInput", "WorkspaceCreateRequest", "WorkspaceDepartment", "WorkspaceDepartmentCreateRequest", "WorkspaceDepartmentInput", "WorkspaceDepartmentListResponse", "WorkspaceDepartmentMember", "WorkspaceDepartmentMemberRequest", "WorkspaceDepartmentMemberResponse", "WorkspaceDepartmentResponse", "WorkspaceDepartmentUpdateRequest", "WorkspaceDirectoryMember", "WorkspaceDirectoryMemberUpdateRequest", "WorkspaceDirectoryResponse", "WorkspaceGroupMapping", "WorkspaceGroupMappingCreateRequest", "WorkspaceGroupMappingListResponse", "WorkspaceGroupMappingResponse", "WorkspaceGroupMappingUpdateRequest", "WorkspaceInvite", "WorkspaceInviteCreateRequest", "WorkspaceInviteCreateResponse", "WorkspaceInviteListResponse", "WorkspaceJoinRequest", "WorkspaceJoinRequestListResponse", "WorkspaceJoinRequestResponse", "WorkspaceJoinRequestStatus", "WorkspaceListResponse", "WorkspaceLowBalanceEmailSettings", "WorkspaceLowBalanceEmailUpdate", "WorkspaceMember", "WorkspaceMemberAddResponse", "WorkspaceMemberBulkRequest", "WorkspaceMemberListResponse", "WorkspaceMemberRemoveRequest", "WorkspaceMemberRemoveResponse", "WorkspaceMemberResponse", "WorkspaceMemberRoleUpdateRequest", "WorkspaceModelSuccessorPricePolicy", "WorkspaceNotificationDestination", "WorkspaceNotificationDestinationCreateRequest", "WorkspaceNotificationDestinationListResponse", "WorkspaceNotificationDestinationResponse", "WorkspaceNotificationDestinationTestRequest", "WorkspaceNotificationDestinationType", "WorkspaceNotificationEmailPreferences", "WorkspaceNotificationEmailPreferencesUpdate", "WorkspaceNotificationEventKind", "WorkspaceNotificationRoute", "WorkspaceNotificationRouteMap", "WorkspaceNotificationRouteResponse", "WorkspaceNotificationRoutesResponse", "WorkspaceNotificationRouteUpdateRequest", "WorkspaceNotificationSettings", "WorkspaceNotificationSettingsResponse", "WorkspaceNotificationSettingsUpdateRequest", "WorkspaceNotificationTestResponse", "WorkspaceProviderRestrictionMode", "WorkspaceResponse", "WorkspaceRole", "WorkspaceRoutingMode", "WorkspaceScimAuditResponse", "WorkspaceScimEndpoint", "WorkspaceScimEndpointResponse", "WorkspaceScimEvent", "WorkspaceScimResponse", "WorkspaceScimToken", "WorkspaceScimTokenCreateRequest", "WorkspaceScimTokenCreateResponse", "WorkspaceScimUpdateRequest", "WorkspaceSettings", "WorkspaceSettingsResponse", "WorkspaceSettingsUpdateRequest", "WorkspaceSpendAttribution", "WorkspaceSpendSettings", "WorkspaceSpendSettingsUpdate", "WorkspaceSsoResponse", "WorkspaceSsoSettings", "WorkspaceSsoUpdateRequest", "WorkspaceUpdateRequest"]

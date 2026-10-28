@@ -12,11 +12,10 @@ import {
 } from "./routing";
 
 describe("localisation registry policy", () => {
-	it("publishes the ten reviewed auth locales", () => {
+	it("publishes nine locales, with English (US) staged behind the English pages", () => {
 		expect(defaultLocale).toBe("en-GB");
 		expect(publicLocales).toEqual([
 			"en-GB",
-			"en-US",
 			"zh-Hans",
 			"hi",
 			"es-ES",
@@ -30,6 +29,8 @@ describe("localisation registry policy", () => {
 		for (const locale of publicLocales) {
 			expect(isPublicLocale(locale)).toBe(true);
 		}
+		expect(isPublicLocale("en-US")).toBe(false);
+		expect(getLocaleDefinition("en-US").release).toBe("staged");
 		expect(isPublicLocale("en-XA")).toBe(false);
 	});
 

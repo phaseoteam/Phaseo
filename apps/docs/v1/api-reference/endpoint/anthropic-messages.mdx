@@ -3,6 +3,7 @@ title: "Create a message"
 sidebarTitle: "Create a message (Anthropic)"
 openapi: "/openapi/v1/openapi.yaml POST /messages"
 description: "Anthropic-compatible Messages endpoint at /v1/messages."
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20a%20message&description=Anthropic-compatible%20Messages%20endpoint%20at%20/v1/messages.&pathname=/docs/v1/api-reference/endpoint/anthropic-messages"
 ---
 
 `/v1/messages` accepts Anthropic Messages API payloads and returns Anthropic-formatted responses.
@@ -10,6 +11,31 @@ description: "Anthropic-compatible Messages endpoint at /v1/messages."
 ## Streaming
 
 Set `stream: true` to receive server-sent events in Anthropic format (`message_start`, `content_block_*`, `message_delta`, `message_stop`).
+
+## Mid-conversation system messages
+
+Add a `role: "system"` message to `messages` for an instruction that applies from that point in the conversation. The top-level `system` field stays the same, so a cached prefix still hits.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- A system message takes a string or text blocks. It must come straight after a user turn (or an assistant turn ending in a server tool result) and be the last message or be followed by an assistant turn. Other positions return a 400.
+- Claude Fable 5 and 5.1, Mythos 5 and 5.1, Opus 4.8, Opus 5 and 5.5, Sonnet 5.5 and Haiku 5.5 receive it in place. Other Claude models, including Sonnet 5, and every Claude model on Microsoft Foundry receive it as part of the top-level system prompt. Other providers receive it as a system message, the same as one sent to Chat Completions.
+- `clear_at`, `output_config`, and `tool_addition` or `tool_removal` blocks are not supported.
 
 ## Notes
 

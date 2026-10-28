@@ -5,6 +5,7 @@
 // Unit tests for Responses API transformations
 import { describe, expect, it } from "vitest";
 import { capabilitySupportsReasoning, irToOpenAIResponses, openAIResponsesToIR } from "../transform";
+import { applyJsonSchemaFallback } from "../quirks/structured";
 
 describe("openAIResponsesToIR", () => {
 	it("maps official incomplete status, refusal, annotations, and current usage details", () => {
@@ -524,7 +525,8 @@ describe("irToOpenAIResponses", () => {
 			stream: false,
 		} as any, "qwen3.7-max", "alibaba-cloud");
 
-		expect(request.input_items[0].content).toEqual([
+		expect(request.input_items).toBeUndefined();
+		expect(request.input[0].content).toEqual([
 			{
 				type: "input_text",
 				text: "stable context",
@@ -690,7 +692,7 @@ describe("irToOpenAIResponses", () => {
 		expect(request.input[0].content).toEqual([
 			{ type: "input_text", text: "Compare these inputs." },
 			{ type: "input_image", image_url: "https://example.com/chart.png" },
-			{ type: "input_video", video_url: { url: "https://example.com/demo.mp4" } },
+			{ type: "input_video", video_url: "https://example.com/demo.mp4" },
 			{ type: "input_audio", input_audio: { url: "https://example.com/note.mp3", format: "mp3" } },
 			{ type: "input_file", file_url: "https://example.com/report.pdf" },
 		]);
@@ -1253,5 +1255,41 @@ describe("capabilitySupportsReasoning", () => {
 		expect(capabilitySupportsReasoning({ reasoning: false, tools: true })).toBe(false);
 		expect(capabilitySupportsReasoning({ tools: true, max_output_tokens: {} })).toBe(false);
 		expect(capabilitySupportsReasoning(null)).toBe(false);
+	});
+});
+
+describe("provider Responses quirks", () => {
+	it("counts Meta web_search_call items as billable search queries", () => {
+		// Meta reports searches only as web_search_call output items (https://dev.meta.ai/docs/search-grounding).
+		const ir = openAIResponsesToIR({
+			id: "resp_meta",
+			status: "completed",
+			output: [
+				{ id: "ws_1", type: "web_search_call", status: "completed" },
+				{ id: "ws_2", type: "web_search_call", status: "completed" },
+				{ id: "ws_3", type: "web_search_call", status: "failed" },
+				{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] },
+			],
+			usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+		}, "req_meta", "muse-spark-1.3", "meta");
+		expect(ir.usage?._ext?.serverToolUse?.web_search_requests).toBe(2);
+	});
+
+	it("adds the schema instruction to a Responses system item as input_text", () => {
+		const request: any = {
+			input: [{ type: "message", role: "system", content: [{ type: "input_text", text: "Be terse." }] }],
+			text: { format: { type: "json_schema", name: "a", schema: { type: "object" } } },
+		};
+		applyJsonSchemaFallback(request);
+		expect(request.input[0].content).toHaveLength(1);
+		expect(request.input[0].content[0].type).toBe("input_text");
+		expect(request.input[0].content[0].text).toContain("The JSON must match this schema");
+
+		const withoutText: any = {
+			input: [{ type: "message", role: "system", content: [{ type: "input_image", image_url: "https://example.com/a.png" }] }],
+			text: { format: { type: "json_schema", name: "a", schema: { type: "object" } } },
+		};
+		applyJsonSchemaFallback(withoutText);
+		expect(withoutText.input[0].content[0].type).toBe("input_text");
 	});
 });

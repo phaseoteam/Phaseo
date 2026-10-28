@@ -1,6 +1,30 @@
 import { getLogoLabel, resolveLogo } from "@/lib/logos";
 
 describe("logos", () => {
+	test("resolves AA's Kimi creator slug to Moonshot in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("kimi", { theme })).toMatchObject({
+				id: "moonshotai",
+				src: `/logos/moonshotai_${theme}.svg`,
+			});
+		}
+	});
+	test("resolves the Base Labs icon in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("baselabs", { theme })).toMatchObject({
+				id: "baselabs", label: "Base Labs", src: "/logos/baselabs.svg", variant: "color",
+			});
+		}
+	});
+	test("resolves Nace's official mark in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("nace", { theme })).toMatchObject({
+				id: "nace",
+				label: "Nace.AI",
+				src: `/logos/nace_${theme}.svg`,
+			});
+		}
+	});
 	test("keeps Pioneer and Fastino as separate identities sharing their official mark", () => {
 		for (const id of ["pioneer", "fastino"]) {
 			for (const theme of ["light", "dark"] as const) {

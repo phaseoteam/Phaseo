@@ -8,6 +8,26 @@ import { decodeAnthropicMessagesRequest } from "../decode";
 import type { IRChatRequest } from "@core/ir";
 
 describe("decodeAnthropicMessagesRequest", () => {
+	it("keeps a mid-conversation system message where it was sent", () => {
+		const ir = decodeAnthropicMessagesRequest({
+			model: "claude-opus-5-5",
+			max_tokens: 256,
+			system: "You are a code review assistant.",
+			messages: [
+				{ role: "user", content: "Review process()." },
+				{ role: "assistant", content: "It looks fine." },
+				{ role: "user", content: "Now the caller." },
+				{ role: "system", content: [{ type: "text", text: "Include type annotations.", cache_control: { type: "ephemeral" } }] },
+			],
+		} as any);
+
+		expect(ir.messages.map((message) => message.role)).toEqual(["system", "user", "assistant", "user", "system"]);
+		expect(ir.messages[4]).toEqual({
+			role: "system",
+			content: [{ type: "text", text: "Include type annotations.", cacheControl: { type: "ephemeral" } }],
+		});
+	});
+
 	it("should decode simple text message", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
@@ -611,7 +631,9 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.serviceTier).toBeUndefined();
 	});
 
-	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
+	// max and xhigh are separate Anthropic effort levels
+	// (https://platform.claude.com/docs/en/build-with-claude/effort).
+	it("should decode reasoning.effort=max into IR reasoning effort max", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
@@ -622,7 +644,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.reasoning?.effort).toBe("xhigh");
+		expect(ir.reasoning?.effort).toBe("max");
 	});
 
 	it("should decode reasoning.effort=xhigh on Anthropic messages surface", () => {

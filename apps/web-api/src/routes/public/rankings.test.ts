@@ -84,6 +84,80 @@ describe("public rankings routes", () => {
 		});
 	});
 
+	it("serves one model's place on the benchmark leaderboards", async () => {
+		const fetchMock = vi.fn(async (input: string | URL | Request) => {
+			const url = decodeURIComponent(String(input));
+			const epoch = url.includes("epoch-capabilities-index");
+			if (url.includes("/v2_benchmarks?")) {
+				return Response.json(epoch
+					? [{ benchmark_id: "epoch-capabilities-index", name: "Epoch Capabilities Index", category: "general", ascending_order: true, total_models: 3, benchmark_type: "numerical" }]
+					: [{ benchmark_id: "aa-intelligence-index-v4", name: "Artificial Analysis Intelligence Index", category: "general", ascending_order: true, benchmark_type: "numerical", total_models: 3 }]);
+			}
+			if (url.includes("/v2_benchmark_results?")) {
+				return Response.json(epoch
+					? [
+						{ model_slug: "anthropic/claude-test", score: "150.5", rank: 1, other_info: null },
+						{ model_slug: "hidden/model", score: "149", rank: 2, other_info: null },
+						{ model_slug: "openai/gpt-test", score: "140", rank: 3, other_info: "Benchmark: ECI" },
+						{ model_slug: "google/unscored", score: null, rank: null, other_info: null },
+					]
+					: [
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "openai/gpt-test", score_numeric: 58, other_info: "Intelligence Index v4.1", variant: "high" },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "openai/gpt-test", score_numeric: 51, other_info: "Intelligence Index v4.1", variant: "low" },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "anthropic/claude-test", score_numeric: 61, other_info: "Intelligence Index v4.1", variant: null },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "google/gemini-test", score_numeric: 55, other_info: "Intelligence Index v4.1", variant: null },
+					]);
+			}
+			if (url.includes("/v2_models?")) {
+				return Response.json(url.includes("released_at,hidden")
+					? [
+						{ model_slug: "anthropic/claude-test", name: "Claude Test", released_at: "2026-05-01", hidden: false, lab: { lab_slug: "anthropic", name: "Anthropic", metadata: { colour: "#d97757" } } },
+						{ model_slug: "hidden/model", name: "Hidden", hidden: true, lab: null },
+						{ model_slug: "openai/gpt-test", name: "GPT Test", released_at: "2026-06-01", hidden: false, lab: { lab_slug: "openai", name: "OpenAI", metadata: {} } },
+						{ model_slug: "google/unscored", name: "Unscored", hidden: false, lab: null },
+					]
+					: [
+						{ model_slug: "openai/gpt-test", name: "GPT Test", lab_slug: "openai", lab: { name: "OpenAI" } },
+						{ model_slug: "anthropic/claude-test", name: "Claude Test", lab_slug: "anthropic", lab: { name: "Anthropic" } },
+						{ model_slug: "google/gemini-test", name: "Gemini Test", lab_slug: "google", lab: { name: "Google" } },
+					]);
+			}
+			return Response.json([]);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request("https://phaseo.app/api/_web/rankings/benchmarks/openai%2Fgpt-test", {}, env);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(response.headers.get("cache-tag")).toBe("web-api-ranking-metadata,web-api-benchmarks,web-api-model-benchmarks");
+		await expect(response.json()).resolves.toEqual({
+			model_id: "openai/gpt-test",
+			artificial_analysis: {
+				"aa-intelligence-index-v4": {
+					lower_is_better: false,
+					entries: [
+						{ model_id: "openai/gpt-test", version: "4.1", scores: [58, 51] },
+						{ model_id: null, version: "4.1", scores: [55, 61] },
+					],
+				},
+			},
+			epoch: {
+				benchmark_id: "epoch-capabilities-index",
+				name: "Epoch Capabilities Index",
+				category: "general",
+				benchmark_type: "numerical",
+				lower_is_better: false,
+				total_models: 3,
+				entries: [
+					{ model_id: "anthropic/claude-test", model_name: "Claude Test", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#d97757", release_date: "2026-05-01", score: 150.5, rank: 1, other_info: null, source_link: null, updated_at: null },
+					{ model_id: "openai/gpt-test", model_name: "GPT Test", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: null, release_date: "2026-06-01", score: 140, rank: 3, other_info: "Benchmark: ECI", source_link: null, updated_at: null },
+				],
+			},
+		});
+		expect((await app.request("https://phaseo.app/api/_web/rankings/benchmarks/%20", {}, env)).status).toBe(400);
+	});
+
 	it("serves the observed context-length distribution through the cached web API", async () => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify([
 			{

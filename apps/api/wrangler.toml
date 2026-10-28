@@ -16,6 +16,10 @@ GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # When a charge would have invalidated the credit cache, store its exact
 # post-charge balance instead if it is at least $1, no higher than the cached
 # balance, and not throttled; otherwise the cache is still invalidated.
@@ -75,6 +79,8 @@ EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
 # Off until the founder approves sending.
 FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+# Sends app notifications from catalogue changes; the first run starts from now, with no backlog.
+MOBILE_PUSH_ENABLED = "true"
 FEEDBACK_REQUEST_FROM_EMAIL = "Daniel at Phaseo <daniel@phaseo.app>"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "false"

@@ -23,6 +23,7 @@ import {
 	normalizeThinkingConfig,
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
+	resolveAllowedTools,
 	normalizeResponseFormat,
 	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
@@ -63,6 +64,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			messages.push({
 				role: normalizedRole,
 				content: normalizeOpenAIContent(msgAny.content),
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 			});
 		} else if (normalizedRole === "assistant") {
 			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
@@ -81,11 +83,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				? decodedDetails.parts
 				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
 			const content: IRContentPart[] = [...reasoningParts, ...assistantContent];
+			const audioId = typeof msgAny.audio?.id === "string" && msgAny.audio.id.length > 0 ? msgAny.audio.id : undefined;
 
 			messages.push({
 				role: "assistant",
 				content,
 				toolCalls,
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
+				...(audioId ? { audio: { id: audioId } } : {}),
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);
@@ -96,6 +101,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 						toolCallId: msgAny.tool_call_id,
 						content: toolResult.content,
 						...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+						...(toolResult.parts ? { parts: toolResult.parts } : {}),
 					},
 				],
 			});
@@ -105,6 +111,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	const tools: IRTool[] | undefined = req.tools?.map(decodeOpenAITool);
 
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
+	const allowedTools = resolveAllowedTools(req.tool_choice, tools);
 	const rawOpenAIToolChoice = req.tool_choice
 		&& typeof req.tool_choice === "object"
 		&& !Array.isArray(req.tool_choice)
@@ -112,13 +119,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			? { ...(req.tool_choice as Record<string, any>) }
 			: undefined;
 
+	// A null field means "not set", like an absent one.
 	const reasoningFromRequest = req.reasoning
 		? {
-			effort: req.reasoning.effort,
-			mode: req.reasoning.mode,
-			summary: req.reasoning.summary as any,
-			enabled: req.reasoning.enabled,
-			maxTokens: req.reasoning.max_tokens,
+			effort: req.reasoning.effort ?? undefined,
+			mode: req.reasoning.mode ?? undefined,
+			summary: (req.reasoning.summary ?? undefined) as any,
+			enabled: req.reasoning.enabled ?? undefined,
+			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
 	const reasoningEffortAlias =
@@ -267,6 +275,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		seed: req.seed,
 		tools,
 		toolChoice,
+		...(allowedTools ? { allowedToolNames: allowedTools.names } : {}),
 		webSearchOptions: reqAny.web_search_options ?? reqAny.webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls,
@@ -285,6 +294,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		topLogprobs: req.top_logprobs,
 		stop: reqAny.stop,
 		streamOptions: req.stream_options,
+		store: req.store,
 		background: (req as any).background,
 		serviceTier: resolveTextServiceTier({
 			service_tier: (req as any).service_tier,
@@ -299,7 +309,8 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
-		safetyIdentifier: (req as any).safety_identifier,
+		// The schema fills an absent value with null; null is never sent upstream.
+		safetyIdentifier: typeof (req as any).safety_identifier === "string" ? (req as any).safety_identifier : undefined,
 		vendor,
 		userId: req.user_id ?? req.user,
 		metadata,

@@ -38,6 +38,7 @@ import {
 	normalizeThinkingConfig,
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
+	resolveAllowedTools,
 	normalizeResponseFormat,
 	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
@@ -65,6 +66,33 @@ function normalizeOpenAIContextManagement(
 		}];
 	});
 	return normalized.length > 0 ? normalized : undefined;
+}
+
+// Input items with their own IR shape. Every other `*_call`, `*_call_output`,
+// `mcp_*`, `compaction` and `item_reference` item is kept verbatim.
+const DECODED_CALL_ITEM_TYPES = new Set([
+	"function_call",
+	"function_call_output",
+	"custom_tool_call",
+	"custom_tool_call_output",
+]);
+const VERBATIM_INPUT_ITEM_TYPE = /^(?:mcp_[a-z_]+|[a-z_]+_call(?:_output)?|compaction|item_reference)$/;
+
+/**
+ * Responses input items the IR has no shape for: OpenAI hosted and local tool
+ * calls and their outputs (shell, apply_patch, local_shell, computer, MCP,
+ * web_search_call, ...), compaction items and item references.
+ * https://platform.openai.com/docs/api-reference/responses/create#responses-create-input
+ */
+export function isVerbatimResponsesInputItem(item: unknown): item is Record<string, any> {
+	if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+	const type = (item as Record<string, unknown>).type;
+	return typeof type === "string" && !DECODED_CALL_ITEM_TYPES.has(type) && VERBATIM_INPUT_ITEM_TYPE.test(type);
+}
+
+/** Verbatim items the client sends back (tool outputs, MCP approvals); the rest belong to the model's turn. */
+function isClientVerbatimItem(item: Record<string, any>): boolean {
+	return item.type.endsWith("_output") || item.type === "mcp_approval_response" || item.type === "item_reference";
 }
 
 function isAllowedToolsChoice(value: unknown): value is Record<string, any> {
@@ -138,13 +166,29 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Array of input items
 		else if (Array.isArray(input)) {
 			for (const [itemIndex, item] of input.entries()) {
+				const verbatimItem = isVerbatimResponsesInputItem(item);
 				const assistantItem = item?.type === "reasoning"
 					|| item?.type === "function_call"
 					|| item?.type === "custom_tool_call"
+					|| (verbatimItem && !isClientVerbatimItem(item))
 					|| ((item?.type === "message" || (!item?.type && item?.role)) && item?.role === "assistant");
 				if (!assistantItem) endAssistantTurn();
+				// Kept verbatim in a message of its own, so it stays between the
+				// items around it and nothing later is merged into it.
+				if (verbatimItem) {
+					flushPendingUserParts();
+					messages.push({ role: "user", content: [{ type: "responses_item", item: { ...item } }] });
+					continue;
+				}
 				// Input parts (Responses API)
-				if (item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio" || item?.type === "input_video") {
+				// Top-level `input_file` parts and Gemini-shaped parts (no `type`,
+				// no `role`) are user content too.
+				if (
+					item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio"
+					|| item?.type === "input_video" || item?.type === "input_file"
+					|| (item && typeof item === "object" && item.type === undefined && item.role === undefined
+						&& (item.inlineData || item.inline_data || item.fileData || item.file_data))
+				) {
 					const parts = normalizeOpenAIContent([item]);
 					if (parts.length > 0) {
 						pendingUserParts.push(...parts);
@@ -215,6 +259,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 									toolCallId: item.tool_call_id,
 									content: toolResult.content,
 									...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+									...(toolResult.parts ? { parts: toolResult.parts } : {}),
 								},
 							],
 						});
@@ -267,6 +312,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 								toolCallId: item.call_id,
 								content: toolResult.content,
 								...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+								...(toolResult.parts ? { parts: toolResult.parts } : {}),
 								...(item.type === "custom_tool_call_output" ? { type: "custom" as const } : {}),
 							},
 						],
@@ -283,6 +329,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 
 	// Transform tool choice
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
+	const allowedTools = resolveAllowedTools(req.tool_choice, tools);
 	const rawOpenAIToolChoice = isAllowedToolsChoice(req.tool_choice)
 		? { ...(req.tool_choice as Record<string, any>) }
 		: undefined;
@@ -290,7 +337,8 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	// Transform reasoning
 	const reasoningCandidate: IRReasoning | undefined = req.reasoning
 		? {
-			effort: req.reasoning.effort,
+			// null means "not set": it must not reach executors as an effort.
+			effort: req.reasoning.effort ?? undefined,
 			mode: req.reasoning.mode ?? undefined,
 			summary: req.reasoning.summary || undefined,
 			context: req.reasoning.context ?? undefined,
@@ -346,6 +394,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Tool calling
 		tools,
 		toolChoice,
+		...(allowedTools ? { allowedToolNames: allowedTools.names } : {}),
 		webSearchOptions: (req as any).web_search_options ?? (req as any).webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls ?? (req as any).max_tools_calls,
@@ -385,7 +434,8 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
-		safetyIdentifier: (req as any).safety_identifier,
+		// The schema fills an absent value with null; null is never sent upstream.
+		safetyIdentifier: typeof (req as any).safety_identifier === "string" ? (req as any).safety_identifier : undefined,
 		modalities: normalizeModalities((req as any).modalities),
 		imageConfig: normalizeImageConfig((req as any).image_config),
 		vendor: Object.keys(vendor).length > 0 ? vendor : undefined,

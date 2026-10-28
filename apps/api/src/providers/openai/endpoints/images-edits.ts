@@ -6,10 +6,10 @@ import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { ImagesEditSchema, type ImagesEditRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { resolveUploadableFromString } from "./uploadable";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
-import { collectStreamUsage, usesGptImageTokenPricing } from "./images";
+import { collectImageStreamSummary, imageStreamUsageMeters, usesGptImageTokenPricing } from "./images";
 
 async function resolveImageUpload(
     source: string | Blob,
@@ -160,12 +160,13 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (res.ok && body.stream === true && res.body) {
         const [clientStream, accountingStream] = res.body.tee();
         const usageFinalizer = async () => {
-            const completedUsage = await collectStreamUsage(accountingStream);
-            const usageMeters = usesGptImageTokenPricing(args.model, body.model)
-                ? normalizeOpenAIImageTokenUsage(completedUsage)
-                : completedUsage;
-            usageMeters.requests = 1;
-            const pricedUsage = computeBill(
+            const usageMeters = imageStreamUsageMeters(
+                await collectImageStreamSummary(accountingStream),
+                usesGptImageTokenPricing(args.model, body.model),
+                body.n,
+            );
+            if (!args.pricingCard) return { ...bill, usage: usageMeters };
+            const pricedUsage = computeBillAfterProviderCharge(
                 usageMeters as Record<string, any>,
                 args.pricingCard,
                 buildImagePricingRequestOptions(body, usageMeters),
@@ -202,7 +203,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             usageMeters.output_image = outputImageCount;
         }
 
-        const pricedUsage = computeBill(
+        const pricedUsage = computeBillAfterProviderCharge(
             usageMeters,
             args.pricingCard,
             buildImagePricingRequestOptions(body, usageMeters),

@@ -6,9 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Info, Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-	fetchFrontendModels,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
@@ -59,12 +56,8 @@ export default async function PresetsPage() {
 			/>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<PresetsWithCatalog />
+				<PresetsContent />
 			</Suspense>
 		</div>
 	);
-}
-
-async function PresetsWithCatalog() {
-	return <PresetsContent models={await fetchFrontendModels()} />;
 }

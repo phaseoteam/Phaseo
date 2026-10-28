@@ -60,6 +60,26 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 استخدم `POST /v1/responses` في طلبك الأول. هذه هي نقطة النهاية الموصى بها لعمليات إنشاء النصوص الجديدة.
 
+### ثبّت حزمة SDK
+
+لا تحتاج أمثلة cURL وJavaScript إلى تثبيت أي شيء. لاستخدام حزمة TypeScript SDK أو Python SDK، ثبّتها أولاً:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+راجع صفحتي التثبيت لـ [TypeScript](./sdk-reference/typescript/installation) و[Python](./sdk-reference/python/installation) لمعرفة متطلبات التشغيل وحزم SDK الأخرى.
+
 ### الطلب
 
 <CodeGroup>
@@ -320,6 +340,43 @@ console.log(result.text);
 عند استدعاء Responses API مباشرةً، اقرأ رد المساعد من `output[].content[]` حيث تكون قيمة `type` هي `output_text`.
 
 إذا كنت تستخدم Vercel AI SDK، فاقرأ الرد من `result.text`.
+
+### بث الرد
+
+لطباعة الرد أثناء إنشائه، استخدم البث. يحتوي الحقل `text` في كل جزء على النص الجديد فقط، لذلك تطبع هذه الحلقة الإجابة مرة واحدة. أحداث الإغلاق مثل `response.output_text.done` يكون فيها `text` فارغاً، ونصها الكامل موجود في `fullText` (TypeScript) أو `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+إذا طُبعت الإجابة مرتين، فحدّث حزمة SDK: كانت الإصدارات الأقدم تضع النص الكامل أيضاً في حدث الإغلاق.
 
 ---
 

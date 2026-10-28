@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { broadcastSpillKey, pruneBroadcastSpill, publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
+import {
+	broadcastMessageBytes,
+	broadcastSpillKey,
+	gunzipJson,
+	pruneBroadcastSpill,
+	publishBroadcastEvent,
+	type BroadcastTelemetry,
+} from "./broadcast-event";
 
 const bindings = vi.hoisted(() => ({ current: {} as Record<string, any> }));
 
@@ -66,8 +73,23 @@ describe("publishBroadcastEvent", () => {
 		expect(put).not.toHaveBeenCalled();
 	});
 
-	it("stores events too large for a message in R2", async () => {
+	it("compresses events that would take more than one queue operation", async () => {
 		const large = telemetry("x".repeat(130_000));
+		expect(await publish(large)).toBe(true);
+		expect(put).not.toHaveBeenCalled();
+		const [message, options] = send.mock.calls[0];
+		expect(options).toEqual({ contentType: "v8" });
+		expect(message).not.toHaveProperty("telemetry");
+		expect(message.telemetryBytes).toBe(JSON.stringify(large).length);
+		expect(broadcastMessageBytes(message)).toBeLessThan(63_000);
+		expect(await gunzipJson(message.telemetryGzip)).toEqual(large);
+	});
+
+	it("stores events too large for a message in R2", async () => {
+		// Random hex compresses to about half, still over the 120 KB limit.
+		const random = new Uint8Array(200_000);
+		for (let offset = 0; offset < random.length; offset += 65_536) crypto.getRandomValues(random.subarray(offset, offset + 65_536));
+		const large = telemetry(Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join(""));
 		expect(await publish(large)).toBe(true);
 		const [key, body] = put.mock.calls[0];
 		expect(key).toMatch(/^broadcast-spill\/\d{4}-\d{2}-\d{2}\/gateway%3Areq_1\.json$/);
@@ -75,6 +97,17 @@ describe("publishBroadcastEvent", () => {
 		const [message] = send.mock.calls[0];
 		expect(message).toMatchObject({ spillKey: key, attempt: 1 });
 		expect(message).not.toHaveProperty("telemetry");
+	});
+
+	it("leaves events too large for a message to the outbox where no bucket is bound", async () => {
+		// The EU and US workers have no I/O log bucket.
+		delete bindings.current.GATEWAY_IO_LOGS_BUCKET;
+		const random = new Uint8Array(200_000);
+		for (let offset = 0; offset < random.length; offset += 65_536) crypto.getRandomValues(random.subarray(offset, offset + 65_536));
+		expect(await publish(telemetry(Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("")))).toBe(false);
+		expect(send).not.toHaveBeenCalled();
+		// Smaller events still use the queue.
+		expect(await publish()).toBe(true);
 	});
 
 	it("reports a failed send so the caller can use the outbox", async () => {

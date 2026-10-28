@@ -2,6 +2,7 @@
 icon: "binary"
 title: "Embeddings"
 description: "Call /embeddings with the Python SDK."
+"og:image": "https://phaseo.app/og/dynamic?title=Embeddings&description=Call%20/embeddings%20with%20the%20Python%20SDK.&pathname=/docs/v1/sdk-reference/python/embeddings"
 ---
 
 **Method**: `client.generate_embedding()`.
@@ -33,8 +34,10 @@ Embedding payload (JSON)
     }
   ],
   "usage": {
-    "prompt_tokens": 5,
-    "total_tokens": 5
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
   }
 }
 ```

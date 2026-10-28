@@ -1,0 +1,29 @@
+{
+	"provider": "black-forest-labs",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "black-forest-labs:black-forest-labs/flux-3-video:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/black-forest-labs/black-forest-labs-flux-3-video/video.generate/pricing.json",
+			"rules": [
+				["#2","standard","output_video_seconds","0.06/1 second",110,[{"path":"video_params.mode","op":"ne","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":2,"value":true}],null,null],
+				["#5","standard","output_video_seconds","0.12/1 second",110,[{"path":"video_params.mode","op":"eq","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":2,"value":true}],null,null],
+				["#0","standard","output_video_seconds","0.17/1 second",100,[{"path":"video_params.mode","op":"ne","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.resolution","op":"eq","or_group":1,"and_index":2,"value":"hd"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":3,"value":false}],null,null],
+				["#1","standard","output_video_seconds","0.29/1 second",100,[{"path":"video_params.mode","op":"ne","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.resolution","op":"eq","or_group":1,"and_index":2,"value":"fhd"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":3,"value":false}],null,null],
+				["#3","standard","output_video_seconds","0.43/1 second",100,[{"path":"video_params.mode","op":"eq","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.resolution","op":"eq","or_group":1,"and_index":2,"value":"hd"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":3,"value":false}],null,null],
+				["#4","standard","output_video_seconds","0.54/1 second",100,[{"path":"video_params.mode","op":"eq","or_group":1,"and_index":1,"value":"v2v"},{"path":"video_params.resolution","op":"eq","or_group":1,"and_index":2,"value":"fhd"},{"path":"video_params.draft","op":"eq","or_group":1,"and_index":3,"value":false}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"video_params":{"mode":"v2v-sim-other","draft":true}},"usage":{"requests":1,"output_video_seconds":5},"expected":{"nanos":300000000,"lines":[["output_video_seconds",5,"#2","output_video_seconds",300000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modeeq\"v2v\"&video_params.drafteqtrue)","kind":"rule","targets":["#5"],"plan":"standard","context":{"video_params":{"mode":"v2v","draft":true}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":840000000,"lines":[["output_video_seconds",7,"#5","output_video_seconds",840000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modeeq\"v2v\"&video_params.resolutioneq\"fhd\"&video_params.drafteqfalse)","kind":"rule","targets":["#4"],"plan":"standard","context":{"video_params":{"mode":"v2v","resolution":"fhd","draft":false}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":3780000000,"lines":[["output_video_seconds",7,"#4","output_video_seconds",3780000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modeeq\"v2v\"&video_params.resolutioneq\"hd\"&video_params.drafteqfalse)","kind":"rule","targets":["#3"],"plan":"standard","context":{"video_params":{"mode":"v2v","resolution":"hd","draft":false}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":3010000000,"lines":[["output_video_seconds",7,"#3","output_video_seconds",3010000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modene\"v2v\"&video_params.drafteqtrue)","kind":"rule","targets":["#2"],"plan":"standard","context":{"video_params":{"mode":"v2v-sim-other","draft":true}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":420000000,"lines":[["output_video_seconds",7,"#2","output_video_seconds",420000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modene\"v2v\"&video_params.resolutioneq\"fhd\"&video_params.drafteqfalse)","kind":"rule","targets":["#1"],"plan":"standard","context":{"video_params":{"mode":"v2v-sim-other","resolution":"fhd","draft":false}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":2030000000,"lines":[["output_video_seconds",7,"#1","output_video_seconds",2030000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(video_params.modene\"v2v\"&video_params.resolutioneq\"hd\"&video_params.drafteqfalse)","kind":"rule","targets":["#0"],"plan":"standard","context":{"video_params":{"mode":"v2v-sim-other","resolution":"hd","draft":false}},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1190000000,"lines":[["output_video_seconds",7,"#0","output_video_seconds",1190000000]]}}
+			]
+		}
+	]
+}

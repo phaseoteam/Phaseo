@@ -150,7 +150,7 @@ const runtime = vi.hoisted(() => {
                 }),
             };
         }
-        if (table === "v2_route_capabilities") {
+        if (table === "v2_effective_route_capabilities") {
             return {
                 select: () => ({
                     eq: () => ({

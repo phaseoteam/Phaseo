@@ -3,7 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import { captureProductEventOnce } from "@/lib/productAnalytics";
 import { useSearchParams } from "next/navigation";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
@@ -427,6 +428,7 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 	const scope = { ...initialScope, workspaceId: sp.get("workspaceId")?.trim() || initialScope.workspaceId };
 	const creatorId = sp.get("user") || "";
 	const keyId = sp.get("key") || "";
+	const excludeKey = Boolean(keyId) && sp.get("key_op") === "is_not";
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = sp.get(rangeKeys.preset);
 	const preset = presetParam
@@ -436,7 +438,9 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 	const customTo = parseUsageDateInput(sp.get(rangeKeys.to));
 	const labelKey = sp.get("label_key")?.trim() || "";
 	const labelValue = sp.get("label_value")?.trim() || "";
-	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, creatorId, keyId }, preset === "live", async (signal) => {
+	// "Is not" has no rollup totals, so the API leaves the overview unfiltered for it.
+	const excludeLabel = Boolean(labelKey) && sp.get("label_op") === "is_not";
+	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, labelOp: excludeLabel ? "is_not" : "", creatorId, keyId, keyOp: excludeKey ? "is_not" : "" }, preset === "live", async (signal) => {
 		const { from, to } = resolveUsageTimeRange({ preset, customFrom, customTo });
 		const previous = resolvePreviousUsageTimeRange({ preset, from, to });
 		const params = new URLSearchParams({
@@ -451,8 +455,10 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 		});
 		if (creatorId) params.set("user", creatorId);
 		if (keyId) params.set("key", keyId);
+		if (excludeKey) params.set("key_op", "is_not");
 		if (labelKey) params.set("label_key", labelKey);
 		if (labelValue) params.set("label_value", labelValue);
+		if (excludeLabel) params.set("label_op", "is_not");
 		const path = `/api/account/settings/usage/observability?${params}` as const;
 		const initial = await fetchPrivateUsage<SettingsObservabilityData>(path, scope, signal);
 		if (!initial.signedIn) throw new WebApiError(path, 401);
@@ -478,6 +484,12 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	const { keys } = initial;
 	const cells = initial.current.cells;
 	const previousCells = initial.previous.cells;
+	const hasUsage = cells.some((cell) => cell.requests > 0) || previousCells.some((cell) => cell.requests > 0);
+
+	useEffect(() => {
+		if (!hasUsage || !initial.workspaceId) return;
+		captureProductEventOnce("gateway_first_usage_seen", { surface: "usage_overview" }, initial.workspaceId);
+	}, [hasUsage, initial.workspaceId]);
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
 	const modelMetadata = new Map(initial.modelMetadataEntries);
@@ -707,6 +719,14 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 			initialTab={initialTab}
 			labelFacets={initial.labelFacets}
 			labelSummary={initial.labelSummary}
+			requestClassifiers={initial.requestClassifiers ?? []}
+			labelBreakdown={{
+				from,
+				to,
+				keyId: sp.get("key") || null,
+				excludeKey: Boolean(sp.get("key")) && sp.get("key_op") === "is_not",
+				creatorId: sp.get("user") || null,
+			}}
 			preset={preset}
 			customFrom={customFrom}
 			customTo={customTo}

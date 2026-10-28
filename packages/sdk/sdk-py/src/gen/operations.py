@@ -206,6 +206,19 @@ def createChatCompletion(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def createClassifier(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ClassifierResponse:
+	path = path or {}
+	resolved_path = "/classifiers"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def createDataContributionClassifier(
 	client: Client,
 	*,
@@ -216,6 +229,19 @@ def createDataContributionClassifier(
 ) -> DataContributionClassifierResponse:
 	path = path or {}
 	resolved_path = "/data-contribution/classifiers"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createDepartmentBudget(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> DepartmentBudgetResponse:
+	path = path or {}
+	resolved_path = "/department-budgets"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -242,6 +268,19 @@ def createEmbedding(
 ) -> EmbeddingsResponse:
 	path = path or {}
 	resolved_path = "/embeddings"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createExtraction(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ExtractionResponse:
+	path = path or {}
+	resolved_path = "/extractions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -473,7 +512,7 @@ def createRealtimeSession(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> OcrResponse:
 	path = path or {}
 	resolved_path = "/audio/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -515,6 +554,19 @@ def createSpeech(
 ) -> Any:
 	path = path or {}
 	resolved_path = "/audio/speech"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleResponse:
+	path = path or {}
+	resolved_path = "/spend-rules"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -606,6 +658,19 @@ def createWebhookEndpoint(
 ) -> WebhookEndpointSecretResponse:
 	path = path or {}
 	resolved_path = "/webhook-endpoints"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createWorkloadIdentityPolicy(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkloadIdentityPolicyResponse:
+	path = path or {}
+	resolved_path = "/workload-identity/policies"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -713,6 +778,19 @@ def deleteApiKey(
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
+def deleteClassifier(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ClassifierDeleteResponse:
+	path = path or {}
+	resolved_path = f"/classifiers/{_path_segment(path.get('id', ''))}"
+	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
+
+
 def deleteDataContributionClassifier(
 	client: Client,
 	*,
@@ -723,6 +801,19 @@ def deleteDataContributionClassifier(
 ) -> DataContributionClassifierDeleteResponse:
 	path = path or {}
 	resolved_path = f"/data-contribution/classifiers/{_path_segment(path.get('id', ''))}"
+	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
+
+
+def deleteDepartmentBudget(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkspaceBudgetDeleteResponse:
+	path = path or {}
+	resolved_path = f"/department-budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -804,6 +895,19 @@ def deletePreset(
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
+def deletePresetLabel(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> PresetLabelDeleteResponse:
+	path = path or {}
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/labels/{_path_segment(path.get('label', ''))}"
+	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
+
+
 def deletePrivateModel(
 	client: Client,
 	*,
@@ -856,6 +960,19 @@ def deleteRateLimitPolicy(
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
+def deleteSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleDeleteResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}"
+	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
+
+
 def deleteVideo(
 	client: Client,
 	*,
@@ -892,6 +1009,19 @@ def deleteWebhookEndpoint(
 ) -> WebhookEndpointDeleteResponse:
 	path = path or {}
 	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
+	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
+
+
+def deleteWorkloadIdentityPolicy(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkloadIdentityPolicyDeleteResponse:
+	path = path or {}
+	resolved_path = f"/workload-identity/policies/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1103,6 +1233,19 @@ def getApiKey(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def getClassifier(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ClassifierResponse:
+	path = path or {}
+	resolved_path = f"/classifiers/{_path_segment(path.get('id', ''))}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def getCredits(
 	client: Client,
 	*,
@@ -1139,6 +1282,19 @@ def getDataContributionSettings(
 ) -> DataContributionOverviewResponse:
 	path = path or {}
 	resolved_path = "/data-contribution"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def getDepartmentBudget(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> DepartmentBudgetResponse:
+	path = path or {}
+	resolved_path = f"/department-budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1357,7 +1513,7 @@ def getProviderDerankStatus(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> OcrResponse:
 	path = path or {}
 	resolved_path = f"/health/providers/{_path_segment(path.get('provider_id', ''))}/derank"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -1386,6 +1542,19 @@ def getRateLimitPolicy(
 ) -> RateLimitPolicyResponse:
 	path = path or {}
 	resolved_path = f"/rate-limits/policies/{_path_segment(path.get('id', ''))}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def getSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1451,6 +1620,19 @@ def getWebhookEndpoint(
 ) -> WebhookEndpoint:
 	path = path or {}
 	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def getWorkloadIdentityPolicy(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkloadIdentityPolicyResponse:
+	path = path or {}
+	resolved_path = f"/workload-identity/policies/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1555,6 +1737,19 @@ def invalidateApiKeyCache(
 ) -> KeyInvalidateResponse:
 	path = path or {}
 	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}/invalidate"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def liftSpendBlock(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendBlockResponse:
+	path = path or {}
+	resolved_path = f"/spend-blocks/{_path_segment(path.get('id', ''))}/lift"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1701,6 +1896,19 @@ def listBatchRequestsAlias(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listClassifiers(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ClassifierListResponse:
+	path = path or {}
+	resolved_path = "/classifiers"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listDataModels(
 	client: Client,
 	*,
@@ -1711,6 +1919,19 @@ def listDataModels(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/data/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listDepartmentBudgets(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> DepartmentBudgetListResponse:
+	path = path or {}
+	resolved_path = "/department-budgets"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1909,6 +2130,19 @@ def listOrganisations(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listPresetLabels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> PresetLabelListResponse:
+	path = path or {}
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/labels"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listPresets(
 	client: Client,
 	*,
@@ -2026,6 +2260,45 @@ def listRateLimitPolicies(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listSpendBlocks(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendBlockListResponse:
+	path = path or {}
+	resolved_path = "/spend-blocks"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listSpendRuleHistory(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleHistoryResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}/history"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listSpendRules(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleListResponse:
+	path = path or {}
+	resolved_path = "/spend-rules"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listTeamModels(
 	client: Client,
 	*,
@@ -2101,6 +2374,19 @@ def listWebhookEndpoints(
 ) -> WebhookEndpointListResponse:
 	path = path or {}
 	resolved_path = "/webhook-endpoints"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listWorkloadIdentityPolicies(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkloadIdentityPolicyListResponse:
+	path = path or {}
+	resolved_path = "/workload-identity/policies"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2284,6 +2570,19 @@ def mergeWorkspaceApp(
 	path = path or {}
 	resolved_path = f"/apps/{_path_segment(path.get('id', ''))}/merge"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def previewSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRulePreviewResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}/preview"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
 def publishPresetVersion(
@@ -2572,6 +2871,32 @@ def rotateWebhookEndpointSecret(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def rotateWorkspaceNotificationDestinationSecret(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkspaceNotificationDestinationResponse:
+	path = path or {}
+	resolved_path = f"/notifications/destinations/{_path_segment(path.get('id', ''))}/rotate-secret"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def setPresetLabel(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> PresetLabelResponse:
+	path = path or {}
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/labels/{_path_segment(path.get('label', ''))}"
+	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
+
+
 def setWorkspaceDepartmentMember(
 	client: Client,
 	*,
@@ -2596,6 +2921,19 @@ def summarizeGatewayFeedback(
 	path = path or {}
 	resolved_path = "/feedback/summary"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def testSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleTestResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}/test"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
 def testWebhookEndpoint(
@@ -2650,6 +2988,19 @@ def updateApiKey(
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
+def updateClassifier(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> ClassifierResponse:
+	path = path or {}
+	resolved_path = f"/classifiers/{_path_segment(path.get('id', ''))}"
+	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
+
+
 def updateDataContributionClassifier(
 	client: Client,
 	*,
@@ -2673,6 +3024,19 @@ def updateDataContributionConsent(
 ) -> DataContributionConsentResponse:
 	path = path or {}
 	resolved_path = "/data-contribution/consent"
+	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
+
+
+def updateDepartmentBudget(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> DepartmentBudgetResponse:
+	path = path or {}
+	resolved_path = f"/department-budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2845,6 +3209,19 @@ def updateRateLimitPolicy(
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
+def updateSpendRule(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> SpendRuleResponse:
+	path = path or {}
+	resolved_path = f"/spend-rules/{_path_segment(path.get('id', ''))}"
+	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
+
+
 def updateWebhookEndpoint(
 	client: Client,
 	*,
@@ -2855,6 +3232,19 @@ def updateWebhookEndpoint(
 ) -> WebhookEndpoint:
 	path = path or {}
 	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
+	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
+
+
+def updateWorkloadIdentityPolicy(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> WorkloadIdentityPolicyResponse:
+	path = path or {}
+	resolved_path = f"/workload-identity/policies/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -3053,4 +3443,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["addGuardrailKeys", "addGuardrailMembers", "addWorkspaceMembers", "applyPresetUpstreamVersion", "approveWorkspaceJoinRequest", "calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createDataContributionClassifier", "createDynamicRoute", "createEmbedding", "createGatewayFeedback", "createGatewayObservabilityEvent", "createGuardrail", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createObservabilityDestination", "createOcr", "createParse", "createPreset", "createPresetTestRun", "createPrivateModel", "createProviderCredential", "createRateLimitAssignment", "createRateLimitPolicy", "createRealtimeSession", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWebhookEndpoint", "createWorkspace", "createWorkspaceBudget", "createWorkspaceDepartment", "createWorkspaceGroupMapping", "createWorkspaceInvite", "createWorkspaceNotificationDestination", "createWorkspaceScimToken", "deleteApiKey", "deleteDataContributionClassifier", "deleteDynamicRoute", "deleteGuardrail", "deleteManagementKey", "deleteOAuthClient", "deleteObservabilityDestination", "deletePreset", "deletePrivateModel", "deleteProviderCredential", "deleteRateLimitAssignment", "deleteRateLimitPolicy", "deleteVideo", "deleteVideoAlias", "deleteWebhookEndpoint", "deleteWorkspace", "deleteWorkspaceBudget", "deleteWorkspaceDepartment", "deleteWorkspaceDepartmentMember", "deleteWorkspaceGroupMapping", "deleteWorkspaceInvite", "deleteWorkspaceNotificationDestination", "deployDynamicRouteVersion", "exportAnalyticsCsv", "finalizeRealtimeSession", "forkPreset", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getDataContributionSettings", "getDynamicRoute", "getGatewayRequestLog", "getGeneration", "getGuardrail", "getHealth", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getObservabilityDestination", "getObservabilityLoggingPolicy", "getPreset", "getPresetPublisher", "getPresetTestRun", "getPrivateModel", "getProviderCredential", "getProviderDerankStatus", "getRateLimitAssignment", "getRateLimitPolicy", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWebhookEndpoint", "getWorkspace", "getWorkspaceBudget", "getWorkspaceDirectory", "getWorkspaceNotificationSettings", "getWorkspaceScim", "getWorkspaceSettings", "getWorkspaceSso", "invalidateApiKeyCache", "listApiKeys", "listBatchCapabilities", "listBatchCapabilitiesAlias", "listBatches", "listBatchesAlias", "listBatchFiles", "listBatchFilesAlias", "listBatchModels", "listBatchModelsAlias", "listBatchRequests", "listBatchRequestsAlias", "listDataModels", "listDynamicRoutes", "listEndpoints", "listFiles", "listGatewayFeedback", "listGatewayObservabilityEvents", "listGatewayRequestLogs", "listGuardrailKeys", "listGuardrailMembers", "listGuardrails", "listManagementKeys", "listModelEndpoints", "listModels", "listOAuthClients", "listObservabilityDestinations", "listOrganisations", "listPresets", "listPresetTestRuns", "listPresetVersions", "listPricingModels", "listPrivateModels", "listProviderCredentials", "listProviders", "listRateLimitAssignments", "listRateLimitPolicies", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWebhookEndpoints", "listWorkspaceApps", "listWorkspaceAuditEvents", "listWorkspaceBudgets", "listWorkspaceDepartments", "listWorkspaceGroupMappings", "listWorkspaceInvites", "listWorkspaceJoinRequests", "listWorkspaceMembers", "listWorkspaceNotificationDestinations", "listWorkspaceNotificationRoutes", "listWorkspaces", "listWorkspaceScimAuditEvents", "makeDecision", "mergeWorkspaceApp", "publishPresetVersion", "regenerateOAuthClientSecret", "rejectWorkspaceJoinRequest", "removeGuardrailKeys", "removeGuardrailMembers", "removeWorkspaceMembers", "reorderProviderCredentials", "replaceDynamicRouteKeys", "replaceGuardrailKeys", "retrieveBatch", "retrieveBatchAlias", "retrieveBatchFile", "retrieveBatchFileAlias", "retrieveBatchFileContent", "retrieveBatchFileContentAlias", "retrieveBatchResults", "retrieveBatchResultsAlias", "retrieveFile", "retrieveFileContent", "revokeWorkspaceScimToken", "rotateApiKey", "rotateWebhookEndpointSecret", "setWorkspaceDepartmentMember", "summarizeGatewayFeedback", "testWebhookEndpoint", "testWorkspaceNotificationDestination", "testWorkspaceNotificationDestinationConfig", "updateApiKey", "updateDataContributionClassifier", "updateDataContributionConsent", "updateDynamicRoute", "updateGuardrail", "updateManagementKey", "updateOAuthClient", "updateObservabilityDestination", "updateObservabilityLoggingPolicy", "updatePreset", "updatePresetPublisher", "updatePresetTestRun", "updatePrivateModel", "updateProviderCredential", "updateRateLimitAssignment", "updateRateLimitPolicy", "updateWebhookEndpoint", "updateWorkspace", "updateWorkspaceApp", "updateWorkspaceBudget", "updateWorkspaceDepartment", "updateWorkspaceDirectoryMember", "updateWorkspaceGroupMapping", "updateWorkspaceMemberRole", "updateWorkspaceNotificationRoute", "updateWorkspaceNotificationSettings", "updateWorkspaceScim", "updateWorkspaceSettings", "updateWorkspaceSso", "uploadBatchFile", "uploadBatchFileAlias", "uploadFile"]
+operations___all__ = ["addGuardrailKeys", "addGuardrailMembers", "addWorkspaceMembers", "applyPresetUpstreamVersion", "approveWorkspaceJoinRequest", "calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createClassifier", "createDataContributionClassifier", "createDepartmentBudget", "createDynamicRoute", "createEmbedding", "createExtraction", "createGatewayFeedback", "createGatewayObservabilityEvent", "createGuardrail", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createObservabilityDestination", "createOcr", "createParse", "createPreset", "createPresetTestRun", "createPrivateModel", "createProviderCredential", "createRateLimitAssignment", "createRateLimitPolicy", "createRealtimeSession", "createRerank", "createResponse", "createSpeech", "createSpendRule", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWebhookEndpoint", "createWorkloadIdentityPolicy", "createWorkspace", "createWorkspaceBudget", "createWorkspaceDepartment", "createWorkspaceGroupMapping", "createWorkspaceInvite", "createWorkspaceNotificationDestination", "createWorkspaceScimToken", "deleteApiKey", "deleteClassifier", "deleteDataContributionClassifier", "deleteDepartmentBudget", "deleteDynamicRoute", "deleteGuardrail", "deleteManagementKey", "deleteOAuthClient", "deleteObservabilityDestination", "deletePreset", "deletePresetLabel", "deletePrivateModel", "deleteProviderCredential", "deleteRateLimitAssignment", "deleteRateLimitPolicy", "deleteSpendRule", "deleteVideo", "deleteVideoAlias", "deleteWebhookEndpoint", "deleteWorkloadIdentityPolicy", "deleteWorkspace", "deleteWorkspaceBudget", "deleteWorkspaceDepartment", "deleteWorkspaceDepartmentMember", "deleteWorkspaceGroupMapping", "deleteWorkspaceInvite", "deleteWorkspaceNotificationDestination", "deployDynamicRouteVersion", "exportAnalyticsCsv", "finalizeRealtimeSession", "forkPreset", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getClassifier", "getCredits", "getCurrentApiKey", "getDataContributionSettings", "getDepartmentBudget", "getDynamicRoute", "getGatewayRequestLog", "getGeneration", "getGuardrail", "getHealth", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getObservabilityDestination", "getObservabilityLoggingPolicy", "getPreset", "getPresetPublisher", "getPresetTestRun", "getPrivateModel", "getProviderCredential", "getProviderDerankStatus", "getRateLimitAssignment", "getRateLimitPolicy", "getSpendRule", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWebhookEndpoint", "getWorkloadIdentityPolicy", "getWorkspace", "getWorkspaceBudget", "getWorkspaceDirectory", "getWorkspaceNotificationSettings", "getWorkspaceScim", "getWorkspaceSettings", "getWorkspaceSso", "invalidateApiKeyCache", "liftSpendBlock", "listApiKeys", "listBatchCapabilities", "listBatchCapabilitiesAlias", "listBatches", "listBatchesAlias", "listBatchFiles", "listBatchFilesAlias", "listBatchModels", "listBatchModelsAlias", "listBatchRequests", "listBatchRequestsAlias", "listClassifiers", "listDataModels", "listDepartmentBudgets", "listDynamicRoutes", "listEndpoints", "listFiles", "listGatewayFeedback", "listGatewayObservabilityEvents", "listGatewayRequestLogs", "listGuardrailKeys", "listGuardrailMembers", "listGuardrails", "listManagementKeys", "listModelEndpoints", "listModels", "listOAuthClients", "listObservabilityDestinations", "listOrganisations", "listPresetLabels", "listPresets", "listPresetTestRuns", "listPresetVersions", "listPricingModels", "listPrivateModels", "listProviderCredentials", "listProviders", "listRateLimitAssignments", "listRateLimitPolicies", "listSpendBlocks", "listSpendRuleHistory", "listSpendRules", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWebhookEndpoints", "listWorkloadIdentityPolicies", "listWorkspaceApps", "listWorkspaceAuditEvents", "listWorkspaceBudgets", "listWorkspaceDepartments", "listWorkspaceGroupMappings", "listWorkspaceInvites", "listWorkspaceJoinRequests", "listWorkspaceMembers", "listWorkspaceNotificationDestinations", "listWorkspaceNotificationRoutes", "listWorkspaces", "listWorkspaceScimAuditEvents", "makeDecision", "mergeWorkspaceApp", "previewSpendRule", "publishPresetVersion", "regenerateOAuthClientSecret", "rejectWorkspaceJoinRequest", "removeGuardrailKeys", "removeGuardrailMembers", "removeWorkspaceMembers", "reorderProviderCredentials", "replaceDynamicRouteKeys", "replaceGuardrailKeys", "retrieveBatch", "retrieveBatchAlias", "retrieveBatchFile", "retrieveBatchFileAlias", "retrieveBatchFileContent", "retrieveBatchFileContentAlias", "retrieveBatchResults", "retrieveBatchResultsAlias", "retrieveFile", "retrieveFileContent", "revokeWorkspaceScimToken", "rotateApiKey", "rotateWebhookEndpointSecret", "rotateWorkspaceNotificationDestinationSecret", "setPresetLabel", "setWorkspaceDepartmentMember", "summarizeGatewayFeedback", "testSpendRule", "testWebhookEndpoint", "testWorkspaceNotificationDestination", "testWorkspaceNotificationDestinationConfig", "updateApiKey", "updateClassifier", "updateDataContributionClassifier", "updateDataContributionConsent", "updateDepartmentBudget", "updateDynamicRoute", "updateGuardrail", "updateManagementKey", "updateOAuthClient", "updateObservabilityDestination", "updateObservabilityLoggingPolicy", "updatePreset", "updatePresetPublisher", "updatePresetTestRun", "updatePrivateModel", "updateProviderCredential", "updateRateLimitAssignment", "updateRateLimitPolicy", "updateSpendRule", "updateWebhookEndpoint", "updateWorkloadIdentityPolicy", "updateWorkspace", "updateWorkspaceApp", "updateWorkspaceBudget", "updateWorkspaceDepartment", "updateWorkspaceDirectoryMember", "updateWorkspaceGroupMapping", "updateWorkspaceMemberRole", "updateWorkspaceNotificationRoute", "updateWorkspaceNotificationSettings", "updateWorkspaceScim", "updateWorkspaceSettings", "updateWorkspaceSso", "uploadBatchFile", "uploadBatchFileAlias", "uploadFile"]

@@ -4,27 +4,53 @@ description: "outubro 2026 - Phaseo"
 rss: true
 ---
 
-## 9 de outubro de 2026
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Produto</p>
+<ChangelogFilters labels={{"product":"Produto","api":"API e SDKs","models":"Modelos"}} clearLabel="Limpar" />
+
+<Update label="24 de outubro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O roteamento de modelos aposentados está disponível para todos os espaços de trabalho. Quando nenhum provedor atende mais um modelo aposentado, as solicitações dele podem ir para o substituto aprovado em vez de falhar. Ele vem desativado: proprietários e administradores o ativam em **Configurações -> Roteamento -> Roteamento de modelos aposentados** e escolhem se um substituto pode custar mais. As respostas redirecionadas trazem o cabeçalho `x-phaseo-model-substitution`. Veja [Descontinuação e aposentadoria de modelos](./guides/model-retirement.mdx).
+
+</div>
+
+</Update>
+
+<Update label="9 de outubro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
 
 - O chat adiciona respostas interativas opcionais ao lado do chat temporário: cartões comparativos, tabelas, gráficos de barras e formulários de acompanhamento. Os valores ficam salvos em cada variante de resposta e os envios continuam a conversa.
 
-***
+</div>
 
-## 7 de outubro de 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Novos modelos</p>
+<Update label="7 de outubro de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Claude Haiku 5.5](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
 
 - [Anthropic: Claude Haiku 5.5](https://phaseo.app/models/anthropic/claude-haiku-5.5)
 
-***
+</div>
 
-## 6 de outubro de 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Novos modelos</p>
+<Update label="6 de outubro de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Mistral Large 4](/images/model-releases/2026-10-06--mistral--mistral-large-4.0.png)
 
@@ -32,11 +58,15 @@ rss: true
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
 
-***
+</div>
 
-## 1 de outubro de 2026
+</Update>
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Novos modelos</p>
+<Update label="1 de outubro de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Clef](/images/model-releases/2026-10-01--cloudflare--clef.png)
 
@@ -46,4 +76,6 @@ rss: true
 - [Microsoft: MAI-Voice-2.1-Flash](https://phaseo.app/models/microsoft/mai-voice-2.1-flash)
 - [Microsoft: MAI-Transcribe-2-Streaming](https://phaseo.app/models/microsoft/mai-transcribe-2-streaming)
 
-***
+</div>
+
+</Update>

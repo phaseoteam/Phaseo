@@ -1,5 +1,7 @@
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,8 +49,19 @@ const nextConfig = {
   ...(configuredAllowedDevOrigins.length > 0
     ? { allowedDevOrigins: configuredAllowedDevOrigins }
     : {}),
+  // Partial Prerendering comes from cacheComponents. `partialPrefetching` stays
+  // off: it re-renders every dynamic page as a runtime prefetch and embeds that
+  // copy in the response, and links here only prefetch static shells on intent.
+  // Set explicitly: Next 16.4 warns when it's unset, and the default may flip.
   cacheComponents: true,
-  partialPrefetching: true,
+  partialPrefetching: false,
+  // `pnpm run build` type-checks with TypeScript 7 first (`pnpm run typecheck`,
+  // incremental in .next/cache like Next's own check). Next's check would run the
+  // `typescript` package's CLI, which is the TypeScript 6 package kept for
+  // typescript-eslint (pnpm-workspace.yaml).
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     globalNotFound: true,
   },
@@ -93,6 +106,11 @@ const nextConfig = {
             value: "camera=(), microphone=(self), geolocation=(), payment=(self)",
           },
         ],
+      },
+      {
+        // Client dictionaries are named by their content, so a file never changes.
+        source: "/_i18n/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       {
         source: "/:locale(en-GB|en-US|es-ES|fr-FR|de-DE|pt-BR|ja|zh-Hans|hi|ar-SA)?/oauth/consent",
@@ -240,4 +258,77 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// Source maps for PostHog error tracking. Production builds with the upload
+// credentials emit browser source maps, inject chunk IDs into the browser
+// chunks, upload the maps to PostHog for this commit, then delete them and
+// their sourceMappingURL comments, so the deployment never serves or points to
+// them. Builds without the credentials (local, preview, forks) are unchanged.
+const posthogSourceMapApiKey = process.env.POSTHOG_SOURCEMAPS_API_KEY?.trim();
+const posthogSourceMapProjectId = process.env.POSTHOG_SOURCEMAPS_PROJECT_ID?.trim();
+const uploadPostHogSourceMaps =
+  Boolean(posthogSourceMapApiKey && posthogSourceMapProjectId) &&
+  process.env.VERCEL_ENV !== "preview";
+
+const sourceMapComment =
+  /\n?(?:\/\/# sourceMappingURL=[^\s]+\.map|\/\*# sourceMappingURL=[^\s*]+\.map[ \t]*\*\/)[ \t]*(?=\n?$)/;
+
+async function removeSourceMaps(directory) {
+  const entries = await readdir(directory, { recursive: true, withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile())
+      .map(async (entry) => {
+        const file = path.join(entry.parentPath, entry.name);
+        if (entry.name.endsWith(".map")) {
+          await rm(file, { force: true });
+        } else if (/\.(?:js|css)$/.test(entry.name)) {
+          const content = await readFile(file, "utf8");
+          const stripped = content.replace(sourceMapComment, "");
+          if (stripped !== content) await writeFile(file, stripped);
+        }
+      }),
+  );
+}
+
+function withPostHogSourceMaps(config) {
+  if (!uploadPostHogSourceMaps) return config;
+
+  const posthogConfig = withPostHogConfig(config, {
+    personalApiKey: posthogSourceMapApiKey,
+    projectId: posthogSourceMapProjectId,
+    host: process.env.POSTHOG_SOURCEMAPS_HOST?.trim() || "https://eu.posthog.com",
+    sourcemaps: {
+      releaseName: "phaseo-web",
+      releaseVersion: nextConfig.env.NEXT_PUBLIC_RELEASE,
+      // Chunk IDs injected into the bundles. The "event" mode needs a newer
+      // posthog-js than this app runs.
+      releaseMode: "symbol-set",
+      deleteAfterUpload: true,
+    },
+  });
+
+  return async (phase, context) => {
+    const resolved = await posthogConfig(phase, context);
+    const upload = resolved.compiler?.runAfterProductionCompile;
+    if (!upload) return resolved;
+    return {
+      ...resolved,
+      compiler: {
+        ...resolved.compiler,
+        // Only browser chunks: server maps stay as Next writes them. A failed
+        // upload logs a warning and the build continues without public maps.
+        runAfterProductionCompile: async (build) => {
+          const browserChunks = path.resolve(build.distDir, "static");
+          try {
+            await upload({ ...build, distDir: browserChunks });
+          } catch (error) {
+            console.warn("[posthog] Source map upload failed; deleting the maps instead.", error);
+          }
+          await removeSourceMaps(browserChunks);
+        },
+      },
+    };
+  };
+}
+
+export default withPostHogSourceMaps(withNextIntl(nextConfig));

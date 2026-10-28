@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	applyDownstreamRateLimitHeaders,
 	extractDownstreamRateLimitHeaders,
+	readDownstreamRateLimitHeaders,
 } from "./upstream-rate-limit-headers";
 
 describe("upstream rate-limit response headers", () => {
@@ -53,5 +54,29 @@ describe("upstream rate-limit response headers", () => {
 		expect(headers.get("Retry-After")).toBe("10");
 		expect(headers.get("X-Phaseo-Upstream-RateLimit-Remaining")).toBe("0");
 		expect(headers.get("Set-Cookie")).toBeNull();
+	});
+
+	it("re-reads downstream rate-limit headers from a gateway error response, never provider names", () => {
+		const result = readDownstreamRateLimitHeaders(new Headers({
+			"retry-after": "9",
+			"X-Phaseo-Upstream-RateLimit-Remaining-Requests": "0",
+			"X-Phaseo-Upstream-RateLimit-Reset-Requests": "7s",
+			"X-Phaseo-Upstream-RateLimit-Limit": "private account unlimited",
+			// Provider names are not downstream headers, so a raw upstream response
+			// cannot leak a shared account's quota through this reader.
+			"x-ratelimit-remaining-requests": "42",
+		}));
+
+		expect(result).toEqual({
+			"Retry-After": "9",
+			"X-Phaseo-Upstream-RateLimit-Remaining-Requests": "0",
+			"X-Phaseo-Upstream-RateLimit-Reset-Requests": "7s",
+		});
+	});
+	it("drops a Retry-After over 24 hours unless the limit is gateway-originated", () => {
+		const headers = new Headers({ "Retry-After": "388800" });
+		expect(readDownstreamRateLimitHeaders(headers)).toEqual({});
+		expect(readDownstreamRateLimitHeaders(headers, { gatewayOriginated: true })).toEqual({ "Retry-After": "388800" });
+		expect(extractDownstreamRateLimitHeaders(headers, { includeQuotaDetails: false })).toEqual({});
 	});
 });

@@ -15,6 +15,34 @@ function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 
 describe("consumeTextProtocolStreamToIR", () => {
 	it.each([
+		["max_tokens", { finishReason: "length" }],
+		["stop_sequence", { finishReason: "stop", finishDetail: "stop_sequence", stopSequence: "###" }],
+		["pause_turn", { finishReason: "stop", finishDetail: "pause_turn" }],
+		["refusal", { finishReason: "content_filter", finishDetail: "refusal" }],
+		["end_turn", { finishReason: "stop" }],
+	])("keeps the Messages stop reason %s when message_stop follows", async (stopReason, expected) => {
+		const frame = (event: string, data: any) => `event: ${event}\ndata: ${JSON.stringify({ type: event, ...data })}\n\n`;
+		const stream = buildSseStream([
+			frame("message_start", { message: { id: "msg_1", role: "assistant", content: [], usage: { input_tokens: 5, output_tokens: 1 } } }),
+			frame("content_block_start", { index: 0, content_block: { type: "text", text: "" } }),
+			frame("content_block_delta", { index: 0, delta: { type: "text_delta", text: "Hi" } }),
+			frame("content_block_stop", { index: 0 }),
+			frame("message_delta", { delta: { stop_reason: stopReason, stop_sequence: stopReason === "stop_sequence" ? "###" : null }, usage: { output_tokens: 3 } }),
+			frame("message_stop", {}),
+		]);
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "anthropic.messages",
+			stream,
+			requestId: "req_messages_stop",
+			model: "claude",
+			provider: "anthropic",
+		});
+		const choice = consumed.ir.choices[0];
+		expect({ finishReason: choice.finishReason, finishDetail: choice.finishDetail, stopSequence: choice.stopSequence })
+			.toEqual({ finishDetail: undefined, stopSequence: undefined, ...expected });
+	});
+
+	it.each([
 		["stop", "length"],
 		["length", "stop"],
 	])("preserves different choice finish reasons (%s, %s) before a usage-only frame", async (...finishReasons) => {
@@ -764,5 +792,126 @@ describe("consumeTextProtocolStreamToIR", () => {
 		expect(text).toContain("\"output\":");
 		expect(text).toContain("It is noon UTC.");
 		expect(text).not.toContain("\"name\":\"tool_call\"");
+	});
+});
+
+describe("buildSyntheticServerToolStream Responses frames", () => {
+	async function readFrames(stream: ReadableStream<Uint8Array> | null) {
+		expect(stream).not.toBeNull();
+		const text = await new Response(stream).text();
+		return text.split("\n\n").filter(Boolean).map((block) => {
+			const event = block.split("\n").find((line) => line.startsWith("event: "))?.slice(7) ?? null;
+			const data = block.split("\n").find((line) => line.startsWith("data: "))!.slice(6);
+			return { event, data: data === "[DONE]" ? data : JSON.parse(data) };
+		});
+	}
+
+	it("streams a final client function call as a whole item after the server tool it follows", async () => {
+		const payload = {
+			id: "req_mixed",
+			object: "response",
+			model: "openai/gpt-5.4-nano",
+			status: "completed",
+			output: [{ type: "function_call", call_id: "call_weather", name: "get_weather", arguments: "{\"city\":\"London\"}" }],
+			usage: { input_tokens: 40, output_tokens: 12, total_tokens: 52 },
+		};
+		const frames = await readFrames(buildSyntheticServerToolStream({
+			protocol: "openai.responses",
+			requestId: "req_mixed",
+			model: "openai/gpt-5.4-nano",
+			serverToolTrace: [{ id: "call_dt", name: "gateway_datetime", arguments: "{\"timezones\":[\"UTC\"]}", output: "{\"datetime\":\"12:00\"}" }],
+			payload,
+		}));
+
+		expect(frames.map((frame) => frame.event)).toEqual([
+			"response.created",
+			"response.output_item.added",
+			"response.function_call_arguments.delta",
+			"response.function_call_arguments.done",
+			"response.output_item.done",
+			"response.output_item.added",
+			"response.function_call_arguments.delta",
+			"response.function_call_arguments.done",
+			"response.output_item.done",
+			"response.completed",
+			null,
+		]);
+		// Every data object names its event, as clients that dispatch on data.type need.
+		for (const frame of frames.slice(0, -1)) expect(frame.data.type).toBe(frame.event);
+		expect(frames.at(-1)!.data).toBe("[DONE]");
+
+		const [, serverAdded, , , serverDone, clientAdded, clientDelta, clientArgumentsDone, clientDone, completed] = frames.map((frame) => frame.data);
+		expect(serverAdded).toMatchObject({ output_index: 0, item: { type: "function_call", call_id: "call_dt", name: "gateway_datetime", status: "in_progress" } });
+		expect(serverDone).toMatchObject({ output_index: 0, item: { call_id: "call_dt", output: "{\"datetime\":\"12:00\"}", status: "completed" } });
+		expect(clientAdded).toMatchObject({ output_index: 1, item: { type: "function_call", call_id: "call_weather", name: "get_weather", arguments: "" } });
+		const itemId = clientAdded.item.id;
+		expect(clientDelta).toMatchObject({ item_id: itemId, output_index: 1, delta: "{\"city\":\"London\"}" });
+		expect(clientArgumentsDone).toMatchObject({ item_id: itemId, output_index: 1, name: "get_weather", arguments: "{\"city\":\"London\"}" });
+		expect(clientDone).toMatchObject({ output_index: 1, item: { id: itemId, type: "function_call", call_id: "call_weather", arguments: "{\"city\":\"London\"}", status: "completed" } });
+		expect(clientDone.item.output).toBeUndefined();
+		// The terminal event carries the whole body, its output listing the streamed item.
+		expect(completed.response).toMatchObject({ id: "req_mixed", status: "completed", usage: payload.usage });
+		expect(completed.response.output).toEqual([{ ...payload.output[0], id: itemId, status: "completed" }]);
+	});
+
+	it("streams reasoning as reasoning events and only the answer as output text", async () => {
+		const frames = await readFrames(buildSyntheticServerToolStream({
+			protocol: "openai.responses",
+			requestId: "req_reasoning",
+			payload: {
+				id: "req_reasoning",
+				object: "response",
+				status: "completed",
+				output: [
+					{ type: "reasoning", id: "rs_req_reasoning_0_0", summary: [], content: [{ type: "reasoning_text", text: "Check the clock." }] },
+					{ type: "message", role: "assistant", content: [{ type: "output_text", text: "It is noon.", annotations: [] }] },
+				],
+				usage: { input_tokens: 10, output_tokens: 6, total_tokens: 16 },
+			},
+		}));
+
+		expect(frames.map((frame) => frame.event)).toEqual([
+			"response.created",
+			"response.output_item.added",
+			"response.content_part.added",
+			"response.reasoning_text.delta",
+			"response.reasoning_text.done",
+			"response.content_part.done",
+			"response.output_item.done",
+			"response.output_item.added",
+			"response.content_part.added",
+			"response.output_text.delta",
+			"response.output_text.done",
+			"response.content_part.done",
+			"response.output_item.done",
+			"response.completed",
+			null,
+		]);
+		for (const frame of frames.slice(0, -1)) expect(frame.data.type).toBe(frame.event);
+		const data = frames.map((frame) => frame.data);
+		expect(data[1].item).toEqual({ id: "rs_req_reasoning_0_0", type: "reasoning", summary: [], content: [] });
+		expect(data[3]).toMatchObject({ item_id: "rs_req_reasoning_0_0", delta: "Check the clock." });
+		expect(data[7].item).toMatchObject({ type: "message", role: "assistant", status: "in_progress", content: [] });
+		expect(data[9]).toMatchObject({ item_id: data[7].item.id, output_index: 1, content_index: 0, delta: "It is noon." });
+		const outputText = data.filter((frame: any) => String(frame?.type).startsWith("response.output_text.")).map((frame: any) => frame.delta ?? frame.text);
+		expect(outputText).toEqual(["It is noon.", "It is noon."]);
+		expect(data[13].response.output.map((item: any) => item.type)).toEqual(["reasoning", "message"]);
+	});
+
+	it("ends an incomplete body with response.incomplete", async () => {
+		const frames = await readFrames(buildSyntheticServerToolStream({
+			protocol: "openai.responses",
+			requestId: "req_incomplete",
+			payload: {
+				id: "req_incomplete",
+				object: "response",
+				status: "incomplete",
+				incomplete_details: { reason: "max_output_tokens" },
+				output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Partial", annotations: [] }] }],
+			},
+		}));
+		const terminal = frames.at(-2)!;
+		expect(terminal.event).toBe("response.incomplete");
+		expect(terminal.data.response).toMatchObject({ status: "incomplete", incomplete_details: { reason: "max_output_tokens" } });
 	});
 });

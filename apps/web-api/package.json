@@ -18,7 +18,7 @@
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "cheerio": "^1.1.2",
-    "fast-xml-parser": "^5.8.0",
+    "fast-xml-parser": "^5.11.2",
     "hono": "^4.12.27",
     "js-yaml": "^4.2.0",
     "resend": "^6.12.4",
@@ -27,8 +27,9 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260523.1",
     "@types/node": "^26.1.2",
-    "eslint": "^10.8.1",
-    "typescript": "^6.0.3",
+    "@typescript/native": "catalog:",
+    "eslint": "^10.13.0",
+    "typescript": "catalog:",
     "typescript-eslint": "8.58.1",
     "vitest": "^4.1.7",
     "wrangler": "^4.118.0"

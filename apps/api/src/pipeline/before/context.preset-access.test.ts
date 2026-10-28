@@ -4,13 +4,14 @@ const state = vi.hoisted(() => ({
 	key: { created_by: "user_1", workspace_id: "ws_1", status: "active" } as Record<string, unknown> | null,
 	preset: { created_by: "user_1", visibility: "private" } as Record<string, unknown> | null,
 	queries: 0,
+	slugs: [] as unknown[],
 	background: [] as Promise<unknown>[],
 }));
 
 function query(table: string) {
 	const chain: any = {
 		select: () => chain,
-		eq: () => chain,
+		eq: (column: string, value: unknown) => { if (column === "slug") state.slugs.push(value); return chain; },
 		is: () => chain,
 		maybeSingle: async () => {
 			state.queries += 1;
@@ -38,6 +39,7 @@ describe("assertPresetAccess", () => {
 		state.key = { created_by: "user_1", workspace_id: "ws_1", status: "active" };
 		state.preset = { created_by: "user_1", visibility: "private" };
 		state.queries = 0;
+		state.slugs.length = 0;
 		state.background.length = 0;
 		vi.useRealTimers();
 	});
@@ -51,6 +53,22 @@ describe("assertPresetAccess", () => {
 		await assertPresetAccess(args);
 		await assertPresetAccess(args);
 		expect(state.queries).toBe(2);
+	});
+
+	it("checks a pinned reference against its preset", async () => {
+		state.preset = { created_by: "someone_else", visibility: "private" };
+		await expect(assertPresetAccess({ ...args, model: "@team-preset@production" })).rejects.toThrow("preset_not_found");
+		state.preset = { created_by: "someone_else", visibility: "team" };
+		__resetTieredCacheForTests();
+		await expect(assertPresetAccess({ ...args, model: "@team-preset@v3" })).resolves.toBeUndefined();
+		expect(state.slugs).toEqual(["team-preset", "team-preset"]);
+	});
+
+	it("leaves public references to another workspace's preset to the context lookup", async () => {
+		state.preset = null;
+		await expect(assertPresetAccess({ ...args, model: "@acme/release-summary" })).resolves.toBeUndefined();
+		await expect(assertPresetAccess({ ...args, model: "@acme/release-summary@v2" })).resolves.toBeUndefined();
+		expect(state.queries).toBe(0);
 	});
 
 	it("denies private presets owned by another user", async () => {

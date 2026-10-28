@@ -13,6 +13,7 @@ icon: "square-terminal"
 | Phaseo CLI | 终端工作流、CI、管理和自动化 | 根据授权范围和工作区角色限制读取与写入权限 |
 | Phaseo MCP | 在 Codex、Claude、ChatGPT 等 MCP 客户端中访问 Phaseo 实时数据 | 已验证身份，仅可读取 |
 | Docs MCP | 在编写代码时查阅最新 Phaseo 文档 | 仅文档，只读 |
+| Phaseo 插件 | 在 Claude Code 或 Codex 中一次性安装 Phaseo MCP、Docs MCP 和 Phaseo 技能 | 与各 MCP 服务器相同 |
 
 ## Phaseo CLI
 
@@ -95,9 +96,33 @@ codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 	将文档服务器连接到 Codex、Claude Code、Cursor、OpenCode 或 VS Code。
 </Card>
 
+## Phaseo 插件
+
+Phaseo 插件打包了 Phaseo MCP、Docs MCP，以及用于集成、迁移、模型选择、用量监控、SDK 和 CLI 的 Phaseo 智能体技能。只需安装一次，无需逐一连接。
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+运行 `/mcp` 并登录 `plugin:phaseo:phaseo`，即可连接你的 Phaseo 账户。当请求与技能匹配时会自动加载，你也可以直接运行某个技能，例如 `/phaseo:phaseo-gateway`。
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+最后一条命令会为 Phaseo MCP 打开 Phaseo OAuth。当请求与技能匹配时会自动加载。
+
 ## 选择合适的接口
 
 - 使用 **CLI** 创建密钥、修改设置、管理工作区或自动执行管理工作流。
 - 使用 **Phaseo MCP** 为 AI 客户端安全地开放 Phaseo 实时数据。
 - 使用 **Docs MCP** 为编程助手提供最新 Phaseo 文档，同时不授予账户访问权限。
+- 使用 **Phaseo 插件**，在 Claude Code 或 Codex 中一次性设置两个 MCP 服务器和 Phaseo 技能。
 

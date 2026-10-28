@@ -125,10 +125,15 @@ describe("google-ai-studio execute usage fallback", () => {
 			expect(output).toContain('"OK"');
 			expect(output).not.toContain("google_empty_response");
 			expect(output).toContain('"reasoning_tokens":3');
+			// The stream is billed from the upstream usageMetadata, thoughts included.
+			expect(result.usageFinalizerAuthoritative).toBe(true);
+			const finalized = await result.usageFinalizer?.();
+			expect(finalized?.usage).toMatchObject({ input_tokens: 36, output_tokens: 8, reasoning_tokens: 3 });
 			if (protocol === "openai.chat.completions") {
 				expect(output).toContain('"finish_reason":"stop"');
 				expect(output).toContain('"prompt_tokens":36');
-				expect(output).toContain('"completion_tokens":5');
+				// candidatesTokenCount (5) + thoughtsTokenCount (3), as totalTokenCount (44) implies.
+				expect(output).toContain('"completion_tokens":8');
 				expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
 			} else {
 				expect(output).toContain("event: response.completed");

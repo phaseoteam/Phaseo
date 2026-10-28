@@ -79,6 +79,9 @@ describe("Artificial Analysis catalogue", () => {
 			const url = new URL(String(input));
 			if (url.pathname.endsWith("/rpc/get_artificial_analysis_coverage")) return Response.json(coverage);
 			if (url.pathname.endsWith("/v2_benchmarks")) {
+				if (url.searchParams.get("select")?.includes("results:v2_benchmark_results")) {
+					return Response.json(rows.map((row) => ({ benchmark_id: row.benchmark_id, results: [] })));
+				}
 				const id = url.searchParams.get("benchmark_id");
 				return Response.json(id?.startsWith("eq.") ? rows.find((row) => row.benchmark_id === id.slice(3)) ?? null : rows);
 			}

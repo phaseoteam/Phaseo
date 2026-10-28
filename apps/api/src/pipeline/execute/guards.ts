@@ -9,6 +9,7 @@ import { applyDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers"
 import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
+import { everyAttemptRateLimited, sharedRequestRejectionStatus } from "./attempt-outcomes";
 import { captureTimingSnapshot } from "./utils";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
@@ -353,6 +354,24 @@ function buildAllCandidatesFailedDescription(args: {
     return lines.join(" ");
 }
 
+// Leads with the provider's own message so the client reads why its request was
+// rejected first, then keeps the per-attempt summary.
+function buildRejectedRequestDescription(
+    attemptErrors: Array<Record<string, unknown>>,
+    status: number,
+    diagnostics: string,
+): string {
+    const primary = attemptErrors.find((entry) => entry?.type === "upstream_non_2xx") ?? null;
+    const message =
+        normalizeText(primary?.upstream_error_message, 500) ??
+        normalizeText(primary?.upstream_error_description, 500) ??
+        normalizeText(primary?.message, 500);
+    const lead = message
+        ? `The provider rejected the request (HTTP ${status}): ${message}${/[.!?]$/.test(message) ? "" : "."}`
+        : `The provider rejected the request (HTTP ${status}).`;
+    return `${lead} ${diagnostics}`;
+}
+
 export async function guardCandidates(
     ctx: PipelineContext,
     timing: PipelineTiming
@@ -628,11 +647,25 @@ export async function guardAllFailed(
             response,
         };
     }
+    // When every provider throttled the request the client gets the throttling
+    // status (with the provider's Retry-After below), not a generic 502, so
+    // SDKs back off instead of treating it as a gateway failure.
+    const allRateLimited = !hasUpstreamPaymentRequired && everyAttemptRateLimited(attemptErrors);
+    // When every provider rejected the request itself with the same 400, 413 or
+    // 422 (malformed input, oversized payload), the client gets that status and
+    // the provider's message, not a 502 that SDKs would retry. Mixed or 5xx
+    // failures stay 502. 404 is left out: there it usually means the provider
+    // does not serve the model, which is a routing problem, not the caller's.
+    const rejectedStatus = hasUpstreamPaymentRequired ? null : sharedRequestRejectionStatus(attemptErrors);
     const res = err(hasUpstreamPaymentRequired ? "provider_payment_required" : "upstream_error", {
         reason: hasUpstreamPaymentRequired
             ? "upstream_provider_payment_required"
-            : "all_candidates_failed",
-        description: paymentRequiredDescription,
+            : rejectedStatus != null
+                ? "upstream_rejected_request"
+                : "all_candidates_failed",
+        description: rejectedStatus != null
+            ? buildRejectedRequestDescription(attemptErrors, rejectedStatus, paymentRequiredDescription)
+            : paymentRequiredDescription,
         model: ctx.model,
         endpoint: ctx.endpoint,
         request_id: ctx.requestId,
@@ -649,7 +682,7 @@ export async function guardAllFailed(
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,
         provider_failure_diagnostics: providerFailureDiagnostics,
-    });
+    }, allRateLimited ? 429 : rejectedStatus ?? undefined);
 	const finalRateLimitHeaders = [...attemptErrors]
 		.reverse()
 		.map((entry) => entry?.upstream_rate_limit_headers)

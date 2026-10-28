@@ -14,6 +14,10 @@ const COPIES = [
 	{ source: SOURCE, target: "apps/web/src/components/(gateway)/settings/observability/broadcastDestinations.ts" },
 	{ source: "packages/shared/broadcast-destinations/otlp-protobuf.ts", target: "apps/api/src/observability/otlp-protobuf.ts" },
 	{ source: "packages/shared/broadcast-destinations/otlp-protobuf.ts", target: "apps/web-api/src/routes/account/otlp-protobuf.ts" },
+	{ source: "packages/shared/broadcast-destinations/safe-regex.ts", target: "apps/api/src/observability/safe-regex.ts" },
+	{ source: "packages/shared/broadcast-destinations/safe-regex.ts", target: "apps/web-api/src/routes/account/safe-regex.ts" },
+	{ source: "packages/shared/broadcast-destinations/broadcast-rows.ts", target: "apps/api/src/observability/broadcast-rows.ts" },
+	{ source: "packages/shared/broadcast-destinations/broadcast-rows.ts", target: "apps/web-api/src/routes/account/broadcast-rows.ts" },
 ];
 const TABLE = "supabase/schemas/public/tables/workspace_broadcast_destinations.sql";
 const TRIGGER = "supabase/schemas/public/functions/enforce_broadcast_destination_limit.sql";

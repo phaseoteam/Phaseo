@@ -3,6 +3,8 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Builds standardized error responses for before-stage failures.
 
+import { withErrorObject } from "@core/error-object";
+
 export type ErrorCode =
     | "unauthorised"
     | "invalid_json"
@@ -18,6 +20,7 @@ export type ErrorCode =
     | "key_limit_exceeded"
     | "phaseo_free_model_limit_exceeded"
     | "rate_limit_exceeded"
+    | "spend_rule_blocked"
     | "insufficient_funds"
     | "guardrail_blocked"
     | "unsupported_model_or_endpoint"
@@ -112,6 +115,7 @@ const STATUS: Record<ErrorCode, number> = {
     key_limit_exceeded: 429,
     phaseo_free_model_limit_exceeded: 429,
     rate_limit_exceeded: 429,
+    spend_rule_blocked: 429,
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
@@ -137,7 +141,7 @@ export function err(code: ErrorCode, payload: Record<string, unknown>) {
     if (providerFailureDiagnostics) {
         body.provider_failure_diagnostics = providerFailureDiagnostics;
     }
-    return json(body, STATUS[code]);
+    return json(withErrorObject(body, STATUS[code]), STATUS[code]);
 }
 
 

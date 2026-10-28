@@ -136,6 +136,10 @@
 					"title": "Créer un garde-fou",
 					"subtitle": "Ajouter une politique pour les requêtes ou les réponses"
 				},
+				"action-create-classifier": {
+					"title": "Créer un classificateur",
+					"subtitle": "Étiqueter les requêtes par service, tâche ou public"
+				},
 				"action-copy-page-link": {
 					"title": "Copier le lien de la page",
 					"subtitle": "Copier l’URL de cette page dans le presse-papiers"
@@ -250,6 +254,11 @@
 				"nav-settings-presets": "Préréglages de routage",
 				"nav-settings-privacy": "Paramètres de confidentialité",
 				"nav-settings-guardrails": "Garde-fous",
+				"nav-settings-rate-limits": "Limites de débit",
+				"nav-settings-trusted-workloads": "Workloads de confiance",
+				"nav-settings-classifiers": "Classificateurs",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Sécurité des clés",
 				"nav-settings-oauth": "Applications OAuth",
 				"nav-settings-broadcast": "Diffusion",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,13 +337,15 @@
 				"nav-settings-account-privacy": "Confidentialité du compte",
 				"nav-settings-credits-onboarding": "Configurer la facturation",
 				"nav-settings-guardrails-new": "Créer un garde-fou",
+				"nav-settings-classifiers-new": "Créer un classificateur",
 				"nav-settings-presets-new": "Créer un préréglage de routage",
 				"nav-how-phaseo-normalises-ai-benchmarks": "Comment les benchmarks sont normalisés",
 				"nav-how-phaseo-measures-latency-throughput": "Comment les performances sont mesurées",
 				"nav-how-phaseo-calculates-model-pricing": "Comment les tarifs sont calculés",
 				"nav-how-phaseo-tracks-provider-availability": "Comment la disponibilité des fournisseurs est suivie",
 				"nav-chat-decisions": "Décisions",
-				"nav-settings-account-providers": "Configuration des fournisseurs"
+				"nav-settings-account-providers": "Configuration des fournisseurs",
+				"nav-settings-budgets": "Budgets"
 			}
 		},
 		"searchDataUnavailable": "Impossible de charger les données de recherche.",
@@ -1251,6 +1262,7 @@
 			"enableConnection": "Activer la connexion",
 			"deleteDestination": "Supprimer la destination",
 			"openRequestDetails": "Ouvrir les détails de la requête",
+			"openInChat": "Ouvrir dans Chat",
 			"copyRequestId": "Copier l’ID de la requête",
 			"copySessionId": "Copier l’ID de la session",
 			"copyNativeResponseId": "Copier l’ID de réponse native",
@@ -1376,6 +1388,11 @@
 			"retention90Days": "90 jours",
 			"retention180Days": "180 jours",
 			"retention365Days": "365 jours",
+			"contentsAccessTitle": "Qui peut voir le contenu",
+			"contentsAccessDescription": "Choisissez qui peut voir les prompts et réponses enregistrés dans les détails des requêtes, dans Chat et via l’API.",
+			"contentsAccessMembers": "Tous les membres",
+			"contentsAccessAdmins": "Propriétaires et administrateurs",
+			"contentsRestricted": "Dans cet espace de travail, seuls les propriétaires et les administrateurs peuvent voir le contenu des requêtes.",
 			"allowAllExceptSelectedModels": "Autoriser tous les modèles sauf ceux sélectionnés",
 			"allowAnyProvider": "Autoriser tous les fournisseurs",
 			"allowOnlySelectedProviders": "Autoriser uniquement les fournisseurs sélectionnés",

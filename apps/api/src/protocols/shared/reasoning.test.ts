@@ -12,6 +12,7 @@ import { encodeAnthropicMessagesResponse } from "../anthropic-messages/encode";
 import { decodeChatReasoningDetails, decodeResponsesReasoningItem } from "./reasoning";
 import { normaliseAnthropicCacheBreakpoints } from "@executors/anthropic/text-generate/breakpoints";
 import { irToOpenAIChat } from "@executors/_shared/text-generate/openai-compat/transform-chat";
+import { irToAnthropicMessages } from "@executors/anthropic/text-generate";
 
 describe("reasoning state seals", () => {
 	it("round-trips the origin and leaves the provider value unchanged", () => {
@@ -119,6 +120,65 @@ describe("surface decoding", () => {
 				reasoningId: "rs_1",
 			},
 		});
+	});
+
+	it("reads a raw signature and format on Responses reasoning items", () => {
+		// A Claude thinking block sent back as a Responses item.
+		expect(decodeResponsesReasoningItem({
+			type: "reasoning",
+			id: "rs_claude",
+			summary: [],
+			content: [{ type: "reasoning_text", text: "Let me think." }],
+			signature: "EqQBCgIYAhIM",
+			format: "anthropic-claude-v1",
+		})).toEqual({
+			kind: "part",
+			part: {
+				type: "reasoning_text",
+				text: "Let me think.",
+				thoughtSignature: "EqQBCgIYAhIM",
+				reasoningFormat: "anthropic-claude-v1",
+				reasoningId: "rs_claude",
+			},
+		});
+		// Claude redacted thinking arrives as encrypted_content with its format.
+		expect(decodeResponsesReasoningItem({
+			type: "reasoning",
+			summary: [],
+			encrypted_content: "EmwKAhgBEgy3",
+			format: "anthropic-claude-v1",
+		})).toEqual({
+			kind: "part",
+			part: { type: "reasoning_text", text: "", redactedData: "EmwKAhgBEgy3", reasoningFormat: "anthropic-claude-v1" },
+		});
+		// A Gemini thought signature.
+		expect(decodeResponsesReasoningItem({
+			type: "reasoning",
+			summary: [{ type: "summary_text", text: "Plan." }],
+			signature: "CiQBcsjafE5Z",
+			format: "google-gemini-v1",
+		})).toMatchObject({
+			kind: "part",
+			part: { type: "reasoning_text", text: "Plan.", thoughtSignature: "CiQBcsjafE5Z", reasoningFormat: "google-gemini-v1" },
+		});
+		// Without a known format a raw signature is not trusted.
+		expect(decodeResponsesReasoningItem({ type: "reasoning", summary: [], signature: "EqQBCgIYAhIM" })).toBeNull();
+	});
+
+	it("replays a Claude Responses reasoning item with signature and format to Claude", () => {
+		const ir = decodeOpenAIResponsesRequest({
+			model: "anthropic/claude-opus-5",
+			input: [
+				{ role: "user", content: "Weather in Paris?" },
+				{ type: "reasoning", summary: [], content: [{ type: "reasoning_text", text: "Use the tool." }], signature: "EqQBCgIYAhIM", format: "anthropic-claude-v1" },
+				{ type: "function_call", call_id: "toolu_1", name: "get_weather", arguments: "{\"city\":\"Paris\"}" },
+				{ type: "function_call_output", call_id: "toolu_1", output: "Sunny" },
+			],
+			tools: [{ type: "function", name: "get_weather", parameters: { type: "object", properties: {} } }],
+		} as any);
+		const request = irToAnthropicMessages(ir, undefined, "claude-opus-5", { providerId: "anthropic" });
+		const assistant = request.messages.find((message: any) => message.role === "assistant");
+		expect(assistant.content[0]).toEqual({ type: "thinking", thinking: "Use the tool.", signature: "EqQBCgIYAhIM" });
 	});
 
 	it("keeps Claude thinking order around tool calls on the Messages surface", () => {

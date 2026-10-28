@@ -15,6 +15,10 @@ BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,google-vertex,m
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # Trust-ladder RPM per workspace from the tiers published to KV by phaseo-gateway.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
 # When a charge would have invalidated the credit cache, store its exact
@@ -33,9 +37,15 @@ GATEWAY_PUBLIC_BASE_URL = "https://us.api.phaseo.app"
 MODEL_DISCOVERY_ENABLED = "false"
 VIDEO_RECONCILIATION_ENABLED = "false"
 BATCH_RECONCILIATION_ENABLED = "false"
-OTEL_EXPORT_ENABLED = "false"
+# Broadcast: requests served here are sent to the workspace's destinations
+# through BROADCAST_QUEUE, which phaseo-gateway consumes. This worker has no
+# I/O log bucket, so an event too large for a queue message goes to the
+# outbox instead, which phaseo-gateway drains.
+OTEL_EXPORT_ENABLED = "true"
+BROADCAST_QUEUE_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_ENABLED = "false"
 FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+MOBILE_PUSH_ENABLED = "false"
 DATA_CONTRIBUTION_CLASSIFIER_ENABLED = "false"
 PRICING_MONITOR_ENABLED = "false"
 PRICING_PAGE_MONITOR_ENABLED = "false"
@@ -47,6 +57,11 @@ region = "aws:us-east-1"
 [[routes]]
 pattern = "us.api.phaseo.app"
 custom_domain = true
+
+# Producer only: the queue is consumed by phaseo-gateway (wrangler.toml).
+[[queues.producers]]
+binding = "BROADCAST_QUEUE"
+queue = "phaseo-broadcast"
 
 [observability]
 [[r2_buckets]]

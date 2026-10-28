@@ -223,7 +223,8 @@ describe("Claude manual thinking (Opus 4.5 with a budget) over Chat Completions"
 describe("Claude adaptive thinking over a streamed Responses tool loop", () => {
 	const model = "claude-opus-5";
 	const isAnthropic = (url: string) => url === "https://api.anthropic.example/v1/messages";
-	const base = { model: "anthropic/claude-opus-5", stream: true, tools: [responsesWeatherTool], store: false };
+	// The client asks for reasoning; without it `thinking` is left to the model default.
+	const base = { model: "anthropic/claude-opus-5", stream: true, tools: [responsesWeatherTool], store: false, reasoning: { effort: "medium", summary: "auto" } };
 
 	async function streamStep(input: any[], blocks: Array<Record<string, any>>) {
 		const step = await run(isAnthropic, () => claudeStep(blocks, model), () =>

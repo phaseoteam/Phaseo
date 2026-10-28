@@ -12,6 +12,59 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("loads bounded AA data for a selected model and major", async () => {
+		const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			expect(String(input)).toContain("/rpc/get_artificial_analysis_public_models");
+			expect(JSON.parse(String(init?.body))).toEqual({ p_model_slug: "lab/model", p_major: 4, p_limit: 20, p_offset: 10 });
+			return Response.json({ snapshot_id: "snapshot", methodology_version: "4.3.2", total: 1, models: [{ model_id: "lab/model", totalTokens: { output: 0 } }] });
+		});
+		vi.stubGlobal("fetch", fetch);
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?model=lab%2Fmodel&version=4&limit=20&offset=10", {}, env);
+		expect(response.status).toBe(200);
+		expect((await response.json() as { models: unknown[] }).models).toHaveLength(1);
+		expect(response.headers.get("Cache-Control")).toContain("s-maxage=300");
+	});
+	it.each(["limit=201", "offset=-1", "version=4.3", "model="])("rejects invalid public data selection %s", async (query) => {
+		const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+		expect((await app.request(`https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?${query}`, {}, env)).status).toBe(400);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+	it("keeps missing AA publications distinct from unavailable storage", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json(null)));
+		expect((await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env)).status).toBe(404);
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json({ message: "not deployed" }, { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env);
+		expect(response.status).toBe(503);
+		expect(await response.json()).toEqual({ error: "aa_data_unavailable" });
+		expect(response.headers.get("Cloudflare-CDN-Cache-Control")).toBeNull();
+	});
+	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
+		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
+		const scoreQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(String(input));
+			if (url.pathname.includes("get_artificial_analysis_coverage")) return Response.json(ids.map((benchmark_id) => ({ benchmark_id, total_models: 1, published: true })));
+			if (url.pathname.endsWith("v2_models")) return Response.json([{ model_slug: "lab/model", name: "Model", hidden: false, lab_slug: "lab", lab: null }]);
+			if (url.searchParams.get("select")?.includes("results:v2_benchmark_results")) {
+				scoreQueries.push(url);
+				return Response.json(ids.map((benchmark_id) => ({ benchmark_id, results: Array.from({ length: 300 }, (_, i) => ({
+					result_id: `${benchmark_id}-${i}`, model_slug: "lab/model", score: i, variant: "high", result_key: String(i),
+					other_info: `Artificial Analysis ID source-${i}; Intelligence Index v4.3.2`, updated_at: "2026-10-18T00:00:00Z",
+				})) })));
+			}
+			if (url.searchParams.has("benchmark_id")) return Response.json([{ benchmark_id: ids[0], name: "Artificial Analysis Intelligence Index" }]);
+			return Response.json(ids.map((benchmark_id) => ({ benchmark_id, name: benchmark_id, total_models: 1 })));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis", {}, env);
+		expect(response.status).toBe(200);
+		const { benchmark } = await response.json() as { benchmark: { results: unknown[]; comparison_benchmarks: Array<{ results: Array<{ variant: string; result_key: string }> }> } };
+		expect(benchmark.results).toHaveLength(300);
+		expect(benchmark.comparison_benchmarks.map((metric) => metric.results.length)).toEqual([300, 300, 300, 300]);
+		expect(benchmark.comparison_benchmarks[0].results[0]).toMatchObject({ variant: "high", result_key: "0" });
+		expect(scoreQueries).toHaveLength(1);
+		expect(scoreQueries[0].searchParams.get("results.or")).toContain("effective_to.is.null");
+	});
+
 	it("keeps retired provider pages addressable and links their successor", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
 			provider_slug: "pioneer", name: "Pioneer", status: "deprecated", country_code: "US", subdivision_code: null,

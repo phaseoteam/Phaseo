@@ -90,23 +90,22 @@ async function handleCredits(req: Request) {
 			throw new Error(error.message || "Failed to fetch wallet");
 		}
 
-		const { data: ledgerData, error: ledgerError } = await supabase
-			.from("credit_ledger")
-			.select("amount_nanos, created_at")
-			.eq("workspace_id", workspaceId)
-			.gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-			.order("created_at", { ascending: false });
+		const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+		// Net signed ledger change over the window, summed in the database: reading the rows
+		// through PostgREST would stop at its 1,000-row page and under-report busy workspaces.
+		const { data: ledgerNet, error: ledgerError } = await supabase.rpc("get_workspace_credit_ledger_net", {
+			p_workspace_id: workspaceId,
+			p_since: since,
+		});
 
 		const { count: requestCount, error: countError } = await supabase
 			.from("gateway_requests")
 			.select("*", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
-			.gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+			.gte("created_at", since);
 
-		const thirtyDayUsage = ledgerError ? null : (ledgerData ?? []).reduce(
-			(sum, entry) => sum + (entry.amount_nanos || 0),
-			0
-		);
+		const ledgerNetNanos = Number(ledgerNet ?? 0);
+		const thirtyDayUsage = ledgerError || !Number.isFinite(ledgerNetNanos) ? null : ledgerNetNanos;
 
 		const balanceNanos = Number(wallet?.balance_nanos ?? 0) || 0;
 		const reservedNanos = Number((wallet as any)?.reserved_nanos ?? 0) || 0;

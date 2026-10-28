@@ -1,25 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-	AudioLines,
-	ArrowUpDown,
-	Braces,
-	FilePlus,
-	Image as ImageIcon,
-	MessageSquareText,
-	Settings2,
-	Video,
-	Check,
-	X,
-} from "lucide-react";
+import { Check, FilePlus, Search, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { debounce, useQueryState } from "nuqs";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { CopyButton } from "@/components/ui/copy-button";
 import {
 	Empty,
 	EmptyContent,
@@ -36,10 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type {
-	APIProviderModelListItem,
-	APIProviderModelPricingMeter,
-} from "@/lib/fetchers/api-providers/providerDataTypes";
+import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/query/providerCatalogPreviews";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
@@ -49,100 +33,30 @@ import {
 	webQueryKeys,
 	type AccountQueryScope,
 } from "@/lib/query/queryKeys";
-import UnreleasedBadge from "@/components/(data)/model/UnreleasedBadge";
+import { MODEL_CARD_GRID_CLASS_NAME } from "@/components/(data)/models/Models/modelCardGrid";
+import {
+	ProviderModelCard,
+	ProviderModelDetailsSheet,
+	listify,
+	normalizeCapabilityKey,
+} from "./ProviderModelCard";
 
 type ProviderModelsClientProps = {
 	apiProvider: string;
-	providerLabel: string;
 	models: APIProviderModelListItem[];
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
 	accountQueryScope?: AccountQueryScope | null;
 };
 
-type IconMeta = {
-	id: string;
-	label: string;
-	icon: React.ComponentType<{ className?: string }>;
-};
-
-function listify(value?: string[] | string | null): string[] {
-	if (!value) return [];
-	if (Array.isArray(value)) return value;
-	return value
-		.split(",")
-		.map((item) => item.trim())
-		.filter(Boolean);
+// Newest first, like the other model lists; undated models go last by name.
+function modelTimestamp(model: APIProviderModelListItem): number {
+	const value = model.release_date ?? model.announcement_date ?? model.created_at;
+	const timestamp = value ? Date.parse(value) : Number.NaN;
+	return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function formatMeterDisplay(
-	meter: APIProviderModelPricingMeter,
-	labels: { millionPixels: string; millionTokens: string; unit: string; knownUnit: (meter: APIProviderModelPricingMeter) => string | null },
-): { amount: number | null; unitLabel: string } {
-	const isPixelMeter = meter.unit === "pixel" || meter.meter.includes("pixel");
-	const isTokenMeter = meter.unit === "token" || meter.meter.includes("token");
-	if (meter.price_per_1m_usd != null && Number.isFinite(meter.price_per_1m_usd)) {
-		if (isPixelMeter) {
-			return { amount: meter.price_per_1m_usd, unitLabel: labels.millionPixels };
-		}
-		if (isTokenMeter) {
-			return { amount: meter.price_per_1m_usd, unitLabel: labels.millionTokens };
-		}
-	}
-
-	return {
-		amount: meter.price_per_unit_usd,
-		unitLabel: labels.knownUnit(meter) || meter.display_unit_label || meter.unit || labels.unit,
-	};
-}
-
-function normalizeCapabilityKey(value: string): string {
-	return value
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "_")
-		.replace(/^_+|_+$/g, "");
-}
-
-// Unknown capabilities remain machine identifiers rather than invented English labels.
-function formatCapabilityLabel(value: string): string {
-	return value;
-}
-
-const MODALITY_ICONS: Record<string, IconMeta> = {
-	text: { id: "text", label: "Text", icon: MessageSquareText },
-	image: { id: "image", label: "Image", icon: ImageIcon },
-	audio: { id: "audio", label: "Audio", icon: AudioLines },
-	video: { id: "video", label: "Video", icon: Video },
-	rerank: { id: "rerank", label: "Rerank", icon: ArrowUpDown },
-	embeddings: { id: "embeddings", label: "Embeddings", icon: Braces },
-};
-
-function resolveModalityIcons(modalities: string[]): IconMeta[] {
-	return Array.from(new Set(modalities.map((value) => normalizeCapabilityKey(value))))
-		.map(
-			(value) =>
-				MODALITY_ICONS[value] ?? {
-					id: value,
-					label: formatCapabilityLabel(value),
-					icon: Settings2,
-				},
-		)
-		.sort((a, b) => a.label.localeCompare(b.label));
-}
-
-type ParamLabel = {
-	id: string;
-	label: string;
-};
-
-function resolveSupportedParamLabels(params: string[]): ParamLabel[] {
-	return Array.from(
-		new Set(params.map((value) => normalizeCapabilityKey(value)).filter(Boolean)),
-	)
-		.map((key) => ({
-			id: key,
-			label: formatCapabilityLabel(key),
-		}))
-		.sort((a, b) => a.label.localeCompare(b.label));
+function compareModels(a: APIProviderModelListItem, b: APIProviderModelListItem): number {
+	return modelTimestamp(b) - modelTimestamp(a) || (a.model_name || a.model_id).localeCompare(b.model_name || b.model_id);
 }
 
 function mapCatalogPreviewModel(model: AuthenticatedProviderCatalogPreview): APIProviderModelListItem {
@@ -209,29 +123,11 @@ function mergeCatalogPreviewModels(
 
 export default function ProviderModelsClient({
 	apiProvider,
-	providerLabel,
 	models,
 	initialProviderPreviews,
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: ProviderModelsClientProps) {
 	const t = useTranslations("Catalogue.providerModelList");
-	const tStatus = useTranslations("Catalogue.modelDetail.providerTable");
-	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
-	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
-	const locale = useLocale();
-	const formatUsd = (value: number | null | undefined) => value == null || !Number.isFinite(value)
-		? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 4 }).format(value);
-	const modalityLabels: Record<string, string> = {
-		text: t("capabilities.text"),
-		image: t("capabilities.image"),
-		audio: t("capabilities.audio"),
-		video: t("capabilities.video"),
-		rerank: t("capabilities.rerank"),
-		embeddings: t("capabilities.embeddings"),
-		decisions: tMetadata("modalityDecisions"),
-		structured: tMetadata("modalityStructured"),
-		moderation: tMetadata("modalityModeration"),
-	};
 	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const { data: providerPreviews = [] } = useQuery<AuthenticatedProviderCatalogPreview[]>({
 		queryKey: webQueryKeys.account.providerPreviews({
@@ -260,6 +156,7 @@ export default function ProviderModelsClient({
 		serialize: (value) => value.join(","),
 	});
 
+	const [detailsModel, setDetailsModel] = useState<APIProviderModelListItem | null>(null);
 	const [paramPickerValue, setParamPickerValue] = useState<string>("");
 	const [isParamSelectOpen, setIsParamSelectOpen] = useState(false);
 	const keepParamSelectOpenRef = useRef(false);
@@ -267,8 +164,9 @@ export default function ProviderModelsClient({
 	const parameterOptions = useMemo(() => {
 		const map = new Map<string, string>();
 		displayModels.forEach((model) => {
-			resolveSupportedParamLabels(listify(model.supported_params)).forEach((item) => {
-				if (!map.has(item.id)) map.set(item.id, item.label);
+			listify(model.supported_params).forEach((value) => {
+				const id = normalizeCapabilityKey(value);
+				if (id && !map.has(id)) map.set(id, id);
 			});
 		});
 		return Array.from(map.entries())
@@ -283,7 +181,7 @@ export default function ProviderModelsClient({
 	const selectedParamLabels = useMemo(
 		() =>
 			selectedParams.map(
-				(param) => parameterLabelMap.get(param) ?? formatCapabilityLabel(param),
+				(param) => parameterLabelMap.get(param) ?? param,
 			),
 		[selectedParams, parameterLabelMap],
 	);
@@ -313,10 +211,43 @@ export default function ProviderModelsClient({
 			}
 
 			return true;
-		});
+		}).sort(compareModels);
 	}, [displayModels, searchQuery, selectedParams]);
 
 	const clearHref = `/api-providers/${apiProvider}#models`;
+
+	const detailsIndex = detailsModel
+		? filteredModels.findIndex((model) => model.model_id === detailsModel.model_id)
+		: -1;
+	const showModelAt = useCallback((index: number) => {
+		const next = filteredModels[index];
+		if (!next) return;
+		setDetailsModel(next);
+		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		document
+			.querySelector(`[data-provider-model-card="${CSS.escape(next.model_id)}"]`)
+			?.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+	}, [filteredModels]);
+
+	// Left and right arrows step through the list while the inspector is open.
+	// Up and down stay with the browser so the page and the sheet still scroll.
+	useEffect(() => {
+		if (detailsIndex < 0) return;
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+			const target = event.target as HTMLElement | null;
+			if (target?.closest("input, textarea, select, [contenteditable='true'], [role='listbox'], [role='slider'], [role='tablist']")) return;
+			if (event.key === "ArrowLeft") {
+				event.preventDefault();
+				showModelAt(detailsIndex - 1);
+			} else if (event.key === "ArrowRight") {
+				event.preventDefault();
+				showModelAt(detailsIndex + 1);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [detailsIndex, showModelAt]);
 
 	function toggleParam(param: string) {
 		if (selectedParams.includes(param)) {
@@ -339,7 +270,7 @@ export default function ProviderModelsClient({
 
 	if (displayModels.length === 0) {
 		return (
-			<Empty className="mt-4 rounded-xl border p-8">
+			<Empty className="mt-4 rounded-lg border p-8">
 				<EmptyHeader>
 					<EmptyMedia variant="icon">
 						<FilePlus />
@@ -360,67 +291,9 @@ export default function ProviderModelsClient({
 
 	return (
 		<>
-			<div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
-				<div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center md:justify-self-start">
-					<div className="w-full sm:w-64 md:w-72">
-						<Select
-							open={isParamSelectOpen}
-							onOpenChange={(nextOpen) => {
-								if (!nextOpen && keepParamSelectOpenRef.current) return;
-								setIsParamSelectOpen(nextOpen);
-							}}
-							value={paramPickerValue}
-							onValueChange={(value) => {
-								keepParamSelectOpenRef.current = true;
-								toggleParam(value);
-								setParamPickerValue("");
-								queueMicrotask(() => {
-									setIsParamSelectOpen(true);
-									keepParamSelectOpenRef.current = false;
-								});
-							}}
-						>
-							<SelectTrigger className="h-9 [&>span]:max-w-[calc(100%-1.5rem)] [&>span]:truncate">
-								<SelectValue placeholder={selectedParamsSummary} />
-							</SelectTrigger>
-							<SelectContent>
-								{parameterOptions.map((option) => (
-									<SelectItem
-										key={option.id}
-										value={option.id}
-										className="[&>span:first-child]:hidden"
-									>
-										<span className="pr-6">{option.label}</span>
-										<span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-											<Check
-												className={`h-4 w-4 text-muted-foreground ${selectedParams.includes(option.id) ? "opacity-100" : "opacity-0"}`}
-											/>
-										</span>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					{selectedParams.length > 0 ? (
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-9 w-9 shrink-0"
-							onClick={clearParameterFilters}
-											aria-label={t("clearSelectedParameterFilters")}
-						>
-							<X className="h-4 w-4" />
-						</Button>
-					) : null}
-					{searchQuery.length > 0 ? (
-						<Button variant="ghost" size="sm" onClick={clearFilters}>
-										{t("clear")}
-						</Button>
-					) : null}
-				</div>
-
-				<div className="w-full md:w-72 md:justify-self-center">
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+				<div className="relative w-full sm:max-w-xs">
+					<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						value={searchQuery}
 						onChange={(event) =>
@@ -429,41 +302,73 @@ export default function ProviderModelsClient({
 							})
 						}
 						placeholder={t("searchPlaceholder")}
-						className="h-9"
+						className="h-9 pl-8"
 						aria-label={t("searchPlaceholder")}
 					/>
 				</div>
-
-				<div className="text-sm text-muted-foreground md:justify-self-end md:text-right">
+				<div className="flex items-center gap-1 sm:w-60">
+					<Select
+						open={isParamSelectOpen}
+						onOpenChange={(nextOpen) => {
+							if (!nextOpen && keepParamSelectOpenRef.current) return;
+							setIsParamSelectOpen(nextOpen);
+						}}
+						value={paramPickerValue}
+						onValueChange={(value) => {
+							keepParamSelectOpenRef.current = true;
+							toggleParam(value);
+							setParamPickerValue("");
+							queueMicrotask(() => {
+								setIsParamSelectOpen(true);
+								keepParamSelectOpenRef.current = false;
+							});
+						}}
+					>
+						<SelectTrigger className="h-9 w-full [&>span]:max-w-[calc(100%-1.5rem)] [&>span]:truncate">
+							<SelectValue placeholder={selectedParamsSummary} />
+						</SelectTrigger>
+						<SelectContent>
+							{parameterOptions.map((option) => (
+								<SelectItem
+									key={option.id}
+									value={option.id}
+									className="[&>span:first-child]:hidden"
+								>
+									<span className="pr-6 font-mono text-xs">{option.label}</span>
+									<span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+										<Check
+											className={`h-4 w-4 text-muted-foreground ${selectedParams.includes(option.id) ? "opacity-100" : "opacity-0"}`}
+										/>
+									</span>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{selectedParams.length > 0 ? (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-9 w-9 shrink-0"
+							onClick={clearParameterFilters}
+							aria-label={t("clearSelectedParameterFilters")}
+						>
+							<X className="h-4 w-4" />
+						</Button>
+					) : null}
+				</div>
+				{searchQuery.length > 0 ? (
+					<Button variant="ghost" size="sm" className="self-start sm:self-auto" onClick={clearFilters}>
+						{t("clear")}
+					</Button>
+				) : null}
+				<div className="text-sm text-muted-foreground sm:ml-auto">
 					{t("modelsCount", { count: filteredModels.length })}
 				</div>
 			</div>
 
 			<div className="mt-4">
-				{displayModels.length === 0 ? (
-					<Empty className="rounded-xl border p-8">
-						<EmptyHeader>
-							<EmptyMedia variant="icon">
-								<FilePlus />
-							</EmptyMedia>
-							<EmptyTitle>{t("noModelsTitle")}</EmptyTitle>
-							<EmptyDescription>
-								{t("noModelsForProvider")}
-							</EmptyDescription>
-						</EmptyHeader>
-						<EmptyContent>
-							<div className="flex gap-2">
-								<Button asChild>
-									<Link href="/contribute">{t("contribute")}</Link>
-								</Button>
-								<Button variant="outline" asChild>
-									<a href="https://phaseo.app">{t("learnMore")}</a>
-								</Button>
-							</div>
-						</EmptyContent>
-					</Empty>
-				) : filteredModels.length === 0 ? (
-					<Empty className="rounded-xl border p-8">
+				{filteredModels.length === 0 ? (
+					<Empty className="rounded-lg border p-8">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />
@@ -482,209 +387,30 @@ export default function ProviderModelsClient({
 						</EmptyContent>
 					</Empty>
 				) : (
-					<div className="divide-y divide-border">
-						{filteredModels.map((model) => {
-							const inputModalities = listify(model.input_modalities);
-							const outputModalities = listify(model.output_modalities);
-							const supportedParams = listify(model.supported_params).sort((a, b) =>
-								a.localeCompare(b),
-							);
-							const pricingMeters = model.pricing_meters ?? [];
-
-							const inputModalityIcons = resolveModalityIcons(inputModalities);
-							const outputModalityIcons = resolveModalityIcons(outputModalities);
-							const paramLabels = resolveSupportedParamLabels(supportedParams);
-
-							return (
-								<div
-									key={`${model.model_id}:${model.created_at ?? "na"}`}
-									className="group/model-row grid gap-4 py-5 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1.65fr)_minmax(0,1fr)]"
-								>
-									<div className="min-w-0 space-y-3">
-										<div className="flex flex-wrap items-center gap-2 text-base font-semibold">
-											<Link
-												href={`/models/${model.model_id}`}
-												className="hover:text-primary"
-											>
-												<span className="relative underline decoration-transparent transition-colors duration-200 hover:decoration-current">
-													{`${providerLabel}: ${model.model_name || model.model_id}`}
-												</span>
-												</Link>
-							{model.is_unreleased ? (
-								<UnreleasedBadge compact />
-							) : model.availability_status === "coming_soon" ? (
-								<Badge variant="secondary" className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
-									{tStatus("statuses.comingSoon")}
-								</Badge>
-							) : model.availability_status === "not_active" ? (
-								<Badge variant="secondary" className="border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-700">
-									{tStatus("statuses.inactive")}
-								</Badge>
-							) : null}
-						</div>
-						{model.availability_status === "coming_soon" ? (
-							<p className="text-xs font-normal text-muted-foreground">
-								{model.availability_reason === "scheduled" ? t("scheduledRelease") : tStatus("statusDescriptions.comingSoon")}
-							</p>
-						) : model.availability_status === "not_active" ? (
-							<p className="text-xs font-normal text-muted-foreground">
-								{model.availability_reason === "internal_testing" ? tStatus("statusDescriptions.internalTesting") : tStatus("statusDescriptions.inactive")}
-							</p>
-						) : null}
-
-										<div className="flex min-w-0 items-center gap-2">
-											<div className="break-all font-mono text-xs text-muted-foreground">
-												{model.api_model_id}
-											</div>
-											<CopyButton
-												content={model.api_model_id}
-												variant="ghost"
-												size="sm"
-												className="shrink-0 opacity-0 transition-opacity duration-150 group-hover/model-row:opacity-100 group-focus-within/model-row:opacity-100"
-												aria-label={t("copyModelId")}
-											/>
-										</div>
-
-										<div className="space-y-2">
-											<div className="text-xs tracking-wide text-muted-foreground/80">
-												{t("modalities")}
-											</div>
-											<div className="grid gap-2 sm:grid-cols-2">
-												<div className="min-w-0 space-y-1">
-													<div className="text-xs tracking-wide text-muted-foreground/80">
-														{t("input")}
-													</div>
-													<div className="flex flex-wrap items-center gap-1.5">
-														{inputModalityIcons.length > 0 ? (
-															inputModalityIcons.map((item) => {
-																const Icon = item.icon;
-																return (
-																	<span
-																		key={`${model.model_id}-mod-in-${item.id}`}
-																		className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-muted/25 px-2 text-muted-foreground"
-																	>
-																		<Icon className="h-4 w-4" />
-																		<span className="text-xs leading-none">
-																	{modalityLabels[item.id] ?? item.label}
-																		</span>
-																	</span>
-																);
-															})
-														) : (
-															<span className="text-xs text-muted-foreground">-</span>
-														)}
-													</div>
-												</div>
-
-												<div className="min-w-0 space-y-1">
-													<div className="text-xs tracking-wide text-muted-foreground/80">
-														{t("output")}
-													</div>
-													<div className="flex flex-wrap items-center gap-1.5">
-														{outputModalityIcons.length > 0 ? (
-															outputModalityIcons.map((item) => {
-																const Icon = item.icon;
-																return (
-																	<span
-																		key={`${model.model_id}-mod-out-${item.id}`}
-																		className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-muted/25 px-2 text-muted-foreground"
-																	>
-																		<Icon className="h-4 w-4" />
-																		<span className="text-xs leading-none">
-																	{modalityLabels[item.id] ?? item.label}
-																		</span>
-																	</span>
-																);
-															})
-														) : (
-															<span className="text-xs text-muted-foreground">-</span>
-														)}
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									<div className="space-y-2 border-t pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-4">
-										<div className="text-xs tracking-wide text-muted-foreground/80">
-											{t("supportedParameters")}
-										</div>
-										<div className="flex flex-wrap items-center gap-1.5">
-											{paramLabels.length > 0 ? (
-												paramLabels.map((item) => (
-													<span
-														key={`${model.model_id}-${item.id}`}
-														className="inline-flex h-7 items-center rounded-md border border-border bg-muted/25 px-2 text-muted-foreground"
-													>
-														<span className="max-w-[9rem] truncate text-xs leading-none">
-															{item.label}
-														</span>
-													</span>
-												))
-											) : (
-												<span className="text-xs text-muted-foreground">-</span>
-											)}
-										</div>
-									</div>
-
-									<div className="space-y-2 border-t pt-3 md:border-t-0 md:border-l md:pt-0 md:pl-4">
-										<div className="text-xs text-muted-foreground">{t("pricing")}</div>
-										{pricingMeters.length > 0 ? (
-											<div className="space-y-1.5">
-												{pricingMeters.map((meter) => {
-													const display = formatMeterDisplay(meter, {
-														millionPixels: t("oneMillionPixels"),
-														millionTokens: t("oneMillionTokens"),
-														unit: t("unit"),
-														knownUnit: (price) => {
-															const quantity = price.unit_size ?? 1;
-															const key = `${quantity === 1 ? "unitsSingular" : "units"}.${price.unit}`;
-															return tPricing.has(key as never) ? `${quantity === 1 ? "" : `${quantity.toLocaleString(locale)} `}${tPricing(key as never)}` : null;
-														},
-													});
-													return (
-														<div key={`${model.model_id}-meter-${meter.meter}`}>
-															<div className="text-sm">
-																<span className="text-muted-foreground">
-																	{tPricing.has(`meters.${meter.meter}` as never) ? tPricing(`meters.${meter.meter}` as never) : meter.label}:
-																</span>{" "}
-																<span className="font-semibold">
-																	{formatUsd(display.amount)}
-																</span>{" "}
-																<span className="text-muted-foreground">
-																	/ {display.unitLabel}
-																</span>
-															</div>
-															{meter.meter === "image_pixels" &&
-															meter.estimated_price_per_image_usd != null ? (
-																<div className="text-xs text-muted-foreground">
-													{t("estimatedImagePrice", {
-														price: formatUsd(meter.estimated_price_per_image_usd),
-														size: "1024×1024",
-													})}
-																</div>
-															) : null}
-														</div>
-													);
-												})}
-											</div>
-										) : model.starting_price_usd != null ? (
-											<div className="text-xs text-muted-foreground">
-												{t("startingAt", { price: formatUsd(model.starting_price_usd) })} /{" "}
-												{model.starting_price_unit && tPricing.has(`unitsSingular.${model.starting_price_unit}` as never)
-													? tPricing(`unitsSingular.${model.starting_price_unit}` as never)
-													: model.starting_price_unit ?? t("unit")}
-											</div>
-										) : (
-											<div className="text-xs text-muted-foreground">-</div>
-										)}
-									</div>
-								</div>
-							);
-						})}
+					<div className={MODEL_CARD_GRID_CLASS_NAME}>
+						{filteredModels.map((model) => (
+							<div key={`${model.model_id}:${model.created_at ?? "na"}`} data-provider-model-card={model.model_id}>
+								<ProviderModelCard
+									model={model}
+									selected={detailsModel?.model_id === model.model_id}
+									onOpenDetails={setDetailsModel}
+								/>
+							</div>
+						))}
 					</div>
 				)}
 			</div>
+
+			<ProviderModelDetailsSheet
+				model={detailsModel}
+				index={detailsIndex}
+				total={filteredModels.length}
+				onPrevious={detailsIndex > 0 ? () => showModelAt(detailsIndex - 1) : undefined}
+				onNext={detailsIndex >= 0 && detailsIndex < filteredModels.length - 1 ? () => showModelAt(detailsIndex + 1) : undefined}
+				onOpenChange={(open) => {
+					if (!open) setDetailsModel(null);
+				}}
+			/>
 		</>
 	);
 }

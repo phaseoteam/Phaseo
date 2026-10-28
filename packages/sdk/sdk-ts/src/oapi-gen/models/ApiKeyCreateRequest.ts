@@ -22,5 +22,6 @@ export interface ApiKeyCreateRequest {
   name: string;
   scopes?: string | string[];
   soft_blocked?: boolean;
+  storage_locations?: string[];
   workspace_id?: string;
 }

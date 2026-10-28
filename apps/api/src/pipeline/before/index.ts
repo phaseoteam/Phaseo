@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
-import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled } from "@core/feature-flags";
+import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
@@ -33,7 +33,11 @@ import {
 } from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
+import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
+import { resolveHostedTools } from "./hostedTools";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
+import { withoutNullTextParams } from "./textParamPolicy";
+import { applyPresetPromptTemplate, capabilityViewOfTemplatedRequest, collectTemplateVariableTargets, extractPromptReference, withoutMessagesPlaceholder, type PromptTemplateApplication } from "./promptTemplate";
 import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
@@ -57,6 +61,7 @@ import {
 } from "./modelSuccessor";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
+import { isClassifierSubrequest } from "../classification/request-classifiers";
 import { generatePublicId } from "./genId";
 import { applyDeploymentRegionPolicy, validateRegionalTextRequest } from "./deployment-region";
 import {
@@ -247,6 +252,14 @@ export type BeforeRequestObservabilitySnapshot = {
     requestPayload: unknown;
     requestedModel: string | null;
     model?: string | null;
+    /** The authenticated key, so failures before the context exists still apply its data policy. */
+    workspaceId?: string | null;
+    apiKeyId?: string | null;
+    /**
+     * The request's preset requires zero data retention, which the raw payload doesn't show,
+     * so failures before the context exists still keep the request's content out.
+     */
+    zeroDataRetention?: boolean;
 };
 
 export async function beforeRequest(
@@ -280,6 +293,13 @@ export async function beforeRequest(
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+    // Each report adds to the last, so a later model never drops an earlier ZDR flag.
+    let observabilitySnapshot: BeforeRequestObservabilitySnapshot = { requestPayload: null, requestedModel: null, workspaceId, apiKeyId };
+    const reportObservability = (snapshot: Partial<Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">>) => {
+        observabilitySnapshot = { ...observabilitySnapshot, ...snapshot };
+        options?.onObservabilitySnapshot?.(observabilitySnapshot);
+    };
+    reportObservability({ requestPayload: null, requestedModel: null });
 	const bindings = getBindings();
 	const perfGatewayAccess = resolvePerfGatewayAccess({
 		environment: bindings.ENV,
@@ -317,8 +337,9 @@ export async function beforeRequest(
         guardJson(req, workspaceId, requestId, { endpoint }),
     );
     if (!j.ok) return j as { ok: false; response: Response };
-    let rawBody = j.value;
-    const requestLabels = parseRequestLabels(req);
+    // Optional text parameters sent as null count as unset from here on.
+    let rawBody = withoutNullTextParams(endpoint, j.value);
+    const requestLabels = parseRequestLabels(req, { allowClassifierLabel: isClassifierSubrequest(req) });
     if (requestLabels.ok === false) {
         return {
             ok: false,
@@ -362,12 +383,47 @@ export async function beforeRequest(
         }
         rawBody = withoutRequestModelFallbacks(rawBody);
     }
+    // A prompt template reference names the preset; it fills `model` when absent.
+    const promptReferenceResult = extractPromptReference(rawBody, endpoint);
+    if (promptReferenceResult.ok === false) {
+        const { issue } = promptReferenceResult;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: issue.reason,
+                description: issue.message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message: issue.message, path: issue.path, keyword: issue.reason }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    rawBody = promptReferenceResult.rawBody;
+    const promptReference = promptReferenceResult.reference;
+    if (promptReference && requestModelFallbacks) {
+        // Fallback attempts replace `model`, which is how the template is found.
+        const message = "\"models\" fallbacks cannot be combined with a prompt template yet; list fallback models in the preset instead";
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "prompt_model_fallbacks_unsupported",
+                description: message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message, path: [REQUEST_MODEL_FALLBACKS_FIELD], keyword: "prompt_model_fallbacks_unsupported" }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     // Guardrails replace rawBody with redacted clones; fallbacks re-send this original.
     const retryRawBody = rawBody;
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
         : null;
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
     });
@@ -388,7 +444,7 @@ export async function beforeRequest(
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
     if (!v.ok) return v as { ok: false; response: Response };
-    let body = v.value;
+    let body = promptReference ? withoutMessagesPlaceholder(v.value) : v.value;
     const providerQualifiedModelRequest =
         canonicalizeProviderQualifiedModelRequest(body);
     if (providerQualifiedModelRequest.syntaxError) {
@@ -496,7 +552,7 @@ export async function beforeRequest(
 			}),
 		};
 	}
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
         model,
@@ -520,6 +576,7 @@ export async function beforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
+		shadowSpendLimit: a.value.authMethod !== "oauth",
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -726,7 +783,7 @@ export async function beforeRequest(
 		}
 		autoRouterEvaluation = selection.evaluation;
 		c = selection.selected.contextResult as Awaited<ReturnType<typeof guardContext>>;
-		options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
+		reportObservability({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
 	} else {
 		const speculative = speculativeContext && !testingModeEnabled ? await speculativeContext : null;
 		if (speculative && "error" in speculative) throw speculative.error;
@@ -746,12 +803,14 @@ export async function beforeRequest(
             ? await timer.span("modelSuccessorRedirect", async () => {
                 const policy = await loadSuccessorRedirectPolicy(workspaceId);
                 if (!policy.enabled) return null;
+                // Checked only once the workspace turned redirects on, so other traffic never waits on Statsig.
+                if (!(await isModelSuccessorRedirectAccessEnabled({ workspaceId }))) return null;
                 const override = workspaceSuccessorOverride(policy, unservedModel!);
                 if (override === null) return null;
                 const resolution = override
                     ? await findWorkspaceModelSuccessor(unservedModel!, override)
                     : await findModelSuccessor(unservedModel!);
-                const substitution = successorRedirectTarget(resolution, policy);
+                const substitution = successorRedirectTarget(resolution, policy, body);
                 if (!substitution) return null;
                 const successorContext = await contextForModel(substitution.to, testingContextFlags);
                 return successorContext.ok ? { successorContext, substitution } : null;
@@ -771,9 +830,19 @@ export async function beforeRequest(
         modelSubstitution = redirected.substitution;
         // Downstream decoding reads the model from the body, not the context.
         body = { ...body, model: modelSubstitution.to };
-        options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
+        reportObservability({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
     }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
+    // A preset's require_zero_data_retention is only in the merged body, so report it now:
+    // a failure from here until the context exists (a preset filter leaving no provider,
+    // say) must keep the request's content out of telemetry and the I/O log too. The merge
+    // decides, as for ctx.zeroDataRetention, since the request's own setting wins.
+    if (context.preset?.config?.provider?.requireZeroDataRetention === true) {
+        const { mergePresetWithBody } = await import("./presetMerge");
+        if (getEffectiveRoutingHints(mergePresetWithBody(body, context.preset, endpoint)).requireZeroDataRetention === true) {
+            reportObservability({ zeroDataRetention: true });
+        }
+    }
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
@@ -854,6 +923,7 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
+                    shadowSpendLimit: a.value.authMethod !== "oauth",
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -885,7 +955,8 @@ export async function beforeRequest(
     let mergedBody = body;
     let presetFilteredProviders = providers;
     let resolvedRoutingMode = context.teamSettings?.routingMode ?? null;
-    let presetInfo: { id: string; name: string; slug?: string | null; config: any } | null = null;
+    let presetInfo: { id: string; name: string; slug?: string | null; config: any; versionId?: string | null; versionLabel?: string | null; ref?: string | null } | null = null;
+    let promptTemplateApplication: PromptTemplateApplication | null = null;
 
     if (context.preset) {
         const {
@@ -896,8 +967,34 @@ export async function beforeRequest(
             validatePresetModel,
         } = await import("./presetMerge");
 
-        // Merge preset config with request body
-        mergedBody = mergePresetWithBody(body, context.preset);
+        // Render the preset prompt template, then merge preset config with the request body
+        const templateResult = applyPresetPromptTemplate({
+            body,
+            preset: context.preset,
+            reference: promptReference,
+            endpoint,
+        });
+        if (templateResult.ok === false) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: templateResult.issues[0]?.keyword ?? "template_invalid",
+                    description: templateResult.issues.map((issue) => issue.message).join("; "),
+                    error_type: "user",
+                    error_origin: "user",
+                    details: templateResult.issues.map((issue) => ({
+                        message: issue.message,
+                        path: issue.path,
+                        keyword: issue.keyword,
+                        ...(issue.params ? { params: issue.params } : {}),
+                    })),
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+        promptTemplateApplication = templateResult.application;
+        mergedBody = mergePresetWithBody(templateResult.body, context.preset, endpoint);
         const presetModelValidationError = validatePresetModel(
             resolvedModel || model,
             context.preset.config,
@@ -937,6 +1034,9 @@ export async function beforeRequest(
             name: context.preset.name,
             slug: context.preset.slug ?? null,
             config: context.preset.config,
+            versionId: context.preset.versionId ?? null,
+            versionLabel: context.preset.versionLabel ?? null,
+            ref: context.preset.ref ?? null,
         };
 
         if (!presetFilteredProviders.length) {
@@ -985,6 +1085,32 @@ export async function beforeRequest(
             }),
         };
     }
+    // The web and web-fetch plugins become server tools here, so routing and
+    // execution treat them as the client's own phaseo:web_search / phaseo:web_fetch.
+    const serverToolPlugins = applyServerToolPlugins({
+        endpoint,
+        body: mergedBody,
+        plugins: resolvedPlugins,
+    });
+    if (serverToolPlugins.ok === false) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: [{
+                    message: `Invalid ${serverToolPlugins.pluginId} plugin option: ${serverToolPlugins.message}`,
+                    path: ["plugins", serverToolPlugins.field],
+                    keyword: "invalid_gateway_plugin_config",
+                    params: {
+                        pluginId: serverToolPlugins.pluginId,
+                        field: serverToolPlugins.field,
+                    },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    mergedBody = serverToolPlugins.body;
     mergedBody = applyWorkspacePrivacyRoutingDefaults(
         mergedBody,
         context.teamSettings,
@@ -1242,6 +1368,9 @@ export async function beforeRequest(
         workspacePolicy,
         requestId,
         workspaceId,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!promptInjectionResult.ok) {
         return promptInjectionResult as { ok: false; response: Response };
@@ -1258,6 +1387,9 @@ export async function beforeRequest(
         requestId,
         workspaceId,
         existingEnforcement: promptInjectionResult.enforcement,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!sensitiveInfoResult.ok) {
         return sensitiveInfoResult as { ok: false; response: Response };
@@ -1273,13 +1405,17 @@ export async function beforeRequest(
     const capabilityValidation = await timer.span("validateCapabilities", () =>
         validateCapabilities({
             endpoint,
-            rawBody,
+            rawBody: promptReference ? capabilityViewOfTemplatedRequest(rawBody, mergedBody) : rawBody,
             body: mergedBody,
             requestId,
             workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
-			requiredParams: requiredExecutionParams(endpoint),
+			requiredParams: [
+				...requiredExecutionParams(endpoint),
+				// Plugin server tools are model function tools: prefer providers that take tools.
+				...(serverToolPlugins.addedTools.length > 0 ? ["tools"] : []),
+			],
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
@@ -1292,6 +1428,7 @@ export async function beforeRequest(
         "moderations",
         "rerank",
         "decisions.make",
+        "extraction.extract",
         "systemone",
         "image.generate",
         "image.edit",
@@ -1416,6 +1553,39 @@ export async function beforeRequest(
 		};
 	}
 	enabledProviders = quantizationCandidates.providers;
+	if (enabledProviders.length > 0) {
+		const hostedTools = resolveHostedTools({
+			endpoint,
+			body: mergedBody,
+			providers: enabledProviders,
+			model: resolvedModel || model,
+		});
+		if (hostedTools.ok === false) {
+			const names = hostedTools.unsupportedTools.map((tool) => tool.type);
+			return {
+				ok: false,
+				response: err("validation_error", {
+					reason: "unsupported_hosted_tool",
+					description: `Model "${resolvedModel || model}" has no provider that can run the hosted tool${names.length > 1 ? "s" : ""} ${names.join(", ")}. Remove ${names.length > 1 ? "them" : "it"}, or choose a model served on OpenAI's Responses API.`,
+					error_type: "user",
+					error_origin: "user",
+					details: hostedTools.unsupportedTools.map((tool) => ({
+						message: `Hosted tool "${tool.type}" cannot run on the providers serving this model.`,
+						path: ["tools", tool.index],
+						keyword: "unsupported_hosted_tool",
+						params: { tool: tool.type, model: resolvedModel || model },
+					})),
+					request_id: requestId,
+					workspace_id: workspaceId,
+				}),
+			};
+		}
+		for (const providerId of hostedTools.droppedProviderIds) {
+			providerEnablementDropped.push({ providerId, reason: "hosted_tool_unsupported" });
+		}
+		enabledProviders = hostedTools.providers;
+		mergedBody = hostedTools.body;
+	}
     const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
         capability: normalizedCapability,
         providersBefore: filteredProviders.map((provider) => provider.providerId),
@@ -1529,6 +1699,12 @@ export async function beforeRequest(
     const ctx: PipelineContext = {
 		quotaUserId: userId ?? null,
 		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
+		neverStoreContent: workspacePolicy.neverStoreContent === true,
+		// The workspace setting or one of the key's guardrails, or the request's own (or its
+		// preset's) require_zero_data_retention.
+		zeroDataRetention:
+			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
+			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
         endpoint,
         capability,
         requestId,
@@ -1556,6 +1732,9 @@ export async function beforeRequest(
             credit: context.credit,
         },
         preset: presetInfo,
+        promptTemplate: promptTemplateApplication && presetInfo
+            ? { presetId: presetInfo.id, presetSlug: presetInfo.slug ?? null, versionLabel: presetInfo.versionLabel ?? null, ref: presetInfo.ref ?? null, ...promptTemplateApplication }
+            : null,
         internal,
         // Enrichment data for observability (wide events)
         teamEnrichment: context.teamEnrichment ?? null,

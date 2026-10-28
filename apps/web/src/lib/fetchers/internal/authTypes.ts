@@ -12,6 +12,7 @@ export type InternalAuthHeaderUser = {
 	email: string | null;
 	displayName: string | null;
 	avatarUrl: string | null;
+	createdAt?: string | null;
 };
 
 export type InternalAuthHeaderData = {

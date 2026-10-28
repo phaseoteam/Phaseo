@@ -134,9 +134,14 @@ export function toAmzDate(date: Date): string {
 	return `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
 }
 
+/**
+ * SigV4 canonical URI. Every AWS service except S3 encodes each path segment a
+ * second time, so an already-encoded segment such as `v1%3A0` (the `:` in a
+ * Bedrock Runtime model ID) is signed as `v1%253A0`.
+ */
 export function normalizePath(pathname: string): string {
 	if (!pathname) return "/";
-	return pathname.split("/").map((segment) => encodeRfc3986(decodeSegment(segment))).join("/");
+	return pathname.split("/").map((segment) => encodeRfc3986(segment)).join("/");
 }
 
 export function normalizeQuery(searchParams: URLSearchParams): string {
@@ -155,14 +160,6 @@ export function encodeRfc3986(value: string): string {
 	return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
 		`%${char.charCodeAt(0).toString(16).toUpperCase()}`,
 	);
-}
-
-export function decodeSegment(value: string): string {
-	try {
-		return decodeURIComponent(value);
-	} catch {
-		return value;
-	}
 }
 
 export function toHex(bytes: Uint8Array): string {
@@ -308,4 +305,131 @@ export function extractRegionFromMantleUrl(value: string | undefined): string | 
 	if (!value) return null;
 	const match = value.match(/bedrock-mantle[\.-]([a-z0-9-]+)\.(?:api\.aws|amazonaws\.com)/i);
 	return match?.[1] ?? null;
+}
+
+/**
+ * Cross-Region inference profile IDs (`global.anthropic.claude-sonnet-4-6`,
+ * `us.openai.gpt-5.6-sol`) are served only by bedrock-runtime; bedrock-mantle
+ * serves bare In-Region model IDs. The catalogue's model ID therefore picks the host.
+ */
+export function isBedrockInferenceProfileId(model: string | null | undefined): boolean {
+	return /^(?:global|us|us-gov|eu|apac|au|jp)\./i.test(String(model ?? "").trim());
+}
+
+export function bedrockRuntimeBaseUrl(region: string): string {
+	if (!/^[a-z0-9-]+$/.test(region)) throw new Error("amazon_bedrock_region_invalid");
+	return `https://bedrock-runtime.${region}.amazonaws.com`;
+}
+
+/** SigV4 service name: `bedrock` for bedrock-runtime, `bedrock-mantle` for Mantle. */
+export function bedrockSigningService(url: string): "bedrock" | "bedrock-mantle" {
+	return new URL(url).hostname.toLowerCase().startsWith("bedrock-runtime.") ? "bedrock" : "bedrock-mantle";
+}
+
+const BEDROCK_STREAM_ERROR_TYPES: Record<string, string> = {
+	throttlingException: "rate_limit_error",
+	serviceUnavailableException: "overloaded_error",
+	validationException: "invalid_request_error",
+};
+
+/**
+ * InvokeModelWithResponseStream answers in the AWS event stream format
+ * (application/vnd.amazon.eventstream), not SSE. Each `chunk` event carries one
+ * Anthropic Messages stream event as base64 JSON. This re-emits those events as
+ * SSE so the Claude stream transformers can read them, and turns exception
+ * frames into Anthropic `error` events.
+ */
+export function createBedrockInvokeStreamToSseTransformer(): TransformStream<Uint8Array, Uint8Array> {
+	const encoder = new TextEncoder();
+	const decoder = new TextDecoder();
+	let buffer = new Uint8Array(0);
+	return new TransformStream<Uint8Array, Uint8Array>({
+		transform(chunk, controller) {
+			const joined = new Uint8Array(buffer.length + chunk.length);
+			joined.set(buffer, 0);
+			joined.set(chunk, buffer.length);
+			buffer = joined;
+			// Prelude: total length, headers length, prelude CRC. Trailer: message CRC.
+			while (buffer.length >= 12) {
+				const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+				const totalLength = view.getUint32(0);
+				const headersLength = view.getUint32(4);
+				if (totalLength < 16 || headersLength > totalLength - 16) {
+					throw new Error("amazon_bedrock_event_stream_malformed");
+				}
+				if (buffer.length < totalLength) break;
+				const headers = parseEventStreamHeaders(buffer.subarray(12, 12 + headersLength), decoder);
+				const payload = decoder.decode(buffer.subarray(12 + headersLength, totalLength - 4));
+				buffer = buffer.slice(totalLength);
+				const sse = eventStreamMessageToSse(headers, payload);
+				if (sse) controller.enqueue(encoder.encode(sse));
+			}
+		},
+	});
+}
+
+function eventStreamMessageToSse(headers: Record<string, string>, payload: string): string | null {
+	if (headers[":message-type"] === "event") {
+		if (headers[":event-type"] !== "chunk") return null;
+		const bytes = (JSON.parse(payload) as { bytes?: unknown })?.bytes;
+		if (typeof bytes !== "string") return null;
+		const event = JSON.parse(decodeBase64Utf8(bytes));
+		if (!event || typeof event.type !== "string") return null;
+		return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+	}
+	const errorType = headers[":exception-type"] ?? headers[":error-code"] ?? "internalServerException";
+	let message = headers[":error-message"] ?? errorType;
+	try {
+		const parsed = JSON.parse(payload) as { message?: unknown };
+		if (typeof parsed?.message === "string" && parsed.message) message = parsed.message;
+	} catch {
+		// Keep the header message.
+	}
+	const error = { type: BEDROCK_STREAM_ERROR_TYPES[errorType] ?? "api_error", message };
+	return `event: error\ndata: ${JSON.stringify({ type: "error", error })}\n\n`;
+}
+
+function parseEventStreamHeaders(bytes: Uint8Array, decoder: TextDecoder): Record<string, string> {
+	const headers: Record<string, string> = {};
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	let offset = 0;
+	while (offset < bytes.length) {
+		const nameLength = bytes[offset];
+		offset += 1;
+		const name = decoder.decode(bytes.subarray(offset, offset + nameLength));
+		offset += nameLength;
+		const valueType = bytes[offset];
+		offset += 1;
+		switch (valueType) {
+			case 0: // true
+			case 1: // false
+				break;
+			case 2: offset += 1; break;
+			case 3: offset += 2; break;
+			case 4: offset += 4; break;
+			case 5: // long
+			case 8: // timestamp
+				offset += 8;
+				break;
+			case 6: // byte array
+			case 7: { // string
+				const length = view.getUint16(offset);
+				offset += 2;
+				if (valueType === 7) headers[name] = decoder.decode(bytes.subarray(offset, offset + length));
+				offset += length;
+				break;
+			}
+			case 9: offset += 16; break; // uuid
+			default:
+				throw new Error("amazon_bedrock_event_stream_header_invalid");
+		}
+	}
+	return headers;
+}
+
+function decodeBase64Utf8(value: string): string {
+	const binary = atob(value);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+	return new TextDecoder().decode(bytes);
 }

@@ -3,25 +3,39 @@ title: "avril"
 description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de modèles en avril 2026."
 ---
 
-<Update label="30 avril 2026" tags={["Sorties de modèles"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Sorties de modèles
+<ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
+
+<Update label="30 avril 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Grok 4.3 visuel de sortie du modèle](../../../images/model-releases/2026-04-30--x-ai--grok-4-3.png)
 
 - [xAI: Grok 4.3](https://phaseo.app/models/x-ai/grok-4.3)
 
+</div>
+
 </Update>
 
-<Update label="29 avril 2026" tags={["Fonctionnalités","Sorties de modèles","SDK"]}>
+<Update label="29 avril 2026">
 
-### Sorties du SDK
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
 
 - Le SDK `2.0.2` a été publié pour [TypeScript](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.2), [Python](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.2), [Go](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.2), [C#](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.2), [Java](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.2), [PHP](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.2) et [Ruby](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.2).
 - Cette version a séparé les identifiants de modèle des requêtes à l’exécution des constantes générées pour les assistants appelables, afin que les nouveaux modèles soient utilisables avant la prochaine publication du SDK.
 - Les assistants générés suivent désormais l’instantané actuel des modèles appelables sur la passerelle, ce qui réduit les changements inutiles du SDK dus aux seules mises à jour du catalogue.
 
-### Sorties de modèles
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Granite 4.1 30B visuel de sortie du modèle](../../../images/model-releases/2026-04-29--ibm--granite-4-1-30b.png)
 
@@ -30,11 +44,15 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [IBM: Granite 4.1 8B](https://phaseo.app/models/ibm/granite-4.1-8b)
 - [Mistral: Mistral Medium 3.5](https://phaseo.app/models/mistral/mistral-medium-3.5)
 
+</div>
+
 </Update>
 
-<Update label="28 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="28 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Nemotron 3 Nano Omni 30B A3B Reasoning visuel de sortie du modèle](../../../images/model-releases/2026-04-28--nvidia--nemotron-3-nano-omni-30b-a3b-reasoning.png)
 
@@ -43,37 +61,53 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Nvidia: Nemotron 3 Nano Omni 30B A3B Reasoning](https://phaseo.app/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning)
 - [Poolside: Laguna XS.2](https://phaseo.app/models/poolside/laguna-xs.2)
 
+</div>
+
 </Update>
 
-<Update label="25 avril 2026" tags={["Fonctionnalités","Tarifs","Sorties de modèles"]}>
+<Update label="25 avril 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Les alertes de solde faible et les protections de facturation ont été renforcées pour avertir plus clairement les équipes avant d’atteindre les limites du compte ([PR #371](https://github.com/phaseoteam/Phaseo/pull/371)).
 - Les cas limites de tarification échouent désormais de façon plus prévisible lorsque les règles de facturation d’un fournisseur sont incomplètes ou que les métadonnées d’une route changent de manière inattendue ([PR #374](https://github.com/phaseoteam/Phaseo/pull/374)).
 
-### Sorties de modèles
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![DeepSeek V4 Pro Lightning visuel de sortie du modèle](../../../images/model-releases/2026-04-25--deepseek--deepseek-v4-pro-lightning.png)
 
 - [DeepSeek: DeepSeek V4 Pro Lightning](https://phaseo.app/models/deepseek/deepseek-v4-pro-lightning)
 
+</div>
+
 </Update>
 
-<Update label="24 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="24 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![DeepSeek V4 Flash visuel de sortie du modèle](../../../images/model-releases/2026-04-24--deepseek--deepseek-v4-flash.png)
 
 - [DeepSeek: DeepSeek V4 Flash](https://phaseo.app/models/deepseek/deepseek-v4-flash)
 - [DeepSeek: DeepSeek V4 Pro](https://phaseo.app/models/deepseek/deepseek-v4-pro)
 
+</div>
+
 </Update>
 
-<Update label="23 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="23 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![GPT 5.5 visuel de sortie du modèle](../../../images/model-releases/2026-04-23--openai--gpt-5-5.png)
 
@@ -81,15 +115,23 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [OpenAI: GPT 5.5 Pro](https://phaseo.app/models/openai/gpt-5.5-pro)
 - [Tencent Hunyuan: Hy3 Preview](https://phaseo.app/models/tencent/hy3-preview)
 
+</div>
+
 </Update>
 
-<Update label="22 avril 2026" tags={["Fonctionnalités","SDK","Sorties de modèles"]}>
+<Update label="22 avril 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Le SDK `2.0.0` a été publié avec des clients régénérés et une meilleure conformité au contrat actuel de la passerelle.
 
-### Sorties de modèles
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemini Embedding 2 visuel de sortie du modèle](../../../images/model-releases/2026-04-22--google--gemini-embedding-2.png)
 
@@ -99,15 +141,23 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Xiaomi: MiMo V2.5 Pro](https://phaseo.app/models/xiaomi/mimo-v2.5-pro)
 - [Xiaomi: MiMo V2.5 TTS](https://phaseo.app/models/xiaomi/mimo-v2.5-tts)
 
+</div>
+
 </Update>
 
-<Update label="21 avril 2026" tags={["Fonctionnalités","Sorties de modèles"]}>
+<Update label="21 avril 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Le centre d’annonces, les outils de gestion des espaces de travail et les parcours d’adhésion associés ont été lancés.
 
-### Sorties de modèles
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemini Deep Research Max Preview (04-2026) visuel de sortie du modèle](../../../images/model-releases/2026-04-21--google--deep-research-max-preview-04-2026.png)
 
@@ -115,141 +165,197 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Google: Gemini Deep Research Preview (04-2026)](https://phaseo.app/models/google/deep-research-preview-04-2026)
 - [OpenAI: GPT Image 2](https://phaseo.app/models/openai/gpt-image-2)
 
+</div>
+
 </Update>
 
-<Update label="20 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="20 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Kimi K2.6 visuel de sortie du modèle](../../../images/model-releases/2026-04-20--moonshotai--kimi-k2-6.png)
 
 - [Moonshot: Kimi K2.6](https://phaseo.app/models/moonshotai/kimi-k2.6)
 - [Qwen: Qwen 3.5 Plus (2026-04-20)](https://phaseo.app/models/qwen/qwen3.5-plus-2026-04-20)
 
+</div>
+
 </Update>
 
-<Update label="18 avril 2026" tags={["Fonctionnalités","Sorties de modèles","SDK","Documentation"]}>
+<Update label="18 avril 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Le SDK `1.2.0` a synchronisé la disponibilité des modèles, les types générés et la documentation avec les dernières modifications du catalogue.
 
+</div>
+
 </Update>
 
-<Update label="17 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="17 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Qwen 3.6 35B A3B visuel de sortie du modèle](../../../images/model-releases/2026-04-17--qwen--qwen3-6-35b-a3b.png)
 
 - [Qwen: Qwen 3.6 35B A3B](https://phaseo.app/models/qwen/qwen3.6-35b-a3b)
 - [xAI: Grok TTS](https://phaseo.app/models/x-ai/grok-tts)
 
+</div>
+
 </Update>
 
-<Update label="16 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="16 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Claude Opus 4.7 visuel de sortie du modèle](../../../images/model-releases/2026-04-16--anthropic--claude-opus-4-7.png)
 
 - [Anthropic: Claude Opus 4.7](https://phaseo.app/models/anthropic/claude-opus-4.7)
 
+</div>
+
 </Update>
 
-<Update label="15 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="15 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemini 3.1 Flash TTS Preview visuel de sortie du modèle](../../../images/model-releases/2026-04-15--google--gemini-3-1-flash-tts-preview.png)
 
 - [Google: Gemini 3.1 Flash TTS Preview](https://phaseo.app/models/google/gemini-3.1-flash-tts-preview)
 
+</div>
+
 </Update>
 
-<Update label="14 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="14 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemini Robotics ER 1.6 Preview visuel de sortie du modèle](../../../images/model-releases/2026-04-14--google--gemini-robotics-er-1-6-preview.png)
 
 - [Google: Gemini Robotics ER 1.6 Preview](https://phaseo.app/models/google/gemini-robotics-er-1.6-preview)
 
+</div>
+
 </Update>
 
-<Update label="13 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="13 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Kimi K2.6 Code Preview visuel de sortie du modèle](../../../images/model-releases/2026-04-13--moonshotai--kimi-k2-6-code-preview.png)
 
 - [Moonshot: Kimi K2.6 Code Preview](https://phaseo.app/models/moonshotai/kimi-k2.6-code-preview)
 
+</div>
+
 </Update>
 
-<Update label="11 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="11 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Music 2.6 visuel de sortie du modèle](../../../images/model-releases/2026-04-11--minimax--music-2-6.png)
 
 - [MiniMax: Music 2.6](https://phaseo.app/models/minimax/music-2.6)
 
+</div>
+
 </Update>
 
-<Update label="8 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="8 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Muse Spark visuel de sortie du modèle](../../../images/model-releases/2026-04-08--meta--muse-spark.png)
 
 - [Meta: Muse Spark](https://phaseo.app/models/meta/muse-spark)
 - [Meta: Muse Spark Contemplating](https://phaseo.app/models/meta/muse-spark-contemplating)
 
+</div>
+
 </Update>
 
-<Update label="7 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="7 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![GLM 5.1 visuel de sortie du modèle](../../../images/model-releases/2026-04-07--z-ai--glm-5-1.png)
 
 - [z.AI: GLM 5.1](https://phaseo.app/models/z-ai/glm-5.1)
 
+</div>
+
 </Update>
 
-<Update label="4 avril 2026" tags={["Fonctionnalités","Sorties de modèles","SDK","Tarifs"]}>
+<Update label="4 avril 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Les pages de modèles sur mobile, les présentations des tarifs et la visibilité des routes gratuites ont été améliorées ; les frais de recharge Pay As You Go sont passés à 5 %.
 
+</div>
+
 </Update>
 
-<Update label="3 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="3 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Wan 2.7 T2V visuel de sortie du modèle](../../../images/model-releases/2026-04-03--qwen--wan2-7-t2v.png)
 
 - [Qwen: Wan 2.7 T2V](https://phaseo.app/models/qwen/wan2.7-t2v)
 
+</div>
+
 </Update>
 
-<Update label="2 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="2 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemma 4 26B A4B visuel de sortie du modèle](../../../images/model-releases/2026-04-02--google--gemma-4-26b-a4b.png)
 
 - [Google: Gemma 4 26B A4B](https://phaseo.app/models/google/gemma-4-26b-a4b)
 - [Google: Gemma 4 31B](https://phaseo.app/models/google/gemma-4-31b)
 
+</div>
+
 </Update>
 
-<Update label="1 avril 2026" tags={["Sorties de modèles"]}>
+<Update label="1 avril 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Qwen 3.6 Plus visuel de sortie du modèle](../../../images/model-releases/2026-04-01--qwen--qwen3-6-plus.png)
 
@@ -257,5 +363,6 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Qwen: Qwen 3.6 Plus](https://phaseo.app/models/qwen/qwen3.6-plus)
 - [z.AI: GLM 5V Turbo](https://phaseo.app/models/z-ai/glm-5v-turbo)
 
-</Update>
+</div>
 
+</Update>

@@ -100,6 +100,28 @@ describe("display preferences", () => {
 		)).toBe("19 Sept, 17:35");
 	});
 
+	it("reuses formatters for repeated settings instead of rebuilding them per value", () => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "en-GB" as const, timeZone: "UTC" };
+		const options = { month: "long", year: "numeric", timeZone: "UTC" } as const;
+		const dateFormat = jest.spyOn(Intl, "DateTimeFormat");
+		const numberFormat = jest.spyOn(Intl, "NumberFormat");
+		try {
+			const months = Array.from({ length: 200 }, (_, index) =>
+				formatDisplayDateParts(Date.UTC(2026, index % 12, 15), preferences, options));
+			const numbers = Array.from({ length: 200 }, (_, index) => formatDisplayNumber(index * 1_000, preferences));
+			expect(months[0]).toBe("January 2026");
+			expect(months[11]).toBe("December 2026");
+			expect(numbers[2]).toBe("2,000");
+			expect(dateFormat.mock.calls.length).toBeLessThanOrEqual(1);
+			expect(numberFormat.mock.calls.length).toBeLessThanOrEqual(1);
+			// Different settings still get their own formatter.
+			expect(formatDisplayDateParts(Date.UTC(2026, 0, 15), { ...preferences, locale: "fr-FR" as const }, options)).toBe("janvier 2026");
+		} finally {
+			dateFormat.mockRestore();
+			numberFormat.mockRestore();
+		}
+	});
+
 	it("allows exact values to override compact notation", () => {
 		const preferences = {
 			...DEFAULT_DISPLAY_PREFERENCES,

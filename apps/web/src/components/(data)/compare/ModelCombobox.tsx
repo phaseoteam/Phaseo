@@ -20,10 +20,12 @@ import {
 } from "@/components/ai-elements/model-selector";
 import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
-import { useLocale, useTranslations } from "next-intl";
+import { useCompareModelOptions, usePrefetchCompareModelOptions } from "./useCompareModelOptions";
+import { useTranslations } from "next-intl";
 
 interface ModelComboboxProps {
-	models: CompareModelOption[];
+	/** Options the page already has: the selected models. The full list loads when the picker opens. */
+	selectedOptions: CompareModelOption[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
 	open?: boolean;
@@ -90,8 +92,77 @@ function getReleaseDate(model: CompareModelOption): Date | null {
 	return parsed;
 }
 
+const NO_GROUPS: GroupedModels[] = [];
+
+function searchText(model: CompareModelOption): string {
+	return `${model.name} ${model.id} ${model.provider?.name ?? ""}`.toLowerCase();
+}
+
+/**
+ * Every word must appear somewhere in the name, id or lab, in any order, so
+ * "qwen max" finds "Qwen 3.8 Max" and "Qwen3 Max". Models Phaseo serves come
+ * first, then names that start with the query, then the newest.
+ */
+export function searchModels(models: CompareModelOption[], query: string): CompareModelOption[] {
+	const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+	if (!words.length) return models;
+	const first = words[0]!;
+	return models
+		.flatMap((model) => {
+			const haystack = searchText(model);
+			if (!words.every((word) => haystack.includes(word))) return [];
+			const time = getReleaseDate(model)?.getTime() ?? Number.NEGATIVE_INFINITY;
+			return [{ model, routed: model.routed ? 0 : 1, prefix: model.name.toLowerCase().startsWith(first) ? 0 : 1, time }];
+		})
+		.sort((a, b) => a.routed - b.routed || a.prefix - b.prefix || b.time - a.time || a.model.name.localeCompare(b.model.name))
+		.map((entry) => entry.model);
+}
+
+/**
+ * Groups models by release month, newest first, and sorts each month newest first
+ * then by name. Each date is parsed once and each month labelled once: the list
+ * holds every catalogue model, so per-model formatting is the expensive part.
+ */
+export function groupModelsByReleaseMonth(
+	models: CompareModelOption[],
+	monthLabel: (date: Date) => string,
+	unknownLabel: string,
+): GroupedModels[] {
+	const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+	const groups = new Map<string, GroupedModels & { entries: Array<{ model: CompareModelOption; time: number }> }>();
+	for (const model of models) {
+		const releaseDate = getReleaseDate(model);
+		const monthKey = releaseDate
+			? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
+			: "unknown";
+		let group = groups.get(monthKey);
+		if (!group) {
+			group = {
+				monthKey,
+				monthLabel: releaseDate ? monthLabel(releaseDate) : unknownLabel,
+				monthTimestamp: releaseDate
+					? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
+					: Number.NEGATIVE_INFINITY,
+				models: [],
+				entries: [],
+			};
+			groups.set(monthKey, group);
+		}
+		group.entries.push({ model, time: releaseDate ? releaseDate.getTime() : Number.NEGATIVE_INFINITY });
+	}
+
+	return Array.from(groups.values())
+		.map(({ entries, ...group }) => ({
+			...group,
+			models: entries
+				.sort((a, b) => (a.time !== b.time ? b.time - a.time : collator.compare(a.model.name, b.model.name)))
+				.map((entry) => entry.model),
+		}))
+		.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
+}
+
 export default function ModelCombobox({
-	models,
+	selectedOptions,
 	selected,
 	setSelected,
 	open,
@@ -103,7 +174,6 @@ export default function ModelCombobox({
 	className,
 }: ModelComboboxProps) {
 	const t = useTranslations("Catalogue.compare");
-	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const getReleaseMonthLabel = React.useCallback(
 		(date: Date) => format.dateParts(date, {
@@ -137,78 +207,31 @@ export default function ModelCombobox({
 		});
 	}, [selected, dialogOpen]);
 
-	const groupedModels = React.useMemo<GroupedModels[]>(() => {
-		const map = new Map<string, GroupedModels>();
-		models.forEach((model) => {
-			const releaseDate = getReleaseDate(model);
-			const monthKey = releaseDate
-				? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
-				: "unknown";
-			const monthLabel = releaseDate
-				? getReleaseMonthLabel(releaseDate)
-				: t("unknownReleaseDate");
-			const monthTimestamp = releaseDate
-				? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
-				: Number.NEGATIVE_INFINITY;
-			if (!map.has(monthKey)) {
-				map.set(monthKey, {
-					monthKey,
-					monthLabel,
-					monthTimestamp,
-					models: [],
-				});
-			}
-			map.get(monthKey)!.models.push(model);
-		});
+	// The list only shows in the open dialog, so it loads when a picker first
+	// opens: pages, server renders and closed pickers carry no catalogue.
+	const optionsQuery = useCompareModelOptions(dialogOpen);
+	const prefetchOptions = usePrefetchCompareModelOptions();
+	const catalogue = optionsQuery.data;
+	const groupedModels = React.useMemo<GroupedModels[]>(
+		() => (dialogOpen && catalogue ? groupModelsByReleaseMonth(catalogue, getReleaseMonthLabel, t("unknownReleaseDate")) : NO_GROUPS),
+		[catalogue, dialogOpen, getReleaseMonthLabel, t],
+	);
 
-		return Array.from(map.values())
-			.map((group) => ({
-				...group,
-				models: group.models
-					.slice()
-					.sort((a, b) => {
-						const aDate = getReleaseDate(a);
-						const bDate = getReleaseDate(b);
-						const aTime = aDate ? aDate.getTime() : Number.NEGATIVE_INFINITY;
-						const bTime = bDate ? bDate.getTime() : Number.NEGATIVE_INFINITY;
-						if (aTime !== bTime) return bTime - aTime;
-						return a.name.localeCompare(b.name, undefined, {
-							sensitivity: "base",
-						});
-					}),
-			}))
-			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
-	}, [getReleaseMonthLabel, models, t]);
-
-	const filteredGroups = React.useMemo(() => {
-		const term = searchTerm.trim().toLowerCase();
-		if (!term) return groupedModels;
-
-		return groupedModels
-			.map((group) => {
-				const matchesMonth = group.monthLabel.toLowerCase().includes(term);
-				if (matchesMonth) {
-					return group;
-				}
-				const matchingModels = group.models.filter((model) => {
-					const providerName = model.provider?.name ?? "";
-					return (
-						model.name.toLowerCase().includes(term) ||
-						model.id.toLowerCase().includes(term) ||
-						providerName.toLowerCase().includes(term)
-					);
-				});
-				if (matchingModels.length === 0) return null;
-				return { ...group, models: matchingModels };
-			})
-			.filter(Boolean) as GroupedModels[];
-	}, [groupedModels, searchTerm]);
+	const searching = searchTerm.trim().length > 0;
+	const filteredGroups = React.useMemo<GroupedModels[]>(() => {
+		if (!searching) return groupedModels;
+		const results = catalogue ? searchModels(catalogue, searchTerm) : [];
+		return results.length
+			? [{ monthKey: "results", monthLabel: t("resultCount", { count: results.length }), monthTimestamp: 0, models: results }]
+			: NO_GROUPS;
+	}, [catalogue, groupedModels, searchTerm, searching, t]);
 
 	const modelsById = React.useMemo(() => {
 		const lookup = new Map<string, CompareModelOption>();
-		models.forEach((model) => lookup.set(model.id, model));
+		for (const model of catalogue ?? []) lookup.set(model.id, model);
+		for (const model of selectedOptions) lookup.set(model.id, model);
 		return lookup;
-	}, [models]);
+	}, [catalogue, selectedOptions]);
 
 	const activeReplaceTarget = React.useMemo(() => {
 		if (!replaceTargetId) return null;
@@ -311,6 +334,17 @@ export default function ModelCombobox({
 		setPendingSelection(Array.from(new Set([...current, modelId])).slice(0, MAX_SELECTION));
 	};
 
+	const optionMeta = (model: CompareModelOption) => {
+		const inputs = [...parseTypeSet(model.input_types)];
+		const outputs = [...parseTypeSet(model.output_types)];
+		const releaseDate = getReleaseDate(model);
+		return [
+			model.provider?.name,
+			inputs.length && outputs.length ? `${inputs.join(", ")} → ${outputs.join(", ")}` : null,
+			releaseDate ? format.dateParts(releaseDate, { month: "short", year: "numeric", timeZone: "UTC" }) : null,
+		].filter(Boolean).join(" · ");
+	};
+
 	const buttonLabel =
 		selected.length > 0
 			? labelWhenSelected ?? t("editModels")
@@ -327,6 +361,8 @@ export default function ModelCombobox({
 						selected.length === 0 && "text-muted-foreground",
 						className
 					)}
+					onPointerEnter={prefetchOptions}
+					onFocus={prefetchOptions}
 				>
 					<Plus className="size-4" />
 					{buttonLabel}
@@ -342,7 +378,7 @@ export default function ModelCombobox({
 			</ModelSelectorTrigger>
 			<ModelSelectorContent
 					title={t("pickerTitle")}
-				className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
+				className="top-[8vh] w-[min(92vw,600px)] max-w-none translate-y-0 rounded-md sm:top-[12vh] sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
 			>
 				<ModelSelectorInput
@@ -367,7 +403,20 @@ export default function ModelCombobox({
 					</p>
 				) : null}
 				<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-2">
-					<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
+					{!catalogue && optionsQuery.isError ? (
+						<div role="alert" className="flex flex-col items-center gap-3 px-3 py-6 text-center text-sm text-muted-foreground">
+							<p>{t("modelsUnavailable")}</p>
+							<Button type="button" variant="outline" size="sm" onClick={() => void optionsQuery.refetch()}>
+								{t("tryAgain")}
+							</Button>
+						</div>
+					) : !catalogue ? (
+						<p role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">
+							{t("loadingModels")}
+						</p>
+					) : (
+						<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
+					)}
 					{filteredGroups.map((group) => (
 						<ModelSelectorGroup
 							key={group.monthKey}
@@ -421,7 +470,9 @@ export default function ModelCombobox({
 														/>
 								<div className="min-w-0 flex-1">
 									<p className="truncate text-sm font-medium">{model.name}</p>
+									<p className="truncate text-xs text-muted-foreground">{optionMeta(model)}</p>
 								</div>
+								<OptionBadge model={model} />
 								{!modelAvailable && !isSelected ? (
 									<span className="shrink-0 text-[10px] text-muted-foreground">
 										{t("incompatible")}
@@ -437,4 +488,18 @@ export default function ModelCombobox({
 			</ModelSelectorContent>
 		</ModelSelector>
 	);
+}
+
+function OptionBadge({ model }: { model: CompareModelOption }) {
+	const t = useTranslations("Catalogue.compareView");
+	const status = model.status?.toLowerCase();
+	if (status === "retired" || status === "deprecated") {
+		return <span className="shrink-0 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 text-[11px] text-amber-700 dark:text-amber-300">{status === "retired" ? t("badgeRetired") : t("badgeDeprecated")}</span>;
+	}
+	if (model.routed) {
+		return <span className="shrink-0 rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 text-[11px] text-emerald-700 dark:text-emerald-300">{t("badgeOnPhaseo")}</span>;
+	}
+	if (status === "preview") return <span className="shrink-0 rounded-sm border border-border px-1.5 text-[11px] text-muted-foreground">{t("badgePreview")}</span>;
+	if (model.routed === false) return <span className="shrink-0 rounded-sm border border-border px-1.5 text-[11px] text-muted-foreground">{t("badgeListedOnly")}</span>;
+	return null;
 }

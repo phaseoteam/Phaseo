@@ -1,0 +1,100 @@
+{
+	"provider": "ltx",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "ltx:ltx-2-3-fast:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/ltx/ltx-2-3-fast/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","output_video_seconds","0.03/1 second",100,[{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#1","standard","output_video_seconds","0.06/1 second",100,[{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#2","standard","output_video_seconds","0.12/1 second",100,[{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#3","standard","output_video_seconds","0.24/1 second",100,[{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"resolution":"1280x720"},"usage":{"requests":1,"output_video_seconds":5},"expected":{"nanos":150000000,"lines":[["output_video_seconds",5,"#0","output_video_seconds",150000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#0"],"plan":"standard","context":{"resolution":"1280x720"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":210000000,"lines":[["output_video_seconds",7,"#0","output_video_seconds",210000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#1"],"plan":"standard","context":{"resolution":"1920x1080"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":420000000,"lines":[["output_video_seconds",7,"#1","output_video_seconds",420000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#2"],"plan":"standard","context":{"resolution":"2560x1440"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":840000000,"lines":[["output_video_seconds",7,"#2","output_video_seconds",840000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#3"],"plan":"standard","context":{"resolution":"3840x2160"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1680000000,"lines":[["output_video_seconds",7,"#3","output_video_seconds",1680000000]]}}
+			]
+		},
+		{
+			"key": "ltx:ltx-2-3-pro:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/ltx/ltx-2-3-pro/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_audio_seconds","0.06/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#1","standard","input_audio_seconds","0.18/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#2","standard","input_audio_seconds","0.34/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null],
+				["#7","standard","input_audio_seconds","0.1/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#3","standard","output_video_seconds","0.04/1 second",100,[{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#4","standard","output_video_seconds","0.08/1 second",100,[{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#5","standard","output_video_seconds","0.16/1 second",100,[{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#6","standard","output_video_seconds","0.32/1 second",100,[{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"mode":"audio-to-video","resolution":"1280x720"},"usage":{"requests":1,"input_audio_seconds":60,"output_video_seconds":5},"expected":{"nanos":3800000000,"lines":[["input_audio_seconds",60,"#0","input_audio_seconds",3600000000],["output_video_seconds",5,"#3","output_video_seconds",200000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#0"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1280x720"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":3660000000,"lines":[["input_audio_seconds",61,"#0","input_audio_seconds",3660000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#7"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1920x1080"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":6100000000,"lines":[["input_audio_seconds",61,"#7","input_audio_seconds",6100000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#1"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"2560x1440"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":10980000000,"lines":[["input_audio_seconds",61,"#1","input_audio_seconds",10980000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#2"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"3840x2160"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":20740000000,"lines":[["input_audio_seconds",61,"#2","input_audio_seconds",20740000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#3"],"plan":"standard","context":{"resolution":"1280x720"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":280000000,"lines":[["output_video_seconds",7,"#3","output_video_seconds",280000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#4"],"plan":"standard","context":{"resolution":"1920x1080"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":560000000,"lines":[["output_video_seconds",7,"#4","output_video_seconds",560000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#5"],"plan":"standard","context":{"resolution":"2560x1440"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1120000000,"lines":[["output_video_seconds",7,"#5","output_video_seconds",1120000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#6"],"plan":"standard","context":{"resolution":"3840x2160"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":2240000000,"lines":[["output_video_seconds",7,"#6","output_video_seconds",2240000000]]}}
+			]
+		},
+		{
+			"key": "ltx:ltx-2-5-fast:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/ltx/ltx-2-5-fast/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_audio_seconds","0.09/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#1","standard","input_audio_seconds","0.19/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#2","standard","input_audio_seconds","0.3/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null],
+				["#7","standard","input_audio_seconds","0.13/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#3","standard","output_video_seconds","0.09/1 second",100,[{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#4","standard","output_video_seconds","0.13/1 second",100,[{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#5","standard","output_video_seconds","0.19/1 second",100,[{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#6","standard","output_video_seconds","0.3/1 second",100,[{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"mode":"audio-to-video","resolution":"1280x720"},"usage":{"requests":1,"input_audio_seconds":60,"output_video_seconds":5},"expected":{"nanos":5850000000,"lines":[["input_audio_seconds",60,"#0","input_audio_seconds",5400000000],["output_video_seconds",5,"#3","output_video_seconds",450000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#0"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1280x720"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":5490000000,"lines":[["input_audio_seconds",61,"#0","input_audio_seconds",5490000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#7"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1920x1080"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":7930000000,"lines":[["input_audio_seconds",61,"#7","input_audio_seconds",7930000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#1"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"2560x1440"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":11590000000,"lines":[["input_audio_seconds",61,"#1","input_audio_seconds",11590000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#2"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"3840x2160"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":18300000000,"lines":[["input_audio_seconds",61,"#2","input_audio_seconds",18300000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#3"],"plan":"standard","context":{"resolution":"1280x720"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":630000000,"lines":[["output_video_seconds",7,"#3","output_video_seconds",630000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#4"],"plan":"standard","context":{"resolution":"1920x1080"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":910000000,"lines":[["output_video_seconds",7,"#4","output_video_seconds",910000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#5"],"plan":"standard","context":{"resolution":"2560x1440"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1330000000,"lines":[["output_video_seconds",7,"#5","output_video_seconds",1330000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#6"],"plan":"standard","context":{"resolution":"3840x2160"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":2100000000,"lines":[["output_video_seconds",7,"#6","output_video_seconds",2100000000]]}}
+			]
+		},
+		{
+			"key": "ltx:ltx-2-5-pro:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/ltx/ltx-2-5-pro/video.generate/pricing.json",
+			"rules": [
+				["#2","standard","input_audio_seconds","0.25/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#3","standard","input_audio_seconds","0.39/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null],
+				["#4","standard","input_audio_seconds","0.12/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#7","standard","input_audio_seconds","0.17/1 second",110,[{"path":"mode","op":"eq","value":"audio-to-video"},{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null],
+				["#0","standard","output_video_seconds","0.25/1 second",100,[{"path":"resolution","op":"in","value":["2560x1440","1440x2560"]}],null,null],
+				["#1","standard","output_video_seconds","0.39/1 second",100,[{"path":"resolution","op":"in","value":["3840x2160","2160x3840"]}],null,null],
+				["#5","standard","output_video_seconds","0.12/1 second",100,[{"path":"resolution","op":"in","value":["1280x720","720x1280"]}],null,null],
+				["#6","standard","output_video_seconds","0.17/1 second",100,[{"path":"resolution","op":"in","value":["1920x1080","1080x1920"]}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"mode":"audio-to-video","resolution":"2560x1440"},"usage":{"requests":1,"input_audio_seconds":60,"output_video_seconds":5},"expected":{"nanos":16250000000,"lines":[["input_audio_seconds",60,"#2","input_audio_seconds",15000000000],["output_video_seconds",5,"#0","output_video_seconds",1250000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#4"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1280x720"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":7320000000,"lines":[["input_audio_seconds",61,"#4","input_audio_seconds",7320000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#7"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"1920x1080"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":10370000000,"lines":[["input_audio_seconds",61,"#7","input_audio_seconds",10370000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#2"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"2560x1440"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":15250000000,"lines":[["input_audio_seconds",61,"#2","input_audio_seconds",15250000000]]}},
+				{"id":"rule.standard.input_audio_seconds.when(modeeq\"audio-to-video\"&resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#3"],"plan":"standard","context":{"mode":"audio-to-video","resolution":"3840x2160"},"usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":23790000000,"lines":[["input_audio_seconds",61,"#3","input_audio_seconds",23790000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1280x720\",\"720x1280\"])","kind":"rule","targets":["#5"],"plan":"standard","context":{"resolution":"1280x720"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":840000000,"lines":[["output_video_seconds",7,"#5","output_video_seconds",840000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"1920x1080\",\"1080x1920\"])","kind":"rule","targets":["#6"],"plan":"standard","context":{"resolution":"1920x1080"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1190000000,"lines":[["output_video_seconds",7,"#6","output_video_seconds",1190000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"2560x1440\",\"1440x2560\"])","kind":"rule","targets":["#0"],"plan":"standard","context":{"resolution":"2560x1440"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":1750000000,"lines":[["output_video_seconds",7,"#0","output_video_seconds",1750000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(resolutionin[\"3840x2160\",\"2160x3840\"])","kind":"rule","targets":["#1"],"plan":"standard","context":{"resolution":"3840x2160"},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":2730000000,"lines":[["output_video_seconds",7,"#1","output_video_seconds",2730000000]]}}
+			]
+		}
+	]
+}

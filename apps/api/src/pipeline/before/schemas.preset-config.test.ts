@@ -127,6 +127,14 @@ describe("presetConfigSchema", () => {
     });
 });
 
+describe("presetConfigSchema prompt templates", () => {
+    it("keeps the prompt block as stored and leaves it out when absent", () => {
+        const prompt = { messages: [{ role: "user", content: "Hi {{name}}" }], variables: { name: { type: "string" } } };
+        expect(presetConfigSchema.parse({ prompt }).prompt).toEqual(prompt);
+        expect(presetConfigSchema.parse({})).not.toHaveProperty("prompt");
+    });
+});
+
 describe("contextSchema preset parsing", () => {
     it("parses preset payloads returned by gateway context SQL", () => {
         const parsed = contextSchema.parse({
@@ -169,6 +177,9 @@ describe("contextSchema preset parsing", () => {
             slug: "fast-preset",
             description: "A fast preset",
             visibility: "team",
+            versionId: null,
+            versionLabel: null,
+            ref: null,
             config: {
                 systemPrompt: "Be fast",
                 allowedModels: ["openai/gpt-5.4-nano"],
@@ -202,5 +213,32 @@ describe("contextSchema preset parsing", () => {
                 },
             },
         });
+    });
+});
+
+describe("contextSchema pinned preset versions", () => {
+    it("keeps the version the SQL resolved and the ref the request pinned", () => {
+        const parsed = contextSchema.parse({
+            workspace_id: "ws_123",
+            resolvedModel: "openai/gpt-5.4-nano",
+            key_ok: true,
+            key_limit_ok: true,
+            credit_ok: true,
+            providers: [],
+            pricing: {},
+            preset: {
+                id: "preset_123",
+                name: "Fast preset",
+                slug: "fast-preset",
+                description: null,
+                visibility: "public",
+                publisher: "acme",
+                version_id: "version_2",
+                version_label: "v2",
+                ref: "production",
+                config: { models: ["openai/gpt-5.4-nano"] },
+            },
+        });
+        expect(parsed.preset).toMatchObject({ id: "preset_123", versionId: "version_2", versionLabel: "v2", ref: "production" });
     });
 });

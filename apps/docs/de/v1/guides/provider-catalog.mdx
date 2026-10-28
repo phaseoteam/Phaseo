@@ -1,6 +1,6 @@
 ---
 title: "Anbieterkatalog veröffentlichen"
-description: "Veröffentliche V1- oder V1.1-Modellfeeds mit normalisierten Service-Stufen-Angeboten und Ratenlimits."
+description: "Veröffentliche V1-, V1.1- oder V1.2-Modellfeeds mit normalisierten Service-Stufen-Angeboten, Datenrichtlinien und Ratenlimits."
 icon: "list"
 ---
 
@@ -12,7 +12,41 @@ Bestehende V1-Feeds funktionieren ohne Änderungen weiter. Ein unversioniertes `
 
 V1.1 gibt `"schema_version": "1.1"` an und veröffentlicht `service_tiers` innerhalb jedes Modells. Beim Import wird das Format anhand des Dokuments bestimmt. URL-Abfrageparameter wie `?format=phaseo-v1.1` sind optionale Konventionen für deinen Endpunkt; Phaseo leitet keine Version aus der URL ab.
 
-Lade das [V1-Schema](https://phaseo.app/api/internal/provider-catalog/schema) oder das [V1.1-Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) herunter. Nicht unterstützte Versionen werden ausdrücklich abgelehnt.
+Lade das [V1-Schema](https://phaseo.app/api/internal/provider-catalog/schema), das [V1.1-Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) oder das [V1.2-Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) herunter. Nicht unterstützte Versionen werden ausdrücklich abgelehnt.
+
+### V1.2-Datenrichtlinien
+
+V1.2 ergänzt jede Servicestufe um fähigkeitsspezifische Angaben zu Training und Aufbewahrung. Du kannst V1.2 jederzeit veröffentlichen. Phaseo validiert die Angaben beim Import, sie begründen aber erst dann eine Garantie, wenn Phaseo deine Richtlinienquelle genehmigt hat. V1- und V1.1-Feeds werden weiterhin unterstützt.
+
+V1.2 akzeptiert außerdem optionale `declarations` auf Modell- oder Stufenebene für Modellidentität, typisierte Ein-/Ausgabegrenzen, Parameterbeschreibungen, bereichsspezifische Preise und Kapazitäten, Rabatte und Bereitstellungsdetails. Diese Angaben werden validiert und zur Prüfung gespeichert. Sie aktivieren keine Parameter und ändern weder abrechenbare Preise noch die Durchsetzung von Kapazitätsgrenzen oder Datenresidenzgarantien automatisch. Die Validierung kennzeichnet gespeicherte Angaben; veröffentliche wirksame Preise und Fähigkeiten weiterhin über die bestehenden Felder.
+
+Setze `schema_version` auf `"1.2"` und ergänze jede betroffene Stufe um ein `data_policy`-Objekt:
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+Dieses Beispiel zeigt den `data_policy`-Wert der Stufe, keinen vollständigen Feed. Fähigkeits-IDs sind kanonisch: Verwende `text.generate`, auch wenn das Modell `responses` oder `chat.completions` angibt.
+
+Die Angabe umfasst Prompts und Ausgaben entlang der gesamten vorgelagerten Verarbeitungskette. Sie beschreibt keine Abrechnungsmetadaten. Trainingswerte sind `unknown`, `may_train`, `no_train`, `opt_out_available` und `enterprise_no_train`. Aufbewahrungsmodi sind `unknown`, `none`, `transient`, `fixed` und `until_deleted`. Verwende null Tage für none, eine positive Höchstdauer für transient/fixed und null für unknown/until-deleted.
+
+Gib erforderliche Vereinbarungen mit `contract_mode` an: `none`, `customer_agreement` oder `enterprise_agreement`. Erforderliche Kontoeinstellungen sind Objekte mit `id`, `description` und einer HTTPS-`documentation_url` im Array `account_settings`. Bedingte Programme verwenden `zdr_eligibility: "conditional"` und dürfen keine aktive Garantie mit true angeben. Sie bleiben informativ, bis Phaseo die Erfüllung der Bedingungen prüfen kann.
+
+Phaseo genehmigt die Richtlinienquelle unabhängig. Der Feed kann eine Angabe nicht als verifiziert markieren. Diese Version gewährt aktives ZDR nur für bedingungslose Textgenerierung bei Nicht-Batch-Angeboten ohne Training und ohne Inhaltsaufbewahrung. Das eigene Hosting eines Modells stellt allein keine ZDR-Erklärung dar.
+
+Nachdem ein Angebot eine feedverwaltete Richtlinie übernommen hat, entziehen false, null, das Weglassen der Angabe oder eine ältere Feedversion diese Garantie. Manuelle Phaseo-Überschreibungen werden getrennt verwaltet. Positive Angaben verfallen nach 24 Stunden ohne erfolgreiche Katalogvalidierung; der Widerruf der Genehmigung erfordert keinen erneuten Abruf beim Anbieter.
 
 ## Normalisierte Stufen veröffentlichen
 

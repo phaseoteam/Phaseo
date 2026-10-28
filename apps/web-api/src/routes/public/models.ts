@@ -1,7 +1,7 @@
 import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
-import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
+import { PUBLIC_DATA_POLICY_CACHE, PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -10,7 +10,8 @@ import { composeGatewayMetadata, fetchGatewayMetadataSource } from "@/models/gat
 import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
-import { PRIVATE_NO_STORE_HEADERS, withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import { normalizeModelLicense } from "@/models/license";
+import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
 // raw request timestamps, request content, and request identifiers. App
@@ -55,9 +56,7 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 const CACHE_PROFILES = {
 	catalogue: PUBLIC_MODEL_CATALOGUE_CACHE,
 	overview: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 60 * 60,
-		staleIfErrorSeconds: 24 * 60 * 60,
+		...PUBLIC_DATA_POLICY_CACHE,
 		cacheTags: ["web-api-model-details"],
 	},
 	benchmarks: {
@@ -77,7 +76,7 @@ const CACHE_PROFILES = {
 		cacheTags: ["web-api-model-subscriptions"],
 	},
 	pricing: {
-		...PUBLIC_LIVE_DATA_CACHE,
+		...PUBLIC_DATA_POLICY_CACHE,
 		cacheTags: ["web-api-model-pricing"],
 	},
 	performance: {
@@ -214,6 +213,13 @@ function supportedParameters(params: unknown): string[] {
 function numberOrNull(value: unknown): number | null {
 	const number = Number(value);
 	return Number.isFinite(number) ? number : null;
+}
+
+// numberOrNull reads SQL null as 0; prices need to tell "not listed" from "$0".
+function listedPrice(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
+	const number = numberOrNull(value);
+	return number !== null && number >= 0 ? number : null;
 }
 
 function median(values: number[]): number | null {
@@ -455,6 +461,14 @@ export async function fetchGatewayMonitorRows(
 		fetchProviderStatuses(env, providerIds, signal),
 	]);
 
+	// `:free` variants without a licence of their own use their base model's.
+	const licenseByBaseModelId = new Map<string, string>();
+	for (const row of rows) {
+		const license = normalizeModelLicense(row.model_license);
+		const baseId = String(row.model_id ?? row.api_model_id ?? "").trim().replace(/:free$/i, "");
+		if (license && baseId && !licenseByBaseModelId.has(baseId)) licenseByBaseModelId.set(baseId, license);
+	}
+
 	const byModelId = new Map<string, Record<string, unknown>[]>();
 	for (const row of rows) {
 		const baseModelId = String(row.model_id ?? row.api_model_id ?? "").trim();
@@ -490,6 +504,9 @@ export async function fetchGatewayMonitorRows(
 			apiModelId,
 			organisationId: row.organisation_id ?? undefined,
 			organisationName: row.organisation_name ?? undefined,
+			license: normalizeModelLicense(row.model_license)
+				?? licenseByBaseModelId.get(modelId.replace(/:free$/i, ""))
+				?? undefined,
 			provider: {
 				name: publicProviderDisplayName(providerId, row.api_provider_name),
 				id: providerId,
@@ -503,6 +520,10 @@ export async function fetchGatewayMonitorRows(
 				standardOutputPriceUnit: row.standard_output_price_unit ?? null,
 				fromPrice: numberOrNull(row.from_price),
 				fromPriceUnit: row.from_price_unit ?? null,
+				// Standard per-1M token rates, preferring text and falling back to
+				// audio, image or video tokens; null when the route lists none.
+				listedInputPrice: listedPrice(row.input_price) ?? listedPrice(row.standard_input_price),
+				listedOutputPrice: listedPrice(row.output_price) ?? listedPrice(row.standard_output_price),
 				pricingDetailRows: [],
 				features: gatewayFeatures(params),
 				executionRegions: providerRegionsById.get(normalizedProviderId) ?? [],
@@ -600,17 +621,32 @@ function buildModelsTablePayload(
 			);
 		}
 
+		// A null token price means the route lists none, so the table must not
+		// show $0. Free offers keep their genuine $0.
+		const free = row.tier === "free";
+		const tokenPrice = (value: unknown) => listedPrice(value) ?? (free ? 0 : null);
+		// Per-image, per-second and similar charges have no token rate; the
+		// cheapest such charge is shown instead when it uses a single unit.
+		// Billing at provider cost ("usd") is not a listed price.
+		const usageUnit = String(provider.fromPriceUnit ?? "").trim();
+		const usagePrice = listedPrice(provider.fromPrice);
+		const usage = !free && usageUnit && !["1m tokens", "usd"].includes(usageUnit.toLowerCase()) && usagePrice !== null
+			? { usagePrice, usageUnit }
+			: {};
+
 		return {
 			id: row.id,
 			model: row.model,
 			modelId: row.modelId,
 			organisationId: row.organisationId,
 			organisationName: row.organisationName,
+			license: row.license,
 			provider: {
 				name: provider.name,
 				id: provider.id,
-				inputPrice: provider.inputPrice,
-				outputPrice: provider.outputPrice,
+				inputPrice: tokenPrice(provider.listedInputPrice),
+				outputPrice: tokenPrice(provider.listedOutputPrice),
+				...usage,
 				features: provider.features,
 				executionRegions: provider.executionRegions,
 			},
@@ -662,6 +698,26 @@ function cataloguePolicy(catalogueVersion: ModelsCatalogueVersion, includeVirtua
 	return includeVirtual
 		? { ...versionPolicy, cacheTags: [...(versionPolicy.cacheTags ?? []), "web-api-free-router-overview"] }
 		: versionPolicy;
+}
+
+// Gateway enrichment (monitor RPC plus route and provider lookups) averages
+// ~1.5 s and peaks above 4 s. The web client waits 15 s, so allow 6 s.
+export const GATEWAY_ENRICHMENT_TIMEOUT_MS = 6_000;
+
+// If enrichment still misses its deadline, cache the metadata-only response
+// for a minute without stale serving: a slow database then costs about one
+// miss per minute per colo, and the full catalogue returns on the next miss.
+export const DEGRADED_CATALOGUE_EDGE_TTL_SECONDS = 60;
+
+function degradedCataloguePolicy(catalogueVersion: ModelsCatalogueVersion): PublicCachePolicy {
+	return {
+		...cataloguePolicy(catalogueVersion),
+		edgeTtlSeconds: DEGRADED_CATALOGUE_EDGE_TTL_SECONDS,
+		staleWhileRevalidateSeconds: 0,
+		staleIfErrorSeconds: 0,
+		browserTtlSeconds: 0,
+		browserStaleWhileRevalidateSeconds: 0,
+	};
 }
 
 function notFound(c: { json: (value: unknown, status: number) => Response }) {
@@ -883,7 +939,7 @@ publicModelsRouter.get("/", async (c) => {
 		let gatewayDataComplete = c.req.query("include_gateway_data") !== "false";
 		let gatewayRowsByModelId = new Map<string, Record<string, unknown>[]>();
 		if (gatewayDataComplete) {
-			try { gatewayRowsByModelId = await fetchGatewayMonitorRows(c.env, catalogueVersion, AbortSignal.timeout(2_000)); }
+			try { gatewayRowsByModelId = await fetchGatewayMonitorRows(c.env, catalogueVersion, AbortSignal.timeout(GATEWAY_ENRICHMENT_TIMEOUT_MS)); }
 			catch (error) {
 				console.error("[web-api/models] optional gateway enrichment failed", error);
 				gatewayDataComplete = false;
@@ -949,8 +1005,7 @@ publicModelsRouter.get("/", async (c) => {
 		}));
 		const response = c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion, gateway_data_complete: gatewayDataComplete });
 		if (!gatewayDataComplete && c.req.query("include_gateway_data") !== "false") {
-			for (const [key, value] of Object.entries(PRIVATE_NO_STORE_HEADERS)) response.headers.set(key, value);
-			return response;
+			return withPublicCache(response, degradedCataloguePolicy(catalogueVersion));
 		}
 		return withPublicCache(response, cataloguePolicy(catalogueVersion));
 	} catch (error) {

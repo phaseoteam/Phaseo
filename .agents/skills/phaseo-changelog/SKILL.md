@@ -1,85 +1,75 @@
 ---
 name: phaseo-changelog
-description: Write and maintain Phaseo changelog pages in the required house style. Use when updating `apps/docs/v1/changelog.mdx`, `product-changelog.mdx`, `sdk-changelog.mdx`, or `data-changelog.mdx`, especially when entries need to be rebuilt from merged pull requests, release metadata, and model-release records.
+description: Writes Phaseo changelog entries in the right category, format and wording, and keeps every changelog page and its 8 translations valid. Use whenever something shipped needs announcing (a feature, setting, fix users noticed, API or SDK change, breaking change, deprecation, model release, price change or retirement), when backfilling a month from merged PRs, when starting a new month's page, when editing apps/docs/v1/changelog.mdx or apps/docs/v1/changelog/*.mdx, or when checking changelog pages.
 ---
 
 # Phaseo Changelog
 
-Write changelogs as a clean release log, not as a blog post and not as a dump of PR titles.
+The changelog is a clean release log: product changes, API and SDK changes, and model releases. It is not a blog and not a dump of PR titles.
 
-Use this skill when the task is to add, rewrite, merge, or audit changelog entries across the docs site.
+## Pages
+
+- `apps/docs/v1/changelog.mdx`: the current month. It has `rss: true` in frontmatter.
+- `apps/docs/v1/changelog/YYYY-MM.mdx`: earlier 2026 months. `apps/docs/v1/changelog/YYYY.mdx`: 2025 and earlier.
+- Every page has a copy in each locale: `apps/docs/<locale>/v1/...` for `es`, `fr`, `de`, `pt-BR`, `ja`, `zh-Hans`, `hi`, `ar`.
+- When a month ends, move its entries into `changelog/YYYY-MM.mdx`, add that page to the Changelog tab in `docs.json` (all 9 languages), and start the next month in `changelog.mdx`.
+
+## How filtering works (why the format is strict)
+
+Each page has one `<Update>` per date, so the "On this page" panel lists every date once. Inside it, each category is a `<div data-changelog-category="...">` section. The `<ChangelogFilters />` bar at the top of the page (`apps/docs/snippets/changelog-filters.jsx`) hides the sections that don't match the selected categories, hides dates left with no sections from the page and from "On this page", and keeps the URL in sync (`?category=product,api`). Several selected categories show either kind.
+
+Don't use Mintlify's own `tags` on `<Update>`: they replace "On this page" with a filter panel, and they combine several selected tags with AND.
+
+The snippet also adjusts two Mintlify behaviours, which can break when Mintlify changes its markup:
+- It raises Mintlify's `--scroll-mt` by the bar's height, so sticky date labels and date links stop below the bar.
+- It sets the "On this page" highlight itself, because Mintlify measures date positions once and doesn't update them after a filter hides dates.
+
+After a Mintlify upgrade, open a changelog page on desktop and phone, turn a filter on, scroll, and click a date in "On this page". The highlighted date must match the date at the top, and the date must land below the bar.
+
+## Categories
+
+Use only these three categories. The section key is the same in every language; the label is localized:
+
+| Section key | en | es | fr | de | pt-BR | ja | zh-Hans | hi | ar |
+|---|---|---|---|---|---|---|---|---|---|
+| `product` | Product | Producto | Produit | Produkt | Produto | 製品 | 产品 | उत्पाद | المنتج |
+| `api` | API & SDKs | API y SDK | API et SDK | API & SDKs | API e SDKs | API と SDK | API 与 SDK | API और SDK | API وحزم SDK |
+| `models` | Models | Modelos | Modèles | Modelle | Modelos | モデル | 模型 | मॉडल | النماذج |
+
+Within a date, sections go in this order: Product, API & SDKs, Models. Leave out a category that has nothing that day.
+
+- **Product**: anything people use in phaseo.app or the apps, including Chat, dashboard, settings, billing and credits, workspaces and teams, the models/providers/compare pages, docs-site features, and the desktop and mobile apps.
+- **API & SDKs**: gateway and management API behaviour such as new endpoints, parameters, headers, routing and limits, plus SDK, CLI, MCP server and integration releases.
+- **Models**: new models, model state changes, provider coverage for a specific model, model pricing changes, retirements, and release artwork.
+
+When an item could fit two categories, choose the one where a reader would look for it. A new model in Chat is Models. A new Chat feature built for one model is Product.
 
 ## Workflow
 
-1. Build the source-of-truth list first.
-- Pull merged PRs, existing changelog entries, model-release records, and any release assets before drafting.
-- Reconcile relative timing against exact dates.
-- Split findings into `product`, `sdk`, and `models/data` before writing.
+1. Build the source list first: merged PRs for the period (`gh pr list --state merged --search "merged:YYYY-MM-DD..YYYY-MM-DD"`), release records, and any existing entries.
+2. Keep only changes users can see that have shipped. Skip refactors, tests, CI, dependency bumps, internal tooling, reverted work, and anything still behind an internal flag. Check that a feature reached users before dating it.
+3. Use the merge date (UTC), or the launch date if it is known and differs.
+4. Put each day in one `<Update>`, with at most one section per category.
+5. Write the English page, then update all 8 locale pages with the same dates, sections and links. Then record freshness for each page (see Validation).
 
-2. Decide which changelog surface you are updating.
-- `apps/docs/v1/changelog.mdx`: combined page for date-ordered product and model updates.
-- `apps/docs/v1/product-changelog.mdx`: product-only log.
-- `apps/docs/v1/sdk-changelog.mdx`: SDK-only log.
-- `apps/docs/v1/data-changelog.mdx`: short model and data release log.
+## Writing
 
-3. Group changes by day before writing.
-- Use one dated entry per calendar day.
-- Do not create duplicate sections for the same date.
-- Merge all related model releases for the same day into one `New Models` block.
-- Merge all related product and SDK work for the same day into one `Product` block.
+`references/writing-guide.md` says how to write each kind of announcement. In short:
+- One change per bullet, one sentence of at most about 25 words, outcome first, then `; see [Docs page](/v1/...)` and up to three PR links.
+- Start with `**Breaking:**`, `**Beta:**` or `**Deprecated:**` when it applies, and say what to do or by when.
+- Include fixes only when users could have noticed the bug.
+- No marketing language, no "SOTA", no competitor names, and nothing customers cannot use yet.
+- Keep historical statements historically accurate.
 
-4. Keep the buckets honest.
-- `Product` means actual product or SDK work.
-- `New Models` means model additions, state changes, pricing syncs, provider coverage, and release imagery.
-- Do not describe model GA coverage or model-page availability as product work unless there was a separate product feature shipped alongside it.
-- Fold SDK launches and SDK version updates into `Product` on the combined page unless the task explicitly asks for a separate SDK label.
+## Required references
 
-5. Keep the writing short.
-- Prefer one-line bullets.
-- Remove filler intros, release-marketing language, and repeated context.
-- Use exact model names, package names, dates, and status labels.
-- If an item can be said in one sentence, do not use two.
-
-## Combined Page Rules
-
-For `apps/docs/v1/changelog.mdx`:
-
-- Use date headings in `Month D, YYYY` format as real `##` headings so the page gets a clean date-only TOC.
-- Under each date, use only these body labels:
-  - `Product`
-  - `New Models`
-- Keep those labels as styled body text, not real Markdown headings.
-- Omit a label entirely if that date has no entries for that bucket.
-- Start the page quickly. Do not add a long intro block above the timeline unless explicitly requested.
-
-## Data Changelog Rules
-
-For `apps/docs/v1/data-changelog.mdx`:
-
-- Match the older short-entry style.
-- Group releases by day.
-- Keep entries compact and factual.
-- Use model-release images where they already exist or are clearly available.
-- Avoid paragraph-heavy explanations, launch copy, or repeated status framing.
-
-## Product And SDK Rules
-
-For `product-changelog.mdx` and `sdk-changelog.mdx`:
-
-- Write product-facing headings that describe the outcome, not the implementation detail.
-- Keep each dated section concise.
-- Do not restate the same item across product and data logs in conflicting ways.
-- If a model release appears in the product log, it must be because a real product or SDK surface changed, not just because the model exists.
-
-## Required Reference
-
-Read `references/changelog-format.md` before drafting or rewriting entries.
+Read both before drafting:
+- `references/changelog-format.md`: updates, sections, labels and images.
+- `references/writing-guide.md`: how to write each kind of entry.
 
 ## Validation
 
-- Check that every date appears only once per page.
-- Check that model releases are grouped under `New Models`, not `Product`.
-- Check that SDK items are folded into `Product` on the combined page unless explicitly separated.
-- Check that the combined page TOC remains date-only.
-- Check that the data changelog stays short and grouped by day.
-- Check that each statement can be tied back to merged work, release metadata, or release records.
+- Run `node apps/docs/scripts/validate-changelog.mjs` (it also runs in the docs build). It checks one `<Update>` per date, section keys, labels and order, the filter bar, and that locale pages match English.
+- Dates run newest first.
+- Record each changed locale page: `node scripts/translation-freshness.mjs record --locale <l> --page changelog/<file>.mdx` (one `--page` per run, from `apps/docs`).
+- Then run `node scripts/translation-freshness.mjs check` and `node scripts/validate-locales.mjs`.

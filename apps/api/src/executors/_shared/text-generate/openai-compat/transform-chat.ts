@@ -10,9 +10,23 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields, promptCacheBreakpointValue } from "./prompt-cache-policy";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
+import { toIRAnnotations } from "@protocols/shared/citations";
+import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
+import { imageDetailForProvider, unsupportedImageFileIdError } from "./media-parts";
+import { isMistralProvider, mapFilePartToMistral, toMistralAssistantContent } from "./providers/mistral/quirks";
+
+// Chat routes whose API documents an assistant message's `audio: { id }`, the
+// reference to an earlier audio response: OpenAI
+// (https://platform.openai.com/docs/api-reference/chat/create) and Azure OpenAI
+// (ChatCompletionRequestAssistantMessageAudio in its v1 inference spec).
+const ASSISTANT_AUDIO_REFERENCE_PROVIDERS: ReadonlySet<string> = new Set(["openai", "openai-eu", "azure"]);
+
+export function sendsAssistantAudioReference(providerId: string | undefined): boolean {
+	return providerId != null && ASSISTANT_AUDIO_REFERENCE_PROVIDERS.has(providerId);
+}
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -31,16 +45,19 @@ export function irToOpenAIChat(
 			messages.push({
 				role: "system",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
-				content: mapIRContentToOpenAI(msg.content),
+				content: mapIRContentToOpenAI(msg.content, providerId),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
 			const assistantText = msg.content
@@ -59,6 +76,7 @@ export function irToOpenAIChat(
 			const message: any = {
 				role: "assistant",
 				content: assistantText || null,
+				...messageNameField(msg.name, providerId),
 			};
 
 			const providerSupportsAssistantReasoningContent =
@@ -77,7 +95,15 @@ export function irToOpenAIChat(
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
-				providerId === "doubleword";
+				providerId === "wafer-zdr" ||
+				providerId === "doubleword" ||
+				// Beam returns 400 without it (https://docs.baseten.co/inference/model-apis/reasoning);
+				// Arcee, Together and DeepInfra document it on assistant messages for tool loops.
+				providerId === "baseten" ||
+				providerId === "arcee" ||
+				providerId === "arcee-ai" ||
+				providerId === "together" ||
+				providerId === "deepinfra";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				if (providerId === "minimax" || providerId === "minimax-lightning") {
 					// With reasoning_split, MiniMax returns thinking in reasoning_details
@@ -93,6 +119,15 @@ export function irToOpenAIChat(
 				} else {
 					message.reasoning_content = assistantReasoning;
 				}
+			}
+
+			if (providerId && isMistralProvider(providerId)) {
+				const mistralContent = toMistralAssistantContent(msg.content, { providerId, model: ir.model });
+				if (mistralContent) message.content = mistralContent;
+			}
+
+			if (msg.audio?.id && sendsAssistantAudioReference(providerId)) {
+				message.audio = { id: msg.audio.id };
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
@@ -119,11 +154,7 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					// A marked result is sent as a text part so the mark survives;
-					// the cache policy turns it back into a string where unsupported.
-					content: result.cacheControl
-						? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
-						: result.content,
+					content: mapToolResultToOpenAIChat(result, providerId),
 				});
 			}
 		}
@@ -219,7 +250,8 @@ export function irToOpenAIChat(
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
-	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	// The provider's own name for the tier (OpenAI, Azure and DeepInfra call standard "default").
+	if (ir.serviceTier !== undefined) request.service_tier = normalizeTextProviderServiceTier(providerId ?? "", ir.serviceTier) ?? ir.serviceTier;
 	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
 	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
@@ -351,9 +383,53 @@ function hasCacheControl(content: IRContentPart[]): boolean {
 	return content.some((part) => part.type === "text" && part.cacheControl);
 }
 
+// Chat APIs whose message schema defines a participant `name` on system, user and
+// assistant messages (from each provider's published spec). Strict APIs such as
+// Mistral's reject the field, so it is sent only here.
+const MESSAGE_NAME_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baidu", "baseten", "cerebras", "deepinfra",
+	"deepseek", "friendli", "io-net", "moonshot-ai", "moonshotai", "nebius-token-factory",
+	"nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1", "ovhcloud",
+	"sail-research", "together", "venice",
+]);
+
+// Chat APIs whose tool message content may be an array of text parts, as in
+// OpenAI's schema. Others take a string.
+const TOOL_CONTENT_PARTS_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baseten", "cerebras", "deepinfra",
+	"deepseek", "groq", "inception", "io-net", "meta", "mistral", "mistral-eu", "moonshot-ai", "moonshotai",
+	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+	"ovhcloud", "perplexity", "reka", "sail-research", "sambanova",
+]);
+
+function messageNameField(name: string | undefined, providerId: string | undefined): { name?: string } {
+	if (!name || !providerId || !MESSAGE_NAME_PROVIDERS.has(providerId)) return {};
+	return { name };
+}
+
+/**
+ * Tool result content: the client's text parts as an array where the provider
+ * accepts one, otherwise the text parts joined. Chat tool messages carry text
+ * only, so image parts in a tool result have no place here.
+ */
+function mapToolResultToOpenAIChat(
+	result: Extract<IRMessage, { role: "tool" }>["toolResults"][number],
+	providerId: string | undefined,
+): any {
+	const textParts = (result.parts ?? []).filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+	if (textParts.length > 0 && providerId && TOOL_CONTENT_PARTS_PROVIDERS.has(providerId)) {
+		return textParts.map((part) => mapTextPartToOpenAI(part));
+	}
+	// A marked result is sent as a text part so the mark survives;
+	// the cache policy turns it back into a string where unsupported.
+	return result.cacheControl
+		? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		: result.content;
+}
+
 function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
 	const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-		? { mode: part.cacheControl.mode }
+		? promptCacheBreakpointValue(part.cacheControl)
 		: undefined;
 	return {
 		type,
@@ -373,30 +449,67 @@ function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
 		.map((part) => mapTextPartToOpenAI(part));
 }
 
-function mapIRContentToOpenAI(content: IRContentPart[]): any {
+/**
+ * Chat Completions `file` part: base64 `file_data` (as a data URL) or an
+ * uploaded `file_id`. Chat has no URL form, so a file given by URL is left out
+ * rather than sent in a shape the provider would reject.
+ * https://platform.openai.com/docs/api-reference/chat/create
+ */
+export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "file" }>): any | null {
+	const filename = part.filename ? { filename: part.filename } : {};
+	if (part.source === "data") {
+		return {
+			type: "file",
+			file: { ...filename, file_data: `data:${part.mimeType || "application/pdf"};base64,${part.data}` },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	if (part.source === "id") {
+		return {
+			type: "file",
+			file: { ...filename, file_id: part.data },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	return null;
+}
+
+function mapIRContentToOpenAI(content: IRContentPart[], providerId?: string): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
-	return content.map((part) => {
+	return content.flatMap((part) => {
 		if (part.type === "text") {
 			return mapTextPartToOpenAI(part);
 		}
 
-		if (part.type === "image") {
-			if (part.source === "url") {
-				return {
-					type: "image_url",
-					image_url: { url: part.data, detail: part.detail },
-					...cacheMarkFields(part.cacheControl),
-				};
-			} else {
-				return {
-					type: "image_url",
-					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...cacheMarkFields(part.cacheControl),
-				};
+		if (part.type === "file") {
+			if (providerId === "mistral" || providerId === "mistral-eu") return [mapFilePartToMistral(part)];
+			const mapped = mapFilePartToOpenAIChat(part);
+			// Chat Completions has no file-by-URL field. Dropping the document would let the model
+			// answer without it, so fail this attempt instead: routing then tries a provider that can
+			// carry it, and the client gets an explicit error if none can.
+			if (!mapped) {
+				throw Object.assign(
+					new Error("This provider's Chat Completions API cannot take a file by URL; send the file as file_data or file_id."),
+					{ code: "unsupported_parameter", param: "file" },
+				);
 			}
+			return [mapped];
+		}
+
+		if (part.type === "image") {
+			// Chat Completions has no image file_id; OpenAI's executor sends such
+			// requests through Responses, and routing keeps them off other hosts.
+			if (part.source === "id") throw unsupportedImageFileIdError("Chat Completions");
+			const detail = imageDetailForProvider(part.detail, providerId);
+			const url = part.source === "url" ? part.data : `data:${part.mimeType || "image/jpeg"};base64,${part.data}`;
+			return {
+				type: "image_url",
+				image_url: { url, ...(detail ? { detail } : {}) },
+				...cacheMarkFields(part.cacheControl),
+			};
 		}
 
 		if (part.type === "audio") {
@@ -407,16 +520,18 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 				type: "input_audio",
 				input_audio: inputAudio,
 				...(part.cacheControl?.type === "prompt_cache_breakpoint"
-					? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
+					? { prompt_cache_breakpoint: promptCacheBreakpointValue(part.cacheControl) }
 					: {}),
 			};
 		}
 
 		if (part.type === "provider_block") return { ...part.block };
 
+		// The Chat part for video is `video_url` on every host that documents
+		// one (DeepInfra, Novita, Z.ai, Venice, Friendli, io.net, SambaNova, ...).
 		if (part.type === "video") {
 			return {
-				type: "input_video",
+				type: "video_url",
 				video_url: { url: part.url },
 			};
 		}
@@ -449,12 +564,35 @@ function applySealedReasoningDetails(
 	for (const part of decoded.parts) {
 		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
 			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
-		if (plain && !part.text) {
+		// The signed detail repeats the plain reasoning_content text, or carries none.
+		if (plain && (!part.text || part.text === plain.text)) {
 			Object.assign(plain, { ...part, text: plain.text });
 		} else {
 			contentParts.push(part);
 		}
 	}
+}
+
+/**
+ * OpenAI Chat audio output: `choices[].message.audio` is `{ id, data, expires_at, transcript }`
+ * with base64 audio in the requested `audio.format`
+ * (https://platform.openai.com/docs/api-reference/chat/object).
+ */
+export function toChatMessageAudioPart(audio: unknown): IRContentPart | null {
+	if (!audio || typeof audio !== "object" || Array.isArray(audio)) return null;
+	const value = audio as Record<string, unknown>;
+	const data = typeof value.data === "string" ? value.data : "";
+	const transcript = typeof value.transcript === "string" ? value.transcript : undefined;
+	const audioId = typeof value.id === "string" && value.id ? value.id : undefined;
+	if (!data && !transcript && !audioId) return null;
+	return {
+		type: "audio",
+		source: "data",
+		data,
+		...(audioId ? { audioId } : {}),
+		...(typeof value.expires_at === "number" ? { expiresAt: value.expires_at } : {}),
+		...(transcript !== undefined ? { transcript } : {}),
+	};
 }
 
 export function openAIChatToIR(
@@ -631,23 +769,25 @@ export function openAIChatToIR(
 		} else {
 			// Regular content processing
 			const rawContent = extractChoiceContent(choice.message?.content);
-			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
+			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent, model });
 
-			// Add reasoning as reasoning_text parts
-			if (reasoning.length > 0) {
-				for (const reasoningText of reasoning) {
-					contentParts.push({
-						type: "reasoning_text",
-						text: reasoningText,
-					});
-				}
+			// Add reasoning as reasoning_text parts. Without a provider quirk, the
+			// plain reasoning_content (or reasoning) field carries it.
+			const plainReasoning = reasoning.length === 0 ? plainChatReasoning(choice.message) : undefined;
+			for (const reasoningText of plainReasoning ? [plainReasoning] : reasoning) {
+				contentParts.push({
+					type: "reasoning_text",
+					text: reasoningText,
+				});
 			}
 
 			// Add main content as text part
 			if (main) {
+				const annotations = toIRAnnotations(choice.message?.annotations);
 				contentParts.push({
 					type: "text",
 					text: main,
+					...(annotations.length > 0 ? { annotations } : {}),
 				});
 			}
 		}
@@ -656,6 +796,8 @@ export function openAIChatToIR(
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));
 		contentParts.push(...extractInlineAudios(choice.message?.audios));
+		const messageAudio = toChatMessageAudioPart(choice.message?.audio);
+		if (messageAudio) contentParts.push(messageAudio);
 
 		choices.push({
 			index: choice.index || 0,
@@ -663,6 +805,9 @@ export function openAIChatToIR(
 				role: "assistant" as const,
 				content: contentParts,
 				toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
+				...(typeof choice.message?.refusal === "string" && choice.message.refusal.length > 0
+					? { refusal: choice.message.refusal }
+					: {}),
 			},
 			finishReason: mapFinishReason(choice.finish_reason),
 			logprobs: choice.logprobs,
@@ -709,6 +854,13 @@ export function openAIChatToIR(
 		...(provider === "perplexity" && Array.isArray(json.related_questions) ? { relatedQuestions: json.related_questions } : {}),
 		...(provider === "perplexity" && Array.isArray(json.reasoning_steps) ? { reasoningSteps: json.reasoning_steps } : {}),
 	};
+}
+
+function plainChatReasoning(message: any): string | undefined {
+	for (const value of [message?.reasoning_content, message?.reasoning]) {
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return undefined;
 }
 
 function firstFiniteNumber(...values: unknown[]): number | undefined {

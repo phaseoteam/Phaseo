@@ -3,7 +3,7 @@
 // How: Uses code-first text param policy + provider capability metadata.
 
 import type { Endpoint } from "@core/types";
-import { isNativeWebSearchTool, isNativeWebSearchToolType } from "@core/nativeTools";
+import { isNativeWebSearchTool, isNativeWebSearchToolType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import type { ProviderCandidate } from "./types";
 import {
 	expandCapabilityParamAliases,
@@ -12,6 +12,7 @@ import {
 	resolveProviderParamSupportOverride,
 	textEndpointRegistryFor,
 } from "./textParamPolicy";
+import { declaredRouteParams } from "@pipeline/execute/unsupportedParams";
 
 function normalizeParamPaths(paths: string[]): string[] {
 	const unique = new Set<string>();
@@ -82,6 +83,22 @@ function hasNativeWebSearchToolUsage(tools: unknown, toolChoice: unknown): boole
 	);
 }
 
+/**
+ * Requested params the gateway can satisfy on a provider without native
+ * support, so `require_parameters` must not exclude providers for them. An
+ * OpenAI hosted web search tool asks for native search (`web_search_options`)
+ * where the provider has it; elsewhere it runs as the gateway's own
+ * phaseo:web_search (see ./hostedTools.ts). An explicit top-level
+ * `web_search_options` stays a real requirement.
+ */
+export function getGatewayFallbackParams(endpoint: Endpoint, rawBody: any): string[] {
+	if ((endpoint !== "chat.completions" && endpoint !== "responses") || !isPlainObject(rawBody)) return [];
+	if (rawBody.web_search_options != null || rawBody.webSearchOptions != null) return [];
+	const hasHostedWebSearch = Array.isArray(rawBody.tools)
+		&& rawBody.tools.some((tool: unknown) => isOpenAINativeWebSearchTool(tool));
+	return hasHostedWebSearch ? ["web_search_options"] : [];
+}
+
 export function getUnknownTopLevelParams(endpoint: Endpoint, rawBody: any): string[] {
 	if (!rawBody || typeof rawBody !== "object") return [];
 	const registry = textEndpointRegistryFor(endpoint);
@@ -127,6 +144,11 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 	// Normalize /responses text.format into canonical response_format parameter.
 	if (endpoint === "responses" && rawBody.text?.format != null) {
 		params.push("response_format");
+	}
+	// Anthropic's output_config carries reasoning effort and structured output; route on both.
+	if (endpoint === "messages" && isPlainObject(rawBody.output_config)) {
+		if (rawBody.output_config.effort != null) params.push("reasoning.effort");
+		if (rawBody.output_config.format != null) params.push("response_format");
 	}
 
 	// Infer tool usage from message/input surfaces where tools may be omitted but active.
@@ -222,6 +244,51 @@ export function providerParamSupportStatus(
 		}
 	}
 	return "unknown";
+}
+
+export type JsonOutputType = "json_schema" | "json_object";
+
+/**
+ * The JSON output mode a request asks for, on any text surface: Chat
+ * `response_format`, Responses `text.format`, Messages `output_config.format`.
+ * Plain text output returns null.
+ */
+export function requestedJsonOutputType(body: any): JsonOutputType | null {
+	const formats = [body?.response_format, body?.text?.format, body?.output_config?.format];
+	for (const format of formats) {
+		const type = isPlainObject(format) ? format.type : null;
+		if (type === "json_schema" || type === "json_object") return type;
+	}
+	return null;
+}
+
+function declaredValuesAllow(config: unknown, type: JsonOutputType): boolean {
+	if (config === false) return false;
+	if (!isPlainObject(config)) return true;
+	const values = config.supported_values ?? config.allowed_values ?? config.enum ?? config.values;
+	if (!Array.isArray(values) || values.length === 0) return true;
+	return values.some((value) => String(value).toLowerCase() === type);
+}
+
+/**
+ * How strong the route's own evidence is that it accepts the requested JSON
+ * output mode: 0 when its capability params list `response_format` (or
+ * `structured_outputs`) with a compatible value, 1 when the route declares no
+ * parameter list at all, 2 when it declares a list that leaves the format out.
+ * Provider-wide profile support does not count: several providers serve
+ * models that reject JSON mode while the provider as a whole supports it.
+ */
+export function jsonOutputEvidenceRank(
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+	type: JsonOutputType,
+): 0 | 1 | 2 {
+	const params = declaredRouteParams(candidate.capabilityParams);
+	if (!params) return 1;
+	if ("structured_outputs" in params && declaredValuesAllow(params.structured_outputs, type)) return 0;
+	for (const key of expandCapabilityParamAliases("response_format")) {
+		if (key in params && declaredValuesAllow(params[key], type)) return 0;
+	}
+	return 2;
 }
 
 export function getUnsupportedParamsForProvider(args: {

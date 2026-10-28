@@ -22,6 +22,7 @@ export default async function BenchmarkDetailShell({
 	tocItems = [],
 }: BenchmarkDetailShellProps) {
 	const t = await getTranslations("Catalogue.benchmarks");
+	const tChart = await getTranslations("Common.ui.benchmarkChartCopy");
 	if (!benchmark) {
 		return (
 			<main className="flex min-h-screen flex-col">
@@ -64,8 +65,10 @@ export default async function BenchmarkDetailShell({
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
-	const artificialAnalysisMetric = benchmark.name?.replace(/^Artificial Analysis\s*/i, "").trim() || benchmark.id;
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
+
+	if (artificialAnalysis) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
+	if (epochCapabilitiesIndex) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><h1 className="flex items-center gap-3 text-sm font-semibold"><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={116} height={22} className="h-[22px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="Epoch AI" width={116} height={22} className="hidden h-[22px] w-auto dark:block" /></h1><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
 
 	return (
 		<main className="flex flex-col">
@@ -77,13 +80,13 @@ export default async function BenchmarkDetailShell({
 							{artificialAnalysis ? <ArtificialAnalysisLogo size={32} /> : epochCapabilitiesIndex ? <><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={150} height={26} className="h-[26px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="" aria-hidden="true" width={150} height={26} className="hidden h-[26px] w-auto dark:block" /></> : <Trophy className="size-7 text-muted-foreground" />}
 						</div>
 						<div className="min-w-0">
-							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+							<h1 className={`${artificialAnalysis ? "text-xl sm:text-2xl" : "text-2xl"} font-semibold tracking-tight md:text-3xl`}>
 								{displayName}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? t("independentEvaluations", { metric: artificialAnalysisMetric }) : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? tChart("independentEvaluations") : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
 						</div>
 					</div>
-					<BenchmarkEditButton benchmarkId={benchmark.id} />
+					<BenchmarkEditButton benchmarkId={benchmark.id} compactMobile={artificialAnalysis} />
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>

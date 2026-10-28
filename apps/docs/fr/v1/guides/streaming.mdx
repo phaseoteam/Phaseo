@@ -53,7 +53,9 @@ Passez un `AbortSignal` au client HTTP serveur et annulez quand l’utilisateur 
 
 Affichez progressivement le texte partiel, mais ne marquez la réponse terminée qu’après l’événement final réussi du point d’accès. Une connexion fermée ne prouve pas son achèvement.
 
-Si le flux échoue après le début de la sortie :
+Si le flux échoue après le début de la sortie, il se termine par l’événement d’échec du point d’accès plutôt que par son événement final réussi : une trame `error` pour Chat Completions (sans `finish_reason`), `response.failed` ou `error` pour Responses et un événement `error` pour Messages (sans `message_stop`). Phaseo ne facture pas la sortie partielle d’un flux en échec.
+
+Dans ce cas :
 
 1. Marquez la réponse partielle comme interrompue.
 2. Conservez l’identifiant de requête ou de génération, le point d’accès et le modèle dans vos journaux.

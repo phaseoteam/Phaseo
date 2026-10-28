@@ -136,6 +136,10 @@
 					"title": "Crear una regla de protección",
 					"subtitle": "Añadir una política para solicitudes o respuestas"
 				},
+				"action-create-classifier": {
+					"title": "Crear un clasificador",
+					"subtitle": "Etiqueta solicitudes por departamento, tarea o público"
+				},
 				"action-copy-page-link": {
 					"title": "Copiar el enlace de esta página",
 					"subtitle": "Copiar la URL de esta página al portapapeles"
@@ -250,6 +254,11 @@
 				"nav-settings-presets": "Preajustes de enrutamiento",
 				"nav-settings-privacy": "Ajustes de privacidad",
 				"nav-settings-guardrails": "Reglas de protección",
+				"nav-settings-rate-limits": "Límites de velocidad",
+				"nav-settings-trusted-workloads": "Cargas de trabajo de confianza",
+				"nav-settings-classifiers": "Clasificadores",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Seguridad de claves",
 				"nav-settings-oauth": "Aplicaciones OAuth",
 				"nav-settings-broadcast": "Difusión",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,13 +337,15 @@
 				"nav-settings-account-privacy": "Privacidad de la cuenta",
 				"nav-settings-credits-onboarding": "Configurar facturación",
 				"nav-settings-guardrails-new": "Crear una regla de protección",
+				"nav-settings-classifiers-new": "Crear clasificador",
 				"nav-settings-presets-new": "Crear preajuste de enrutamiento",
 				"nav-how-phaseo-normalises-ai-benchmarks": "Cómo se normalizan las pruebas de evaluación",
 				"nav-how-phaseo-measures-latency-throughput": "Cómo se mide el rendimiento",
 				"nav-how-phaseo-calculates-model-pricing": "Cómo se calculan los precios",
 				"nav-how-phaseo-tracks-provider-availability": "Cómo se supervisa la disponibilidad de los proveedores",
 				"nav-chat-decisions": "Decisiones",
-				"nav-settings-account-providers": "Incorporación de proveedores"
+				"nav-settings-account-providers": "Incorporación de proveedores",
+				"nav-settings-budgets": "Presupuestos"
 			}
 		},
 		"searchDataUnavailable": "No se pudieron cargar los datos de búsqueda.",
@@ -1251,6 +1262,7 @@
 			"enableConnection": "Activar conexión",
 			"deleteDestination": "Eliminar destino",
 			"openRequestDetails": "Abrir detalles de la solicitud",
+			"openInChat": "Abrir en Chat",
 			"copyRequestId": "Copiar ID de solicitud",
 			"copySessionId": "Copiar ID de sesión",
 			"copyNativeResponseId": "Copiar ID de respuesta nativa",
@@ -1376,6 +1388,11 @@
 			"retention90Days": "90 días",
 			"retention180Days": "180 días",
 			"retention365Days": "365 días",
+			"contentsAccessTitle": "Quién puede ver el contenido",
+			"contentsAccessDescription": "Elige quién puede ver los prompts y respuestas guardados en los detalles de la solicitud, en Chat y en la API.",
+			"contentsAccessMembers": "Todos los miembros",
+			"contentsAccessAdmins": "Propietarios y administradores",
+			"contentsRestricted": "En este espacio de trabajo, solo los propietarios y administradores pueden ver el contenido de las solicitudes.",
 			"allowAllExceptSelectedModels": "Permitir todos los modelos excepto los seleccionados",
 			"allowAnyProvider": "Permitir cualquier proveedor",
 			"allowOnlySelectedProviders": "Permitir solo los proveedores seleccionados",

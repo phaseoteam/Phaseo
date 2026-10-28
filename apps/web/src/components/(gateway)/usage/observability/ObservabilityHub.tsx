@@ -89,6 +89,9 @@ import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guar
 import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import UsageLabelBreakdown from "@/components/(gateway)/usage/UsageLabelBreakdown";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
+import { type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
 import { Logo } from "@/components/Logo";
 import type { UsageLabelFacet, UsageLabelSummary } from "@/lib/fetchers/internal/settingsTypes";
 import type {
@@ -2512,6 +2515,8 @@ export default function ObservabilityHub({
 	initialTab,
 	labelFacets = [],
 	labelSummary = null,
+	requestClassifiers = [],
+	labelBreakdown,
 	preset,
 	customFrom,
 	customTo,
@@ -2521,6 +2526,9 @@ export default function ObservabilityHub({
 	initialTab: ObservabilityTab;
 	labelFacets?: UsageLabelFacet[];
 	labelSummary?: UsageLabelSummary | null;
+	requestClassifiers?: RequestClassifierSummary[];
+	/** The period and key filters the "usage by label" table reads with; omitted, it is hidden. */
+	labelBreakdown?: { from: string; to: string; keyId?: string | null; excludeKey?: boolean; creatorId?: string | null };
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
@@ -2534,7 +2542,7 @@ export default function ObservabilityHub({
 					<p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t("yourUsage")}</p>
 				</div>
 				<div className="flex shrink-0 flex-wrap justify-end gap-2">
-					<RequestLabelFilter facets={labelFacets} />
+					<RequestLabelFilter facets={labelFacets} classifiers={requestClassifiers} mode="usage" />
 					<UsageLogsToolbar
 						view="logs"
 						preset={preset}
@@ -2544,32 +2552,22 @@ export default function ObservabilityHub({
 				</div>
 			</div>
 			{labelSummary ? (
-				<Card className="ring-1 ring-primary/15">
-					<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-						<div className="min-w-0">
-							<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("filteredSpend")}</p>
-							<p className="mt-1 truncate text-sm font-medium">
-								<span className="font-mono">{labelSummary.key}</span>
-								<span className="px-1.5 text-muted-foreground">=</span>
-								<span>{labelSummary.value}</span>
-							</p>
-						</div>
-						<div className="flex items-center gap-6 text-sm">
-							<div>
-								<p className="text-xs text-muted-foreground">{t("requests")}</p>
-								<p className="mt-1 font-mono font-medium">{formatNumber(labelSummary.requestCount)}</p>
-							</div>
-							<div>
-								<p className="text-xs text-muted-foreground">{t("spend")}</p>
-								<p className="mt-1 font-mono font-medium">{formatCurrency(labelSummary.totalCostNanos / 1e9)}</p>
-							</div>
-						</div>
-						{labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("sampledSpend")}</p> : null}
-					</CardContent>
-				</Card>
+				<LabelFilterSummary
+					requestCount={labelSummary.requestCount}
+					totalCostNanos={labelSummary.totalCostNanos}
+					isSampled={labelSummary.isSampled}
+				/>
 			) : null}
 
 			{initialTab === "overview" ? <Overview data={data} /> : null}
+			{initialTab === "overview" && labelBreakdown ? (
+				<UsageLabelBreakdown
+					facets={labelFacets}
+					classifiers={requestClassifiers}
+					labelFilterActive={Boolean(labelSummary)}
+					{...labelBreakdown}
+				/>
+			) : null}
 			{initialTab === "trends" ? <Trends data={data} /> : null}
 			{initialTab === "explore" ? (
 				<Explore data={data} />

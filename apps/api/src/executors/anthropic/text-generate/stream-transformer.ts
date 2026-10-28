@@ -2,8 +2,11 @@
 // Why: Responses API expects specific event names and structure
 // How: Parse Anthropic events and emit normalized Responses API events
 
+import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
+import { gatewayContextManagementEntry, gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
@@ -40,7 +43,7 @@ export function createAnthropicStreamAccounting(): AnthropicStreamAccounting {
 	return {
 		observe(event: any) {
 			const eventUsage = event?.message?.usage ?? event?.usage;
-			if (eventUsage && typeof eventUsage === "object") usage = { ...usage, ...eventUsage };
+			if (eventUsage && typeof eventUsage === "object") usage = mergeMessagesStreamUsage(usage, eventUsage);
 			if (typeof event?.delta?.stop_reason === "string") stopReason = event.delta.stop_reason;
 			if (typeof event?.message?.stop_reason === "string") stopReason = event.message.stop_reason;
 		},
@@ -110,10 +113,19 @@ export function anthropicUsageToResponsesUsage(usage: any): Record<string, unkno
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
-	options?: { accounting?: AnthropicStreamAccounting; providerId?: string },
+	options?: {
+		accounting?: AnthropicStreamAccounting;
+		providerId?: string;
+		/**
+		 * Carry the `context_management` result from the final message_delta on the
+		 * terminal response, for the Messages adapter. Only Messages clients get it.
+		 */
+		keepContextManagement?: boolean;
+	},
 ): TransformStream<Uint8Array, Uint8Array> {
 	const accounting = options?.accounting;
 	const providerId = options?.providerId;
+	const keepContextManagement = options?.keepContextManagement === true;
 	const parser = new SseParser();
 	const encoder = new TextEncoder();
 
@@ -122,6 +134,8 @@ export function createAnthropicToResponsesStreamTransformer(
 	let createdAt: number = Math.floor(Date.now() / 1000);
 	let usage: any = null;
 	let stopReason: string | null = null;
+	let stopSequence: string | null = null;
+	let contextManagement: unknown = null;
 
 	// Track content blocks by index
 	const contentBlocks: Map<number, {
@@ -134,7 +148,14 @@ export function createAnthropicToResponsesStreamTransformer(
 		data?: string;
 		name?: string;
 		input?: string;
+		citations?: any[];
 	}> = new Map();
+	// Claude cites a whole text block, so a URL citation spans the block's text.
+	const blockAnnotations = (block: { text?: string; citations?: any[] }) =>
+		toResponsesAnnotations(block.citations).map((annotation) =>
+			annotation.type === "url_citation"
+				? { ...annotation, start_index: 0, end_index: (block.text || "").length }
+				: annotation);
 
 	// A reasoning item for a thinking or redacted_thinking block. The signature
 	// (or redacted data) is sealed with its origin so the client can send it
@@ -148,9 +169,8 @@ export function createAnthropicToResponsesStreamTransformer(
 			status: "completed",
 			summary: [],
 			content: redacted ? [] : [{
-				type: "output_text",
+				type: "reasoning_text",
 				text: block.text || "",
-				annotations: [],
 			}],
 			...(value
 				? {
@@ -175,6 +195,25 @@ export function createAnthropicToResponsesStreamTransformer(
 		payload: any,
 	) => {
 		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	// A citation goes out as Claude sent it, document citations included: the
+	// Messages surface returns it unchanged, the Chat encoder keeps its URL, and
+	// Responses clients get the url_citation form at the client boundary
+	// (pipeline/after/responses-stream-normaliser.ts).
+	const emitCitation = (
+		controller: TransformStreamDefaultController<Uint8Array>,
+		block: { itemId: string; outputIndex: number },
+		citation: Record<string, any>,
+		annotationIndex: number,
+	) => {
+		emitEvent(controller, "response.output_text.annotation.added", {
+			item_id: block.itemId,
+			output_index: block.outputIndex,
+			content_index: 0,
+			annotation_index: annotationIndex,
+			annotation: { ...citation },
+		});
 	};
 
 	return new TransformStream<Uint8Array, Uint8Array>({
@@ -203,8 +242,11 @@ export function createAnthropicToResponsesStreamTransformer(
 						emitEvent(controller, "response.created", {
 							response: {
 								id: requestId,
+								object: "response",
 								created_at: createdAt,
 								model: model,
+								status: "in_progress",
+								output: [],
 							},
 						});
 						createdEmitted = true;
@@ -228,12 +270,34 @@ export function createAnthropicToResponsesStreamTransformer(
 						data: typeof block.data === "string" ? block.data : undefined,
 						name: block.name || "",
 						input: "",
+						...(Array.isArray(block.citations) && block.citations.length > 0 ? { citations: [...block.citations] } : {}),
 					});
 
 					if (block.type === "thinking" || block.type === "redacted_thinking") {
 						emitEvent(controller, "response.output_item.added", {
 							output_index: outputIndex,
 							item: { type: "reasoning", id: itemId, summary: [], content: [] },
+						});
+					}
+
+					// A text block is a message item: announce it and its text part before
+					// any output_text.delta, as the Responses stream documents.
+					if (block.type === "text") {
+						emitEvent(controller, "response.output_item.added", {
+							output_index: outputIndex,
+							item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+						});
+						emitEvent(controller, "response.content_part.added", {
+							item_id: itemId,
+							output_index: outputIndex,
+							content_index: 0,
+							part: { type: "output_text", text: "", annotations: [] },
+						});
+						const startCitations = contentBlocks.get(index)?.citations ?? [];
+						startCitations.forEach((citation, citationIndex) => {
+							if (citation && typeof citation === "object") {
+								emitCitation(controller, { itemId, outputIndex }, citation, citationIndex);
+							}
 						});
 					}
 
@@ -269,6 +333,7 @@ export function createAnthropicToResponsesStreamTransformer(
 							delta: chunk,
 							output_index: block.outputIndex,
 							item_id: block.itemId,
+							content_index: 0,
 						});
 
 					} else if (delta.type === "thinking_delta") {
@@ -280,6 +345,10 @@ export function createAnthropicToResponsesStreamTransformer(
 							output_index: block.outputIndex,
 							item_id: block.itemId,
 						});
+
+					} else if (delta.type === "citations_delta" && delta.citation && typeof delta.citation === "object") {
+						block.citations = [...(block.citations ?? []), delta.citation];
+						emitCitation(controller, block, delta.citation, block.citations.length - 1);
 
 					} else if (delta.type === "signature_delta") {
 						// Thinking signature (store for final snapshot)
@@ -308,6 +377,24 @@ export function createAnthropicToResponsesStreamTransformer(
 							output_index: block.outputIndex,
 							item: buildReasoningItem(block),
 						});
+					} else if (block.type === "text") {
+						const part = { type: "output_text", text: block.text || "", annotations: [] };
+						emitEvent(controller, "response.output_text.done", {
+							item_id: block.itemId,
+							output_index: block.outputIndex,
+							content_index: 0,
+							text: part.text,
+						});
+						emitEvent(controller, "response.content_part.done", {
+							item_id: block.itemId,
+							output_index: block.outputIndex,
+							content_index: 0,
+							part,
+						});
+						emitEvent(controller, "response.output_item.done", {
+							output_index: block.outputIndex,
+							item: { type: "message", id: block.itemId, status: "completed", role: "assistant", content: [part] },
+						});
 					} else if (block.type === "tool_use") {
 						emitEvent(controller, "response.function_call_arguments.done", {
 							item_id: block.itemId,
@@ -331,10 +418,45 @@ export function createAnthropicToResponsesStreamTransformer(
 				} else if (payload.type === "message_delta") {
 					// Update usage and stop reason
 					if (payload.delta?.stop_reason) stopReason = payload.delta.stop_reason;
+					if (typeof payload.delta?.stop_sequence === "string") stopSequence = payload.delta.stop_sequence;
+					if (keepContextManagement && payload.context_management) contextManagement = payload.context_management;
 					if (payload.usage) {
-						usage = { ...usage, ...payload.usage };
+						usage = mergeMessagesStreamUsage(usage, payload.usage);
 					}
 
+				} else if (payload.type === "error") {
+					// Anthropic reports a failure after the stream started (for example
+					// overloaded_error) as an `error` event and sends no message_stop.
+					// The partial output already reached the client as deltas.
+					if (!createdEmitted) {
+						// An error before message_start: open the response so the stream
+						// still begins with response.created.
+						createdAt = createdAt || Math.floor(Date.now() / 1000);
+						emitEvent(controller, "response.created", {
+							response: {
+								id: requestId,
+								created_at: createdAt,
+								model: model,
+							},
+						});
+						createdEmitted = true;
+					}
+					emitEvent(controller, "response.failed", {
+						response: {
+							id: requestId,
+							object: "response",
+							created_at: createdAt,
+							model: model,
+							status: "failed",
+							error: {
+								code: typeof payload.error?.type === "string" ? payload.error.type : "api_error",
+								message: typeof payload.error?.message === "string" ? payload.error.message : "stream_error",
+							},
+							output: [],
+							usage: anthropicUsageToResponsesUsage(usage),
+							nativeResponseId: messageId,
+						},
+					});
 				} else if (payload.type === "message_stop") {
 					// Build final response object
 					const outputItems: any[] = [];
@@ -350,7 +472,7 @@ export function createAnthropicToResponsesStreamTransformer(
 								content: [{
 									type: "output_text",
 									text: block.text || "",
-									annotations: [],
+									annotations: blockAnnotations(block),
 								}],
 							});
 						} else if (block.type === "thinking" || block.type === "redacted_thinking") {
@@ -375,29 +497,27 @@ export function createAnthropicToResponsesStreamTransformer(
 						}
 					}
 
-					// Map Anthropic stop_reason to Responses API status
-					let status: "completed" | "incomplete" | "failed" = "completed";
-					if (stopReason === "max_tokens" || stopReason === "model_context_window_exceeded") {
-						status = "incomplete";
-					}
+					// Map Anthropic stop_reason to Responses API status: max_tokens and
+					// refusal (a safety classifier stop) are incomplete with the documented
+					// reason. stop_sequence, pause_turn and refusal also travel internally
+					// for Messages clients, which can express them.
+					const finish = normalizeFinishReason(stopReason);
+					const { status, incompleteDetails } = responsesStatusFor(finish.finishReason);
 
 					const responseUsage = anthropicUsageToResponsesUsage(usage);
 
-					// Emit response.completed
-					emitEvent(controller, "response.completed", {
+					// One terminal event: response.incomplete for max_tokens and refusal,
+					// response.completed otherwise.
+					emitEvent(controller, status === "incomplete" ? "response.incomplete" : "response.completed", {
 						response: {
 							id: requestId,
 							object: "response",
 							created_at: createdAt,
 							model: model,
 							status,
-							...(status === "incomplete"
-								? {
-									incomplete_details: {
-										reason: "max_output_tokens",
-									},
-								}
-								: {}),
+							...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
+							...gatewayStopEntry(finish.finishDetail, stopSequence),
+							...gatewayContextManagementEntry(contextManagement),
 							output: outputItems,
 							usage: responseUsage,
 							nativeResponseId: messageId,

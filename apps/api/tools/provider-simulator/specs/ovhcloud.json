@@ -1,0 +1,4439 @@
+{
+	"id": "ovhcloud",
+	"source": {
+		"url": "https://oai.endpoints.kepler.ai.cloud.ovh.net/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-18T08:41:07.656Z",
+		"sha256": "e84f4e00279453579538c7a9081bce3f7df1da3ea205b5163c15f220eb32559e",
+		"handWritten": false,
+		"notes": "Served by the unified AI Endpoints host (title \"OpenAI Compatible API\" 0.3.11). Per-model hosts may expose their own specs."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionParameters"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionResponse"
+			}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/ResponseParameters"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ResponseObject"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionParameters": {
+				"type": "object",
+				"required": [
+					"messages"
+				],
+				"properties": {
+					"audio": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/AudioParameters",
+								"description": "Parameters for audio output. Required when audio output is requested with modalities: [\"audio\"]."
+							}
+						]
+					},
+					"frequency_penalty": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far,\ndecreasing the model's likelihood to repeat the same line verbatim."
+					},
+					"logit_bias": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Modify the likelihood of specified tokens appearing in the completion.",
+						"additionalProperties": {
+							"type": "integer",
+							"format": "int32"
+						},
+						"propertyNames": {
+							"type": "string"
+						}
+					},
+					"logprobs": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether to return log probabilities of the output tokens or not.\nIf true, returns the log probabilities of each output token returned in the 'content' of 'message'."
+					},
+					"max_completion_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.\nThis parameter cannot be used together with `max_tokens`.",
+						"minimum": 0
+					},
+					"max_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "The maximum number of tokens that can be generated in the completion.\nThe token count of your prompt plus `max_tokens` cannot exceed the model's context length.\nThis parameter cannot be used together with `max_completion_tokens`.",
+						"example": 100,
+						"minimum": 0
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ChatMessage"
+						},
+						"description": "A list of messages comprising the conversation so far."
+					},
+					"metadata": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Developer-defined tags and values used for filtering completions in the dashboard.",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"propertyNames": {
+							"type": "string"
+						}
+					},
+					"modalities": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/Modality"
+						},
+						"description": "Output types that you would like the model to generate for this request."
+					},
+					"model": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "ID of the model to use."
+					},
+					"n": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "How many chat completion choices to generate for each input message.",
+						"minimum": 0
+					},
+					"parallel_tool_calls": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether to enable parallel function calling during tool use."
+					},
+					"prediction": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/PredictedOutput",
+								"description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time.\nThis is most common when you are regenerating a file with only minor changes to most of the content."
+							}
+						]
+					},
+					"presence_penalty": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far,\nincreasing the model's likelihood to talk about new topics."
+					},
+					"prompt_cache_key": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates."
+					},
+					"query_params": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Azure OpenAI and some other providers may require special query parameters to be set on the request URL.\nThis field allows you to specify those query parameters.",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"propertyNames": {
+							"type": "string"
+						}
+					},
+					"reasoning_effort": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ReasoningEffort",
+								"description": "Constrains effort on reasoning for reasoning models."
+							}
+						]
+					},
+					"response_format": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ChatCompletionResponseFormat",
+								"description": "An object specifying the format that the model must output.\nSetting to { \"type\": \"json_schema\", \"json_schema\": {...} } enables Structured Outputs which ensures the model will match your supplied JSON schema. Setting to { \"type\": \"json_object\" } enables the older JSON mode, which ensures the message the model generates is valid JSON. Using json_schema is preferred for models that support it."
+							}
+						]
+					},
+					"safety_identifier": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies."
+					},
+					"seed": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "This feature is in Beta. If specified, our system will make a best effort to sample deterministically,\nsuch that repeated requests with the same seed and parameters should return the same result.\nDeterminism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor changes in the backend.",
+						"minimum": 0
+					},
+					"stop": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/Prompt",
+								"description": "Words or tokens that must stop the generation process. You can specify a string, a token ID, a list of strings or a list of token IDs."
+							}
+						]
+					},
+					"store": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether or not to store the output of this chat completion request for use in our model distillation or evals products."
+					},
+					"stream": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether to stream back partial progress. If set, tokens will be sent as data-only server-sent events as they become available, with the stream terminated by a `data: [DONE]` message."
+					},
+					"stream_options": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ChatCompletionStreamOptions",
+								"description": "Options for streaming response. Only set this when you set stream: true."
+							}
+						]
+					},
+					"temperature": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random,\nwhile lower values like 0.2 will make it more focused and deterministic.\nWe generally recommend altering this or `top_p` but not both.",
+						"default": 1,
+						"example": 1,
+						"maximum": 2,
+						"minimum": 0
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ChatCompletionToolChoice",
+								"description": "Controls which (if any) tool is called by the model. none means the model will not call any tool and instead generates a message.\nauto means the model can pick between generating a message or calling one or more tools.\nrequired means the model must call one or more tools.\nSpecifying a particular tool via {\"type\": \"function\", \"function\": {\"name\": \"my_function\"}} forces the model to call that tool."
+							}
+						]
+					},
+					"tools": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionTool"
+						},
+						"description": "A list of tools the model may call. Currently, only functions are supported as a tool.\nUse this to provide a list of functions the model may generate JSON inputs for."
+					},
+					"top_logprobs": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "An integer between 0 and 5 specifying the number of most likely tokens to return at each token position,\neach with an associated log probability. 'logprobs' must be set to 'true' if this parameter is used.",
+						"minimum": 0
+					},
+					"top_p": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass.\nSo 0.1 means only the tokens comprising the top 10% probability mass are considered.\nWe generally recommend altering this or `temperature` but not both.",
+						"default": 1,
+						"example": 1,
+						"maximum": 1,
+						"minimum": 0
+					},
+					"web_search_options": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/WebSearchOptions",
+								"description": "This tool searches the web for relevant results to use in a response."
+							}
+						]
+					}
+				}
+			},
+			"ChatCompletionResponse": {
+				"type": "object",
+				"required": [
+					"choices",
+					"created",
+					"model",
+					"object"
+				],
+				"properties": {
+					"choices": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionChoice"
+						},
+						"description": "A list of chat completion choices. Can be more than one if n is greater than 1."
+					},
+					"created": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The Unix timestamp (in seconds) of when the chat completion was created.",
+						"minimum": 0
+					},
+					"id": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "A unique identifier for the chat completion."
+					},
+					"model": {
+						"type": "string",
+						"description": "The model used for the chat completion."
+					},
+					"object": {
+						"type": "string",
+						"description": "The object type, which is always chat.completion."
+					},
+					"usage": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/Usage",
+								"description": "Usage statistics for the completion request."
+							}
+						]
+					}
+				}
+			},
+			"ResponseParameters": {
+				"allOf": [
+					{
+						"description": "Allows to pass arbitrary json as an extra_body parameter, for specific features/openai-compatible endpoints."
+					},
+					{
+						"type": "object",
+						"required": [
+							"input"
+						],
+						"properties": {
+							"background": {
+								"type": [
+									"boolean",
+									"null"
+								],
+								"description": "Whether to run the model response in the background."
+							},
+							"include": {
+								"type": [
+									"array",
+									"null"
+								],
+								"items": {
+									"$ref": "#/components/schemas/ResponseInclude"
+								},
+								"description": "Specify additional output data to include in the model response."
+							},
+							"input": {
+								"$ref": "#/components/schemas/ResponseInput",
+								"description": "Text, image, or file inputs to the model, used to generate a response."
+							},
+							"instructions": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "Inserts a system (or developer) message as the first item in the model's context."
+							},
+							"max_output_tokens": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int32",
+								"description": "An upper bound for the number of tokens that can be generated for a response.",
+								"example": 100,
+								"minimum": 0
+							},
+							"metadata": {
+								"type": [
+									"object",
+									"null"
+								],
+								"description": "Set of 16 key-value pairs that can be attached to an object.",
+								"additionalProperties": {
+									"type": "string"
+								},
+								"propertyNames": {
+									"type": "string"
+								}
+							},
+							"model": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "Model ID used to generate the response."
+							},
+							"parallel_tool_calls": {
+								"type": [
+									"boolean",
+									"null"
+								],
+								"description": "Whether to allow the model to run tool calls in parallel."
+							},
+							"previous_response_id": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "The unique ID of the previous response to the model."
+							},
+							"prompt": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/Prompt",
+										"description": "Reference to a prompt template and its variables."
+									}
+								]
+							},
+							"reasoning": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ResponseReasoning",
+										"description": "Configuration options for reasoning models."
+									}
+								]
+							},
+							"store": {
+								"type": [
+									"boolean",
+									"null"
+								],
+								"description": "Whether to store the generated model response for later retrieval via API.",
+								"default": true,
+								"example": false
+							},
+							"stream": {
+								"type": [
+									"boolean",
+									"null"
+								],
+								"description": "Whether to stream the response back to the client as it is generated.",
+								"default": false,
+								"example": false
+							},
+							"temperature": {
+								"type": [
+									"number",
+									"null"
+								],
+								"format": "float",
+								"description": "What sampling temperature to use, between 0 and 2.",
+								"default": 1,
+								"example": 1,
+								"maximum": 2,
+								"minimum": 0
+							},
+							"text": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ResponseText",
+										"description": "Configuration options for a text response from the model."
+									}
+								]
+							},
+							"tool_choice": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ResponseToolChoice",
+										"description": "How the model should select which tool (or tools) to use when generating a response."
+									}
+								]
+							},
+							"tools": {
+								"type": [
+									"array",
+									"null"
+								],
+								"items": {
+									"$ref": "#/components/schemas/ResponseTool"
+								},
+								"description": "An array of tools the model may call while generating a response."
+							},
+							"top_logprobs": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int32",
+								"description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability.",
+								"minimum": 0
+							},
+							"top_p": {
+								"type": [
+									"number",
+									"null"
+								],
+								"format": "float",
+								"description": "An alternative to sampling with temperature.",
+								"default": 1,
+								"example": 1,
+								"maximum": 1,
+								"minimum": 0
+							},
+							"user": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "A unique identifier representing your end-user."
+							}
+						}
+					}
+				]
+			},
+			"ResponseObject": {
+				"type": "object",
+				"required": [
+					"created_at",
+					"id",
+					"model",
+					"object",
+					"output",
+					"status",
+					"tools"
+				],
+				"properties": {
+					"created_at": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Unix timestamp (in seconds) of when this Response was created.",
+						"minimum": 0
+					},
+					"error": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseError",
+								"description": "An error object returned when the model fails to generate a Response."
+							}
+						]
+					},
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for this Response."
+					},
+					"incomplete_details": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/IncompleteDetails",
+								"description": "Details about why the response is incomplete."
+							}
+						]
+					},
+					"instruction": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Inserts a system (or developer) message as the first item in the model's context."
+					},
+					"max_output_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and reasoning tokens.",
+						"minimum": 0
+					},
+					"metadata": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Set of 16 key-value pairs that can be attached to an object.",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"propertyNames": {
+							"type": "string"
+						}
+					},
+					"model": {
+						"type": "string",
+						"description": "Model ID used to generate the response."
+					},
+					"object": {
+						"type": "string",
+						"description": "The object type of this resource - always set to response."
+					},
+					"output": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ResponseOutput"
+						},
+						"description": "An array of content items generated by the model."
+					},
+					"parallel_tool_calls": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether to allow the model to run tool calls in parallel."
+					},
+					"previous_response_id": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The unique ID of the previous response to the model."
+					},
+					"reasoning": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseReasoning",
+								"description": "Configuration options for reasoning models."
+							}
+						]
+					},
+					"service_tier": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The service tier used for processing the request."
+					},
+					"status": {
+						"$ref": "#/components/schemas/ReasoningStatus",
+						"description": "The status of the response generation."
+					},
+					"temperature": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "What sampling temperature to use, between 0 and 2."
+					},
+					"text": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseText",
+								"description": "Configuration options for a text response from the model."
+							}
+						]
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseToolChoice",
+								"description": "How the model should select which tool (or tools) to use when generating a response."
+							}
+						]
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ResponseTool"
+						},
+						"description": "An array of tools the model may call while generating a response."
+					},
+					"top_logprobs": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability.",
+						"minimum": 0
+					},
+					"top_p": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float",
+						"description": "An alternative to sampling with temperature."
+					},
+					"truncation": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/TruncationStrategy",
+								"description": "The truncation strategy to use for the model response."
+							}
+						]
+					},
+					"usage": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseUsage",
+								"description": "Represents token usage details."
+							}
+						]
+					},
+					"user": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "A unique identifier representing your end-user."
+					}
+				}
+			},
+			"AudioParameters": {
+				"type": "object",
+				"required": [
+					"voice",
+					"format"
+				],
+				"properties": {
+					"format": {
+						"$ref": "#/components/schemas/AudioFormat",
+						"description": "Specifies the output audio format."
+					},
+					"voice": {
+						"$ref": "#/components/schemas/Voice",
+						"description": "The voice the model uses to respond."
+					}
+				}
+			},
+			"ChatMessage": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"content",
+							"role"
+						],
+						"properties": {
+							"content": {
+								"$ref": "#/components/schemas/ChatMessageContent",
+								"description": "The contents of the developer message."
+							},
+							"name": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "An optional name for the participant. Provides the model information to differentiate between participants of the same role."
+							},
+							"role": {
+								"type": "string",
+								"enum": [
+									"developer"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"content",
+							"role"
+						],
+						"properties": {
+							"content": {
+								"$ref": "#/components/schemas/ChatMessageContent",
+								"description": "The contents of the system message."
+							},
+							"name": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "An optional name for the participant. Provides the model information to differentiate between participants of the same role."
+							},
+							"role": {
+								"type": "string",
+								"enum": [
+									"system"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"content",
+							"role"
+						],
+						"properties": {
+							"content": {
+								"$ref": "#/components/schemas/ChatMessageContent",
+								"description": "The contents of the user message."
+							},
+							"name": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "An optional name for the participant. Provides the model information to differentiate between participants of the same role."
+							},
+							"role": {
+								"type": "string",
+								"enum": [
+									"user"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"role"
+						],
+						"properties": {
+							"audio": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/AudioDataIdParameter",
+										"description": "Data about a previous audio response from the model."
+									}
+								]
+							},
+							"content": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ChatMessageContent",
+										"description": "The contents of the assistant message. Required unless tool_calls is specified."
+									}
+								]
+							},
+							"name": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "An optional name for the participant. Provides the model information to differentiate between participants of the same role."
+							},
+							"reasoning": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "The reasoning content by the assistant."
+							},
+							"refusal": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "The refusal message by the assistant."
+							},
+							"role": {
+								"type": "string",
+								"enum": [
+									"assistant"
+								]
+							},
+							"tool_calls": {
+								"type": [
+									"array",
+									"null"
+								],
+								"items": {
+									"$ref": "#/components/schemas/ToolCall"
+								},
+								"description": "The tool calls generated by the model, such as function calls."
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"content",
+							"tool_call_id",
+							"role"
+						],
+						"properties": {
+							"content": {
+								"$ref": "#/components/schemas/ChatMessageContent",
+								"description": "The contents of the tool message."
+							},
+							"role": {
+								"type": "string",
+								"enum": [
+									"tool"
+								]
+							},
+							"tool_call_id": {
+								"type": "string",
+								"description": "Tool call that this message is responding to."
+							}
+						}
+					}
+				]
+			},
+			"Modality": {
+				"type": "string",
+				"enum": [
+					"text",
+					"audio"
+				]
+			},
+			"PredictedOutput": {
+				"type": "object",
+				"required": [
+					"type",
+					"content"
+				],
+				"properties": {
+					"content": {
+						"$ref": "#/components/schemas/PredictedOutputContent",
+						"description": "The content that should be matched when generating a model response.\nIf generated tokens would match this content, the entire model response can be returned much more quickly."
+					},
+					"type": {
+						"$ref": "#/components/schemas/PredictedOutputType",
+						"description": "The type of the predicted content you want to provide."
+					}
+				}
+			},
+			"ReasoningEffort": {
+				"type": "string",
+				"enum": [
+					"none",
+					"high",
+					"medium",
+					"low",
+					"minimal",
+					"max",
+					"xhigh"
+				]
+			},
+			"ChatCompletionResponseFormat": {
+				"oneOf": [
+					{
+						"type": "object",
+						"description": "Default response format. Used to generate text responses.",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"description": "JSON object response format. An older method of generating JSON responses. Using json_schema is recommended for models that support it. Note that the model will not generate JSON without a system or user message instructing it to do so.",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"json_object"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"description": "JSON Schema response format. Used to generate structured JSON responses.",
+						"required": [
+							"json_schema",
+							"type"
+						],
+						"properties": {
+							"json_schema": {
+								"$ref": "#/components/schemas/JsonSchema"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"json_schema"
+								]
+							}
+						}
+					}
+				]
+			},
+			"Prompt": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					{
+						"type": "array",
+						"items": {
+							"type": "integer",
+							"format": "int32",
+							"minimum": 0
+						}
+					},
+					{
+						"type": "array",
+						"items": {
+							"type": "array",
+							"items": {
+								"type": "integer",
+								"format": "int32",
+								"minimum": 0
+							}
+						}
+					}
+				]
+			},
+			"ChatCompletionStreamOptions": {
+				"type": "object",
+				"properties": {
+					"continuous_usage_stats": {
+						"type": [
+							"boolean",
+							"null"
+						]
+					},
+					"include_usage": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "If set, an additional chunk will be streamed before the data: [DONE] message."
+					}
+				}
+			},
+			"ChatCompletionToolChoice": {
+				"oneOf": [
+					{
+						"type": "string",
+						"enum": [
+							"none"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"auto"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"required"
+						]
+					},
+					{
+						"type": "object",
+						"required": [
+							"chatcompletiontoolchoicefunction"
+						],
+						"properties": {
+							"chatcompletiontoolchoicefunction": {
+								"$ref": "#/components/schemas/ChatCompletionToolChoiceFunction"
+							}
+						}
+					}
+				]
+			},
+			"ChatCompletionTool": {
+				"type": "object",
+				"required": [
+					"type",
+					"function"
+				],
+				"properties": {
+					"function": {
+						"$ref": "#/components/schemas/ChatCompletionFunction",
+						"description": "The name of the function to call."
+					},
+					"type": {
+						"$ref": "#/components/schemas/ChatCompletionToolType",
+						"description": "The type of the tool. Currently, only 'function' is supported."
+					}
+				}
+			},
+			"WebSearchOptions": {
+				"type": "object",
+				"properties": {
+					"search_context_size": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/WebSearchContextSize"
+							}
+						]
+					},
+					"user_location": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ApproximateUserLocation",
+								"description": "Approximate location parameters for the search."
+							}
+						]
+					}
+				}
+			},
+			"ChatCompletionChoice": {
+				"type": "object",
+				"required": [
+					"index",
+					"message"
+				],
+				"properties": {
+					"finish_reason": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/FinishReason",
+								"description": "The reason the model stopped generating tokens."
+							}
+						]
+					},
+					"index": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The index of the choice in the list of choices.",
+						"minimum": 0
+					},
+					"logprobs": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/LogProps",
+								"description": "Log probability information for the choice."
+							}
+						]
+					},
+					"message": {
+						"$ref": "#/components/schemas/ChatMessage",
+						"description": "A chat completion message generated by the model."
+					}
+				}
+			},
+			"Usage": {
+				"type": "object",
+				"required": [
+					"total_tokens"
+				],
+				"properties": {
+					"completion_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "Number of tokens in the completion.",
+						"minimum": 0
+					},
+					"completion_tokens_details": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/CompletionTokensDetails",
+								"description": "Breakdown of tokens used in a completion."
+							}
+						]
+					},
+					"prompt_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "Number of tokens in the prompt.",
+						"minimum": 0
+					},
+					"prompt_tokens_details": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/PromptTokensDetails",
+								"description": "Breakdown of tokens used in the prompt."
+							}
+						]
+					},
+					"total_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Number of tokens in the entire response.",
+						"minimum": 0
+					}
+				}
+			},
+			"ResponseInclude": {
+				"type": "string",
+				"enum": [
+					"file_search_call.results",
+					"message.input_image.image_url",
+					"computer_call_output.output.image_url",
+					"message.output_text.logprobs"
+				]
+			},
+			"ResponseInput": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ResponseInputItem"
+						}
+					}
+				]
+			},
+			"ResponseReasoning": {
+				"type": "object",
+				"properties": {
+					"effort": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ReasoningEffort",
+								"description": "Constrains effort on reasoning for reasoning models."
+							}
+						]
+					},
+					"summary": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ReasoningSummary"
+							}
+						]
+					}
+				}
+			},
+			"ResponseText": {
+				"type": "object",
+				"required": [
+					"format"
+				],
+				"properties": {
+					"format": {
+						"$ref": "#/components/schemas/ResponseFormat",
+						"description": "An object specifying the format that the model must output."
+					}
+				}
+			},
+			"ResponseToolChoice": {
+				"oneOf": [
+					{
+						"type": "string",
+						"enum": [
+							"None"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"Auto"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"Required"
+						]
+					},
+					{
+						"type": "object",
+						"required": [
+							"Function"
+						],
+						"properties": {
+							"Function": {
+								"type": "string"
+							}
+						}
+					},
+					{
+						"type": "string",
+						"enum": [
+							"FileSearch"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"WebSearchPreview"
+						]
+					},
+					{
+						"type": "string",
+						"enum": [
+							"ComputerUsePreview"
+						]
+					}
+				]
+			},
+			"ResponseTool": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"name",
+							"parameters",
+							"type"
+						],
+						"properties": {
+							"description": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"name": {
+								"type": "string"
+							},
+							"parameters": {},
+							"strict": {
+								"type": [
+									"boolean",
+									"null"
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"function"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"vector_store_ids",
+							"type"
+						],
+						"properties": {
+							"filters": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/FileSearchFilters"
+									}
+								]
+							},
+							"max_num_results": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int32",
+								"minimum": 0
+							},
+							"ranking_options": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/FileSearchRankingOption"
+									}
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"file_search"
+								]
+							},
+							"vector_store_ids": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"search_context_size": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/WebSearchContextSize"
+									}
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"web_search_preview"
+								]
+							},
+							"user_location": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/WebSearchUserLocation"
+									}
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"server_label",
+							"authorization",
+							"type"
+						],
+						"properties": {
+							"allowed_tools": {
+								"type": [
+									"array",
+									"null"
+								],
+								"items": {
+									"type": "string"
+								}
+							},
+							"authorization": {
+								"type": "string"
+							},
+							"connector_id": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"headers": {
+								"type": [
+									"object",
+									"null"
+								],
+								"additionalProperties": {
+									"type": "string"
+								},
+								"propertyNames": {
+									"type": "string"
+								}
+							},
+							"require_approval": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/McpToolApproval"
+									}
+								]
+							},
+							"server_description": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"server_label": {
+								"type": "string"
+							},
+							"server_url": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"mcp"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"background": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/BackgroundStyle"
+									}
+								]
+							},
+							"input_fidelity": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"input_image_mask": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/InputImageMask"
+									}
+								]
+							},
+							"model": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"moderation": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"output_compression": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int32",
+								"minimum": 0
+							},
+							"output_format": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"partial_images": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int32",
+								"minimum": 0
+							},
+							"quality": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"size": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ImageSize"
+									}
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"image_generation"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"display_height": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int64",
+								"minimum": 0
+							},
+							"display_width": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int64",
+								"minimum": 0
+							},
+							"environment": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/ComputerUseEnvironment"
+									}
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"computer_use_preview"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"container",
+							"type"
+						],
+						"properties": {
+							"container": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"code_interpreter"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"shell"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"apply_patch"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"name",
+							"type"
+						],
+						"properties": {
+							"description": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"format": {
+								"oneOf": [
+									{
+										"type": "null"
+									},
+									{
+										"$ref": "#/components/schemas/CustomToolFormat"
+									}
+								]
+							},
+							"name": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"custom"
+								]
+							}
+						}
+					}
+				]
+			},
+			"ResponseError": {
+				"type": "object",
+				"required": [
+					"code",
+					"message"
+				],
+				"properties": {
+					"code": {
+						"type": "string",
+						"description": "The error code for the response."
+					},
+					"message": {
+						"type": "string",
+						"description": "A human-readable description of the error."
+					}
+				}
+			},
+			"IncompleteDetails": {
+				"type": "object",
+				"required": [
+					"reason"
+				],
+				"properties": {
+					"reason": {
+						"type": "string",
+						"description": "The reason why the response is incomplete."
+					}
+				}
+			},
+			"ResponseOutput": {
+				"oneOf": [
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OutputMessage"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"message"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/FunctionToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"function_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/FileSearchToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"file_search_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/WebSearchToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"web_search_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ComputerToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"computer_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/Reasoning"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"reasoning"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ImageGenerationCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"image_generation_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/CodeInterpreterCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"code_interpreter_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/LocalShellCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"local_shell_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/McpToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"mcp_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/McpListTools"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"mcp_list_tools"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/McpApprovalRequest"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"mcp_approval_request"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/CustomToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"custom_tool_call"
+										]
+									}
+								}
+							}
+						]
+					}
+				]
+			},
+			"ReasoningStatus": {
+				"type": "string",
+				"enum": [
+					"completed",
+					"failed",
+					"in_progress",
+					"incomplete"
+				]
+			},
+			"TruncationStrategy": {
+				"type": "string",
+				"enum": [
+					"auto",
+					"disabled"
+				]
+			},
+			"ResponseUsage": {
+				"type": "object",
+				"required": [
+					"total_tokens"
+				],
+				"properties": {
+					"input_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "The number of input tokens.",
+						"minimum": 0
+					},
+					"input_tokens_details": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/InputTokensDetails",
+								"description": "A detailed breakdown of the input tokens."
+							}
+						]
+					},
+					"output_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "The number of output tokens.",
+						"minimum": 0
+					},
+					"output_tokens_details": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/OutputTokensDetails",
+								"description": "A detailed breakdown of the output tokens."
+							}
+						]
+					},
+					"total_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Number of tokens in the entire response.",
+						"minimum": 0
+					}
+				}
+			},
+			"AudioFormat": {
+				"type": "string",
+				"enum": [
+					"wav",
+					"mp3",
+					"flac",
+					"opus",
+					"pcm16"
+				]
+			},
+			"Voice": {
+				"type": "string",
+				"enum": [
+					"alloy",
+					"ash",
+					"ballad",
+					"coral",
+					"echo",
+					"sage",
+					"shimmer",
+					"verse"
+				]
+			},
+			"ChatMessageContent": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ChatMessageContentPart"
+						}
+					},
+					{
+						"type": "null",
+						"default": null
+					}
+				]
+			},
+			"AudioDataIdParameter": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for a previous audio response from the model."
+					}
+				}
+			},
+			"ToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"function"
+				],
+				"properties": {
+					"function": {
+						"$ref": "#/components/schemas/Function",
+						"description": "The function that the model called."
+					},
+					"id": {
+						"type": "string",
+						"description": "The ID of the tool call."
+					},
+					"type": {
+						"type": "string",
+						"description": "The type of the tool. Currently, only function is supported.\nDefaults to \"function\" if not specified (for compatibility with Mistral LangChain provider)."
+					}
+				}
+			},
+			"PredictedOutputContent": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/PredictedOutputArrayPart"
+						}
+					}
+				]
+			},
+			"PredictedOutputType": {
+				"type": "string",
+				"enum": [
+					"content"
+				]
+			},
+			"JsonSchema": {
+				"type": "object",
+				"required": [
+					"name",
+					"schema"
+				],
+				"properties": {
+					"description": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "A description of what the response format is for, used by the model to determine how to respond in the format."
+					},
+					"name": {
+						"type": "string",
+						"description": "The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+					},
+					"schema": {
+						"description": "The schema for the response format, described as a JSON Schema object."
+					},
+					"strict": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Whether to enable strict schema adherence when generating the output."
+					}
+				}
+			},
+			"ChatCompletionToolChoiceFunction": {
+				"type": "object",
+				"required": [
+					"function"
+				],
+				"properties": {
+					"function": {
+						"$ref": "#/components/schemas/ChatCompletionToolChoiceFunctionName",
+						"description": "Name of the function."
+					},
+					"type": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ChatCompletionToolType",
+								"description": "The type of the tool. Currently, only 'function' is supported."
+							}
+						]
+					}
+				}
+			},
+			"ChatCompletionFunction": {
+				"type": "object",
+				"required": [
+					"name",
+					"parameters"
+				],
+				"properties": {
+					"description": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Optional description of the function."
+					},
+					"name": {
+						"type": "string",
+						"description": "Name of the function."
+					},
+					"parameters": {
+						"description": "The parameters the function takes. The model will generate JSON inputs for these parameters."
+					}
+				}
+			},
+			"ChatCompletionToolType": {
+				"type": "string",
+				"enum": [
+					"function"
+				]
+			},
+			"WebSearchContextSize": {
+				"type": "string",
+				"enum": [
+					"low",
+					"medium",
+					"large"
+				]
+			},
+			"ApproximateUserLocation": {
+				"type": "object",
+				"required": [
+					"type",
+					"approximate"
+				],
+				"properties": {
+					"approximate": {
+						"$ref": "#/components/schemas/WebSearchUserLocation",
+						"description": "Approximate location parameters for the search."
+					},
+					"type": {
+						"$ref": "#/components/schemas/UserLocationType"
+					}
+				}
+			},
+			"FinishReason": {
+				"type": "string",
+				"enum": [
+					"stop",
+					"length",
+					"content_filter",
+					"tool_calls",
+					"end_turn",
+					"FINISH_REASON_UNSPECIFIED\t",
+					"MALFORMED_FUNCTION_CALL",
+					"OTHER"
+				]
+			},
+			"LogProps": {
+				"type": "object",
+				"properties": {
+					"content": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/LogPropsContent"
+						},
+						"description": "A list of message content tokens with log probability information."
+					},
+					"refusal": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/LogPropsContent"
+						},
+						"description": "A list of message refusal tokens with log probability information."
+					}
+				}
+			},
+			"CompletionTokensDetails": {
+				"type": "object",
+				"required": [
+					"reasoning_tokens"
+				],
+				"properties": {
+					"accepted_prediction_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "When using Predicted Outputs, the number of tokens in the prediction that appeared in the completion.",
+						"minimum": 0
+					},
+					"audio_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "Audio input tokens generated by the model.",
+						"minimum": 0
+					},
+					"reasoning_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Tokens generated by the model for reasoning.",
+						"minimum": 0
+					},
+					"rejected_prediction_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "When using Predicted Outputs, the number of tokens in the prediction that did not appear in the completion.",
+						"minimum": 0
+					}
+				}
+			},
+			"PromptTokensDetails": {
+				"type": "object",
+				"required": [
+					"cached_tokens"
+				],
+				"properties": {
+					"audio_tokens": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"format": "int32",
+						"description": "Audio input tokens present in the prompt.",
+						"minimum": 0
+					},
+					"cached_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Cached tokens present in the prompt.",
+						"minimum": 0
+					}
+				}
+			},
+			"ResponseInputItem": {
+				"oneOf": [
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/InputMessage"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"message"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"type": "object",
+						"required": [
+							"id",
+							"type"
+						],
+						"properties": {
+							"id": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"item_reference"
+								]
+							}
+						}
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/FileSearchToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"file_search_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ComputerToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"computer_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ComputerToolCallOutput"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"computer_call_output"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/WebSearchToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"web_search_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/FunctionToolCall"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"function_call"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/FunctionToolCallOutput"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"function_call_output"
+										]
+									}
+								}
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/Reasoning"
+							},
+							{
+								"type": "object",
+								"required": [
+									"type"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"reasoning"
+										]
+									}
+								}
+							}
+						]
+					}
+				]
+			},
+			"ReasoningSummary": {
+				"type": "string",
+				"enum": [
+					"auto",
+					"concise",
+					"detailed"
+				]
+			},
+			"ResponseFormat": {
+				"type": "string",
+				"enum": [
+					"url",
+					"b64_json"
+				]
+			},
+			"FileSearchFilters": {
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/ComparisonFilter"
+					},
+					{
+						"$ref": "#/components/schemas/CompoundFilter"
+					}
+				]
+			},
+			"FileSearchRankingOption": {
+				"type": "object",
+				"required": [
+					"ranker",
+					"score_threshold"
+				],
+				"properties": {
+					"ranker": {
+						"type": "string"
+					},
+					"score_threshold": {
+						"type": "number",
+						"format": "double"
+					}
+				}
+			},
+			"WebSearchUserLocation": {
+				"type": "object",
+				"properties": {
+					"city": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"country": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"region": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"timezone": {
+						"type": [
+							"string",
+							"null"
+						]
+					}
+				}
+			},
+			"McpToolApproval": {
+				"type": "string",
+				"enum": [
+					"always",
+					"never"
+				]
+			},
+			"BackgroundStyle": {
+				"type": "string",
+				"enum": [
+					"transparent",
+					"opaque",
+					"auto"
+				]
+			},
+			"InputImageMask": {
+				"type": "object",
+				"properties": {
+					"file_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"image_url": {
+						"type": [
+							"string",
+							"null"
+						]
+					}
+				}
+			},
+			"ImageSize": {
+				"type": "string",
+				"enum": [
+					"256x256",
+					"512x512",
+					"1024x1024",
+					"1024x1536",
+					"1536x1024",
+					"1792x1024",
+					"1024x1792",
+					"auto"
+				]
+			},
+			"ComputerUseEnvironment": {
+				"type": "string",
+				"enum": [
+					"browser",
+					"mac",
+					"ubuntu",
+					"windows"
+				]
+			},
+			"CustomToolFormat": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"definition",
+							"syntax",
+							"type"
+						],
+						"properties": {
+							"definition": {
+								"type": "string"
+							},
+							"syntax": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"grammar"
+								]
+							}
+						}
+					}
+				]
+			},
+			"OutputMessage": {
+				"type": "object",
+				"required": [
+					"id",
+					"role",
+					"status",
+					"content"
+				],
+				"properties": {
+					"content": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OutputContent"
+						}
+					},
+					"id": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/Role"
+					},
+					"status": {
+						"$ref": "#/components/schemas/MessageStatus"
+					}
+				}
+			},
+			"FunctionToolCall": {
+				"type": "object",
+				"required": [
+					"call_id",
+					"name",
+					"arguments"
+				],
+				"properties": {
+					"arguments": {
+						"type": "string"
+					},
+					"call_id": {
+						"type": "string"
+					},
+					"id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"name": {
+						"type": "string"
+					},
+					"status": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/InputItemStatus"
+							}
+						]
+					}
+				}
+			},
+			"FileSearchToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"queries",
+					"status"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"queries": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"results": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/FileSearchResult"
+						}
+					},
+					"status": {
+						"$ref": "#/components/schemas/FileSearchStatus"
+					}
+				}
+			},
+			"WebSearchToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"status"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"ComputerToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"status"
+				],
+				"properties": {
+					"action": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ComputerAction"
+							}
+						]
+					},
+					"call_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"pending_safety_checks": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"type": "string"
+						}
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"Reasoning": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"content": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/ReasoningContent"
+						}
+					},
+					"encrypted_content": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/InputItemStatus"
+							}
+						]
+					},
+					"summary": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/ReasoningSummary"
+						}
+					}
+				}
+			},
+			"ImageGenerationCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"status"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"result": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"CodeInterpreterCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"status"
+				],
+				"properties": {
+					"code": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"container_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"outputs": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/CodeInterpreterOutput"
+						}
+					},
+					"status": {
+						"$ref": "#/components/schemas/CodeInterpreterStatus"
+					}
+				}
+			},
+			"LocalShellCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"status"
+				],
+				"properties": {
+					"action": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/LocalShellAction"
+							}
+						]
+					},
+					"call_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"McpToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"name",
+					"server_label",
+					"arguments",
+					"status"
+				],
+				"properties": {
+					"approval_request_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"arguments": {
+						"type": "string"
+					},
+					"error": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"output": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"server_label": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/McpStatus"
+					}
+				}
+			},
+			"McpListTools": {
+				"type": "object",
+				"required": [
+					"id",
+					"server_label"
+				],
+				"properties": {
+					"error": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"server_label": {
+						"type": "string"
+					},
+					"tools": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/McpTool"
+						}
+					}
+				}
+			},
+			"McpApprovalRequest": {
+				"type": "object",
+				"required": [
+					"id",
+					"name",
+					"server_label",
+					"arguments"
+				],
+				"properties": {
+					"arguments": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"server_label": {
+						"type": "string"
+					}
+				}
+			},
+			"CustomToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"name",
+					"call_id",
+					"input"
+				],
+				"properties": {
+					"call_id": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"input": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"InputTokensDetails": {
+				"type": "object",
+				"required": [
+					"image_tokens",
+					"text_tokens"
+				],
+				"properties": {
+					"image_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The number of image tokens in the input.",
+						"minimum": 0
+					},
+					"text_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The number of text tokens in the input.",
+						"minimum": 0
+					}
+				}
+			},
+			"OutputTokensDetails": {
+				"type": "object",
+				"required": [
+					"reasoning_tokens"
+				],
+				"properties": {
+					"reasoning_tokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The number of reasoning tokens.",
+						"minimum": 0
+					}
+				}
+			},
+			"ChatMessageContentPart": {
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/ChatMessageTextContentPart"
+					},
+					{
+						"$ref": "#/components/schemas/ChatMessageImageContentPart"
+					},
+					{
+						"$ref": "#/components/schemas/ChatMessageAudioContentPart"
+					}
+				]
+			},
+			"Function": {
+				"type": "object",
+				"required": [
+					"name",
+					"arguments"
+				],
+				"properties": {
+					"arguments": {
+						"type": "string",
+						"description": "The arguments to call the function with, as generated by the model in JSON format."
+					},
+					"name": {
+						"type": "string",
+						"description": "The name of the function to call."
+					}
+				}
+			},
+			"PredictedOutputArrayPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"text": {
+						"type": "string",
+						"description": "The text content."
+					},
+					"type": {
+						"type": "string",
+						"description": "The type of the content part."
+					}
+				}
+			},
+			"ChatCompletionToolChoiceFunctionName": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Name of the function."
+					}
+				}
+			},
+			"UserLocationType": {
+				"type": "string",
+				"enum": [
+					"approximate"
+				]
+			},
+			"LogPropsContent": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/LogProbsContentInfo",
+						"description": "Token information"
+					},
+					{
+						"type": "object",
+						"required": [
+							"top_logprobs"
+						],
+						"properties": {
+							"top_logprobs": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/LogProbsContentInfo"
+								},
+								"description": "List of the most likely tokens and their log probability, at this token position."
+							}
+						}
+					}
+				]
+			},
+			"InputMessage": {
+				"type": "object",
+				"required": [
+					"role",
+					"content"
+				],
+				"properties": {
+					"content": {
+						"$ref": "#/components/schemas/ContentInput"
+					},
+					"id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"role": {
+						"$ref": "#/components/schemas/Role"
+					},
+					"status": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/InputItemStatus"
+							}
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ComputerToolCallOutput": {
+				"type": "object",
+				"required": [
+					"id",
+					"call_id",
+					"output",
+					"status"
+				],
+				"properties": {
+					"acknowledged_safety_checks": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/AcknowledgedSafetyCheck"
+						}
+					},
+					"call_id": {
+						"type": "string"
+					},
+					"id": {
+						"type": "string"
+					},
+					"output": {
+						"$ref": "#/components/schemas/ComputerToolCallOutputOutput"
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"FunctionToolCallOutput": {
+				"type": "object",
+				"required": [
+					"call_id",
+					"output",
+					"status"
+				],
+				"properties": {
+					"call_id": {
+						"type": "string"
+					},
+					"id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"output": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/InputItemStatus"
+					}
+				}
+			},
+			"ComparisonFilter": {
+				"type": "object",
+				"required": [
+					"key",
+					"type",
+					"value"
+				],
+				"properties": {
+					"key": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"value": {
+						"$ref": "#/components/schemas/ComparisonFilterValue"
+					}
+				}
+			},
+			"CompoundFilter": {
+				"type": "object",
+				"required": [
+					"filters",
+					"type"
+				],
+				"properties": {
+					"filters": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/FileSearchFilters"
+						}
+					},
+					"type": {
+						"$ref": "#/components/schemas/CompoundFilterType"
+					}
+				}
+			},
+			"OutputContent": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"annotations",
+							"type"
+						],
+						"properties": {
+							"annotations": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/Annotation"
+								}
+							},
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"output_text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"type"
+						],
+						"properties": {
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"reasoning_text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"refusal",
+							"type"
+						],
+						"properties": {
+							"refusal": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"refusal"
+								]
+							}
+						}
+					}
+				]
+			},
+			"Role": {
+				"type": "string",
+				"enum": [
+					"user",
+					"system",
+					"assistant",
+					"developer"
+				]
+			},
+			"MessageStatus": {
+				"type": "string",
+				"enum": [
+					"in_progress",
+					"completed",
+					"incomplete"
+				]
+			},
+			"InputItemStatus": {
+				"type": "string",
+				"enum": [
+					"in_progress",
+					"completed",
+					"incomplete"
+				]
+			},
+			"FileSearchResult": {
+				"type": "object",
+				"required": [
+					"file_id",
+					"filename",
+					"text",
+					"attributes"
+				],
+				"properties": {
+					"attributes": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"propertyNames": {
+							"type": "string"
+						}
+					},
+					"file_id": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					},
+					"score": {
+						"type": [
+							"number",
+							"null"
+						],
+						"format": "float"
+					},
+					"text": {
+						"type": "string"
+					}
+				}
+			},
+			"FileSearchStatus": {
+				"type": "string",
+				"enum": [
+					"in_progress",
+					"searching",
+					"completed",
+					"incomplete",
+					"failed"
+				]
+			},
+			"ComputerAction": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"x",
+							"y",
+							"button",
+							"type"
+						],
+						"properties": {
+							"button": {
+								"$ref": "#/components/schemas/MouseButton"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"click"
+								]
+							},
+							"x": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"y": {
+								"type": "integer",
+								"format": "int32"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"x",
+							"y",
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"double_click"
+								]
+							},
+							"x": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"y": {
+								"type": "integer",
+								"format": "int32"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"path",
+							"type"
+						],
+						"properties": {
+							"path": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/Coordinate"
+								}
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"drag"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"keys",
+							"type"
+						],
+						"properties": {
+							"keys": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"keypress"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"x",
+							"y",
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"move"
+								]
+							},
+							"x": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"y": {
+								"type": "integer",
+								"format": "int32"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"screenshot"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"x",
+							"y",
+							"scroll_x",
+							"scroll_y",
+							"type"
+						],
+						"properties": {
+							"scroll_x": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"scroll_y": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"scroll"
+								]
+							},
+							"x": {
+								"type": "integer",
+								"format": "int32"
+							},
+							"y": {
+								"type": "integer",
+								"format": "int32"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"type"
+						],
+						"properties": {
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"type"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"wait"
+								]
+							}
+						}
+					}
+				]
+			},
+			"ReasoningContent": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"type"
+						],
+						"properties": {
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"reasoning_text"
+								]
+							}
+						}
+					}
+				]
+			},
+			"CodeInterpreterOutput": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"logs",
+							"type"
+						],
+						"properties": {
+							"logs": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"logs"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"url",
+							"type"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"image"
+								]
+							},
+							"url": {
+								"type": "string"
+							}
+						}
+					}
+				]
+			},
+			"CodeInterpreterStatus": {
+				"type": "string",
+				"enum": [
+					"in_progress",
+					"completed",
+					"incomplete",
+					"interpreting",
+					"failed"
+				]
+			},
+			"LocalShellAction": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"command",
+							"type"
+						],
+						"properties": {
+							"command": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"env": {
+								"type": [
+									"object",
+									"null"
+								],
+								"additionalProperties": {
+									"type": "string"
+								},
+								"propertyNames": {
+									"type": "string"
+								}
+							},
+							"timeout_ms": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"format": "int64",
+								"minimum": 0
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"exec"
+								]
+							},
+							"user": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"working_directory": {
+								"type": [
+									"string",
+									"null"
+								]
+							}
+						}
+					}
+				]
+			},
+			"McpStatus": {
+				"type": "string",
+				"enum": [
+					"in_progress",
+					"completed",
+					"incomplete",
+					"calling",
+					"failed"
+				]
+			},
+			"McpTool": {
+				"type": "object",
+				"required": [
+					"name",
+					"input_schema"
+				],
+				"properties": {
+					"annotations": {},
+					"description": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"input_schema": {},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"ChatMessageTextContentPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"text": {
+						"type": "string",
+						"description": "The text content."
+					},
+					"type": {
+						"type": "string",
+						"description": "The type of the content part."
+					}
+				}
+			},
+			"ChatMessageImageContentPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"image_url"
+				],
+				"properties": {
+					"image_url": {
+						"$ref": "#/components/schemas/ImageUrlType",
+						"description": "The text content."
+					},
+					"type": {
+						"type": "string",
+						"description": "The type of the content part."
+					}
+				}
+			},
+			"ChatMessageAudioContentPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"input_audio"
+				],
+				"properties": {
+					"input_audio": {
+						"$ref": "#/components/schemas/InputAudioData",
+						"description": "The input audio data."
+					},
+					"type": {
+						"type": "string",
+						"description": "The type of the content part. Always input_audio."
+					}
+				}
+			},
+			"LogProbsContentInfo": {
+				"type": "object",
+				"required": [
+					"token",
+					"logprob"
+				],
+				"properties": {
+					"bytes": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"type": "integer",
+							"format": "int32",
+							"minimum": 0
+						},
+						"description": "A list of integers representing the UTF-8 bytes representation of the token."
+					},
+					"logprob": {
+						"type": "number",
+						"format": "float",
+						"description": "The log probability of this token, if it is within the top 20 most likely tokens.\nOtherwise, the value -9999.0 is used to signify that the token is very unlikely."
+					},
+					"token": {
+						"type": "string",
+						"description": "The token."
+					}
+				}
+			},
+			"ContentInput": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ContentItem"
+						}
+					}
+				]
+			},
+			"AcknowledgedSafetyCheck": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"code": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"message": {
+						"type": [
+							"string",
+							"null"
+						]
+					}
+				}
+			},
+			"ComputerToolCallOutputOutput": {
+				"type": "object",
+				"properties": {
+					"file_id": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"image_url": {
+						"type": [
+							"string",
+							"null"
+						]
+					}
+				}
+			},
+			"ComparisonFilterValue": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "number",
+						"format": "double"
+					},
+					{
+						"type": "boolean"
+					}
+				]
+			},
+			"CompoundFilterType": {
+				"type": "string",
+				"enum": [
+					"and",
+					"or"
+				]
+			},
+			"Annotation": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"file_id",
+							"index",
+							"type"
+						],
+						"properties": {
+							"file_id": {
+								"type": "string"
+							},
+							"index": {
+								"type": "integer",
+								"format": "int64",
+								"minimum": 0
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"file_citation"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"title",
+							"url",
+							"start_index",
+							"end_index",
+							"type"
+						],
+						"properties": {
+							"end_index": {
+								"type": "integer",
+								"format": "int64",
+								"minimum": 0
+							},
+							"start_index": {
+								"type": "integer",
+								"format": "int64",
+								"minimum": 0
+							},
+							"title": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"url_citation"
+								]
+							},
+							"url": {
+								"type": "string"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"file_id",
+							"index",
+							"type"
+						],
+						"properties": {
+							"file_id": {
+								"type": "string"
+							},
+							"index": {
+								"type": "integer",
+								"format": "int64",
+								"minimum": 0
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"file_path"
+								]
+							}
+						}
+					}
+				]
+			},
+			"MouseButton": {
+				"type": "string",
+				"enum": [
+					"left",
+					"right",
+					"wheel",
+					"back",
+					"forward"
+				]
+			},
+			"Coordinate": {
+				"type": "object",
+				"required": [
+					"x",
+					"y"
+				],
+				"properties": {
+					"x": {
+						"type": "integer",
+						"format": "int32"
+					},
+					"y": {
+						"type": "integer",
+						"format": "int32"
+					}
+				}
+			},
+			"ImageUrlType": {
+				"type": "object",
+				"required": [
+					"url"
+				],
+				"properties": {
+					"detail": {
+						"oneOf": [
+							{
+								"type": "null"
+							},
+							{
+								"$ref": "#/components/schemas/ImageUrlDetail",
+								"description": "Specifies the detail level of the image."
+							}
+						]
+					},
+					"url": {
+						"type": "string",
+						"description": "Either a URL of the image or the base64 encoded image data."
+					}
+				}
+			},
+			"InputAudioData": {
+				"type": "object",
+				"required": [
+					"data",
+					"format"
+				],
+				"properties": {
+					"data": {
+						"type": "string",
+						"description": "Base64 encoded audio data."
+					},
+					"format": {
+						"type": "string",
+						"description": "The format of the encoded audio data. Currently supports \"wav\" and \"mp3\"."
+					}
+				}
+			},
+			"ContentItem": {
+				"oneOf": [
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"type"
+						],
+						"properties": {
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"input_text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"detail": {
+								"$ref": "#/components/schemas/ImageDetailLevel"
+							},
+							"file_id": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"image_url": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"input_image"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"file_data": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"file_id": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"filename": {
+								"type": [
+									"string",
+									"null"
+								]
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"input_file"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"text",
+							"annotations",
+							"type"
+						],
+						"properties": {
+							"annotations": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/Annotation"
+								}
+							},
+							"text": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"output_text"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"refusal",
+							"type"
+						],
+						"properties": {
+							"refusal": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string",
+								"enum": [
+									"Refusal"
+								]
+							}
+						}
+					}
+				]
+			},
+			"ImageUrlDetail": {
+				"type": "string",
+				"enum": [
+					"auto",
+					"high",
+					"low"
+				]
+			},
+			"ImageDetailLevel": {
+				"type": "string",
+				"enum": [
+					"high",
+					"low",
+					"auto"
+				]
+			}
+		}
+	},
+	"servers": [],
+	"securitySchemes": {},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses"
+	}
+}

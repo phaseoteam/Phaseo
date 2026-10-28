@@ -1,0 +1,213 @@
+[
+  {
+    "layer": "e2e",
+    "provider": "google-vertex",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "billing_over",
+    "path": "billing.meter.input_text_tokens",
+    "expected": 79875,
+    "actual": 80393,
+    "delta": {
+      "tokens": 518,
+      "nanos": 155400,
+      "meter": "input_text_tokens"
+    },
+    "note": "expectation billing-google-vertex",
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "billing_under",
+    "path": "billing.meter.input_image_tokens",
+    "expected": 307,
+    "actual": 0,
+    "delta": {
+      "tokens": -307,
+      "nanos": -92100,
+      "meter": "input_image_tokens"
+    },
+    "note": "expectation billing-google-vertex",
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "billing_under",
+    "path": "billing.meter.input_audio_tokens",
+    "expected": 211,
+    "actual": 0,
+    "delta": {
+      "tokens": -211,
+      "nanos": -211000,
+      "meter": "input_audio_tokens"
+    },
+    "note": "expectation billing-google-vertex",
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "billing_under",
+    "path": "billing",
+    "expected": 37373430,
+    "actual": 37225730,
+    "delta": {
+      "nanos": -147700
+    },
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "cohere",
+    "family": "rerank",
+    "model": "cohere/rerank-v3.5",
+    "surface": "rerank",
+    "mode": "buffered",
+    "caseId": "nontext.rerank.cohere",
+    "kind": "wrong_value",
+    "path": "upstream.calls[0].url",
+    "expected": "https://api.cohere.com/v2/rerank",
+    "actual": "https://api.cohere.ai/v2/rerank",
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.cohere.com/reference/rerank",
+      "note": "POST https://api.cohere.com/v2/rerank (api.cohere.ai is the legacy host)."
+    },
+    "note": "expectation rerank-cohere"
+  },
+  {
+    "layer": "e2e",
+    "provider": "cohere",
+    "family": "rerank",
+    "model": "cohere/rerank-v3.5",
+    "surface": "rerank",
+    "mode": "buffered",
+    "caseId": "nontext.rerank.cohere",
+    "kind": "billing_under",
+    "path": "billing.meter.requests",
+    "expected": 2,
+    "actual": 1,
+    "delta": {
+      "tokens": -1,
+      "nanos": -2000000,
+      "meter": "requests"
+    },
+    "note": "expectation rerank-cohere",
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.cohere.com/reference/rerank",
+      "note": "meta.billed_units.search_units is what Cohere bills (one search unit = one query over up to 100 documents); 150 documents = 2 search units. The catalogue meter for a search is requests at $0.002."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "cohere",
+    "family": "rerank",
+    "model": "cohere/rerank-v3.5",
+    "surface": "rerank",
+    "mode": "buffered",
+    "caseId": "nontext.rerank.cohere",
+    "kind": "billing_under",
+    "path": "billing",
+    "expected": 4000000,
+    "actual": 2000000,
+    "delta": {
+      "nanos": -2000000
+    },
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.cohere.com/reference/rerank",
+      "note": "meta.billed_units.search_units is what Cohere bills (one search unit = one query over up to 100 documents); 150 documents = 2 search units. The catalogue meter for a search is requests at $0.002."
+    },
+    "note": "expectation rerank-cohere"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "client.body.polling_url",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.VideoGenerationResponse.polling_url"
+    },
+    "note": "expectation video-openai-submit"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "client.body.lifecycle_status",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.VideoGenerationResponse.lifecycle_status: normalized async lifecycle status for polling, websocket, and webhook consumers"
+    },
+    "note": "expectation video-openai-submit"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "wrong_value",
+    "path": "client.body.model",
+    "expected": "openai/sora-2",
+    "actual": "sora-2-2025-12-08",
+    "source": {
+      "kind": "assumed",
+      "reason": "Every other Phaseo surface echoes the requested Phaseo model id; the provider snapshot slug (sora-2-2025-12-08) is not a Phaseo model id."
+    },
+    "note": "expectation video-openai-submit"
+  }
+]

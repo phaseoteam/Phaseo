@@ -12,14 +12,14 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BASE_URL } from "./config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
 import { buildJavaSdkQuickstart } from "./javaSdkQuickstart";
-import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
+import { buildEndpointRoutes, getSupportedEndpointOptions } from "./endpointRoutes";
 import {
 	AI_SDK_ENDPOINTS,
 	GENERIC_PHASEO_SDK_ENDPOINTS,
@@ -75,8 +75,6 @@ interface QuickstartProps {
 
 const normalizeEndpointValue = (value: string | null | undefined) =>
 	value ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".") : "";
-
-const endpointValueFromPath = (path: string) => normalizeEndpointValue(path);
 
 type LanguageFamilyId =
 	| "curl"
@@ -199,6 +197,10 @@ const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
 const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
 const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
+	extractions: {
+		label: "Extractions API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/extractions`,
+	},
 	models: {
 		label: "Model discovery",
 		href: `${DOCS_BASE_URL}/sdk-reference/sdk/get-models`,
@@ -343,38 +345,18 @@ export default function Quickstart({
 		python: "python-sdk",
 		curl: "curl",
 	}[preferences.codeLanguage];
-	const isModelMetadataQuickstart = mode === "model-metadata";
-	const supportedEndpointValues = useMemo(() => {
-		const normalized = new Set(
-			supportedEndpoints.map((value) => normalizeEndpointValue(value)),
-		);
-		const values = new Set<string>();
-		for (const value of normalized) {
-			const mapped = capabilityToEndpoints[value];
-			if (mapped && mapped.length > 0) {
-				mapped.forEach((path) => values.add(endpointValueFromPath(path)));
-				if (ENDPOINT_OPTIONS.some((option) => option.value === value)) {
-					values.add(value);
-				}
-				continue;
-			}
-			if (value) values.add(value);
-		}
-		if (endpoint) {
-			values.add(normalizeEndpointValue(endpoint));
-		}
-		return values;
-	}, [supportedEndpoints, endpoint]);
+	const supportedEndpointOptions = useMemo(
+		() => getSupportedEndpointOptions(supportedEndpoints, endpoint),
+		[supportedEndpoints, endpoint],
+	);
+	const isModelMetadataQuickstart = mode === "model-metadata" || supportedEndpointOptions.length === 0;
 
 	const availableEndpoints = useMemo(() => {
 		if (isModelMetadataQuickstart) {
 			return [{ value: "models", label: "Models" }];
 		}
-		const filtered = ENDPOINT_OPTIONS.filter((option) =>
-			supportedEndpointValues.has(option.value),
-		);
-		return filtered.length > 0 ? filtered : ENDPOINT_OPTIONS;
-	}, [isModelMetadataQuickstart, supportedEndpointValues]);
+		return supportedEndpointOptions;
+	}, [isModelMetadataQuickstart, supportedEndpointOptions]);
 
 	const defaultEndpoint = useMemo(() => {
 		if (isModelMetadataQuickstart) return "models";
@@ -1796,8 +1778,8 @@ console.log(response);`
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("PHASEO_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.environ.get("PHASEO_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 payload = ${payloadJsonPython}
@@ -1811,8 +1793,9 @@ print(response)`
 			? `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({

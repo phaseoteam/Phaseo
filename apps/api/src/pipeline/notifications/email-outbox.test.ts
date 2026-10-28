@@ -33,11 +33,11 @@ function buildSupabaseMock() {
 					is: () => ({
 						lt: () => ({
 							not: (column: string, operator: string, value: string) => {
-								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled")']);
+								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing","spend_alert","spend_blocked","spend_report")']);
 								return {
 									order: () => ({
 										limit: async (limit: number) => ({
-											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request", "rate_limit_throttled"].includes(String(row.kind))).slice(0, limit),
+											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"].includes(String(row.kind))).slice(0, limit),
 											error: null,
 										}),
 									}),
@@ -198,6 +198,15 @@ describe("email outbox", () => {
 		expect(state.sendEmail).not.toHaveBeenCalled();
 	});
 
+	it("leaves spend rule events for routed notification delivery", async () => {
+		for (const kind of ["spend_alert", "spend_blocked", "spend_report"]) {
+			state.rows.push({ id: `email_${kind}`, created_at: "2026-10-21T09:00:00Z", kind, template: kind, to_email: "owner@example.com", subject: "Spend", workspace_id: "ws_1", user_id: null, payload: {}, attempts: 0, last_error: null, sent_at: null });
+		}
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 0, sent: 0, failed: 0 });
+		expect(state.sendEmail).not.toHaveBeenCalled();
+	});
+
 	it("emails the owner copy of a model deprecation notice", async () => {
 		state.rows.push({
 			id: "email_model_deprecation_owner",
@@ -246,6 +255,35 @@ describe("email outbox", () => {
 			html: expect.stringContaining("Card declined"),
 			idempotencyKey: "auto_top_up_failed:pi_123",
 	}));
+	});
+
+	it("renders Slack agent refusals from the payload with their deduplication key", async () => {
+		state.rows.push({
+			id: "email_slack_agent_refused",
+			created_at: "2026-10-22T09:30:00Z",
+			kind: "slack_agent_refused",
+			template: "slack_agent_refused",
+			to_email: "admin@example.com",
+			subject: null,
+			workspace_id: "ws_1",
+			user_id: "user_2",
+			dedupe_key: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+			payload: { workspace_name: "Research", team_name: "Research Slack", reason: "max_people", people: 40, plan_people: 50, max_people: 40, monthly_cap_usd: 25 },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		expect(await drainEmailOutbox(10)).toEqual({ processed: 1, sent: 1, failed: 0 });
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "admin@example.com",
+			subject: "Slack agent: people limit reached",
+			html: expect.stringContaining("limit of 40 people a month"),
+			text: expect.stringContaining("Open Slack settings: https://phaseo.app/settings/slack"),
+			idempotencyKey: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+		}));
 	});
 
 	it("sends feedback requests from Daniel with a reply-to and one-click unsubscribe", async () => {

@@ -121,7 +121,10 @@ type FailureSampleEntry = {
 };
 
 type ParsedGatewayError = {
-	error?: string;
+	// The gateway now returns an object ({ code, message, type }) and repeats the
+	// code as top-level `code`; older payloads hold the code string here.
+	error?: string | { code?: unknown; message?: unknown; type?: unknown };
+	code?: string;
 	description?: string;
 	message?: string;
 	reason?: string;
@@ -273,6 +276,18 @@ export type FormattedRoomError = {
 		};
 	};
 };
+
+function gatewayErrorCode(payload: ParsedGatewayError): string {
+	if (typeof payload.error === "string") return payload.error;
+	if (typeof payload.code === "string") return payload.code;
+	const code = payload.error && typeof payload.error === "object" ? payload.error.code : undefined;
+	return typeof code === "string" ? code : "";
+}
+
+function gatewayErrorObjectMessage(payload: ParsedGatewayError): string | undefined {
+	const message = payload.error && typeof payload.error === "object" ? payload.error.message : undefined;
+	return typeof message === "string" && message.trim() ? message.trim() : undefined;
+}
 
 function parseJsonLike(raw: string): ParsedGatewayError | null {
 	const trimmed = raw.trim();
@@ -460,7 +475,7 @@ function hintForGatewayError(
 			? roomErrorText(translate, "genericProviderFailureHint", "The provider could not complete the request. Check its configuration or try another provider.")
 			: structuredFailureHint;
 	}
-	const code = String(payload.error ?? "").trim().toLowerCase();
+	const code = gatewayErrorCode(payload).trim().toLowerCase();
 	if (code === "key_limit_exceeded") {
 		const diagnostics = normalizeKeyLimitDiagnostics(payload as ParsedGatewayError & KeyLimitDiagnostics);
 		if (diagnostics?.metric === "soft_blocked") {
@@ -923,10 +938,11 @@ export function formatRoomError(
 			message: fallbackMessage,
 		};
 	}
-	const title = titleFromCode(String(parsed.error ?? ""), translate);
+	const title = titleFromCode(gatewayErrorCode(parsed), translate);
 	const message =
 		(parsed.description && parsed.description.trim()) ||
 		(parsed.message && parsed.message.trim()) ||
+		gatewayErrorObjectMessage(parsed) ||
 		fallbackMessage;
 	return {
 		title,

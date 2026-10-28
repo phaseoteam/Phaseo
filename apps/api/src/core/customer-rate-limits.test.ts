@@ -72,8 +72,13 @@ describe("customer quota integration", () => {
 		mocks.bindings.CUSTOMER_RATE_LIMIT_LADDER = "{}";
 		minute();
 		await settle();
-		expect(mocks.readLimits).toHaveBeenCalledWith("workspace", "{}");
+		expect(mocks.readLimits).toHaveBeenCalledWith("workspace", "{}", false);
 		expect(mocks.admit.mock.calls[1][3]).toEqual({ requestsPerMinute: 60, freeRequestsPerDay: 1500 });
+		// Self-serve raises apply only with their own switch on.
+		mocks.bindings.CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED = "true";
+		minute();
+		await settle();
+		expect(mocks.readLimits).toHaveBeenLastCalledWith("workspace", "{}", true);
 	});
 
 	it("remembers a reported denial until the window frees up, then counts again", async () => {
@@ -84,7 +89,7 @@ describe("customer quota integration", () => {
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("42");
 		expect(await response?.json()).toMatchObject({
-			error: "key_limit_exceeded",
+			code: "key_limit_exceeded",
 			reason: "customer_requests_per_minute",
 			request_id: "public-request",
 			description: "This user and workspace have reached their limit of 25 requests per minute. Retry after 42 seconds.",
@@ -195,7 +200,7 @@ describe("customer quota integration", () => {
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("3600");
 		expect(await response?.json()).toMatchObject({
-			error: "phaseo_free_model_limit_exceeded",
+			code: "phaseo_free_model_limit_exceeded",
 			error_origin: "gateway",
 			reason: "free_requests_per_day",
 			description: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,

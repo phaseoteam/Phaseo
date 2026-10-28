@@ -13,6 +13,7 @@ icon: "square-terminal"
 | Phaseo CLI | टर्मिनल वर्कफ़्लो, CI, प्रशासन और ऑटोमेशन | पढ़ने और लिखने की अनुमति, जो आपके स्कोप और वर्कस्पेस भूमिका से सीमित है |
 | Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP क्लाइंट में Phaseo का लाइव डेटा | प्रमाणीकृत और केवल पढ़ने के लिए |
 | Docs MCP | कोडिंग के समय Phaseo के वर्तमान दस्तावेज़ देखना | केवल दस्तावेज़, केवल पढ़ने के लिए |
+| Phaseo प्लगइन | Claude Code या Codex में Phaseo MCP, Docs MCP और Phaseo स्किल्स एक साथ इंस्टॉल करना | हर MCP सर्वर के समान |
 
 ## Phaseo CLI
 
@@ -95,8 +96,32 @@ codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 	दस्तावेज़ सर्वर को Codex, Claude Code, Cursor, OpenCode या VS Code से जोड़ें।
 </Card>
 
+## Phaseo प्लगइन
+
+Phaseo प्लगइन में Phaseo MCP, Docs MCP और इंटीग्रेशन, माइग्रेशन, मॉडल चयन, उपयोग की निगरानी, SDK और CLI के लिए Phaseo एजेंट स्किल्स एक साथ मिलती हैं। हर हिस्से को अलग से जोड़ने के बजाय इसे एक बार इंस्टॉल करें।
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+अपना Phaseo खाता जोड़ने के लिए `/mcp` चलाएँ और `plugin:phaseo:phaseo` में साइन इन करें। अनुरोध से मेल खाने पर स्किल्स अपने आप लोड होती हैं, या आप किसी स्किल को सीधे चला सकते हैं, जैसे `/phaseo:phaseo-gateway`।
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+आखिरी कमांड Phaseo MCP के लिए Phaseo OAuth खोलती है। अनुरोध से मेल खाने पर स्किल्स अपने आप लोड होती हैं।
+
 ## सही इंटरफ़ेस चुनें
 
 - कुंजियाँ बनाने, सेटिंग्स बदलने, वर्कस्पेस सँभालने या प्रशासनिक वर्कफ़्लो ऑटोमेट करने के लिए **CLI** इस्तेमाल करें।
 - AI क्लाइंट को Phaseo के लाइव डेटा तक सुरक्षित पहुँच देने के लिए **Phaseo MCP** इस्तेमाल करें।
 - खाते तक पहुँच दिए बिना कोडिंग असिस्टेंट को Phaseo के मौजूदा दस्तावेज़ देने के लिए **Docs MCP** इस्तेमाल करें।
+- Claude Code या Codex में दोनों MCP सर्वर और Phaseo स्किल्स एक साथ सेट अप करने के लिए **Phaseo प्लगइन** का उपयोग करें।

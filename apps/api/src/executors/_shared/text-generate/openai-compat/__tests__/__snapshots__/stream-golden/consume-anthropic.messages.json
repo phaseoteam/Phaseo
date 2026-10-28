@@ -13,7 +13,9 @@
             "content": [
               {
                 "type": "reasoning_text",
-                "text": "Let me think ✓"
+                "text": "Let me think ✓",
+                "thoughtSignature": "sig==",
+                "reasoningFormat": "anthropic-claude-v1"
               },
               {
                 "type": "text",
@@ -32,15 +34,24 @@
         }
       ],
       "usage": {
-        "inputTokens": 0,
+        "inputTokens": 25,
         "outputTokens": 42,
-        "totalTokens": 42
+        "totalTokens": 67,
+        "cachedInputTokens": 5,
+        "cachedReadTokensAreSubsetOfInput": false,
+        "cachedWriteTokensAreSubsetOfInput": false,
+        "_ext": {
+          "cachedWriteTokens": 2
+        }
       }
     },
     "rawResponse": {
       "type": "message_stop"
     },
     "usageRaw": {
+      "input_tokens": 25,
+      "cache_read_input_tokens": 5,
+      "cache_creation_input_tokens": 2,
       "output_tokens": 42
     },
     "frameCount": 16,
@@ -217,7 +228,7 @@
     },
     {
       "type": "stop",
-      "finishReason": "end_turn",
+      "finishReason": null,
       "payload": {
         "type": "message_stop"
       }

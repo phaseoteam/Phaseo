@@ -3,6 +3,12 @@ export interface ChatCompletionsResponse {
     finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
     index?: number;
     message?: {
+      audio?: {
+        data?: string;
+        expires_at?: number;
+        id?: string;
+        transcript?: string;
+      };
       audios?: {
         audio_url: {
           url: string;
@@ -13,6 +19,7 @@ export interface ChatCompletionsResponse {
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -23,6 +30,7 @@ export interface ChatCompletionsResponse {
                 };
                 prompt_cache_breakpoint?: {
                   mode?: "explicit";
+                  ttl?: string;
                   [key: string]: unknown;
                 };
                 text: string;
@@ -47,6 +55,20 @@ export interface ChatCompletionsResponse {
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -63,6 +85,7 @@ export interface ChatCompletionsResponse {
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
       reasoning_content?: string;
       reasoning_details?: {
         data?: string;
@@ -96,15 +119,27 @@ export interface ChatCompletionsResponse {
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
       cached_tokens?: number;
     };
     output_tokens?: number;
     prompt_tokens?: number;
     prompt_tokens_details?: {
       cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
       cached_tokens?: number;
     };
     server_tool_use?: {

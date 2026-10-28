@@ -1,0 +1,5807 @@
+[
+ {
+  "layer": "pricing",
+  "provider": "akashml",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "akashml",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "akashml",
+  "family": "text",
+  "model": "openai/gpt-oss-20b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "akashml",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "deepseek/deepseek-v3.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "deepseek/deepseek-v4-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "deepseek/deepseek-v4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "moonshotai/kimi-k2.7-code",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qvq-max",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-flash-character",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-max",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-mt-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-mt-lite",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-mt-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-mt-turbo",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-01-25",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-04-28",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-07-14",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-07-28",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-09-11",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-2025-12-01",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-plus-character",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-turbo-2024-11-01",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-turbo-2025-04-28",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-vl-max-2025-04-08",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-vl-max-2025-08-13",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-vl-plus-2025-01-25",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-vl-plus-2025-05-07",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen-vl-plus-2025-08-15",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-14b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-14b-1m",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-32b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-72b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-7b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-7b-1m",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-vl-32b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-0.6b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-1.7b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-14b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-instruct-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-thinking-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-30b-a3b-instruct-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-30b-a3b-thinking-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-32b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-4b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-8b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-coder-480b-a35b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-coder-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-coder-next",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-coder-plus-2025-07-22",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-coder-plus-2025-09-23",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-max-2025-09-23",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-max-2026-01-23",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-max-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b-a3b-thinking",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-235b-a22b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-235b-a22b-thinking",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-flash-2025-10-15",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-flash-2026-01-22",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-plus-2025-09-23",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3-vl-plus-2025-12-19",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-122b-a10b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19",
+  "surface": "text.generate",
+  "caseId": "text.generate:fallback.cache-read.no-rule",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 8960000
+  },
+  "actual": "pricing_rule_missing:cached_read_text_tokens",
+  "delta": {
+   "nanos": -8960000,
+   "meter": "cached_read_text_tokens"
+  },
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "pricing threw; the request would fail after the provider was paid; dialect openai-chat; cache read reported (provider documents it, card has no cache-read price); IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; needs a live check: the provider documents cache-read usage fields provider-wide; this model may never return them"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-plus-2026-04-20",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.6-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.6-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.6-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.7-max-2026-05-17",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.7-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwen3.7-plus-2026-05-26",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "qwen/qwq-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "z-ai/glm-5.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "alibaba-cloud",
+  "family": "text",
+  "model": "z-ai/glm-5.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "alibaba-cloud",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-3-haiku",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "Claude reports cache reads; without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-3-haiku",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour 2x. Partner platforms (Bedrock, Google Cloud) set their own prices."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-opus-4",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "Claude reports cache reads; without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-opus-4",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour 2x. Partner platforms (Bedrock, Google Cloud) set their own prices."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "catalogue:claude-cache-write-multiplier.5m.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_write_text_tokens_5m.price_per_unit",
+  "expected": "1.25x input (6) = 7.5",
+  "actual": {
+   "write": "12",
+   "ratio": 2,
+   "rule": "#8",
+   "input": "#5"
+  },
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "partner platform: Anthropic says Bedrock and Google Cloud set their own prices; check the platform's page"
+ },
+ {
+  "layer": "pricing",
+  "kind": "wrong_value",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "catalogue:condition-gap.output_text_tokens",
+  "path": "catalogue.output_text_tokens.match",
+  "expected": "a rule for every condition branch the card prices other meters in",
+  "actual": {
+   "case": "documented.long-context@200001",
+   "context": {
+    "cache_ttl": "5m",
+    "input_tokens": 200001
+   }
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "When other meters of the card have a rule for this request, a meter with none is a gap in the card; the engine throws pricing_rule_missing for it."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "text.generate:documented.long-context@200001",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 288006600
+  },
+  "actual": "pricing_rule_missing:output_text_tokens",
+  "delta": {
+   "nanos": -288006600,
+   "meter": "output_text_tokens"
+  },
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing",
+   "note": "Long-context thresholds count cache reads and writes."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid; dialect anthropic-messages; cache read reported; IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; prompt length 200001 counts cache reads and writes (Anthropic: \"A request's prompt length counts all of its input tokens, including cache reads and cache writes\")."
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "text.generate:rule.standard.cached_read_text_tokens.when(input_tokensgt200000)",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 1175344200
+  },
+  "actual": "pricing_rule_missing:output_text_tokens",
+  "delta": {
+   "nanos": -1175344200,
+   "meter": "output_text_tokens"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "The route's catalogue price card is the billing contract: each usage meter is billed once, at the rule matching the requested plan and conditions (apps/docs/v1/exploring/pricing-performance.mdx describes the meters; no page states the selection rules)."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "text.generate:rule.standard.cached_write_text_tokens_5m.when(input_tokensgt200000)",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 1214076000
+  },
+  "actual": "pricing_rule_missing:output_text_tokens",
+  "delta": {
+   "nanos": -1214076000,
+   "meter": "output_text_tokens"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "The route's catalogue price card is the billing contract: each usage meter is billed once, at the rule matching the requested plan and conditions (apps/docs/v1/exploring/pricing-performance.mdx describes the meters; no page states the selection rules)."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "text.generate:rule.standard.cached_write_text_tokens.when(input_tokensgt200000)",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 1201486500
+  },
+  "actual": "pricing_rule_missing:output_text_tokens",
+  "delta": {
+   "nanos": -1201486500,
+   "meter": "output_text_tokens"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "The route's catalogue price card is the billing contract: each usage meter is billed once, at the rule matching the requested plan and conditions (apps/docs/v1/exploring/pricing-performance.mdx describes the meters; no page states the selection rules)."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid"
+ },
+ {
+  "layer": "pricing",
+  "provider": "amazon-bedrock",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-4.5",
+  "surface": "text.generate",
+  "caseId": "text.generate:rule.standard.input_text_tokens.when(input_tokensgt200000)",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 1200006000
+  },
+  "actual": "pricing_rule_missing:output_text_tokens",
+  "delta": {
+   "nanos": -1200006000,
+   "meter": "output_text_tokens"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "The route's catalogue price card is the billing contract: each usage meter is billed once, at the rule matching the requested plan and conditions (apps/docs/v1/exploring/pricing-performance.mdx describes the meters; no page states the selection rules)."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid"
+ },
+ {
+  "layer": "pricing",
+  "provider": "atlascloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.55",
+   "input": "0.55",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "azure",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "azure",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "baidu/ernie-4.5-turbo",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "baidu/ernie-5.0",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "baidu/ernie-5.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "baidu/ernie-x1.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "deepseek/deepseek-ocr",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "qwen/qwen3.5-122b-a10b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "qwen/qwen3.5-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "qwen/qwen3.5-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baidu",
+  "family": "text",
+  "model": "z-ai/glm-5.3",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "baidu",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "baseten",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.1",
+   "input": "0.1",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "byteplus",
+  "family": "text",
+  "model": "bytedance/seed-translation",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "byteplus",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "cerebras",
+  "family": "text",
+  "model": "google/gemma-4-31b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.99",
+   "input": "0.99",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "cerebras",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.35",
+   "input": "0.35",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepinfra",
+  "family": "text",
+  "model": "anthropic/claude-fable-5",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "Claude reports cache reads; without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepinfra",
+  "family": "text",
+  "model": "anthropic/claude-opus-5",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "Claude reports cache reads; without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepinfra",
+  "family": "text",
+  "model": "anthropic/claude-sonnet-5",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "docs",
+   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
+   "note": "5-minute cache write 1.25x base input; 1-hour cache write 2x; cache read 0.1x (0.05x or 0.025x on some models). Partner platforms (Bedrock, Google Cloud) set their own prices."
+  },
+  "note": "Claude reports cache reads; without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "deepinfra",
+  "family": "audio.generate",
+  "model": "hexgrad/kokoro-82m",
+  "surface": "audio.generate",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepinfra",
+  "family": "text",
+  "model": "qwen/qwen3.5-9b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-free.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "> 0 and < input price",
+  "actual": {
+   "cacheRead": "0",
+   "input": "0.1",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepinfra",
+  "family": "text",
+  "model": "qwen/qwen3.6-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-free.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "> 0 and < input price",
+  "actual": {
+   "cacheRead": "0",
+   "input": "0.32",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "deepseek",
+  "family": "text",
+  "model": "deepseek/deepseek-v4.1-flash-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    "2026-09-08T00:00:00Z",
+    "2026-09-10T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    "2026-09-08T00:00:00Z",
+    "2026-09-10T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    "2026-09-08T00:00:00Z",
+    "2026-09-10T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "elevenlabs",
+  "family": "audio.speech",
+  "model": "eleven-labs/eleven-v4",
+  "surface": "audio.speech",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_characters",
+    "standard",
+    "2026-09-28T00:00:00Z",
+    "2026-10-12T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "elevenlabs",
+  "family": "audio.speech",
+  "model": "eleven-labs/eleven-v4-turbo",
+  "surface": "audio.speech",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_characters",
+    "standard",
+    "2026-09-28T00:00:00Z",
+    "2026-10-12T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "fireworks",
+  "family": "rerank",
+  "model": "qwen/qwen3-reranker",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "fireworks",
+  "family": "text",
+  "model": "z-ai/glm-5.3",
+  "surface": "text.generate",
+  "caseId": "text.generate:documented",
+  "kind": "wrong_value",
+  "path": "billing.error",
+  "expected": {
+   "nanos": 7932960
+  },
+  "actual": "pricing_plan_missing:standard",
+  "delta": {
+   "nanos": -7932960,
+   "meter": "standard"
+  },
+  "source": {
+   "kind": "docs",
+   "url": "https://developers.openai.com/api/docs/guides/reasoning",
+   "note": "Reasoning tokens \"are billed as output tokens\"; Gemini's pricing page likewise lists \"Output price (including thinking tokens)\"."
+  },
+  "note": "pricing threw; the request would fail after the provider was paid; dialect openai-chat; cache read reported; IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; output_reasoning_tokens: reasoning at the output price"
+ },
+ {
+  "layer": "pricing",
+  "provider": "friendli",
+  "family": "text",
+  "model": "google/gemma-4-31b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "friendli",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "text",
+  "model": "minimax/minimax-m2.7:free",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "text",
+  "model": "minimax/minimax-m3:free",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "music.generate",
+  "model": "minimax/music-3.0:free",
+  "surface": "music.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "requests",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "audio.speech",
+  "model": "minimax/speech-2.8:free",
+  "surface": "audio.speech",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_characters",
+    "free",
+    "2026-08-24T00:00:00Z",
+    "2026-09-07T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "image.edit",
+  "model": "tencent/hy-image-v3.5-preview:free",
+  "surface": "image.edit",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "requests",
+    "free",
+    "2026-09-25T00:00:00Z",
+    "2026-10-02T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "gmicloud",
+  "family": "image.generate",
+  "model": "tencent/hy-image-v3.5-preview:free",
+  "surface": "image.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "requests",
+    "free",
+    "2026-09-25T00:00:00Z",
+    "2026-10-02T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-ai-studio",
+  "family": "text",
+  "model": "google/gemini-2.5-flash-image",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-ai-studio",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-ai-studio",
+  "family": "text",
+  "model": "google/gemini-3-pro-image",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-ai-studio",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-ai-studio",
+  "family": "text",
+  "model": "google/gemini-3.1-flash-image",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-ai-studio",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-ai-studio",
+  "family": "text",
+  "model": "google/gemini-3.1-flash-lite-image",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-ai-studio",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-ai-studio",
+  "family": "text",
+  "model": "google/gemini-robotics-er-1.6-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-ai-studio",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "anthropic/claude-3-haiku",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    "2024-03-13T00:00:00Z",
+    "2026-04-20T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    "2024-03-13T00:00:00Z",
+    "2026-04-20T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    "2024-03-13T00:00:00Z",
+    "2026-04-20T00:00:00Z"
+   ],
+   [
+    "cached_write_text_tokens_5m",
+    "standard",
+    "2024-03-13T00:00:00Z",
+    "2026-04-20T00:00:00Z"
+   ],
+   [
+    "cached_write_text_tokens_1h",
+    "standard",
+    "2024-03-13T00:00:00Z",
+    "2026-04-20T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "google/gemini-3.1-flash-lite-image",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b-a3b-instruct",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b-a3b-thinking",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "google-vertex-eu",
+  "family": "text",
+  "model": "google/gemini-3.1-flash-lite",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "google-vertex",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "groq",
+  "family": "text",
+  "model": "qwen/qwen3.8-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "groq",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "ltx",
+  "family": "video.generate",
+  "model": "ltx-2-fast",
+  "surface": "video.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ],
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ],
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "ltx",
+  "family": "video.generate",
+  "model": "ltx-2-pro",
+  "surface": "video.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ],
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ],
+   [
+    "output_video_seconds",
+    "standard",
+    "2025-10-29T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ],
+   [
+    "input_audio_seconds",
+    "standard",
+    "2025-12-09T00:00:00Z",
+    "2026-08-15T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/devstral-small-2",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "batch",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "batch",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "priority",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "priority",
+    "2026-03-26T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/devstral-small-2:free",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "free",
+    "2025-12-09T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "free",
+    "2025-12-09T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "free",
+    "2025-12-09T00:00:00Z",
+    "2026-03-31T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/leanstral:free",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "free",
+    "2026-03-16T00:00:00Z",
+    "2026-05-22T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "free",
+    "2026-03-16T00:00:00Z",
+    "2026-05-22T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "free",
+    "2026-03-16T00:00:00Z",
+    "2026-05-22T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/magistral-small-1.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/mistral-small-3.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "mistral",
+  "family": "text",
+  "model": "mistral/mistral-small-creative",
+  "surface": "text.generate",
+  "caseId": "catalogue:no-current-rules",
+  "kind": "wrong_value",
+  "path": "catalogue.effective_to",
+  "expected": "at least one rule in effect for an active route",
+  "actual": [
+   [
+    "input_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "cached_read_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "standard",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "batch",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "input_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ],
+   [
+    "output_text_tokens",
+    "priority",
+    null,
+    "2026-04-30T00:00:00Z"
+   ]
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)."
+  },
+  "note": "every rule has expired"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-128k",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-128k-vision-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-32k",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-32k-vision-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-8k",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "moonshotai",
+  "family": "text",
+  "model": "moonshotai/moonshot-v1-8k-vision-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "moonshotai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "deepseek/deepseek-v4-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "deepseek/deepseek-v4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "google/gemma-3-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "meta/llama-3.3-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "minimax/minimax-m2.5",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "minimax/minimax-m3",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "moonshotai/kimi-k2.6",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "moonshotai/kimi-k2.7-code",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "moonshotai/kimi-k3",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nousresearch/hermes-4-405b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nousresearch/hermes-4-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/cosmos3-super-reasoner",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/nemotron-3-nano-omni",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/nemotron-3.5-lightning",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "nvidia/nvidia-nemotron-3-nano-30b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen2.5-vl-72b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen3-30b-a3b-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen3-32b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b-a3b-thinking",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "z-ai/glm-5.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "z-ai/glm-5.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "nebius-token-factory",
+  "family": "text",
+  "model": "z-ai/glm-5.3-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "nebius-token-factory",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "kind": "wrong_value",
+  "provider": "novita",
+  "family": "text",
+  "model": "qwen/qwen3-max",
+  "surface": "text.generate",
+  "caseId": "catalogue:overlapping-conditions.input_text_tokens",
+  "path": "catalogue.input_text_tokens.match",
+  "expected": "condition branches that do not overlap",
+  "actual": {
+   "input_tokens": 131072,
+   "rules": [
+    "#1",
+    "#2"
+   ],
+   "prices": [
+    "1.4",
+    "2.11"
+   ],
+   "conditions": [
+    [
+     {
+      "path": "input_tokens",
+      "op": "gte",
+      "or_group": 1,
+      "and_index": 1,
+      "value": 32768
+     },
+     {
+      "path": "input_tokens",
+      "op": "lte",
+      "or_group": 1,
+      "and_index": 2,
+      "value": 131072
+     }
+    ],
+    [
+     {
+      "path": "input_tokens",
+      "op": "gte",
+      "or_group": 1,
+      "and_index": 1,
+      "value": 131072
+     }
+    ]
+   ]
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "At the boundary both tiers match, so the price depends on rule specificity rather than the provider's published threshold."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "wrong_value",
+  "provider": "novita",
+  "family": "text",
+  "model": "qwen/qwen3-max",
+  "surface": "text.generate",
+  "caseId": "catalogue:overlapping-conditions.output_text_tokens",
+  "path": "catalogue.output_text_tokens.match",
+  "expected": "condition branches that do not overlap",
+  "actual": {
+   "input_tokens": 131072,
+   "rules": [
+    "#4",
+    "#5"
+   ],
+   "prices": [
+    "5.64",
+    "8.45"
+   ],
+   "conditions": [
+    [
+     {
+      "path": "input_tokens",
+      "op": "gte",
+      "or_group": 1,
+      "and_index": 1,
+      "value": 32768
+     },
+     {
+      "path": "input_tokens",
+      "op": "lte",
+      "or_group": 1,
+      "and_index": 2,
+      "value": 131072
+     }
+    ],
+    [
+     {
+      "path": "input_tokens",
+      "op": "gte",
+      "or_group": 1,
+      "and_index": 1,
+      "value": 131072
+     }
+    ]
+   ]
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "At the boundary both tiers match, so the price depends on rule specificity rather than the provider's published threshold."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/babbage-002",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.4",
+   "input": "0.4",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/chatgpt-4o",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/computer-use-preview",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/davinci-002",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "2",
+   "input": "2",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-3.5-turbo-16k",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-3.5-turbo-2023-03-21",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-4-2023-03-14",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-4-2023-06-13",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "30",
+   "input": "30",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-4o-2024-05-13",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "5",
+   "input": "5",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5-nano",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.flex",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.025",
+   "input": "0.025",
+   "unit_size": 1000000,
+   "rule": "#4"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "15",
+   "input": "15",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5.2-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "21",
+   "input": "21",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5.4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "30",
+   "input": "30",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5.4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "60",
+   "input": "60",
+   "unit_size": 1000000,
+   "rule": "#4"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5.5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "30",
+   "input": "30",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/gpt-5.5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "60",
+   "input": "60",
+   "unit_size": 1000000,
+   "rule": "#4"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-6-astra",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-6-astra-pro",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-image-1",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "image.generate",
+  "model": "openai/gpt-image-1",
+  "surface": "image.generate",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-image-1-mini",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-image-1.5",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/gpt-image-2",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/o1-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "150",
+   "input": "150",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/o3-deep-research",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/o3-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "20",
+   "input": "20",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai",
+  "family": "text",
+  "model": "openai/o4-mini-deep-research",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "openai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/omni-moderation",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/sora-2",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/sora-2-pro",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/text-embedding-3-large",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/text-embedding-3-small",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "openai",
+  "family": "batch",
+  "model": "openai/text-embedding-ada-002",
+  "surface": "batch",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai-eu",
+  "family": "text",
+  "model": "openai/gpt-5.4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "33",
+   "input": "33",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai-eu",
+  "family": "text",
+  "model": "openai/gpt-5.4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "66",
+   "input": "66",
+   "unit_size": 1000000,
+   "rule": "#4"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai-eu",
+  "family": "text",
+  "model": "openai/gpt-5.5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "33",
+   "input": "33",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "openai-eu",
+  "family": "text",
+  "model": "openai/gpt-5.5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard+conditions",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "66",
+   "input": "66",
+   "unit_size": 1000000,
+   "rule": "#4"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "ovhcloud",
+  "family": "text",
+  "model": "openai/gpt-oss-20b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.05",
+   "input": "0.05",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "ovhcloud",
+  "family": "text",
+  "model": "qwen/qwen2.5-vl-72b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "ovhcloud",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "ovhcloud",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.71",
+   "input": "0.71",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "ovhcloud",
+  "family": "text",
+  "model": "qwen/qwen3.6-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.47",
+   "input": "0.47",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "parasail",
+  "family": "text",
+  "model": "bytedance/ui-tars-1.5-7b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.1",
+   "input": "0.1",
+   "unit_size": 1000000,
+   "rule": "#2"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "relace",
+  "family": "text",
+  "model": "relace/relace-search",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "relace",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "sambanova",
+  "family": "text",
+  "model": "deepseek/deepseek-v3.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "sambanova",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "sambanova",
+  "family": "text",
+  "model": "deepseek/deepseek-v3.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "sambanova",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "sambanova",
+  "family": "text",
+  "model": "google/gemma-4-31b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "sambanova",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "sambanova",
+  "family": "text",
+  "model": "meta/llama-3.3-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "sambanova",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "sambanova",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "sambanova",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "cogito/cogito-671b-v2.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "1.25",
+   "input": "1.25",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "essential-ai/rnj-1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.15",
+   "input": "0.15",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "google/gemma-4-31b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.39",
+   "input": "0.39",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "liquid-ai/lfm-2-24b-a2b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.03",
+   "input": "0.03",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "liquid-ai/lfm-2.5-8b-a1b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.03",
+   "input": "0.03",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "meta/llama-3.3-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "1.04",
+   "input": "1.0399999999999998",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.15",
+   "input": "0.15",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "openai/gpt-oss-20b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.05",
+   "input": "0.05",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "qwen/qwen2.5-7b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.3",
+   "input": "0.3",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "qwen/qwen3.5-9b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.17",
+   "input": "0.17",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "qwen/qwen3.6-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.5",
+   "input": "0.5",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "qwen/qwen3.7-plus",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.32",
+   "input": "0.32",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "qwen/qwen3.8-flash",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.15",
+   "input": "0.15",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "together",
+  "family": "text",
+  "model": "thinking-machines/inkling-small",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.5",
+   "input": "0.5",
+   "unit_size": 1000000,
+   "rule": "#1"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "upstage",
+  "family": "ocr",
+  "model": "upstage/document-parse",
+  "surface": "ocr",
+  "caseId": "catalogue:unreadable-condition.input_pages",
+  "kind": "wrong_value",
+  "path": "catalogue.input_pages.match",
+  "expected": [
+   {
+    "path": "mode",
+    "op": "eq",
+    "value": "enhanced"
+   }
+  ],
+  "actual": [
+   {
+    "key": "mode",
+    "operator": "eq",
+    "value": "enhanced"
+   }
+  ],
+  "source": {
+   "kind": "assumed",
+   "reason": "pipeline/pricing/conditions.ts reads `path` and `op`; a condition written with field/key/operator never matches, so the rule is never selected."
+  },
+  "note": "rule #1 (standard)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "upstage",
+  "family": "text",
+  "model": "upstage/solar-mini",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "upstage",
+   "path": "usageFields"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "google/gemma-3-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "meta/llama-3.2-3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "meta/llama-3.3-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "mistral/mistral-small-3.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "mistral/mistral-small-4",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "nous/hermes-3-llama-3.1-405b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "nvidia/nemotron-3-nano-30b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "openai/gpt-4o",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "openai/gpt-5.4-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "openai/gpt-5.5-pro",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3-235b-a22b-thinking-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3-next-80b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3.5-397b-a17b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3.5-9b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3.6-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "qwen/qwen3.8-27b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "venice/gemma-4-uncensored",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "venice/venice-role-play-uncensored",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "provider": "venice",
+  "family": "text",
+  "model": "venice/venice-uncensored-1.2",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "venice",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-1",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-2",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-2-lite",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-2.5",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-2.5-lite",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "kind": "dropped",
+  "provider": "voyage",
+  "family": "rerank",
+  "model": "voyage/rerank-lite-1",
+  "surface": "rerank",
+  "caseId": "catalogue:no-card",
+  "path": "catalogue.card",
+  "expected": "a price card for an active route",
+  "actual": null,
+  "source": {
+   "kind": "assumed",
+   "reason": "An executed route with no card throws pricing_card_missing_for_executed_route (pipeline/after/pricing.ts), after the provider has been paid."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "deepseek/deepseek-v3.1",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.55",
+   "input": "0.55",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "google/gemma-4-31b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.1",
+   "input": "0.1",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "ibm/granite-4.1-8b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.05",
+   "input": "0.05",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "ibm/granite-4.2-8b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.05",
+   "input": "0.05",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "meta/llama-3.1-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.8",
+   "input": "0.8",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "meta/llama-3.1-8b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.22",
+   "input": "0.22",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "meta/llama-3.3-70b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.71",
+   "input": "0.71",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "minimax/minimax-m2.5",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.3",
+   "input": "0.3",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "openai/gpt-oss-120b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.03",
+   "input": "0.03",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "openai/gpt-oss-20b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.03",
+   "input": "0.03",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "qwen/qwen3-30b-a3b-2507",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.1",
+   "input": "0.1",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "qwen/qwen3-coder-480b-a35b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "1",
+   "input": "1",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "qwen/qwen3.5-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.25",
+   "input": "0.25",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "weights-and-biases",
+  "family": "text",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-not-discounted.standard",
+  "kind": "wrong_value",
+  "path": "catalogue.cached_read_text_tokens.price_per_unit",
+  "expected": "< input price",
+  "actual": {
+   "cacheRead": "0.25",
+   "input": "0.25",
+   "unit_size": 1000000,
+   "rule": "#0"
+  },
+  "source": {
+   "kind": "assumed",
+   "reason": "Provider pricing page not checked; a cache hit that costs nothing, or as much as uncached input, contradicts what prompt caching is (apps/docs/v1/guides/prompt-caching.mdx: \"Cache reads are usually cheaper\")."
+  }
+ },
+ {
+  "layer": "pricing",
+  "provider": "z-ai",
+  "family": "text",
+  "model": "z-ai/glm-4-32b",
+  "surface": "text.generate",
+  "caseId": "catalogue:cache-read-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_read_text_tokens",
+  "expected": "a cache-read price",
+  "actual": null,
+  "source": {
+   "kind": "spec",
+   "spec": "z-ai",
+   "path": "usage schema"
+  },
+  "note": "the provider documents cache-read usage fields provider-wide; whether this model returns them needs a live check. Without a price the engine throws pricing_rule_missing (AUDIT B1)"
+ }
+]

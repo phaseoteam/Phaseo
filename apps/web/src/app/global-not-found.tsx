@@ -33,7 +33,6 @@ export default async function GlobalNotFound() {
 			locale={locale}
 			direction={definition.dir}
 			fontProfile={definition.font}
-			messages={messages}
 		>
 			<main className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-6">
 				<div className="text-center">

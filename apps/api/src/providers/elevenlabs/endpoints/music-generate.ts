@@ -8,7 +8,7 @@ import { MusicGenerateSchema, type MusicGenerateRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function toBase64(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
@@ -74,6 +74,41 @@ function defaultOutputFormatForGatewayFormat(format?: string | null): string | u
 	if (normalized === "wav") return "pcm_44100";
 	if (normalized === "ogg") return "opus_48000_128";
 	return undefined;
+}
+
+/**
+ * Length in seconds of the audio ElevenLabs returned. `music_length_ms` is optional ("if not
+ * provided, the model will choose a length based on the prompt") and the response is the audio
+ * file alone (https://elevenlabs.io/docs/api-reference/music/compose), so the length is read
+ * from the audio. `output_format` names the encoding (`mp3_44100_128`, `pcm_44100`, ...);
+ * `auto`, the default, is mp3_44100_128 for v1 models and mp3_48000_192 for v2 models.
+ */
+export async function measureMusicDurationSeconds(
+	bytes: Uint8Array,
+	contentType: string,
+	outputFormat: string | undefined,
+	modelId: string,
+): Promise<number | undefined> {
+	if (bytes.length === 0) return undefined;
+	const format = String(outputFormat ?? "").trim().toLowerCase();
+	const pcm = /^pcm_(\d+)$/.exec(format);
+	// Raw PCM is signed 16-bit mono; μ-law and A-law are 8-bit mono.
+	if (pcm) return bytes.length / (Number(pcm[1]) * 2);
+	const law = /^(?:ulaw|alaw)_(\d+)$/.exec(format);
+	if (law) return bytes.length / Number(law[1]);
+	try {
+		const { parseBuffer } = await import("music-metadata");
+		const parsed = await parseBuffer(bytes, { mimeType: contentType.split(";")[0].trim() || undefined, size: bytes.length }, { duration: true, skipCovers: true });
+		const duration = parsed.format.duration;
+		if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) return duration;
+	} catch {
+		// Fall back to the bitrate below.
+	}
+	const bitrate = /^(?:mp3|opus)_\d+_(\d+)$/.exec(format);
+	const kbps = bitrate
+		? Number(bitrate[1])
+		: contentType.toLowerCase().includes("mpeg") ? (/v1/i.test(modelId) ? 128 : 192) : undefined;
+	return kbps ? (bytes.length * 8) / (kbps * 1000) : undefined;
 }
 
 function invalidParameterResponse(param: string, message: string): Response {
@@ -205,7 +240,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 usageMeters,
             );
             if (args.pricingCard) {
-                const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+                const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, {
                     model: requestBody.model_id,
                 });
                 bill.cost_cents = pricedUsage.pricing.total_cents;
@@ -215,9 +250,13 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         } else {
             const audioBuffer = await res.clone().arrayBuffer();
             const base64Audio = toBase64(audioBuffer);
+            // The requested length when the client set one, else the length of the returned audio.
+            const outputAudioSeconds = typeof musicLengthMs === "number"
+                ? musicLengthMs / 1000
+                : await measureMusicDurationSeconds(new Uint8Array(audioBuffer), contentType, outputFormat, requestBody.model_id);
             const usageMeters = {
 				requests: 1,
-				...(typeof musicLengthMs === "number" ? { output_audio_seconds: musicLengthMs / 1000 } : {}),
+				...(typeof outputAudioSeconds === "number" ? { output_audio_seconds: outputAudioSeconds } : {}),
 			};
             normalized = {
                 id: bill.upstream_id ?? null,
@@ -231,7 +270,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 usage: usageMeters,
             };
             if (args.pricingCard) {
-                const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+                const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, {
                     model: requestBody.model_id,
                 });
                 bill.cost_cents = pricedUsage.pricing.total_cents;

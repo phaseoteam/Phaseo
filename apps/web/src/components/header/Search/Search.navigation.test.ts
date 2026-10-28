@@ -1,5 +1,6 @@
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, GLOBAL_NAVIGATION_ITEMS, isSearchDestinationEnabled } from "@/components/header/Search/Search.navigation";
 import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
+import { GLOBAL_ACTION_ITEMS } from "@/components/header/Search/Search.commands";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -11,6 +12,16 @@ describe("global search navigation", () => {
 		expect(disabled).not.toContain("/settings/webhooks/new");
 		expect(disabled).not.toContain("/chat/video");
 		expect(disabled).not.toContain("/games");
+		expect(disabled).not.toContain("/settings/classifiers");
+		expect(isSearchDestinationEnabled("/settings/classifiers/new", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true }).map((item) => item.href)).toContain("/settings/classifiers");
+		// The palette filters its actions the same way, so "Create a classifier" is hidden too.
+		const createClassifier = GLOBAL_ACTION_ITEMS.find((item) => item.id === "action-create-classifier");
+		expect(isSearchDestinationEnabled(createClassifier?.href, DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(isSearchDestinationEnabled(createClassifier?.href, { ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true })).toBe(true);
+		expect(disabled).not.toContain("/settings/slack");
+		expect(isSearchDestinationEnabled("/settings/slack?installed=1", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, slackAgent: true }).map((item) => item.href)).toContain("/settings/slack");
 		expect(disabled).toContain("/settings/routing");
 		const enabled = getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, autoRouting: true });
 		expect(enabled.map((item) => item.href)).toContain("/settings/routing/auto");
@@ -33,7 +44,9 @@ describe("global search navigation", () => {
 				if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
 				const source = fs.readFileSync(path.join(root, file), "utf8");
 				if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
-				const href = normalized === "page.tsx" ? "/" : `/${normalized.slice(0, -"/page.tsx".length)}`;
+				// Route groups such as `(list)` are not part of the URL.
+				const route = normalized === "page.tsx" ? "" : normalized.slice(0, -"/page.tsx".length).split("/").filter((segment) => !/^\(.+\)$/.test(segment)).join("/");
+				const href = `/${route}`;
 				expect(hrefs).toContain(href);
 			}
 		}

@@ -17,6 +17,21 @@ Definições de campos em vez de dicas de ajuste? Consulte [Parâmetros de infer
 
 O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. A tabela de início rápido do modelo agrega o suporte dos provedores ativos para uma rota específica.
 
+## Parâmetros não suportados
+
+Se o provedor que atende uma solicitação não suportar um dos seus parâmetros de amostragem, a Phaseo descarta esse parâmetro. Ele não é enviado ao provedor e a solicitação não é rejeitada, então clientes que sempre enviam os padrões da OpenAI continuam funcionando. O suporte é definido por provedor a partir dos perfis de provedor da Phaseo e dos parâmetros de catálogo da rota. Se uma rota não declarar parâmetros, apenas a verificação do catálogo é ignorada: os parâmetros que o perfil de provedor marca como não suportados continuam sendo descartados, por exemplo `top_k` na Cohere ou `stop` na Reflection.
+
+Somente estes parâmetros podem ser descartados: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` em `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` e `image_config`. Mensagens, ferramentas, `tool_choice`, `response_format`, configurações de raciocínio e limites de saída nunca são descartados.
+
+Além disso, um `ttl` de cache de prompts de `12h` é removido nas rotas que não aceitam o cache de 12 horas da OpenAI, e informado nos mesmos lugares como `prompt_cache_options.ttl` ou `prompt_cache_breakpoint.ttl`; consulte [Cache de prompts](../guides/prompt-caching.mdx).
+
+Em respostas bem-sucedidas, a Phaseo informa os parâmetros descartados que a própria solicitação enviou:
+
+- no cabeçalho de resposta `X-Phaseo-Dropped-Params`, por exemplo `X-Phaseo-Dropped-Params: top_k, min_p`
+- em `meta.routing.dropped_params` quando a solicitação define `meta: true`, por exemplo `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Um parâmetro que vem de um preset ou de um valor padrão, e não do corpo da solicitação, pode ser descartado sem aparecer em nenhum desses lugares. Mesmo assim, ele fica registrado nos diagnósticos de roteamento que a Phaseo armazena com a solicitação.
+
 ## Consulta rápida
 
 | Parâmetro | Tipo | Use para |
@@ -423,14 +438,14 @@ Conforme a rota, pode ser um ajuste da solicitação, um limite ou um campo de c
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Solicita conteúdo ou resumos do raciocínio nas respostas quando houver suporte.
+Aceito em Chat Completions por compatibilidade. O conteúdo e os resumos do raciocínio são retornados sempre que o modelo os produz, qualquer que seja o valor deste campo.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `boolean` |
-| Padrão | `false` |
+| Padrão | `true` |
 
-Use com cuidado. Payloads de raciocínio podem ser maiores, não estar disponíveis em todos os modelos e ser inadequados para respostas de produção que não precisam de detalhes de diagnóstico extras.
+Payloads de raciocínio podem ser grandes e não estão disponíveis em todos os modelos. Para reduzir o raciocínio, diminua `reasoning.effort` ou defina `reasoning.enabled` como `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -451,6 +466,7 @@ Observações:
 
 - `Batch` é um fluxo de API separado, não um valor de nível de serviço.
 - O suporte varia conforme o endpoint e o provedor.
+- Os valores da OpenAI também são aceitos: `auto` (ou `null`) não pede nenhum nível específico e é tratado como se o campo tivesse sido omitido, e `scale` é tratado como `default`, o nível padrão.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -464,22 +480,22 @@ Fornece uma chave estável de afinidade de cache para roteamento que considera o
 
 Use-o quando uma série de solicitações compartilhar prefixos de prompt estáveis, como as etapas de um loop de agente. O Phaseo fixa a chave no provedor e na rota (implantação ou região) que atenderam a primeira solicitação bem-sucedida e mantém lá as solicitações seguintes com a mesma chave até que esse provedor falhe, a cota gerenciada do Phaseo nele se esgote ou sua política de roteamento deixe de permiti-lo. As fixações são mantidas por workspace, e a duração delas segue a retenção de cache do provedor. Consulte [Afinidade com o provedor](../guides/prompt-caching.mdx#provider-affinity).
 
-O Phaseo envia ao provedor um hash do ID do seu workspace e da chave, nunca a chave original, então workspaces que escolhem a mesma chave não compartilham um cache de provedor. As respostas retornam a chave que você enviou. Provedores cuja API rejeita o campo não o recebem, e enviá-lo nunca exclui um provedor do roteamento. O Phaseo também pode derivar a afinidade do contexto da solicitação, mas uma chave explícita é melhor para conversas longas, sessões de agentes e fluxos de trabalho repetidos.
+Chat Completions, Responses e Anthropic Messages aceitam o campo. O Phaseo envia ao provedor um hash do ID do seu workspace e da chave, nunca a chave original, então workspaces que escolhem a mesma chave não compartilham um cache de provedor. As respostas retornam a chave que você enviou. Provedores cuja API rejeita o campo não o recebem, e enviá-lo nunca exclui um provedor do roteamento. O Phaseo também pode derivar a afinidade do contexto da solicitação, mas uma chave explícita é melhor para conversas longas, sessões de agentes e fluxos de trabalho repetidos.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-Envia controles de cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6, incluindo o GPT-6 Astra, e para a DeepInfra.
+Envia controles de cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6, incluindo o GPT-6 Astra, para a DeepInfra e para a Moonshot AI.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `object` |
 | Campos comuns | `mode` (`implicit` ou `explicit`), `ttl` |
-| TTL da OpenAI | `30m` |
+| TTL da OpenAI | `30m`, ou `12h` na API Responses da OpenAI |
 
-Use `{"mode":"explicit","ttl":"30m"}` quando quiser que a OpenAI armazene em cache apenas os pontos de interrupção que você posicionar. `30m` é o único `ttl` aceito pela OpenAI. A DeepInfra aceita `5m` ou `1h` e exige `prompt_cache_key` em todas as solicitações da sessão.
+Use `{"mode":"explicit","ttl":"30m"}` quando quiser que a OpenAI armazene em cache apenas os pontos de interrupção que você posicionar. A OpenAI aceita um `ttl` de `30m` (o padrão) ou `12h`, e o Azure OpenAI apenas `30m`; consulte [Cache de 12 horas na OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). A DeepInfra aceita `5m` ou `1h` e exige `prompt_cache_key` em todas as solicitações da sessão. A Moonshot AI aceita `mode: "implicit"` e um `ttl` de `5m` ou, no Kimi K3, `1h`.
 
-O Phaseo envia o objeto sem alterações para essas rotas. Ele o remove para todos os outros provedores e para os modelos da OpenAI anteriores ao GPT-5.6, que usam [`prompt_cache_retention`](#prompt_cache_retention). `provider_options.openai.prompt_cache_options` também é aceito; prevalece o valor do nível superior.
+O Phaseo envia o objeto para essas rotas. Uma duração que a rota não aceita, como `12h` no Azure OpenAI ou `1h` em um modelo da Moonshot AI sem preço de gravação de 1 hora, é removida e informada no cabeçalho `X-Phaseo-Dropped-Params`. O Phaseo remove o objeto para todos os outros provedores e para os modelos da OpenAI anteriores ao GPT-5.6, que usam [`prompt_cache_retention`](#prompt_cache_retention). `provider_options.openai.prompt_cache_options` também é aceito; prevalece o valor do nível superior.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -560,7 +576,7 @@ Exemplos:
 
 Use-o quando precisar de um recurso nativo do provedor, mas quiser manter o restante da solicitação no esquema comum do gateway. Prefira `cache_control` no nível superior para políticas de cache do Claude e, para retenção da OpenAI, `prompt_cache_options` no nível superior no GPT-5.6 e posteriores ou `prompt_cache_retention` no nível superior em modelos anteriores.
 
-`google.cached_content` indica um cache explícito do Gemini. No Google AI Studio, ele só funciona com a sua própria chave de API do Google, e na Vertex AI o cache precisa pertencer ao projeto da credencial que atende a solicitação. `google.cache_control` e `google.cache_ttl` são aceitos, mas não são enviados ao Google.
+`google.cached_content` indica um cache explícito do Gemini. Ele só funciona com a sua própria credencial: uma chave de API do Google no Google AI Studio ou uma credencial da Vertex AI na Vertex AI. Na Vertex AI, o Phaseo envia a solicitação para o projeto e o local do nome completo do cache (`projects/{project}/locations/{location}/cachedContents/{id}`); um nome curto usa o `project_id` e a `region` do JSON da sua conta de serviço. Com as credenciais do Phaseo, a solicitação retorna 400. `google.cache_control` e `google.cache_ttl` são aceitos, mas não são enviados ao Google.
 
 Para ver exemplos de cache de prompts por provedor em Chat Completions, Responses e Anthropic Messages, consulte [Cache de prompts](../guides/prompt-caching.mdx).
 

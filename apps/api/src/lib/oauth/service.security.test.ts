@@ -14,6 +14,9 @@ const state = vi.hoisted(() => ({
 	authorizationUpdateError: null as { message?: string } | null,
 	delegatedKeyRow: null as Record<string, unknown> | null,
 	revokedDelegatedKeyIds: [] as string[],
+	auditEvents: [] as Array<Record<string, unknown>>,
+	keyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: unknown[][] }>,
+	renewedKeyRow: null as Record<string, unknown> | null,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -141,12 +144,31 @@ vi.mock("@/runtime/env", () => ({
 							maybeSingle: async () => ({ data: state.delegatedKeyRow, error: null }),
 						}),
 					}),
-					update: () => ({
-						eq(column: string, value: unknown) {
-							if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
-							return this;
-						},
-					}),
+					update: (payload: Record<string, unknown>) => {
+						const filters: unknown[][] = [];
+						const chain = {
+							eq(column: string, value: unknown) {
+								if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
+								filters.push([column, "eq", value]);
+								return chain;
+							},
+							gt(column: string, value: unknown) { filters.push([column, "gt", value]); return chain; },
+							select: () => chain,
+							maybeSingle: async () => {
+								state.keyUpdates.push({ payload, filters });
+								return { data: state.renewedKeyRow, error: null };
+							},
+						};
+						return chain;
+					},
+				};
+			}
+			if (table === "workspace_audit_events") {
+				return {
+					insert: async (row: Record<string, unknown>) => {
+						state.auditEvents.push(row);
+						return { error: null };
+					},
 				};
 			}
 			throw new Error(`Unexpected table: ${table}`);
@@ -178,6 +200,7 @@ describe("OAuth refresh rotation security", () => {
 		state.authorizationUpdateError = null;
 		state.delegatedKeyRow = null;
 		state.revokedDelegatedKeyIds.length = 0;
+		state.auditEvents.length = 0;
 		vi.resetModules();
 	});
 
@@ -297,6 +320,30 @@ describe("OAuth refresh rotation security", () => {
 		expect(rpcCall?.args.p_key_hash).not.toBe(result?.access_token);
 	});
 
+	it("records an OAuth-managed key as a new API key, so owners and admins are alerted", async () => {
+		state.rotationStatus = "issued";
+		state.delegatedKeyRow = { id: "key_1", name: "OAuth: partner_app", prefix: "abc123" };
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000003",
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "partner_app", scopes: ["gateway:access"] },
+			{ clientName: "Partner App" },
+		);
+
+		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(state.auditEvents).toEqual([{
+			workspace_id: "ws_1",
+			actor_user_id: "user_1",
+			action: "api_key.created",
+			target_type: "api_key",
+			target_id: "key_1",
+			target_name: "OAuth: partner_app",
+			metadata: { prefix: "abc123", status: "active", source: "oauth", oauthClientId: "partner_app", appName: "Partner App" },
+			request_id: null,
+		}]);
+	});
+
 	it("refuses to mint an OAuth-managed key without gateway access consent", async () => {
 		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
 		const rpcCallCount = state.rpcCalls.length;
@@ -398,5 +445,56 @@ describe("OAuth refresh rotation security", () => {
 			clientId: "phaseo_cli",
 			scopes: ["openid"],
 		})).rejects.toThrow("grant update failed");
+	});
+});
+
+describe("Desktop key renewal", () => {
+	beforeEach(() => { state.keyUpdates = []; state.renewedKeyRow = null; });
+
+	it("extends only the desktop's own active, unexpired delegated key by 30 days", async () => {
+		const { renewDesktopKey } = await import("./service");
+		const before = Date.now();
+		state.renewedKeyRow = { expires_at: "2026-11-25T12:00:00.000Z" };
+		await expect(renewDesktopKey("key_1")).resolves.toEqual({ expiresAt: "2026-11-25T12:00:00.000Z" });
+		const [{ payload, filters }] = state.keyUpdates;
+		const days = (Date.parse(String(payload.expires_at)) - before) / 86_400_000;
+		expect(days).toBeGreaterThan(29.99); expect(days).toBeLessThan(30.01);
+		expect(filters).toEqual(expect.arrayContaining([
+			["id", "eq", "key_1"], ["key_kind", "eq", "oauth_delegated"], ["oauth_client_id", "eq", "phaseo_desktop"], ["status", "eq", "active"],
+			["expires_at", "gt", expect.any(String)],
+		]));
+	});
+
+	it("doesn't bring back a key that has expired or been revoked", async () => {
+		const { renewDesktopKey } = await import("./service");
+		await expect(renewDesktopKey("key_1")).resolves.toBeNull();
+	});
+});
+
+describe("Desktop key for a Phaseo login", () => {
+	beforeEach(() => { state.rpcCalls.length = 0; state.rpcError = null; state.auditEvents.length = 0; state.delegatedKeyRow = null; });
+
+	it("issues a gateway key for the desktop client, 30 days long, and tells owners like any new key", async () => {
+		state.rotationStatus = "2026-11-25T12:00:00+00:00";
+		state.delegatedKeyRow = { id: "key_9", name: "Phaseo desktop", prefix: "abc123" };
+		const { issueDesktopSessionKey } = await import("./service");
+		const issued = await issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_1" });
+		expect(issued).toEqual({ key: expect.stringMatching(/^phaseo_v1_sk_/), expiresAt: "2026-11-25T12:00:00.000Z", scopes: ["gateway:access", "models:read"] });
+		const rpcCall = state.rpcCalls.at(-1);
+		expect(rpcCall).toMatchObject({
+			name: "issue_desktop_session_key",
+			args: { p_user_id: "user_1", p_workspace_id: "ws_1", p_key_name: "Phaseo desktop", p_resource: "https://api.phaseo.app/v1", p_ttl_seconds: 30 * 24 * 60 * 60, p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/) },
+		});
+		expect(rpcCall?.args.p_key_hash).not.toBe(issued?.key);
+		expect(state.auditEvents).toEqual([expect.objectContaining({ action: "api_key.created", target_id: "key_9", metadata: expect.objectContaining({ oauthClientId: "phaseo_desktop", appName: "Phaseo desktop" }) })]);
+	});
+
+	it("gives no key outside the person's workspaces, and fails loudly when the database does", async () => {
+		const { issueDesktopSessionKey } = await import("./service");
+		state.rotationStatus = null as unknown as string;
+		await expect(issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_other" })).resolves.toBeNull();
+		expect(state.auditEvents).toEqual([]);
+		state.rpcError = { message: "issue failed" };
+		await expect(issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_1" })).rejects.toThrow("issue failed");
 	});
 });

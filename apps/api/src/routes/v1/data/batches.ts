@@ -12,11 +12,12 @@ import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
+import { withErrorObject, withGatewayErrorObject } from "@core/error-object";
 import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { generatePublicId } from "@pipeline/before/genId";
 import { guardContext } from "@pipeline/before/guards";
 import { readProviderCatalogTier } from "@core/serviceTiers";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { applyPromptInjectionGuardrails } from "@pipeline/before/promptInjection";
 import { applySensitiveInfoGuardrails } from "@pipeline/before/sensitiveInfo";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
@@ -144,7 +145,10 @@ async function parseUpstreamJson(response: Response): Promise<any | null> {
 }
 
 function jsonPayload(payload: unknown, status = 200): Response {
-	return new Response(JSON.stringify(payload), {
+	const body = status >= 400 && payload && typeof payload === "object" && !Array.isArray(payload)
+		? withGatewayErrorObject(payload as Record<string, unknown>, status)
+		: payload;
+	return new Response(JSON.stringify(body), {
 		status,
 		headers: {
 			"Content-Type": "application/json",
@@ -1029,6 +1033,7 @@ async function uploadProviderBatchInputFile(providerId: string, args: {
 				error: {
 					type: "upstream_error",
 					reason: "batch_file_upload_missing_id",
+					message: "The provider did not return an ID for the uploaded batch file.",
 				},
 			}, 502),
 		};
@@ -1729,7 +1734,7 @@ async function handleCreate(req: Request) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
-	const otelParentContext = parseW3cTraceContext(
+	let otelParentContext = parseW3cTraceContext(
 		req.headers.get("traceparent"),
 		req.headers.get("tracestate"),
 	);
@@ -1744,14 +1749,14 @@ async function handleCreate(req: Request) {
 
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);
 	if (Number.isFinite(declaredLength) && declaredLength > MAX_BATCH_CREATE_BODY_BYTES) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large", message: "The batch request body is too large." } }, 413);
 	}
 	let rawBody: string;
 	try {
 		rawBody = await readStreamTextWithLimit(req.body, MAX_BATCH_CREATE_BODY_BYTES, "batch_body_too_large");
 	} catch (error) {
 		if (!(error instanceof BodyLimitExceededError)) throw error;
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large", message: "The batch request body is too large." } }, 413);
 	}
 	let payload: Record<string, unknown>;
 	try {
@@ -1764,6 +1769,12 @@ async function handleCreate(req: Request) {
 	}
 	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
 		return err("validation_error", { reason: "batch_body_must_be_object", request_id: requestId });
+	}
+	// Same rules as synchronous requests: traceparent wins, then metadata trace_id.
+	const otelMetadata = readRequestMetadata(payload.metadata);
+	if (!otelParentContext) {
+		otelParentContext = metadataTraceContext(otelMetadata);
+		if (otelParentContext) otelSubmissionContext.traceId = otelParentContext.traceId;
 	}
 	if (hasRequestModelFallbacksField(payload)) {
 		// Batch rows run asynchronously inside the provider batch; there is no
@@ -2381,6 +2392,7 @@ async function handleCreate(req: Request) {
 		submissionOutcome: null,
 		otelParentContext,
 		otelSubmissionContext,
+		otelMetadata,
 	});
 	try {
 		await saveBatchJobMeta(auth.workspaceId, batchId, submissionMeta);
@@ -2398,7 +2410,7 @@ async function handleCreate(req: Request) {
 			batchId,
 			providerId,
 		});
-		return jsonPayload({ error: { type: "gateway_error", reason: "batch_submission_persistence_failed" } }, 503);
+		return jsonPayload({ error: { type: "gateway_error", reason: "batch_submission_persistence_failed", message: "The batch could not be recorded before submission. Try again." } }, 503);
 	}
 
 	let upstream: Response;
@@ -2558,6 +2570,7 @@ async function handleCreate(req: Request) {
 				submissionOutcome: "accepted",
 				otelParentContext,
 				otelSubmissionContext,
+				otelMetadata,
 			});
 			try {
 				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);
@@ -2677,6 +2690,7 @@ async function handleCreate(req: Request) {
 				spanId: otelSubmissionContext.parentSpanId,
 				requestPayload: payload,
 				responsePayload: upstreamJson,
+				metadata: otelMetadata,
 			}).catch((otelError) => console.error("batch_otel_submit_failed", {
 				batchId,
 				error: otelError instanceof Error ? otelError.message : String(otelError),
@@ -3086,13 +3100,13 @@ async function handleResults(req: Request, id: string) {
 	try {
 		const admission = await admitBatchDownload(auth.workspaceId, batchId);
 		if (!admission.allowed) {
-			return Response.json({ error: "rate_limit_exceeded", message: "Batch results allow 10 download attempts per workspace per batch every 30 minutes.", request_id: requestId }, {
+			return Response.json(withErrorObject({ error: "rate_limit_exceeded", message: "Batch results allow 10 download attempts per workspace per batch every 30 minutes.", request_id: requestId }, 429, { retryAfter: String(admission.retryAfterSeconds) }), {
 				status: 429, headers: { "Retry-After": String(admission.retryAfterSeconds), "Cache-Control": "no-store" },
 			});
 		}
 	} catch {
 		console.error("batch_download_admission_failed", { requestId, workspaceId: auth.workspaceId, batchId });
-		return Response.json({ error: "temporarily_unavailable", request_id: requestId }, {
+		return Response.json(withErrorObject({ error: "temporarily_unavailable", request_id: requestId }, 503, { retryAfter: "30" }), {
 			status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" },
 		});
 	}

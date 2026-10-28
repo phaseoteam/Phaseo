@@ -1,5 +1,98 @@
 # Artificial Analysis benchmarks
 
+For the upcoming major-version transition, see the [v5 rollout checks](V5-ROLLOUT.md).
+
+## Full frontend data extractor
+
+`pnpm exec tsx scripts/scrape-artificial-analysis-public.ts --output snapshot.json`
+loads the public models page, discovers its full-model data manifest, and fetches
+that versioned frontend data asset. It uses the same public decoding format as
+AA's unauthenticated browser. No API key or browser automation is needed; no
+downloaded JavaScript is executed. The manifest path is discovered on every run.
+
+The default 27 HTML rows are **not** the extraction scope. The live frontend
+asset contained **704 distinct AA configurations**, including 216 with benchmark
+token totals and per-task token usage, 2,160 Intelligence Index evaluation scores,
+and 8,742 non-null standalone benchmark score fields. Missing metrics remain
+null. Individual scores preserve source scales and source field names; this
+extractor does not invent benchmark IDs or normalize incompatible scales.
+
+Each snapshot records source/data URLs, HTML and data SHA-256 hashes, detected
+methodology versions, and fetch/extraction times. `--input saved.html --data
+saved-data.txt` supports offline replay; saved inputs have unknown fetch time.
+Saved HTML requires an explicit `--url` to preserve source provenance.
+Output files are created exclusively. Invalid identities, duplicates, broken
+manifests, authentication failures in the data envelope, and changed schemas
+abort extraction. Corrupt or partial data is not published.
+
+### Catalogue matching
+
+Add `--match-db` with the existing maintenance Supabase environment variables
+(`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). This reads every
+`v2_models` row in ordered pages, uses the existing database AA UUID mappings,
+creator aliases and configuration-family matcher, and adds a bidirectional
+matching report to the JSON snapshot. It never writes to the database.
+
+The live audit matched 601 of 704 AA configurations to 419 Phaseo catalogue
+models. Another 103 configurations remained unmatched; five catalogue models
+were ambiguous. The report includes source UUIDs, candidate UUIDs, and unmapped
+source names so those cases can be reviewed instead of guessed. Counts are a
+point-in-time audit, not fixed completeness thresholds.
+
+The command makes two public requests plus optional catalogue reads. It does
+not modify the scheduled API import. Before publication, review unmatched IDs,
+benchmark metadata/scales, and methodology compatibility. Preserve attribution
+to [Artificial Analysis](https://artificialanalysis.ai/models).
+
+### Database storage and page access
+
+After deploying the schema migration, add `--write --match-db` to publish a fresh
+full snapshot. Saved HTML/data cannot be published. Each publication retains all
+source configurations, raw source records, provenance, and the source-to-catalogue
+mapping. The service-only `artificial_analysis_public_snapshots` table is append-only;
+the publisher validates identities and ownership, rejects stale methodology/data,
+and treats identical content as a no-op. The existing four-metric API import and
+its history remain separate. The existing hourly benchmark workflow runs this
+publisher in an independent job, alongside the core API import. Both jobs also
+run on manual workflow dispatch. Failure of either job is visible without
+preventing the other from running. The public importer needs the database secrets
+but no AA API key; its two public requests do not use the free API quota.
+
+The full snapshot is written to the runner's temporary directory, not uploaded as
+a public artifact, because its matching report can contain non-public catalogue
+identities. Extraction, validation or publication failures retain the previously
+published snapshot and fail the job. Check the `public_snapshot` job when the
+dashboard's snapshot date stops advancing; a green core `sync` job alone does not
+confirm rich-data freshness. Identical data is a no-op, so its original fetch date
+remains until the source data or catalogue matching changes.
+
+`GET /api/_web/benchmarks/artificial-analysis/data` returns a bounded page of
+matched, currently visible catalogue configurations. It accepts `model` (canonical
+model slug), `version` (major), `limit` (1–200), and `offset`. The response includes
+the snapshot ID, methodology version and fetch time. Raw source records and the
+unmatched/ambiguous matching report never leave the server through this route.
+The server fetcher `fetchFrontendArtificialAnalysisData` provides the typed page
+contract. Missing publication returns 404; an unavailable storage RPC returns 503.
+
+Stored/displayable fields include benchmark and domain capability scores, token
+totals and weighted per-task token use, costs and timing, price/cache rates,
+performance measurements, context/parameter/modality/licensing details, openness
+and available evaluation breakdowns. Raw upstream fields remain available in the
+private snapshot for future reviewed display additions.
+
+`methodology_version` identifies the Intelligence Index, not the independent
+versions of every evaluation or domain capability index. The frontend dataset
+does not supply all those versions. Preserve each source metric's scale and
+snapshot provenance; do not label domain scores with the Intelligence Index
+version or combine historical domain scores into a trend without their version
+definitions. AA performance/pricing measurements also have different semantics
+from benchmark-task timing/cost and must keep their distinct field names.
+
+Storage contract test: `node supabase/tests/artificial-analysis-public-data.test.mjs`.
+
+Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts
+scripts/artificial-analysis/core.test.ts`.
+
 `pnpm data:sync-artificial-analysis` fetches every free V2 API page and imports Intelligence, Coding, Agentic, and total evaluation cost in USD into Supabase. Results retain source ID, index version, tested configuration, source link, and timestamp. Null metrics are omitted; zero is a score.
 
 ## Running

@@ -5,21 +5,41 @@
 
 import { beforeRequest, type BeforeRequestObservabilitySnapshot, type UnservedModelFallback } from "./before";
 import { modelSubstitutionHeader, noteModelSubstitutionServed, type ModelSubstitution } from "./before/modelSuccessor";
+import { DROPPED_PARAMS_HEADER, droppedParamsForClient, droppedParamsHeader } from "./execute/unsupportedParams";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
+import { errorCodeOf, withErrorObject, withErrorObjectResponse } from "@core/error-object";
 import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
 import { gatewayTraceFor } from "./telemetry/gateway-trace";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
-import { ResponsesSchema } from "@core/schemas";
+import { DecisionsSchema, ResponsesSchema } from "@core/schemas";
 import { MAX_REQUEST_MODEL_FALLBACKS } from "./before/requestModelFallbacks";
+import { everyAttemptRejectedRequest } from "./execute/attempt-outcomes";
 import { runAutoRouterClassifierGatewayRequest } from "./auto-router-classifier-gateway";
+import { attachRequestClassifierCall } from "./classification/request-classifiers";
 import {
 	buildPipelineExecutionErrorResponse,
 	logPipelineExecutionError,
 } from "./error-response";
-import { rejectedByRateLimitPolicy, withRateLimitPolicyHeaders } from "@core/rate-limit-policies";
+import { rejectedByRateLimitPolicy as rejectedByRateLimitPolicyOnly, withRateLimitPolicyHeaders as withRateLimitPolicyHeadersOnly } from "@core/rate-limit-policies";
+import {
+	createConcurrencyLeases, releaseConcurrencyAfter, releaseConcurrencyLeases, type ConcurrencyLeases,
+} from "@core/customer-rate-limits";
+import { rejectedBySpendBlockForEveryModel, withSpendWarningHeader } from "@core/spend-blocks";
+import type { PipelineContext } from "./before/types";
+
+// Admission headers on every response: rate limit policy headers and the spend rule warning.
+function withRateLimitPolicyHeaders(response: Response, ctx: PipelineContext): Response {
+	return withSpendWarningHeader(withRateLimitPolicyHeadersOnly(response, ctx), ctx);
+}
+
+// Other models share an exhausted policy allowance, and a spend block on the workspace, key,
+// member or department; model fallbacks are not tried then.
+function rejectedByRateLimitPolicy(ctx: PipelineContext): boolean {
+	return rejectedByRateLimitPolicyOnly(ctx) || rejectedBySpendBlockForEveryModel(ctx);
+}
 
 const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
 const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -27,9 +47,18 @@ const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
 const CONFIGURED_MODEL_FALLBACK_LIMIT = 8;
 let autoRouterClassifierHandler: ReturnType<typeof makeEndpointHandler> | null = null;
 
+let decisionsClassifierHandler: ReturnType<typeof makeEndpointHandler> | null = null;
+
 function getAutoRouterClassifierHandler() {
 	autoRouterClassifierHandler ??= makeEndpointHandler({ endpoint: "responses", schema: ResponsesSchema });
 	return autoRouterClassifierHandler;
+}
+
+/** Request classifiers call Responses, or Decisions for decision models. */
+function getRequestClassifierHandler(path: "responses" | "decisions") {
+	if (path === "responses") return getAutoRouterClassifierHandler();
+	decisionsClassifierHandler ??= makeEndpointHandler({ endpoint: "decisions", schema: DecisionsSchema });
+	return decisionsClassifierHandler;
 }
 
 type ModelFallbackSource = "dynamic_route" | "request" | "auto_router";
@@ -77,12 +106,34 @@ function modelFallbackAttemptKey(ctx: {
 	return `${ctx.model}|${providers}|${ctx.preset?.id ?? ""}`;
 }
 
-function shouldTryModelFallback(response: Response): boolean {
-    return MODEL_FALLBACK_STATUSES.has(response.status);
+// A provider rejection of the request itself (400, 413, 422) reaches the client
+// as a 502 upstream_error, but it is the request's fault: another model would
+// be called, and billed, with the same bad request.
+function shouldTryModelFallback(
+	response: Response,
+	ctx: { attemptErrors?: Array<Record<string, unknown>> | null },
+): boolean {
+	if (!MODEL_FALLBACK_STATUSES.has(response.status)) return false;
+	return !(response.status === 502 && everyAttemptRejectedRequest(ctx.attemptErrors));
 }
 
 function discardResponseBody(response: Response) {
 	response.body?.cancel().catch(() => undefined);
+}
+
+/**
+ * A 429 upstream_error says every provider called was rate limited. Across model fallbacks
+ * that holds only if every model that ran also ended in 429; otherwise (for example the
+ * primary's provider failed with 503) the request failed for mixed reasons and is a 502.
+ */
+export async function settleMixedRateLimitAcrossModels(response: Response, attempts: readonly ModelFallbackAttempt[]): Promise<Response> {
+	if (response.status !== 429) return response;
+	const executed = attempts.filter((attempt) => attempt.stage === "execute");
+	if (executed.every((attempt) => attempt.status === 429)) return response;
+	const body = await response.clone().json().catch(() => null) as Record<string, unknown> | null;
+	if (!body || errorCodeOf(body) !== "upstream_error") return response;
+	discardResponseBody(response);
+	return new Response(JSON.stringify(withErrorObject({ ...body, status_code: 502 }, 502)), { status: 502, headers: response.headers });
 }
 
 function hasBlobValue(value: unknown): boolean {
@@ -178,6 +229,22 @@ function withModelSubstitutionHeaders(
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+/**
+ * Tells the client which of its parameters the serving provider does not
+ * support and the gateway removed (`X-Phaseo-Dropped-Params: top_k, min_p`).
+ */
+function withDroppedParamsHeader(
+	response: Response,
+	ctx: { routingDiagnostics?: Record<string, any> | null },
+): Response {
+	if (!response.ok) return response;
+	const dropped = droppedParamsForClient(ctx);
+	if (dropped.length === 0) return response;
+	const headers = new Headers(response.headers);
+	headers.set(DROPPED_PARAMS_HEADER, droppedParamsHeader(dropped));
+	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 function cloneRequestForEarlyObservability(req: Request): Request | undefined {
     const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
     const capturesTextBody =
@@ -200,6 +267,17 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
     const { endpoint, schema } = opts;
 
     return async function handler(req: Request) {
+        // Concurrency slots taken by rate limit policies are held until the response has been delivered.
+        const concurrency = createConcurrencyLeases();
+        try {
+            return releaseConcurrencyAfter(await handleRequest(req, concurrency), concurrency);
+        } catch (error) {
+            releaseConcurrencyLeases(concurrency);
+            throw error;
+        }
+    };
+
+    async function handleRequest(req: Request, concurrency: ConcurrencyLeases): Promise<Response> {
         const timer = new Timer();
         const gatewayTrace = gatewayTraceFor(req);
         gatewayTrace?.mark("pipeline_entry");
@@ -231,8 +309,11 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             : null;
 
         const runner = resolvePipeline(endpoint);
-        const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) =>
-            withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx);
+        // Surfaces that build their own error bodies get the same `error` object.
+        const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) => {
+            attachRequestClassifierCall(attempt.pre.ctx, req, getRequestClassifierHandler);
+            return withDroppedParamsHeader(withModelSubstitutionHeaders(await withErrorObjectResponse(await runner(attempt)), attempt.pre.ctx), attempt.pre.ctx);
+        };
 
         // Tries the configured fallback models in order after the first model
         // failed. Returns the first response that should not fall back further,
@@ -313,6 +394,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				// One HTTP request is one admission against rate limit policies.
 				rateLimitAdmissionId ??= fallbackPre.ctx.billingRequestId;
 				fallbackPre.ctx.rateLimitAdmissionId = rateLimitAdmissionId;
+				fallbackPre.ctx.rateLimitConcurrency = concurrency;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
 					modelFallback: {
@@ -342,9 +424,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				}
 				response = withRateLimitPolicyHeaders(response, fallbackPre.ctx);
 				attempts.push({ model: fallbackPre.ctx.model, status: response.status, stage: "execute" });
-				if (!shouldTryModelFallback(response) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
+				if (!shouldTryModelFallback(response, fallbackPre.ctx) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
 			}
-			return response;
+			return await settleMixedRateLimitAcrossModels(response, attempts);
         };
 
         // If before failed, log and return error immediately
@@ -381,10 +463,11 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             pre.ctx.meta.before_ms = beforeMs;
         }
         pre.ctx.gatewayTimingTrace = gatewayTrace;
+        pre.ctx.rateLimitConcurrency = concurrency;
 
         try {
 			const response = withRateLimitPolicyHeaders(await runWithHeaders({ pre, req, endpoint, timing }), pre.ctx);
-			if (!shouldTryModelFallback(response)) return response;
+			if (!shouldTryModelFallback(response, pre.ctx)) return response;
 			// Other models share the exhausted policy allowance.
 			if (rejectedByRateLimitPolicy(pre.ctx)) return response;
 			const fallbackPlan = configuredModelFallbacks(pre.ctx);
@@ -416,5 +499,5 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 req,
             }), pre.ctx);
         }
-    };
+    }
 }

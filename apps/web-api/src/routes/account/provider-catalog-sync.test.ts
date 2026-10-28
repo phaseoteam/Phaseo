@@ -20,6 +20,13 @@ describe("catalog refresh execution",()=>{
   });
   vi.mocked(getDataClient).mockReturnValue({from:query,rpc} as never);return {rpc,writes};
  }
+ it.each([false,true])("purges public policy caches after an applied legacy snapshot; purge failure=%s",async(fail)=>{
+  const {rpc}=client(true);
+  vi.spyOn(globalThis,"fetch").mockImplementation(async(input)=>String(input).startsWith("https://cloudflare-dns.com/")?Response.json({Answer:[{type:1,data:"93.184.216.34"}]}):Response.json({data:[{id:"sample/model",capabilities:["responses"],availability:"not_ready"}]}));
+  const purge=vi.fn(async()=>{expect(rpc).toHaveBeenCalledWith("apply_provider_catalog_feed_snapshot",expect.anything());if(fail)throw new Error("purge unavailable");return {success:true};});
+  expect((await syncProviderCatalog({} as never,"sample","poll",undefined,{cache:{purge}})).status).toBe("applied");
+  expect(purge).toHaveBeenCalledWith({tags:expect.arrayContaining(["web-api-models","web-api-gateway-models","web-api-model-pricing","web-api-model-details","web-api-compare"])});
+ });
  it("fetches the full feed after approval even when its ETag is unchanged",async()=>{
   const {rpc}=client(true);const fetchMock=vi.spyOn(globalThis,"fetch").mockImplementation(async(input)=>String(input).startsWith("https://cloudflare-dns.com/")?Response.json({Answer:[{type:1,data:"93.184.216.34"}]}):Response.json({data:[{id:"sample/model",name:"Model",capabilities:["responses"],availability:"not_ready"}]}));
   expect((await syncProviderCatalog({} as never,"sample","poll")).status).toBe("applied");

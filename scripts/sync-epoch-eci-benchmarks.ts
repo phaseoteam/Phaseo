@@ -39,7 +39,7 @@ async function main() {
 		models.push(...(data ?? []));
 		if ((data ?? []).length < 500) break;
 	}
-	const matches = matchEpochRows(models, sourceRows);
+	const { matches, missingMappings } = matchEpochRows(models, sourceRows);
 	const matched = matches.filter((match) => match.model);
 	const report = {
 		source: SOURCE_URL,
@@ -47,9 +47,14 @@ async function main() {
 		sourceModels: sourceRows.length,
 		matched: matched.length,
 		unmatched: matches.filter((match) => !match.model).map(({ row, candidates }) => ({ sourceModel: row.model, displayName: row.displayName, candidates })),
+		missingMappings,
 	};
 	const reportArg = process.argv.find((argument) => argument.startsWith("--report="));
 	if (reportArg) writeJson(resolve(reportArg.slice("--report=".length)), report);
+	for (const { model_slug, sourceId } of missingMappings) {
+		const message = `Epoch mapping for ${model_slug} refers to missing source ID ${sourceId}; kept its existing scores. Set epoch_ai to null or a current ID.`;
+		console.warn(process.env.GITHUB_ACTIONS === "true" ? `::warning::${message}` : message);
+	}
 	console.log(`Epoch ECI: ${matched.length}/${sourceRows.length} source models matched.`);
 	if (!matched.length) throw new Error("No Epoch ECI models matched; no benchmark data was written.");
 	if (!process.argv.includes("--write")) { console.log("Dry run complete. Use --write to update the database catalog."); return; }

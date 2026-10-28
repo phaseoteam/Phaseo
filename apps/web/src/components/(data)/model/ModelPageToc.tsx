@@ -6,6 +6,8 @@ import {
 	Activity,
 	AppWindow,
 	Bolt,
+	Boxes,
+	ChartColumn,
 	CircleDollarSign,
 	CircleHelp,
 	CreditCard,
@@ -18,10 +20,10 @@ import {
 	Info,
 	Landmark,
 	Link2,
-	MapPinned,
 	Package,
 	PieChart,
 	ScrollText,
+	Sparkles,
 	Store,
 	Trophy,
 	Users,
@@ -59,14 +61,14 @@ const sectionIcons: Record<string, LucideIcon> = {
 	"tool-calls": Wrench,
 	images: Image,
 	"image-output": ImagePlus,
-	"token-usage": PieChart,
+	"token-usage": ChartColumn,
 	"top-models": Trophy,
 	"top-apps": AppWindow,
 	overview: Info,
-	"latest-releases": Bolt,
+	"latest-releases": Sparkles,
 	organisations: Landmark,
 	links: Link2,
-	"latest-models": Package,
+	"latest-models": Sparkles,
 	summary: ScrollText,
 	progress: Activity,
 	"model-results": Trophy,
@@ -76,7 +78,7 @@ const sectionIcons: Record<string, LucideIcon> = {
 	"included-models": Package,
 	usage: Activity,
 	"model-leaderboard": Trophy,
-	models: MapPinned,
+	models: Boxes,
 	text: Trophy,
 	"fastest-models": Gauge,
 	"usage-signals": Activity,
@@ -233,6 +235,45 @@ function useActiveSection(items: ModelPageTocItem[]) {
 	return { activeDirection, activeId, setProgrammaticActiveId };
 }
 
+// Sections can be conditional (for example Top models only renders when
+// there is traffic), so hide entries whose target never made it into the page.
+function useAvailableSectionIds(items: ModelPageTocItem[]) {
+	const [availableIds, setAvailableIds] = useState<Set<string> | null>(null);
+
+	useEffect(() => {
+		if (!items.length) return;
+		let frameId = 0;
+		const update = () => {
+			frameId = 0;
+			const next = items
+				.map((item) => item.id)
+				.filter((id) => document.getElementById(id));
+			setAvailableIds((current) =>
+				current &&
+				current.size === next.length &&
+				next.every((id) => current.has(id))
+					? current
+					: new Set(next),
+			);
+		};
+		const requestUpdate = () => {
+			if (frameId) return;
+			frameId = window.requestAnimationFrame(update);
+		};
+
+		requestUpdate();
+		const mutationObserver = new MutationObserver(requestUpdate);
+		mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+		return () => {
+			if (frameId) window.cancelAnimationFrame(frameId);
+			mutationObserver.disconnect();
+		};
+	}, [items]);
+
+	return availableIds;
+}
+
 function usePinnedMobileToc(anchorId: string) {
 	const [pinned, setPinned] = useState(false);
 
@@ -274,9 +315,19 @@ export default function ModelPageToc({
 	className?: string;
 }) {
 	const t = useTranslations("Common.dropdown");
-	const filteredItems = useMemo(
+	const labelledItems = useMemo(
 		() => items.filter((item) => item.id && item.label),
 		[items],
+	);
+	const availableIds = useAvailableSectionIds(labelledItems);
+	const filteredItems = useMemo(
+		() =>
+			// Show everything until the first scan; after that, an empty set means
+			// no targets are on the page yet (for example still suspended).
+			availableIds
+				? labelledItems.filter((item) => availableIds.has(item.id))
+				: labelledItems,
+		[availableIds, labelledItems],
 	);
 	const { activeDirection, activeId, setProgrammaticActiveId } =
 		useActiveSection(filteredItems);

@@ -28,6 +28,7 @@ import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceS
 import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartSection";
 import {
 	buildHomeModelPrices,
+	HOME_MODEL_ID_LIST,
 	type HomeModelPrices,
 } from "@/components/landingPage/Home/homeModelIntel";
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
@@ -344,7 +345,7 @@ async function HomePageContent() {
 	const t = await getTranslations("Site.home");
 	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
 		getGatewayHeroVariant(),
-		fetchFrontendGatewayModels()
+		fetchFrontendGatewayModels({ ids: HOME_MODEL_ID_LIST })
 			.then(buildHomeModelPrices)
 			.catch((error) => {
 				console.warn("[Homepage] failed to load gateway model prices", error);

@@ -45,6 +45,8 @@ describe("decodeOpenAIResponsesRequest", () => {
 			}],
 		});
 		expect((ir.vendor as any)?.openai?.tool_choice?.type).toBe("allowed_tools");
+		// Other providers get the choice it implies, not a tool named allowed_tools.
+		expect(ir.toolChoice).toEqual({ name: "lookup" });
 	});
 
 	it("preserves current native and custom Responses tools for lossless re-encoding", () => {

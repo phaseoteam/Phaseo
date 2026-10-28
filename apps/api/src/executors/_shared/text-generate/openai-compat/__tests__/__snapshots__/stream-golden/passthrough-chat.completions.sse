@@ -1,6 +1,6 @@
 data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}],"rewritten":true}
 
-data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"reasoning_content":"Thinking ✓"},"finish_reason":null}],"rewritten":true}
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"reasoning_content":"Thinking ✓","reasoning":"Thinking ✓"},"finish_reason":null}],"rewritten":true}
 
 data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"content":"Hel"},"finish_reason":null}],"rewritten":true}
 

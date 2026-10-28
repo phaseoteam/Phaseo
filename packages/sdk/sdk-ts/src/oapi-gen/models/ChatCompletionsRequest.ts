@@ -1,3 +1,6 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface ChatCompletionsRequest {
   cache_control?: {
     scope?: string;
@@ -28,6 +31,7 @@ export interface ChatCompletionsRequest {
     super_resolution_references?: string[];
     [key: string]: unknown;
   };
+  include_reasoning?: boolean;
   logit_bias?: {
     [key: string]: number;
   };
@@ -36,6 +40,9 @@ export interface ChatCompletionsRequest {
   max_tokens?: number;
   max_tool_calls?: number;
   messages: {
+    audio?: {
+      id: string;
+    } | null;
     audios?: {
       audio_url: {
         url: string;
@@ -46,6 +53,7 @@ export interface ChatCompletionsRequest {
     }[];
     content?:
       | string
+      | null
       | (
           | {
               cache_control?: {
@@ -56,6 +64,7 @@ export interface ChatCompletionsRequest {
               };
               prompt_cache_breakpoint?: {
                 mode?: "explicit";
+                ttl?: string;
                 [key: string]: unknown;
               };
               text: string;
@@ -80,6 +89,20 @@ export interface ChatCompletionsRequest {
               video_url: string;
             }
           | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              file: {
+                file_data?: string;
+                file_id?: string;
+                filename?: string;
+              };
+              type: "file";
+            }
+          | {
               function: {
                 arguments?: string;
                 name?: string;
@@ -96,6 +119,7 @@ export interface ChatCompletionsRequest {
       type: "image_url";
     }[];
     name?: string;
+    reasoning?: string;
     reasoning_content?: string;
     reasoning_details?: {
       data?: string;
@@ -128,7 +152,56 @@ export interface ChatCompletionsRequest {
   model: string;
   models?: string[];
   parallel_tool_calls?: boolean;
+  plugins?: (
+    | {
+        enabled?: boolean;
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
+        exclude_domains?: string[];
+        id: "web";
+        include_domains?: string[];
+        max_results?: number;
+        max_uses?: number;
+        search_context_size?: "low" | "medium" | "high";
+      }
+    | {
+        allowed_domains?: string[];
+        blocked_domains?: string[];
+        enabled?: boolean;
+        engine?:
+          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+        id: "web-fetch";
+        max_content_tokens?: number;
+        max_uses?: number;
+      }
+    | {
+        enabled?: boolean;
+        id: "response-healing";
+        mode?: "safe" | "strict";
+      }
+  )[];
+  prediction?: {
+    content:
+      | string
+      | {
+          [key: string]: unknown;
+        }[];
+    type: "content";
+  };
   presence_penalty?: number;
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+    version?: string;
+  };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
     mode?: "implicit" | "explicit";
@@ -227,7 +300,8 @@ export interface ChatCompletionsRequest {
       | "medium"
       | "high"
       | "xhigh"
-      | "max";
+      | "max"
+      | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -257,7 +331,10 @@ export interface ChatCompletionsRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "scale"
+    | null;
   session_id?: string;
   stop?: string | string[];
   store?: boolean;
@@ -359,6 +436,21 @@ export interface ChatCompletionsRequest {
           max_results?: number;
         };
         type: "phaseo:search_models";
+      }
+    | {
+        filters?: {
+          allowed_domains?: string[];
+        };
+        search_context_size?: "low" | "medium" | "high";
+        type:
+          | "web_search"
+          | "web_search_2025_08_26"
+          | "web_search_preview"
+          | "web_search_preview_2025_03_11";
+        user_location?: {
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
       }
   )[];
   top_logprobs?: number;

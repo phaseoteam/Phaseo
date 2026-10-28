@@ -9,7 +9,7 @@ import type { GatewayCompletionsChoice } from "@core/types";
 import type { IRChatResponse, IRUsage } from "@core/ir";
 import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
 import { shapeUsageForClient } from "../usage";
-import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
 
 type AnyRecord = Record<string, any>;
 
@@ -235,19 +235,10 @@ function resolveClientModel(
     rawModel: string | null | undefined,
     ctxModel: string,
 ): string {
-    // Canonical gateway model ID should win for client-facing payloads.
-    // This prevents leaking provider snapshot/internal slugs (e.g. gpt-5-nano-2025-08-07).
-    if (ctxModel && ctxModel.includes("/")) return ctxModel;
-    if (!rawModel) return ctxModel;
-    if (!ctxModel) return rawModel;
-    if (
-        ctxModel.includes("/") &&
-        !rawModel.includes("/") &&
-        ctxModel.endsWith(`/${rawModel}`)
-    ) {
-        return ctxModel;
-    }
-    return rawModel;
+    // The Phaseo model id always wins for client-facing payloads, so provider
+    // snapshot and internal slugs (e.g. gpt-5-nano-2025-08-07) never leak.
+    if (ctxModel) return ctxModel;
+    return rawModel ?? ctxModel;
 }
 
 function deriveResponsesStatus(ir?: IRChatResponse) {
@@ -259,7 +250,7 @@ function deriveResponsesStatus(ir?: IRChatResponse) {
 }
 
 function encodeResponsesUsage(usage: IRUsage) {
-    const inputDetails: Record<string, number> = {};
+    const inputDetails: Record<string, any> = {};
     const outputDetails: Record<string, number> = {};
     // OpenAI semantics: input_tokens includes cache reads and writes.
     const cache = irUsageToOpenAIStyle(usage);
@@ -269,6 +260,8 @@ function encodeResponsesUsage(usage: IRUsage) {
     if (typeof cache.writeTokens === "number") {
         inputDetails.cache_write_tokens = cache.writeTokens;
     }
+    const writeTtlDetails = openAICacheWriteTtlDetails(cache);
+    if (writeTtlDetails) inputDetails.cache_write_tokens_details = writeTtlDetails;
     if (typeof usage._ext?.inputImageTokens === "number") {
         inputDetails.input_images = usage._ext.inputImageTokens;
     }
@@ -308,6 +301,8 @@ function encodeResponsesUsage(usage: IRUsage) {
 	if (typeof cache.write1hTokens === "number") {
 		out.cached_write_text_tokens_1h = cache.write1hTokens;
 	}
+	if (typeof cache.write30mTokens === "number") out.cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") out.cached_write_text_tokens_12h = cache.write12hTokens;
 	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
 	if (serverToolUse) out.server_tool_use = serverToolUse;
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
@@ -332,9 +327,8 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
                 status: "completed",
                 content: [
                     {
-                        type: "output_text",
+                        type: "reasoning_text",
                         text: reasoningPart.text,
-                        annotations: [],
                     },
                 ],
             });
@@ -455,6 +449,41 @@ export function extractFinishReason(payload: any): string | null {
     return null;
 }
 
+/** Endpoints whose client usage reports `cost` and `cost_details`. */
+const USAGE_COST_ENDPOINTS = new Set<string>(["chat.completions", "responses", "messages", "embeddings"]);
+
+const NANOS_PER_USD = 1_000_000_000;
+
+function finiteNanos(value: unknown): number | undefined {
+    const numeric = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+    return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+/**
+ * `usage.cost` (USD) and `usage.cost_details`, read from the pricing result already attached
+ * to the usage; nothing is priced again here. On a buffered response that pricing is the
+ * settled charge, after any BYOK fee, data-sharing discount or zero-output waiver.
+ * `upstream_inference_cost` is what the provider bills the customer's own key on a BYOK
+ * request (our price card's figure for the request); otherwise it is null, because the
+ * customer pays only `cost`.
+ */
+export function usageCostFields(pricing: unknown): {
+    cost: number;
+    cost_details: { upstream_inference_cost: number | null };
+} | undefined {
+    if (!pricing || typeof pricing !== "object") return undefined;
+    const record = pricing as AnyRecord;
+    const totalNanos = finiteNanos(record.total_nanos ?? record.totalNanos);
+    if (totalNanos === undefined) return undefined;
+    const upstreamNanos = finiteNanos(record.byok_reference_total_nanos);
+    return {
+        cost: totalNanos / NANOS_PER_USD,
+        cost_details: {
+            upstream_inference_cost: upstreamNanos === undefined ? null : upstreamNanos / NANOS_PER_USD,
+        },
+    };
+}
+
 export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineContext["endpoint"]; body?: any }) {
     if (!usage || typeof usage !== "object") return usage;
     const shaped = shapeUsageForClient(usage, { endpoint: ctx?.endpoint, body: ctx?.body });
@@ -486,6 +515,9 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
             lines: p.lines ?? [],
         };
     })();
+    const costFields = USAGE_COST_ENDPOINTS.has(String(ctx?.endpoint ?? ""))
+        ? usageCostFields(shaped.pricing ?? shaped.pricing_breakdown)
+        : undefined;
 
     if (ctx?.endpoint === "chat.completions") {
         const out: any = {
@@ -498,6 +530,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
         if (serverToolUse) out.server_tool_use = serverToolUse;
         if (typeof serviceTier === "string") out.service_tier = serviceTier;
         if (pricing) out.pricing = pricing;
+        if (costFields) Object.assign(out, costFields);
         return out;
     }
 
@@ -518,6 +551,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     if (serverToolUse) out.server_tool_use = serverToolUse;
     if (typeof serviceTier === "string") out.service_tier = serviceTier;
     if (pricing) out.pricing_breakdown = pricing;
+    if (costFields) Object.assign(out, costFields);
     return out;
 }
 
@@ -562,8 +596,9 @@ function toOaiChatChoices(choices: GatewayCompletionsChoice[] | undefined) {
         index: c.index ?? 0,
         message: {
             ...c.message,
-            refusal: (c as any).refusal ?? null,
-            annotations: (c as any).annotations ?? [],
+            // The encoder puts refusal and annotations on the message, as Chat documents.
+            refusal: (c.message as any)?.refusal ?? (c as any).refusal ?? null,
+            annotations: (c.message as any)?.annotations ?? (c as any).annotations ?? [],
         },
         logprobs: c.logprobs ?? null,
         finish_reason: c.finish_reason ?? null,
@@ -738,11 +773,31 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
         // Gateway usage follows OpenAI semantics (input includes the cache); the Messages
         // surface reports input_tokens without cache reads and writes, as Anthropic does.
         const totalInput = Number(raw?.input_tokens ?? 0);
-        const write5m = typeof raw?.cached_write_text_tokens_5m === "number" ? raw.cached_write_text_tokens_5m : undefined;
-        const write1h = typeof raw?.cached_write_text_tokens_1h === "number" ? raw.cached_write_text_tokens_1h : undefined;
+        // Client usage shaping drops the TTL split, so fall back to the response's IR for it.
+        const pickCount = (...values: unknown[]) =>
+            values.find((value): value is number => typeof value === "number" && Number.isFinite(value));
+        const write5m = openAIWrite === undefined ? undefined : pickCount(
+            raw?.cached_write_text_tokens_5m,
+            raw?.cache_creation?.ephemeral_5m_input_tokens,
+            irUsage?._ext?.cachedWriteTokens5m,
+        );
+        const write1h = openAIWrite === undefined ? undefined : pickCount(
+            raw?.cached_write_text_tokens_1h,
+            raw?.cache_creation?.ephemeral_1h_input_tokens,
+            irUsage?._ext?.cachedWriteTokens1h,
+        );
         const uncachedInput = Math.max(0, totalInput - (openAIRead ?? 0) - (openAIWrite ?? 0));
+        // The OpenAI-style details restate the same cache counts; Messages reports them once.
+        // Input no longer contains the cache, so OpenAI-style subset hints would be wrong here.
+        const {
+            input_tokens_details: _inputDetails,
+            prompt_tokens_details: _promptDetails,
+            cached_read_tokens_are_subset_of_input: _readSubset,
+            cached_write_tokens_are_subset_of_input: _writeSubset,
+            ...anthropicRaw
+        } = raw ?? {};
         return normalizeAnthropicUsage({
-            ...raw,
+            ...anthropicRaw,
             input_tokens: uncachedInput,
             ...(typeof raw?.total_tokens === "number"
                 ? { total_tokens: uncachedInput + Number(raw?.output_tokens ?? 0) }
@@ -767,6 +822,9 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
     delete extras.cache_creation;
     delete extras.cache_creation_input_tokens;
     delete extras.cache_read_input_tokens;
+    // Internal meters for OpenAI write lifetimes: Messages usage has no such fields.
+    delete extras.cached_write_text_tokens_30m;
+    delete extras.cached_write_text_tokens_12h;
     delete extras.input_tokens;
     delete extras.output_tokens;
     delete extras.server_tool_use;
@@ -821,6 +879,8 @@ function encodeChatUsage(usage: IRUsage) {
         cached_write_text_tokens: cache.writeTokens,
         cached_write_text_tokens_5m: cache.write5mTokens,
         cached_write_text_tokens_1h: cache.write1hTokens,
+        cached_write_text_tokens_30m: cache.write30mTokens,
+        cached_write_text_tokens_12h: cache.write12hTokens,
 		"x-spent-credits": usage._ext?.spentCredits,
         server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };
@@ -907,7 +967,7 @@ export function formatClientPayload(args: {
         return attachTopLevelPricing(body, usage);
     }
 
-	if (ctx.endpoint === "decisions") {
+	if (ctx.endpoint === "decisions" || ctx.endpoint === "extractions") {
 		const {
 			provider,
 			provider_id: _providerId,

@@ -5,6 +5,7 @@ import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
 import { normalizeModelsPagePricing } from "./card-pricing";
 import { publicProviderDisplayName, STEALTH_PROVIDER_ID } from "@/models/provider-identity";
+import { normalizeModelLicense } from "@/models/license";
 
 export { normalizeModelsPagePricing };
 
@@ -39,6 +40,7 @@ export type ModelsPageFacets = {
 	providerOptions: OptionCount[];
 	regionOptions: OptionCount[];
 	creatorOptions: OptionCount[];
+	licenseOptions: OptionCount[];
 	yearOptions: OptionCount[];
 };
 
@@ -128,6 +130,7 @@ type ModelVariantLinks = Record<string, ModelVariantLink>;
  */
 export function attachModelsPageVariants(rows: Row[]): Row[] {
 	const variantsByBaseModel = new Map<string, ModelVariantLinks>();
+	const licenseByBaseModel = new Map<string, string>();
 
 	for (const row of rows) {
 		const modelId = String(row.model_id ?? "").trim();
@@ -140,12 +143,17 @@ export function attachModelsPageVariants(rows: Row[]): Row[] {
 			name: String(row.name ?? modelId).trim() || modelId,
 		};
 		variantsByBaseModel.set(baseId, variants);
+		const license = normalizeModelLicense(row.license);
+		if (license && (kind === "standard" || !licenseByBaseModel.has(baseId))) licenseByBaseModel.set(baseId, license);
 	}
 
 	return rows.map((row) => {
 		const baseId = baseModelId(row);
+		// Variants such as `:free` share the base model's weights and licence.
+		// Undefined drops the key from the JSON for models without a licence.
 		return withoutExternalProviders({
 			...row,
+			license: normalizeModelLicense(row.license) ?? licenseByBaseModel.get(baseId),
 			gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers),
 			base_model_id: baseId,
 			variant_kind: variantKind(row),
@@ -206,6 +214,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		retired: 0,
 	};
 	const creatorCounts = new Map<string, number>();
+	const licenseCounts = new Map<string, number>();
 	const yearCounts = new Map<string, number>();
 	for (const row of rows) {
 		const status = row.gateway_status === "active"
@@ -220,12 +229,15 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		statusCounts[status] += 1;
 		const creatorName = creator(row);
 		if (creatorName) creatorCounts.set(creatorName, (creatorCounts.get(creatorName) ?? 0) + 1);
+		const license = normalizeModelLicense(row.license);
+		if (license) licenseCounts.set(license, (licenseCounts.get(license) ?? 0) + 1);
 		const timestamp = Number(row.primary_timestamp);
 		const date = Number.isFinite(timestamp) ? new Date(timestamp) : row.primary_date ? new Date(String(row.primary_date)) : null;
 		const year = date && Number.isFinite(date.getTime()) ? String(date.getUTCFullYear()) : "";
 		if (year) yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
 	}
 	const creatorOptions = [...creatorCounts].map(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
+	const licenseOptions = [...licenseCounts].map(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
 	const yearOptions = [...yearCounts].map(([value, count]) => ({ value, count })).sort((left, right) => Number(right.value) - Number(left.value));
 	return {
 		statusCounts,
@@ -240,6 +252,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		providerOptions: optionCounts(rows, "gateway_provider_names"),
 		regionOptions: optionCounts(rows, "gateway_execution_regions"),
 		creatorOptions,
+		licenseOptions,
 		yearOptions,
 	};
 }

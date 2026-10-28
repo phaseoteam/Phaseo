@@ -117,29 +117,124 @@ export async function estimateAudioDurationSeconds(file: File | Blob): Promise<n
     return undefined;
 }
 
+function finiteNumber(value: unknown): number | undefined {
+    return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+/** Audio tokens per second of input, the conversion the catalogue's input_audio_tokens rows use. */
+const AUDIO_TOKENS_PER_SECOND = 40;
+
+type ReportedSpeechToTextUsage = {
+    inputAudioTokens?: number;
+    inputTextTokens?: number;
+    outputTextTokens?: number;
+    inputAudioSeconds?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+};
+
+/**
+ * Read the usage the provider reported. OpenAI documents two shapes
+ * (https://platform.openai.com/docs/api-reference/audio/json-object):
+ * - tokens (gpt-4o-transcribe family): input_tokens with input_token_details.audio_tokens and
+ *   text_tokens (the prompt), and output_tokens for the transcript;
+ * - duration (whisper-1): seconds of input audio.
+ * Gateway meters already on the object (input_audio_tokens, input_audio_seconds) win.
+ */
+function readReportedSpeechToTextUsage(base: Record<string, any> | undefined): ReportedSpeechToTextUsage {
+    if (!base || typeof base !== "object") return {};
+    const details = base.input_token_details ?? base.input_tokens_details;
+    const detailAudio = finiteNumber(details?.audio_tokens);
+    const detailText = finiteNumber(details?.text_tokens);
+    const isDurationUsage = base.type === "duration";
+    const reportedInput = isDurationUsage ? undefined : finiteNumber(base.input_tokens);
+    const reportedOutput = isDurationUsage ? undefined : finiteNumber(base.output_tokens);
+    const inputAudioSeconds =
+        finiteNumber(base.input_audio_seconds) ??
+        finiteNumber(base.seconds) ??
+        finiteNumber(base.duration);
+    const inputAudioTokens =
+        finiteNumber(base.input_audio_tokens) ??
+        detailAudio ??
+        (reportedInput !== undefined ? Math.max(0, reportedInput - (detailText ?? 0)) : undefined) ??
+        (inputAudioSeconds !== undefined && inputAudioSeconds > 0
+            ? Math.max(1, Math.round(inputAudioSeconds * AUDIO_TOKENS_PER_SECOND))
+            : undefined);
+    // A reported text_tokens of 0 is still reported: it stops the prompt estimate.
+    const inputTextTokens = finiteNumber(base.input_text_tokens) ?? detailText;
+    const outputTextTokens = finiteNumber(base.output_text_tokens) ?? reportedOutput;
+    return {
+        inputAudioTokens,
+        inputTextTokens,
+        outputTextTokens,
+        inputAudioSeconds,
+        inputTokens: reportedInput,
+        outputTokens: reportedOutput,
+        totalTokens: isDurationUsage ? undefined : finiteNumber(base.total_tokens),
+    };
+}
+
+/**
+ * Combine the provider's reported usage with the local estimate. Reported values always win;
+ * the file-size and character estimates only fill meters the provider did not report.
+ */
 export function mergeSpeechToTextUsage(
     base: Record<string, any> | undefined,
     estimated: EstimatedSpeechToTextUsage,
 ): Record<string, any> {
+    const reported = readReportedSpeechToTextUsage(base);
+    const inputAudioTokens = reported.inputAudioTokens ?? estimated.input_audio_tokens;
+    const inputTextTokens = reported.inputTextTokens ?? estimated.input_text_tokens;
+    const outputTextTokens = reported.outputTextTokens ?? estimated.output_text_tokens;
+    const inputAudioSeconds = reported.inputAudioSeconds ?? estimated.input_audio_seconds;
+    const inputTokens =
+        finiteNumber(base?.inputTokens) ??
+        reported.inputTokens ??
+        inputAudioTokens + (inputTextTokens ?? 0);
+    const outputTokens = finiteNumber(base?.outputTokens) ?? reported.outputTokens ?? outputTextTokens;
     return {
         ...estimated,
         ...(base ?? {}),
-        input_audio_tokens: typeof base?.input_audio_tokens === "number" ? base.input_audio_tokens : estimated.input_audio_tokens,
-        output_text_tokens: typeof base?.output_text_tokens === "number" ? base.output_text_tokens : estimated.output_text_tokens,
-        ...(typeof estimated.input_text_tokens === "number" && typeof base?.input_text_tokens !== "number"
-            ? { input_text_tokens: estimated.input_text_tokens }
-            : {}),
-        ...(typeof estimated.input_audio_seconds === "number" && typeof base?.input_audio_seconds !== "number"
-            ? { input_audio_seconds: estimated.input_audio_seconds }
-            : {}),
+        input_audio_tokens: inputAudioTokens,
+        output_text_tokens: outputTextTokens,
+        ...(typeof inputTextTokens === "number" ? { input_text_tokens: inputTextTokens } : {}),
+        ...(typeof inputAudioSeconds === "number" ? { input_audio_seconds: inputAudioSeconds } : {}),
         ...(typeof estimated.input_characters === "number" && typeof base?.input_characters !== "number"
             ? { input_characters: estimated.input_characters }
             : {}),
         requests: typeof base?.requests === "number" ? base.requests : 1,
-        inputTokens: typeof base?.inputTokens === "number" ? base.inputTokens : estimated.inputTokens,
-        outputTokens: typeof base?.outputTokens === "number" ? base.outputTokens : estimated.outputTokens,
-        totalTokens: typeof base?.totalTokens === "number" ? base.totalTokens : estimated.totalTokens,
+        inputTokens,
+        outputTokens,
+        totalTokens: finiteNumber(base?.totalTokens) ?? reported.totalTokens ?? inputTokens + outputTokens,
     };
+}
+
+/** Groq bills every transcription or translation as at least 10 seconds of audio. */
+const GROQ_MINIMUM_BILLED_SECONDS = 10;
+
+/**
+ * Apply a provider's documented speech-to-text billing basis to the merged usage:
+ * - Groq: "Minimum Billed Length: 10 seconds. If you submit a request less than this, you will
+ *   still be billed for 10 seconds." (https://console.groq.com/docs/speech-to-text)
+ * - Together: Whisper is priced per audio minute (https://www.together.ai/pricing); the audio
+ *   length is the `duration` (seconds) of a verbose_json response, else the measured file.
+ */
+export function applyProviderSpeechToTextBilling(providerId: string, usage: Record<string, any>): Record<string, any> {
+    if (providerId === "groq") {
+        const seconds = finiteNumber(usage.input_audio_seconds) ?? 0;
+        if (seconds < GROQ_MINIMUM_BILLED_SECONDS) {
+            return { ...usage, input_audio_seconds: GROQ_MINIMUM_BILLED_SECONDS };
+        }
+        return usage;
+    }
+    if (providerId === "together") {
+        const seconds = finiteNumber(usage.input_audio_seconds);
+        if (seconds !== undefined && finiteNumber(usage.input_audio_minutes) === undefined) {
+            return { ...usage, input_audio_minutes: seconds / 60 };
+        }
+    }
+    return usage;
 }
 
 export async function estimateOpenAiSpeechToTextUsage(args: {

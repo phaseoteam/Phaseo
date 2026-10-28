@@ -2,6 +2,7 @@
   - changed-files:
       - any-glob-to-any-file:
           - apps/api/**
+          - apps/slack/**
 
 "Area: Data":
   - changed-files:

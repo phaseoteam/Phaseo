@@ -1,0 +1,357 @@
+---
+title: "Prompt Templates"
+description: "Keep prompts in a preset and send only the values that change with each request."
+"og:image": "https://phaseo.app/og/dynamic?title=Prompt%20Templates&description=Keep%20prompts%20in%20a%20preset%20and%20send%20only%20the%20values%20that%20change%20with%20each%20request.&pathname=/docs/v1/guides/prompt-templates"
+icon: "braces"
+---
+
+A prompt template is a list of messages with `{{variables}}`, saved on a [preset](/v1/guides/presets). Your application sends the preset reference and the variable values. Phaseo checks the values, fills in the messages and sends the request to the preset's model.
+
+This keeps prompt text out of application code. You can change the prompt in the dashboard without a deploy, and every caller uses the same wording, tools and response format.
+
+Templates work on `POST /v1/chat/completions`, `POST /v1/responses` and `POST /v1/messages`.
+
+## Quick start
+
+<Steps>
+<Step title="Write the template">
+
+Open **Settings -> Presets**, create or open a preset, choose its model and open the **Prompt template** tab. Add messages and write variables in double braces:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+The editor lists each variable it finds. Set its type, whether it is required, a default and a description. Fill in the **Try it** panel to see the exact messages the gateway will send, then save.
+
+Once the preset is saved, **Run saved preset** sends a real request with your test values and shows the reply, the model and the token counts. It uses your workspace's credits. The same panel has cURL, TypeScript and Python code for the request, filled in with your test values.
+
+</Step>
+
+<Step title="Send the variables">
+
+Reference the preset in `prompt.id` and put the values in `prompt.variables`. Leave out `model`, or set it to the same reference.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Check the request">
+
+Open **Gateway -> Logs** to see the request, the model that served it and its cost. The request's metadata records the preset, the variable names and the number of rendered messages, but not the variable values.
+
+</Step>
+</Steps>
+
+## Use templates from each endpoint
+
+The same `prompt` object works on all three endpoints. The template's system and developer messages become the endpoint's system instructions, and its other messages go before any conversation your request sends.
+
+| Endpoint | Template system messages go to | Template conversation goes before |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (kept as system messages) | your `messages` |
+| `/v1/responses` | `instructions` | your `input` |
+| `/v1/messages` | `system` | your `messages` |
+
+You can send a conversation with the template. For example, a chat request can add the user's follow-up turns after the template's messages:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## Template syntax
+
+Templates use a small, logic-free subset of Mustache. Nothing in a template is ever run as code.
+
+| Syntax | What it does |
+| --- | --- |
+| `{{name}}` | Inserts a value. Text is inserted as-is, numbers and booleans as text, and lists and objects as JSON. A missing optional value inserts nothing. |
+| `{{customer.name}}` | Inserts a field of an object variable. |
+| `{{#name}}...{{/name}}` | Renders the block once when the value is set and not `false`, or once for each item of a list. Inside, `{{.}}` is the current item and its fields can be used by name. |
+| `{{^name}}...{{/name}}` | Renders the block when the value is missing, `false`, empty text or an empty list. |
+| `{{! note }}` | A comment. It is removed. |
+| `\{{` | A literal `{{`. |
+
+Values are inserted as plain text, without HTML escaping. A value can change the text of a message but never the structure of the request.
+
+If a message renders to nothing but whitespace, it is dropped. Use this to make a whole message optional:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+To repeat text for each item of a list, open a section on the list and use `{{.}}` for the current item:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+Partials (`{{> name}}`), unescaped tags (`{{{name}}}` and `{{& name}}`), delimiter changes and lambdas are not supported, and the editor and API refuse templates that use them.
+
+## Variables
+
+Each variable has a type. You only need to declare a variable to change its defaults; variables used in the messages but not declared are required text.
+
+| Type | Accepts |
+| --- | --- |
+| `string` | Text. Set `max_length` to limit its length. |
+| `number` | A number. |
+| `boolean` | `true` or `false`. |
+| `enum` | One of the strings listed in `enum`. |
+| `array` | A list. |
+| `object` | A JSON object. |
+| `any` | Any JSON value. |
+| `image` | An image for a user message. See [Image variables](#image-variables). |
+
+Each variable can also have:
+
+- `required`: the request fails when the value is missing. A required variable cannot have a default.
+- `default`: used when the request leaves the value out. It must match the type.
+- `description`: shown in the editor and in error messages, up to 500 characters.
+
+A name used only to open sections, such as `notes` and `examples` above, is optional and accepts any value.
+
+Requests are checked strictly. A missing required value, a value of the wrong type or a name the template does not have returns a `400` that lists every problem at once, so a typo cannot silently drop part of a prompt.
+
+## Image variables
+
+An image variable fills a whole content part of a user message, so the template decides where the image goes. In the editor, choose **Add image** inside a user message. In the API, use a `variable` part:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+The request can send each image as an `https` URL, a `data:image/...` URL, or an image part in the chat completions, Responses or Messages shape. Phaseo converts it to the format of the endpoint you called. The selected model must accept image input.
+
+## Tools and response format
+
+A template can include `tools`, `tool_choice` and `response_format`, written in the chat completions shape. Phaseo converts them for the Responses and Messages endpoints.
+
+The request always wins when both set the same thing:
+
+- Tools are joined by function name. If the request defines a tool with the same name, the request's definition is used.
+- The request's `tool_choice` and response format (`response_format`, `text.format` or `output_config.format`) replace the template's.
+
+Request parameters such as `temperature` and `max_tokens` work as usual. The preset's own defaults fill only the fields the request leaves out.
+
+## Create a template with the API
+
+Templates are stored in the preset's `config.prompt`. Create or update the preset with a [management API key](/v1/developers/management-api-keys) that has `presets:write`:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo checks the template when it is saved. A template with a syntax error, an unknown type or a default that does not match its type is refused with `400 invalid_prompt_template` and the location of each problem, both here and in the editor.
+
+Saved changes reach requests within about two minutes.
+
+## Versions and labels
+
+Each time you publish a preset, Phaseo saves an immutable version (see [Presets](/v1/guides/presets#versions-and-marketplace-forks)). Requests run the latest published version unless they pin one. A pinned request uses that version's models, parameters and template together.
+
+Pin a version with `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` takes a version label such as `v3`, `1.2.0` or `2026.10.27`, or a label such as `production`. You can also put the version in the model ID, with or without a template:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Public presets use `@publisher/support-triage@production`. If `model` and `prompt.version` both pin a version, they must name the same one.
+
+### Labels
+
+A label is a name, such as `production` or `staging`, that points at one published version. Labels are 1 to 32 lowercase letters, numbers, hyphens or underscores, start with a letter, and cannot look like a version label (`v1`, `v2`).
+
+In **Settings -> Presets**, open the preset. **Publish**, next to **Save Draft**, saves your changes and publishes them as the next version. Open **Versions and labels** to manage labels: each label has a version picker, so choosing another version moves the label and choosing an earlier one rolls back. Use **Add label** for a new one. Open a version to see its models and template messages and how they differ from the default version (the one requests run when they don't pin a version), and use **Run** to try that version with the test values from **Prompt template**. The preset's creator can change its labels, and so can workspace owners and admins when the preset is shared. With a [management API key](/v1/developers/management-api-keys) that has `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+The body takes `version` (a version label, or another label to copy where it points) or `version_id`. `GET /v1/presets/{id}/labels` lists labels, and `DELETE /v1/presets/{id}/labels/{label}` removes one. Requests that pin a removed label fail until it is added again.
+
+### Roll back
+
+To roll back, move the label to the earlier version: choose **Move production here** on that version, or send the same request with `"version": "v2"`. Requests that pin `production` run v2 again without any change to your application.
+
+Label moves reach requests within about two minutes, the same as other preset changes.
+
+## Errors
+
+Template problems in a request return `400` with the code `validation_error`. `reason` holds the first problem's code and `details` lists all of them with their path:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Reason | Cause |
+| --- | --- |
+| `template_variable_required` | A required variable is missing. |
+| `template_variable_type` | A value does not match its type, enum list or `max_length`. |
+| `template_variable_unknown` | The request sent a variable the template does not have, or the preset has no template. |
+| `template_variables_invalid` | `prompt.variables` is not an object. |
+| `template_limit_exceeded` | The variables or the rendered text are larger than the limits below. |
+| `template_rendered_empty` | The template rendered no user or assistant message and the request sent none. |
+| `template_endpoint_unsupported` | The preset has a template and was called from an endpoint other than the three above. |
+| `prompt_model_conflict` | `model` names a different preset or model than `prompt.id`, or pins a different version than `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` is empty, longer than 64 characters, or has characters other than letters, numbers, `.`, `_`, `+` and `-`. |
+| `prompt_model_fallbacks_unsupported` | The request set `models` fallbacks. List fallback models in the preset instead. |
+
+A `prompt.id` that names no preset in your workspace returns `404`.
+
+A pinned version or label that does not exist, or that the key cannot use, returns `404` with the reason `preset_version_not_found`.
+
+## Limits
+
+| Limit | Value |
+| --- | --- |
+| Messages per template | 64 |
+| Variables per template | 64 |
+| Template text across all messages | 48,000 characters |
+| Section nesting depth | 8 |
+| Section repeats per request | 1,000 |
+| Rendered text per request | 1,000,000 characters |
+| Size of `prompt.variables` | 256 KB |
+| Values per `enum` | 100 |
+
+## Guardrails and logs
+
+[Guardrails](/v1/cookbook/guardrails-for-api-keys) check variable values as user content, even when the template puts them into a system message. A guardrail that redacts a value redacts it everywhere the template inserted it, and one that blocks a value blocks the request.
+
+Request metadata records the preset, the variable names and the number of rendered messages. The values themselves are kept only where the request body is kept, under your workspace's normal logging settings.
+
+## Current limitations
+
+- `models` fallbacks cannot be combined with a template. Add fallback models to the preset instead.
+- Templates apply to chat completions, Responses and Messages requests only.
+
+## Related guides
+
+- [Presets](./presets)
+- [Structured Outputs](./structured-outputs)
+- [Tool Calling](./tool-calling)
+- [Multimodality](./multimodality)

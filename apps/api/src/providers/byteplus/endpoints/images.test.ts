@@ -34,6 +34,17 @@ function args(endpoint: "images.generations" | "images.edits", body: Record<stri
 }
 
 describe("BytePlus image adapter", () => {
+	it("sends the request through the upstream timing tracker, so a 2xx is not retried elsewhere", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/api/v3/images/generations"),
+			response: jsonResponse({ data: [{ url: "https://example.com/output.png" }] }),
+		}]);
+		const upstreamFetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
+		await exec({ ...args("images.generations", { size: "1024x1024" }), upstreamTiming: { fetch: upstreamFetch } });
+		mock.restore();
+		expect(upstreamFetch).toHaveBeenCalledTimes(1);
+	});
+
 	it("routes generation through ModelArk with the provider-native model slug", async () => {
 		let requestBody: any;
 		const mock = installFetchMock([{

@@ -1,8 +1,18 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface AnthropicMessagesRequest {
   cache_control?: {
     scope?: string;
     ttl?: string;
     type?: string;
+    [key: string]: unknown;
+  };
+  context_management?: {
+    edits?: {
+      type: string;
+      [key: string]: unknown;
+    }[];
     [key: string]: unknown;
   };
   debug?: {
@@ -14,38 +24,97 @@ export interface AnthropicMessagesRequest {
   };
   echo_upstream_request?: boolean;
   max_tokens: number;
-  messages: {
-    content:
-      | string
-      | {
-          cache_control?: {
-            scope?: string;
-            ttl?: string;
-            type?: string;
-            [key: string]: unknown;
-          };
-          content?: string;
-          id?: string;
-          input?: {};
-          name?: string;
-          source?: {
-            data?: string;
-            media_type?: string;
-            type?: string;
-            url?: string;
-          };
-          text?: string;
-          tool_use_id?: string;
-          type?: "text" | "image" | "tool_use" | "tool_result";
-        }[];
-    role: "user" | "assistant";
-  }[];
+  messages: (
+    | {
+        content:
+          | string
+          | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              content?: string;
+              id?: string;
+              input?: {};
+              name?: string;
+              source?: {
+                data?: string;
+                media_type?: string;
+                type?: string;
+                url?: string;
+              };
+              text?: string;
+              tool_use_id?: string;
+              type?: "text" | "image" | "tool_use" | "tool_result";
+            }[];
+        role: "user" | "assistant";
+      }
+    | {
+        content:
+          | string
+          | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              text: string;
+              type: "text";
+            }[];
+        role: "system";
+      }
+  )[];
   meta?: boolean;
   metadata?: {
     [key: string]: unknown;
   };
   model: string;
   models?: string[];
+  plugins?: (
+    | {
+        enabled?: boolean;
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
+        exclude_domains?: string[];
+        id: "web";
+        include_domains?: string[];
+        max_results?: number;
+        max_uses?: number;
+        search_context_size?: "low" | "medium" | "high";
+      }
+    | {
+        allowed_domains?: string[];
+        blocked_domains?: string[];
+        enabled?: boolean;
+        engine?:
+          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+        id: "web-fetch";
+        max_content_tokens?: number;
+        max_uses?: number;
+      }
+    | {
+        enabled?: boolean;
+        id: "response-healing";
+        mode?: "safe" | "strict";
+      }
+  )[];
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+    version?: string;
+  };
+  prompt_cache_key?: string | null;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -119,7 +188,8 @@ export interface AnthropicMessagesRequest {
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    effort?:
+      "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -132,7 +202,9 @@ export interface AnthropicMessagesRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "standard_only";
   session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;
@@ -226,4 +298,5 @@ export interface AnthropicMessagesRequest {
   top_k?: number;
   top_p?: number;
   usage?: boolean;
+  user?: string;
 }

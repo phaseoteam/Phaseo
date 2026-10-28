@@ -59,6 +59,26 @@ export const CACHED_WRITE_1H_TOKEN_PATHS = [
 	"cache_creation_ephemeral_1h_input_tokens",
 ] as const;
 
+// OpenAI GPT-5.6+ (Responses API) splits cache writes by lifetime:
+// input_tokens_details.cache_write_tokens_details { ttl_30m_tokens, ttl_12h_tokens }. The two
+// counts do not overlap and sum to cache_write_tokens
+// (https://developers.openai.com/api/docs/guides/prompt-caching).
+export const CACHED_WRITE_30M_TOKEN_PATHS = [
+	"cached_write_text_tokens_30m",
+	"_ext.cachedWriteTokens30m",
+	"input_tokens_details.cache_write_tokens_details.ttl_30m_tokens",
+	"prompt_tokens_details.cache_write_tokens_details.ttl_30m_tokens",
+	"input_details.cache_write_tokens_details.ttl_30m_tokens",
+] as const;
+
+export const CACHED_WRITE_12H_TOKEN_PATHS = [
+	"cached_write_text_tokens_12h",
+	"_ext.cachedWriteTokens12h",
+	"input_tokens_details.cache_write_tokens_details.ttl_12h_tokens",
+	"prompt_tokens_details.cache_write_tokens_details.ttl_12h_tokens",
+	"input_details.cache_write_tokens_details.ttl_12h_tokens",
+] as const;
+
 const NESTED_CACHED_READ_TOKEN_PATHS = [
 	"input_tokens_details.cached_tokens",
 	"input_details.cached_tokens",
@@ -88,6 +108,9 @@ export type CacheTokenUsage = {
 	writeTokens?: number;
 	write5mTokens?: number;
 	write1hTokens?: number;
+	/** OpenAI 30-minute and 12-hour writes; both are part of `writeTokens`. */
+	write30mTokens?: number;
+	write12hTokens?: number;
 	/** Cache reads are already counted inside the reported input tokens. */
 	readSubset: boolean;
 	/** Cache writes are already counted inside the reported input tokens. */
@@ -123,6 +146,11 @@ export function resolveCacheTokenUsage(
 	if (typeof writeTokens !== "number" && (typeof write5mTokens === "number" || typeof write1hTokens === "number")) {
 		writeTokens = (write5mTokens ?? 0) + (write1hTokens ?? 0);
 	}
+	const write30mTokens = pickFirstFiniteNumber(usage, [...CACHED_WRITE_30M_TOKEN_PATHS]);
+	const write12hTokens = pickFirstFiniteNumber(usage, [...CACHED_WRITE_12H_TOKEN_PATHS]);
+	if (typeof writeTokens !== "number" && (typeof write30mTokens === "number" || typeof write12hTokens === "number")) {
+		writeTokens = (write30mTokens ?? 0) + (write12hTokens ?? 0);
+	}
 
 	const explicitRead = explicitBoolean(usage, "cached_read_tokens_are_subset_of_input", "cachedReadTokensAreSubsetOfInput");
 	let readSubset: boolean;
@@ -145,7 +173,16 @@ export function resolveCacheTokenUsage(
 	if (writeSubset && write > 0 && input < (readSubset ? read : 0) + write) writeSubset = false;
 	if (readSubset && read > 0 && input < read) readSubset = false;
 
-	return { readTokens, writeTokens, write5mTokens, write1hTokens, readSubset, writeSubset };
+	return {
+		readTokens,
+		writeTokens,
+		write5mTokens,
+		write1hTokens,
+		...(typeof write30mTokens === "number" ? { write30mTokens } : {}),
+		...(typeof write12hTokens === "number" ? { write12hTokens } : {}),
+		readSubset,
+		writeSubset,
+	};
 }
 
 /** Input tokens that were neither read from nor written to the cache. */
@@ -163,6 +200,8 @@ export type OpenAIStyleCacheUsage = {
 	writeTokens?: number;
 	write5mTokens?: number;
 	write1hTokens?: number;
+	write30mTokens?: number;
+	write12hTokens?: number;
 };
 
 /**
@@ -176,7 +215,13 @@ export function irUsageToOpenAIStyle(usage: {
 	cachedInputTokens?: number;
 	cachedReadTokensAreSubsetOfInput?: boolean;
 	cachedWriteTokensAreSubsetOfInput?: boolean;
-	_ext?: { cachedWriteTokens?: number; cachedWriteTokens5m?: number; cachedWriteTokens1h?: number };
+	_ext?: {
+		cachedWriteTokens?: number;
+		cachedWriteTokens5m?: number;
+		cachedWriteTokens1h?: number;
+		cachedWriteTokens30m?: number;
+		cachedWriteTokens12h?: number;
+	};
 }): OpenAIStyleCacheUsage {
 	const input = Number.isFinite(usage.inputTokens) ? Number(usage.inputTokens) : 0;
 	const cache = resolveCacheTokenUsage(
@@ -195,6 +240,54 @@ export function irUsageToOpenAIStyle(usage: {
 	return {
 		inputTokens,
 		totalTokens: reportedTotal + (inputTokens - input),
+		readTokens: cache.readTokens,
+		writeTokens: cache.writeTokens,
+		write5mTokens: cache.write5mTokens,
+		write1hTokens: cache.write1hTokens,
+		write30mTokens: cache.write30mTokens,
+		write12hTokens: cache.write12hTokens,
+	};
+}
+
+/**
+ * OpenAI's Responses `input_tokens_details.cache_write_tokens_details`. OpenAI returns both
+ * fields whenever it returns the split, so a missing one is reported as 0; with no split
+ * known, nothing is returned.
+ */
+export function openAICacheWriteTtlDetails(
+	cache: Pick<CacheTokenUsage, "write30mTokens" | "write12hTokens">,
+): { ttl_30m_tokens: number; ttl_12h_tokens: number } | undefined {
+	if (typeof cache.write30mTokens !== "number" && typeof cache.write12hTokens !== "number") return undefined;
+	return { ttl_30m_tokens: cache.write30mTokens ?? 0, ttl_12h_tokens: cache.write12hTokens ?? 0 };
+}
+
+export type AnthropicStyleCacheUsage = {
+	/** Input that was neither read from nor written to the cache. */
+	inputTokens: number;
+	readTokens?: number;
+	writeTokens?: number;
+	write5mTokens?: number;
+	write1hTokens?: number;
+};
+
+/**
+ * Restate IR usage in Anthropic terms for the Messages encoder: input excludes cache reads
+ * and writes, which are reported beside it.
+ */
+export function irUsageToAnthropicStyle(usage: Parameters<typeof irUsageToOpenAIStyle>[0]): AnthropicStyleCacheUsage {
+	const input = Number.isFinite(usage.inputTokens) ? Number(usage.inputTokens) : 0;
+	const cache = resolveCacheTokenUsage(
+		{
+			cachedInputTokens: usage.cachedInputTokens,
+			cachedReadTokensAreSubsetOfInput: usage.cachedReadTokensAreSubsetOfInput,
+			cachedWriteTokensAreSubsetOfInput: usage.cachedWriteTokensAreSubsetOfInput,
+			_ext: usage._ext,
+		},
+		input,
+		{ readSubsetDefault: true },
+	);
+	return {
+		inputTokens: uncachedInputTokens(input, cache),
 		readTokens: cache.readTokens,
 		writeTokens: cache.writeTokens,
 		write5mTokens: cache.write5mTokens,
@@ -231,7 +324,11 @@ export function reportedCacheTokens(usage: any): ReportedCacheTokens {
 		const write5m = sum((dimension) => dimension === "cached_write_text_tokens_5m");
 		const write1h = sum((dimension) => dimension === "cached_write_text_tokens_1h");
 		const aggregateWrite = sum((dimension) => dimension.startsWith("cached_write_") && !/_(5m|1h)$/.test(dimension));
-		const write = aggregateWrite ?? (write5m !== undefined || write1h !== undefined ? (write5m ?? 0) + (write1h ?? 0) : undefined);
+		// The pricing engine bills each write on one line: an aggregate line can sit beside a
+		// 1-hour line when the 1-hour writes were priced at their own rate.
+		const write = aggregateWrite !== undefined || write5m !== undefined || write1h !== undefined
+			? (aggregateWrite ?? 0) + (write5m ?? 0) + (write1h ?? 0)
+			: undefined;
 		if (read !== undefined || write !== undefined) {
 			return { readTokens: read, writeTokens: write, write5mTokens: write5m, write1hTokens: write1h };
 		}

@@ -3,8 +3,41 @@ title: "Criar destino de observabilidade"
 sidebarTitle: "Criar destino"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /observability/destinations"
-description: "Cria um destino de webhook ou OpenTelemetry."
+description: "Cria um destino do Broadcast: uma ferramenta OpenTelemetry, um webhook, um bucket de armazenamento ou um data warehouse."
 ---
 <Note>Este endpoint requer uma chave de API de gerenciamento com `settings:write`.</Note>
 
-O objeto `config` é somente para gravação e é criptografado antes do armazenamento. Os endpoints devem usar endereços HTTPS públicos.
+O objeto `config` é somente para gravação e é criptografado antes do armazenamento. Os endpoints devem usar endereços HTTPS públicos. Veja [Broadcast](../../guides/broadcast.mdx) para saber o que cada destino faz e o que recebe.
+
+## Chaves de `config` por tipo
+
+Todos os valores são strings. Uma solicitação sem uma chave obrigatória, ou com um valor que o destino não consegue usar, retorna `400` com uma mensagem que identifica a chave.
+
+| `type` | Chaves de `config` obrigatórias | Chaves de `config` opcionais |
+| --- | --- | --- |
+| `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
+| `axiom` | `api_token`, `dataset` | `region` |
+| `bigquery` | `service_account_json`, `dataset`, `table` | `project_id` |
+| `braintrust` | `api_key`, `project_id` | `base_url` |
+| `clickhouse` | `endpoint`, `password`, `table` | `username`, `database` |
+| `comet_opik` | `api_key`, `workspace`, `project_name` | `base_url` |
+| `datadog` | `api_key` | `ml_app`, `site` |
+| `dynatrace` | `environment_url`, `api_token` | `token_type` |
+| `elastic` | `otlp_endpoint`, `api_key` | — |
+| `gcs` | `bucket`, `access_key_id`, `secret_access_key` | `path_template` |
+| `grafana_cloud` | `otlp_endpoint`, `instance_id`, `api_key` | — |
+| `honeycomb` | `api_key` | `region`, `dataset` |
+| `langfuse` | `secret_key`, `public_key` | `base_url` |
+| `langsmith` | `api_key` | `project`, `base_url` |
+| `new_relic` | `license_key` | `region` |
+| `otel_collector` | `otlp_endpoint` | `otlp_protocol`, `headers_json` |
+| `posthog` | `api_key` | `base_url` |
+| `r2` | `account_id`, `bucket`, `access_key_id`, `secret_access_key` | `jurisdiction`, `path_template` |
+| `respan` | `api_key` | `base_url` |
+| `s3` | `bucket`, `access_key_id`, `secret_access_key` | `region`, `endpoint`, `session_token`, `path_template` |
+| `sentry` | `otlp_endpoint`, `public_key` | — |
+| `snowflake` | `account`, `user`, `private_key`, `warehouse`, `database`, `schema`, `table` | `role` |
+| `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
+| `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
+
+Os tipos OpenTelemetry também aceitam `otlp_protocol` (`http/json` ou `http/protobuf`) e `otlp_compression` (`none` ou `gzip`), exceto quando o fornecedor aceita apenas um valor. O `headers_json` de um webhook é um objeto JSON que associa nomes de cabeçalho a valores, em forma de string.
