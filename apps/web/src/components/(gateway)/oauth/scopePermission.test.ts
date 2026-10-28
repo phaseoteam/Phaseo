@@ -25,6 +25,12 @@ describe("scopePermissionFor", () => {
 			resourceKey: "oauthApps",
 			tone: "delete",
 		});
+		expect(scopePermissionFor("spend_rules:delete")).toEqual({
+			scope: "spend_rules:delete",
+			action: "delete",
+			resourceKey: "spendRules",
+			tone: "delete",
+		});
 	});
 
 	it("keeps unknown scope identifiers intact for translated fallback copy", () => {

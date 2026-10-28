@@ -634,6 +634,7 @@
 				"providerCredentials": "プロバイダーの認証情報",
 				"guardrails": "ガードレールとポリシー設定",
 				"budgets": "チームの支出予算と利用状況",
+				"spendRules": "支出アラートとブロックのルール",
 				"managementKeys": "マシンレベルの管理キーの詳細",
 				"oauthApps": "OAuth アプリと連携の設定",
 				"privateModels": "ワークスペースのプライベートモデル"

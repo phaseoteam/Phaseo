@@ -108,6 +108,33 @@ const RESOURCE_BOUND_MCP_SCOPES = [
 	"generations:read",
 ] as const;
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
+// Account management through the Phaseo MCP. Never a default: a client must
+// name these scopes itself (the MCP's "manage" connection URL does), and the
+// consent screen lists each one so the user can untick any of them.
+export const MCP_MANAGEMENT_SCOPES = [
+	"keys:read",
+	"keys:write",
+	"keys:delete",
+	"budgets:read",
+	"budgets:write",
+	"budgets:delete",
+	"spend_rules:read",
+	"spend_rules:write",
+	"spend_rules:delete",
+	"provider_credentials:read",
+	"provider_credentials:write",
+	"provider_credentials:delete",
+	"guardrails:read",
+	"guardrails:write",
+	"guardrails:delete",
+	"presets:read",
+	"presets:write",
+	"settings:read",
+	"settings:write",
+] as const;
+const MCP_MANAGEMENT_SCOPE_SET = new Set<string>(MCP_MANAGEMENT_SCOPES);
+const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
+const PHASEO_MCP_RESOURCE = "https://mcp.phaseo.app/mcp";
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
@@ -287,19 +314,24 @@ function requiresGatewayAccessScope(clientId: string, resource: string, scopes: 
 		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
-// Permit explicit inference consent for an existing dynamic Phaseo MCP client.
-// This changes neither its stored allowlist nor any existing authorization grant.
+// Permit explicit inference or account-management consent for an existing
+// dynamic Phaseo MCP client. The request must name only MCP scopes; broader
+// catalogues are still narrowed or rejected. This changes neither the client's
+// stored allowlist nor any existing authorization grant.
 export function filterMcpAuthorizationScopes(
 	client: Parameters<typeof filterAllowedScopes>[0],
 	requested: string[],
 	resource: string,
 ): string[] {
 	const explicitStepUp = client.registration_source === "dynamic"
-		&& resource === "https://mcp.phaseo.app/mcp"
-		&& requested.includes(GATEWAY_ACCESS_SCOPE)
-		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
+		&& resource === PHASEO_MCP_RESOURCE
+		&& requested.some((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))
+		&& requested.every((scope) => MCP_STEP_UP_SCOPE_SET.has(scope) || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
 	return filterAllowedScopes(explicitStepUp
-		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		? {
+			...client,
+			allowed_scopes: [...client.allowed_scopes, ...requested.filter((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))],
+		}
 		: client, requested);
 }
 
@@ -457,12 +489,16 @@ oauthRouter.post(
 		}
 
 		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_DEFAULT_SCOPES);
-		const includesUnsupportedScopes = requestedScopes.some((scope) => !DYNAMIC_MCP_SCOPE_SET.has(scope));
+		const includesUnsupportedScopes = requestedScopes.some(
+			(scope) => !DYNAMIC_MCP_SCOPE_SET.has(scope) && !MCP_MANAGEMENT_SCOPE_SET.has(scope),
+		);
 		// Some MCP clients register with the authorization server's complete
 		// advertised scope catalogue instead of the protected resource's narrower
 		// scope list. Never grant that broader request. When it also contains the
 		// canonical resource-bound MCP scopes, safely negotiate it down to that
 		// exact read-only set and return the narrowed scope in the response.
+		// Management scopes are kept only when the client asked for nothing
+		// outside the MCP's own scope list; the user still consents to each.
 		const grantedScopes = includesUnsupportedScopes
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;

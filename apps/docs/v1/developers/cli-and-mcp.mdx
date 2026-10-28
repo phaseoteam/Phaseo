@@ -1,7 +1,7 @@
 ---
 title: "CLI and MCP"
-description: "Use the Phaseo CLI for terminal automation or connect the authenticated MCP server to AI clients for live, read-only Phaseo data."
-"og:image": "https://phaseo.app/og/dynamic?title=CLI%20and%20MCP&description=Use%20the%20Phaseo%20CLI%20for%20terminal%20automation%20or%20connect%20the%20authenticated%20MCP%20server%20to%20AI%20clients%20for%20live%2C%20read-only%20Phaseo%20data.&pathname=/docs/v1/developers/cli-and-mcp"
+description: "Use the Phaseo CLI for terminal automation or connect the authenticated MCP server to AI clients for live Phaseo data and, if you allow it, account management."
+"og:image": "https://phaseo.app/og/dynamic?title=CLI%20and%20MCP&description=Use%20the%20Phaseo%20CLI%20for%20terminal%20automation%20or%20connect%20the%20authenticated%20MCP%20server%20to%20AI%20clients%20for%20live%20Phaseo%20data%20and%2C%20if%20you%20allow%20it%2C%20account%20management.&pathname=/docs/v1/developers/cli-and-mcp"
 icon: "square-terminal"
 ---
 
@@ -12,7 +12,7 @@ Use Phaseo from your terminal with the CLI, or connect an AI client through MCP.
 | Interface | Best for | Access |
 | --- | --- | --- |
 | Phaseo CLI | Terminal workflows, CI, administration, and automation | Read and write, limited by your scopes and workspace role |
-| Phaseo MCP | Live Phaseo data inside Codex, Claude, ChatGPT, and other MCP clients | Authenticated and read-only |
+| Phaseo MCP | Live Phaseo data inside Codex, Claude, ChatGPT, and other MCP clients, and optional account management | Authenticated; read-only unless you connect with account management |
 | Docs MCP | Looking up current Phaseo documentation while coding | Documentation-only and read-only |
 | Phaseo plugin | Installing the Phaseo MCP, the Docs MCP, and the Phaseo skills in Claude Code or Codex at once | Same as each MCP server |
 
@@ -76,12 +76,41 @@ For another MCP client, add the same URL as a remote Streamable HTTP server. The
 
 ### What the MCP can read
 
-- models, providers, organisations, endpoint families, and pricing
+- models, providers, benchmark rankings, pricing, and cost estimates
 - credits, activity, analytics, request logs, and generation metadata
-- workspaces, members, presets, settings, and guardrails
-- API-key, management-key, OAuth-application, and webhook metadata without secret values
 
-The MCP does not run billable inference, return secret values, or mutate Phaseo resources. Use the dashboard, CLI, or Management API for those operations.
+These tools are read-only. They never return prompts, responses, or secret values.
+
+### Manage your account (optional)
+
+To let an agent change your Phaseo workspace, connect with the manage URL instead:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+When you sign in, the consent screen lists each permission the connection asks for, such as **Manage API keys** or **Delete budgets**, marked Read, Write, or Delete. Untick any you do not want. The agent only gets tools for the permissions you allow, and Phaseo still checks your workspace role on every change, so a member who is not an owner or admin cannot change admin-only settings this way.
+
+If you already connected with the read-only URL, switch the client to the manage URL and sign in again. To go back to read-only access, reconnect with the plain URL or revoke the app under **Settings → Connected Apps**.
+
+| Area | Tools | Permissions |
+| --- | --- | --- |
+| API keys | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| Budgets | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| Spend rules | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| Provider keys (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| Guardrails | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| Presets | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| Settings | `settings_get`, `settings_update` (routing mode, privacy and ZDR, logging, provider restrictions) | `settings:read`, `settings:write` |
+| Webhooks | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| Observability destinations | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+Tools that change or delete something are marked as such, so MCP clients that support it ask you before each call. A new API key or webhook signing secret is shown once in the tool result and cannot be shown again. Stored provider keys and destination credentials are never returned.
+
+The MCP has no billing, payment, workspace, member, management-key, or OAuth-app tools. Use the dashboard, CLI, or Management API for those.
 
 ## Docs MCP
 

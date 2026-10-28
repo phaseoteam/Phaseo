@@ -862,8 +862,60 @@ describe("OAuth route security", () => {
 		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
 			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, params.get("resource")!)).not.toContain("gateway:access");
 		}
-		expect(filterMcpAuthorizationScopes(client, [...requested, "keys:write"], params.get("resource")!)).not.toContain("gateway:access");
+		expect(filterMcpAuthorizationScopes(client, [...requested, "workspaces:write"], params.get("resource")!)).not.toContain("gateway:access");
 		expect(filterMcpAuthorizationScopes(client, ["models:read"], params.get("resource")!)).toEqual(["models:read"]);
+	});
+
+	it("lets existing dynamic Phaseo MCP clients explicitly step up to account-management consent", async () => {
+		state.client = { id: "existing_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "pricing:read"] };
+		const { oauthRouter, filterMcpAuthorizationScopes } = await import("./oauth");
+		const requested = ["models:read", "pricing:read", "keys:read", "keys:write", "keys:delete", "budgets:write", "settings:write"];
+		const challenge = "a".repeat(43);
+		const params = new URLSearchParams({ client_id: "existing_mcp", redirect_uri: "https://claude.ai/api/mcp/auth_callback", response_type: "code", scope: requested.join(" "), code_challenge: challenge, code_challenge_method: "S256", resource: "https://mcp.phaseo.app/mcp" });
+		const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+		expect(response.status).toBe(302);
+		expect(new URLSearchParams(state.consentParams ?? "").get("scope")).toBe(requested.join(" "));
+		expect(state.client.allowed_scopes).toEqual(["models:read", "pricing:read"]);
+
+		const client = state.client as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		const resource = params.get("resource")!;
+		// Management scopes are only granted when the client names them for the Phaseo MCP.
+		for (const otherResource of ["https://other.example/mcp", "https://api.example.com/v1", ""]) {
+			expect(filterMcpAuthorizationScopes(client, requested, otherResource)).toEqual(["models:read", "pricing:read"]);
+		}
+		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
+			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// A request that also names a scope outside the MCP list gets no step-up at all.
+		for (const outside of ["openid", "workspaces:write", "management_keys:write", "oauth_clients:delete", "presets:delete"]) {
+			expect(filterMcpAuthorizationScopes(client, [...requested, outside], resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// Asking for read-only scopes never adds management scopes.
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "pricing:read"], resource)).toEqual(["models:read", "pricing:read"]);
+	});
+
+	it("keeps explicitly requested MCP management scopes at dynamic registration", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const scope = "models:read pricing:read keys:read keys:write keys:delete settings:read settings:write";
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Claude", redirect_uris: ["https://claude.ai/api/mcp/auth_callback"], scope, token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(scope.split(" "));
+		expect(await response.json()).toMatchObject({ scope });
+	});
+
+	it("narrows registration to read-only scopes when management scopes come with administrative ones", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Catalogue", redirect_uris: ["https://client.example/callback"], scope: "models:read pricing:read keys:write workspaces:delete", token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read", "pricing:read"]);
 	});
 
 	it("classifies legacy loopback registrations as native clients", async () => {
