@@ -1850,14 +1850,16 @@ describe("Slack search", () => {
 		expect(keeps.instructions).toContain("You can't search Slack messages with Claude Test: Slack's terms don't allow keeping what its search finds, so an answer that searches Slack may only use AI providers that keep no data (zero data retention), and Claude Test has no provider that does.");
 		expect(keeps.instructions).toContain("an admin can choose a model that keeps no data for the agent in Phaseo (Settings → Slack)");
 
-		// Auto picks a model per request without regard to that. With model choice on, the allowed models that can search are named.
-		await install({ model: "phaseo/auto", bot_scopes: SEARCH_SCOPES, model_choice_enabled: true, allowed_models: [ZDR_MODEL, "anthropic/claude-test"] });
-		const auto = await turnWith();
-		expect(auto.tools).not.toContain("search_slack");
-		expect(auto.instructions).toContain("You can't search Slack messages with Auto:");
-		expect(auto.instructions).toContain("by starting the message with `with <model>:` (GPT Test), or an admin can choose one for the agent");
-		// Chosen for the message, a model that keeps no data can search.
+		// With model choice on, the allowed models that can search are named: Auto among them, whose router then picks only models that keep no data.
+		await install({ model: "anthropic/claude-test", bot_scopes: SEARCH_SCOPES, model_choice_enabled: true, allowed_models: [ZDR_MODEL, "phaseo/auto", "anthropic/claude-test"] });
+		const named = await turnWith();
+		expect(named.tools).not.toContain("search_slack");
+		expect(named.instructions).toContain("by starting the message with `with <model>:` (GPT Test, Auto), or an admin can choose one for the agent");
+		// Chosen for the message, a model that keeps no data can search, and so can Auto.
 		expect((await turnWith({ model: ZDR_MODEL })).tools).toContain("search_slack");
+		expect((await turnWith({ model: "phaseo/auto" })).tools).toContain("search_slack");
+		await install({ model: "phaseo/auto", bot_scopes: SEARCH_SCOPES });
+		expect((await turnWith()).tools).toContain("search_slack");
 		await install({ model: ZDR_MODEL, bot_scopes: SEARCH_SCOPES });
 		const offered = await turnWith();
 		expect(offered.tools).toContain("search_slack");
@@ -1890,7 +1892,7 @@ describe("Slack search", () => {
 		expect(flags).toEqual([["step 1", false], ["consult 1", false], ["step 2", true], ["consult 2", true], ["step 3", true]]);
 		expect(consults).toEqual([
 			expect.objectContaining({ answer: "Yes." }),
-			"Claude Test can't be used after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and Claude Test has none. Answer without it, and say so if they asked for it.",
+			"Claude Test can't be used after a Slack search: once an answer has searched Slack, it may only use AI providers that keep no data (zero data retention), and none could serve Claude Test. Answer without it, and say so if they asked for it.",
 		]);
 		// One function for the whole answer: the runner asks it before each request (agent.ts adds the flag).
 		expect(agent.asks.map((ask) => ask.zeroDataRetention)).toEqual([agent.requests[0].zeroDataRetention, agent.requests[0].zeroDataRetention]);
@@ -1920,7 +1922,7 @@ describe("Slack search", () => {
 		expect(stored(turn)).not.toContain(SNIPPET);
 	});
 
-	it("never asks Auto after a search, and offers search with a route that takes the workspace's own provider key when it has one", async () => {
+	it("asks Auto after a search only from providers that keep no data, and offers search with a route that takes the workspace's own provider key when it has one", async () => {
 		// The only route of this model keeps no data but takes only the workspace's own key for its provider.
 		catalogueRoute("acme/byok-zdr", "byok-cloud", { credential_mode: "byok_only" });
 		await install({ model: "acme/byok-zdr", bot_scopes: SEARCH_SCOPES, model_choice_enabled: true, allowed_models: ["acme/byok-zdr", "phaseo/auto"] });
@@ -1941,9 +1943,11 @@ describe("Slack search", () => {
 		(world.db.tables.byok_keys ??= []).push({ id: "byok_1", workspace_id: WORKSPACE_ID, provider_id: "byok-cloud", enabled: true });
 		await expect(runTurn(deps(agent), await startTurn({ ...DIRECT, actionToken: TOKEN }), step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests.at(-1)!.tools.map((tool) => tool.id)).toContain("search_slack");
-		expect(consults).toEqual([expect.stringMatching(/^Auto can't be asked after a Slack search: .* Auto picks a model for each request and can't promise one\./)]);
-		// It never reached the gateway.
-		expect(agent.asks).toEqual([]);
+		expect(consults).toEqual([expect.objectContaining({ model: "phaseo/auto", answer: "Yes." })]);
+		// Asked with the answer's flag, which the runner turns into require_zero_data_retention (agent.ts).
+		expect(agent.asks).toHaveLength(1);
+		expect(agent.asks[0].model).toBe("phaseo/auto");
+		await expect(agent.asks[0].zeroDataRetention!()).resolves.toBe(true);
 	});
 
 	it("searches as the person and keeps nothing it found: not in step outputs, working memory, the coordinator or the Workflow's payload", async () => {

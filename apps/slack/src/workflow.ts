@@ -581,7 +581,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	let searchOn: SearchAvailability = searchAvailability(installation, turn);
 	const actionToken = searchOn === "on" ? await coordinator.actionToken(turn.turnId) : null;
 	if (searchOn === "on" && !actionToken) searchOn = "no_token";
-	// After a search the answer may only use providers that keep no data, so its model must have one (Auto never does).
+	// After a search the answer may only use providers that keep no data, so its model must have one (Auto always may).
 	// The models the person could choose instead, if model choice is on, are read with it.
 	let zdr: ZeroRetentionNote | undefined;
 	if (searchOn === "on") {
@@ -591,7 +591,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			searchOn = "needs_zdr";
 			const choices = others.filter((id) => capable.has(id));
 			const names = await modelNames(deps.db, [model, ...choices]);
-			zdr = { name: names.get(model) ?? model, auto: isAutoModel(model), choices: choices.map((id) => names.get(id) ?? id) };
+			zdr = { name: names.get(model) ?? model, choices: choices.map((id) => names.get(id) ?? id) };
 		}
 	}
 	const search: SearchOffer = { availability: searchOn, asker: turn.slackUserId, inChannel: !(turn.kind === "dm" || turn.channel.startsWith("D")), ...(zdr ? { zdr } : {}) };
