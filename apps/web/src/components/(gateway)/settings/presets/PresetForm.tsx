@@ -29,16 +29,27 @@ import {
 	ChevronRight,
 	ChevronLeft,
 	FileText,
+	History,
+	Loader2,
+	Upload,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
-import { createPresetAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SortablePresetList } from "./SortablePresetList";
-import { PresetVersionLabels } from "./PresetVersionLabels";
+import { PresetVersionLabels, labelsSummary, usePresetVersions, versionName } from "./PresetVersionLabels";
 import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -63,6 +74,7 @@ type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" 
 type PresetVisibility = "private" | "team" | "public";
 type PresetRoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ResponseHealingMode = "safe" | "strict";
+type PresetSubmission = { name: string; slug: string; description: string; visibility: PresetVisibility; config: Record<string, unknown> };
 type PresetEditorView =
 	| "overview"
 	| "defaults"
@@ -70,7 +82,8 @@ type PresetEditorView =
 	| "providers"
 	| "parameters"
 	| "reasoning"
-	| "template";
+	| "template"
+	| "versions";
 
 const EXCLUDED_STATUSES = ["retired", "rumoured", "deprecated"];
 const REASONING_LABELS: Record<ReasoningEffort, string> = { none: "None", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Maximum" };
@@ -247,12 +260,17 @@ export default function PresetForm({
 	const promptBuild = useMemo(() => buildPromptTemplate(promptDraft), [promptDraft]);
 	const [visibility, setVisibility] = useState<PresetVisibility>(initialPreset?.visibility ?? "team");
 	// Running sends the saved preset, so it waits until template edits are saved.
-	const [savedTemplateJson] = useState(() => JSON.stringify(buildPromptTemplate(draftFromTemplate(initialConfig.prompt)).template));
+	const [savedTemplateJson, setSavedTemplateJson] = useState(() => JSON.stringify(buildPromptTemplate(draftFromTemplate(initialConfig.prompt)).template));
 	const templateHasUnsavedChanges = JSON.stringify(promptBuild.template) !== savedTemplateJson;
-	const savedSlug = typeof initialPreset?.slug === "string" ? initialPreset.slug : "";
+	// What was last saved, so publishing from the editor can stay here and keep these current.
+	const [saved, setSaved] = useState<{ slug: string; visibility: unknown }>(() => ({
+		slug: typeof initialPreset?.slug === "string" ? initialPreset.slug : "",
+		visibility: initialPreset?.visibility,
+	}));
+	const savedSlug = saved.slug;
 	const savedReference = !savedSlug
 		? null
-		: initialPreset?.visibility === "public"
+		: saved.visibility === "public"
 			? workspacePublisher?.handle ? `@${workspacePublisher.handle}/${savedSlug}` : null
 			: `@${savedSlug}`;
 	const presetReference = visibility === "public"
@@ -299,6 +317,21 @@ export default function PresetForm({
 		useState<ResponseHealingMode>(initialHealingPlugin?.mode === "strict" ? "strict" : "safe");
 	const [responseCachingEnabled, setResponseCachingEnabled] = useState(Boolean(initialResponseCaching.enabled));
 	const [responseCachingTtl, setResponseCachingTtl] = useState(asInputValue(initialResponseCaching.ttl_seconds || 300));
+
+	const presetId = initialPreset?.id ? String(initialPreset.id) : null;
+	const versions = usePresetVersions(presetId);
+	const canPublish = Boolean(presetId) && initialPreset?.canPublish !== false;
+	const [publishOpen, setPublishOpen] = useState(false);
+	const [publishing, setPublishing] = useState(false);
+	const [releaseNotes, setReleaseNotes] = useState("");
+	// Semver presets name each version; the other methods number them automatically.
+	const needsVersionLabel = initialPreset?.versioning_method === "semver";
+	const [publishVersionLabel, setPublishVersionLabel] = useState("");
+	const [publishError, setPublishError] = useState<string | null>(null);
+	const [publishNotice, setPublishNotice] = useState<string | null>(null);
+	// The form as last loaded or saved, to tell whether Publish must save first.
+	const [savedSnapshot, setSavedSnapshot] = useState(() => snapshotOf(collectSubmission()));
+	const formHasUnsavedChanges = snapshotOf(collectSubmission()) !== savedSnapshot;
 
 	const activeModels = useMemo(() => {
 		return models
@@ -480,42 +513,15 @@ export default function PresetForm({
 		};
 	}
 
-	async function onSubmit(e: React.FormEvent) {
-		e.preventDefault();
-
+	/** The preset as it would be saved now. */
+	function collectSubmission(): PresetSubmission {
 		const trimmedName = name.trim();
-		const slugPreview = buildPresetSlugPreview(slug || trimmedName);
-		if (!trimmedName) {
-			toast.error(t("credits.Preset name is required" as never));
-			return;
-		}
-		if (!slugPreview) {
-			toast.error(t("credits.Preset slug is required" as never));
-			return;
-		}
-		if (selectedModels.length === 0) {
-			toast.error(t("strings.phraseSelectAtLeastOneModelForThisPreset" as never));
-			return;
-		}
-		if (!currentUserId || !currentTeamId) {
-			toast.error(t("strings.phraseYouMustBeSignedInAndInAWorkspaceToSaveAPreset" as never));
-			return;
-		}
-
-		setLoading(true);
-
 		const config: Record<string, unknown> = {};
 
 		if (systemPrompt) {
 			config.system_prompt = systemPrompt;
 		}
 
-		if (promptBuild.issues.length > 0) {
-			toast.error(promptBuild.issues[0].message);
-			setActiveView("template");
-			setLoading(false);
-			return;
-		}
 		if (promptBuild.template) {
 			config.prompt = promptBuild.template;
 		}
@@ -617,28 +623,58 @@ export default function PresetForm({
 			config.reasoning = reasoning;
 		}
 
+		return { name: trimmedName, slug: buildPresetSlugPreview(slug || trimmedName), description, visibility, config };
+	}
+
+	function snapshotOf(submission: PresetSubmission) {
+		return JSON.stringify(submission);
+	}
+
+	/** Explains the first problem with a toast and returns false, or returns true when the preset can be saved. */
+	function validateSubmission(submission: PresetSubmission): boolean {
+		if (!submission.name) {
+			toast.error(t("credits.Preset name is required" as never));
+			return false;
+		}
+		if (!submission.slug) {
+			toast.error(t("credits.Preset slug is required" as never));
+			return false;
+		}
+		if (selectedModels.length === 0) {
+			toast.error(t("strings.phraseSelectAtLeastOneModelForThisPreset" as never));
+			return false;
+		}
+		if (!currentUserId || !currentTeamId) {
+			toast.error(t("strings.phraseYouMustBeSignedInAndInAWorkspaceToSaveAPreset" as never));
+			return false;
+		}
+		if (promptBuild.issues.length > 0) {
+			toast.error(promptBuild.issues[0].message);
+			setActiveView("template");
+			return false;
+		}
+		return true;
+	}
+
+	/** Records a successful save so Run and Publish treat the form as saved. */
+	function markSaved(submission: PresetSubmission) {
+		setSavedSnapshot(snapshotOf(submission));
+		setSavedTemplateJson(JSON.stringify(promptBuild.template));
+		setSaved({ slug: submission.slug, visibility: submission.visibility });
+	}
+
+	async function onSubmit(e: React.FormEvent) {
+		e.preventDefault();
+		const submission = collectSubmission();
+		if (!validateSubmission(submission)) return;
+		setLoading(true);
 		try {
 			if (initialPreset?.id) {
-				await updatePresetAction({
-					id: initialPreset.id,
-					name: trimmedName,
-					slug: slugPreview,
-					description,
-					visibility,
-					config,
-				});
-			toast.success(t("credits.Draft saved" as never));
+				await updatePresetAction({ id: initialPreset.id, ...submission });
+				toast.success(t("credits.Draft saved" as never));
 			} else {
-				await createPresetAction({
-					name: trimmedName,
-					slug: slugPreview,
-					description,
-					visibility,
-					config,
-					creatorUserId: currentUserId,
-					workspaceId: currentTeamId,
-				});
-			toast.success(t("credits.Preset created" as never));
+				await createPresetAction({ ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! });
+				toast.success(t("credits.Preset created" as never));
 			}
 			router.push("/settings/presets");
 			router.refresh();
@@ -648,6 +684,65 @@ export default function PresetForm({
 			setLoading(false);
 		}
 	}
+
+	function publishErrorMessage(code: string) {
+		if (code === "no_draft_changes") return t("presetVersions.publishNoChanges");
+		if (code === "forbidden") return t("presetVersions.publishForbidden");
+		if (code === "workspace_publisher_required") return t("presetVersions.publishNeedsHandle");
+		if (code === "invalid_prompt_template") return t("presetVersions.publishInvalidTemplate");
+		if (code === "invalid_semver_label" || code === "version_label_taken") return t("presetVersions.publishInvalidSemver");
+		return t("presetVersions.publishFailed");
+	}
+
+	/** Saves the draft when it has unsaved edits, publishes it, and stays in the editor. */
+	async function publish() {
+		if (!presetId) return;
+		if (needsVersionLabel && !publishVersionLabel.trim()) {
+			setPublishError(t("presetVersions.publishInvalidSemver"));
+			return;
+		}
+		const submission = collectSubmission();
+		if (!validateSubmission(submission)) {
+			setPublishOpen(false);
+			return;
+		}
+		setPublishing(true);
+		setPublishError(null);
+		try {
+			if (formHasUnsavedChanges) {
+				await updatePresetAction({ id: presetId, ...submission });
+				markSaved(submission);
+			}
+			const result = await publishPresetDraftAction(presetId, releaseNotes, needsVersionLabel ? publishVersionLabel : undefined);
+			if (!result.ok) {
+				setPublishError(publishErrorMessage(result.error));
+				return;
+			}
+			const published = result.version?.version_number ? versionName({ version_label: result.version.version_label ?? null, version_number: result.version.version_number }) : null;
+			setPublishOpen(false);
+			setReleaseNotes("");
+			setPublishVersionLabel("");
+			setPublishNotice(published ? t("presetVersions.published", { version: published }) : t("presetVersions.publishedNext"));
+			await versions.reload();
+			// The editor's address is the slug; keep it valid when the save renamed it.
+			if (submission.slug !== String(initialPreset?.slug ?? "")) router.replace(`/settings/presets/${encodeURIComponent(submission.slug)}`);
+			router.refresh();
+		} catch (error) {
+			setPublishError(localizedSettingsError(error, t, "Failed to save preset"));
+		} finally {
+			setPublishing(false);
+		}
+	}
+
+	const versionsSummary = versions.state.status === "loading"
+		? t("presetVersions.loading")
+		: versions.state.status === "failed"
+			? t("presetVersions.loadFailed")
+			: versions.state.data.versions.length === 0
+				? t("presetVersions.summaryNone")
+				: versions.state.data.labels.length
+					? t("presetVersions.summary", { labels: labelsSummary(versions.state.data), count: versions.state.data.versions.length })
+					: t("presetVersions.summaryNoLabels", { count: versions.state.data.versions.length });
 
 	return (
 		<form
@@ -683,11 +778,24 @@ export default function PresetForm({
 								<Button type="button" variant="outline" asChild disabled={loading}>
 				<Link href="/settings/presets">{t("labels.cancel")}</Link>
 								</Button>
-								<Button type="submit" disabled={loading || !name.trim()}>
+								<Button type="submit" variant={canPublish ? "outline" : "default"} disabled={loading || publishing || !name.trim()}>
 									{loading ? t("strings.phraseSaving") : initialPreset ? t("finalSettingsCopy.saveDraft") : t("labels.create")}
 								</Button>
+								{canPublish ? (
+									<Button type="button" disabled={loading || publishing || !name.trim()} onClick={() => { setPublishError(null); setPublishOpen(true); }}>
+										{publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+										{publishing ? t("presetVersions.publishing") : t("presetVersions.publish")}
+									</Button>
+								) : null}
 							</div>
 						</div>
+						{publishNotice ? (
+							<p role="status" className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+								<Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+								{publishNotice}
+								<button type="button" className="font-medium text-foreground underline underline-offset-4" onClick={() => setActiveView("versions")}>{t("presetVersions.viewVersions")}</button>
+							</p>
+						) : null}
 
 						<div className="space-y-3">
 							<Textarea
@@ -804,14 +912,15 @@ export default function PresetForm({
 							summary={reasoningSummary}
 							onClick={() => setActiveView("reasoning")}
 						/>
+						{presetId ? (
+							<SectionLinkRow
+								title={t("presetVersions.title")}
+								description={t("presetVersions.navDescription")}
+								summary={versionsSummary}
+								onClick={() => setActiveView("versions")}
+							/>
+						) : null}
 					</div>
-
-					{initialPreset?.id ? (
-						<>
-							<Separator />
-							<PresetVersionLabels presetId={String(initialPreset.id)} reference={savedReference} />
-						</>
-					) : null}
 				</>
 			) : null}
 
@@ -922,6 +1031,36 @@ export default function PresetForm({
 							savedReference={savedReference}
 							hasUnsavedChanges={templateHasUnsavedChanges}
 						/>
+					</FormSection>
+				</div>
+			) : null}
+
+			{activeView === "versions" && presetId ? (
+				<div className="space-y-6">
+					<button
+						type="button"
+						onClick={() => setActiveView("overview")}
+						className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ChevronLeft className="h-4 w-4" />
+						<span>{t("presetVersions.breadcrumb")}</span>
+					</button>
+					<FormSection
+						icon={<History className="h-4 w-4" />}
+						title={t("presetVersions.title")}
+						description={t("presetVersions.description")}
+						stacked
+					>
+						{canPublish ? (
+							<div className="flex flex-wrap items-center gap-3">
+								<Button type="button" size="sm" disabled={loading || publishing || !name.trim()} onClick={() => { setPublishError(null); setPublishOpen(true); }}>
+									{publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+									{publishing ? t("presetVersions.publishing") : t("presetVersions.publishNew")}
+								</Button>
+								{publishNotice ? <p role="status" className="text-sm text-muted-foreground">{publishNotice}</p> : null}
+							</div>
+						) : null}
+						<PresetVersionLabels presetId={presetId} reference={savedReference} versions={versions} testValues={promptDraft.testValues} />
 					</FormSection>
 				</div>
 			) : null}
@@ -1462,6 +1601,36 @@ export default function PresetForm({
 					</FormSection>
 				</div>
 			) : null}
+
+			<Dialog open={publishOpen} onOpenChange={(open) => { if (!publishing) setPublishOpen(open); }}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>{t("presetVersions.publishTitle")}</DialogTitle>
+						<DialogDescription>
+							{formHasUnsavedChanges ? t("presetVersions.publishSavesFirst") : null}{formHasUnsavedChanges ? " " : null}{t("presetVersions.publishDescription")}
+						</DialogDescription>
+					</DialogHeader>
+					{needsVersionLabel ? (
+						<div className="space-y-2">
+							<Label htmlFor="preset-version-label">{t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)}</Label>
+							<Input id="preset-version-label" value={publishVersionLabel} onChange={(event) => setPublishVersionLabel(event.target.value)} autoComplete="off" spellCheck={false} className="font-mono" />
+						</div>
+					) : null}
+					<div className="space-y-2">
+						<Label htmlFor="preset-release-notes">{t("presetVersions.releaseNotes")}</Label>
+						<Textarea id="preset-release-notes" value={releaseNotes} onChange={(event) => setReleaseNotes(event.target.value)} rows={3} maxLength={1000} aria-describedby="preset-release-notes-help" />
+						<p id="preset-release-notes-help" className="text-xs text-muted-foreground">{t("presetVersions.releaseNotesHelp")}</p>
+					</div>
+					{publishError ? <p role="alert" className="text-sm text-destructive">{publishError}</p> : null}
+					<DialogFooter>
+						<Button type="button" variant="outline" className="rounded-md" disabled={publishing} onClick={() => setPublishOpen(false)}>{t("labels.cancel")}</Button>
+						<Button type="button" className="rounded-md" disabled={publishing} onClick={() => void publish()}>
+							{publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+							{publishing ? t("presetVersions.publishing") : t("presetVersions.publish")}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</form>
 	);
 }

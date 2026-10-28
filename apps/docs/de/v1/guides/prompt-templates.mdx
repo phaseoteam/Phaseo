@@ -266,7 +266,7 @@ Pinne eine Version mit `prompt.version`:
 
 Ein Label ist ein Name wie `production` oder `staging`, der auf eine veröffentlichte Version zeigt. Labels bestehen aus 1 bis 32 Kleinbuchstaben, Ziffern, Bindestrichen oder Unterstrichen, beginnen mit einem Buchstaben und dürfen nicht wie ein Versionslabel aussehen (`v1`, `v2`).
 
-Öffne in **Einstellungen -> Voreinstellungen** die Voreinstellung und nutze **Label setzen** an einer Version, um ein Label hinzuzufügen oder dorthin zu verschieben. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins. Mit einem [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `presets:write`:
+Öffne in **Einstellungen -> Voreinstellungen** die Voreinstellung. **Veröffentlichen** neben **Entwurf speichern** speichert deine Änderungen und veröffentlicht sie als nächste Version. Unter **Versionen und Labels** verwaltest du Labels: Jedes Label hat eine Versionsauswahl, sodass du es durch Wahl einer anderen Version verschiebst und durch Wahl einer früheren zurückrollst. Mit **Label hinzufügen** legst du ein neues an. Öffne eine Version, um ihre Modelle und Vorlagennachrichten zu sehen und wie sie sich von der Standardversion unterscheiden (der Version, die Anfragen ohne gepinnte Version ausführen), und nutze **Ausführen**, um diese Version mit den Testwerten aus **Prompt-Vorlage** zu testen. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins. Mit einem [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `presets:write`:
 
 ```bash
 curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
