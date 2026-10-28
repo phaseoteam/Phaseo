@@ -84,7 +84,8 @@ type Ended struct {
 	Cost              Cost               `json:"cost"`
 	BillingStatus     string             `json:"billing_status"`
 	FinalBill         *FinalBill         `json:"final_bill,omitempty"`
-	// Raw is the full event, including fields added later.
+	// Raw is the full event, including fields added later. A field with an unexpected type
+	// is left at its zero value; Raw still holds it.
 	Raw Event `json:"-"`
 }
 
@@ -316,9 +317,7 @@ func (s *Session) OnWarning(listener func(Warning)) func() {
 // OnEnded subscribes to session.ended.
 func (s *Session) OnEnded(listener func(*Ended)) func() {
 	return s.On("session.ended", func(event Event) {
-		if ended, err := decodeEnded(event); err == nil {
-			listener(ended)
-		}
+		listener(endedFromEvent(event))
 	})
 }
 
@@ -443,10 +442,7 @@ func (s *Session) dispatch(event Event) {
 		}
 	}
 	if event.Type() == "session.ended" && !finished {
-		ended, err := decodeEnded(event)
-		if err == nil {
-			s.finish(ended, nil)
-		}
+		s.finish(endedFromEvent(event), nil)
 	}
 }
 
@@ -468,6 +464,34 @@ func (s *Session) finish(ended *Ended, err *ClosedError) {
 	s.subs = nil
 }
 
+// endedFromEvent decodes session.ended. A field with an unexpected type must not lose the bill,
+// so on a decode error it keeps whatever decoded, fills the string fields it can read and
+// always carries the full event in Raw.
+func endedFromEvent(event Event) *Ended {
+	ended, err := decodeEnded(event)
+	if err == nil {
+		return ended
+	}
+	if ended == nil {
+		ended = &Ended{}
+	}
+	ended.Raw = event
+	for _, field := range []struct {
+		target *string
+		key    string
+	}{
+		{&ended.Type, "type"}, {&ended.SessionID, "session_id"}, {&ended.Reason, "reason"},
+		{&ended.InitiatedBy, "initiated_by"}, {&ended.ClientReason, "client_reason"}, {&ended.BillingStatus, "billing_status"},
+	} {
+		if value, ok := event[field.key].(string); ok && *field.target == "" {
+			*field.target = value
+		}
+	}
+	return ended
+}
+
+// decodeEnded decodes session.ended. On a field type error it also returns the partly decoded
+// event (encoding/json skips the bad field and decodes the rest).
 func decodeEnded(event Event) (*Ended, error) {
 	data, err := json.Marshal(event)
 	if err != nil {
@@ -475,6 +499,10 @@ func decodeEnded(event Event) (*Ended, error) {
 	}
 	var ended Ended
 	if err := json.Unmarshal(data, &ended); err != nil {
+		var typeErr *json.UnmarshalTypeError
+		if errors.As(err, &typeErr) {
+			return &ended, err
+		}
 		return nil, err
 	}
 	ended.Raw = event

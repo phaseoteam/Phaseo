@@ -59,9 +59,17 @@ use phaseo::realtime::{EndOptions, RealtimeOptions};
 let session = client.realtime().connect(RealtimeOptions::new("openai/gpt-realtime-2").voice("marin"))?;
 session.on_warning(|warning| eprintln!("{}", warning["code"]));
 let events = session.events(); // every event until the socket closes
+let reader = std::thread::spawn(move || {
+    for event in events {
+        println!("{}", event["type"]);
+    }
+});
 session.send_audio(&pcm16_chunk)?; // PCM16 bytes; base64 is handled for you
 let ended = session.end(EndOptions { reason: Some("caller hung up".into()), ..EndOptions::default() })?;
+reader.join().unwrap();
 ```
+
+`events()` queues every event, audio deltas included, until you receive it, so drain the receiver as above or drop it once you're done. Use `session.on(..)` if you only need a few event types.
 
 If the socket closes without `session.ended`, `end` returns `RealtimeError::Closed`, whose `final_bill_path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
 
@@ -69,8 +77,8 @@ If the socket closes without `session.ended`, `end` returns `RealtimeError::Clos
 
 ```bash
 rustfmt --check packages/sdk/sdk-rust/src/phaseo.rs packages/sdk/sdk-rust/tests/*.rs
-cargo clippy --manifest-path packages/sdk/sdk-rust/Cargo.toml --all-targets -- -D warnings
-cargo test --manifest-path packages/sdk/sdk-rust/Cargo.toml --all-targets
+cargo clippy --manifest-path packages/sdk/sdk-rust/Cargo.toml --all-targets --features realtime -- -D warnings
+cargo test --manifest-path packages/sdk/sdk-rust/Cargo.toml --all-targets --features realtime
 cargo package --manifest-path packages/sdk/sdk-rust/Cargo.toml
 ```
 

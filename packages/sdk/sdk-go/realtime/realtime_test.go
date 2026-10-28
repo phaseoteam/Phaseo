@@ -215,3 +215,45 @@ func TestProviderEndedSessionClosesEvents(t *testing.T) {
 		t.Fatalf("unexpected result: %v %v %v", ended, err, types)
 	}
 }
+
+func TestUndecodableSessionEndedStillFinishesWithRawBill(t *testing.T) {
+	server, _ := fakeRelay(t, func(ctx context.Context, conn *websocket.Conn, state *relayState) {
+		receiveUntil(ctx, conn, state, "session.end")
+		ended := map[string]any{}
+		for key, value := range endedEvent {
+			ended[key] = value
+		}
+		ended["usage"] = "not an object"
+		ended["cost"] = map[string]any{"total_usd": 0.01, "total_nanos": "abc", "currency": "USD"}
+		send(ctx, conn, ended)
+		_ = conn.Close(websocket.StatusNormalClosure, "")
+	})
+	session, err := realtime.Connect(context.Background(), newClient(server), realtime.Options{Model: "openai/gpt-realtime-2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	listened := make(chan *realtime.Ended, 1)
+	session.OnEnded(func(ended *realtime.Ended) { listened <- ended })
+	ended, err := session.End(context.Background(), realtime.EndOptions{Timeout: 5 * time.Second})
+	if err != nil {
+		t.Fatalf("expected the bill, got %v", err)
+	}
+	if ended.Type != "session.ended" || ended.SessionID != "rt_test" || ended.Reason != "client_requested" || ended.BillingStatus != "settled" {
+		t.Fatalf("unexpected ended: %+v", ended)
+	}
+	cost, _ := ended.Raw["cost"].(map[string]any)
+	if ended.Raw["usage"] != "not an object" || cost["total_nanos"] != "abc" {
+		t.Fatalf("raw bill should be kept: %v", ended.Raw)
+	}
+	select {
+	case got := <-listened:
+		if got.Reason != "client_requested" || got.Raw == nil {
+			t.Fatalf("unexpected OnEnded value: %+v", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("OnEnded listener was not called")
+	}
+	if result, err := session.Result(); err != nil || result != ended {
+		t.Fatalf("Result should match End: %v %v", result, err)
+	}
+}

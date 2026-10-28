@@ -214,4 +214,72 @@ class RealtimeTest < Minitest::Test
   ensure
     server&.close
   end
+
+  def require_websocket_gem
+    require "websocket"
+  rescue LoadError
+    skip "websocket gem not installed"
+  end
+
+  def test_websocket_transport_times_out_a_silent_handshake_and_closes_the_socket
+    require_websocket_gem
+    server = TCPServer.new("127.0.0.1", 0)
+    accepted = Queue.new
+    relay = Thread.new do
+      client = server.accept
+      accepted << true
+      # Read the upgrade request and never answer it; return what we see once the client gives up.
+      loop { client.readpartial(4096) }
+    rescue EOFError, IOError, SystemCallError
+      :client_closed
+    end
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    error = assert_raises(IOError) do
+      PhaseoSdk::WebSocketTransport.open("ws://127.0.0.1:#{server.addr[1]}/relay", ["statsync-realtime"], 0.3)
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+    assert_includes error.message, "WebSocket handshake timed out"
+    assert_operator elapsed, :<, 3
+    accepted.pop
+    assert relay.join(5), "the timed-out socket should be closed"
+    assert_equal :client_closed, relay.value
+  ensure
+    server&.close
+  end
+
+  def test_websocket_transport_close_closes_the_socket_and_ends_the_reader
+    require_websocket_gem
+    server = TCPServer.new("127.0.0.1", 0)
+    frames = Queue.new
+    relay = Thread.new do
+      client = server.accept
+      handshake = WebSocket::Handshake::Server.new
+      request = +""
+      request << client.readpartial(1) until request.end_with?("\r\n\r\n")
+      handshake << request
+      client.write(handshake.to_s.sub("\r\n\r\n", "\r\nSec-WebSocket-Protocol: statsync-realtime\r\n\r\n"))
+      incoming = WebSocket::Frame::Incoming::Server.new(version: handshake.version)
+      begin
+        loop do
+          incoming << client.readpartial(4096)
+          while (frame = incoming.next)
+            frames << [frame.type, frame.code]
+          end
+        end
+      rescue EOFError, IOError, SystemCallError
+        frames << :eof
+      end
+    end
+    transport = PhaseoSdk::WebSocketTransport.open("ws://127.0.0.1:#{server.addr[1]}/relay", ["statsync-realtime"], 5)
+    reader = Thread.new { transport.read_text }
+    sleep 0.05
+    transport.close(1000, "client_closed")
+    assert reader.join(5), "read_text should return once the socket is closed"
+    assert_nil reader.value
+    assert_equal [:close, 1000], frames.pop
+    assert_equal :eof, frames.pop
+    relay.join(5)
+  ensure
+    server&.close
+  end
 end

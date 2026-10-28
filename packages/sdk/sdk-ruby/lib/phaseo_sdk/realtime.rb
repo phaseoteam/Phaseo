@@ -89,6 +89,8 @@ module PhaseoSdk
       @queues = []
       @lock = Monitor.new
       @changed = @lock.new_cond
+      # WebSocketTransport serialises its own frame writes; this lock covers custom transports.
+      # It is always taken before the transport's lock, never inside it, so the two cannot deadlock.
       @write_lock = Mutex.new
       @connected = false
       @outcome = nil
@@ -294,17 +296,28 @@ module PhaseoSdk
       new(url, protocols, timeout)
     end
 
+    # timeout bounds the whole connect: TCP, the TLS handshake and the WebSocket upgrade.
     def initialize(url, protocols, timeout)
       uri = URI.parse(url)
       secure = uri.scheme == "wss"
-      tcp = Socket.tcp(uri.host, uri.port || (secure ? 443 : 80), connect_timeout: timeout)
-      @io = secure ? tls(tcp, uri.host) : tcp
-      handshake = ::WebSocket::Handshake::Client.new(url: url, protocols: protocols)
-      @io.write(handshake.to_s)
-      response = +""
-      response << @io.readpartial(1) until response.end_with?("\r\n\r\n")
-      handshake << response
-      raise IOError, "Realtime relay handshake failed: #{handshake.error || response.lines.first.to_s.strip}" unless handshake.finished? && handshake.valid?
+      # One lock for every frame written: send_event, pongs and close replies from the reader
+      # thread, and close. Frames written concurrently would interleave on the wire.
+      @write_lock = Mutex.new
+      @deadline = monotonic + timeout
+      @io = Socket.tcp(uri.host, uri.port || (secure ? 443 : 80), connect_timeout: timeout)
+      begin
+        @io = tls(@io, uri.host) if secure
+        handshake = ::WebSocket::Handshake::Client.new(url: url, protocols: protocols)
+        @io.write(handshake.to_s)
+        response = +""
+        # One byte at a time so no frame sent straight after the upgrade is consumed here.
+        response << read_handshake_byte until response.end_with?("\r\n\r\n")
+        handshake << response
+        raise IOError, "Realtime relay handshake failed: #{handshake.error || response.lines.first.to_s.strip}" unless handshake.finished? && handshake.valid?
+      rescue Exception # Any failure, interrupts included: close the socket, then re-raise.
+        @io.close rescue nil
+        raise
+      end
 
       @version = handshake.version
       @incoming = ::WebSocket::Frame::Incoming::Client.new(version: @version)
@@ -313,7 +326,7 @@ module PhaseoSdk
     end
 
     def write_text(text)
-      @io.write(::WebSocket::Frame::Outgoing::Client.new(version: @version, data: text, type: :text).to_s)
+      write_frame(:text, text)
     end
 
     # Returns the next text message, or nil once the socket has closed.
@@ -331,22 +344,29 @@ module PhaseoSdk
             return nil
           end
         end
-        @incoming << @io.readpartial(64 * 1024)
+        @incoming << read_available
       end
     rescue EOFError, IOError, SystemCallError
       nil
     end
 
+    # Sends a close frame if the socket still takes one, then closes the socket, which also
+    # ends a reader blocked in read_text.
     def close(code = 1000, reason = "")
-      write_frame(:close, reason, code: code)
-    rescue IOError, SystemCallError
+      begin
+        write_frame(:close, reason, code: code)
+      rescue IOError, SystemCallError
+        nil
+      end
+      @io.close rescue nil
       nil
     end
 
     private
 
     def write_frame(type, data, code: nil)
-      @io.write(::WebSocket::Frame::Outgoing::Client.new(version: @version, data: data, type: type, code: code).to_s)
+      frame = ::WebSocket::Frame::Outgoing::Client.new(version: @version, data: data, type: type, code: code).to_s
+      @write_lock.synchronize { @io.write(frame) }
     end
 
     def tls(tcp, host)
@@ -356,9 +376,53 @@ module PhaseoSdk
       ssl = OpenSSL::SSL::SSLSocket.new(tcp, context)
       ssl.hostname = host
       ssl.sync_close = true
-      ssl.connect
-      ssl.post_connection_check(host)
+      begin
+        loop do
+          result = ssl.connect_nonblock(exception: false)
+          break unless %i[wait_readable wait_writable].include?(result)
+
+          wait_for(ssl, result, "TLS handshake")
+        end
+        ssl.post_connection_check(host)
+      rescue Exception # The caller closes the TCP socket; close the TLS wrapper too, then re-raise.
+        ssl.close rescue nil
+        raise
+      end
       ssl
+    end
+
+    # Waits in IO.select rather than a blocking read: on Windows, closing a socket from another
+    # thread does not wake a blocking read on a non-blocking socket (Socket.tcp and TLS sockets
+    # are non-blocking), so close would hang, but it does wake IO.select.
+    def read_available
+      loop do
+        result = @io.read_nonblock(64 * 1024, exception: false)
+        raise EOFError if result.nil?
+        return result unless result.is_a?(Symbol)
+
+        result == :wait_readable ? IO.select([@io]) : IO.select(nil, [@io])
+      end
+    end
+
+    def read_handshake_byte
+      loop do
+        result = @io.read_nonblock(1, exception: false)
+        raise EOFError, "Realtime relay closed the connection during the WebSocket handshake" if result.nil?
+        return result unless result.is_a?(Symbol)
+
+        wait_for(@io, result, "WebSocket handshake")
+      end
+    end
+
+    # Waits until io is ready for the :wait_readable / :wait_writable result, within the connect deadline.
+    def wait_for(io, result, step)
+      remaining = @deadline - monotonic
+      ready = remaining.positive? && (result == :wait_readable ? IO.select([io], nil, nil, remaining) : IO.select(nil, [io], nil, remaining))
+      raise IOError, "Realtime relay #{step} timed out" unless ready
+    end
+
+    def monotonic
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
   end
 end

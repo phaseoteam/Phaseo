@@ -391,6 +391,12 @@ impl RealtimeSession {
     }
 
     /// Every event from now until the socket closes. Iterating blocks while waiting.
+    ///
+    /// The channel is unbounded so a slow reader never stalls the session, which means every
+    /// event, audio deltas included, is queued until it is received. Drain the receiver (for
+    /// example in its own thread) or drop it when you no longer need it; a receiver that is
+    /// kept but never read grows for the whole call. Use [`on`](Self::on) if you only need a
+    /// few event types.
     pub fn events(&self) -> Receiver<Value> {
         let (sender, receiver) = channel();
         let state = self.inner.state.lock().unwrap();
