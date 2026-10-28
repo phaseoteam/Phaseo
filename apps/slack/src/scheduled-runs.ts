@@ -23,9 +23,12 @@ import type { TurnRef } from "./turns";
 //      12-step limits, the usual footer, and the meter counts it as one answer
 //
 // A run that can't start is recorded (record_slack_agent_schedule_run). When the
-// creator lost access, the installation is paused, or the agent can't post in
-// the conversation, the schedule pauses with that reason; anything else counts
-// as a failure, and the third failure in a row pauses it. The creator is told
+// creator lost access or the agent can't post in the conversation, the schedule
+// pauses with that reason. While the installation is paused or a bill is due,
+// its runs are skipped with that reason: the schedule stays active, the run
+// doesn't count as a failure, and it runs again at its next time once the agent
+// is back on (the cron claim skips them the same way). Anything else counts as a
+// failure, and the third failure in a row pauses it. The creator is told
 // privately (a message in the app's DM) when it pauses for failures or because
 // the agent can't post there. The run's answer reports back the same way when
 // its turn finishes (workflow.ts, whose step is retried until it's recorded), and
@@ -157,23 +160,27 @@ export async function reportScheduledRunWithRetries(deps: Deps, run: ScheduledRu
 	console.error("[slack-agent] scheduled run not recorded, gave up", { scheduleId: run.scheduleId, result: outcome.result, attempts: RECORD_ATTEMPTS });
 }
 
+/** A run skipped while the agent is paused or a bill is due: the schedule carries on afterwards, and the run isn't a failure. */
+function agentPausedOutcome(status: string | undefined): RunMissed {
+	return { result: "skipped", reason: status === "payment_due" ? "payment_due" : "installation_paused" };
+}
+
 /** What a turn the AgentTurnWorkflow skipped (its load step) means for its schedule. */
 export function skippedTurnOutcome(reason: string): RunMissed {
 	switch (reason) {
 		case "link_required":
 			return { result: "skipped", reason: "creator_access", pause: true };
 		case "payment_due":
-			return { result: "skipped", reason: "payment_due", pause: true };
 		case "paused":
 		case "uninstalled":
 		case "no_installation":
-			return { result: "skipped", reason: "installation_paused", pause: true };
+			return agentPausedOutcome(reason);
 		default:
 			return { result: "failed", reason: "load_failed" };
 	}
 }
 
-/** A refusal from the meter: lost access and a paused installation pause the schedule; limits are a skipped run. */
+/** A refusal from the meter: lost access pauses the schedule; a paused installation and limits are a skipped run. */
 function refusedOutcome(reason: RefuseReason): RunMissed {
 	switch (reason) {
 		case "bot":
@@ -181,10 +188,9 @@ function refusedOutcome(reason: RefuseReason): RunMissed {
 		case "guest":
 			return { result: "skipped", reason: "creator_access", pause: true };
 		case "payment_due":
-			return { result: "skipped", reason: "payment_due", pause: true };
 		case "paused":
 		case "uninstalled":
-			return { result: "skipped", reason: "installation_paused", pause: true };
+			return agentPausedOutcome(reason);
 		default:
 			return { result: "skipped", reason };
 	}
@@ -213,9 +219,7 @@ export async function startScheduledRun(deps: Deps, run: ClaimedRun, installatio
 	try {
 		if (!installations.has(run.installation_id)) installations.set(run.installation_id, loadInstallation(deps.db, run.installation_id));
 		installation = await installations.get(run.installation_id)!;
-		if (!installation || installation.status !== "active") {
-			return await end({ result: "skipped", reason: installation?.status === "payment_due" ? "payment_due" : "installation_paused", pause: true });
-		}
+		if (!installation || installation.status !== "active") return await end(agentPausedOutcome(installation?.status));
 		const token = await botToken(deps, installation);
 		if (!token) return await end({ result: "failed", reason: "slack_unavailable" });
 		const slack = deps.slack(token);

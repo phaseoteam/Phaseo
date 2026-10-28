@@ -28,10 +28,12 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
   -- claim, so no schedule runs more than once an hour, even when a run is claimed
   -- late. Rows another claim holds are skipped, so a run is claimed once,
   -- whichever tick gets there first; run_at keys the run for the Worker's retries.
-  -- A schedule whose installation isn't active (paused by an admin, or a charge
-  -- unpaid) is paused with that reason instead, and while admins have turned
-  -- recurring tasks off its runs are skipped. Neither is returned. Uninstalling
-  -- deletes an installation's schedules (delete_slack_agent_schedules).
+  -- While a schedule's installation isn't active (paused by an admin, or a charge
+  -- unpaid) its runs are skipped with that reason, and so are all runs while
+  -- admins have turned recurring tasks off. A skipped run isn't returned; the
+  -- schedule stays active with its failures in a row as they were, and runs again
+  -- at its next time once the agent is back on. Uninstalling deletes an
+  -- installation's schedules (delete_slack_agent_schedules).
   -- Service role only.
   with due as (
     select schedule.id
@@ -48,12 +50,6 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
           schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
           now() + interval '50 minutes'
         ),
-        status = case when installation.status = 'active' then 'active' else 'paused' end,
-        pause_reason = case installation.status
-          when 'active' then null
-          when 'payment_due' then 'payment_due'
-          else 'installation_paused'
-        end,
         last_result = case when installation.status <> 'active' or not installation.schedules_enabled then 'skipped' end,
         last_result_reason = case
           when installation.status = 'payment_due' then 'payment_due'
@@ -64,16 +60,16 @@ CREATE OR REPLACE FUNCTION public.claim_slack_agent_schedules (
     where schedule.id = due.id and installation.id = schedule.installation_id
     returning schedule.id, schedule.installation_id, schedule.channel_id, schedule.title, schedule.prompt, schedule.created_by,
       schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week, schedule.day_of_month, schedule.timezone,
-      schedule.last_run_at, schedule.status, schedule.last_result
+      schedule.last_run_at, schedule.last_result
   )
   select claimed.id, claimed.installation_id, claimed.channel_id, claimed.title, claimed.prompt, claimed.created_by,
     claimed.frequency, claimed.hour, claimed.minute, claimed.day_of_week, claimed.day_of_month, claimed.timezone, claimed.last_run_at
   from claimed
-  where claimed.status = 'active' and claimed.last_result is null
+  where claimed.last_result is null
   order by claimed.last_run_at;
 $function$;
 
-COMMENT ON FUNCTION "public"."claim_slack_agent_schedules"(integer) IS 'For the Slack Worker''s cron trigger: claims due schedules once (FOR UPDATE SKIP LOCKED), moves each to its next local time at least 50 minutes after the claim, pauses those of installations that aren''t active, skips them while recurring tasks are off, and returns the runs to start.';
+COMMENT ON FUNCTION "public"."claim_slack_agent_schedules"(integer) IS 'For the Slack Worker''s cron trigger: claims due schedules once (FOR UPDATE SKIP LOCKED), moves each to its next local time at least 50 minutes after the claim, skips (without pausing them) those of installations that aren''t active and all of them while recurring tasks are off, and returns the runs to start.';
 
 GRANT EXECUTE ON FUNCTION "public"."claim_slack_agent_schedules"(integer) TO "service_role";
 

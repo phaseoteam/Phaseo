@@ -9,6 +9,7 @@ import {
 	scheduleSettingsDraft,
 	scheduleSettingsPatch,
 	scheduleWhere,
+	skipReasonKey,
 	slackScheduleError,
 	type SlackAgentSchedule,
 	type SlackAgentSchedules,
@@ -105,6 +106,20 @@ describe("SlackSchedulesSection", () => {
 		expect(html).not.toMatch(/rounded-(full|lg|xl)\b/);
 	});
 
+	it("says why a run was skipped: the agent was paused, a bill unpaid, recurring tasks off or a limit", () => {
+		const skipped = (id: string, reason: string | null) => schedule({ id, last_result: "skipped", last_result_reason: reason });
+		const html = render(<SchedulesList data={{ ...DATA, schedules: [
+			skipped("k1", "installation_paused"), skipped("k2", "payment_due"), skipped("k3", "schedules_off"), skipped("k4", "monthly_cap"), skipped("k5", "creator_access"),
+		], total: 5 }} onChanged={() => undefined} now={NOW} />);
+		expect(html).toContain(">Skipped: the agent was paused<");
+		expect(html).toContain(">Skipped: a Phaseo bill was unpaid<");
+		expect(html).toContain(">Skipped: recurring tasks were off<");
+		expect(html).toContain(">Skipped: a usage limit was reached<");
+		// A reason without its own words is just Skipped (its pause reason says why).
+		expect(html).toContain(">Skipped<");
+		expect(html).not.toMatch(/text-destructive">Skipped/);
+	});
+
 	it("says when there are none, and when they are turned off", () => {
 		expect(render(<SchedulesList data={{ ...DATA, schedules: [], total: 0 }} onChanged={() => undefined} />)).toContain("No recurring tasks yet.");
 		expect(render(<SchedulesList data={{ ...DATA, enabled: false }} onChanged={() => undefined} />)).toContain("Recurring tasks are turned off, so none of these run");
@@ -128,6 +143,12 @@ describe("slackAgentSchedules", () => {
 		expect(scheduleWhere("D0DIRECT01")).toBe("directMessage");
 		expect(pauseReasonKey("not_in_channel")).toBe("notInChannel");
 		expect(pauseReasonKey("creator_access")).toBe("creatorAccess");
+		expect(skipReasonKey("installation_paused")).toBe("installationPaused");
+		expect(skipReasonKey("payment_due")).toBe("paymentDue");
+		expect(skipReasonKey("schedules_off")).toBe("schedulesOff");
+		for (const reason of ["max_people", "plan_full", "hourly_limit", "monthly_cap"]) expect(skipReasonKey(reason)).toBe("limit");
+		expect(skipReasonKey("creator_access")).toBeNull();
+		expect(skipReasonKey(null)).toBeNull();
 		expect(pauseReasonKey("something_new")).toBe("admin");
 		expect(lastRunState({ last_result: "skipped", last_run_at: "2026-10-27T09:00:00Z" }, NOW)).toBe("skipped");
 		expect(lastRunState({ last_result: null, last_run_at: "2026-10-27T09:00:00Z" }, NOW)).toBe("running");

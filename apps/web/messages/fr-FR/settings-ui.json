@@ -7219,6 +7219,12 @@
 				"running": "En cours",
 				"none": "Pas encore exécutée"
 			},
+			"skipReasons": {
+				"installationPaused": "Ignorée : l'agent était en pause",
+				"paymentDue": "Ignorée : une facture Phaseo était impayée",
+				"schedulesOff": "Ignorée : les tâches récurrentes étaient désactivées",
+				"limit": "Ignorée : une limite d'utilisation était atteinte"
+			},
 			"failuresInRow": "Échecs d'affilée : {count}",
 			"pause": "Mettre en pause",
 			"resume": "Reprendre",

@@ -3,7 +3,7 @@ import { isAutoModel } from "./agent";
 import type { Env } from "./env";
 import type { Installation } from "./installations";
 import { allowedModels, modelChoiceOn, modelNames } from "./model-choice";
-import { describeTiming, formatRunTime, pauseReasonText, type ScheduleRow } from "./schedules";
+import { describeTiming, formatRunTime, lastRunText, pauseReasonText, type ScheduleRow } from "./schedules";
 import type { SlackClient } from "./slack-api";
 import type { Db } from "./supabase";
 import { isWorkspaceMember, linkedUserId } from "./usage-tools";
@@ -18,9 +18,9 @@ import { isWorkspaceMember, linkedUserId } from "./usage-tools";
 
 /** The most of a person's recurring tasks the tab lists. */
 const HOME_SCHEDULES = 10;
-const HOME_SCHEDULE_COLUMNS = "title,channel_id,status,pause_reason,next_run_at,frequency,hour,minute,day_of_week,day_of_month,timezone";
+const HOME_SCHEDULE_COLUMNS = "title,channel_id,status,pause_reason,next_run_at,last_result,last_result_reason,frequency,hour,minute,day_of_week,day_of_month,timezone";
 
-export type HomeSchedule = Pick<ScheduleRow, "title" | "channel_id" | "status" | "pause_reason" | "next_run_at" | "frequency" | "hour" | "minute" | "day_of_week" | "day_of_month" | "timezone">;
+export type HomeSchedule = Pick<ScheduleRow, "title" | "channel_id" | "status" | "pause_reason" | "next_run_at" | "last_result" | "last_result_reason" | "frequency" | "hour" | "minute" | "day_of_week" | "day_of_month" | "timezone">;
 
 export type HomeAccount = "member" | "linked" | "not_linked";
 
@@ -42,13 +42,29 @@ export type HomeFacts = {
 
 function scheduleLine(schedule: HomeSchedule): string {
 	const where = schedule.channel_id.startsWith("D") ? "here in Messages" : `in <#${schedule.channel_id}>`;
-	const state = schedule.status === "active" ? `next ${formatRunTime(schedule.next_run_at, schedule.timezone)}` : `_${pauseReasonText(schedule.pause_reason)}_`;
+	// A skipped run says why (the agent was paused, say); answers and failures aren't listed here.
+	const skipped = schedule.last_result === "skipped" ? `; last run ${lastRunText(schedule.last_result, schedule.last_result_reason)}` : "";
+	const state = schedule.status === "active" ? `next ${formatRunTime(schedule.next_run_at, schedule.timezone)}${skipped}` : `_${pauseReasonText(schedule.pause_reason)}_`;
 	return `• *${escapeText(schedule.title)}*, ${escapeText(describeTiming(schedule))} ${where}: ${escapeText(state)}`;
 }
 
 /** Text for Slack's mrkdwn, which reads &, < and > as markup. */
 function escapeText(text: string): string {
 	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Slack refuses a section whose text is longer than this. */
+const MAX_SECTION_CHARS = 3_000;
+
+/** Lines joined into as few section texts as fit Slack's limit, a line never split across two. */
+export function sectionTexts(lines: string[]): string[] {
+	const texts: string[] = [];
+	for (const line of lines) {
+		const last = texts.length - 1;
+		if (last >= 0 && texts[last].length + 1 + line.length <= MAX_SECTION_CHARS) texts[last] += `\n${line}`;
+		else texts.push(line.slice(0, MAX_SECTION_CHARS));
+	}
+	return texts;
 }
 
 /** verbatim: Slack leaves mentions in the text as they are, for text people wrote (schedule titles). */
@@ -95,11 +111,13 @@ export function homeView(facts: HomeFacts) {
 		},
 	);
 	if (facts.schedules?.mine.length) {
-		blocks.push(section([
+		const lines = [
 			"*Your recurring tasks*",
 			...facts.schedules.mine.map(scheduleLine),
+			...(installation.status !== "active" ? ["_While the agent is paused their runs are skipped, and they carry on by themselves once it's back on._"] : []),
 			"_Ask the agent to list or cancel them. Owners and admins can also pause them in Phaseo settings._",
-		].join("\n"), true));
+		];
+		for (const text of sectionTexts(lines)) blocks.push(section(text, true));
 	}
 	if (facts.account === "not_linked" && facts.connectUrl) {
 		blocks.push(...connectAccountMessage(facts.connectUrl, installation.access_mode === "linked" ? "access" : "usage").blocks);
