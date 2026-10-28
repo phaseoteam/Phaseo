@@ -224,7 +224,7 @@ phaseo workspaces set-role <workspace> <user-id> --role admin|member --json
 phaseo workspaces invites list <workspace> [--limit <n>] [--offset <n>] --json
 phaseo workspaces invites create <workspace> [--role admin|member] [--expires-in-days <n>] [--max-uses <n>] [--show-secret] --json
 phaseo workspaces invites revoke <workspace> <invite-id> [--yes] --json
-phaseo workspaces join-requests list <workspace> [--status pending|approved|rejected] [--limit <n>] [--offset <n>] --json
+phaseo workspaces join-requests list <workspace> [--status pending|approved|denied] [--limit <n>] [--offset <n>] --json
 phaseo workspaces join-requests approve <workspace> <request-id> --json
 phaseo workspaces join-requests reject <workspace> <request-id> --json
 ```
