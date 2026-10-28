@@ -52,12 +52,12 @@ const TABLES: Record<string, unknown[]> = {
 	v2_benchmark_results: [],
 };
 
-function mockCatalogue() {
+function mockCatalogue(tables: Record<string, unknown[]> = TABLES) {
 	const client = createClient("https://catalogue.example.test", "test-service-role", {
 		auth: { persistSession: false },
 		global: { fetch: async (input) => {
 			const table = new URL(String(input)).pathname.split("/").pop() ?? "";
-			return new Response(JSON.stringify(TABLES[table] ?? []), { headers: { "Content-Type": "application/json" } });
+			return new Response(JSON.stringify(tables[table] ?? []), { headers: { "Content-Type": "application/json" } });
 		} },
 	});
 	vi.spyOn(runtime, "getSupabaseAdmin").mockReturnValue(client);
@@ -89,6 +89,35 @@ describe("auto router and zero data retention", () => {
 		expect(eu.models).toEqual(["model/kept"]);
 		expect(eu.droppedForResidency).toBe(2);
 		expect(eu.unmetByDropped).toEqual(["data_region"]);
+	});
+
+	it("leaves out providers the request or workspace excludes before cutting the shortlist to its size", async () => {
+		// Thirteen equally priced models that keep no data: twelve served only by an excluded provider, the last by the one allowed.
+		const models = Array.from({ length: 13 }, (_, index) => ({ model: `model/m${String(index).padStart(2, "0")}`, provider: index < 12 ? "excluded-co" : "allowed-co" }));
+		const ids = models.map(({ model, provider }) => `${provider}:${model}`);
+		mockCatalogue({
+			v2_model_provider_routes: models.map(({ model, provider }, index) => ({ provider_model_id: ids[index], model_slug: model, provider_slug: provider, routing_enabled: true, status: "active", effective_from: null, effective_to: null })),
+			v2_route_capabilities: ids.map((id) => ({ provider_model_id: id, capability_id: "text.generate", status: "active" })),
+			v2_effective_route_capabilities: ids.map((id) => ({ provider_model_id: id, capability_id: "text.generate", params: {}, status: "active" })),
+			v2_providers: ["excluded-co", "allowed-co"].map((slug) => ({ provider_slug: slug, zero_data_retention: true, data_policy_variant: "standard", default_execution_regions: null, default_data_regions: null })),
+			v2_pricing_skus: ids.map((id) => ({ sku_id: `sku:${id}`, provider_model_id: id, service_tier_slug: "standard", status: "active", effective_from: null, effective_to: null })),
+			v2_pricing_sku_meters: ids.flatMap((id) => [
+				{ sku_id: `sku:${id}`, meter_key: "input_text_tokens", unit_quantity: 1_000_000, price_nanos: 100_000_000 },
+				{ sku_id: `sku:${id}`, meter_key: "output_text_tokens", unit_quantity: 1_000_000, price_nanos: 400_000_000 },
+			]),
+			v2_benchmark_results: [],
+		});
+		const body = { model: "phaseo/auto", input: "hello", provider: { require_zero_data_retention: true } };
+		const unfiltered = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", residency: { requireZeroDataRetention: true } });
+		expect(unfiltered.models).toHaveLength(12);
+		expect(unfiltered.models).not.toContain("model/m12");
+		for (const allowed of [
+			(provider: string) => provider !== "excluded-co",
+			(provider: string) => provider === "allowed-co",
+		]) {
+			const filtered = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", residency: { requireZeroDataRetention: true }, providerAllowed: allowed });
+			expect(filtered.models).toEqual(["model/m12"]);
+		}
 	});
 
 	it("reads a route's zero data retention the way the gateway context does", () => {

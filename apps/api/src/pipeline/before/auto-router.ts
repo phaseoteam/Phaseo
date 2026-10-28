@@ -877,11 +877,13 @@ export async function loadManagedAutoRouterCandidates(
 	config: AutoRouterWorkspaceConfig,
 	body: any,
 	classification = deterministicAutoRouterClassification(body),
-	requirements: { endpoint: Endpoint; residency: ResidencyRequirement } | null = null,
+	requirements: { endpoint: Endpoint; residency: ResidencyRequirement; providerAllowed?: (providerId: string) => boolean } | null = null,
 ): Promise<AutoRouterCandidateUniverse> {
 	const catalogue = await readAutoRouterCatalogue();
 	const now = Date.now();
-	const activeRoutes = catalogue.routes.filter((row) => activeAt(row, now));
+	// Routes the request and workspace allow, so the shortlist never fills with models only excluded providers serve.
+	const providerAllowed = requirements?.providerAllowed;
+	const activeRoutes = catalogue.routes.filter((row) => activeAt(row, now) && (!providerAllowed || providerAllowed(row.provider_slug)));
 	const skus = catalogue.skus.filter((row) => activeAt(row, now));
 	const metersBySku = new Map<string, any[]>();
 	for (const meter of catalogue.meters) {

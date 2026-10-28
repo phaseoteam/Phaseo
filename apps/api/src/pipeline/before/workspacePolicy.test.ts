@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable } from "./workspacePolicy";
+import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable, providerPermittedByPolicy } from "./workspacePolicy";
 
 function candidate(args: {
     providerId: string;
@@ -77,6 +77,15 @@ function candidate(args: {
 }
 
 describe("applyWorkspacePolicy", () => {
+	it("tells Auto's shortlist which providers the request and workspace allow, as it filters them", () => {
+		const blocked = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"] }, guardrails: [] });
+		const allowed = providerPermittedByPolicy({ provider: { only: ["Anthropic", "openai", "google-vertex"], ignore: ["google-vertex"] } }, blocked);
+		expect(["anthropic", "openai", "google-vertex", "deepseek"].filter(allowed)).toEqual(["anthropic"]);
+		const allowlist = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["deepseek"] }, guardrails: [] });
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, allowlist))).toEqual(["deepseek"]);
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, null))).toEqual(["anthropic", "deepseek"]);
+	});
+
 	it("keeps workspace route blocks when scoped guardrails allow other routes", () => {
 		const policy = buildWorkspacePolicy({
 			globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "blocklist", model_restriction_model_ids: ["test/model"] },

@@ -49,7 +49,7 @@ import {
 	normalizeRequestRoutingBody,
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
-import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
+import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -711,7 +711,7 @@ export async function beforeRequest(
 				config,
 				autoRouterBody,
 				classification,
-				{ endpoint, residency: shortlistResidency },
+				{ endpoint, residency: shortlistResidency, providerAllowed: providerPermittedByPolicy(autoRouterBody, policyLoad.value) },
 			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
