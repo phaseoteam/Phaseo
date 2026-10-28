@@ -496,6 +496,34 @@ describe("after a Slack search", () => {
 		expect(seen.map((sent) => sent.body.provider ?? null)).toEqual([null, { require_zero_data_retention: true }, { require_zero_data_retention: true }]);
 	});
 
+	it("sends Auto's own steps and an Auto consult through the runner with the flag after a search", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const sent = await capture(input, init);
+			seen.push(sent);
+			return sent.body.stream
+				? sse([COMPLETED])
+				: Response.json({ ...COMPLETED.response, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Yes." }] }] });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ model: "phaseo/auto", zeroDataRetention: async () => true }), { onText: async () => undefined, onStep: async () => undefined });
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		await runner.ask({ gatewayKey, endUser, sessionId, labels, signal, model: "phaseo/auto", instructions: "Answer directly.", prompt: "Right?", webTools: false, maxOutputTokens: 4_000, zeroDataRetention: async () => true });
+		expect(seen.map((sent) => [sent.body.model, sent.body.provider])).toEqual([
+			["phaseo/auto", { require_zero_data_retention: true }],
+			["phaseo/auto", { require_zero_data_retention: true }],
+		]);
+		expect(seen[0].body.tools.map((tool: { type: string }) => tool.type)).not.toEqual(expect.arrayContaining(["phaseo:web_search"]));
+
+		// A workspace without Auto access is still told the model isn't allowed after a search, not that it needs zero data retention.
+		const noAccess = new AgentGatewayError({
+			status: 400,
+			statusText: "Bad Request",
+			body: { error: { code: "not_supported", message: "Auto Routing is currently available to selected Alpha workspaces." }, code: "not_supported", error_type: "user" },
+		});
+		expect(classifyTurnError(noAccess, "phaseo/auto", true)).toBe("model_not_allowed");
+	});
+
 	it("says so when no provider that keeps no data could answer, and only after a search", async () => {
 		const refusal = new AgentGatewayError({ status: 403, statusText: "Forbidden", body: NO_ZDR_ROUTE });
 		expect(classifyTurnError(refusal, "openai/gpt-test", true)).toBe("search_needs_zdr");

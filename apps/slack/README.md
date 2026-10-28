@@ -280,9 +280,10 @@ doesn't otherwise:
   routes Phaseo's credentials serve; only routes or providers that can't be read
   mean no search. Auto always qualifies: with `require_zero_data_retention` the
   gateway's auto router shortlists only models with a route that keeps no data,
-  its classifier request carries the flag, and when the workspace's Auto
-  settings leave no such model it refuses with `model_region_unavailable` and
-  `unmet_requirements.zero_data_retention`. Otherwise
+  its classifier request carries the flag, and when zero data retention is
+  what leaves it no model it refuses with `model_region_unavailable` and
+  `unmet_requirements.zero_data_retention` (Auto settings that leave no model
+  for other reasons too get the gateway's usual error). Otherwise
   (`needs_zdr`) the instructions say search isn't available with this model,
   and name the allowed models that keep no data when model choice is on
   (`with <model>:`), or say an admin can choose one.
