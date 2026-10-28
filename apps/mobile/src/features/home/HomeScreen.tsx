@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { Columns3, MessageSquare, Search, Server, UserRound, Wallet } from "lucide-react-native";
 import { useMemo } from "react";
-import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, Header, Icon, IconButton, ReadableWidth, Row, Screen, Section, Skeleton, Text } from "@/components/ui";
 import { searchFocusStore, useCatalogue } from "@/features/models/state";
@@ -14,6 +14,7 @@ import { formatCompact, formatRelativeDay, formatUsd } from "@/lib/format";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { onePerModel } from "./releases";
 
 // One label per release, most useful first: "Released" beats "Announced" when both apply.
 // Upcoming entries (mostly retirements) read in the future tense.
@@ -35,7 +36,6 @@ export function HomeScreen() {
     () => (catalogue.data?.models ?? []).filter((model) => isOnPhaseo(model) && (model.popularity_tokens_week ?? 0) > 0).sort((a, b) => (b.popularity_tokens_week ?? 0) - (a.popularity_tokens_week ?? 0)).slice(0, 6),
     [catalogue.data],
   );
-  const refresh = () => { void releases.refetch(); void catalogue.refetch(); };
 
   return (
     <Screen>
@@ -50,7 +50,7 @@ export function HomeScreen() {
           </>
         )}
       />
-      <ScrollView contentContainerClassName="pb-16" keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={releases.isRefetching} onRefresh={refresh} />}>
+      <ScrollView contentContainerClassName="pb-16" keyboardShouldPersistTaps="handled">
         <ReadableWidth>
           <HomeSearch count={catalogue.data?.models.length} />
           {session ? null : <SignedOutIntro />}
@@ -62,7 +62,7 @@ export function HomeScreen() {
           </View>
 
           <Section title="Latest releases" action={<Link href="/models" asChild><Pressable hitSlop={8} className="shrink-0"><Text variant="small" numberOfLines={1} className="font-semibold text-link">All models</Text></Pressable></Link>}>
-            {releases.isLoading ? <ReleaseSkeleton /> : (releases.data?.past ?? []).filter(isNewRelease).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+            {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
           </Section>
 
           {releases.data?.future.length ? (
@@ -107,8 +107,9 @@ function HomeSearch({ count }: { count?: number }) {
   const router = useRouter();
   return (
     <Pressable
-      accessibilityRole="search"
+      accessibilityRole="button"
       accessibilityLabel="Search models"
+      accessibilityHint="Opens Models with the search field ready"
       onPress={() => { searchFocusStore.set((value) => value + 1); router.navigate("/models"); }}
       className="mx-4 mt-1 h-11 flex-row items-center gap-2 rounded-md bg-muted px-3 active:opacity-80"
     >

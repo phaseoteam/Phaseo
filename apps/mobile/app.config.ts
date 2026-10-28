@@ -1,5 +1,8 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import type { ExpoConfig } from "expo/config";
+import { withAndroidManifest, type ConfigPlugin } from "expo/config-plugins";
 
 import appJson from "./app.json";
 
@@ -33,15 +36,76 @@ const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const googleServicesFile = "./google-services.json";
 const hasGoogleServices = fs.existsSync(path.resolve(__dirname, googleServicesFile));
 
-export default {
-  ...appJson.expo,
+/**
+ * `APP_VARIANT=perf` builds "Phaseo Perf" (app.phaseo.client.perf), a separate app for load tests that
+ * installs beside the real one and never shares its chats. Its perf tools (seeder, timing spans, a local
+ * chat stand-in) are bundled only when `EXPO_PUBLIC_PERF_TOOLS=1`, so normal builds leave them out.
+ * See "Load tests" in README.md.
+ */
+const perf = process.env.APP_VARIANT === "perf";
+if (perf !== (process.env.EXPO_PUBLIC_PERF_TOOLS === "1")) {
+  throw new Error("Set APP_VARIANT=perf and EXPO_PUBLIC_PERF_TOOLS=1 together for the perf build, and neither for a normal build.");
+}
+
+/** The perf build talks plain HTTP to the chat stand-in on the development machine. */
+const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(config, (manifest) => {
+  const application = manifest.modResults.manifest.application?.[0];
+  if (application) application.$["android:usesCleartextTraffic"] = "true";
+  return manifest;
+});
+
+const git = (args: string) => execSync(`git ${args}`, { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+
+/**
+ * Which source a build came from, for Account → About and Diagnostics: the commit, when the config was read (the app
+ * build embeds this config) and the build number, which is the number of commits up to HEAD, so each build from a
+ * later commit gets a higher Android versionCode and iOS build number. Builds outside a git checkout leave these
+ * out, and so does a shallow clone for the count, which would be meaningless there.
+ */
+function buildInfo(): { buildCommit?: string; builtAt?: string; buildNumber?: number } {
+  try {
+    const commit = git("rev-parse --short=10 HEAD");
+    if (!commit) return {};
+    const count = git("rev-parse --is-shallow-repository") === "true" ? Number.NaN : Number(git("rev-list --count HEAD"));
+    return { buildCommit: commit, builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
+  } catch {
+    return {};
+  }
+}
+
+const expo = appJson.expo as ExpoConfig;
+const build = buildInfo();
+/**
+ * Android installs only replace a build with the same or a higher versionCode. android/ is generated, so prebuild
+ * again after committing for the number to move on (see "Build number" in README.md).
+ */
+const buildNumber = build.buildNumber ?? expo.android?.versionCode ?? 1;
+const base: ExpoConfig = {
+  ...expo,
+  ios: {
+    ...expo.ios,
+    buildNumber: String(buildNumber),
+  },
   android: {
-    ...appJson.expo.android,
-    ...(hasGoogleServices ? { googleServicesFile } : {}),
+    ...expo.android,
+    versionCode: buildNumber,
+    ...(hasGoogleServices && !perf ? { googleServicesFile } : {}),
   },
   extra: {
-    ...appJson.expo.extra,
+    ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
+    ...build,
+    buildNumber,
   },
 };
+
+export default perf
+  ? withCleartextTraffic({
+    ...base,
+    name: "Phaseo Perf",
+    scheme: "phaseo-perf",
+    ios: { ...base.ios, bundleIdentifier: "app.phaseo.client.perf" },
+    android: { ...base.android, package: "app.phaseo.client.perf" },
+  })
+  : base;

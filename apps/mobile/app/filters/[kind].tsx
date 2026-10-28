@@ -1,30 +1,29 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ArrowDownAZ, Check, CircleDollarSign, CircleCheck, Clock, Flame, Gift, History, Maximize2, type LucideIcon } from "lucide-react-native";
+import { Check, CircleCheck, Gift, History } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { ScrollView, Switch, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, Header, Icon, Row, Screen, SearchField, Section, Text } from "@/components/ui";
-import { SORT_LABELS } from "@/features/models/ModelBrowser";
+import { Button, Header, Icon, Row, RouteSheet, SearchField, Section, Switch, Text } from "@/components/ui";
+import { SORT_ICONS, SORT_LABELS } from "@/features/models/ModelBrowser";
 import { filtersStore, toggleValue, updateFilters, useCatalogue, useLabIds } from "@/features/models/state";
 import { DEFAULT_FILTERS, type CatalogueSort } from "@/lib/catalogue";
 import { modalityLabel } from "@/lib/format";
 import { modalityIcon } from "@/lib/modalityIcon";
 
-const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
 
-/** Bottom sheets for the Models filters: sort, labs, and modalities. */
+/** The Models filters (sort, labs and modalities): bottom sheets on phones, dialogs on tablets. */
 export default function FilterSheet() {
   const { kind } = useLocalSearchParams<{ kind: string }>();
   return (
-    <Screen edges={[]} className="bg-popover">
+    <RouteSheet size={kind === "sort" ? "fit" : "tall"}>
       <Stack.Screen options={{ title: kind === "sort" ? "Sort" : kind === "organisations" ? "Labs" : "Filters" }} />
       {kind === "sort" ? <SortSheet /> : kind === "organisations" ? <OrganisationSheet /> : <ModelFilterSheet />}
-    </Screen>
+    </RouteSheet>
   );
 }
 
 function Check_({ on }: { on: boolean }) {
-  return on ? <Icon icon={Check} tone="primary" size={18} /> : null;
+  return on ? <Icon icon={Check} tone="link" size={18} /> : null;
 }
 
 function SortSheet() {
@@ -90,9 +89,9 @@ function ModelFilterSheet() {
         ))}
       </Section>
       <Section title="Availability">
-        <Row icon={CircleCheck} title="Only models on Phaseo" chevron={false} trailing={<Switch value={filters.availability === "phaseo"} onValueChange={(on) => updateFilters({ availability: on ? "phaseo" : "all" })} trackColorOnClassName="accent-primary" />} />
-        <Row icon={Gift} title="Only free models" chevron={false} trailing={<Switch value={filters.availability === "free"} onValueChange={(on) => updateFilters({ availability: on ? "free" : "all" })} trackColorOnClassName="accent-primary" />} />
-        <Row icon={History} title="Show retired models" chevron={false} last trailing={<Switch value={filters.includeRetired} onValueChange={(on) => updateFilters({ includeRetired: on })} trackColorOnClassName="accent-primary" />} />
+        <Row icon={CircleCheck} title="Only models on Phaseo" chevron={false} trailing={<Switch value={filters.availability === "phaseo"} accessibilityLabel="Only models on Phaseo" onValueChange={(on) => updateFilters({ availability: on ? "phaseo" : "all" })} />} />
+        <Row icon={Gift} title="Only free models" chevron={false} trailing={<Switch value={filters.availability === "free"} accessibilityLabel="Only free models" onValueChange={(on) => updateFilters({ availability: on ? "free" : "all" })} />} />
+        <Row icon={History} title="Show retired models" chevron={false} last trailing={<Switch value={filters.includeRetired} accessibilityLabel="Show retired models" onValueChange={(on) => updateFilters({ includeRetired: on })} />} />
       </Section>
       <Text variant="caption" className="px-4 pt-4">Filters apply instantly. Swipe down to close.</Text>
     </ScrollView>

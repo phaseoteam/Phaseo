@@ -3,7 +3,7 @@ import { LegendList } from "@legendapp/list/react-native";
 import { usePathname } from "expo-router";
 import { CircleCheck, KeyRound, Server, ShieldCheck } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
-import { Pressable, RefreshControl, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Badge, Chip, ChipRow, EmptyState, ErrorState, Header, Screen, SearchField, SkeletonRows, Text } from "@/components/ui";
@@ -57,7 +57,6 @@ export function ProviderBrowser() {
           estimatedItemSize={63}
           recycleItems
           keyboardDismissMode="on-drag"
-          refreshControl={<RefreshControl refreshing={providers.isRefetching} onRefresh={() => void providers.refetch()} />}
           ListEmptyComponent={<EmptyState icon={Server} title="No providers match" body="Try another search or filter." />}
           contentContainerStyle={{ paddingBottom: 24 }}
         />
