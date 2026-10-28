@@ -7,13 +7,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
-<Update label="2026年2月26日">
+<Update label="2026年2月27日">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">製品</p>
 
-- Gemini 3.1 Flash Image Previewをモデル検索、ゲートウェイ互換性、ドキュメントでサポートしました。
+- メールでのサインインに失敗した場合、汎用のエラーページではなくサインインページ上に、パスワードの誤りやメール未確認などの理由が表示されます ([#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+- メールでのサインアップでは、パスワードの条件（小文字、大文字、数字、記号）が表示され、フォーム送信前に確認されます ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+- モデル表で100万単位あたりの価格が正しく表示され、ページ幅いっぱいに表示されるようになりました。以前は一部の行で極端に高い価格が表示されていました ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Gemini 3 へのリクエストでは、`reasoning.effort` が各モデルの対応する思考レベル（`minimal` から `high`）に対応付けられます ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+
+</div>
+
+</Update>
+
+<Update label="2026年2月26日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** `/v1/responses/ws` は実験的機能と位置付けられ、プレフィックスのないモデル ID を拒否するようになりました。`openai/<model>` 形式の ID を送信し、本番環境では `POST /v1/responses` を使用してください ([#112](https://github.com/phaseoteam/Phaseo/pull/112))。
 
 </div>
 
@@ -66,14 +88,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年2月19日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- Gemini 3.1 Pro Previewをモデル検索、料金、ゲートウェイ、ドキュメントでサポートしました。
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -93,7 +107,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">製品</p>
 
-- Claude Sonnet 4.6をモデル検索、ゲートウェイ互換性、ドキュメントでサポートしました。
+- モデルページのライトモードでプロバイダーのロゴが1つだけ表示されるようになりました。以前はライト版とダーク版が両方表示されることがありました ([#81](https://github.com/phaseoteam/Phaseo/pull/81))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Baseten、Chutes、Cohere、Together、Cerebras へのリクエストでは、プロバイダーが対応していないパラメーターが除外され、プロバイダーからの `400` で失敗しなくなりました ([#82](https://github.com/phaseoteam/Phaseo/pull/82))。
 
 </div>
 
@@ -148,6 +170,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年2月15日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 設定画面に **Account**、**Billing**、**Usage**、**API** の各セクションをタブで分けたサイドバーが付き、**Account** には詳細、MFA、危険ゾーンの個別ページが用意されました ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+- **Settings -> Credits** に、クレジット残高が USD で設定したしきい値を下回るとメールで通知する、オプトインの残高不足アラートが追加されました ([#54](https://github.com/phaseoteam/Phaseo/pull/54))。
+- **Settings -> Keys** に、各キーのステータスと、リクエスト上限および支出上限の使用状況が表示されます ([#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -172,7 +204,28 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年2月13日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- サインインしていない訪問者がメッセージを送信しようとすると、Chat に **Create account** と **Sign in** ボタン付きのバナーが表示されます ([#52](https://github.com/phaseoteam/Phaseo/pull/52))。
+
+</div>
+
+</Update>
+
 <Update label="2026年2月12日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- AI SDK 用プロバイダーパッケージが `1.0.1` から npm で公開されました。[AI SDK](../guides/integrations/ai-sdk.mdx) を参照してください ([#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+- TypeScript SDK `1.0.1` に devtools のリクエストキャプチャが同梱され、別途 devtools core パッケージをインストールする必要がなくなりました ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+
+</div>
 
 <div data-changelog-category="models">
 
