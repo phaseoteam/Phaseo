@@ -9,6 +9,12 @@ import { PLAN_TIERS, NANOS_PER_USD, slackAgentPlanNanos } from "@/lib/slack-agen
 export type SlackAccessMode = "everyone" | "linked";
 export type SlackUsageDataMode = "off" | "dm" | "dm_and_channels";
 export type SlackOverPlan = "refuse" | "move_up";
+/** Where the agent may search Slack for the person asking: direct messages only by default. */
+export type SlackSearchMode = "off" | "dm" | "dm_and_channels";
+export const SLACK_SEARCH_MODES: readonly SlackSearchMode[] = ["off", "dm", "dm_and_channels"];
+/** The Slack scope searching needs; installations from before it lack it until an admin updates the Slack permissions. */
+export const SLACK_SEARCH_SCOPE = "search:read.public";
+export type SlackPageAccess = "link" | "workspace";
 
 export type SlackAgentSettings = {
 	plan_people: number;
@@ -20,6 +26,14 @@ export type SlackAgentSettings = {
 	/** People may start a message with "with <model>:" to have one of allowed_models answer it. */
 	model_choice_enabled: boolean;
 	allowed_models: string[];
+	/** The agent's notes, pins and to-dos. Off: it saves and sees none, saved ones are kept, and skills still work. */
+	memory_enabled: boolean;
+	/** Where the agent may search Slack as the person asking. Missing from responses of an older web-api: direct messages. */
+	search_mode?: SlackSearchMode;
+	/** Recurring tasks (slackAgentSchedules.ts): on or off, the most per workspace, and who can set them up. */
+	schedules_enabled?: boolean;
+	schedules_max?: number;
+	schedule_creators?: "everyone" | "linked";
 	instructions: string | null;
 	access_mode: SlackAccessMode;
 	usage_data_mode: SlackUsageDataMode;
@@ -27,6 +41,12 @@ export type SlackAgentSettings = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	token_monthly_limit_usd: number;
+	/** Shared pages the agent publishes (absent from an API that predates them): on or off, days a new one is kept, who may view it. */
+	pages_enabled?: boolean;
+	page_expiry_days?: number;
+	page_default_access?: SlackPageAccess;
+	/** Whether a page may be open to anyone with its link. Off, every page needs a Slack sign-in. */
+	page_link_access?: boolean;
 };
 
 export type SlackAgentInstallation = {
@@ -39,6 +59,8 @@ export type SlackAgentInstallation = {
 	status: string;
 	installed_at: string;
 	uses_custom_app: boolean;
+	/** The Slack scopes the installation was granted, and those the agent now asks for that it lacks (Update Slack permissions). */
+	permissions?: { granted: string[]; missing: string[] };
 	settings: SlackAgentSettings;
 	plan: { people: number; price_usd: number };
 	/** Counted in the database for the current UTC month. Absent in PATCH responses. */
@@ -399,7 +421,7 @@ export type SlackErrorKey =
 	| "appMissing" | "appUnavailable" | "alreadyInstalled" | "teamInUse" | "notInstalled" | "conflict" | "keyMissing"
 	| "slackDenied" | "slackError" | "slackResponseInvalid" | "stateExpired" | "stateInvalid" | "signInRequired"
 	| "sessionMismatch" | "installFailed" | "autoUnavailable" | "unknownModels" | "modelChoiceNeedsModels" | "tooManyModels"
-	| "invalid" | "unavailable" | "generic";
+	| "teamMismatch" | "invalid" | "unavailable" | "generic";
 
 // Every error code the Slack settings routes return, including the OAuth
 // callback's ?error= values.
@@ -416,6 +438,7 @@ const ERROR_KEYS: Record<string, SlackErrorKey> = {
 	slack_app_unavailable: "appUnavailable",
 	already_installed: "alreadyInstalled",
 	slack_team_in_use: "teamInUse",
+	slack_team_mismatch: "teamMismatch",
 	not_installed: "notInstalled",
 	conflict: "conflict",
 	key_missing: "keyMissing",
@@ -450,9 +473,14 @@ export function slackErrorKey(code: string | null | undefined, status: number | 
 	return "generic";
 }
 
-/** What the OAuth callback's redirect says: ?installed=1, or ?error=<code>. */
-export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "installed" } | { kind: "error"; key: SlackErrorKey } | null {
+/**
+ * What the OAuth callback's redirect says: ?installed=1, ?permissions_updated=1
+ * (or partial, when Slack granted only some of the scopes), or ?error=<code>.
+ */
+export function callbackNotice(params: Pick<URLSearchParams, "get">): { kind: "installed" } | { kind: "permissionsUpdated"; partial: boolean } | { kind: "error"; key: SlackErrorKey } | null {
 	if (params.get("installed") === "1") return { kind: "installed" };
+	const updated = params.get("permissions_updated");
+	if (updated === "1" || updated === "partial") return { kind: "permissionsUpdated", partial: updated === "partial" };
 	const error = params.get("error");
 	return error ? { kind: "error", key: slackErrorKey(error) } : null;
 }

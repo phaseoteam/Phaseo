@@ -33,7 +33,7 @@ export default function ProviderWebhookSettings({ providerSlug, webhookUrl, conf
 
 	return <div className="space-y-3 border-t border-border/70 pt-4">
 		<div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-medium">{t("providerWebhookCopy.title")}</h3><p className="mt-1 text-xs text-muted-foreground">{t(hasSecret ? "providerWebhookCopy.configured" : "providerWebhookCopy.unconfigured")}</p></div><Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => void rotate()}>{t(saving ? "providerWebhookCopy.updating" : hasSecret ? "providerWebhookCopy.rotate" : "providerWebhookCopy.generate")}</Button></div>
-		{secret ? <Callout tone="warning" role="status" title={t("providerWebhookCopy.saveWarning")}><code className="block break-all font-mono text-xs select-all">{secret}</code><Button type="button" variant="ghost" size="sm" className="mt-1" onClick={() => setSecret(null)}>{t("providerWebhookCopy.hide")}</Button></Callout> : null}
+		{secret ? <Callout tone="warning" role="status" title={t("providerWebhookCopy.saveWarning")}><code className="ph-no-capture block break-all font-mono text-xs select-all">{secret}</code><Button type="button" variant="ghost" size="sm" className="mt-1" onClick={() => setSecret(null)}>{t("providerWebhookCopy.hide")}</Button></Callout> : null}
 		<p className="text-xs text-muted-foreground">{t.rich("providerWebhookCopy.instructions", { endpoint: webhookUrl, signature: "X-Phaseo-Signature: v1=<hex>", code: (chunks) => <code>{chunks}</code>, url: (chunks) => <code className="break-all text-foreground">{chunks}</code> })}</p>
 	</div>;
 }

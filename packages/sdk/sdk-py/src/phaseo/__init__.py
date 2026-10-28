@@ -15,6 +15,7 @@ from gen.client import Client
 from gen import models
 from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
+from ._version import __version__
 from .model_ids import MODEL_IDS, ModelIds
 from .auth import ApiKeyProvider
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
@@ -34,7 +35,7 @@ REGIONAL_BASE_URLS = {
     "eu": "https://eu.api.phaseo.app/v1",
     "us": "https://us.api.phaseo.app/v1",
 }
-DEFAULT_USER_AGENT = "phaseo-python/2.0.7"
+DEFAULT_USER_AGENT = f"phaseo-python/{__version__}"
 PREFLIGHT_STRUCTURAL_FIELDS = {
     "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
     "metadata", "session_id", "app", "webhook", "idempotency_key",
@@ -411,7 +412,10 @@ class ChatStreamChunk(TypedDict, total=False):
 
 
 class ResponseStreamChunk(TypedDict, total=False):
+    # Text added by this event. Empty on `.done` and `response.completed` events, which repeat streamed text.
     text: str
+    # Full text carried by a `.done` event such as `response.output_text.done`.
+    full_text: NotRequired[str]
     usage: Optional[dict[str, Any]]
     reasoning_tokens: Optional[int]
     raw: NotRequired[Any]
@@ -526,7 +530,7 @@ class Phaseo:
             **({} if provider else {"Authorization": f"Bearer {api_key}"}),
             "User-Agent": DEFAULT_USER_AGENT,
             "X-Phaseo-Client": client_source or "phaseo-python",
-            "X-Phaseo-Client-Version": client_source_version or "2.0.7",
+            "X-Phaseo-Client-Version": client_source_version or __version__,
         }
         if app:
             app_headers = {
@@ -1199,10 +1203,7 @@ class Phaseo:
             raise
 
     def stream_responses(self, request: models.ResponsesRequest) -> Iterator[ResponseStreamChunk]:
-        for line in self.stream_response(request):
-            chunk = _parse_response_stream_line(line)
-            if chunk is not None:
-                yield chunk
+        yield from _iter_response_stream_chunks(self.stream_response(request))
 
     def generate_message(self, request: models.AnthropicMessagesRequest) -> dict[str, Any]:
         payload = dict(request)
@@ -1723,14 +1724,34 @@ def _parse_chat_stream_line(line: str) -> Optional[ChatStreamChunk]:
     return parsed  # type: ignore[return-value]
 
 
-def _parse_response_stream_line(line: str) -> Optional[ResponseStreamChunk]:
+def _iter_response_stream_chunks(lines: Iterator[str]) -> Iterator[ResponseStreamChunk]:
+    # An SSE event is named on its `event:` line; data that does not name itself takes that name.
+    event_name: Optional[str] = None
+    for line in lines:
+        if line.startswith("event:"):
+            event_name = line[6:].strip() or None
+            continue
+        is_data = line.startswith("data:")
+        chunk = _parse_response_stream_line(line, event_name if is_data else None)
+        if is_data:
+            event_name = None
+        if chunk is not None:
+            yield chunk
+
+
+def _parse_response_stream_line(line: str, event_name: Optional[str] = None) -> Optional[ResponseStreamChunk]:
     parsed = _parse_sse_json(line)
     if parsed is None:
         return None
     if not isinstance(parsed, dict):
         return {"text": "", "usage": None, "reasoning_tokens": None, "raw": parsed}
 
+    if event_name and not isinstance(parsed.get("type"), str):
+        parsed["type"] = event_name
     usage = _extract_usage(parsed)
+    # A `.done` event repeats text already streamed as deltas; `text` becomes empty and the full text moves to `full_text`.
+    if _is_done_event(parsed) and isinstance(parsed.get("text"), str):
+        parsed["full_text"] = parsed["text"]
     parsed["text"] = _extract_response_stream_text(parsed)
     parsed["usage"] = usage
     parsed["reasoning_tokens"] = _extract_reasoning_tokens(usage)
@@ -1751,7 +1772,13 @@ def _parse_message_stream_line(line: str) -> Optional[MessageStreamChunk]:
     return parsed  # type: ignore[return-value]
 
 
+# SSE field lines that never carry a payload: `event:`, `id:`, `retry:` and `:` comments.
+_SSE_NON_DATA_PREFIXES = ("event:", "id:", "retry:", ":")
+
+
 def _parse_sse_json(line: str) -> Optional[Any]:
+    if not line.startswith("data:") and line.lstrip().startswith(_SSE_NON_DATA_PREFIXES):
+        return None
     data = line[5:].strip() if line.startswith("data:") else line.strip()
     if not data or data == "[DONE]":
         return None
@@ -1778,9 +1805,22 @@ def _extract_chat_stream_text(chunk: dict[str, Any]) -> str:
     return "".join(parts)
 
 
+def _is_done_event(chunk: dict[str, Any]) -> bool:
+    event_type = chunk.get("type")
+    return isinstance(event_type, str) and event_type.endswith(".done")
+
+
 def _extract_response_stream_text(chunk: dict[str, Any]) -> str:
+    """Text streamed by this event.
+
+    Only delta events add text: `.done`, `response.completed` and other typed events repeat
+    what the deltas already sent, so joining `text` gives the answer once.
+    """
     if isinstance(chunk.get("delta"), str):
         return chunk["delta"]
+    event_type = chunk.get("type")
+    if isinstance(event_type, str) and not event_type.endswith(".delta"):
+        return ""
     if isinstance(chunk.get("text"), str):
         return chunk["text"]
     if isinstance(chunk.get("output_text"), str):
@@ -2008,6 +2048,7 @@ def _as_trimmed_string(value: Any) -> Optional[str]:
 
 
 __all__ = [
+    "__version__",
     "ApiKeyProvider",
     "APIResponse",
     "AsyncPhaseo",

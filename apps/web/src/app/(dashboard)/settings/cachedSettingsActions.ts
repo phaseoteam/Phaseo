@@ -15,6 +15,7 @@ import { fetchSettingsClassifiersInitialData } from "@/lib/fetchers/internal/fet
 import { fetchSettingsRateLimitsInitialData } from "@/lib/fetchers/internal/fetchSettingsRateLimitsInitialData";
 import { fetchSettingsWorkloadIdentityInitialData } from "@/lib/fetchers/internal/fetchSettingsWorkloadIdentityInitialData";
 import { fetchSettingsBudgetsInitialData } from "@/lib/fetchers/internal/fetchSettingsBudgetsInitialData";
+import { fetchSettingsSpendAlertsData } from "@/lib/fetchers/internal/fetchSettingsSpendAlertsData";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
 import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
@@ -92,6 +93,7 @@ const readers = {
 	"rate-limits": fetchSettingsRateLimitsInitialData,
 	"trusted-workloads": fetchSettingsWorkloadIdentityInitialData,
 	budgets: fetchSettingsBudgetsInitialData,
+	"spend-rules": fetchSettingsSpendAlertsData,
 	privacy: fetchSettingsPrivacyInitialData,
 	byok: fetchSettingsByokInitialData,
 	presets: fetchSettingsPresetsInitialData,

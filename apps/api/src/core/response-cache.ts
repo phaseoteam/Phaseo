@@ -36,6 +36,8 @@ export type ResponseCacheFingerprintInput = {
 	protocol?: string | null;
 	presetId?: string | null;
 	presetSlug?: string | null;
+	/** Set only for pinned requests ("@slug@ref"), so unpinned fingerprints are unchanged. */
+	presetVersionId?: string | null;
 	routingMode?: string | null;
 };
 
@@ -152,6 +154,7 @@ export function buildResponseCacheFingerprintPayload(
 		preset: {
 			id: normalizeOptionalText(input.presetId),
 			slug: normalizeOptionalText(input.presetSlug),
+			...(normalizeOptionalText(input.presetVersionId) ? { version_id: normalizeOptionalText(input.presetVersionId) } : {}),
 		},
 		routing_mode: normalizeOptionalText(input.routingMode),
 		body: sanitizeRequestValue(input.body) ?? null,

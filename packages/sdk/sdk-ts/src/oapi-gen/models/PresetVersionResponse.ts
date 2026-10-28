@@ -45,6 +45,7 @@ export interface PresetVersionResponse {
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;

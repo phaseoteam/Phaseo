@@ -242,6 +242,19 @@ describe("rate limit plan publication", () => {
 		expect(error).toHaveBeenCalledWith("rate_limit_plan_publish_failed", expect.objectContaining({ workspaceId: WS }));
 	});
 
+	it("applies a plan published elsewhere to the first request after this isolate sat idle", async () => {
+		vi.useFakeTimers({ now: 1_000_000 });
+		expect(await readRateLimitPlan(WS)).toBeNull();
+		// Another isolate publishes; this one keeps its cached "no plan" meanwhile.
+		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
+		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		const plan = await buildRateLimitPlan(WS);
+		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: plan, at: 1_005_000 }));
+
+		vi.setSystemTime(1_000_000 + 121_000);
+		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": STRICT });
+	});
+
 	it("treats a missing, malformed or unreadable plan as no policies", async () => {
 		expect(await readRateLimitPlan(WS)).toBeNull();
 		__resetTieredCacheForTests();

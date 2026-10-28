@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
 import { compilePromptTemplate, type PromptTemplateIssue } from "./prompt-templates";
 import { requireUser } from "@/auth/requireUser";
@@ -649,13 +649,73 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env); const id = c.req.param("presetId");
-	const preset = await client.from("presets").select("workspace_id,created_by,visibility").eq("id", id).is("archived_at", null).maybeSingle();
+	const preset = await client.from("presets").select("workspace_id,created_by,visibility,draft_visibility,active_version_id").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.visibility === "private" && preset.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const versions = await client.from("preset_versions").select("id,version_number,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false });
-	if (versions.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ versions: versions.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	const [versions, labels] = await Promise.all([
+		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false }),
+		client.from("preset_version_labels").select("label,version_id,updated_at").eq("preset_id", id).order("label", { ascending: true }),
+	]);
+	if (versions.error || labels.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const labelsByVersion = new Map<string, string[]>();
+	for (const row of labels.data ?? []) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
+	return c.json({
+		versions: (versions.data ?? []).map((version) => ({ ...version, labels: labelsByVersion.get(String(version.id)) ?? [] })),
+		labels: labels.data ?? [],
+		activeVersionId: preset.data.active_version_id ?? null,
+		canManageLabels: canManagePresetLabels(context, user.id, preset.data),
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+/** The rule set_preset_version_label applies: the creator, or an owner or admin when the preset is shared. */
+function canManagePresetLabels(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null; draft_visibility?: string | null }) {
+	return canWritePreset(context, userId, { created_by: preset.created_by, visibility: preset.draft_visibility ?? preset.visibility });
+}
+const PRESET_LABEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
+function normalizePresetLabel(value: unknown): string | null {
+	const label = String(value ?? "").trim().toLowerCase();
+	return PRESET_LABEL_PATTERN.test(label) && !/^v[0-9]+$/.test(label) ? label : null;
+}
+function presetLabelRpcError(message: string): { error: string; status: 400 | 403 | 404 } | null {
+	if (message.includes("invalid_preset_label")) return { error: "invalid_preset_label", status: 400 };
+	if (message.includes("preset_version_not_found")) return { error: "preset_version_not_found", status: 404 };
+	if (message.includes("preset_not_found")) return { error: "not_found", status: 404 };
+	if (message.includes("preset_label_forbidden")) return { error: "forbidden", status: 403 };
+	return null;
+}
+async function presetForLabelChange(c: Context<{ Bindings: Env }>, userId: string) {
+	const client = getDataClient(c.env);
+	const preset = await client.from("presets").select("id,workspace_id,created_by,visibility,draft_visibility").eq("id", String(c.req.param("presetId") ?? "")).is("archived_at", null).maybeSingle();
+	if (preset.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
+	if (!preset.data?.workspace_id) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id });
+	if (!context || !canManagePresetLabels(context, userId, preset.data)) return { response: c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS) } as const;
+	return { client, preset: preset.data } as const;
+}
+
+accountSettingsPolicyRouter.put("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const body: { versionId?: string } = await c.req.json<{ versionId?: string }>().catch(() => ({})); const versionId = String(body.versionId ?? "").trim();
+	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(versionId)) return c.json({ error: "preset_version_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const saved = await loaded.client.rpc("set_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, p_version_id: versionId, actor_user_id: user.id });
+	if (saved.error) { const mapped = presetLabelRpcError(saved.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	const row = Array.isArray(saved.data) ? saved.data[0] : saved.data;
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ label: row ?? { label, version_id: versionId }, cache }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.delete("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const removed = await loaded.client.rpc("remove_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, actor_user_id: user.id });
+	if (removed.error) { const mapped = presetLabelRpcError(removed.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	if (removed.data !== true) return c.json({ error: "label_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ removed: true, label, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {

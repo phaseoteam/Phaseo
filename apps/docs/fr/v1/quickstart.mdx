@@ -60,6 +60,26 @@ Traitez votre clé API comme un mot de passe. Ne l’exposez pas dans du code c�
 
 Utilisez `POST /v1/responses` pour la première requête. C’est l’endpoint recommandé pour les nouveaux usages de génération de texte.
 
+### Installer un SDK
+
+Les exemples cURL et JavaScript ne nécessitent aucune installation. Pour utiliser le SDK TypeScript ou Python, installez-le d’abord :
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+Consultez les pages d’installation [TypeScript](./sdk-reference/typescript/installation) et [Python](./sdk-reference/python/installation) pour les prérequis d’exécution et les autres SDK.
+
 ### Requête
 
 <CodeGroup>
@@ -320,6 +340,43 @@ console.log(result.text);
 Pour les appels directs à l’API Responses, lisez la réponse de l’assistant dans `output[].content[]`, à l’élément dont `type` vaut `output_text`.
 
 Avec le SDK Vercel AI, lisez la réponse dans `result.text`.
+
+### Diffuser la réponse en streaming
+
+Pour afficher la réponse au fur et à mesure de sa génération, diffusez-la en streaming. Le champ `text` de chaque fragment ne contient que le nouveau texte : cette boucle affiche donc la réponse une seule fois. Les événements de clôture comme `response.output_text.done` ont un `text` vide ; leur texte complet se trouve dans `fullText` (TypeScript) ou `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+Si la réponse s’affiche deux fois, mettez le SDK à jour : les versions plus anciennes plaçaient aussi le texte complet dans l’événement de clôture.
 
 ---
 

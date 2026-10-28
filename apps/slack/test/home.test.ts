@@ -99,6 +99,12 @@ describe("the Home tab", () => {
 		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test", "openai/gpt-6-luna"] });
 		await openHome();
 		expect(published().text).toContain("*Choose a model:* start a message with `with &lt;model&gt;:` and one of Claude Test, GPT-6 Luna &amp; &lt;Co&gt;, for example `with Claude Test: …`.");
+		expect(published().text).toContain("*Compare models:* start a message with `compare &lt;model&gt;, &lt;model&gt;:` and 2 or 3 of them, for example `compare Claude Test, GPT-6 Luna &amp; &lt;Co&gt;: …`. Each answers your question, in one reply.");
+		// With one model to choose, there is nothing to compare.
+		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test"] });
+		await openHome();
+		expect(published().text).toContain("*Choose a model:*");
+		expect(published().text).not.toContain("Compare models");
 		// The agent's own model name is escaped too.
 		await install({ model: "openai/gpt-6-luna" });
 		await openHome();

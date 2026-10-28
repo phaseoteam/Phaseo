@@ -69,14 +69,9 @@ async function main(): Promise<void> {
       packageJsonPath: file("packages", "sdk", "sdk-ts", "package.json"),
       checks: [
         {
-          filePath: file("packages", "sdk", "sdk-ts", "src", "index.ts"),
-          pattern: /new TelemetryCapture\(opts\.devtools,\s*"([^"]+)"\)/m,
-          label: "TelemetryCapture construction version",
-        },
-        {
-          filePath: file("packages", "sdk", "sdk-ts", "src", "devtools", "telemetry.ts"),
-          pattern: /constructor\(config\?: Partial<DevToolsConfig>, sdkVersion: string = "([^"]+)"\)/m,
-          label: "TelemetryCapture default version",
+          filePath: file("packages", "sdk", "sdk-ts", "src", "version.ts"),
+          pattern: /export const SDK_VERSION = "([^"]+)";/m,
+          label: "SDK_VERSION constant",
         },
       ],
     },
@@ -89,6 +84,11 @@ async function main(): Promise<void> {
           filePath: file("packages", "sdk", "sdk-py", "src", "phaseo_devtools", "recorder.py"),
           pattern: /^SDK_VERSION\s*=\s*"([^"]+)"/m,
           label: "SDK_VERSION constant",
+        },
+        {
+          filePath: file("packages", "sdk", "sdk-py", "src", "phaseo", "_version.py"),
+          pattern: /^__version__\s*=\s*"([^"]+)"/m,
+          label: "__version__ constant",
         },
       ],
     },

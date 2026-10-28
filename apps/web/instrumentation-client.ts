@@ -5,6 +5,11 @@ import {
 	POSTHOG_UI_HOST,
 } from "@/lib/analytics";
 import {
+	ANALYTICS_IDENTITY_EVENT,
+	type AnalyticsIdentity,
+	getAnalyticsIdentityKey,
+} from "@/lib/analyticsIdentity";
+import {
 	ANALYTICS_CONSENT_EVENT,
 	ANALYTICS_CONSENT_STORAGE_KEY,
 	type AnalyticsConsent,
@@ -17,10 +22,16 @@ import {
 	type ClientErrorPayload,
 	isAnalyticsCaptureAllowed,
 } from "@/lib/clientErrorReporting";
+import { matchClientErrorNoise } from "@/lib/clientErrorNoise";
 import {
 	PRODUCT_ANALYTICS_EVENT,
 	type ProductAnalyticsPayload,
 } from "@/lib/productAnalytics";
+import {
+	POSTHOG_SURVEY_EVENT,
+	type PosthogSurveyPayload,
+	toPosthogSurveyEvent,
+} from "@/lib/posthogSurveys";
 import {
 	PRODUCT_FEEDBACK_CATEGORY_QUESTION_ID,
 	PRODUCT_FEEDBACK_EVENT,
@@ -36,6 +47,9 @@ import {
 let posthogInitialized = false;
 let listenersBound = false;
 let posthogCaptureEnabled = false;
+// undefined until the header reports who is signed in; null when signed out.
+let analyticsIdentity: AnalyticsIdentity | null | undefined;
+let appliedIdentityKey: string | null = null;
 
 const RECENT_ERROR_WINDOW_MS = 15000;
 const RECENT_ERROR_MAX = 100;
@@ -132,6 +146,11 @@ function captureClientError(payloadInput: ClientErrorPayload) {
 		return;
 	}
 
+	// Third-party noise (wallets, extensions, opaque cross-origin errors).
+	if (matchClientErrorNoise(payload)) {
+		return;
+	}
+
 	if (shouldSkipAsDuplicate(payload)) {
 		return;
 	}
@@ -205,6 +224,18 @@ function bindGlobalErrorListeners() {
 		captureClientError(customEvent.detail);
 	});
 
+	window.addEventListener(POSTHOG_SURVEY_EVENT, (event) => {
+		const payload = (event as CustomEvent<PosthogSurveyPayload>).detail;
+		if (!payload || !posthogCaptureEnabled || !isAnalyticsCaptureAllowed()) return;
+		const { event: surveyEvent, properties } = toPosthogSurveyEvent(payload);
+		posthog.capture(surveyEvent, properties);
+	});
+
+	window.addEventListener(ANALYTICS_IDENTITY_EVENT, (event) => {
+		analyticsIdentity = (event as CustomEvent<AnalyticsIdentity | null>).detail ?? null;
+		applyAnalyticsIdentity();
+	});
+
 	window.addEventListener(PRODUCT_ANALYTICS_EVENT, (event) => {
 		const payload = (event as CustomEvent<ProductAnalyticsPayload>).detail;
 		if (!payload || !isAnalyticsCaptureAllowed()) return;
@@ -251,6 +282,30 @@ function bindGlobalErrorListeners() {
 	});
 }
 
+function applyAnalyticsIdentity() {
+	if (!posthogCaptureEnabled || analyticsIdentity === undefined) return;
+
+	const key = getAnalyticsIdentityKey(analyticsIdentity);
+	if (key === appliedIdentityKey) return;
+	appliedIdentityKey = key;
+
+	if (!analyticsIdentity) {
+		// Only reset after a real sign-out so anonymous visitors keep one ID.
+		if (posthog._isIdentified()) posthog.reset();
+		return;
+	}
+
+	const { userId, workspaceId, signedUpAt } = analyticsIdentity;
+	// A different account on the same browser must not merge into the previous person.
+	if (posthog._isIdentified() && posthog.get_distinct_id() !== userId) posthog.reset();
+	posthog.identify(userId, undefined, signedUpAt ? { signed_up_at: signedUpAt } : undefined);
+	if (workspaceId) {
+		posthog.group("workspace", workspaceId);
+	} else {
+		posthog.resetGroups();
+	}
+}
+
 function initializePosthog() {
 	if (typeof window === "undefined" || !POSTHOG_KEY || posthogInitialized) {
 		return;
@@ -287,11 +342,18 @@ function enablePosthog() {
 		capture_pageleave: true,
 		session_recording: {
 			recordCrossOriginIframes: false,
+			// Secrets shown as text (new keys, signing secrets, TOTP) carry
+			// `ph-no-capture`; inputs such as the SCIM token rely on this.
+			maskAllInputs: true,
+			// Text under `ph-mask` (Chat) is masked by default; hide its media too.
+			blockSelector: ".ph-mask img, .ph-mask video, .ph-mask audio, .ph-mask canvas, .ph-mask iframe",
 		},
 		disable_session_recording: false,
+		disable_surveys: false,
 	});
 	posthog.opt_in_capturing({ captureEventName: false });
 	posthogCaptureEnabled = true;
+	applyAnalyticsIdentity();
 	posthog.capture("$pageview", {
 		$current_url: window.location.href,
 		$pathname: window.location.pathname,
@@ -304,11 +366,13 @@ function disablePosthog() {
 	}
 
 	posthogCaptureEnabled = false;
+	appliedIdentityKey = null;
 	posthog.set_config({
 		autocapture: false,
 		capture_pageview: false,
 		capture_pageleave: false,
 		disable_session_recording: true,
+		disable_surveys: true,
 	});
 	posthog.reset();
 	posthog.opt_out_capturing();

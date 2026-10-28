@@ -51,6 +51,7 @@ const TYPE_BY_CODE: Record<string, GatewayErrorType> = {
 	rate_limit_exceeded: "rate_limit_error",
 	key_limit_exceeded: "rate_limit_error",
 	phaseo_free_model_limit_exceeded: "rate_limit_error",
+	spend_rule_blocked: "rate_limit_error",
 	insufficient_funds: "insufficient_quota",
 	overloaded_error: "overloaded",
 	api_error: "server_error",
@@ -133,6 +134,7 @@ const METADATA_FIELDS = [
 	"provider_payment_required_provider",
 	"policy_id",
 	"limit_scope",
+	"rule_id",
 	"retired_at",
 	"replacement_model",
 ] as const;

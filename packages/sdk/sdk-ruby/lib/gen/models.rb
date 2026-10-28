@@ -3806,6 +3806,37 @@ module Phaseo
     # @!attribute [rw] source_version_id
     #   @return [String, nil]
     PresetForkRequest = Struct.new(:source_version_id, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] label
+    #   @return [String]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] updated_by
+    #   @return [String, nil]
+    # @!attribute [rw] version_id
+    #   @return [String]
+    # @!attribute [rw] version_label
+    #   @return [String, nil]
+    # @!attribute [rw] version_number
+    #   @return [Integer, nil]
+    PresetLabel = Struct.new(:created_at, :label, :updated_at, :updated_by, :version_id, :version_label, :version_number, keyword_init: true)
+    # @!attribute [rw] deleted
+    #   @return [Boolean]
+    # @!attribute [rw] label
+    #   @return [String]
+    PresetLabelDeleteResponse = Struct.new(:deleted, :label, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    PresetLabelListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    PresetLabelResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] version
+    #   @return [String, nil]
+    # @!attribute [rw] version_id
+    #   @return [String, nil]
+    PresetLabelSetRequest = Struct.new(:version, :version_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] total_count
@@ -3963,6 +3994,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String]
+    # @!attribute [rw] labels
+    #   @return [Array<String>, nil]
     # @!attribute [rw] name
     #   @return [String]
     # @!attribute [rw] preset_id
@@ -3979,7 +4012,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] visibility
     #   @return [String]
-    PresetVersion = Struct.new(:config, :created_at, :created_by, :description, :id, :name, :preset_id, :release_notes, :slug, :version_label, :version_number, :versioning_method, :visibility, keyword_init: true)
+    PresetVersion = Struct.new(:config, :created_at, :created_by, :description, :id, :labels, :name, :preset_id, :release_notes, :slug, :version_label, :version_number, :versioning_method, :visibility, keyword_init: true)
     PresetVersioningMethod = Object
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
@@ -4123,7 +4156,9 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] variables
     #   @return [Hash{String => Object}, nil]
-    PromptTemplateReference = Struct.new(:id, :variables, keyword_init: true)
+    # @!attribute [rw] version
+    #   @return [String, nil]
+    PromptTemplateReference = Struct.new(:id, :variables, :version, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name
@@ -4701,6 +4736,52 @@ module Phaseo
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
     ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :fusion_requests, :image_generation_requests, :search_models_requests, :subagent_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    # @!attribute [rw] active
+    #   @return [Boolean]
+    # @!attribute [rw] block_free_models
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] lift_reason
+    #   @return [Object, nil]
+    # @!attribute [rw] lifted_at
+    #   @return [String, nil]
+    # @!attribute [rw] lifted_by
+    #   @return [String, nil]
+    # @!attribute [rw] limit_nanos
+    #   @return [Integer]
+    # @!attribute [rw] limit_usd
+    #   @return [Float]
+    # @!attribute [rw] period_start
+    #   @return [String]
+    # @!attribute [rw] resets_at
+    #   @return [String, nil]
+    # @!attribute [rw] rule_id
+    #   @return [String, nil]
+    # @!attribute [rw] rule_name
+    #   @return [String, nil]
+    # @!attribute [rw] scope_id
+    #   @return [String, nil]
+    # @!attribute [rw] scope_label
+    #   @return [String]
+    # @!attribute [rw] scope_type
+    #   @return [String]
+    # @!attribute [rw] spend_nanos
+    #   @return [Integer]
+    # @!attribute [rw] spend_usd
+    #   @return [Float]
+    # @!attribute [rw] started_at
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    SpendBlock = Struct.new(:active, :block_free_models, :id, :lift_reason, :lifted_at, :lifted_by, :limit_nanos, :limit_usd, :period_start, :resets_at, :rule_id, :rule_name, :scope_id, :scope_label, :scope_type, :spend_nanos, :spend_usd, :started_at, :workspace_id, keyword_init: true)
+    SpendBlockLiftReason = Object
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    SpendBlockListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SpendBlockResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] action
     #   @return [String]
     # @!attribute [rw] base_amount_nanos
@@ -5448,6 +5529,69 @@ module Phaseo
     # @!attribute [rw] search_context_size
     #   @return [String, nil]
     WebSearchPlugin = Struct.new(:enabled, :engine, :exclude_domains, :id, :include_domains, :max_results, :max_uses, :search_context_size, keyword_init: true)
+    # @!attribute [rw] audience
+    #   @return [String]
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] issuer
+    #   @return [String]
+    # @!attribute [rw] key_id
+    #   @return [String]
+    # @!attribute [rw] last_used_at
+    #   @return [String, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] owner_id
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [String]
+    # @!attribute [rw] status
+    #   @return [String]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    WorkloadIdentityPolicy = Struct.new(:audience, :claim_conditions, :created_at, :created_by, :id, :issuer, :key_id, :last_used_at, :max_token_lifetime_seconds, :name, :owner_id, :provider, :status, :updated_at, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    WorkloadIdentityPolicyDeleteResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] issuer
+    #   @return [String, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] owner_id
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [String]
+    WorkloadIdentityPolicyInput = Struct.new(:claim_conditions, :issuer, :max_token_lifetime_seconds, :name, :owner_id, :provider, keyword_init: true)
+    # @!attribute [rw] audience
+    #   @return [String]
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    WorkloadIdentityPolicyListResponse = Struct.new(:audience, :data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    WorkloadIdentityPolicyResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] claim_conditions
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] max_token_lifetime_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    WorkloadIdentityPolicyUpdateInput = Struct.new(:claim_conditions, :max_token_lifetime_seconds, :name, :status, keyword_init: true)
+    WorkloadIdentityProvider = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by

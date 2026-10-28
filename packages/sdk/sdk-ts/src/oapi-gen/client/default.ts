@@ -960,6 +960,7 @@ export type CreateAnthropicMessageParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     provider?: {
@@ -2301,6 +2302,7 @@ export type CreateChatCompletionParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -6143,6 +6145,7 @@ export type CreateResponseParams = {
       variables?: {
         [key: string]: unknown;
       };
+      version?: string;
     };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -7879,6 +7882,78 @@ export async function createWebhookEndpoint(
   });
 }
 
+export type CreateWorkloadIdentityPolicyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    issuer?: string;
+    max_token_lifetime_seconds?: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+  };
+};
+
+/**
+ * Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function createWorkloadIdentityPolicy(
+  client: Client,
+  args: CreateWorkloadIdentityPolicyParams = {},
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateWorkspaceParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -8673,6 +8748,44 @@ export async function deletePreset(
   });
 }
 
+export type DeletePresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a label. Requests that still pin it fail with preset_version_not_found.
+ */
+export async function deletePresetLabel(
+  client: Client,
+  args: DeletePresetLabelParams,
+): Promise<{
+  deleted: boolean;
+  label: string;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    deleted: boolean;
+    label: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeletePrivateModelParams = {
   path: {
     id: string;
@@ -8958,6 +9071,45 @@ export async function deleteWebhookEndpoint(
     deleted: true;
     id: string;
     object: "webhook_endpoint";
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function deleteWorkloadIdentityPolicy(
+  client: Client,
+  args: DeleteWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -12877,6 +13029,73 @@ export async function getWebhookEndpoint(
   });
 }
 
+export type GetWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function getWorkloadIdentityPolicy(
+  client: Client,
+  args: GetWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetWorkspaceParams = {
   path: {
     id: string;
@@ -13420,6 +13639,95 @@ export async function invalidateApiKeyCache(
     };
     message: string;
     ok: true;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type LiftSpendBlockParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lifts an active spend block so requests in its scope are accepted again within about a minute. The rule does not block again until its period resets, but it keeps sending alerts. Owners and admins only; the lift is recorded in the audit log and queues a spend_blocked event with state lifted. Returns 404 for an unknown block and 409 spend_block_not_active when it was already lifted.
+ */
+export async function liftSpendBlock(
+  client: Client,
+  args: LiftSpendBlockParams,
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-blocks/${encodeURIComponent(String(path["id"]))}/lift`;
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -17211,6 +17519,55 @@ export async function listOrganisations(
   });
 }
 
+export type ListPresetLabelsParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the named labels, such as production or staging, and the published version each one points at.
+ */
+export async function listPresetLabels(
+  client: Client,
+  args: ListPresetLabelsParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListPresetsParams = {
   path?: Record<string, never>;
   query?: {
@@ -17493,6 +17850,7 @@ export async function listPresetVersions(
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -17554,6 +17912,7 @@ export async function listPresetVersions(
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -17921,6 +18280,94 @@ export async function listRateLimitPolicies(
       workspace_id: string;
     }[];
     has_more: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendBlocksParams = {
+  path?: Record<string, never>;
+  query?: {
+    include_lifted?: boolean;
+    limit?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's spend blocks, newest first: the blocks that spend rules with action block have started once spend reached their block point. Active blocks only, unless include_lifted is true. Owners and admins only.
+ */
+export async function listSpendBlocks(
+  client: Client,
+  args: ListSpendBlocksParams = {},
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-blocks";
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -19591,6 +20038,71 @@ export async function listWebhookEndpoints(
   });
 }
 
+export type ListWorkloadIdentityPoliciesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function listWorkloadIdentityPolicies(
+  client: Client,
+  args: ListWorkloadIdentityPoliciesParams = {},
+): Promise<{
+  audience: string;
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/workload-identity/policies";
+  return client.request<{
+    audience: string;
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListWorkspaceAppsParams = {
   path?: Record<string, never>;
   query?: {
@@ -21042,6 +21554,7 @@ export async function publishPresetVersion(
     created_by: string;
     description?: string | null;
     id: string;
+    labels?: string[];
     name: string;
     preset_id: string;
     release_notes?: string | null;
@@ -21103,6 +21616,7 @@ export async function publishPresetVersion(
       created_by: string;
       description?: string | null;
       id: string;
+      labels?: string[];
       name: string;
       preset_id: string;
       release_notes?: string | null;
@@ -22526,6 +23040,61 @@ export async function rotateWorkspaceNotificationDestinationSecret(
     };
   }>({
     method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type SetPresetLabelParams = {
+  path: {
+    id: string;
+    label: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    version?: string;
+    version_id?: string;
+  };
+};
+
+/**
+ * Points a label at a published version, creating the label or moving it. Requests that pin the label, such as @support-triage@production, use the new version within about 2 minutes. Moving a label back to an earlier version is a rollback.
+ */
+export async function setPresetLabel(
+  client: Client,
+  args: SetPresetLabelParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    label: string;
+    updated_at?: string | null;
+    updated_by?: string | null;
+    version_id: string;
+    version_label: string | null;
+    version_number: number | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["label"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/labels/${encodeURIComponent(String(path["label"]))}`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      label: string;
+      updated_at?: string | null;
+      updated_by?: string | null;
+      version_id: string;
+      version_label: string | null;
+      version_number: number | null;
+    };
+  }>({
+    method: "PUT",
     path: resolvedPath,
     query,
     headers,
@@ -25010,6 +25579,80 @@ export async function updateWebhookEndpoint(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateWorkloadIdentityPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    claim_conditions?: {
+      [key: string]: string[];
+    };
+    max_token_lifetime_seconds?: number;
+    name?: string;
+    status?: "active" | "disabled";
+  };
+};
+
+/**
+ * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ */
+export async function updateWorkloadIdentityPolicy(
+  client: Client,
+  args: UpdateWorkloadIdentityPolicyParams,
+): Promise<{
+  data: {
+    audience: string;
+    claim_conditions: {
+      [key: string]: string[];
+    };
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    issuer: string;
+    key_id: string;
+    last_used_at: string | null;
+    max_token_lifetime_seconds: number;
+    name: string;
+    owner_id: string;
+    provider: "vercel" | "github_actions";
+    status: "active" | "disabled";
+    updated_at: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/workload-identity/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      audience: string;
+      claim_conditions: {
+        [key: string]: string[];
+      };
+      created_at: string;
+      created_by: string | null;
+      id: string;
+      issuer: string;
+      key_id: string;
+      last_used_at: string | null;
+      max_token_lifetime_seconds: number;
+      name: string;
+      owner_id: string;
+      provider: "vercel" | "github_actions";
+      status: "active" | "disabled";
+      updated_at: string;
+    };
   }>({
     method: "PATCH",
     path: resolvedPath,

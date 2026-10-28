@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -4590,6 +4596,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5105,6 +5233,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: हटाए गए ब्लॉक भी लौटाएँ, नए पहले।
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: लौटाए जाने वाले ब्लॉक की अधिकतम संख्या।
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: खर्च ब्लॉक की सूची
+      description: 'वर्कस्पेस के खर्च ब्लॉक की सूची देता है, नए पहले: वे ब्लॉक जो block ऐक्शन वाले खर्च नियमों ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किए। केवल सक्रिय ब्लॉक, जब तक include_lifted true न हो। केवल ओनर और एडमिन।'
+      responses:
+        '200':
+          description: खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च ब्लॉक की ID।
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: खर्च ब्लॉक हटाएँ
+      description: सक्रिय खर्च ब्लॉक हटाता है, ताकि उसके दायरे के अनुरोध लगभग एक मिनट में फिर से स्वीकार हों। अवधि रीसेट होने तक नियम फिर से ब्लॉक नहीं करता, लेकिन अलर्ट भेजता रहता है। केवल ओनर और एडमिन; हटाना ऑडिट लॉग में दर्ज होता है और lifted स्थिति वाला spend_blocked इवेंट कतार में डालता है। अज्ञात ब्लॉक के लिए 404 और पहले से हटाए गए ब्लॉक के लिए 409 spend_block_not_active लौटाता है।
+      responses:
+        '200':
+          description: हटाया गया खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
         default:
           description: अनुरोध विफल हुआ
           content:
@@ -8676,6 +8871,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: प्रीसेट लेबल सूचीबद्ध करें
+      description: production या staging जैसे नाम वाले लेबल और हर लेबल जिस प्रकाशित संस्करण पर है, उसे सूचीबद्ध करता है।
+      responses:
+        '200':
+          description: प्रीसेट लेबल की सूची
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: प्रीसेट नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: प्रीसेट लेबल सेट करें
+      description: किसी लेबल को प्रकाशित संस्करण पर लगाता है, लेबल बनाकर या उसे वहाँ ले जाकर। लेबल को pin करने वाले अनुरोध, जैसे @support-triage@production, लगभग 2 मिनट में नए संस्करण का उपयोग करते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: लेबल सहेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: अमान्य लेबल, या version_id और version में से कोई नहीं या दोनों
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या संस्करण नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: प्रीसेट लेबल हटाएँ
+      description: एक लेबल हटाता है। जो अनुरोध अब भी उसे pin करते हैं, वे preset_version_not_found के साथ विफल होते हैं।
+      responses:
+        '200':
+          description: लेबल हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: अमान्य लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या लेबल नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9106,6 +9398,10 @@ components:
       description: क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।
       schema:
         type: string
+    SpendWarning:
+      description: तब भेजा जाता है जब कोई ब्लॉक करने वाला खर्च नियम अनुरोध को कवर करता है और खर्च उसकी आख़िरी अलर्ट सीमा पार कर चुका है, लेकिन अभी ब्लॉक बिंदु तक नहीं पहुँचा। अधिकतम तीन नियम rule_id, scope और resets_at के रूप में बताता है, जैसे `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`। खर्च के ब्लॉक बिंदु तक पहुँचने पर दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
@@ -9166,6 +9462,14 @@ components:
       description: प्रीसेट का UUID, slug या canonical नाम।
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: लेबल का नाम, जैसे production। 1 से 32 छोटे अंग्रेज़ी अक्षर, अंक, हाइफ़न या अंडरस्कोर, अक्षर से शुरू; यह संस्करण लेबल (v1, v2) जैसा नहीं दिख सकता।
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -17232,6 +17536,10 @@ components:
           type: object
           additionalProperties: true
           description: टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।
+        version:
+          type: string
+          maxLength: 64
+          description: 'मौजूदा संस्करण की जगह प्रीसेट का यह प्रकाशित संस्करण चलाता है: उसके मॉडल, पैरामीटर और टेम्पलेट। v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या production जैसा लेबल दें। यह model को @support-triage@production पर सेट करने जैसा है।'
     Preset:
       type: object
       required:
@@ -17424,6 +17732,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: production जैसे नाम वाले लेबल जो इस संस्करण पर हैं। संस्करण सूचीबद्ध करते समय लौटाए जाते हैं।
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +17765,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id और version में से ठीक एक भेजें।
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: वह प्रकाशित संस्करण जिस पर लेबल लगाना है।
+        version:
+          type: string
+          maxLength: 64
+          description: v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या staging जैसा कोई दूसरा लेबल जिसकी जगह कॉपी करनी है।
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -21539,6 +21926,200 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     RateLimitPolicy:
       type: object
       description: A named set of gateway rate limits. When several policies apply to a request, the most restrictive limit wins.
@@ -21837,7 +22418,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।'
+      description: notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। जब तक गेटवे पर ब्लॉक करना बंद है, ब्लॉक करना शुरू करने वाला नियम 400 के साथ अस्वीकार किया जाता है, और पहले से ब्लॉक करने वाला नियम केवल सूचना देता है।
       enum:
         - notify
         - block
@@ -22559,6 +23140,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'खर्च ब्लॉक क्यों हटाया गया: manual (कोई ओनर या एडमिन), period_reset, below_limit (खर्च फिर से ब्लॉक बिंदु से नीचे है, जैसे बजट बढ़ाने के बाद), rule_changed, rule_disabled या rule_deleted।'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: वह ब्लॉक जो किसी खर्च नियम ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किया। सक्रिय रहने तक उसके दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है और Retry-After resets_at पर सेट होता है। मुफ़्त मॉडल छूट में रहते हैं, जब तक block_free_models true न हो।
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: वह नियम जिसने ब्लॉक शुरू किया; नियम पूरी तरह हटाए जाने पर null।
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: दायरे का दिखने वाला नाम (कुंजी, विभाग या मॉडल का नाम, सदस्य का ईमेल, या ID)।
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ब्लॉक अपने आप कब हटता है (नियम की अवधि का अंत)।
+        spend_nanos:
+          type: integer
+          description: ब्लॉक शुरू होते समय नियम के दायरे में खर्च, नैनोडॉलर में।
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: ब्लॉक बिंदु, नैनोडॉलर में।
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: मैन्युअल रूप से हटाने पर, ब्लॉक हटाने वाला ओनर या एडमिन।
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: हटाया नहीं गया, और इसका रीसेट समय अभी नहीं बीता।
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

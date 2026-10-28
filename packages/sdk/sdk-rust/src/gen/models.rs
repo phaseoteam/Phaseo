@@ -2668,6 +2668,34 @@ pub struct PresetForkRequest {
 	pub source_version_id: Option<String>,
 }
 
+pub struct PresetLabel {
+	pub created_at: Option<Option<String>>,
+	pub label: String,
+	pub updated_at: Option<Option<String>>,
+	pub updated_by: Option<Option<String>>,
+	pub version_id: String,
+	pub version_label: Option<String>,
+	pub version_number: Option<i64>,
+}
+
+pub struct PresetLabelDeleteResponse {
+	pub deleted: bool,
+	pub label: String,
+}
+
+pub struct PresetLabelListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct PresetLabelResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct PresetLabelSetRequest {
+	pub version: Option<String>,
+	pub version_id: Option<String>,
+}
+
 pub struct PresetListResponse {
 	pub data: Vec<HashMap<String, String>>,
 	pub total_count: i64,
@@ -2790,6 +2818,7 @@ pub struct PresetVersion {
 	pub created_by: String,
 	pub description: Option<Option<String>>,
 	pub id: String,
+	pub labels: Option<Vec<String>>,
 	pub name: String,
 	pub preset_id: String,
 	pub release_notes: Option<Option<String>>,
@@ -2903,6 +2932,7 @@ pub struct PromptCacheOptions {
 pub struct PromptTemplateReference {
 	pub id: String,
 	pub variables: Option<HashMap<String, String>>,
+	pub version: Option<String>,
 }
 
 pub struct Provider {
@@ -3300,6 +3330,38 @@ pub struct ServerToolUsage {
 	pub subagent_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
 	pub web_search_requests: Option<i64>,
+}
+
+pub struct SpendBlock {
+	pub active: bool,
+	pub block_free_models: bool,
+	pub id: String,
+	pub lift_reason: Option<String>,
+	pub lifted_at: Option<String>,
+	pub lifted_by: Option<String>,
+	pub limit_nanos: i64,
+	pub limit_usd: f64,
+	pub period_start: String,
+	pub resets_at: Option<String>,
+	pub rule_id: Option<String>,
+	pub rule_name: Option<String>,
+	pub scope_id: Option<String>,
+	pub scope_label: String,
+	pub scope_type: String,
+	pub spend_nanos: i64,
+	pub spend_usd: f64,
+	pub started_at: String,
+	pub workspace_id: String,
+}
+
+pub type SpendBlockLiftReason = JsonValue;
+
+pub struct SpendBlockListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct SpendBlockResponse {
+	pub data: HashMap<String, String>,
 }
 
 pub struct SpendRule {
@@ -3808,6 +3870,54 @@ pub struct WebSearchPlugin {
 	pub max_uses: Option<i64>,
 	pub search_context_size: Option<String>,
 }
+
+pub struct WorkloadIdentityPolicy {
+	pub audience: String,
+	pub claim_conditions: HashMap<String, String>,
+	pub created_at: String,
+	pub created_by: Option<String>,
+	pub id: String,
+	pub issuer: String,
+	pub key_id: String,
+	pub last_used_at: Option<String>,
+	pub max_token_lifetime_seconds: i64,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+	pub status: String,
+	pub updated_at: String,
+}
+
+pub struct WorkloadIdentityPolicyDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub issuer: Option<String>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+}
+
+pub struct WorkloadIdentityPolicyListResponse {
+	pub audience: String,
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct WorkloadIdentityPolicyResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyUpdateInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: Option<String>,
+	pub status: Option<String>,
+}
+
+pub type WorkloadIdentityProvider = JsonValue;
 
 pub struct Workspace {
 	pub created_at: Option<String>,

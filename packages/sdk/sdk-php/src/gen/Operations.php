@@ -365,6 +365,13 @@ function createWebhookEndpoint(Client $client, ?array $path = null, ?array $quer
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createWorkloadIdentityPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/workload-identity/policies";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -495,6 +502,15 @@ function deletePreset(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
+function deletePresetLabel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	if (in_array((string)($path["label"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels/" . rawurlencode((string)($path["label"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function deletePrivateModel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -556,6 +572,14 @@ function deleteWebhookEndpoint(Client $client, ?array $path = null, ?array $quer
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/webhook-endpoints/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
+function deleteWorkloadIdentityPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/workload-identity/policies/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -918,6 +942,14 @@ function getWebhookEndpoint(Client $client, ?array $path = null, ?array $query =
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getWorkloadIdentityPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/workload-identity/policies/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -974,6 +1006,14 @@ function invalidateApiKeyCache(Client $client, ?array $path = null, ?array $quer
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/keys/" . rawurlencode((string)($path["id"] ?? "")) . "/invalidate";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function liftSpendBlock(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/spend-blocks/" . rawurlencode((string)($path["id"] ?? "")) . "/lift";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1186,6 +1226,14 @@ function listOrganisations(Client $client, ?array $path = null, ?array $query = 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listPresetLabels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listPresets(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1250,6 +1298,13 @@ function listRateLimitPolicies(Client $client, ?array $path = null, ?array $quer
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listSpendBlocks(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/spend-blocks";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listSpendRuleHistory(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1304,6 +1359,13 @@ function listWebhookEndpoints(Client $client, ?array $path = null, ?array $query
 {
 	$path = $path ?? [];
 	$resolvedPath = "/webhook-endpoints";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listWorkloadIdentityPolicies(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/workload-identity/policies";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1601,6 +1663,15 @@ function rotateWorkspaceNotificationDestinationSecret(Client $client, ?array $pa
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function setPresetLabel(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	if (in_array((string)($path["label"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/presets/" . rawurlencode((string)($path["id"] ?? "")) . "/labels/" . rawurlencode((string)($path["label"] ?? ""));
+	return $client->request("PUT", $resolvedPath, $query, $headers, $body);
+}
+
 function setWorkspaceDepartmentMember(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -1802,6 +1873,14 @@ function updateWebhookEndpoint(Client $client, ?array $path = null, ?array $quer
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/webhook-endpoints/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateWorkloadIdentityPolicy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/workload-identity/policies/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

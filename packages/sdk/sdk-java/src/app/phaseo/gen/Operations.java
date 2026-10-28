@@ -260,6 +260,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -345,6 +350,11 @@ public final class Operations {
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Object deletePresetLabel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels/" + pathSegment(path != null && path.containsKey("label") ? path.get("label") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object deletePrivateModel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/private-models/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
@@ -382,6 +392,11 @@ public final class Operations {
 
 	public static Object deleteWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
+	public static Object deleteWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -615,6 +630,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object getWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object getWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -652,6 +672,11 @@ public final class Operations {
 
 	public static Object invalidateApiKeyCache(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/invalidate";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object liftSpendBlock(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-blocks/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/lift";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -800,6 +825,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listPresetLabels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listPresets(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/presets";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -845,6 +875,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listSpendBlocks(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/spend-blocks";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listSpendRuleHistory(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/spend-rules/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/history";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -882,6 +917,11 @@ public final class Operations {
 
 	public static Object listWebhookEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listWorkloadIdentityPolicies(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1075,6 +1115,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object setPresetLabel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels/" + pathSegment(path != null && path.containsKey("label") ? path.get("label") : "");
+		return client.request("PUT", resolvedPath, query, headers, body);
+	}
+
 	public static Object setWorkspaceDepartmentMember(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/identity/departments/" + pathSegment(path != null && path.containsKey("departmentId") ? path.get("departmentId") : "") + "/members/" + pathSegment(path != null && path.containsKey("userId") ? path.get("userId") : "");
 		return client.request("PUT", resolvedPath, query, headers, body);
@@ -1202,6 +1247,11 @@ public final class Operations {
 
 	public static Object updateWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/webhook-endpoints/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateWorkloadIdentityPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workload-identity/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

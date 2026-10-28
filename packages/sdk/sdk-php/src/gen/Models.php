@@ -4697,6 +4697,52 @@ class PresetForkRequest
 	public $source_version_id;
 }
 
+class PresetLabel
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string */
+	public $label;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string|null */
+	public $updated_by;
+	/** @var string */
+	public $version_id;
+	/** @var string|null */
+	public $version_label;
+	/** @var int|null */
+	public $version_number;
+}
+
+class PresetLabelDeleteResponse
+{
+	/** @var bool */
+	public $deleted;
+	/** @var string */
+	public $label;
+}
+
+class PresetLabelListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class PresetLabelResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class PresetLabelSetRequest
+{
+	/** @var string|null */
+	public $version;
+	/** @var string|null */
+	public $version_id;
+}
+
 class PresetListResponse
 {
 	/** @var array */
@@ -4907,6 +4953,8 @@ class PresetVersion
 	public $description;
 	/** @var string */
 	public $id;
+	/** @var array|null */
+	public $labels;
 	/** @var string */
 	public $name;
 	/** @var string */
@@ -5105,6 +5153,8 @@ class PromptTemplateReference
 	public $id;
 	/** @var array<string, mixed>|null */
 	public $variables;
+	/** @var string|null */
+	public $version;
 }
 
 class Provider
@@ -5809,6 +5859,62 @@ class ServerToolUsage
 	public $web_fetch_requests;
 	/** @var int|null */
 	public $web_search_requests;
+}
+
+class SpendBlock
+{
+	/** @var bool */
+	public $active;
+	/** @var bool */
+	public $block_free_models;
+	/** @var string */
+	public $id;
+	/** @var mixed|null */
+	public $lift_reason;
+	/** @var string|null */
+	public $lifted_at;
+	/** @var string|null */
+	public $lifted_by;
+	/** @var int */
+	public $limit_nanos;
+	/** @var float */
+	public $limit_usd;
+	/** @var string */
+	public $period_start;
+	/** @var string|null */
+	public $resets_at;
+	/** @var string|null */
+	public $rule_id;
+	/** @var string|null */
+	public $rule_name;
+	/** @var string|null */
+	public $scope_id;
+	/** @var string */
+	public $scope_label;
+	/** @var string */
+	public $scope_type;
+	/** @var int */
+	public $spend_nanos;
+	/** @var float */
+	public $spend_usd;
+	/** @var string */
+	public $started_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class SpendBlockLiftReason { }
+
+class SpendBlockListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class SpendBlockResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
 }
 
 class SpendRule
@@ -6710,6 +6816,88 @@ class WebSearchPlugin
 	/** @var string|null */
 	public $search_context_size;
 }
+
+class WorkloadIdentityPolicy
+{
+	/** @var string */
+	public $audience;
+	/** @var array<string, mixed> */
+	public $claim_conditions;
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $issuer;
+	/** @var string */
+	public $key_id;
+	/** @var string|null */
+	public $last_used_at;
+	/** @var int */
+	public $max_token_lifetime_seconds;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $owner_id;
+	/** @var string */
+	public $provider;
+	/** @var string */
+	public $status;
+	/** @var string */
+	public $updated_at;
+}
+
+class WorkloadIdentityPolicyDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class WorkloadIdentityPolicyInput
+{
+	/** @var array<string, mixed>|null */
+	public $claim_conditions;
+	/** @var string|null */
+	public $issuer;
+	/** @var int|null */
+	public $max_token_lifetime_seconds;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $owner_id;
+	/** @var string */
+	public $provider;
+}
+
+class WorkloadIdentityPolicyListResponse
+{
+	/** @var string */
+	public $audience;
+	/** @var array */
+	public $data;
+}
+
+class WorkloadIdentityPolicyResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class WorkloadIdentityPolicyUpdateInput
+{
+	/** @var array<string, mixed>|null */
+	public $claim_conditions;
+	/** @var int|null */
+	public $max_token_lifetime_seconds;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $status;
+}
+
+class WorkloadIdentityProvider { }
 
 class Workspace
 {

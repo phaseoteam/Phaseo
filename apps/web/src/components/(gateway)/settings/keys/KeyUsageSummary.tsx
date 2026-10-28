@@ -6,6 +6,7 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import type { KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 import { forecastLimitWindow, formatLimitResetCountdown, type LimitWindow } from "@/lib/gateway/usage/limitForecast";
 import { useLimitClock } from "./useLimitClock";
+import { KeyLimitAlertShortcut } from "../spend-rules/SpendAlertShortcuts";
 
 type KeyLimits = Pick<
 	KeyDetailData["key"],
@@ -27,11 +28,14 @@ export function KeyUsageSummary({
 	usage,
 	limits,
 	observedAt,
+	limitAlert,
 }: {
 	usage: KeyDetailData["usage"];
 	limits: KeyLimits;
 	/** Server time the usage was read, so projections match between render and hydration. */
 	observedAt: number;
+	/** For owners and admins: offer an 80% spend alert under each window with a cost limit. */
+	limitAlert?: { keyId: string; keyName: string };
 }) {
 	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
@@ -98,6 +102,9 @@ export function KeyUsageSummary({
 							<span className="text-amber-700 dark:text-amber-300">{t("keyDetail.reachesLimit", { date: when(spendProjection.reachesLimitAt) })}</span>
 						) : null}
 					</div>
+				) : null}
+				{limitAlert && spendLimit > 0 ? (
+					<div className="mt-2"><KeyLimitAlertShortcut keyId={limitAlert.keyId} keyName={limitAlert.keyName} window={period.prefix} /></div>
 				) : null}
 				<div className="mt-4 border-t pt-3">
 					<p className="text-sm tabular-nums text-muted-foreground">

@@ -235,6 +235,54 @@ Phaseo は保存時にテンプレートを検証します。構文エラー、�
 
 保存した変更は 2 分ほどでリクエストに反映されます。
 
+## バージョンとラベル
+
+プリセットを公開するたびに、Phaseo は変更できないバージョンを保存します（[プリセット](./presets.mdx) を参照）。リクエストはバージョンを固定しない限り、最新の公開バージョンを実行します。固定したリクエストは、そのバージョンのモデル、パラメーター、テンプレートをまとめて使います。
+
+`prompt.version` でバージョンを固定します。
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` には `v3`、`1.2.0`、`2026.10.27` のようなバージョンラベル、または `production` のようなラベルを指定します。テンプレートの有無にかかわらず、モデル ID にバージョンを含めることもできます。
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+公開プリセットでは `@publisher/support-triage@production` を使います。`model` と `prompt.version` の両方でバージョンを固定する場合は、同じバージョンを指定する必要があります。
+
+### ラベル
+
+ラベルは `production` や `staging` のような名前で、1 つの公開バージョンを指します。ラベルは英小文字、数字、ハイフン、アンダースコアの 1〜32 文字で、英字で始まり、バージョンラベル（`v1`、`v2`）のような形にはできません。
+
+**設定 -> プリセット** でプリセットを開き、バージョンの **ラベルを割り当て** からラベルを追加するか、そのバージョンに移動します。ラベルを変更できるのはプリセットの作成者と、プリセットが共有されている場合のワークスペースのオーナーと管理者です。`presets:write` を持つ [管理 API キー](../developers/management-api-keys.mdx) を使う場合:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+本文には `version`（バージョンラベル、または指し先をコピーする別のラベル）か `version_id` を指定します。`GET /v1/presets/{id}/labels` でラベルを一覧表示し、`DELETE /v1/presets/{id}/labels/{label}` で削除します。削除したラベルに固定したリクエストは、ラベルを再度追加するまで失敗します。
+
+### ロールバック
+
+ロールバックするには、ラベルを以前のバージョンに移します。そのバージョンで **production をここに移動** を選ぶか、`"version": "v2"` で同じリクエストを送信します。`production` に固定したリクエストは、アプリケーションを変更しなくても再び v2 を実行します。
+
+ラベルの移動は、ほかのプリセットの変更と同じく約 2 分以内にリクエストに反映されます。
+
 ## エラー
 
 リクエスト内のテンプレートの問題は、コード `validation_error` とともに `400` を返します。`reason` には最初の問題のコードが入り、`details` にはすべての問題がパス付きで列挙されます。
@@ -268,11 +316,13 @@ Phaseo は保存時にテンプレートを検証します。構文エラー、�
 | `template_limit_exceeded` | 変数またはレンダリングされたテキストが、下記の上限を超えています。 |
 | `template_rendered_empty` | テンプレートが user メッセージも assistant メッセージもレンダリングせず、リクエストにもメッセージがありません。 |
 | `template_endpoint_unsupported` | テンプレートを持つプリセットが、上記の 3 つ以外のエンドポイントから呼び出されました。 |
-| `prompt_model_conflict` | `model` が `prompt.id` と異なるプリセットまたはモデルを指定しています。 |
-| `prompt_version_unsupported` | リクエストで `prompt.version` が設定されています。 |
+| `prompt_model_conflict` | `model` が `prompt.id` と異なるプリセットまたはモデルを指定しているか、`prompt.version` と異なるバージョンを固定しています。 |
+| `prompt_version_invalid` | `prompt.version` が空、64 文字を超えている、または英数字、`.`、`_`、`+`、`-` 以外の文字を含んでいます。 |
 | `prompt_model_fallbacks_unsupported` | リクエストで `models` のフォールバックが設定されています。フォールバックモデルはプリセットに登録してください。 |
 
 ワークスペースにないプリセットを `prompt.id` に指定すると `404` が返ります。
+
+存在しないバージョンやラベル、またはキーが使用できないバージョンやラベルを固定すると、理由 `preset_version_not_found` とともに `404` が返ります。
 
 ## 上限
 
@@ -295,7 +345,6 @@ Phaseo は保存時にテンプレートを検証します。構文エラー、�
 
 ## 現在の制限
 
-- リクエストには最後に保存されたテンプレートが使われます。`prompt.version` で以前のバージョンを固定することはまだできません。
 - `models` のフォールバックはテンプレートと併用できません。フォールバックモデルはプリセットに追加してください。
 - テンプレートが適用されるのは、chat completions、Responses、Messages のリクエストだけです。
 

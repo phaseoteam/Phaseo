@@ -4241,6 +4241,34 @@ type PresetForkRequest struct {
 	SourceVersionId *string `json:"source_version_id,omitempty"`
 }
 
+type PresetLabel struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+	Label string `json:"label"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	UpdatedBy *string `json:"updated_by,omitempty"`
+	VersionId string `json:"version_id"`
+	VersionLabel *string `json:"version_label"`
+	VersionNumber *int `json:"version_number"`
+}
+
+type PresetLabelDeleteResponse struct {
+	Deleted bool `json:"deleted"`
+	Label string `json:"label"`
+}
+
+type PresetLabelListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type PresetLabelResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type PresetLabelSetRequest struct {
+	Version *string `json:"version,omitempty"`
+	VersionId *string `json:"version_id,omitempty"`
+}
+
 type PresetListResponse struct {
 	Data []map[string]interface{} `json:"data"`
 	TotalCount int `json:"total_count"`
@@ -4363,6 +4391,7 @@ type PresetVersion struct {
 	CreatedBy string `json:"created_by"`
 	Description *string `json:"description,omitempty"`
 	Id string `json:"id"`
+	Labels *[]string `json:"labels,omitempty"`
 	Name string `json:"name"`
 	PresetId string `json:"preset_id"`
 	ReleaseNotes *string `json:"release_notes,omitempty"`
@@ -4490,6 +4519,7 @@ type PromptCacheOptions struct {
 type PromptTemplateReference struct {
 	Id string `json:"id"`
 	Variables *map[string]interface{} `json:"variables,omitempty"`
+	Version *string `json:"version,omitempty"`
 }
 
 type Provider struct {
@@ -4902,6 +4932,48 @@ type ServerToolUsage struct {
 	SubagentRequests *int `json:"subagent_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
+}
+
+type SpendBlock struct {
+	Active bool `json:"active"`
+	BlockFreeModels bool `json:"block_free_models"`
+	Id string `json:"id"`
+	LiftReason *interface{} `json:"lift_reason"`
+	LiftedAt *string `json:"lifted_at"`
+	LiftedBy *string `json:"lifted_by"`
+	LimitNanos int `json:"limit_nanos"`
+	LimitUsd float64 `json:"limit_usd"`
+	PeriodStart string `json:"period_start"`
+	ResetsAt *string `json:"resets_at"`
+	RuleId *string `json:"rule_id"`
+	RuleName *string `json:"rule_name"`
+	ScopeId *string `json:"scope_id"`
+	ScopeLabel string `json:"scope_label"`
+	ScopeType string `json:"scope_type"`
+	SpendNanos int `json:"spend_nanos"`
+	SpendUsd float64 `json:"spend_usd"`
+	StartedAt string `json:"started_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type SpendBlockLiftReason string
+
+const (
+	SpendBlockLiftReasonManual SpendBlockLiftReason = "manual"
+	SpendBlockLiftReasonPeriodReset SpendBlockLiftReason = "period_reset"
+	SpendBlockLiftReasonBelowLimit SpendBlockLiftReason = "below_limit"
+	SpendBlockLiftReasonRuleChanged SpendBlockLiftReason = "rule_changed"
+	SpendBlockLiftReasonRuleDisabled SpendBlockLiftReason = "rule_disabled"
+	SpendBlockLiftReasonRuleDeleted SpendBlockLiftReason = "rule_deleted"
+)
+
+
+type SpendBlockListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type SpendBlockResponse struct {
+	Data map[string]interface{} `json:"data"`
 }
 
 type SpendRule struct {
@@ -5468,6 +5540,60 @@ type WebSearchPlugin struct {
 	MaxUses *int `json:"max_uses,omitempty"`
 	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
+
+type WorkloadIdentityPolicy struct {
+	Audience string `json:"audience"`
+	ClaimConditions map[string]interface{} `json:"claim_conditions"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Id string `json:"id"`
+	Issuer string `json:"issuer"`
+	KeyId string `json:"key_id"`
+	LastUsedAt *string `json:"last_used_at"`
+	MaxTokenLifetimeSeconds int `json:"max_token_lifetime_seconds"`
+	Name string `json:"name"`
+	OwnerId string `json:"owner_id"`
+	Provider string `json:"provider"`
+	Status string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type WorkloadIdentityPolicyDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyInput struct {
+	ClaimConditions *map[string]interface{} `json:"claim_conditions,omitempty"`
+	Issuer *string `json:"issuer,omitempty"`
+	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
+	Name string `json:"name"`
+	OwnerId string `json:"owner_id"`
+	Provider string `json:"provider"`
+}
+
+type WorkloadIdentityPolicyListResponse struct {
+	Audience string `json:"audience"`
+	Data []map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type WorkloadIdentityPolicyUpdateInput struct {
+	ClaimConditions *map[string]interface{} `json:"claim_conditions,omitempty"`
+	MaxTokenLifetimeSeconds *int `json:"max_token_lifetime_seconds,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type WorkloadIdentityProvider string
+
+const (
+	WorkloadIdentityProviderVercel WorkloadIdentityProvider = "vercel"
+	WorkloadIdentityProviderGithubActions WorkloadIdentityProvider = "github_actions"
+)
+
 
 type Workspace struct {
 	CreatedAt *string `json:"created_at"`

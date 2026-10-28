@@ -39,7 +39,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 		</section>
 		<section className="space-y-4">
 			<div className="flex items-center justify-between"><h2 className="text-base font-semibold">{t("teams.usage")}</h2><Button variant="outline" size="sm" asChild><Link href={`/settings/usage/logs?key=${encodeURIComponent(key.id)}&workspaceId=${encodeURIComponent(key.workspace_id)}`}>{t("keyDetail.viewLogs")}</Link></Button></div>
-			<KeyUsageSummary usage={usage} limits={key} observedAt={data.observedAt} />
+			<KeyUsageSummary usage={usage} limits={key} observedAt={data.observedAt} limitAlert={data.canManage ? { keyId: key.id, keyName: key.name } : undefined} />
 			<p className="text-xs text-muted-foreground">{t("keyDetail.usagePeriod")} {t("keyDetail.projectionNote")}</p>
 			<KeyUsageCharts chart={data.chart} />
 		</section>

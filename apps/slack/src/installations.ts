@@ -23,9 +23,21 @@ export type SlackAppContext = {
 
 export const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "enterprise_id", "bot_user_id", "secrets_ciphertext", "key_id",
-	"model", "model_choice_enabled", "allowed_models", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
-	"plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"schedules_enabled", "schedule_creators", "plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"bot_scopes", "search_mode",
+	"pages_enabled", "page_expiry_days", "page_default_access", "page_link_access",
 ].join(",");
+
+/**
+ * The bot scopes every installation had before slack_installations.bot_scopes
+ * was recorded. A feature that needs a newer scope (files:read, files:write)
+ * reaches an installation only once an admin updates its Slack permissions, so
+ * it checks hasBotScope first and says it can't do that here yet without it.
+ */
+export const ORIGINAL_BOT_SCOPES: readonly string[] = [
+	"app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read",
+];
 
 export type Installation = {
 	id: string;
@@ -40,10 +52,16 @@ export type Installation = {
 	/** People may start a message with `with <model>:` to have one of allowed_models answer it (model-choice.ts). */
 	model_choice_enabled: boolean;
 	allowed_models: string[];
+	/** The agent's notes, pins and to-dos (memory.ts). Off: none are offered or shown; saved skills still are. */
+	memory_enabled: boolean;
 	instructions: string | null;
 	access_mode: "everyone" | "linked";
 	usage_data_mode: "off" | "dm" | "dm_and_channels";
 	usage_data_channel_ids: string[] | null;
+	/** Recurring tasks (schedules.ts): whether people may set them up and they run. */
+	schedules_enabled: boolean;
+	/** Who may set up recurring tasks: anyone the agent answers, or only people who linked their Phaseo account. */
+	schedule_creators: "everyone" | "linked";
 	plan_people: number;
 	over_plan: "refuse" | "move_up";
 	max_people: number | null;
@@ -52,7 +70,22 @@ export type Installation = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	status: "active" | "paused" | "payment_due" | "uninstalled";
+	/** The bot scopes Slack granted; null for installations from before they were recorded (ORIGINAL_BOT_SCOPES). */
+	bot_scopes: string[] | null;
+	/** Where the agent may search Slack for the person asking (slack-search.ts): off, dm (direct messages with it, the default) or dm_and_channels. */
+	search_mode: "off" | "dm" | "dm_and_channels";
+	/** Shared pages (pages.ts): whether the agent may publish them, for how many days, and who can view them. */
+	pages_enabled: boolean;
+	page_expiry_days: number;
+	page_default_access: "link" | "workspace";
+	/** Whether a page may be open to anyone with its link. Off, every page needs a Slack sign-in. */
+	page_link_access: boolean;
 };
+
+/** Whether Slack granted the installation's bot a scope. */
+export function hasBotScope(installation: Pick<Installation, "bot_scopes">, scope: string): boolean {
+	return (installation.bot_scopes ?? ORIGINAL_BOT_SCOPES).includes(scope);
+}
 
 export type InstallationSecrets = {
 	bot_token: string;
@@ -155,6 +188,33 @@ export function botTokenNeedsRefresh(secrets: InstallationSecrets, now = Date.no
 	return !Number.isFinite(expiresAt) || expiresAt - now < TOKEN_REFRESH_MARGIN_MS;
 }
 
+export type AppClientCredentials = { clientId: string; clientSecret: string };
+
+/**
+ * The client credentials of the app an installation was made through: the hosted
+ * app's (optional Worker secrets), or the company app's from slack_apps. Null
+ * when they aren't configured.
+ */
+export async function appClientCredentials(env: Env, db: Db, installation: Pick<Installation, "slack_app_id">): Promise<AppClientCredentials | null> {
+	let clientId: string | null;
+	let clientSecret: string | null;
+	if (installation.slack_app_id) {
+		if (!UUID_PATTERN.test(installation.slack_app_id)) return null;
+		const app = (await db.select<{ client_id: string; secrets_ciphertext: string }>("slack_apps", {
+			select: "client_id,secrets_ciphertext",
+			id: `eq.${installation.slack_app_id}`,
+			limit: "1",
+		}))[0];
+		const appSecrets = app ? await decryptSlackSecrets(env, app.secrets_ciphertext) : null;
+		clientId = app?.client_id ?? null;
+		clientSecret = appSecrets?.client_secret ?? null;
+	} else {
+		clientId = env.SLACK_CLIENT_ID?.trim() || null;
+		clientSecret = env.SLACK_CLIENT_SECRET?.trim() || null;
+	}
+	return clientId && clientSecret ? { clientId, clientSecret } : null;
+}
+
 /**
  * Refreshes a rotating bot token and stores it. Slack's refresh tokens are single
  * use, so this runs inside the installation's WorkspaceMeter, one refresh at a
@@ -171,19 +231,8 @@ export async function refreshInstallationBotToken(env: Env, db: Db, installation
 	const secrets = await installationSecrets(env, row.secrets_ciphertext);
 	if (!botTokenNeedsRefresh(secrets, now)) return secrets.bot_token;
 
-	let credentials: { clientId: string | null; clientSecret: string | null };
-	if (row.slack_app_id) {
-		const app = (await db.select<{ client_id: string; secrets_ciphertext: string }>("slack_apps", {
-			select: "client_id,secrets_ciphertext",
-			id: `eq.${row.slack_app_id}`,
-			limit: "1",
-		}))[0];
-		const appSecrets = app ? await decryptSlackSecrets(env, app.secrets_ciphertext) : null;
-		credentials = { clientId: app?.client_id ?? null, clientSecret: appSecrets?.client_secret ?? null };
-	} else {
-		credentials = { clientId: env.SLACK_CLIENT_ID?.trim() || null, clientSecret: env.SLACK_CLIENT_SECRET?.trim() || null };
-	}
-	if (!credentials.clientId || !credentials.clientSecret) {
+	const credentials = await appClientCredentials(env, db, row);
+	if (!credentials) {
 		console.error("[slack-agent] bot token needs a refresh but the app's client credentials are missing", { installationId });
 		return null;
 	}

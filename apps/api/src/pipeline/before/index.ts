@@ -955,7 +955,7 @@ export async function beforeRequest(
     let mergedBody = body;
     let presetFilteredProviders = providers;
     let resolvedRoutingMode = context.teamSettings?.routingMode ?? null;
-    let presetInfo: { id: string; name: string; slug?: string | null; config: any } | null = null;
+    let presetInfo: { id: string; name: string; slug?: string | null; config: any; versionId?: string | null; versionLabel?: string | null; ref?: string | null } | null = null;
     let promptTemplateApplication: PromptTemplateApplication | null = null;
 
     if (context.preset) {
@@ -1034,6 +1034,9 @@ export async function beforeRequest(
             name: context.preset.name,
             slug: context.preset.slug ?? null,
             config: context.preset.config,
+            versionId: context.preset.versionId ?? null,
+            versionLabel: context.preset.versionLabel ?? null,
+            ref: context.preset.ref ?? null,
         };
 
         if (!presetFilteredProviders.length) {
@@ -1730,7 +1733,7 @@ export async function beforeRequest(
         },
         preset: presetInfo,
         promptTemplate: promptTemplateApplication && presetInfo
-            ? { presetId: presetInfo.id, presetSlug: presetInfo.slug ?? null, ...promptTemplateApplication }
+            ? { presetId: presetInfo.id, presetSlug: presetInfo.slug ?? null, versionLabel: presetInfo.versionLabel ?? null, ref: presetInfo.ref ?? null, ...promptTemplateApplication }
             : null,
         internal,
         // Enrichment data for observability (wide events)

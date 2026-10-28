@@ -19,6 +19,7 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
 # When a charge would have invalidated the credit cache, store its exact
 # post-charge balance instead if it is at least $1, no higher than the cached
 # balance, and not throttled; otherwise the cache is still invalidated.

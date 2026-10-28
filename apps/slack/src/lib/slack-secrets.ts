@@ -106,7 +106,8 @@ export async function decryptSlackSecrets(env: SlackSecretsEnv, value: string): 
 	return parsed as Record<string, string>;
 }
 
-export type SlackTokenPurpose = "install" | "link";
+/** page_signin and page_session: the Slack Worker's sign-in for shared pages (state, then the viewer's session). */
+export type SlackTokenPurpose = "install" | "link" | "page_signin" | "page_session";
 
 export type SlackTokenResult<T> =
 	| { ok: true; payload: T & { purpose: SlackTokenPurpose; exp: number; nonce: string } }

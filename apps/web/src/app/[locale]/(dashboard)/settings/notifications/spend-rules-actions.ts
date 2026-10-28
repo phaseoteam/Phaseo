@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import type {
+	SpendBlock,
 	SpendRule,
 	SpendRuleHistory,
 	SpendRulePreview,
@@ -32,8 +33,9 @@ async function account(): Promise<{ accessToken: string; workspaceId: string }> 
 function failure(error: unknown): SpendRuleActionError {
 	if (error instanceof WebApiError) {
 		const detail = error.detail ?? null;
-		const code = detail && /^[a-z_]+$/.test(detail) ? detail : null;
-		return { ok: false, status: error.status, message: code ? null : detail, code };
+		// The API's machine-readable error, kept even when detail is its message.
+		const code = error.code ?? (detail && /^[a-z_]+$/.test(detail) ? detail : null);
+		return { ok: false, status: error.status, message: detail === code ? null : detail, code };
 	}
 	return { ok: false, status: null, message: null, code: null };
 }
@@ -123,6 +125,21 @@ export async function spendRuleHistory(id: string, page: { limit?: number; offse
 		if (page.offset !== undefined) query.set("offset", String(page.offset));
 		const response = await fetchAccountWebApi<{ history: SpendRuleHistory }>(`${rulePath(id, "/history")}?${query}`, context.accessToken);
 		return { ok: true, history: response.history };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+/** Lifts an active spend block (owners and admins). It stays lifted until the rule's period resets. */
+export async function liftSpendBlock(id: string): Promise<{ ok: true; block: SpendBlock } | SpendRuleActionError> {
+	try {
+		const context = await account();
+		const response = await fetchAccountWebApi<{ block: SpendBlock }>(`${BASE}/blocks/${encodeURIComponent(id)}/lift`, context.accessToken, {
+			method: "POST",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		refresh();
+		return { ok: true, block: response.block };
 	} catch (error) {
 		return failure(error);
 	}

@@ -2691,6 +2691,34 @@ public final class Models {
 		public String source_version_id;
 	}
 
+	public static class PresetLabel {
+		public String created_at;
+		public String label;
+		public String updated_at;
+		public String updated_by;
+		public String version_id;
+		public String version_label;
+		public Integer version_number;
+	}
+
+	public static class PresetLabelDeleteResponse {
+		public Boolean deleted;
+		public String label;
+	}
+
+	public static class PresetLabelListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class PresetLabelResponse {
+		public Object data;
+	}
+
+	public static class PresetLabelSetRequest {
+		public String version;
+		public String version_id;
+	}
+
 	public static class PresetListResponse {
 		public java.util.List<Object> data;
 		public Integer total_count;
@@ -2813,6 +2841,7 @@ public final class Models {
 		public String created_by;
 		public String description;
 		public String id;
+		public java.util.List<String> labels;
 		public String name;
 		public String preset_id;
 		public String release_notes;
@@ -2928,6 +2957,7 @@ public final class Models {
 	public static class PromptTemplateReference {
 		public String id;
 		public Object variables;
+		public String version;
 	}
 
 	public static class Provider {
@@ -3329,6 +3359,39 @@ public final class Models {
 		public Integer subagent_requests;
 		public Integer web_fetch_requests;
 		public Integer web_search_requests;
+	}
+
+	public static class SpendBlock {
+		public Boolean active;
+		public Boolean block_free_models;
+		public String id;
+		public Object lift_reason;
+		public String lifted_at;
+		public String lifted_by;
+		public Integer limit_nanos;
+		public Double limit_usd;
+		public String period_start;
+		public String resets_at;
+		public String rule_id;
+		public String rule_name;
+		public String scope_id;
+		public String scope_label;
+		public Object scope_type;
+		public Integer spend_nanos;
+		public Double spend_usd;
+		public String started_at;
+		public String workspace_id;
+	}
+
+	public static class SpendBlockLiftReason {
+	}
+
+	public static class SpendBlockListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class SpendBlockResponse {
+		public Object data;
 	}
 
 	public static class SpendRule {
@@ -3845,6 +3908,55 @@ public final class Models {
 		public Integer max_results;
 		public Integer max_uses;
 		public Object search_context_size;
+	}
+
+	public static class WorkloadIdentityPolicy {
+		public String audience;
+		public Object claim_conditions;
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String issuer;
+		public String key_id;
+		public String last_used_at;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+		public Object status;
+		public String updated_at;
+	}
+
+	public static class WorkloadIdentityPolicyDeleteResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyInput {
+		public Object claim_conditions;
+		public String issuer;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+	}
+
+	public static class WorkloadIdentityPolicyListResponse {
+		public String audience;
+		public java.util.List<Object> data;
+	}
+
+	public static class WorkloadIdentityPolicyResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyUpdateInput {
+		public Object claim_conditions;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public Object status;
+	}
+
+	public static class WorkloadIdentityProvider {
 	}
 
 	public static class Workspace {

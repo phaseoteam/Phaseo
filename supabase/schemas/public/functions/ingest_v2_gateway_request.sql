@@ -131,6 +131,7 @@ begin
     structured_output_attempted, structured_output_succeeded, stream, byok,
     latency_ms, time_to_first_token_ms, generation_ms, internal_dispatch_ms,
     gateway_total_ms, upstream_attempt_count, throughput, user_agent,
+    sdk_name, sdk_version, client_version,
     session_id, end_user_id, auth_method, native_response_id, cost_nanos, currency,
     cloudflare_colo, safe_metadata
   ) values (
@@ -153,6 +154,9 @@ begin
     least(32767, jsonb_array_length(v_attempts))::smallint,
     nullif(p_event->>'throughput', '')::numeric,
     left(nullif(p_event->>'user_agent', ''), 1024),
+    left(nullif(trim(p_event->>'sdk_name'), ''), 256),
+    left(nullif(trim(p_event->>'sdk_version'), ''), 128),
+    left(nullif(trim(p_event->>'client_version'), ''), 128),
     left(nullif(p_event->>'session_id', ''), 256),
     left(nullif(p_event->>'end_user_id', ''), 256),
     nullif(p_event->>'auth_method', ''),
@@ -189,6 +193,9 @@ begin
     upstream_attempt_count = excluded.upstream_attempt_count,
     throughput = excluded.throughput,
     user_agent = excluded.user_agent,
+    sdk_name = excluded.sdk_name,
+    sdk_version = excluded.sdk_version,
+    client_version = excluded.client_version,
     session_id = excluded.session_id,
     end_user_id = excluded.end_user_id,
     auth_method = excluded.auth_method,

@@ -1,5 +1,7 @@
 # Artificial Analysis benchmarks
 
+For the upcoming major-version transition, see the [v5 rollout checks](V5-ROLLOUT.md).
+
 ## Full frontend data extractor
 
 `pnpm exec tsx scripts/scrape-artificial-analysis-public.ts --output snapshot.json`

@@ -463,6 +463,7 @@ accountAuthRouter.get("/header", async (c) => {
 				email: user.email,
 				displayName,
 				avatarUrl: metadataString(user.userMetadata, ["avatar_url", "picture", "picture_url"]),
+				createdAt: user.createdAt || null,
 			},
 			teams,
 			...(teamsHasMore !== undefined ? { teamsHasMore } : {}),

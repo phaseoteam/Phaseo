@@ -30,6 +30,7 @@ const saved: SlackAgentSettings = {
 	model: "phaseo/auto",
 	model_choice_enabled: false,
 	allowed_models: [],
+	memory_enabled: true,
 	instructions: null,
 	access_mode: "everyone",
 	usage_data_mode: "dm",
@@ -265,6 +266,10 @@ describe("Slack agent error messages", () => {
 
 	it("reads the OAuth callback's result", () => {
 		expect(callbackNotice(new URLSearchParams("installed=1&workspaceId=w"))).toEqual({ kind: "installed" });
+		expect(callbackNotice(new URLSearchParams("permissions_updated=1&workspaceId=w"))).toEqual({ kind: "permissionsUpdated", partial: false });
+		expect(callbackNotice(new URLSearchParams("permissions_updated=partial"))).toEqual({ kind: "permissionsUpdated", partial: true });
+		expect(callbackNotice(new URLSearchParams("permissions_updated=yes"))).toBeNull();
+		expect(callbackNotice(new URLSearchParams("error=slack_team_mismatch"))).toEqual({ kind: "error", key: "teamMismatch" });
 		expect(callbackNotice(new URLSearchParams("error=slack_denied"))).toEqual({ kind: "error", key: "slackDenied" });
 		expect(callbackNotice(new URLSearchParams("error=sign_in_required"))).toEqual({ kind: "error", key: "signInRequired" });
 		expect(callbackNotice(new URLSearchParams("error=unheard_of"))).toEqual({ kind: "error", key: "generic" });

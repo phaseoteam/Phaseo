@@ -315,6 +315,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createWorkloadIdentityPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/workload-identity/policies"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces"
@@ -428,6 +434,14 @@ module Phaseo
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.deletePresetLabel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["label"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels/#{URI.encode_uri_component(path["label"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.deletePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -481,6 +495,13 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deleteWorkloadIdentityPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/workload-identity/policies/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -797,6 +818,13 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.getWorkloadIdentityPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/workload-identity/policies/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.getWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -845,6 +873,13 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}/invalidate"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.liftSpendBlock(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-blocks/#{URI.encode_uri_component(path["id"].to_s)}/lift"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1028,6 +1063,13 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listPresetLabels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listPresets(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/presets"
@@ -1083,6 +1125,12 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listSpendBlocks(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/spend-blocks"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listSpendRuleHistory(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -1129,6 +1177,12 @@ module Phaseo
       def self.listWebhookEndpoints(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/webhook-endpoints"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listWorkloadIdentityPolicies(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/workload-identity/policies"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1388,6 +1442,14 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.setPresetLabel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["label"].to_s)
+        resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/labels/#{URI.encode_uri_component(path["label"].to_s)}"
+        client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.setWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["departmentId"].to_s)
@@ -1563,6 +1625,13 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateWorkloadIdentityPolicy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/workload-identity/policies/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

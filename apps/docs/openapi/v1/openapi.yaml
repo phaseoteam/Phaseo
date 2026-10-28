@@ -779,6 +779,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -825,6 +827,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -949,6 +953,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -4819,6 +4825,153 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: >-
+        Lists the workspace's trusted workload policies: which Vercel
+        deployments and GitHub Actions workflows may call the gateway with their
+        OIDC token instead of an API key. Requires keys:read on management keys
+        and OAuth tokens, or a workspace owner or admin. Available only to
+        workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: >-
+        Creates a policy and its secretless key. Tokens must be issued for the
+        audience https://api.phaseo.app and match the pinned owner and every
+        claim condition. A workspace can have up to 50 policies; more returns
+        409 limit_reached. Requires keys:write on management keys and OAuth
+        tokens, or a workspace owner or admin. Available only to workspaces in
+        the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: >-
+        Returns one trusted workload policy. Requires keys:read on management
+        keys and OAuth tokens, or a workspace owner or admin. Available only to
+        workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: >-
+        Changes a policy's name, status, claim conditions or maximum token
+        lifetime. The provider, issuer and owner cannot change; create a new
+        policy instead. Changes reach the gateway within a minute. Requires
+        keys:write on management keys and OAuth tokens, or a workspace owner or
+        admin. Available only to workspaces in the trusted workloads beta; other
+        workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: >-
+        Revokes the policy's key, then deletes the policy. Matching tokens are
+        refused within a minute. Past requests keep their key in logs and usage.
+        Requires keys:delete on management keys and OAuth tokens, or a workspace
+        owner or admin. Available only to workspaces in the trusted workloads
+        beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5392,6 +5545,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Also return lifted blocks, newest first.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of blocks to return.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: List spend blocks
+      description: >-
+        Lists the workspace's spend blocks, newest first: the blocks that spend
+        rules with action block have started once spend reached their block
+        point. Active blocks only, unless include_lifted is true. Owners and
+        admins only.
+      responses:
+        '200':
+          description: Spend blocks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Spend block id.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Lift a spend block
+      description: >-
+        Lifts an active spend block so requests in its scope are accepted again
+        within about a minute. The rule does not block again until its period
+        resets, but it keeps sending alerts. Owners and admins only; the lift is
+        recorded in the audit log and queues a spend_blocked event with state
+        lifted. Returns 404 for an unknown block and 409 spend_block_not_active
+        when it was already lifted.
+      responses:
+        '200':
+          description: The lifted spend block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
         default:
           description: Request failed
           content:
@@ -9080,6 +9310,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: List preset labels
+      description: >-
+        Lists the named labels, such as production or staging, and the published
+        version each one points at.
+      responses:
+        '200':
+          description: Preset label list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: Preset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Set a preset label
+      description: >-
+        Points a label at a published version, creating the label or moving it.
+        Requests that pin the label, such as @support-triage@production, use the
+        new version within about 2 minutes. Moving a label back to an earlier
+        version is a rollback.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Label saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Invalid label, or neither or both of version_id and version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Remove a preset label
+      description: >-
+        Removes a label. Requests that still pin it fail with
+        preset_version_not_found.
+      responses:
+        '200':
+          description: Label removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Invalid label
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Only the preset's creator or a workspace owner or admin can change
+            its labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Preset or label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9546,6 +9885,16 @@ components:
         default value are not listed.
       schema:
         type: string
+    SpendWarning:
+      description: >-
+        Sent while a spend rule that blocks covers the request and spend has
+        passed its last alert threshold but not yet its block point. Lists up to
+        three rules as rule_id, scope and resets_at, for example `rule_id=...;
+        scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Once spend reaches
+        the block point, requests in scope get a 429 with code
+        spend_rule_blocked.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: >-
         BYOK-only provider quota metadata. Omitted for managed-provider
@@ -9613,6 +9962,17 @@ components:
       description: Preset UUID, slug, or canonical name.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: >-
+        Label name, such as production. 1 to 32 lowercase letters, numbers,
+        hyphens or underscores, starting with a letter; it cannot look like a
+        version label (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
     ObservabilityDestinationId:
       name: id
       in: path
@@ -18135,6 +18495,14 @@ components:
           description: >-
             Values for the template variables. Image variables take an https
             URL, a data URL or an image part.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            Runs this published version of the preset instead of the current
+            one: its models, parameters and template. Use a version label such
+            as v3, 1.2.0 or 2026.10.27, or a label such as production. The same
+            as setting model to @support-triage@production.
     Preset:
       type: object
       required:
@@ -18327,6 +18695,13 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: >-
+            Named labels, such as production, that point at this version.
+            Returned when listing versions.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -18355,6 +18730,82 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Send exactly one of version_id and version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: The published version to point the label at.
+        version:
+          type: string
+          maxLength: 64
+          description: >-
+            A version label such as v3, 1.2.0 or 2026.10.27, or another label
+            such as staging to copy where it points.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -22476,6 +22927,229 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: >-
+        A trusted workload: tokens from this issuer, for the pinned owner and
+        matching every claim condition, authenticate as the policy's key.
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: >-
+            Token issuer, for example https://oidc.vercel.com/acme or
+            https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: >-
+            The pinned Vercel team ID (owner_id claim) or GitHub organisation or
+            user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: >-
+            The policy's key. Requests, usage and limits are recorded against
+            it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: >-
+            Required for Vercel: https://oidc.vercel.com/ followed by the team
+            slug, or https://oidc.vercel.com for the global issuer. Defaults to
+            https://token.actions.githubusercontent.com for GitHub Actions.
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: >-
+            Extra claims the token must match, as claim name to allowed values,
+            for example project_id and environment for Vercel, or repository_id
+            and ref for GitHub Actions. Every claim must match one of its
+            values. At most 15 claims and 20 values per claim; iss, aud, exp,
+            iat, nbf and jti cannot be used, and the pinned owner claim is set
+            with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     RateLimitPolicy:
       type: object
       description: >-
@@ -22812,8 +23486,9 @@ components:
       description: >-
         notify, or notify and then block once spend reaches block_at_percent of
         the base or block_at_amount. Blocking is best effort and acts minutes
-        after the threshold. Blocking is not available yet: a rule with action
-        block is refused with a 400 until it is.
+        after the threshold. While blocking is switched off for the gateway, a
+        rule that would start blocking is refused with a 400, and a rule that
+        already blocks only notifies.
       enum:
         - notify
         - block
@@ -23586,6 +24261,128 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: >-
+        Why a spend block was lifted: manual (an owner or admin), period_reset,
+        below_limit (spend is under the block point again, for example after a
+        budget was raised), rule_changed, rule_disabled or rule_deleted.
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: >-
+        A block a spend rule started once spend reached its block point. While
+        it is active, requests in its scope get a 429 with code
+        spend_rule_blocked and Retry-After set to resets_at. Free models are
+        exempt unless block_free_models is true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The rule that started the block; null once the rule was deleted
+            outright.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: >-
+            Display name of the scope (key, department or model name, member
+            email, or the id).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the block lifts by itself (the end of the rule's period).
+        spend_nanos:
+          type: integer
+          description: Spend in the rule's scope when the block started, in nanodollars.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: The block point, in nanodollars.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: The owner or admin who lifted the block, for manual lifts.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: Not lifted, and its reset has not passed.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

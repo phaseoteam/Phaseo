@@ -30,6 +30,8 @@ type Fixture = {
 	rules?: Array<Record<string, unknown>>;
 	rpc?: (name: string, body: any) => Response;
 	gateway?: (request: Request) => Response;
+	/** Rows for other tables, by the last path segment (e.g. keys, workspace_departments). */
+	tables?: Record<string, unknown[]>;
 };
 
 function database(fixture: Fixture = {}) {
@@ -42,6 +44,9 @@ function database(fixture: Fixture = {}) {
 		requests.push({ url, method: request.method, body, headers: request.headers });
 		if (url.hostname === "api.test") return fixture.gateway ? fixture.gateway(request) : new Response("{}", { status: 500 });
 		if (url.pathname.endsWith("/auth/v1/user")) return Response.json({ id: "user-a", email: "fixture@example.com", app_metadata: {} });
+		const table = url.pathname.split("/").at(-1)!;
+		const listingMembers = table === "workspace_members" && (url.searchParams.get("select") ?? "").includes("users(");
+		if (fixture.tables && Object.hasOwn(fixture.tables, table) && (table !== "workspace_members" || listingMembers)) return Response.json(fixture.tables[table]);
 		if (url.pathname.endsWith("/workspace_members")) return Response.json(fixture.role ? [{ role: fixture.role }] : []);
 		if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "owner", slug: "workspace-a", name: "Workspace A" }]);
 		if (url.pathname.endsWith("/workspace_settings")) return Response.json([{ billing_time_zone: "Europe/London" }]);
@@ -116,6 +121,41 @@ describe("spend rule settings: reads", () => {
 	});
 });
 
+describe("spend rule settings: editor options", () => {
+	it("lists keys with their cost limits, members, departments, providers and budgets", async () => {
+		const requests = database({
+			role: "member",
+			tables: {
+				keys: [{ id: "k1", name: "prod", prefix: "sk-1", status: "active", daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: null, monthly_limit_cost_nanos: 250_000_000_000 }],
+				workspace_members: [{ user_id: "u1", role: "admin", users: { display_name: "Ada" } }, { user_id: "u2", role: "member", users: null }],
+				workspace_departments: [{ id: "d1", name: "Research" }],
+				v2_providers: [{ provider_slug: "openai", name: "OpenAI" }],
+				workspace_budgets: [{ interval: "monthly", limit_nanos: 100_000_000_000 }],
+			},
+		});
+		const response = await call(`/spend-rules/options?workspaceId=${WORKSPACE}`);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toContain("no-store");
+		expect(await response.json()).toEqual({
+			workspaceId: WORKSPACE,
+			keys: [{ id: "k1", name: "prod", prefix: "sk-1", status: "active", limitsUsd: { daily: null, weekly: null, monthly: 250 } }],
+			members: [{ id: "u1", name: "Ada", role: "admin" }, { id: "u2", name: null, role: "member" }],
+			departments: [{ id: "d1", name: "Research" }],
+			providers: [{ id: "openai", name: "OpenAI" }],
+			budgetsUsd: { monthly: 100 },
+		});
+		const keysRead = requests.find((entry) => entry.url.pathname.endsWith("/keys"))!;
+		expect(keysRead.url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+		expect(keysRead.url.searchParams.get("status")).toBe("neq.deleted");
+	});
+
+	it("rejects a workspace the user does not belong to", async () => {
+		const requests = database({ role: null });
+		expect((await call(`/spend-rules/options?workspaceId=${WORKSPACE}`)).status).toBe(403);
+		expect(requests.some((entry) => entry.url.pathname.endsWith("/keys"))).toBe(false);
+	});
+});
+
 describe("spend rule settings: writes", () => {
 	it("keeps members out of every write", async () => {
 		const requests = database({ role: "member" });
@@ -132,6 +172,9 @@ describe("spend rule settings: writes", () => {
 		const response = await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day" });
 		expect(await response.json()).toEqual({ error: "bad_request", message: "threshold_amount_usd (or threshold_amount_nanos) is required for spend rules" });
 		expect((await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, time_zone: "Nowhere/Land" })).status).toBe(400);
+		// A block rule is refused while the gateway does not enforce blocks (SPEND_RULE_BLOCKS_ENABLED off here).
+		const block = await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, action: "block", block_at_amount_usd: 6 });
+		expect(await block.json()).toEqual({ error: "bad_request", message: "action block is not available yet; use notify" });
 		expect(rpcCalls(requests, "save_workspace_spend_rule")).toEqual([]);
 	});
 
@@ -186,5 +229,87 @@ describe("spend rule settings: writes", () => {
 		expect(limited.status).toBe(429);
 		expect(limited.headers.get("retry-after")).toBe("21");
 		expect(await limited.json()).toEqual({ error: "rate_limited", message: "A workspace can send at most 5 spend rule tests a minute" });
+	});
+});
+
+describe("spend blocks", () => {
+	const BLOCK = "00000000-0000-4000-8000-0000000000b1";
+	const blockRow = (overrides: Record<string, unknown> = {}) => ({
+		id: BLOCK, workspace_id: WORKSPACE, rule_id: RULE, rule_name: "Monthly", scope_type: "workspace", scope_id: null, scope_label: "Workspace A",
+		block_free_models: false, period_start: "2026-10-01T00:00:00+00:00", resets_at: "2026-11-01T00:00:00+00:00",
+		spend_nanos: 112_000_000_000, limit_nanos: 110_000_000_000, started_at: "2026-10-21T12:00:00+00:00",
+		lifted_at: null, lifted_by: null, lift_reason: null, active: true, ...overrides,
+	});
+
+	it("lets members list active blocks, and says whether blocking is on", async () => {
+		const requests = database({ role: "member", rpc: () => Response.json([blockRow()]) });
+		const response = await call(`/spend-rules/blocks?workspaceId=${WORKSPACE}`);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ workspaceId: WORKSPACE, canLift: false, blocks: [{ id: BLOCK, spend_usd: 112, limit_usd: 110, active: true }] });
+		expect(rpcCalls(requests, "list_workspace_spend_blocks")).toEqual([{ p_workspace_id: WORKSPACE, p_include_lifted: false, p_limit: 50 }]);
+		expect((await call(`/spend-rules/blocks?workspaceId=${WORKSPACE}&includeLifted=nope`)).status).toBe(400);
+		expect(((await (await call(`/spend-rules?workspaceId=${WORKSPACE}`)).json()) as any).blocksEnabled).toBe(false);
+		const enabled = await app.request(`https://phaseo.app/api/account/settings/spend-rules?workspaceId=${WORKSPACE}`, {
+			headers: { authorization: "Bearer fixture-token" },
+		}, { ...env, SPEND_RULE_BLOCKS_ENABLED: "true" }, executionCtx);
+		expect(((await enabled.json()) as any).blocksEnabled).toBe(true);
+	});
+
+	it("only lets owners and admins lift a block", async () => {
+		const requests = database({ role: "member" });
+		expect((await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {})).status).toBe(403);
+		expect(rpcCalls(requests, "lift_workspace_spend_block")).toEqual([]);
+	});
+
+	it("lifts a block, audits it and asks the gateway to republish", async () => {
+		const requests = database({
+			role: "admin",
+			rpc: () => Response.json(blockRow({ lifted_at: "2026-10-21T13:00:00+00:00", lift_reason: "manual", lifted_by: "user-a", active: false })),
+			gateway: () => Response.json({ ok: true, published: true, enabled: true }),
+		});
+		const response = await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {});
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ block: { id: BLOCK, lift_reason: "manual", active: false } });
+		expect(rpcCalls(requests, "lift_workspace_spend_block")).toEqual([{ p_workspace_id: WORKSPACE, p_block_id: BLOCK, p_actor_user_id: "user-a" }]);
+		expect(audits(requests)).toEqual([expect.objectContaining({ action: "spend_block.lifted", target_type: "spend_block", target_id: BLOCK })]);
+		const publish = requests.find((entry) => entry.url.hostname === "api.test");
+		expect(publish?.url.pathname).toBe("/internal/spend-blocks/publish");
+		expect(publish?.body).toEqual({ workspaceId: WORKSPACE });
+		expect(publish?.headers.get("authorization")).toBe(`Bearer ${env.GATEWAY_INTERNAL_TEST_TOKEN}`);
+	});
+
+	it("still answers when the gateway republish fails", async () => {
+		database({ role: "owner", rpc: () => Response.json(blockRow({ lifted_at: "2026-10-21T13:00:00+00:00", lift_reason: "manual", active: false })) });
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		expect((await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {})).status).toBe(200);
+		expect(warn).toHaveBeenCalledWith("spend_block_publish_failed", expect.anything());
+		warn.mockRestore();
+	});
+
+	it("maps lift errors", async () => {
+		database({ role: "admin", rpc: () => Response.json({ code: "P0002", message: "spend_block_not_found" }, { status: 400 }) });
+		expect((await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {})).status).toBe(404);
+		vi.unstubAllGlobals();
+		database({ role: "admin", rpc: () => Response.json({ code: "55000", message: "spend_block_not_active" }, { status: 400 }) });
+		const conflict = await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {});
+		expect(conflict.status).toBe(409);
+		expect(await conflict.json()).toMatchObject({ error: "spend_block_not_active" });
+		expect((await send("/spend-rules/blocks/nope/lift", "POST", {})).status).toBe(400);
+	});
+
+	it("republishes after a block rule is changed or deleted, not after a notify rule changes", async () => {
+		const requests = database({ role: "admin", gateway: () => Response.json({ ok: true }) });
+		expect((await send(`/spend-rules/${RULE}`, "PATCH", { name: "Renamed" })).status).toBe(200);
+		expect(requests.filter((entry) => entry.url.hostname === "api.test")).toHaveLength(0);
+		vi.unstubAllGlobals();
+		const blockRequests = database({
+			role: "admin",
+			rules: [{ ...row({ action: "block", metric: "spend", base_kind: null, base_amount_nanos: null, threshold_percents: null, threshold_amount_nanos: 100e9, block_at_amount_nanos: 110e9 }), workspace_spend_rule_destinations: [] }],
+			rpc: (name, body) => Response.json({ rule: { ...row({ action: "block", metric: "spend", base_kind: null, base_amount_nanos: null, threshold_percents: null, threshold_amount_nanos: 100e9, block_at_amount_nanos: 110e9 }), ...body.p_rule }, destination_ids: [] }),
+			gateway: () => Response.json({ ok: true }),
+		});
+		expect((await send(`/spend-rules/${RULE}`, "PATCH", { enabled: false })).status).toBe(200);
+		expect((await send(`/spend-rules/${RULE}`, "DELETE", {})).status).toBe(200);
+		expect(blockRequests.filter((entry) => entry.url.pathname === "/internal/spend-blocks/publish")).toHaveLength(2);
 	});
 });

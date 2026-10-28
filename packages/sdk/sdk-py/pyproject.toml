@@ -53,5 +53,5 @@ packages = [
 "SKILL.md" = "phaseo/SKILL.md"
 
 [tool.hatch.version]
-path = "src/phaseo/__init__.py"
+path = "src/phaseo/_version.py"
 

@@ -28,6 +28,7 @@ import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequ
 import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
+import { parsePresetReference } from "./presetReference";
 import { shadowSpendLimitOnce } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
@@ -93,6 +94,27 @@ function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDia
     };
 }
 
+const NANOS_PER_USD = 1_000_000_000;
+
+/**
+ * Cost limits and usage are stored in nanos (1e-9 USD). Formats them as US
+ * dollars: two decimals from $1 up, and below $1 up to three significant
+ * digits so tiny amounts stay readable (11,660,720 nanos is "$0.0117").
+ */
+export function formatUsdFromNanos(nanos: number): string {
+	const dollars = nanos / NANOS_PER_USD;
+	const magnitude = Math.abs(dollars);
+	const maximumFractionDigits = magnitude >= 1 || magnitude === 0
+		? 2
+		: Math.min(9, Math.max(2, Math.ceil(-Math.log10(magnitude)) + 2));
+	return dollars.toLocaleString("en-US", {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits,
+	});
+}
+
 function describeKeyLimitExceeded(args: {
 	reason: string | null;
 	limitWindow?: "daily" | "weekly" | "monthly" | "lifetime" | null;
@@ -129,7 +151,10 @@ function describeKeyLimitExceeded(args: {
 		Number.isFinite(args.limitValue) &&
 		args.limitValue > 0
 	) {
-		return `This ${subject} has reached its ${windowLabel} ${metricLabel} (${args.currentValue}/${args.limitValue}).`;
+		const usage = args.limitMetric === "cost"
+			? `${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)}`
+			: `${args.currentValue}/${args.limitValue}`;
+		return `This ${subject} has reached its ${windowLabel} ${metricLabel} (${usage}).`;
 	}
 
 	return `This ${subject} has reached its ${windowLabel} ${metricLabel}.`;
@@ -602,7 +627,19 @@ export async function guardContext(args: {
         // A missing or unusable preset is the caller's mistake (often a typo in
         // the @reference), not a gateway failure.
         const message = e instanceof Error ? e.message : String(e);
-        if (args.model.startsWith("@") && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
+        const presetReference = parsePresetReference(args.model);
+        if (presetReference?.ref != null && message.includes("preset_version_not_found")) {
+            return {
+                ok: false,
+                response: err("not_found", {
+                    reason: "preset_version_not_found",
+                    description: `Preset "${presetReference.base}" has no published version or label "${presetReference.ref}", or this key cannot use it`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
+        if (presetReference && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
             const missing = message.includes("preset_not_found");
             return {
                 ok: false,

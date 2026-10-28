@@ -1,13 +1,15 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
-import { beforeEach, describe, expect, it } from "vitest";
-import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, PausedRun } from "../src/agent";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentRunner, AgentTurnHooks, AgentTurnOutput, AgentTurnRequest, AskOutput, AskRequest, GeneratedImage, ImageRequest, PausedRun } from "../src/agent";
 import { clearUserFactsCache } from "../src/access";
-import { TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { SEARCHED_REPLY_MEMORY, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
 import { processEvent, type SlackEnvelope } from "../src/events";
-import { hostedApp, type Installation } from "../src/installations";
+import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/installations";
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
+import { MEMORY_TOOL_IDS, SKILL_TOOL_IDS } from "../src/memory";
+import { SCHEDULE_TOOL_IDS } from "../src/schedules";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
 	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, eventEnvelope, HOSTED_APP_ID, INSTALLATION_ID, installationRow, mention, storageOf, TEAM_ID, testWorld, WORKSPACE_ID,
@@ -47,13 +49,19 @@ class FakeStep implements StepRunner {
 }
 
 type Script = (request: AgentTurnRequest, hooks: AgentTurnHooks, call: number) => Promise<AgentTurnOutput>;
+type AskScript = (request: AskRequest, call: number) => Promise<AskOutput>;
 
 class ScriptedAgent implements AgentRunner {
 	requests: AgentTurnRequest[] = [];
-	constructor(private readonly script: Script) {}
+	asks: AskRequest[] = [];
+	constructor(private readonly script: Script, private readonly askScript: AskScript = async () => { throw new Error("unexpected ask"); }) {}
 	async run(request: AgentTurnRequest, hooks: AgentTurnHooks) {
 		this.requests.push(request);
 		return this.script(request, hooks, this.requests.length);
+	}
+	async ask(request: AskRequest) {
+		this.asks.push(request);
+		return this.askScript(request, this.asks.length);
 	}
 }
 
@@ -122,6 +130,11 @@ function deps(agent: AgentRunner): TurnDeps {
 	return { ...world.deps, agent };
 }
 
+/** The tools a turn was offered besides memory and skills, which every turn gets (memory.test.ts). */
+function offeredTools(request: AgentTurnRequest): string[] {
+	return request.tools.map((tool) => tool.id).filter((id) => id !== "ask_question" && !(MEMORY_TOOL_IDS as readonly string[]).includes(id) && !(SCHEDULE_TOOL_IDS as readonly string[]).includes(id));
+}
+
 beforeEach(async () => {
 	world = testWorld({ now: NOW });
 	step = new FakeStep();
@@ -162,7 +175,7 @@ describe("AgentTurnWorkflow", () => {
 		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "reply", "finish"]);
 		const stored = JSON.stringify(step.outputs);
 		for (const secretOrText of ["spent", "what did we", GATEWAY_KEY, BOT_TOKEN]) expect(stored).not.toContain(secretOrText);
-		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null, consulted: [], consultCount: 0 });
 		expect(step.outputs.find((entry) => entry.name === "reply")?.output).toEqual({ shown: true, stopped: true });
 
 		const [request] = agent.requests;
@@ -172,8 +185,8 @@ describe("AgentTurnWorkflow", () => {
 			endUser: `slack:${TEAM_ID}:U0PERSON01`,
 			labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
 		});
-		// Every answer can ask the person a question.
-		expect(request.tools.map((tool) => tool.id)).toEqual(["ask_question"]);
+		// No usage tools here; memory, skills and questions always.
+		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(request.resume).toBeUndefined();
 		expect(request.prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
 		expect(request.instructions).toContain("can't see this workspace's Phaseo usage");
@@ -219,9 +232,90 @@ describe("AgentTurnWorkflow", () => {
 		expect(agent.requests[0].instructions).toMatch(/Instructions from this workspace's admins:\nAnswer in French\.$/);
 	});
 
+	it("puts the conversation's pins and the saved skills before the conversation, and answers without them when they can't be read", async () => {
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [{ id: "00000000-0000-4000-8000-0000000000e1", scope: "workspace", text: "Our fiscal year starts on 1 April.", created_at: "2026-10-20T09:00:00Z" }],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1", p_workspace_notes: true });
+		expect(agent.requests[0].prompt).toBe([
+			"Pinned for the whole Slack workspace, newest first:",
+			"- Our fiscal year starts on 1 April. (id 00000000-0000-4000-8000-0000000000e1)",
+			"",
+			"Saved skills (call use_skill to load one):",
+			"- Weekly report: Summarise the week.",
+			"",
+			"New message from <@U0PERSON01>:",
+			"what did we spend this week?",
+		].join("\n"));
+		expect(agent.requests[0].instructions).toContain("Save one with remember only when someone asks you to remember");
+		expect(agent.requests[0].instructions).toContain("Call save_skill only when someone explicitly asks you to save a skill.");
+
+		world.db.failingRpcs.add("load_slack_agent_turn_memory");
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].prompt).toBe("New message from <@U0PERSON01>:\nwhat did we spend this week?");
+		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
+	});
+
+	it("shows someone from another organisation only this conversation's notes, and lets them use skills but not save them", async () => {
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [
+				{ id: "00000000-0000-4000-8000-0000000000e1", scope: "channel", text: "Release notes go out on Tuesdays.", created_at: "2026-10-20T09:00:00Z" },
+				{ id: "00000000-0000-4000-8000-0000000000e2", scope: "workspace", text: "Our fiscal year starts on 1 April.", created_at: "2026-10-20T09:00:00Z" },
+			],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		const turn = await startTurn({ external: true });
+		// The coordinator keeps the flag for the Workflow.
+		expect(turn.external).toBe(true);
+		await runTurn(deps(agent), turn, step);
+		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toMatchObject({ p_workspace_notes: false });
+		const [request] = agent.requests;
+		expect(request.prompt).toContain("Release notes go out on Tuesdays.");
+		expect(request.prompt).not.toContain("fiscal year");
+		expect(request.prompt).toContain("- Weekly report: Summarise the week.");
+		expect(request.instructions).toContain("The person asking is from another organisation");
+		// Skills apply to the whole workspace: they can use them, not save them.
+		expect(request.tools.map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS.filter((id) => id !== "save_skill"), "list_schedules", "cancel_schedule", "ask_question"]);
+		expect(request.instructions).toContain("they can't save skills");
+		expect((request.tools.find((tool) => tool.id === "remember")!.parameters as any).properties.scope.enum).toEqual(["conversation"]);
+
+		// Someone from this organisation in the same thread sees the workspace's too.
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].prompt).toContain("fiscal year");
+	});
+
+	it("with memory off: no note tools and no pins, but the skills and their tools", async () => {
+		await install({ memory_enabled: false });
+		world.db.rpcResults.load_slack_agent_turn_memory = {
+			pins: [{ id: "00000000-0000-4000-8000-0000000000e1", scope: "channel", text: "Release notes go out on Tuesdays.", created_at: "2026-10-20T09:00:00Z" }],
+			skills: [{ name: "Weekly report", description: "Summarise the week." }],
+			skills_total: 1,
+		};
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		const [request] = agent.requests;
+		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
+		expect(request.prompt).toBe([
+			"Saved skills (call use_skill to load one):",
+			"- Weekly report: Summarise the week.",
+			"",
+			"New message from <@U0PERSON01>:",
+			"what did we spend this week?",
+		].join("\n"));
+		expect(request.instructions).toContain("turned your memory (notes, pins and to-dos) off");
+		expect(request.instructions).not.toContain("Save one with remember");
+		expect(request.instructions).toContain("Call save_skill only when someone explicitly asks you to save a skill.");
+	});
+
 	it("offers usage tools only where usage_data_mode allows and to a linked member", async () => {
 		const agent = new ScriptedAgent(async () => answer());
-		const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
+		const toolIds = () => offeredTools(agent.requests.at(-1)!);
 		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["connect_phaseo_account"]);
@@ -233,6 +327,7 @@ describe("AgentTurnWorkflow", () => {
 		world.db.tables.workspace_members.push({ workspace_id: WORKSPACE_ID, user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["get_spend", "get_credit_balance", "get_key_usage", "find_models"]);
+		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(agent.requests.at(-1)!.instructions).toContain("You can look up this Phaseo workspace's spend");
 		// The same member in a channel: only with dm_and_channels and the channel listed.
 		await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
@@ -556,7 +651,7 @@ describe("AgentTurnWorkflow", () => {
 
 		it("isn't offered where linking wouldn't bring the usage tools, nor to someone already linked", async () => {
 			const agent = new ScriptedAgent(async () => answer());
-			const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id).filter((id) => id !== "ask_question");
+			const toolIds = () => offeredTools(agent.requests.at(-1)!);
 			// A channel that usage_data_mode doesn't cover.
 			await runTurn(deps(agent), await startTurn({ channel: "C0CHANNEL1" }), step);
 			expect(toolIds()).toEqual([]);
@@ -767,6 +862,191 @@ describe("AgentTurnWorkflow", () => {
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 	});
 
+	describe("asking another model", () => {
+		const CLAUDE_PAGE = "https://phaseo.app/models/anthropic/claude-test";
+		type Execute = (input: unknown, context: unknown) => Promise<Record<string, unknown>>;
+		const askTool = (request: AgentTurnRequest) => request.tools.find((tool) => tool.id === "ask_model");
+
+		it("asks another allowed model mid-answer: same key, labels, user and session, its cost in the limit, and every model in the footer", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			const results: unknown[] = [];
+			const agent = new ScriptedAgent(async (request, hooks) => {
+				// The runner reports its own spend before the tool runs, as the real one does.
+				hooks.onCost?.(0.01);
+				results.push(await (askTool(request)!.execute as Execute)({ model: "anthropic/claude-test", prompt: "Is $12.50 right for 5 seats at $2.50?" }, {}));
+				await hooks.onText("Yes. Claude Test agrees: 5 × $2.50 = $12.50.");
+				await hooks.onStep({ costUsd: 0.01 + request.otherCostUsd!() });
+				return answer("openai/gpt-test", 0.01 + request.otherCostUsd!());
+			}, async () => ({ text: "Yes, that's right.", costUsd: 0.02 }));
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+			expect(agent.asks).toEqual([{
+				gatewayKey: GATEWAY_KEY,
+				endUser: `slack:${TEAM_ID}:U0PERSON01`,
+				sessionId: `slack-${turn.eventId}`,
+				labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
+				model: "anthropic/claude-test",
+				instructions: expect.stringContaining("Phaseo agent in Slack"),
+				prompt: "Is $12.50 right for 5 seats at $2.50?",
+				maxOutputTokens: 4_000,
+				webTools: false,
+				signal: agent.requests[0].signal,
+			}]);
+			expect(results).toEqual([{ model: "anthropic/claude-test", name: "Claude Test", answer: "Yes, that's right.", cost_usd: 0.02, asks_left: 2, budget_left_usd: 0.47 }]);
+			// Both models, each linked to its page, and the total with the consult.
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0300", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 30_000_000, consulted: ["anthropic/claude-test"] });
+			// Working memory notes the model asked, never what was asked.
+			expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["ask_model anthropic/claude-test", "Yes. Claude Test agrees: 5 × $2.50 = $12.50."]);
+			expect(JSON.stringify(step.outputs)).not.toContain("seats");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("is offered only with model choice on and another allowed model than the one answering", async () => {
+			const agent = new ScriptedAgent(async () => answer());
+			const offered = () => agent.requests.at(-1)!.tools.some((tool) => tool.id === "ask_model");
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test"] });
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+			// The person chose Claude Test for this message: GPT Test is the other model.
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			await runTurn(deps(agent), await startTurn({ model: "anthropic/claude-test" }), step);
+			expect((askTool(agent.requests.at(-1)!)!.parameters as { properties: { model: { enum: string[] } } }).properties.model.enum).toEqual(["openai/gpt-test"]);
+			await install({ model: "openai/gpt-test", model_choice_enabled: false, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			await runTurn(deps(agent), await startTurn(), step);
+			expect(offered()).toBe(false);
+		});
+
+		it("counts a consult's cost when the run fails after it, and a retry's limit includes it", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			const agent = new ScriptedAgent(async (request, hooks, call) => {
+				if (call === 1) {
+					hooks.onCost?.(0.05);
+					await (askTool(request)!.execute as Execute)({ model: "anthropic/claude-test", prompt: "a" }, {});
+					throw new Error("network");
+				}
+				return answer("openai/gpt-test", 0.01);
+			}, async () => ({ text: "ok", costUsd: 0.2 }));
+			const turn = await startTurn();
+			await runTurn(deps(agent), turn, step);
+			// The first attempt failed with $0.25 spent: the model's own $0.05 and the $0.20 consult.
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", costNanos: 250_000_000, consulted: ["anthropic/claude-test"] });
+		});
+	});
+
+	describe("Compare", () => {
+		const CLAUDE_PAGE = "https://phaseo.app/models/anthropic/claude-test";
+		const compareInstall = () => install({ model: "phaseo/auto", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+
+		it("asks each model at once and posts one reply with a section per model and the total, counted as one answer", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => { throw new Error("the agent doesn't run for a Compare"); }, async (request) => (
+				request.model === "openai/gpt-test" ? { text: "GPT says A.", costUsd: 0.0123 } : { text: "Claude says B.", costUsd: 0.0201 }
+			));
+			// events.ts queued it with the models, and the question without `compare …:`.
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: `<@${BOT_USER_ID}> which is faster?` });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests).toEqual([]);
+			expect(agent.asks.map((request) => [request.model, request.prompt, request.webTools, request.sessionId])).toEqual([
+				["openai/gpt-test", "which is faster?", true, `slack-${turn.eventId}`],
+				["anthropic/claude-test", "which is faster?", true, `slack-${turn.eventId}`],
+			]);
+			expect(agent.asks[0].instructions).toContain("shown next to other models' answers");
+			const sections = [
+				`**[GPT Test](${GPT_PAGE})** · $0.0123`, "", "GPT says A.", "",
+				`**[Claude Test](${CLAUDE_PAGE})** · $0.0201`, "", "Claude says B.",
+			].join("\n");
+			expect(world.slack.calls.map((call) => [call.method, call.args])).toEqual([
+				["agents.sessions.setStatus", { channel_id: "C0CHANNEL1", thread_ts: turn.threadTs, status: "processing" }],
+				["chat.startStream", { channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: sections, recipient_user_id: "U0PERSON01", recipient_team_id: TEAM_ID }],
+				["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001", blocks: [{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0324", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }] }],
+			]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({
+				status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 32_400_000,
+				requestedModel: "openai/gpt-test", model: null, error: null, consulted: ["anthropic/claude-test"],
+			});
+			expect(JSON.stringify(step.outputs)).not.toMatch(/faster|says/);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+			expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: sections, at: world.clock.now, ts: "1792600100.000001" }]);
+		});
+
+		it("doesn't ask the models when what earlier attempts left of the limit is too small to share", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => ({ text: "ok", costUsd: 0.01 }));
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			// An earlier attempt spent $0.47: $0.015 each is left.
+			coordinatorOf(turn).stageTurnOutput(turn.turnId, { attempt: 0, costNanos: 470_000_000, reply: "", tools: [] });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(agent.asks).toEqual([]);
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe([
+				`**[GPT Test](${GPT_PAGE})**`, "", "_Not asked: this answer's $0.50 limit was already used._", "",
+				`**[Claude Test](${CLAUDE_PAGE})**`, "", "_Not asked: this answer's $0.50 limit was already used._",
+			].join("\n"));
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", costNanos: 470_000_000, error: null });
+		});
+
+		it("shows a failed model's error in its section and keeps the others", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async (request) => {
+				if (request.model === "anthropic/claude-test") throw new AgentGatewayError({ status: 404, statusText: "Not Found", body: { error: { code: "model_not_found" } } });
+				return { text: "GPT says A.", costUsd: 0.0123 };
+			});
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe([
+				`**[GPT Test](${GPT_PAGE})** · $0.0123`, "", "GPT says A.", "",
+				`**[Claude Test](${CLAUDE_PAGE})**`, "", "_This model isn't available right now. Please try again in a few minutes._",
+			].join("\n"));
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0123", `<${GPT_PAGE}|GPT Test> + <${CLAUDE_PAGE}|Claude Test>`) }] }]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("isn't counted when every model fails, and has no footer", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => { throw new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }); });
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain("_This Phaseo workspace is out of credits. An admin can add credits in Phaseo billing._");
+			expect(world.slack.of("chat.stopStream")[0].args.blocks).toBeUndefined();
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "no_credits" });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("isn't counted when every model runs out of output without an answer, but keeps what they cost", async () => {
+			await compareInstall();
+			const agent = new ScriptedAgent(async () => answer(), async () => ({ text: "", costUsd: 0.02 }));
+			const turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain("_No answer: this model used its whole output allowance before writing one._");
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "failed", costNanos: 40_000_000 });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("stops when the thread is cancelled while the models answer, and isn't counted", async () => {
+			await compareInstall();
+			let turn!: TurnRef;
+			const agent = new ScriptedAgent(async () => answer(), async () => {
+				await coordinatorOf(turn).cancel(NOW);
+				return { text: "too late", costUsd: 0.01 };
+			});
+			turn = await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "cancelled" });
+			expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe("_Stopped._");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("answers as usual when an admin no longer allows two of the models", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test"] });
+			const agent = new ScriptedAgent(async () => answer());
+			await expect(runTurn(deps(agent), await startTurn({ compare: ["openai/gpt-test", "anthropic/claude-test"], text: "which is faster?" }), step)).resolves.toEqual({ status: "answered" });
+			expect(agent.requests.map((request) => request.model)).toEqual(["openai/gpt-test"]);
+			expect(agent.asks).toEqual([]);
+		});
+	});
+
 	it("notes when a limit stopped the answer early", async () => {
 		const agent = new ScriptedAgent(async (_request, hooks) => {
 			await hooks.onText("Partial answer");
@@ -899,10 +1179,43 @@ describe("AgentTurnWorkflow", () => {
 
 			expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "ask-1", "close-1", "resume-1", "reply", "finish"]);
 			expect(step.waits).toEqual([{ name: "answer-1", type: "answer-1", timeout: "1 hour" }]);
-			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null });
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "waiting", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 100_000_000, requestedModel: "phaseo/auto", model: "openai/gpt-test", error: null, consulted: [], consultCount: 0 });
 			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ status: "answered", costNanos: 150_000_000 });
 			const stored = JSON.stringify(step.outputs);
 			for (const text of ["Which region", "One thing", "Using EU", "\"EU\""]) expect(stored).not.toContain(text);
+		});
+
+		it("counts consults before a question toward the answer's three, and names every model asked in the footer", async () => {
+			await install({ model: "openai/gpt-test", model_choice_enabled: true, allowed_models: ["openai/gpt-test", "anthropic/claude-test"] });
+			let turn!: TurnRef;
+			const consult = (request: AgentTurnRequest) => (request.tools.find((tool) => tool.id === "ask_model")!.execute as (input: unknown, context: unknown) => Promise<Record<string, unknown>>)({ model: "anthropic/claude-test", prompt: "check" }, {});
+			const results: unknown[] = [];
+			const agent = new ScriptedAgent(async (request, hooks) => {
+				if (!request.resume) {
+					await consult(request);
+					await consult(request);
+					await hooks.onStep({ costUsd: 0.01 + request.otherCostUsd!() });
+					await request.tools.find((tool) => tool.id === "ask_question")!.onToolCalled!({ question: "Which region?", options: ["EU", "US"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+					return { costUsd: 0.01 + request.otherCostUsd!(), model: "openai/gpt-test", stopReason: null, paused: PAUSED };
+				}
+				results.push(await consult(request));
+				results.push(await consult(request).catch((error: Error) => error.message));
+				await hooks.onText("Using EU.");
+				return answer("openai/gpt-test", 0.01 + request.otherCostUsd!());
+			}, async () => ({ text: "ok", costUsd: 0.01 }));
+			step.onWait = async () => {
+				await expect(click(turn, "U0PERSON01", 0)).resolves.toBe("answered");
+				return "event";
+			};
+			turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			// Two before the question, one after; the fourth is refused.
+			expect(agent.asks).toHaveLength(3);
+			expect(results).toEqual([expect.objectContaining({ asks_left: 0 }), expect.stringContaining("already asked other models 3 times")]);
+			expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "waiting", costNanos: 30_000_000, consulted: ["anthropic/claude-test"], consultCount: 2 });
+			expect(step.outputs.find((entry) => entry.name === "resume-1")?.output).toMatchObject({ costNanos: 50_000_000, consulted: ["anthropic/claude-test"], consultCount: 3 });
+			// The whole answer's footer: both runs' cost, and the model asked.
+			expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toEqual([{ type: "context", elements: [{ type: "mrkdwn", text: mrkdwnFooter(turn, "$0.0500", `<${GPT_PAGE}|GPT Test> + <https://phaseo.app/models/anthropic/claude-test|Claude Test>`) }] }]);
 		});
 
 		it("lets only the person asked answer, tells anyone else privately, and takes one answer however often they click", async () => {
@@ -1162,5 +1475,533 @@ describe("AgentTurnWorkflow", () => {
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
 		expect(coordinatorOf(turn).status().running).toBeNull();
+	});
+});
+
+describe("Files in the thread", () => {
+	const ALL_SCOPES = [...ORIGINAL_BOT_SCOPES, "files:read", "files:write"];
+	/** A PNG's signature and IHDR start: enough for the type checks. */
+	const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+	const PDF = new TextEncoder().encode("%PDF-1.7\n%test\n");
+
+	function shareFile(id: string, name: string, mimetype: string, bytes: Uint8Array, extra: Record<string, unknown> = {}) {
+		const url = `https://files.slack.com/files-pri/${TEAM_ID}-${id}/download/${encodeURIComponent(name)}`;
+		world.slack.files.set(id, { info: { id, name, mimetype, size: bytes.byteLength, url_private_download: url, mode: "hosted", ...extra }, bytes });
+		return url;
+	}
+
+	/** An agent that runs one tool from its request, as the model would call it, then answers. */
+	class ToolAgent extends ScriptedAgent {
+		images: ImageRequest[] = [];
+		constructor(script: Script, private readonly image: GeneratedImage | null = null) {
+			super(script);
+		}
+		async generateImage(request: ImageRequest): Promise<GeneratedImage> {
+			this.images.push(request);
+			if (!this.image) throw new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: "insufficient_credits" }, message: "No credits" });
+			return this.image;
+		}
+	}
+
+	function callTool(request: AgentTurnRequest, id: string, input: unknown) {
+		const tool = request.tools.find((entry) => entry.id === id);
+		if (!tool || typeof tool.execute !== "function") throw new Error(`no ${id} tool`);
+		return tool.execute(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	}
+
+	it("offers charts and images only once Slack granted files:write, and otherwise says what an admin can do", async () => {
+		const agent = new ToolAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[0].tools.map((tool) => tool.id)).not.toContain("make_chart");
+		expect(agent.requests[0].tools.map((tool) => tool.id)).not.toContain("generate_image");
+		expect(agent.requests[0].instructions).toContain("You can't post charts or images in this Slack workspace yet. If someone asks for one, say an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack)");
+
+		await install({ bot_scopes: ALL_SCOPES });
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(agent.requests[1].tools.map((tool) => tool.id)).toEqual(expect.arrayContaining(["make_chart", "generate_image"]));
+		expect(agent.requests[1].instructions).toContain("You can post a chart of numbers in the thread with make_chart, and an image you make with generate_image.");
+		expect(agent.requests[1].instructions).not.toContain("can't post charts");
+	});
+
+	it("draws a chart the model asks for and posts it in the thread", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request) => {
+			result = await callTool(request, "make_chart", { type: "bar", title: "Weekly spend", labels: ["Oct 5", "Oct 12"], series: [{ name: "Spend", values: [12.5, 40] }], value_prefix: "$" });
+			return answer();
+		});
+		const turn = await startTurn();
+		await runTurn(deps(agent), turn, step);
+		expect(result).toEqual({ posted: true, file: "weekly-spend.png" });
+		const [url] = world.slack.of("files.getUploadURLExternal");
+		expect(url.args).toMatchObject({ filename: "weekly-spend.png", alt_txt: "Bar chart: Weekly spend. Spend: Oct 5 $12.5, Oct 12 $40." });
+		const png = world.slack.uploads.get("F0UPLOAD001")!;
+		expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		expect(url.args.length).toBe(png.byteLength);
+		const [complete] = world.slack.of("files.completeUploadExternal");
+		expect(complete.args).toEqual({ files: JSON.stringify([{ id: "F0UPLOAD001", title: "Weekly spend" }]), channel_id: "C0CHANNEL1", thread_ts: turn.threadTs });
+		// The thread's working memory says what was posted.
+		expect(coordinatorOf(turn).workingMemory().filter((entry) => entry.kind === "tool").map((entry) => entry.text)).toEqual(['make_chart: posted a bar chart, "Weekly spend"']);
+	});
+
+	it("tells the model what to fix in a chart, without posting anything", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let failure: unknown;
+		const agent = new ToolAgent(async (request) => {
+			failure = await callTool(request, "make_chart", { type: "pie", title: "Share", labels: ["A", "B"], series: [{ name: "Share", values: [3, -1] }] }).catch((error: unknown) => error);
+			return answer();
+		});
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(String(failure)).toContain("pie slices can't be negative");
+		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
+	});
+
+	it("makes an image with the installation's key, posts it, and counts its cost in the answer", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request, hooks) => {
+			result = await callTool(request, "generate_image", { prompt: "A lighthouse at dusk, watercolour", size: "landscape" });
+			await hooks.onText("Here's your lighthouse.");
+			return { ...answer(), costUsd: 0.01 + request.otherCostUsd!() };
+		}, { bytes: PNG, mimeType: "image/png", costUsd: 0.042, model: "openai/gpt-image-2" });
+		const turn = await startTurn();
+		await runTurn(deps(agent), turn, step);
+		expect(result).toEqual({ posted: true, cost_usd: 0.042 });
+		expect(agent.images).toEqual([{
+			gatewayKey: GATEWAY_KEY, model: "openai/gpt-image-2", prompt: "A lighthouse at dusk, watercolour", size: "1536x1024",
+			endUser: `slack:${TEAM_ID}:U0PERSON01`, sessionId: `slack-${turn.eventId}`, labels: { slackTeam: TEAM_ID, slackChannel: "C0CHANNEL1" },
+			signal: expect.any(AbortSignal),
+		}]);
+		expect(world.slack.of("files.getUploadURLExternal")[0].args).toMatchObject({ filename: "image.png", alt_txt: "Generated image: A lighthouse at dusk, watercolour" });
+		expect(world.slack.uploads.get("F0UPLOAD001")).toEqual(PNG);
+		// The image's cost is part of the answer's: in the run's cost and the footer's total.
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "answered", costNanos: 52_000_000 });
+		expect(JSON.stringify(world.slack.of("chat.stopStream").map((call) => call.args))).toContain("$0.0520");
+	});
+
+	it("passes on why an image couldn't be made, and counts nothing for it", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let result: unknown;
+		const agent = new ToolAgent(async (request) => {
+			result = await callTool(request, "generate_image", { prompt: "A cat" });
+			return { ...answer(), costUsd: 0.01 + request.otherCostUsd!() };
+		});
+		await runTurn(deps(agent), await startTurn(), step);
+		expect(result).toEqual({ posted: false, error: "This Phaseo workspace is out of credits, so no image could be made." });
+		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 10_000_000 });
+	});
+
+	it("reads the images and PDFs shared with the message and sends them to the model, keeping nothing of them", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		const imageUrl = shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const pdfUrl = shareFile("F0PDF00001", "invoice.pdf", "application/pdf", PDF);
+		const agent = new ScriptedAgent(async () => answer());
+		const turn = await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }, { id: "F0PDF00001", name: "invoice.pdf" }] });
+		await runTurn(deps(agent), turn, step);
+		expect(world.slack.downloads).toEqual([imageUrl, pdfUrl]);
+		const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+		expect(agent.requests[0].attachments).toEqual([
+			{ type: "input_image", image_url: `data:image/png;base64,${base64(PNG)}` },
+			{ type: "input_file", filename: "invoice.pdf", file_data: `data:application/pdf;base64,${base64(PDF)}` },
+		]);
+		expect(agent.requests[0].prompt).toContain([
+			"Files shared in this thread, newest first:",
+			"- latency.png from <@U0PERSON01>, in the new message: attached after this text.",
+			"- invoice.pdf from <@U0PERSON01>, in the new message: attached after this text.",
+		].join("\n"));
+		// Step outputs hold ids and statuses only.
+		expect(JSON.stringify(step.outputs)).not.toContain(base64(PNG));
+		expect(JSON.stringify(step.outputs)).not.toContain("latency.png");
+	});
+
+	it("never asks Slack for files without files:read, and says an admin can allow it", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step);
+		expect(world.slack.of("files.info")).toHaveLength(0);
+		expect(world.slack.downloads).toEqual([]);
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[0].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: you can't open files here yet: an admin needs to update the Phaseo agent's Slack permissions in Phaseo (Settings → Slack).");
+	});
+
+	it("skips files the model can't read, types it can't read and anything that isn't what it claims, without downloading them", async () => {
+		await install({ bot_scopes: ALL_SCOPES, model: "openai/gpt-test" });
+		world.db.tables.v2_models = [{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, input_modalities: ["text"] }];
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		shareFile("F0SHEET001", "budget.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new Uint8Array([0x50, 0x4b, 3, 4]));
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }, { id: "F0SHEET001", name: "budget.xlsx" }] }), step);
+		expect(world.slack.downloads).toEqual([]);
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[0].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: the model answering can't read this kind of file.");
+		expect(agent.requests[0].prompt).toContain("- budget.xlsx from <@U0PERSON01>, in the new message: you can only read images (PNG, JPEG, GIF, WebP) and PDFs.");
+
+		// A model that reads images gets them; a file that says it's an image but isn't is left out.
+		world.db.tables.v2_models = [{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, input_modalities: ["text", "image"] }];
+		shareFile("F0FAKE0001", "photo.png", "image/png", new TextEncoder().encode("<!DOCTYPE html><html>Sign in</html>"));
+		await runTurn(deps(agent), await startTurn({ files: [{ id: "F0FAKE0001", name: "photo.png" }] }), step);
+		expect(agent.requests[1].attachments).toBeUndefined();
+		expect(agent.requests[1].prompt).toContain("- photo.png from <@U0PERSON01>, in the new message: Slack didn't let you read it.");
+	});
+
+	it("answers without the files, and says so, when no route of the model reads them", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const agent = new ScriptedAgent(async (_request, hooks, call) => {
+			if (call === 1) throw new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+			await hooks.onText("I can't see the image with this model.");
+			return answer();
+		});
+		await expect(runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests).toHaveLength(2);
+		expect(agent.requests[0].attachments).toHaveLength(1);
+		expect(agent.requests[1].attachments).toBeUndefined();
+		expect(agent.requests[1].prompt).toContain("- latency.png from <@U0PERSON01>, in the new message: the model answering can't read this kind of file.");
+	});
+
+	it("doesn't start the answer again without the files once a model response came back: tools may have run", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0IMAGE001", "latency.png", "image/png", PNG);
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			hooks.onCost?.(0.01);
+			throw new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+		});
+		await expect(runTurn(deps(agent), await startTurn({ files: [{ id: "F0IMAGE001", name: "latency.png" }] }), step)).resolves.toEqual({ status: "failed" });
+		expect(agent.requests).toHaveLength(1);
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ status: "failed", error: "files_unsupported" });
+	});
+
+	it("tells a retried run what the answer already posted, and counts its images toward the answer's limit", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		let turn!: TurnRef;
+		const results: unknown[] = [];
+		const agent = new ToolAgent(async (request, _hooks, call) => {
+			if (call === 1) {
+				results.push(await callTool(request, "generate_image", { prompt: "A fox" }));
+				// The step dies at its end, after the image was posted and paid for.
+				const coordinator = coordinatorOf(turn);
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+				return { ...answer(), costUsd: 0.01 + request.otherCostUsd!() };
+			}
+			expect(request.prompt).toContain([
+				"Already posted in this thread while answering this message (an earlier try stopped part way); don't post them again:",
+				'- image: "A fox"',
+			].join("\n"));
+			results.push(await callTool(request, "generate_image", { prompt: "A badger" }));
+			results.push(await callTool(request, "generate_image", { prompt: "A heron" }));
+			return answer();
+		}, { bytes: PNG, mimeType: "image/png", costUsd: 0.04, model: "openai/gpt-image-2" });
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(results).toEqual([
+			{ posted: true, cost_usd: 0.04 },
+			{ posted: true, cost_usd: 0.04 },
+			{ posted: false, error: expect.stringContaining("You've made 2 images in this answer") },
+		]);
+		expect(agent.images.map((image) => image.prompt)).toEqual(["A fox", "A badger"]);
+	});
+
+	it("reads the files shared with an answer to its question in the run after it", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		shareFile("F0REPORT01", "report.pdf", "application/pdf", PDF);
+		const paused = { run: { id: "run_q", status: "waiting_for_human", messages: [] }, steps: [], stepResults: [], messages: [], items: [] } as unknown as PausedRun;
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (request.resume) return answer();
+			await hooks.onStep({ costUsd: 0.01 });
+			const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+			await tool.onToolCalled!({ question: "Which report?", options: ["Q3", "Q4"] }, { stepIndex: 0, toolCall: { id: "call_q1", name: "ask_question", input: {} } } as never);
+			return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null, paused };
+		});
+		step.onWait = async () => {
+			// Their reply in the thread, with the file: the answer to the question.
+			const ts = "1792600050.000200";
+			const reply = mention({ text: `<@${BOT_USER_ID}> This one`, ts, thread_ts: turn.threadTs, event_ts: ts, files: [{ id: "F0REPORT01", name: "report.pdf", mimetype: "application/pdf" }] });
+			await expect(processEvent(world.deps, hostedApp(world.env)!, eventEnvelope(reply, { event_id: "Ev0REPLY001" }) as SlackEnvelope)).resolves.toBe("answered_question");
+			return "event";
+		};
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests[0].attachments).toBeUndefined();
+		expect(agent.requests[1].attachments).toEqual([{ type: "input_file", filename: "report.pdf", file_data: `data:application/pdf;base64,${btoa(String.fromCharCode(...PDF))}` }]);
+		expect(agent.requests[1].resume?.toolOutputs).toEqual([{
+			toolCallId: "call_q1",
+			output: { answered: true, answer: "This one", in_their_own_words: true, files: ["- report.pdf from <@U0PERSON01>, in the new message: attached after this text."] },
+		}]);
+	});
+
+	it("reads files people shared in the thread messages it read, never the agent's own", async () => {
+		await install({ bot_scopes: ALL_SCOPES });
+		const threadTs = "1792600000.000050";
+		shareFile("F0IMAGE001", "dashboard.png", "image/png", PNG);
+		shareFile("F0CHART001", "weekly-spend.png", "image/png", PNG);
+		world.slack.replies = [
+			{ ts: threadTs, user: "U0PERSON02", text: "Here's the dashboard", files: [{ id: "F0IMAGE001", name: "dashboard.png", mimetype: "image/png" }] },
+			{ ts: "1792600000.000060", bot_id: "B0BOT00001", user: BOT_USER_ID, text: "", files: [{ id: "F0CHART001", name: "weekly-spend.png", mimetype: "image/png" }] },
+			{ ts: "1792600000.000070", user: "U0PERSON01", text: "what's wrong in it?" },
+		];
+		const agent = new ScriptedAgent(async () => answer());
+		await runTurn(deps(agent), await startTurn({ threadTs, messageTs: "1792600000.000070", text: "what's wrong in it?" }), step);
+		expect(world.slack.of("files.info").map((call) => call.args.file)).toEqual(["F0IMAGE001"]);
+		expect(agent.requests[0].attachments).toHaveLength(1);
+		expect(agent.requests[0].prompt).toContain("<@U0PERSON02>: Here's the dashboard (shared dashboard.png)");
+		expect(agent.requests[0].prompt).toContain("You (Phaseo agent): (shared weekly-spend.png)");
+		expect(agent.requests[0].prompt).toContain("- dashboard.png from <@U0PERSON02>, earlier in the thread: attached after this text.");
+	});
+});
+
+describe("Slack search", () => {
+	const SEARCH_SCOPES = [...ORIGINAL_BOT_SCOPES, "search:read.public", "search:read.files"];
+	const TOKEN = "7310092.18.0c9f5a6d2e8bTOKEN";
+	const SNIPPET = "We ship the launch plan on Friday.";
+	const RESPONSE = {
+		results: {
+			messages: [{ author_name: "Ada Lovelace", author_user_id: "U0ADA00001", channel_id: "C0LAUNCH01", channel_name: "launch", message_ts: "1792500000.000100", content: SNIPPET, permalink: "https://acme.slack.com/archives/C0LAUNCH01/p1792500000000100" }],
+			files: [],
+		},
+		response_metadata: { next_cursor: "" },
+	};
+	const DIRECT = { channel: "D0DIRECT01", kind: "dm" as const };
+
+	function callTool(request: AgentTurnRequest, id: string, input: unknown) {
+		const tool = request.tools.find((entry) => entry.id === id);
+		if (!tool || typeof tool.execute !== "function") throw new Error(`no ${id} tool`);
+		return tool.execute(input, { runId: "run", agentId: "agent", stepIndex: 0, context: undefined, toolCall: { id: "call", name: id, input }, emitProgress: () => undefined, setContext: () => undefined } as never);
+	}
+
+	/** Every value the thread's coordinator holds, as text. */
+	function stored(turn: TurnRef): string {
+		const storage = storageOf(coordinatorOf(turn));
+		return JSON.stringify(storage.tables().map((table) => storage.db.prepare(`SELECT * FROM ${table}`).all()));
+	}
+
+	it("is offered with the search scope, the admins' permission and the message's action token, and otherwise the model is told why not", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		const turnWith = async (overrides: Partial<TurnRequest>) => {
+			await runTurn(deps(agent), await startTurn(overrides), step);
+			const request = agent.requests.at(-1)!;
+			return { tools: request.tools.map((tool) => tool.id), instructions: request.instructions };
+		};
+
+		// Installed before search: no scope yet.
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages in this Slack workspace yet. If asked to, say an admin needs to update the Phaseo agent's Slack permissions") });
+
+		await install({ bot_scopes: SEARCH_SCOPES });
+		const direct = await turnWith({ ...DIRECT, actionToken: TOKEN });
+		expect(direct.tools).toContain("search_slack");
+		expect(direct.instructions).toContain("You can search this Slack workspace's public channels with search_slack. It searches as <@U0PERSON01>, so it finds only what they can see in Slack.");
+		expect(direct.instructions).not.toContain("Everyone in this conversation reads your answer");
+		// No token: a guest, or a message that didn't carry one.
+		expect(await turnWith(DIRECT)).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("Slack lets you search only for members of the workspace (not guests)") });
+		// Direct messages only, by default.
+		expect(await turnWith({ actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can only search Slack messages in a direct message with you") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "dm_and_channels" });
+		const channel = await turnWith({ actionToken: TOKEN });
+		expect(channel.tools).toContain("search_slack");
+		expect(channel.instructions).toContain("Everyone in this conversation reads your answer, so share only what the question needs and link to the rest.");
+		expect(await turnWith({ actionToken: TOKEN, external: true })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("You can't search Slack messages for people from other organisations.") });
+
+		await install({ bot_scopes: SEARCH_SCOPES, search_mode: "off" });
+		expect(await turnWith({ ...DIRECT, actionToken: TOKEN })).toMatchObject({ tools: expect.not.arrayContaining(["search_slack"]), instructions: expect.stringContaining("an admin has turned Slack search off") });
+	});
+
+	it("searches as the person and keeps nothing it found: not in step outputs, working memory, the coordinator or the Workflow's payload", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			const found = await callTool(request, "search_slack", { query: "launch plan" }) as { messages: Array<{ text: string; link: string; channel: string }> };
+			expect(found.messages).toEqual([expect.objectContaining({ text: SNIPPET, channel: "<#C0LAUNCH01|launch>" })]);
+			await hooks.onText(`The launch plan ships on Friday (<${found.messages[0].link}|#launch>).`);
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		expect(JSON.stringify(turn)).not.toContain(TOKEN);
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+
+		expect(world.slack.of("assistant.search.context")).toEqual([{ token: BOT_TOKEN, method: "assistant.search.context", args: expect.objectContaining({ query: "launch plan", action_token: TOKEN, channel_types: "public_channel", content_types: "messages,files" }) }]);
+		const outputs = JSON.stringify(step.outputs);
+		for (const value of [TOKEN, SNIPPET, "Ada Lovelace"]) {
+			expect(outputs).not.toContain(value);
+			expect(stored(turn)).not.toContain(value);
+		}
+		// Its own answer is a message in the thread like any other; the note names the query and the count.
+		// The answer quotes what it found: working memory keeps only a note of it (the reply is in the thread).
+		expect(coordinatorOf(turn).workingMemory().map((entry) => entry.text)).toEqual(["search_slack", SEARCHED_REPLY_MEMORY]);
+	});
+
+	function askQuestion(request: AgentTurnRequest, id = "call_q1") {
+		const tool = request.tools.find((entry) => entry.id === "ask_question")!;
+		return tool.onToolCalled!({ question: "Which launch?", options: ["Web", "Mobile"] }, { stepIndex: 0, toolCall: { id, name: "ask_question", input: {} } } as never);
+	}
+
+	/** A run paused at ask_question, holding `messages`. */
+	function pausedAt(messages: unknown[]): AgentTurnOutput {
+		const paused = {
+			run: {
+				id: "run_q", agentId: "phaseo-slack-agent", status: "waiting_for_human", input: null, stepCount: 1, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-21T12:00:00.000Z",
+				messages,
+			},
+			steps: [], stepResults: [], messages: [], items: [],
+		} as unknown as PausedRun;
+		return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null, paused };
+	}
+
+	it("asks no question once the answer has searched, so no run holding results waits in the coordinator", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const refusals: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			const found = await callTool(request, "search_slack", { query: "launch plan" });
+			refusals.push(await askQuestion(request));
+			await hooks.onText("The launch plan ships on Friday. Which launch did you mean, web or mobile?");
+			expect(JSON.stringify(found)).toContain(SNIPPET);
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(refusals).toEqual([{ asked: false, error: expect.stringContaining("You searched Slack in this answer, so you can't ask a question") }]);
+		expect(agent.requests[0].instructions).toContain("Slack's terms don't allow keeping anything its search finds, so once you've searched in an answer you can't ask a question with ask_question, save notes, pins, to-dos, skills or recurring tasks, or publish shared pages.");
+		expect(step.waits).toEqual([]);
+		expect(step.outputs.map((entry) => entry.name)).not.toContain("ask-1");
+	});
+
+	it("never holds a paused run for an answer that searched, should a search slip past the question", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		let turn!: TurnRef;
+		const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			const agent = new ScriptedAgent(async (request) => {
+				expect(await askQuestion(request)).toBeNull();
+				// A search the tools didn't stop (they do: see the next test).
+				expect(await coordinatorOf(turn).reserveSearch(turn.turnId, 4)).toBe(true);
+				return pausedAt([{ role: "user", content: "what's the launch plan?" }, { role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify({ found: true, messages: [{ text: SNIPPET }] }) }]);
+			});
+			turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(errors.mock.calls).toContainEqual(["[slack-agent] paused run not kept", { turnId: turn.turnId, question: 1, afterSearch: true }]);
+		} finally {
+			errors.mockRestore();
+		}
+		expect(step.waits).toEqual([]);
+		expect(stored(turn)).not.toContain(SNIPPET);
+	});
+
+	it("doesn't search in the step that asks a question, and searches after the answer with the answer's token", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const ANSWER_TOKEN = "7310092.19.answerTOKEN";
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			if (!request.resume) {
+				// The SDK takes a step's questions before it runs the step's other tools.
+				expect(await askQuestion(request)).toBeNull();
+				const refused = await callTool(request, "search_slack", { query: "launch plan" });
+				expect(refused).toEqual({ found: false, error: expect.stringContaining("can't search Slack until they answer") });
+				await hooks.onStep({ costUsd: 0.01 });
+				return pausedAt([{ role: "user", content: "what's the launch plan?" }, { role: "tool", toolCallId: "call_s1", name: "search_slack", content: JSON.stringify(refused) }]);
+			}
+			const found = await callTool(request, "search_slack", { query: "web launch plan" });
+			expect(JSON.stringify(found)).toContain(SNIPPET);
+			// Searched now: no more questions in this answer.
+			expect(await askQuestion(request, "call_q2")).toMatchObject({ asked: false, error: expect.stringContaining("You searched Slack in this answer") });
+			await hooks.onText("The web launch ships on Friday.");
+			return answer();
+		});
+		step.onWait = async () => {
+			expect(stored(turn)).not.toContain(SNIPPET);
+			await expect(coordinatorOf(turn).answerWithMessage({ slackUserId: "U0PERSON01", text: "Web", actionToken: ANSWER_TOKEN, now: NOW })).resolves.toMatchObject({ status: "answered" });
+			return "event";
+		};
+		turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(world.slack.of("assistant.search.context").map((call) => call.args.action_token)).toEqual([ANSWER_TOKEN]);
+		expect(stored(turn)).not.toContain(SNIPPET);
+		expect(stored(turn)).not.toContain("TOKEN");
+	});
+
+	it("saves no notes, skills or recurring tasks once the answer has searched", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		world.db.rpcResults.save_slack_agent_note = { status: "saved", note: { id: "00000000-0000-4000-8000-0000000000e1", kind: "note", channel_id: "D0DIRECT01", text: "Mobile ships later.", done_at: null, created_by: "U0PERSON01", created_at: "2026-10-21T12:00:00Z", expires_at: null } };
+		world.db.rpcResults.save_slack_agent_skill = { status: "saved", skill: { name: "Launch notes", description: "x" } };
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			// Before a search, as ever.
+			results.push(await callTool(request, "remember", { text: "Mobile ships later." }));
+			await callTool(request, "search_slack", { query: "launch plan" });
+			results.push(await callTool(request, "remember", { text: SNIPPET, kind: "pin" }));
+			results.push(await callTool(request, "save_skill", { name: "Launch notes", description: "Where the launch stands", instructions: SNIPPET }));
+			results.push(await callTool(request, "schedule_task", { title: "Launch digest", prompt: SNIPPET, frequency: "daily", time: "09:00" }));
+			await hooks.onText("I can't save what Slack search finds.");
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		const refused = { saved: false, note: expect.stringContaining("you searched Slack in this answer") };
+		expect(results).toEqual([expect.objectContaining({ saved: true }), refused, refused, refused]);
+		expect(world.db.rpcs.filter((call) => call.fn.startsWith("save_")).map((call) => call.args.p_text ?? call.args.p_instructions)).toEqual(["Mobile ships later."]);
+		expect(JSON.stringify(world.db.rpcs)).not.toContain(SNIPPET);
+	});
+
+	it("publishes no shared page once the answer has searched", async () => {
+		world.env.PUBLIC_ORIGIN = "https://slack.phaseo.app";
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks) => {
+			// Before a search, as ever.
+			results.push(await callTool(request, "publish_page", { title: "Launch status", html: "<h1>Mobile ships later.</h1>" }));
+			await callTool(request, "search_slack", { query: "launch plan" });
+			results.push(await callTool(request, "publish_page", { title: "Launch plan", html: `<h1>Launch plan</h1><p>${SNIPPET}</p>` }));
+			await hooks.onText("I can't put what Slack search finds on a page.");
+			return answer();
+		});
+		const turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(results).toEqual([
+			expect.objectContaining({ url: expect.stringMatching(/^https:\/\/slack\.phaseo\.app\/p\//), title: "Launch status" }),
+			{ published: false, note: expect.stringContaining("you searched Slack in this answer") },
+		]);
+		const pages = world.pages.get(world.pages.idFromName(INSTALLATION_ID));
+		expect((await pages.list(NOW)).map((page) => page.title)).toEqual(["Launch status"]);
+		expect(JSON.stringify(storageOf(pages).db.prepare("SELECT * FROM pages").all())).not.toContain(SNIPPET);
+	});
+
+	it("makes at most 4 searches in an answer, however often its run starts again", async () => {
+		await install({ bot_scopes: SEARCH_SCOPES });
+		world.slack.searchResponse = RESPONSE;
+		let turn!: TurnRef;
+		const results: unknown[] = [];
+		const agent = new ScriptedAgent(async (request, hooks, call) => {
+			if (call === 1) {
+				for (const query of ["one", "two", "three"]) results.push(await callTool(request, "search_slack", { query }));
+				// The step dies at its end, after the searches.
+				const coordinator = coordinatorOf(turn);
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+				return answer();
+			}
+			// The retry has made no search itself, but the answer has.
+			expect(await askQuestion(request)).toMatchObject({ asked: false, error: expect.stringContaining("You searched Slack in this answer") });
+			for (const query of ["four", "five", "six"]) results.push(await callTool(request, "search_slack", { query }));
+			await hooks.onText("Here's what I found.");
+			return answer();
+		});
+		turn = await startTurn({ ...DIRECT, actionToken: TOKEN });
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(world.slack.of("assistant.search.context").map((entry) => entry.args.query)).toEqual(["one", "two", "three", "four"]);
+		const limit = { found: false, error: "You've searched Slack 4 times in this answer, the most one answer may. Answer with what you found." };
+		expect(results.slice(4)).toEqual([limit, limit]);
 	});
 });

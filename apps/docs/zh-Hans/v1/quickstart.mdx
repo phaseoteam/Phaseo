@@ -60,6 +60,26 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 首次请求使用 `POST /v1/responses`。这是新文本生成集成的推荐端点。
 
+### 安装 SDK
+
+cURL 和 JavaScript 示例无需安装任何内容。如需使用 TypeScript 或 Python SDK，请先安装：
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+运行环境要求和其他 SDK 请参阅 [TypeScript](./sdk-reference/typescript/installation) 和 [Python](./sdk-reference/python/installation) 安装页面。
+
 ### 请求
 
 <CodeGroup>
@@ -320,6 +340,43 @@ console.log(result.text);
 直接调用 Responses API 时，请从 `output[].content[]` 中 `type` 为 `output_text` 的内容读取助手回复。
 
 如果使用 Vercel AI SDK，请从 `result.text` 读取回复。
+
+### 流式输出回复
+
+如需在生成过程中打印回复，请使用流式输出。每个分块的 `text` 只包含新增文本，因此这个循环只会打印一次答案。`response.output_text.done` 等结束事件的 `text` 为空；其完整文本位于 `fullText`（TypeScript）或 `full_text`（Python）中。
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+如果答案被打印了两次，请更新 SDK：旧版本也会把完整文本放在结束事件中。
 
 ---
 

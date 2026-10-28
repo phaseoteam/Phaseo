@@ -6444,6 +6444,65 @@ public sealed class PresetForkRequest
 
 }
 
+public sealed class PresetLabel
+{
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("label")]
+	public string Label { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("updated_by")]
+	public string? UpdatedBy { get; set; }
+
+	[JsonPropertyName("version_id")]
+	public string VersionId { get; set; }
+
+	[JsonPropertyName("version_label")]
+	public string? VersionLabel { get; set; }
+
+	[JsonPropertyName("version_number")]
+	public long? VersionNumber { get; set; }
+
+}
+
+public sealed class PresetLabelDeleteResponse
+{
+	[JsonPropertyName("deleted")]
+	public bool Deleted { get; set; }
+
+	[JsonPropertyName("label")]
+	public string Label { get; set; }
+
+}
+
+public sealed class PresetLabelListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class PresetLabelResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class PresetLabelSetRequest
+{
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
+
+	[JsonPropertyName("version_id")]
+	public string? VersionId { get; set; }
+
+}
+
 public sealed class PresetListResponse
 {
 	[JsonPropertyName("data")]
@@ -6724,6 +6783,9 @@ public sealed class PresetVersion
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
+	[JsonPropertyName("labels")]
+	public List<string>? Labels { get; set; }
+
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
 
@@ -6994,6 +7056,9 @@ public sealed class PromptTemplateReference
 
 	[JsonPropertyName("variables")]
 	public Dictionary<string, object>? Variables { get; set; }
+
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
 
 }
 
@@ -7964,6 +8029,83 @@ public sealed class ServerToolUsage
 
 	[JsonPropertyName("web_search_requests")]
 	public long? WebSearchRequests { get; set; }
+
+}
+
+public sealed class SpendBlock
+{
+	[JsonPropertyName("active")]
+	public bool Active { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool BlockFreeModels { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("lift_reason")]
+	public object? LiftReason { get; set; }
+
+	[JsonPropertyName("lifted_at")]
+	public string? LiftedAt { get; set; }
+
+	[JsonPropertyName("lifted_by")]
+	public string? LiftedBy { get; set; }
+
+	[JsonPropertyName("limit_nanos")]
+	public long LimitNanos { get; set; }
+
+	[JsonPropertyName("limit_usd")]
+	public double LimitUsd { get; set; }
+
+	[JsonPropertyName("period_start")]
+	public string PeriodStart { get; set; }
+
+	[JsonPropertyName("resets_at")]
+	public string? ResetsAt { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string? RuleId { get; set; }
+
+	[JsonPropertyName("rule_name")]
+	public string? RuleName { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_label")]
+	public string ScopeLabel { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string ScopeType { get; set; }
+
+	[JsonPropertyName("spend_nanos")]
+	public long SpendNanos { get; set; }
+
+	[JsonPropertyName("spend_usd")]
+	public double SpendUsd { get; set; }
+
+	[JsonPropertyName("started_at")]
+	public string StartedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class SpendBlockLiftReason { }
+
+public sealed class SpendBlockListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class SpendBlockResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
 
 }
 
@@ -9211,6 +9353,116 @@ public sealed class WebSearchPlugin
 	public string? SearchContextSize { get; set; }
 
 }
+
+public sealed class WorkloadIdentityPolicy
+{
+	[JsonPropertyName("audience")]
+	public string Audience { get; set; }
+
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object> ClaimConditions { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("issuer")]
+	public string Issuer { get; set; }
+
+	[JsonPropertyName("key_id")]
+	public string KeyId { get; set; }
+
+	[JsonPropertyName("last_used_at")]
+	public string? LastUsedAt { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("owner_id")]
+	public string OwnerId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string Provider { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyInput
+{
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object>? ClaimConditions { get; set; }
+
+	[JsonPropertyName("issuer")]
+	public string? Issuer { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long? MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("owner_id")]
+	public string OwnerId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string Provider { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyListResponse
+{
+	[JsonPropertyName("audience")]
+	public string Audience { get; set; }
+
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class WorkloadIdentityPolicyUpdateInput
+{
+	[JsonPropertyName("claim_conditions")]
+	public Dictionary<string, object>? ClaimConditions { get; set; }
+
+	[JsonPropertyName("max_token_lifetime_seconds")]
+	public long? MaxTokenLifetimeSeconds { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
+public sealed class WorkloadIdentityProvider { }
 
 public sealed class Workspace
 {

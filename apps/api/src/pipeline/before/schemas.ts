@@ -563,6 +563,9 @@ const presetDataSchema = z
         description: z.string().nullable().optional(),
         config: presetConfigSchema,
         visibility: z.enum(["private", "team", "public"]),
+        version_id: z.string().nullable().optional(),
+        version_label: z.string().nullable().optional(),
+        ref: z.string().nullable().optional(),
     })
     .transform<PresetData>((preset) => ({
         id: preset.id,
@@ -571,6 +574,9 @@ const presetDataSchema = z
         description: preset.description ?? null,
         config: preset.config,
         visibility: preset.visibility,
+        versionId: preset.version_id ?? null,
+        versionLabel: preset.version_label ?? null,
+        ref: preset.ref ?? null,
     }));
 
 const teamEnrichmentSchema = z

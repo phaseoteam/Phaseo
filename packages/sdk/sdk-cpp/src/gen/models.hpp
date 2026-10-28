@@ -2667,6 +2667,34 @@ struct PresetForkRequest {
 	std::string source_version_id;
 };
 
+struct PresetLabel {
+	std::optional<std::string> created_at;
+	std::string label;
+	std::optional<std::string> updated_at;
+	std::optional<std::string> updated_by;
+	std::string version_id;
+	std::optional<std::string> version_label;
+	std::optional<int> version_number;
+};
+
+struct PresetLabelDeleteResponse {
+	bool deleted;
+	std::string label;
+};
+
+struct PresetLabelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PresetLabelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PresetLabelSetRequest {
+	std::string version;
+	std::string version_id;
+};
+
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
@@ -2789,6 +2817,7 @@ struct PresetVersion {
 	std::string created_by;
 	std::optional<std::string> description;
 	std::string id;
+	std::vector<std::string> labels;
 	std::string name;
 	std::string preset_id;
 	std::optional<std::string> release_notes;
@@ -2902,6 +2931,7 @@ struct PromptCacheOptions {
 struct PromptTemplateReference {
 	std::string id;
 	std::map<std::string, std::any> variables;
+	std::string version;
 };
 
 struct Provider {
@@ -3299,6 +3329,38 @@ struct ServerToolUsage {
 	std::optional<int> subagent_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;
+};
+
+struct SpendBlock {
+	bool active;
+	bool block_free_models;
+	std::string id;
+	std::optional<std::any> lift_reason;
+	std::optional<std::string> lifted_at;
+	std::optional<std::string> lifted_by;
+	int limit_nanos;
+	double limit_usd;
+	std::string period_start;
+	std::optional<std::string> resets_at;
+	std::optional<std::string> rule_id;
+	std::optional<std::string> rule_name;
+	std::optional<std::string> scope_id;
+	std::string scope_label;
+	std::any scope_type;
+	int spend_nanos;
+	double spend_usd;
+	std::string started_at;
+	std::string workspace_id;
+};
+
+using SpendBlockLiftReason = std::any;
+
+struct SpendBlockListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SpendBlockResponse {
+	std::map<std::string, std::any> data;
 };
 
 struct SpendRule {
@@ -3807,6 +3869,54 @@ struct WebSearchPlugin {
 	std::optional<int> max_uses;
 	std::any search_context_size;
 };
+
+struct WorkloadIdentityPolicy {
+	std::string audience;
+	std::map<std::string, std::any> claim_conditions;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string issuer;
+	std::string key_id;
+	std::optional<std::string> last_used_at;
+	int max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+	std::any status;
+	std::string updated_at;
+};
+
+struct WorkloadIdentityPolicyDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::string issuer;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+};
+
+struct WorkloadIdentityPolicyListResponse {
+	std::string audience;
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct WorkloadIdentityPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyUpdateInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::any status;
+};
+
+using WorkloadIdentityProvider = std::any;
 
 struct Workspace {
 	std::optional<std::string> created_at;
