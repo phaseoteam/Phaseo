@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react-native";
-import { RefreshControl, ScrollView, Switch, View } from "react-native";
-import { confirm, ErrorState, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text, toast, toastError } from "@/components/ui";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { confirm, ErrorState, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Switch, Text, toast, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { updateWorkspacePrivacy, type ChatPrivacyReview, type PrivacyPatch } from "@/lib/api/account";
 import { openWeb } from "@/lib/web";
@@ -91,7 +91,7 @@ export function PrivacyScreen({ workspaceId }: { workspaceId: string }) {
                       numberOfLines={2}
                       chevron={false}
                       last={index === SWITCHES.length - 1}
-                      trailing={<Switch value={value} disabled={!canEdit || save.isPending} accessibilityLabel={entry.title} onValueChange={(next) => void change(entry.key, next, entry.widens === next, entry.title, entry.confirm)} trackColorOnClassName="accent-primary" />}
+                      trailing={<Switch value={value} disabled={!canEdit || save.isPending} accessibilityLabel={entry.title} onValueChange={(next) => void change(entry.key, next, entry.widens === next, entry.title, entry.confirm)} />}
                     />
                   );
                 })}
@@ -103,7 +103,7 @@ export function PrivacyScreen({ workspaceId }: { workspaceId: string }) {
                   numberOfLines={2}
                   chevron={false}
                   last
-                  trailing={<Switch value={policy.io_logging_enabled === true} disabled={!canEdit || save.isPending} accessibilityLabel={STORAGE.title} onValueChange={(next) => void change(STORAGE.key, next, next, STORAGE.title, STORAGE.confirm)} trackColorOnClassName="accent-primary" />}
+                  trailing={<Switch value={policy.io_logging_enabled === true} disabled={!canEdit || save.isPending} accessibilityLabel={STORAGE.title} onValueChange={(next) => void change(STORAGE.key, next, next, STORAGE.title, STORAGE.confirm)} />}
                 />
               </Section>
               <Section title="Route access" description="Which providers and models this workspace may use.">

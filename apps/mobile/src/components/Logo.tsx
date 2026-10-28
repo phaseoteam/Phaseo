@@ -9,13 +9,24 @@ import { useAppearance } from "@/providers/AppearanceProvider";
 // keeps organisation and provider logos identical to phaseo.app without a copy.
 import { resolveLogo } from "../../../web/src/lib/logos";
 
+/** Where a lab's or provider's logo is on phaseo.app, or null for an unknown ID (also for `Image.prefetch`). */
+export function logoUri(id: string, theme: "light" | "dark") {
+  const logo = resolveLogo(id, { theme, fallbackToColor: true });
+  return logo?.src ? `${WEB_ORIGIN}${logo.src}` : null;
+}
+
 /** A logo on its own, without the tile: for buttons, chips and dense lists. Renders nothing if unknown. */
 export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);
-  const logo = resolveLogo(id, { theme: resolved, fallbackToColor: true });
-  if (!logo?.src || failed) return null;
-  return <Image source={{ uri: `${WEB_ORIGIN}${logo.src}` }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
+  const uri = logoUri(id, resolved);
+  if (!uri || failed) return null;
+  return <Image source={{ uri }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
+}
+
+/** A logo tile's corner radius: rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles. */
+export function logoTileRadius(size: number) {
+  return Math.min(8, Math.round(size * 0.25));
 }
 
 /** `bare` draws the logo on its own (as web chat does beside model names); unknown labs still get a letter tile. */
@@ -25,8 +36,7 @@ export function Logo({ id, label, colour, size = 32, className, bare }: { id?: s
   const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
   const src = logo?.src && !failed ? `${WEB_ORIGIN}${logo.src}` : null;
   const name = label ?? logo?.label ?? id ?? "?";
-  // rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles.
-  const radius = Math.min(8, Math.round(size * 0.25));
+  const radius = logoTileRadius(size);
 
   if (src && bare) {
     return <Image source={{ uri: src }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityLabel={`${name} logo`} />;

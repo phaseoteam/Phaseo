@@ -23,12 +23,12 @@ export function PageSection({ id, title, description, action, first, onLayoutSec
   return (
     <View
       onLayout={(event: LayoutChangeEvent) => onLayoutSection?.(id, event.nativeEvent.layout.y)}
-      className={cn("mx-4", first ? "pt-2" : "mt-8 border-t border-border pt-6", className)}
+      className={cn("mx-4", first ? "pt-2" : "mt-6 border-t border-border pt-5", className)}
     >
       {title || action ? (
-        <View className="mb-4 gap-3">
+        <View className="mb-3 gap-3">
           <View>
-            {typeof title === "string" ? <Text className="text-[20px] font-semibold leading-7 tracking-tight text-foreground" accessibilityRole="header">{title}</Text> : title}
+            {typeof title === "string" ? <Text variant="heading" accessibilityRole="header">{title}</Text> : title}
             {description ? <Text variant="muted" className="mt-1">{description}</Text> : null}
           </View>
           {action}
@@ -41,7 +41,7 @@ export function PageSection({ id, title, description, action, first, onLayoutSec
 
 /** A sub-heading inside a section ("Effective pricing", "Related models"). */
 export function SubHeading({ children, className }: { children: ReactNode; className?: string }) {
-  return <Text className={cn("text-[16px] font-semibold leading-6 text-foreground", className)}>{children}</Text>;
+  return <Text className={cn("text-[15px] font-semibold leading-[22px] text-foreground", className)}>{children}</Text>;
 }
 
 /** The website's dashed empty state: an icon tile, a title and a hint. */

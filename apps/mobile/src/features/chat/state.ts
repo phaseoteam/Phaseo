@@ -61,13 +61,16 @@ export function saveSettings(chatId: string | null, modelId: string, settings: M
   });
 }
 
-/** The website's "Apply to all": copies one model's settings, except its provider and name, to the chat's other models. */
+/**
+ * The website's "Apply to all": the chat's other models get exactly one model's settings, keeping only their own
+ * provider and name. A setting left at its default on the source goes back to the default on the others too.
+ */
 export function applySettingsToAll(chatId: string | null, fromModel: string, models: string[]) {
   const shared = sharedSettings(settingsFor(chatId, fromModel));
   for (const model of models) {
     if (model === fromModel) continue;
-    const current = settingsFor(chatId, model);
-    saveSettings(chatId, model, { ...current, ...shared, providerId: current.providerId, displayName: current.displayName });
+    const { providerId, displayName } = settingsFor(chatId, model);
+    saveSettings(chatId, model, { ...shared, ...(providerId ? { providerId } : {}), ...(displayName ? { displayName } : {}) });
   }
 }
 

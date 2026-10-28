@@ -2,8 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { X } from "lucide-react-native";
 import { useEffect, useRef } from "react";
-import { Pressable, ScrollView, Switch, View } from "react-native";
-import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Text, TextField, toastError } from "@/components/ui";
+import { Pressable, ScrollView, View } from "react-native";
+import { LogoMark } from "@/components/Logo";
+import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Switch, Text, TextField, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { createRule, deleteRule, updateRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
 import { cn } from "@/lib/cn";
@@ -17,6 +18,9 @@ const SCOPES: { value: ScopeMode; label: string }[] = [{ value: "all", label: "A
 function patchDraft(patch: Partial<RuleInput>) {
   draftRuleStore.set((current) => (current ? { ...current, ...patch } : current));
 }
+
+/** Model IDs start with their lab's, which is also its logo's. */
+export const modelLab = (modelId: string) => modelId.split("/")[0] ?? modelId;
 
 function toggle(list: string[], value: string) {
   return list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
@@ -91,7 +95,7 @@ export function RuleEditor() {
                 title={EVENT_LABELS[event].title}
                 subtitle={EVENT_LABELS[event].description}
                 chevron={false}
-                trailing={<Switch value={draft.events.includes(event)} onValueChange={() => patchDraft({ events: toggle(draft.events, event) })} trackColorOnClassName="accent-primary" />}
+                trailing={<Switch value={draft.events.includes(event)} accessibilityLabel={EVENT_LABELS[event].title} onValueChange={() => patchDraft({ events: toggle(draft.events, event) })} />}
                 last={index === kinds.length - 1}
               />
             ))}
@@ -110,7 +114,7 @@ export function RuleEditor() {
           />
 
           <Section title="Models" description={draft.models.length ? undefined : "Any model, unless you pick some."}>
-            <Chips ids={draft.models} name={names.model} onRemove={(value) => patchDraft({ models: draft.models.filter((entry) => entry !== value) })} />
+            <PickedChips ids={draft.models} name={names.model} logo={modelLab} onRemove={(value) => patchDraft({ models: draft.models.filter((entry) => entry !== value) })} />
             <View className="px-4 pt-2"><Button label={draft.models.length ? "Change models" : "Choose models"} variant="outline" size="sm" className="self-start" onPress={() => router.push({ pathname: "/sheets/[kind]", params: { kind: "pick", type: "models" } })} /></View>
           </Section>
 
@@ -136,8 +140,8 @@ export function RuleEditor() {
           </Section>
 
           <Section title="More">
-            <Row title="Only models on Phaseo" subtitle="Skip models you can't call through Phaseo yet" chevron={false} trailing={<Switch value={draft.onlyOnPhaseo} onValueChange={(onlyOnPhaseo) => patchDraft({ onlyOnPhaseo })} trackColorOnClassName="accent-primary" />} />
-            <Row title="Include free variants" subtitle="Separate :free listings of the same model" chevron={false} last trailing={<Switch value={draft.includeFreeVariants} onValueChange={(includeFreeVariants) => patchDraft({ includeFreeVariants })} trackColorOnClassName="accent-primary" />} />
+            <Row title="Only models on Phaseo" subtitle="Skip models you can't call through Phaseo yet" chevron={false} trailing={<Switch value={draft.onlyOnPhaseo} accessibilityLabel="Only models on Phaseo" onValueChange={(onlyOnPhaseo) => patchDraft({ onlyOnPhaseo })} />} />
+            <Row title="Include free variants" subtitle="Separate :free listings of the same model" chevron={false} last trailing={<Switch value={draft.includeFreeVariants} accessibilityLabel="Include free variants" onValueChange={(includeFreeVariants) => patchDraft({ includeFreeVariants })} />} />
           </Section>
 
           {!isNew ? (
@@ -160,7 +164,7 @@ function ScopeSection({ title, mode, ids, name, onMode, onRemove, onPick, disabl
       {disabled && disabledNote ? <Text variant="caption" className="px-4 pt-1.5">{disabledNote}</Text> : null}
       {mode !== "all" && !disabled ? (
         <>
-          <Chips ids={ids} name={name} onRemove={onRemove} />
+          <PickedChips ids={ids} name={name} logo={(value) => value} onRemove={onRemove} />
           <View className="px-4 pt-2"><Button label={ids.length ? `Change ${title.toLowerCase()}` : `Choose ${title.toLowerCase()}`} variant="outline" size="sm" className="self-start" onPress={onPick} /></View>
         </>
       ) : null}
@@ -168,12 +172,14 @@ function ScopeSection({ title, mode, ids, name, onMode, onRemove, onPick, disabl
   );
 }
 
-function Chips({ ids, name, onRemove }: { ids: string[]; name(id: string): string; onRemove(id: string): void }) {
+/** Picked labs, providers or models, each with its logo (a model shows its lab's). Tap one to remove it. */
+export function PickedChips({ ids, name, logo, onRemove, className }: { ids: string[]; name(id: string): string; logo?(id: string): string; onRemove(id: string): void; className?: string }) {
   if (!ids.length) return null;
   return (
-    <View className="flex-row flex-wrap gap-2 px-4 pt-3">
+    <View className={cn("flex-row flex-wrap gap-2 px-4 pt-3", className)}>
       {ids.map((value) => (
-        <Pressable key={value} accessibilityLabel={`Remove ${name(value)}`} onPress={() => onRemove(value)} className="h-8 flex-row items-center gap-1.5 rounded-md bg-muted px-3 active:bg-accent">
+        <Pressable key={value} accessibilityRole="button" accessibilityLabel={`Remove ${name(value)}`} onPress={() => onRemove(value)} className="h-8 flex-row items-center gap-1.5 rounded-md bg-muted px-3 active:bg-accent">
+          {logo ? <LogoMark id={logo(value)} size={14} /> : null}
           <Text variant="small" className="font-semibold">{name(value)}</Text>
           <Icon icon={X} tone="muted" size={13} />
         </Pressable>

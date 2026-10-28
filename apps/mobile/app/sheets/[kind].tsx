@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
+import { Logo } from "@/components/Logo";
 import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Segmented, Text, TextField } from "@/components/ui";
 import { exportAndShare } from "@/features/chat/chatActions";
 import type { ExportFormat } from "@/features/chat/export";
@@ -77,7 +78,7 @@ function WorkspaceSheet() {
           key={workspace.id}
           title={workspace.name ?? workspace.id}
           subtitle={workspace.role ? workspace.role.replace(/^\w/, (letter) => letter.toUpperCase()) : null}
-          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="primary" size={18} /> : null}
+          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="link" size={18} /> : null}
           chevron={false}
           onPress={() => { selectWorkspace(workspace.id); router.back(); }}
           last={index === workspaces.length - 1}
@@ -200,8 +201,9 @@ function PickSheet() {
           <Row
             key={option.id}
             title={option.name}
+            leading={<Logo id={option.id} label={option.name} size={28} />}
             chevron={false}
-            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="primary" size={18} /> : null}
+            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="link" size={18} /> : null}
             onPress={() => setIds(scope.ids.includes(option.id) ? scope.ids.filter((id) => id !== option.id) : [...scope.ids, option.id])}
             last={index === options.length - 1}
           />

@@ -9,9 +9,10 @@ import { databasePages } from "@/features/chat/db";
 import { readStorageReport, type StorageReport } from "@/features/chat/deviceStorage";
 import { SCHEMA_VERSION } from "@/features/chat/migrations";
 import { useLayout } from "@/hooks/useLayout";
-import { BUILD_COMMIT, BUILT_AT, deviceName, osName } from "@/lib/appInfo";
+import { BUILD_COMMIT, BUILD_NUMBER, BUILT_AT, deviceName, osName } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { slowLog } from "@/lib/diagnostics";
+import { hapticsHere } from "@/lib/haptics";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { diagnosticsText, slowOperationLine, type DiagnosticsSection } from "./diagnosticsReport";
 
@@ -50,7 +51,8 @@ export function DiagnosticsScreen() {
   const sections: DiagnosticsSection[] = [
     { title: "App", rows: [
       ["Version", APP_VERSION],
-      ["Build", BUILD_COMMIT ? `${BUILD_COMMIT}${BUILT_AT ? `, ${when.format(Date.parse(BUILT_AT))}` : ""}` : "Not recorded"],
+      ["Build", BUILD_NUMBER != null ? String(BUILD_NUMBER) : "Not recorded"],
+      ["Commit", BUILD_COMMIT ? `${BUILD_COMMIT}${BUILT_AT ? `, built ${when.format(Date.parse(BUILT_AT))}` : ""}` : "Not recorded"],
       ["Updates", "Built in (no over-the-air update channel)"],
       ["Engine", `${engine}, ${fabric}`],
     ] },
@@ -59,6 +61,7 @@ export function DiagnosticsScreen() {
       ["System", osName()],
       ["Screen", `${Math.round(window.width)} × ${Math.round(window.height)} dp at ${PixelRatio.get()}×`],
       ...(Device.totalMemory ? [["Memory", formatBytes(Device.totalMemory)] as [string, string]] : []),
+      ["Haptics", hapticsHere()],
     ] },
     database && "report" in database ? { title: "Chat database", rows: [
       ["Schema version", database.pages.schemaVersion === SCHEMA_VERSION ? `${database.pages.schemaVersion} (current)` : `${database.pages.schemaVersion} (the app expects ${SCHEMA_VERSION})`],

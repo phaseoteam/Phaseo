@@ -2,7 +2,16 @@ import { testDatabase } from "./testDatabase";
 
 const mockDb = testDatabase();
 jest.mock("expo-sqlite", () => ({ openDatabaseSync: () => mockDb }));
-jest.mock("expo-file-system", () => ({ File: class { exists = false; } }));
+// Text attachments the tests read; any other file is missing.
+const mockFiles: Record<string, string> = {};
+jest.mock("expo-file-system", () => ({
+  File: class {
+    uri: string;
+    constructor(uri: string) { this.uri = uri; }
+    get exists() { return this.uri in mockFiles; }
+    async text() { return mockFiles[this.uri] ?? ""; }
+  },
+}));
 
 // eslint-disable-next-line import/first
 import { createChat, db, insertMessage, latestSummary } from "./db";
@@ -85,6 +94,22 @@ test("past 80% of the window, older messages are summarised and the summary is s
   expect(again.summarise).not.toHaveBeenCalled();
   expect(text(nextThread.messages[0]!.content)).toContain("The summary.");
   expect(nextThread.messages.at(-1)).toEqual({ role: "user", content: "Follow-up" });
+});
+
+test("a text file in a summarised message reaches the summary in full", async () => {
+  createChat({ id: "file", title: "file", models: [MODEL], workspaceId: null, createdAt: 1, updatedAt: 1 });
+  mockFiles["file:///notes.txt"] = "The launch code is 4471.";
+  // Old enough to be summarised, new enough for the summary's transcript (older messages aren't read at all).
+  addTurns("file", 24);
+  const withFile = ask("file", "Remember this file");
+  db().runSync("UPDATE messages SET attachments = ? WHERE id = ?", JSON.stringify([{ id: "n", kind: "text", name: "notes.txt", mimeType: "text/plain", uri: "file:///notes.txt" }]), withFile.id);
+  addTurns("file", 5);
+  const upTo = ask("file", "What was the code?");
+  const { summarise, result } = prepare("file", upTo, 8_000);
+  const thread = await result;
+  expect(thread.compacted).toBe(true);
+  const request = (summarise.mock.calls[0] as unknown as [{ role: string; content: string }[]])[0];
+  expect(request[1]!.content).toContain("Attached file notes.txt:\n```\nThe launch code is 4471.");
 });
 
 test("when the summary can't be written, the newest messages that fit are sent, with a notice, and the next request tries again", async () => {

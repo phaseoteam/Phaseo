@@ -49,6 +49,8 @@ cd android
 # app/build/outputs/apk/release/app-release.apk (signed with the debug key; not for the Play Store)
 ```
 
+**Build number.** `app.config.ts` sets the Android `versionCode` and iOS build number to `git rev-list --count HEAD`, so a build from a later commit has a higher number. Account shows it as "0.1.0 (build 2493)", and Diagnostics adds the commit. Prebuild writes the number into `android/app/build.gradle`, so prebuild again after committing. Android won't install a lower `versionCode` over a higher one: a build from a branch with fewer commits needs the installed app removed first. Outside a git checkout, or in a shallow clone, the number falls back to app.json's `versionCode` (1 when unset).
+
 Checks: `pnpm --filter @phaseo/mobile typecheck`, `lint`, `test`, and `pnpm exec expo export --platform android` to bundle the JavaScript.
 
 **Open source licences** (Account → Open source licences) come from `src/features/account/licences.generated.json`, written by `pnpm --filter @phaseo/mobile licences` from `pnpm licenses list --prod` and each package's licence files (identical texts are stored once; copyright lines are kept per package). `pnpm build` regenerates it, and a Jest test fails when it no longer matches the installed packages, so run the script and commit the file after changing dependencies.

@@ -1,13 +1,15 @@
 import { CircleAlert, CircleCheck, Info, X } from "lucide-react-native";
+import { useEffect } from "react";
 import { Pressable, View } from "react-native";
 import Animated, { FadeInUp, FadeOutUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { Button } from "./button";
 import { Sheet } from "./dialog";
 import { Icon } from "./icon";
-import { closeActions, dismissToast, overlayStore, settleConfirm, type ConfirmRequest, type Toast } from "./overlayStore";
+import { closeActions, dismissToast, onToast, overlayStore, settleConfirm, type ConfirmRequest, type Toast } from "./overlayStore";
 import { ActionMenu } from "./select";
 import { Text } from "./text";
 
@@ -17,6 +19,14 @@ import { Text } from "./text";
  */
 export function OverlayHost() {
   const { confirm, menu, toasts } = overlayStore.use();
+  // An outcome toast is felt as well as seen; a neutral notice isn't.
+  useEffect(() => {
+    onToast((shown) => {
+      if (shown.tone === "success") haptic("success");
+      else if (shown.tone === "error") haptic("error");
+    });
+    return () => onToast(null);
+  }, []);
   return (
     <>
       <ActionMenu open={Boolean(menu?.open)} title={menu?.title} actions={menu?.actions ?? []} anchor={menu?.anchor} onClose={closeActions} />

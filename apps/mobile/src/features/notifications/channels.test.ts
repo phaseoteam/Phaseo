@@ -1,4 +1,4 @@
-import { BRAND_COLOR, CATEGORIES, categoriesFrom, CHANNELS, createChannels, LEGACY_CHANNEL, type ChannelApi, type ChannelInput } from "./channels";
+import { BRAND_COLOR, CATEGORIES, categoriesFrom, CHANNELS, createChannels, LEGACY_CHANNEL, shownCategories, type ChannelApi, type ChannelInput } from "./channels";
 
 function fakeApi() {
   const created = new Map<string, ChannelInput>();
@@ -43,6 +43,16 @@ describe("channel scheme 2", () => {
 
   it("keeps the scheme-1 id the server and old builds use", () => {
     expect(LEGACY_CHANNEL.id).toBe("model-updates");
+  });
+});
+
+describe("shownCategories", () => {
+  it("leaves out jobs and account, which nothing sends to yet", () => {
+    expect(shownCategories(true).map((channel) => channel.id)).toEqual(["new-models", "prices-providers", "deprecations", "money", "traffic", "security", "digest"]);
+  });
+
+  it("shows members only what can reach them", () => {
+    expect(shownCategories(false).map((channel) => channel.id)).toEqual(["new-models", "prices-providers", "deprecations", "security"]);
   });
 });
 
