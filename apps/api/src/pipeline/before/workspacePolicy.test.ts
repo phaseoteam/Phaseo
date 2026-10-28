@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeRequestRoutingBody } from "../requestRouting";
 
 function candidate(args: {
     providerId: string;
@@ -84,6 +85,9 @@ describe("applyWorkspacePolicy", () => {
 		const allowlist = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["deepseek"] }, guardrails: [] });
 		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, allowlist))).toEqual(["deepseek"]);
 		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, null))).toEqual(["anthropic", "deepseek"]);
+		// Limits under `routing` count once the body is normalised, as Auto's body is.
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy(normalizeRequestRoutingBody({ routing: { only: ["deepseek"] } }), null))).toEqual(["deepseek"]);
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy(normalizeRequestRoutingBody({ routing: { ignore: ["deepseek"] } }), null))).toEqual(["anthropic"]);
 	});
 
 	it("keeps workspace route blocks when scoped guardrails allow other routes", () => {

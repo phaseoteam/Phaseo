@@ -641,9 +641,10 @@ export async function beforeRequest(
 			body,
 			bindings.GATEWAY_ROUTING_REGION,
 		);
-		const autoRouterBody = regionalAutoRouterBody.ok
+		// Routing limits under `routing` count as under `provider`, as they do once a model is chosen.
+		const autoRouterBody = normalizeRequestRoutingBody(regionalAutoRouterBody.ok
 			? regionalAutoRouterBody.body
-			: body;
+			: body);
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
