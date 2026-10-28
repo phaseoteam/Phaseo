@@ -332,6 +332,10 @@ export function isRateLimitPolicyRejection(errorCode: string | null | undefined,
 }
 
 /** A workspace spend rule block (core/spend-blocks.ts): refused before any provider is called. */
+// Limits the gateway enforces itself, whose Retry-After is the real time until
+// the limit resets (a monthly key cap can be weeks away), never a provider value.
+const GATEWAY_LIMIT_ERROR_CODES = new Set(["key_limit_exceeded", "spend_rule_blocked"]);
+
 export function isSpendRuleBlockRejection(errorCode: string | null | undefined): boolean {
     return errorCode === "spend_rule_blocked";
 }
@@ -599,6 +603,7 @@ function hasExecuteUpstreamEvidence(body: any): boolean {
     if (Array.isArray(body.failed_statuses) && body.failed_statuses.length > 0) return true;
     if (
         body.reason === "all_candidates_failed" ||
+        body.reason === "upstream_rejected_request" ||
         body.reason === "upstream_provider_payment_required"
     ) {
         return true;
@@ -689,8 +694,6 @@ export async function handleError({
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
-    // Keeps BYOK quota headers the execute stage already put in downstream form.
-    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers));
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
         headers.set("Timing-Allow-Origin", "*");
@@ -711,6 +714,11 @@ export async function handleError({
             process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
             debugRequested);
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
+    // Keeps BYOK quota headers the execute stage already put in downstream form.
+    // Gateway-originated limits keep a Retry-After longer than a day.
+    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers, {
+        gatewayOriginated: GATEWAY_LIMIT_ERROR_CODES.has(errCode),
+    }));
     const description = extractErrorDescription(body);
     const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });

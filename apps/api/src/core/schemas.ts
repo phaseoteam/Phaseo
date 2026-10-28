@@ -427,10 +427,29 @@ const EmbeddingsMultimodalContentSchema = lazySchema(() => z.array(EmbeddingsInp
 const EmbeddingsInputObjectSchema = lazySchema(() => z.object({
 	content: EmbeddingsMultimodalContentSchema,
 }).passthrough());
-const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.any()).refine(
-	(value) => Object.keys(value).length > 0 && typeof value.type !== "string",
-	{ message: "structured embedding input must not be empty" },
-));
+// Flat field objects such as `{ text: "..." }` that some providers fill into a
+// prompt template (Fireworks `prompt_template`). Values must be scalars: nested
+// objects and arrays are not a shape any embeddings provider accepts, so they
+// are rejected here with a 400 instead of reaching the provider and failing there.
+// Multimodal input uses `{ content: [...] }` (EmbeddingsInputObjectSchema).
+const isStructuredInputScalar = (value: unknown): boolean =>
+	typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
+	const keys = Object.keys(value);
+	if (keys.length === 0 || typeof value.type === "string") {
+		ctx.addIssue({ code: "custom", message: "structured embedding input must not be empty" });
+		return;
+	}
+	for (const key of keys) {
+		if (!isStructuredInputScalar(value[key])) {
+			ctx.addIssue({
+				code: "custom",
+				path: [key],
+				message: "structured embedding input fields must be strings, numbers or booleans; use { content: [...] } for multimodal input",
+			});
+		}
+	}
+}));
 
 const EmbeddingsInputStringSchema = lazySchema(() => z.string().min(1));
 const EmbeddingsInputTokenArraySchema = lazySchema(() => z.array(z.number().int()).max(2048));
