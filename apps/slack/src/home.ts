@@ -53,6 +53,20 @@ function escapeText(text: string): string {
 	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** Slack refuses a section whose text is longer than this. */
+const MAX_SECTION_CHARS = 3_000;
+
+/** Lines joined into as few section texts as fit Slack's limit, a line never split across two. */
+export function sectionTexts(lines: string[]): string[] {
+	const texts: string[] = [];
+	for (const line of lines) {
+		const last = texts.length - 1;
+		if (last >= 0 && texts[last].length + 1 + line.length <= MAX_SECTION_CHARS) texts[last] += `\n${line}`;
+		else texts.push(line.slice(0, MAX_SECTION_CHARS));
+	}
+	return texts;
+}
+
 /** verbatim: Slack leaves mentions in the text as they are, for text people wrote (schedule titles). */
 function section(text: string, verbatim = false) {
 	return { type: "section", text: { type: "mrkdwn", text, ...(verbatim ? { verbatim: true } : {}) } };
@@ -97,12 +111,13 @@ export function homeView(facts: HomeFacts) {
 		},
 	);
 	if (facts.schedules?.mine.length) {
-		blocks.push(section([
+		const lines = [
 			"*Your recurring tasks*",
 			...facts.schedules.mine.map(scheduleLine),
 			...(installation.status !== "active" ? ["_While the agent is paused their runs are skipped, and they carry on by themselves once it's back on._"] : []),
 			"_Ask the agent to list or cancel them. Owners and admins can also pause them in Phaseo settings._",
-		].join("\n"), true));
+		];
+		for (const text of sectionTexts(lines)) blocks.push(section(text, true));
 	}
 	if (facts.account === "not_linked" && facts.connectUrl) {
 		blocks.push(...connectAccountMessage(facts.connectUrl, installation.access_mode === "linked" ? "access" : "usage").blocks);
