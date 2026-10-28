@@ -58,6 +58,7 @@ import { useDisplayPreferences } from "@/components/providers/DisplayPreferences
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
 import { WorkspaceCombobox } from "./WorkspaceCombobox";
+import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
 import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
 
 const PhaseoActionDock = dynamic(
@@ -566,6 +567,11 @@ export default function HeaderClient({
 
 	return (
 		<div className="flex items-center gap-4">
+			<AnalyticsIdentitySync
+				userId={isLoggedIn ? (user?.id ?? null) : null}
+				workspaceId={isLoggedIn ? (activeWorkspaceId ?? null) : null}
+				signedUpAt={isLoggedIn ? (user?.createdAt ?? null) : null}
+			/>
 			{isLoggedIn ? (
 				<>
 					<TeamSwitcher
