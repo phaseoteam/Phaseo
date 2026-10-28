@@ -1082,13 +1082,15 @@ export async function rotateRefreshToken(
 	if (membership.error || !membership.data) {
 		return { ok: false, reason: "invalid_grant" };
 	}
-	// The new pair takes the current authorization's scopes narrowed to the refreshed token's
-	// (never wider), and is bound to no resource, so it can never carry a dynamic client's
-	// MCP management scopes.
-	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
-	if (violatesMcpManagementBinding(client.registration_source, null, scopes)) {
+	// The new pair is bound to no resource, so a dynamic client whose authorization holds MCP
+	// management scopes fails closed (checked on the authorization, as before narrowing).
+	// The pair itself takes the authorization's scopes narrowed to the refreshed token's,
+	// so a later consent never widens an existing session.
+	const authorizationScopes = Array.isArray(authorization.data.scopes) ? authorization.data.scopes.map(String) : [];
+	if (violatesMcpManagementBinding(client.registration_source, null, authorizationScopes)) {
 		return { ok: false, reason: "invalid_grant" };
 	}
+	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),
