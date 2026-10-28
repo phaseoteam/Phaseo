@@ -153,6 +153,9 @@ gap, not a choice, unless you can say why.
 9. Visibility check: confirm the model in the gateway model list (for
    example `phaseo api get models --json` shows the expected capabilities and
    endpoints) and that it is selectable in Chat, not only listed on /models.
+10. Changelog: once the model has a live route, add it to the Models section
+    for its release date in the docs changelog, in all 9 languages, following
+    `phaseo-changelog`. Catalogue-only models wait until they are routable.
 
 ## Validation
 

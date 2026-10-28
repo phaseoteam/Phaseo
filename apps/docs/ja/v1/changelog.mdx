@@ -55,6 +55,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月24日">
@@ -104,6 +112,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - レート制限ポリシーは `concurrent_requests` を適用し、すべての枠が埋まっていると理由 `policy_concurrent_requests` と `Retry-After: 1` を付けて `429` を返します。詳しくは[レート制限](./api-reference/limits.mdx)をご覧ください ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 厳格なポリシー (`fail_closed`) は、リクエストをプロバイダーに送る前に 1 分あたりの上限を確認します ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - EU と US のリージョナルゲートウェイを通るリクエストも Broadcast の送信先に届くようになりました ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
 
 </div>
 
@@ -176,6 +193,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="2026年10月20日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月19日">
@@ -188,6 +228,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - ストリーミング中にプロバイダーで障害が起きた場合、ストリームは通常の終了ではなくエンドポイントのエラーイベントで終わります ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
 - すべてのプロバイダーが `429` で拒否したリクエストは、プロバイダーの `Retry-After` を付けて `429` を返します ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
 - 無効として拒否されたリクエストは、`models` の他のモデルにフォールバックしなくなりました ([#2990](https://github.com/phaseoteam/Phaseo/pull/2990))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
 
 </div>
 
@@ -215,6 +265,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">製品</p>
 
 - **設定 -> 通知** に **レート制限アラート** が追加され、メール、Slack、Discord、Teams、Webhook に最大 1 時間に 1 回送られます。詳しくは[ワークスペース通知](./guides/workspace-notifications.mdx)をご覧ください ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -267,6 +325,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月14日">
@@ -290,6 +356,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月13日">
@@ -299,6 +374,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">製品</p>
 
 - 使用状況の概要の各カードに、支出、リクエスト数、トークン数の月末予測、またはキャッシュヒット率などの率については月初からの値が表示されます ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -321,6 +404,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - トップレベルの `models` フォールバックリストが、`/v1/messages` やメディア系エンドポイントを含むすべての推論エンドポイントで機能します。詳しくは[ルーティングとフォールバック](./guides/routing-and-fallbacks.mdx)をご覧ください ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858))。
 - API キーのリクエスト数上限と支出上限による `429` レスポンスに、上限がリセットされるまでの秒数を示す `Retry-After` が付きます ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -364,6 +455,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - ワークスペースの各メンバーには API キー間で共有される 1 分あたりのリクエスト枠があり、ワークスペースの実績に応じて 10 から 120 まで増えます。詳しくは[レート制限](./api-reference/limits.mdx)をご覧ください ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800))。
 - 各ユーザーは UTC の 1 日あたり 1,500 件まで無料モデルにリクエストでき、いずれかの上限を超えたリクエストは `Retry-After` 付きで `429` を返します ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787))。
 - EU と US のリージョナルゲートウェイは、そのリージョンでモデルを提供するプロバイダーがない場合に `403 model_region_unavailable` を返します。詳しくは[地域別にテキストリクエストをルーティングする](./guides/regional-routing.mdx)をご覧ください ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 
