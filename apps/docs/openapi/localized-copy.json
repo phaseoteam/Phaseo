@@ -9973,6 +9973,26 @@
 			"ja": "このバージョンを指す production などの名前付きラベル。バージョン一覧の取得時に返されます。",
 			"zh-Hans": "指向此版本的命名标签，例如 production。列出版本时返回。",
 			"ar": "التسميات المسمّاة، مثل production، التي تشير إلى هذا الإصدار. تُعاد عند سرد الإصدارات."
+		},
+		"Addresses allowed to use the key. Each entry is a labelled IPv4 or IPv6 address or CIDR range. Empty allows any address.": {
+			"es": "Direcciones que pueden usar la clave. Cada entrada es una dirección IPv4 o IPv6, o un rango CIDR, con una etiqueta. Si está vacía, se permite cualquier dirección.",
+			"fr": "Adresses autorisées à utiliser la clé. Chaque entrée est une adresse IPv4 ou IPv6, ou une plage CIDR, avec un libellé. Si la liste est vide, toutes les adresses sont autorisées.",
+			"de": "Adressen, die den Schlüssel verwenden dürfen. Jeder Eintrag ist eine IPv4- oder IPv6-Adresse oder ein CIDR-Bereich mit einer Bezeichnung. Eine leere Liste erlaubt jede Adresse.",
+			"pt-BR": "Endereços autorizados a usar a chave. Cada entrada é um endereço IPv4 ou IPv6, ou um intervalo CIDR, com um rótulo. Se estiver vazia, qualquer endereço é permitido.",
+			"hi": "वे पते जो कुंजी का उपयोग कर सकते हैं। हर प्रविष्टि एक लेबल वाला IPv4 या IPv6 पता या CIDR रेंज है। खाली होने पर कोई भी पता अनुमत है।",
+			"ja": "キーを使用できるアドレス。各エントリはラベル付きの IPv4 または IPv6 アドレス、もしくは CIDR 範囲です。空の場合はすべてのアドレスが許可されます。",
+			"zh-Hans": "允许使用该密钥的地址。每个条目都是带标签的 IPv4 或 IPv6 地址，或 CIDR 范围。为空时允许任何地址。",
+			"ar": "العناوين المسموح لها باستخدام المفتاح. كل إدخال هو عنوان IPv4 أو IPv6 أو نطاق CIDR مع تسمية. القائمة الفارغة تسمح بأي عنوان."
+		},
+		"An IPv4 or IPv6 address, or a CIDR range.": {
+			"es": "Una dirección IPv4 o IPv6, o un rango CIDR.",
+			"fr": "Une adresse IPv4 ou IPv6, ou une plage CIDR.",
+			"de": "Eine IPv4- oder IPv6-Adresse oder ein CIDR-Bereich.",
+			"pt-BR": "Um endereço IPv4 ou IPv6, ou um intervalo CIDR.",
+			"hi": "एक IPv4 या IPv6 पता, या एक CIDR रेंज।",
+			"ja": "IPv4 または IPv6 アドレス、もしくは CIDR 範囲。",
+			"zh-Hans": "IPv4 或 IPv6 地址，或 CIDR 范围。",
+			"ar": "عنوان IPv4 أو IPv6، أو نطاق CIDR."
 		}
 	},
 	"GET /apps": {

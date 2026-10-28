@@ -197,6 +197,10 @@ jobs:
               run: pnpm run validate:key-storage-locations
             - name: Validate shared spend rule validation
               run: pnpm run validate:spend-rules
+            - name: Validate shared workspace routing settings
+              run: pnpm run validate:workspace-routing-settings
+            - name: Validate shared key IP allowlist validation
+              run: pnpm run validate:key-ip-allowlist
 
             - name: Validate unique Supabase migration versions
               shell: bash

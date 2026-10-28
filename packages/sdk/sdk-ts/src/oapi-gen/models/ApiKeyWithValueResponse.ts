@@ -9,6 +9,10 @@ export interface ApiKeyWithValueResponse {
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     key: string;
     label: string | null;
     last_used_at: string | null;

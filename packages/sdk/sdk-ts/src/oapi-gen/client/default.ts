@@ -1,5 +1,46 @@
 import type { Client } from "../../runtime/client.js";
 
+export type AcceptWorkspaceInviteParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    token: string;
+  };
+};
+
+/**
+ * Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+ */
+export async function acceptWorkspaceInvite(
+  client: Client,
+  args: AcceptWorkspaceInviteParams = {},
+): Promise<{
+  data: {
+    created_at?: string;
+    id?: string;
+    status?: string;
+    workspace_id?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/invites/accept";
+  return client.request<{
+    data: {
+      created_at?: string;
+      id?: string;
+      status?: string;
+      workspace_id?: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type AddGuardrailKeysParams = {
   path: {
     id: string;
@@ -1312,6 +1353,10 @@ export async function createApiKey(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     key: string;
     label: string | null;
     last_used_at: string | null;
@@ -1378,6 +1423,10 @@ export async function createApiKey(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       key: string;
       label: string | null;
       last_used_at: string | null;
@@ -10102,6 +10151,10 @@ export async function getApiKey(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     label: string | null;
     last_used_at: string | null;
     limit: number | null;
@@ -10168,6 +10221,10 @@ export async function getApiKey(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       label: string | null;
       last_used_at: string | null;
       limit: number | null;
@@ -10217,6 +10274,55 @@ export async function getApiKey(
       usage_monthly: number;
       usage_weekly: number;
       workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetAutoRoutingSettingsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+ */
+export async function getAutoRoutingSettings(
+  client: Client,
+  args: GetAutoRoutingSettingsParams = {},
+): Promise<{
+  data: {
+    allow_fallbacks?: boolean;
+    allowed_patterns?: string[];
+    max_input_price_per_million?: number | null;
+    max_output_price_per_million?: number | null;
+    objective?: "balanced" | "quality" | "cost" | "latency";
+    revision?: string | null;
+    spend_profile?:
+      "economy" | "standard" | "premium" | "unrestricted" | "custom";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/routing/auto";
+  return client.request<{
+    data: {
+      allow_fallbacks?: boolean;
+      allowed_patterns?: string[];
+      max_input_price_per_million?: number | null;
+      max_output_price_per_million?: number | null;
+      objective?: "balanced" | "quality" | "cost" | "latency";
+      revision?: string | null;
+      spend_profile?:
+        "economy" | "standard" | "premium" | "unrestricted" | "custom";
+      updated_at?: string | null;
     };
   }>({
     method: "GET",
@@ -10393,6 +10499,10 @@ export async function getCurrentApiKey(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     label: string | null;
     last_used_at: string | null;
     limit: number | null;
@@ -10457,6 +10567,10 @@ export async function getCurrentApiKey(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       label: string | null;
       last_used_at: string | null;
       limit: number | null;
@@ -11264,6 +11378,73 @@ export async function getManagementKey(
   });
 }
 
+export type GetMeParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+ */
+export async function getMe(
+  client: Client,
+  args: GetMeParams = {},
+): Promise<{
+  data: {
+    current_workspace_id?: string;
+    oauth?: {
+      client_id?: string;
+      resource?: string | null;
+      scopes?: string[];
+    };
+    user?: {
+      email?: string | null;
+      id?: string;
+      name?: string | null;
+    };
+    workspaces?: {
+      current?: boolean;
+      id?: string;
+      name?: string | null;
+      role?: string | null;
+      slug?: string | null;
+    }[];
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/me";
+  return client.request<{
+    data: {
+      current_workspace_id?: string;
+      oauth?: {
+        client_id?: string;
+        resource?: string | null;
+        scopes?: string[];
+      };
+      user?: {
+        email?: string | null;
+        id?: string;
+        name?: string | null;
+      };
+      workspaces?: {
+        current?: boolean;
+        id?: string;
+        name?: string | null;
+        role?: string | null;
+        slug?: string | null;
+      }[];
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetMusicGenerationParams = {
   path: {
     music_id: string;
@@ -11381,6 +11562,45 @@ export async function getMusicGenerationAlias(
       [key: string]: unknown;
     };
     [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetMyProfileParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+ */
+export async function getMyProfile(
+  client: Client,
+  args: GetMyProfileParams = {},
+): Promise<{
+  data: {
+    default_workspace_id?: string | null;
+    display_name?: string | null;
+    obfuscate_info?: boolean;
+    user_id?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/me/profile";
+  return client.request<{
+    data: {
+      default_workspace_id?: string | null;
+      display_name?: string | null;
+      obfuscate_info?: boolean;
+      user_id?: string;
+    };
   }>({
     method: "GET",
     path: resolvedPath,
@@ -12265,6 +12485,65 @@ export async function getRateLimitPolicy(
       tokens_per_minute: number | null;
       updated_at: string;
       workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetRateLimitTierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+ */
+export async function getRateLimitTier(
+  client: Client,
+  args: GetRateLimitTierParams = {},
+): Promise<{
+  data: {
+    activeUntil?: number | null;
+    availableAt?: number | null;
+    canRaise?: boolean;
+    durationDays?: number;
+    eligible?: boolean;
+    refusal?: string | null;
+    requestsPerMinute?: number;
+    target?: string | null;
+    targetRequestsPerMinute?: number | null;
+    thresholds?: {
+      minAgeDays?: number;
+      minLifetimePaidSpendUsd?: number;
+    };
+    tier?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/tier";
+  return client.request<{
+    data: {
+      activeUntil?: number | null;
+      availableAt?: number | null;
+      canRaise?: boolean;
+      durationDays?: number;
+      eligible?: boolean;
+      refusal?: string | null;
+      requestsPerMinute?: number;
+      target?: string | null;
+      targetRequestsPerMinute?: number | null;
+      thresholds?: {
+        minAgeDays?: number;
+        minLifetimePaidSpendUsd?: number;
+      };
+      tier?: string;
     };
   }>({
     method: "GET",
@@ -13766,6 +14045,10 @@ export async function listApiKeys(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     label: string | null;
     last_used_at: string | null;
     limit: number | null;
@@ -13831,6 +14114,10 @@ export async function listApiKeys(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       label: string | null;
       last_used_at: string | null;
       limit: number | null;
@@ -13882,6 +14169,55 @@ export async function listApiKeys(
       workspace_id: string;
     }[];
     total_count: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListAuthorizedAppsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+ */
+export async function listAuthorizedApps(
+  client: Client,
+  args: ListAuthorizedAppsParams = {},
+): Promise<{
+  data: {
+    app_name?: string;
+    authorized_at?: string;
+    client_id?: string;
+    current?: boolean;
+    id?: string;
+    last_used_at?: string | null;
+    scopes?: string[];
+    workspace_id?: string;
+    workspace_name?: string | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/me/authorized-apps";
+  return client.request<{
+    data: {
+      app_name?: string;
+      authorized_at?: string;
+      client_id?: string;
+      current?: boolean;
+      id?: string;
+      last_used_at?: string | null;
+      scopes?: string[];
+      workspace_id?: string;
+      workspace_name?: string | null;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -17206,6 +17542,51 @@ export async function listModels(
   });
 }
 
+export type ListMyJoinRequestsParams = {
+  path?: Record<string, never>;
+  query?: {
+    status?: "pending" | "approved" | "rejected" | "all";
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+ */
+export async function listMyJoinRequests(
+  client: Client,
+  args: ListMyJoinRequestsParams = {},
+): Promise<{
+  data: {
+    created_at?: string;
+    decided_at?: string | null;
+    id?: string;
+    status?: "pending" | "approved" | "rejected";
+    workspace_id?: string;
+    workspace_name?: string | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/invites/requests";
+  return client.request<{
+    data: {
+      created_at?: string;
+      decided_at?: string | null;
+      id?: string;
+      status?: "pending" | "approved" | "rejected";
+      workspace_id?: string;
+      workspace_name?: string | null;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListOAuthClientsParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -18583,6 +18964,43 @@ export async function listSpendRules(
       workspace_id: string;
     }[];
     max_rules: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSuccessorReplacementsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+ */
+export async function listSuccessorReplacements(
+  client: Client,
+  args: ListSuccessorReplacementsParams = {},
+): Promise<{
+  data: {
+    model?: string;
+    successor?: string | null;
+    updated_at?: string | null;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/routing/successor/replacements";
+  return client.request<{
+    data: {
+      model?: string;
+      successor?: string | null;
+      updated_at?: string | null;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -21635,6 +22053,106 @@ export async function publishPresetVersion(
   });
 }
 
+export type RaiseRateLimitTierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+ */
+export async function raiseRateLimitTier(
+  client: Client,
+  args: RaiseRateLimitTierParams = {},
+): Promise<{
+  data: {
+    activeUntil?: number | null;
+    availableAt?: number | null;
+    canRaise?: boolean;
+    durationDays?: number;
+    eligible?: boolean;
+    refusal?: string | null;
+    requestsPerMinute?: number;
+    target?: string | null;
+    targetRequestsPerMinute?: number | null;
+    thresholds?: {
+      minAgeDays?: number;
+      minLifetimePaidSpendUsd?: number;
+    };
+    tier?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/tier/raise";
+  return client.request<{
+    data: {
+      activeUntil?: number | null;
+      availableAt?: number | null;
+      canRaise?: boolean;
+      durationDays?: number;
+      eligible?: boolean;
+      refusal?: string | null;
+      requestsPerMinute?: number;
+      target?: string | null;
+      targetRequestsPerMinute?: number | null;
+      thresholds?: {
+        minAgeDays?: number;
+        minLifetimePaidSpendUsd?: number;
+      };
+      tier?: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ReduceAuthorizedAppScopesParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    scopes: string[];
+  };
+};
+
+/**
+ * Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+ */
+export async function reduceAuthorizedAppScopes(
+  client: Client,
+  args: ReduceAuthorizedAppScopesParams,
+): Promise<{
+  data: {
+    id?: string;
+    scopes?: string[];
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/me/authorized-apps/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      id?: string;
+      scopes?: string[];
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type RegenerateOAuthClientSecretParams = {
   path: {
     client_id: string;
@@ -21796,6 +22314,39 @@ export async function removeGuardrailMembers(
   });
 }
 
+export type RemoveSuccessorReplacementParams = {
+  path?: Record<string, never>;
+  query?: {
+    model: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+ */
+export async function removeSuccessorReplacement(
+  client: Client,
+  args: RemoveSuccessorReplacementParams = {},
+): Promise<{
+  deleted?: boolean;
+  model?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/routing/successor/replacements";
+  return client.request<{
+    deleted?: boolean;
+    model?: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type RemoveWorkspaceMembersParams = {
   path: {
     id: string;
@@ -21939,6 +22490,41 @@ export async function replaceGuardrailKeys(
     };
   }>({
     method: "PUT",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ReportLeakedKeyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    comment?: string;
+    evidence_url?: string;
+    reporter_email?: string;
+    source?: string;
+    token: string;
+  };
+};
+
+/**
+ * Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+ */
+export async function reportLeakedKey(
+  client: Client,
+  args: ReportLeakedKeyParams = {},
+): Promise<{
+  status?: "received";
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/security/report-leaked-key";
+  return client.request<{
+    status?: "received";
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -22734,6 +23320,41 @@ export async function retrieveFileContent(
   });
 }
 
+export type RevokeAuthorizedAppParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+ */
+export async function revokeAuthorizedApp(
+  client: Client,
+  args: RevokeAuthorizedAppParams,
+): Promise<{
+  id?: string;
+  revoked?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/me/authorized-apps/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    id?: string;
+    revoked?: boolean;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type RevokeWorkspaceScimTokenParams = {
   path: {
     id: string;
@@ -22796,6 +23417,10 @@ export async function rotateApiKey(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     key: string;
     label: string | null;
     last_used_at: string | null;
@@ -22864,6 +23489,10 @@ export async function rotateApiKey(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       key: string;
       label: string | null;
       last_used_at: string | null;
@@ -23047,6 +23676,89 @@ export async function rotateWorkspaceNotificationDestinationSecret(
   });
 }
 
+export type SaveSuccessorReplacementParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    model: string;
+    successor: string | null;
+  };
+};
+
+/**
+ * Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+ */
+export async function saveSuccessorReplacement(
+  client: Client,
+  args: SaveSuccessorReplacementParams = {},
+): Promise<{
+  data: {
+    model?: string;
+    successor?: string | null;
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/routing/successor/replacements";
+  return client.request<{
+    data: {
+      model?: string;
+      successor?: string | null;
+      updated_at?: string | null;
+    };
+  }>({
+    method: "PUT",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type SendObservabilityDestinationSampleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+ */
+export async function sendObservabilityDestinationSample(
+  client: Client,
+  args: SendObservabilityDestinationSampleParams,
+): Promise<{
+  data: {
+    error?: string | null;
+    http_status?: number | null;
+    ok?: boolean;
+    status?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/observability/destinations/${encodeURIComponent(String(path["id"]))}/sample`;
+  return client.request<{
+    data: {
+      error?: string | null;
+      http_status?: number | null;
+      ok?: boolean;
+      status?: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type SetPresetLabelParams = {
   path: {
     id: string;
@@ -23210,6 +23922,117 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestObservabilityDestinationParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+ */
+export async function testObservabilityDestination(
+  client: Client,
+  args: TestObservabilityDestinationParams,
+): Promise<{
+  data: {
+    error?: string | null;
+    http_status?: number | null;
+    ok?: boolean;
+    status?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/observability/destinations/${encodeURIComponent(String(path["id"]))}/test`;
+  return client.request<{
+    data: {
+      error?: string | null;
+      http_status?: number | null;
+      ok?: boolean;
+      status?: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestObservabilityDestinationConfigParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    config: {
+      [key: string]: string;
+    };
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
+  };
+};
+
+/**
+ * Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+ */
+export async function testObservabilityDestinationConfig(
+  client: Client,
+  args: TestObservabilityDestinationConfigParams = {},
+): Promise<{
+  data: {
+    error?: string | null;
+    http_status?: number | null;
+    ok?: boolean;
+    status?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/observability/destinations/test";
+  return client.request<{
+    data: {
+      error?: string | null;
+      http_status?: number | null;
+      ok?: boolean;
+      status?: string;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -23419,6 +24242,10 @@ export type UpdateApiKeyParams = {
     disabled?: boolean;
     expires_at?: string | null;
     include_byok_in_limit?: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     limit?: number | null;
     limit_reset?: "daily" | "weekly" | "monthly";
     limits?: {
@@ -23459,6 +24286,10 @@ export async function updateApiKey(
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     label: string | null;
     last_used_at: string | null;
     limit: number | null;
@@ -23525,6 +24356,10 @@ export async function updateApiKey(
       hash: string;
       id: string;
       include_byok_in_limit: boolean;
+      ip_allowlist?: {
+        address: string;
+        label: string;
+      }[];
       label: string | null;
       last_used_at: string | null;
       limit: number | null;
@@ -23574,6 +24409,63 @@ export async function updateApiKey(
       usage_monthly: number;
       usage_weekly: number;
       workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateAutoRoutingSettingsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    allow_fallbacks?: boolean;
+    allowed_patterns?: string[];
+    max_input_price_per_million?: number | null;
+    max_output_price_per_million?: number | null;
+    objective?: "balanced" | "quality" | "cost" | "latency";
+    spend_profile?:
+      "economy" | "standard" | "premium" | "unrestricted" | "custom";
+  };
+};
+
+/**
+ * Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+ */
+export async function updateAutoRoutingSettings(
+  client: Client,
+  args: UpdateAutoRoutingSettingsParams = {},
+): Promise<{
+  data: {
+    allow_fallbacks?: boolean;
+    allowed_patterns?: string[];
+    max_input_price_per_million?: number | null;
+    max_output_price_per_million?: number | null;
+    objective?: "balanced" | "quality" | "cost" | "latency";
+    revision?: string | null;
+    spend_profile?:
+      "economy" | "standard" | "premium" | "unrestricted" | "custom";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/routing/auto";
+  return client.request<{
+    data: {
+      allow_fallbacks?: boolean;
+      allowed_patterns?: string[];
+      max_input_price_per_million?: number | null;
+      max_output_price_per_million?: number | null;
+      objective?: "balanced" | "quality" | "cost" | "latency";
+      revision?: string | null;
+      spend_profile?:
+        "economy" | "standard" | "premium" | "unrestricted" | "custom";
+      updated_at?: string | null;
     };
   }>({
     method: "PATCH",
@@ -24354,6 +25246,49 @@ export async function updateManagementKey(
       weekly_limit_cost_nanos?: number | null;
       weekly_limit_requests?: number | null;
       workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateMyProfileParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    default_workspace_id?: string | null;
+    display_name?: string;
+    obfuscate_info?: boolean;
+  };
+};
+
+/**
+ * Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+ */
+export async function updateMyProfile(
+  client: Client,
+  args: UpdateMyProfileParams = {},
+): Promise<{
+  data: {
+    default_workspace_id?: string | null;
+    display_name?: string | null;
+    obfuscate_info?: boolean;
+    user_id?: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/me/profile";
+  return client.request<{
+    data: {
+      default_workspace_id?: string | null;
+      display_name?: string | null;
+      obfuscate_info?: boolean;
+      user_id?: string;
     };
   }>({
     method: "PATCH",

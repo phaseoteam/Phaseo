@@ -525,6 +525,6 @@ rateLimitsRoutes.post("/assignments", withRuntime(handleCreateAssignment));
 rateLimitsRoutes.get("/assignments/:id", withRuntime(handleGetAssignment));
 rateLimitsRoutes.patch("/assignments/:id", withRuntime(handleUpdateAssignment));
 rateLimitsRoutes.delete("/assignments/:id", withRuntime(handleDeleteAssignment));
-// Dashboard only: the workspace's trust-ladder tier and self-serve raises.
+// The workspace's trust-ladder tier and self-serve raises (owner only; never a management key).
 rateLimitsRoutes.get("/tier", withRuntime(handleGetRateLimitTier));
 rateLimitsRoutes.post("/tier/raise", withRuntime(handleRaiseRateLimitTier));

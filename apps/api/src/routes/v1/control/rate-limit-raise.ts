@@ -1,8 +1,10 @@
 // Self-serve rate limit raises for Settings → Rate limits: the workspace's
 // trust-ladder tier, whether it can raise itself one tier, and the raise.
-// Only a dashboard session can use these routes, and only the workspace owner
-// can raise: management keys and OAuth tokens are refused, so a leaked key
-// cannot lift its own workspace's limits. The thresholds live in the ladder
+// The dashboard session and OAuth tokens act as a person, so the dashboard's
+// rules apply to both: owners and admins see the tier and only the workspace
+// owner can raise. A management key belongs to no person, so it can read the
+// tier but never raise: a leaked key cannot lift its own workspace's limits.
+// The thresholds live in the ladder
 // configuration (selfServeRaise), and CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED
 // turns the feature, and every active raise, off.
 import { CAPABILITIES } from "@/lib/authz/capabilities";
@@ -11,8 +13,9 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { json } from "@/routes/utils";
 import { customerRateLimitLadder, selfServeRaiseStatus, type SelfServeRaiseStatus } from "@core/customer-rate-limit-ladder";
 import { publishCustomerRateLimitTier, readCustomerRateLimitInputs } from "@core/customer-rate-limit-tiers";
-import { internalServerError } from "./route-helpers";
-import { authenticateDashboardSession, type DashboardSession } from "./dashboard-session";
+import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { internalServerError, requireCapability } from "./route-helpers";
+import { authenticateDashboardSession, workspaceRole } from "./dashboard-session";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const DAY_MS = 86_400_000;
@@ -22,12 +25,34 @@ function forbidden(message: string) {
 	return json({ error: "forbidden", message }, 403, NO_STORE);
 }
 
-async function dashboardSession(req: Request): Promise<{ session: DashboardSession } | { response: Response }> {
+/** Who is asking: role is the person's workspace role, or null for a management key. */
+type Caller = { workspaceId: string; userId: string | null; role: string | null };
+
+async function authorize(req: Request, scope: string): Promise<{ caller: Caller } | { response: Response }> {
 	const session = await authenticateDashboardSession(req, SCOPES);
 	if (session instanceof Response) return { response: session };
-	if (!session) return { response: forbidden("Rate limit raises are requested by the workspace owner in the dashboard") };
-	if (!["owner", "admin"].includes(session.role)) return { response: forbidden("Only workspace owners and admins can view the workspace's rate limit tier") };
-	return { session };
+	let caller: Caller;
+	if (session) {
+		caller = { workspaceId: session.auth.workspaceId, userId: session.auth.userId ?? null, role: session.role };
+	} else {
+		const auth = await guardManagementAuth(req, { useKvCache: false });
+		if (!auth.ok) return { response: (auth as GuardErr).response };
+		const scopeError = requireCapability(auth.value, scope);
+		if (scopeError) return { response: scopeError };
+		if (auth.value.authMethod === "oauth") {
+			const userId = auth.value.userId?.trim();
+			if (!userId) return { response: forbidden("OAuth user is required") };
+			const role = await workspaceRole(auth.value.workspaceId, userId);
+			if (role === null) return { response: forbidden("Workspace membership is required") };
+			caller = { workspaceId: auth.value.workspaceId, userId, role };
+		} else {
+			caller = { workspaceId: auth.value.workspaceId, userId: null, role: null };
+		}
+	}
+	if (caller.role !== null && !["owner", "admin"].includes(caller.role)) {
+		return { response: forbidden("Only workspace owners and admins can view the workspace's rate limit tier") };
+	}
+	return { caller };
 }
 
 function raisesEnabled(): boolean {
@@ -66,29 +91,30 @@ async function currentStatus(workspaceId: string): Promise<SelfServeRaiseStatus 
 const raiseUnavailable = (reason: string | null) =>
 	json({ error: "raise_unavailable", reason, message: "This workspace cannot raise its rate limit now" }, 409, NO_STORE);
 
-function body(status: SelfServeRaiseStatus, session: DashboardSession) {
-	return { data: { ...status, canRaise: session.role === "owner" && status.eligible } };
+function body(status: SelfServeRaiseStatus, caller: Caller) {
+	return { data: { ...status, canRaise: caller.role === "owner" && status.eligible } };
 }
 
 export async function handleGetRateLimitTier(req: Request) {
-	const authorization = await dashboardSession(req);
+	const authorization = await authorize(req, CAPABILITIES.RATE_LIMITS_READ);
 	if ("response" in authorization) return authorization.response;
-	const { session } = authorization;
+	const { caller } = authorization;
 	try {
-		const status = await currentStatus(session.auth.workspaceId);
+		const status = await currentStatus(caller.workspaceId);
 		if (!status) return json({ error: "not_found", message: "Workspace not found" }, 404, NO_STORE);
-		return json(body(status, session), 200, NO_STORE);
+		return json(body(status, caller), 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("rate_limit_tier.get", error);
 	}
 }
 
 export async function handleRaiseRateLimitTier(req: Request) {
-	const authorization = await dashboardSession(req);
+	const authorization = await authorize(req, CAPABILITIES.RATE_LIMITS_WRITE);
 	if ("response" in authorization) return authorization.response;
-	const { session } = authorization;
-	if (session.role !== "owner") return forbidden("Only the workspace owner can raise the workspace's rate limit");
-	const workspaceId = session.auth.workspaceId;
+	const { caller } = authorization;
+	if (caller.role === null) return forbidden("Management keys cannot raise rate limits; the workspace owner raises them with an OAuth sign-in or in the dashboard");
+	if (caller.role !== "owner") return forbidden("Only the workspace owner can raise the workspace's rate limit");
+	const workspaceId = caller.workspaceId;
 	try {
 		const read = await readStatus(workspaceId);
 		if (!read) return json({ error: "not_found", message: "Workspace not found" }, 404, NO_STORE);
@@ -101,7 +127,7 @@ export async function handleRaiseRateLimitTier(req: Request) {
 			p_workspace_id: workspaceId,
 			p_from_tier: status.tier,
 			p_to_tier: status.target,
-			p_requested_by: session.auth.userId ?? null,
+			p_requested_by: caller.userId,
 			p_expires_at: new Date(now + status.durationDays * DAY_MS).toISOString(),
 			p_last_requested_at: read.lastRequestedAt,
 		});
@@ -110,7 +136,7 @@ export async function handleRaiseRateLimitTier(req: Request) {
 		if (!raise) return raiseUnavailable("raised");
 		await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 			workspaceId,
-			actorUserId: session.auth.userId ?? null,
+			actorUserId: caller.userId,
 			action: "rate_limit_raise.requested",
 			targetType: "workspace_rate_limit_raise",
 			targetId: raise.id,
@@ -135,7 +161,7 @@ export async function handleRaiseRateLimitTier(req: Request) {
 			availableAt: null,
 		};
 		const updated = await currentStatus(workspaceId).catch(() => null);
-		return json(body(updated ?? raised, session), 201, NO_STORE);
+		return json(body(updated ?? raised, caller), 201, NO_STORE);
 	} catch (error) {
 		return internalServerError("rate_limit_tier.raise", error);
 	}

@@ -680,6 +680,25 @@ describe("management key routes", () => {
 			expect(state.updatePayloads[1]).toEqual({ storage_locations: [] });
 		});
 
+		it("sets an IP allowlist with the dashboard's rules and returns it", async () => {
+			const allowlist = [{ label: "Office", address: "203.0.113.0/24" }, { label: "VPN", address: "2001:db8::1" }];
+			state.keyRows.push(keyRow(), keyRow({ ip_allowlist: allowlist }));
+			const response = await patch({ ip_allowlist: [{ label: " Office ", address: "203.0.113.0/24" }, allowlist[1]] });
+			expect(response.status).toBe(200);
+			expect(state.updatePayloads[0]).toEqual({ ip_allowlist: allowlist });
+			await expect(response.json()).resolves.toMatchObject({ data: { ip_allowlist: allowlist } });
+		});
+
+		it("rejects an invalid IP allowlist", async () => {
+			for (const ip_allowlist of [[{ label: "Office", address: "not-an-ip" }], [{ label: "", address: "203.0.113.1" }], "203.0.113.1"]) {
+				state.keyRows.push(keyRow());
+				const response = await patch({ ip_allowlist });
+				expect(response.status).toBe(400);
+				await expect(response.json()).resolves.toMatchObject({ error: "invalid_ip_allowlist" });
+			}
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
 		it("rejects unknown locations", async () => {
 			state.keyRows.push(keyRow());
 			const response = await patch({ storage_locations: ["my-laptop"] });

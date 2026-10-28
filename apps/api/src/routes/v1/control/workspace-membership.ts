@@ -72,7 +72,7 @@ async function encryptInviteToken(token: string): Promise<string> {
 	return bytesToBase64(output);
 }
 
-async function inviteFingerprint(token: string): Promise<string> {
+export async function inviteFingerprint(token: string): Promise<string> {
 	const keyBytes = base64ToBytes(getBindings().HMAC_ENCRYPTION_KEY ?? "");
 	if (!keyBytes.length) throw new Error("invite_hmac_unavailable");
 	const key = await crypto.subtle.importKey("raw", bytesBuffer(keyBytes), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);

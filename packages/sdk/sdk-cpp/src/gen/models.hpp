@@ -140,6 +140,7 @@ struct ApiKey {
 	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::optional<std::string> label;
 	std::optional<std::string> last_used_at;
 	std::optional<double> limit;
@@ -175,6 +176,8 @@ struct ApiKeyCreateRequest {
 	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
+
+using ApiKeyIpAllowlist = std::any;
 
 struct ApiKeyLimitBucket {
 	std::optional<double> cost;
@@ -226,6 +229,7 @@ struct ApiKeyUpdateRequest {
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::optional<double> limit;
 	std::any limit_reset;
 	std::map<std::string, std::any> limits;
@@ -257,6 +261,7 @@ struct ApiKeyWithValue {
 	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::string key;
 	std::optional<std::string> label;
 	std::optional<std::string> last_used_at;
@@ -379,6 +384,59 @@ struct AudioTranslationRequest {
 
 struct AudioTranslationResponse {
 	std::string text;
+};
+
+struct AuthorizedApp {
+	std::string app_name;
+	std::string authorized_at;
+	std::string client_id;
+	std::optional<bool> current;
+	std::string id;
+	std::optional<std::string> last_used_at;
+	std::vector<std::string> scopes;
+	std::string workspace_id;
+	std::optional<std::string> workspace_name;
+};
+
+struct AuthorizedAppListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct AuthorizedAppRevokedResponse {
+	std::string id;
+	std::optional<bool> revoked;
+};
+
+struct AuthorizedAppScopesRequest {
+	std::vector<std::string> scopes;
+};
+
+struct AuthorizedAppScopesResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct AutoRoutingSettings {
+	std::optional<bool> allow_fallbacks;
+	std::vector<std::string> allowed_patterns;
+	std::optional<double> max_input_price_per_million;
+	std::optional<double> max_output_price_per_million;
+	std::any objective;
+	std::optional<std::string> revision;
+	std::any spend_profile;
+	std::optional<std::string> updated_at;
+};
+
+struct AutoRoutingSettingsResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct AutoRoutingSettingsUpdateRequest {
+	std::optional<bool> allow_fallbacks;
+	std::vector<std::string> allowed_patterns;
+	std::optional<double> max_input_price_per_million;
+	std::optional<double> max_output_price_per_million;
+	std::any objective;
+	std::any spend_profile;
 };
 
 struct BatchBillingSummary {
@@ -1968,6 +2026,18 @@ struct KeyInvalidateResponse {
 
 using KnownModelId = std::any;
 
+struct LeakedKeyReportRequest {
+	std::string comment;
+	std::string evidence_url;
+	std::string reporter_email;
+	std::string source;
+	std::string token;
+};
+
+struct LeakedKeyReportResponse {
+	std::any status;
+};
+
 struct LegacyDecisionBoxQuestion {
 	std::any instructions;
 	std::any type;
@@ -2124,6 +2194,10 @@ struct ManagementKeyUpdateRequest {
 struct ManagementKeyUpdateResponse {
 	std::string message;
 	std::any ok;
+};
+
+struct MeResponse {
+	std::map<std::string, std::any> data;
 };
 
 using MessageContentPart = std::any;
@@ -2294,6 +2368,23 @@ struct MusicGenerateResponse {
 	std::map<std::string, std::any> usage;
 };
 
+struct MyJoinRequest {
+	std::string created_at;
+	std::optional<std::string> decided_at;
+	std::string id;
+	std::any status;
+	std::string workspace_id;
+	std::optional<std::string> workspace_name;
+};
+
+struct MyJoinRequestCreatedResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct MyJoinRequestListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
 struct NotImplementedResponse {
 	std::string description;
 	std::string error;
@@ -2449,6 +2540,15 @@ struct ObservabilityDestinationPolicyInput {
 };
 
 struct ObservabilityDestinationResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct ObservabilityDestinationTestRequest {
+	std::map<std::string, std::any> config;
+	std::any type;
+};
+
+struct ObservabilityDestinationTestResponse {
 	std::map<std::string, std::any> data;
 };
 
@@ -3146,6 +3246,10 @@ struct RateLimitPolicyUpdateInput {
 
 using RateLimitTargetType = std::any;
 
+struct RateLimitTierResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct ReasoningConfig {
 	std::optional<std::any> effort;
 	std::optional<bool> enabled;
@@ -3537,6 +3641,30 @@ struct SubagentToolDefinition {
 	std::any type;
 };
 
+struct SuccessorReplacement {
+	std::string model;
+	std::optional<std::string> successor;
+};
+
+struct SuccessorReplacementListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SuccessorReplacementRemovedResponse {
+	std::optional<bool> deleted;
+	std::string model;
+};
+
+struct SuccessorReplacementResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SuccessorReplacementRow {
+	std::string model;
+	std::optional<std::string> successor;
+	std::optional<std::string> updated_at;
+};
+
 struct SupportedParameterDetails {
 };
 
@@ -3633,6 +3761,23 @@ struct Usage {
 
 struct UsageCostDetails {
 	std::optional<double> upstream_inference_cost;
+};
+
+struct UserProfile {
+	std::optional<std::string> default_workspace_id;
+	std::optional<std::string> display_name;
+	std::optional<bool> obfuscate_info;
+	std::string user_id;
+};
+
+struct UserProfileResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct UserProfileUpdateRequest {
+	std::optional<std::string> default_workspace_id;
+	std::string display_name;
+	std::optional<bool> obfuscate_info;
 };
 
 struct VideoBillingSummary {
@@ -4233,6 +4378,10 @@ struct WorkspaceInvite {
 	std::optional<std::string> token_preview;
 	std::optional<int> uses_count;
 	std::string workspace_id;
+};
+
+struct WorkspaceInviteAcceptRequest {
+	std::string token;
 };
 
 struct WorkspaceInviteCreateRequest {

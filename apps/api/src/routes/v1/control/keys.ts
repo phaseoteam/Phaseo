@@ -20,6 +20,7 @@ import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, i
 const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
 import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
 import { parseKeyStorageLocations } from "@core/key-storage-locations";
+import { keyIpAllowlistSchema } from "@core/key-ip-allowlist";
 
 type KeyRow = {
 	id: string;
@@ -44,6 +45,7 @@ type KeyRow = {
 	scopes?: string | null;
 	department_id?: string | null;
 	storage_locations?: string[] | null;
+	ip_allowlist?: Array<{ label: string; address: string }> | null;
 };
 
 type KeyUsageRow = {
@@ -59,7 +61,7 @@ type KeyUsageRow = {
 	last_used_at?: string | null;
 };
 
-const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations";
+const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations, ip_allowlist";
 const KEY_WITH_KID_COLUMNS = `${KEY_COLUMNS}, kid`;
 
 const DEFAULT_LIMIT = 100;
@@ -285,6 +287,7 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 		expires_at: row.expires_at ?? null,
 		department_id: row.department_id ?? null,
 		storage_locations: row.storage_locations ?? [],
+		ip_allowlist: row.ip_allowlist ?? [],
 	};
 }
 
@@ -835,6 +838,14 @@ async function handleUpdateKey(req: Request) {
 				return json({ error: "bad_request", message: storageLocations.message }, 400, { "Cache-Control": "no-store" });
 			}
 			updatePayload.storage_locations = storageLocations.value;
+		}
+		// The dashboard's rules: labelled IPv4/IPv6 addresses or CIDR ranges, at most 100; [] allows any address.
+		if (body.ip_allowlist !== undefined) {
+			const ipAllowlist = keyIpAllowlistSchema.safeParse(body.ip_allowlist);
+			if (!ipAllowlist.success) {
+				return json({ error: "invalid_ip_allowlist", message: "ip_allowlist entries need a label and a valid IPv4, IPv6, or CIDR address (maximum 100 entries)" }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.ip_allowlist = ipAllowlist.data;
 		}
 		if (expiresAt.value !== undefined) {
 			updatePayload.expires_at = expiresAt.value;

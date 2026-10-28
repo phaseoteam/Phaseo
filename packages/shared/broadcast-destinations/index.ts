@@ -672,3 +672,44 @@ export async function broadcastWebhookSignatureHeaders(
 		"x-phaseo-signature": Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join(""),
 	};
 }
+
+/**
+ * The trace sent by connection checks and "Send sample trace", in the
+ * gateway's gen_ai form so each preset's renames and message format apply to it
+ * as they do to real traces. Private mode leaves out the messages.
+ */
+export function sampleBroadcastTrace(name: string, privateMode: boolean) {
+	// Nanoseconds as strings, without BigInt, so every app's build target can use this.
+	const startMs = Date.now();
+	const attributes: Array<Record<string, unknown>> = [
+		{ key: "trace.name", value: { stringValue: `Test Trace - ${name}` } },
+		{ key: "gen_ai.operation.name", value: { stringValue: "chat" } },
+		{ key: "gen_ai.provider.name", value: { stringValue: "OpenAI" } },
+		{ key: "gen_ai.request.model", value: { stringValue: "openai/gpt-4-turbo" } },
+		{ key: "gen_ai.usage.input_tokens", value: { intValue: "50" } },
+		{ key: "gen_ai.usage.output_tokens", value: { intValue: "100" } },
+	];
+	if (!privateMode) attributes.push(
+		{ key: "gen_ai.input.messages", value: { stringValue: JSON.stringify([{ role: "user", parts: [{ type: "text", content: "What is the capital of France?" }] }]) } },
+		{ key: "gen_ai.output.messages", value: { stringValue: JSON.stringify([{ role: "assistant", parts: [{ type: "text", content: "Paris" }], finish_reason: "stop" }]) } },
+	);
+	const hex = () => crypto.randomUUID().replace(/-/g, "");
+	return {
+		resourceSpans: [{
+			resource: { attributes: [{ key: "service.name", value: { stringValue: "phaseo-gateway" } }] },
+			scopeSpans: [{
+				scope: { name: "phaseo" },
+				spans: [{
+					traceId: hex(),
+					spanId: hex().slice(0, 16),
+					name: "Test Generation",
+					kind: 3,
+					startTimeUnixNano: `${startMs}000000`,
+					endTimeUnixNano: `${startMs + 1500}000000`,
+					status: { code: 1 },
+					attributes,
+				}],
+			}],
+		}],
+	};
+}
