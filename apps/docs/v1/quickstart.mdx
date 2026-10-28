@@ -61,6 +61,26 @@ Treat your API key like a password. Do not expose it in client-side code.
 
 Use `POST /v1/responses` for the first request. It is the recommended endpoint for new text-generation work.
 
+### Install an SDK
+
+The cURL and JavaScript examples need nothing installed. To use the TypeScript or Python SDK, install it first:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+See the [TypeScript](./sdk-reference/typescript/installation) and [Python](./sdk-reference/python/installation) installation pages for runtime requirements and the other SDKs.
+
 ### Request
 
 <CodeGroup>
@@ -321,6 +341,43 @@ console.log(result.text);
 For direct Responses API calls, read the assistant reply from `output[].content[]` where `type` is `output_text`.
 
 If you use the Vercel AI SDK, read the reply from `result.text`.
+
+### Stream the reply
+
+To print the reply as it is generated, stream it. Each chunk's `text` holds only the new text, so this loop prints the answer once. Closing events such as `response.output_text.done` have an empty `text`; their full text is in `fullText` (TypeScript) or `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+If the answer prints twice, update the SDK: older releases also put the full text on the closing event.
 
 ---
 

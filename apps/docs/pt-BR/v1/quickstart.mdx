@@ -60,6 +60,26 @@ Trate sua chave de API como uma senha. Não a exponha em código executado no cl
 
 Use `POST /v1/responses` na primeira solicitação. Esse é o endpoint recomendado para novas integrações de geração de texto.
 
+### Instale um SDK
+
+Os exemplos com cURL e JavaScript não precisam de nenhuma instalação. Para usar o SDK de TypeScript ou de Python, instale-o primeiro:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+Consulte as páginas de instalação de [TypeScript](./sdk-reference/typescript/installation) e [Python](./sdk-reference/python/installation) para ver os requisitos de execução e os outros SDKs.
+
 ### Solicitação
 
 <CodeGroup>
@@ -320,6 +340,43 @@ console.log(result.text);
 Em chamadas diretas à Responses API, leia a resposta do assistente em `output[].content[]`, no item em que `type` é `output_text`.
 
 Se usar o Vercel AI SDK, leia a resposta em `result.text`.
+
+### Transmita a resposta
+
+Para exibir a resposta enquanto ela é gerada, use streaming. O campo `text` de cada chunk contém apenas o texto novo, então este loop imprime a resposta uma única vez. Eventos de encerramento como `response.output_text.done` têm `text` vazio; o texto completo deles fica em `fullText` (TypeScript) ou `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+Se a resposta aparecer duas vezes, atualize o SDK: versões anteriores também colocavam o texto completo no evento de encerramento.
 
 ---
 
