@@ -281,7 +281,8 @@ const COMMANDS: Record<string, CommandSpec> = {
 			});
 			const prompt = await textInput(flags, input, "prompt");
 			const base = flagString(flags, "body-json") ? jsonObject(flagString(flags, "body-json")!, "--body-json") : {};
-			const sample = compact({ ...(base.sample as Record<string, unknown> | undefined), prompt, response: flagString(flags, "response") });
+			// Only flags that were given override --body-json's sample.
+			const sample = { ...(base.sample as Record<string, unknown> | undefined), ...compact({ prompt, response: flagString(flags, "response") }) };
 			const body: Record<string, unknown> = { ...base, sample };
 			if (args[0]) body.classifier_id = args[0];
 			if (Object.keys(draft).length) body.classifier = { ...(base.classifier as Record<string, unknown> | undefined), ...draft };

@@ -121,6 +121,16 @@ test("classifiers test builds a saved or draft test", async () => {
 	await assert.rejects(build("classifiers test", { prompt: "hi" }), /saved classifier id, or a draft/);
 });
 
+test("classifiers test keeps --body-json sample fields that no flag overrides", async () => {
+	const body = { classifier_id: "00000000-0000-4000-8000-0000000000aa", sample: { prompt: "From JSON", response: "JSON reply" } };
+	assert.deepEqual(await build("classifiers test", { "body-json": JSON.stringify(body) }), { method: "POST", path: "/classifiers/test", body });
+	assert.deepEqual(await build("classifiers test", { "body-json": JSON.stringify(body), prompt: "From flag" }), {
+		method: "POST",
+		path: "/classifiers/test",
+		body: { ...body, sample: { prompt: "From flag", response: "JSON reply" } },
+	});
+});
+
 test("--ip-allowlist parsing for keys update", () => {
 	assert.deepEqual(parseIpAllowlist("Office=203.0.113.0/24, VPN=2001:db8::1"), [
 		{ label: "Office", address: "203.0.113.0/24" },
