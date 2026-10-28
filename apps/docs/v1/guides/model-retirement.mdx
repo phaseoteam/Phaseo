@@ -152,7 +152,9 @@ Under **Your own replacements** in the same settings section, owners and admins
 can choose the replacement for a specific model, or choose **Never redirect**
 to keep that model's requests failing. Your own replacement is used whatever it
 costs, but a free model is still never replaced by a paid one. Your own
-replacements are set in the dashboard only.
+replacements can also be set from the CLI with
+`phaseo routing successors set --model <id> --successor <id>` (or `--never`),
+or with `PUT /v1/routing/successor/replacements`.
 
 Changes to these settings take effect within about a minute.
 

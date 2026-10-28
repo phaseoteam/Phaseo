@@ -4,14 +4,14 @@ description: "Salve configurações reutilizáveis do Gateway para sua equipe."
 icon: "sliders-horizontal"
 ---
 
-Predefinições são configurações reutilizáveis que ajudam as equipes a padronizar prompts, preferências de modelo e padrões de roteamento. Elas são gerenciadas no painel da Phaseo e podem ser compartilhadas com a equipe.
+Predefinições são configurações reutilizáveis que ajudam as equipes a padronizar prompts, preferências de modelo e padrões de roteamento. Elas são gerenciadas no painel da Phaseo e podem ser compartilhadas com a equipe. Você também pode gerenciá-los com os comandos `phaseo presets` da CLI ou com a API `/v1/presets`.
 
 ## Início rápido
 
 <Steps>
 <Step title="Crie uma predefinição">
 
-Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug claro, como `release-summary`. Adicione somente os padrões que devem ser compartilhados entre os solicitantes.
+Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug claro, como `release-summary`. Adicione somente os padrões que devem ser compartilhados entre os solicitantes. Pela CLI, execute `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -126,7 +126,7 @@ Se precisar de transformações mais complexas específicas do solicitante, mant
 
 ## Gerencie predefinições
 
-Crie e gerencie predefinições em **Painel -> Configurações -> Predefinições**. Use slugs separados quando os fluxos de trabalho exigirem diferenças significativas de prompt, roteamento ou cache.
+Crie e gerencie predefinições em **Painel -> Configurações -> Predefinições**. Use slugs separados quando os fluxos de trabalho exigirem diferenças significativas de prompt, roteamento ou cache. Pela CLI, use `phaseo presets create|update`, `phaseo presets versions create` e `phaseo presets labels set` (a API `/v1/presets`).
 
 ## Quando usar predefinições
 

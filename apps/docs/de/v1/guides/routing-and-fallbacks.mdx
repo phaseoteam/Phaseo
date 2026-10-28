@@ -17,7 +17,7 @@ Beginne mit `balanced`, sofern nicht eine Produktionsanforderung eindeutig wicht
 | `latency` | Ein schneller Antwortbeginn die höchste Priorität hat. |
 | `throughput` | Eine dauerhaft hohe Token-Generierungsgeschwindigkeit am wichtigsten ist. |
 
-Lege den Standard für den Workspace unter **Dashboard -> Einstellungen -> Routing** fest. Verwende Voreinstellungen, wenn ein Workflow eine engere Anbieter- oder Modellrichtlinie als der Workspace-Standard benötigt.
+Lege den Standard für den Workspace unter **Dashboard -> Einstellungen -> Routing** fest. Verwende Voreinstellungen, wenn ein Workflow eine engere Anbieter- oder Modellrichtlinie als der Workspace-Standard benötigt. Du kannst ihn auch mit `phaseo settings update --routing-mode <mode>` festlegen oder `routing_mode` an `PATCH /v1/settings` senden.
 
 ### Routing-Suffixe für Modelle
 
@@ -51,6 +51,8 @@ Verwende `phaseo/auto`, wenn sich das Modell an die jeweilige Arbeitslast anpass
 4. Optional kannst du geeignete Modelle mithilfe von Mustern wie `anthropic/*`, `openai/gpt-5.*` oder einer exakten Modell-ID einschränken.
 5. Lege fest, ob Phaseo nach einem wiederholbaren Fehler weitere Modelle in der Rangfolge versuchen darf.
 6. Speichere die Konfiguration.
+
+Um dieselben Optionen ohne Dashboard festzulegen, führe `phaseo routing auto update` mit `--objective`, `--spend-profile`, `--allowed-patterns` und `--allow-fallbacks` aus oder rufe `PATCH /v1/routing/auto` auf. `phaseo routing auto get` zeigt die aktuelle Konfiguration.
 
 Anwendungen können den Router anschließend aktivieren, ohne die Routing-Richtlinie des Workspaces in jede Anfrage zu kopieren:
 
@@ -186,15 +188,17 @@ Unter **Dashboard -> Einstellungen -> Routing** können Workspaces festlegen, wi
 - `latency`
 - `throughput`
 
+Über die CLI: `phaseo settings update --routing-mode <mode>`.
+
 Auf derselben Seite gibt es außerdem Umschalter für Beta- und Alpha-Kanäle. So lässt sich Vorschau-Traffic gezielt einführen, statt ihn als nicht nachvollziehbaren Routing-Nebeneffekt zuzulassen.
 
 ### BYOK-Fallback ist explizit
 
-Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen <Tooltip tip="Eigener Schlüssel: Phaseo leitet die Anfrage mit deinem eigenen Anbieter-API-Schlüssel weiter, und dein Anbieter rechnet die Modellnutzung direkt ab.">BYOK</Tooltip>-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“
+Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen <Tooltip tip="Eigener Schlüssel: Phaseo leitet die Anfrage mit deinem eigenen Anbieter-API-Schlüssel weiter, und dein Anbieter rechnet die Modellnutzung direkt ab.">BYOK</Tooltip>-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“ Agents können das mit `byok_fallback_enabled` über `PATCH /v1/settings` festlegen, zum Beispiel `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, und Anbieterschlüssel mit `phaseo byok create --provider <id> --name <name> --key-stdin` hinzufügen.
 
 ### Dynamische Routen ordnen API-Schlüsseln Richtlinien zu
 
-Erstelle unter **Dashboard -> Einstellungen -> Routing** eine dynamische Route, wenn verschiedene API-Schlüssel oder Anfrageklassen unterschiedliche Anbieterregeln benötigen. Eine Route kann:
+Erstelle unter **Dashboard -> Einstellungen -> Routing** eine dynamische Route, wenn verschiedene API-Schlüssel oder Anfrageklassen unterschiedliche Anbieterregeln benötigen. Über die CLI verwendest du `phaseo routing dynamic-routes create`, `set-keys` und `deploy` oder die API `/v1/routing/dynamic-routes`. Eine Route kann:
 
 - anhand verschachtelter Felder im Anfrage-Body, Anfrage-Headern, benutzerdefinierten Metadaten, Endpunkt, Modell oder Sitzungs-ID verzweigen
 - Traffic für A/B-Tests und schrittweise Rollouts prozentual aufteilen

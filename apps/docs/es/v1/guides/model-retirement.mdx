@@ -117,7 +117,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Define tus propios sustitutos
 
-En **Tus propios sustitutos**, dentro de la misma sección de ajustes, los propietarios y administradores pueden elegir el sustituto de un modelo concreto, o elegir **No redirigir nunca** para que las solicitudes de ese modelo sigan fallando. Tu propio sustituto se usa sea cual sea su precio, pero un modelo gratuito sigue sin sustituirse nunca por uno de pago. Tus propios sustitutos solo se definen en el panel.
+En **Tus propios sustitutos**, dentro de la misma sección de ajustes, los propietarios y administradores pueden elegir el sustituto de un modelo concreto, o elegir **No redirigir nunca** para que las solicitudes de ese modelo sigan fallando. Tu propio sustituto se usa sea cual sea su precio, pero un modelo gratuito sigue sin sustituirse nunca por uno de pago. Tus propios sustitutos también se pueden definir desde la CLI con `phaseo routing successors set --model <id> --successor <id>` (o `--never`), o con `PUT /v1/routing/successor/replacements`.
 
 Los cambios en estos ajustes se aplican en aproximadamente un minuto.
 

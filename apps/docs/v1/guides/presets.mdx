@@ -5,14 +5,14 @@ description: "Save reusable Gateway configurations for your team."
 icon: "sliders-horizontal"
 ---
 
-Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed in the Phaseo dashboard and can be shared across a team.
+Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed with the `phaseo presets` CLI commands, the `/v1/presets` API or the Phaseo dashboard, and can be shared across a team.
 
 ## Quick start
 
 <Steps>
 <Step title="Create a preset">
 
-Open **Dashboard -> Settings -> Presets** and create a preset with a clear slug, such as `release-summary`. Add only the defaults that should be shared across callers.
+Open **Dashboard -> Settings -> Presets** and create a preset with a clear slug, such as `release-summary`. Add only the defaults that should be shared across callers. From the CLI, run `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -125,7 +125,7 @@ If you need more complex caller-specific transforms, keep them in one applicatio
 
 ## Manage presets
 
-Create and manage presets in **Dashboard -> Settings -> Presets**. Use separate slugs when workflows need meaningfully different prompt, routing, or caching behavior.
+Create and manage presets in **Dashboard -> Settings -> Presets**, or with `phaseo presets create|update`, `phaseo presets versions create` and `phaseo presets labels set` (the `/v1/presets` API). Use separate slugs when workflows need meaningfully different prompt, routing, or caching behavior.
 
 ## When to use presets
 

@@ -20,7 +20,7 @@ icon: "plug-zap"
 開始する前に、次のものがそろっていることを確認してください。
 
 - Gateway にアクセスできる Phaseo アカウント
-- [ダッシュボード](https://phaseo.app/settings/keys)で取得した API キー
+- [Phaseo CLI](../guides/integrations/phaseo-cli) の `phaseo keys create` または[ダッシュボード](https://phaseo.app/settings/keys)で作成した API キー
 - HTTP クライアント、OpenAI 互換 SDK、または Phaseo SDK
 - クレジットなしで試す場合は、`google/gemma-3-27b:free` などの対応モデル ID
 
@@ -28,8 +28,8 @@ icon: "plug-zap"
 
 ## 1. API キーを保存する
 
-1. Phaseo ダッシュボードで **Gateway → API キー**を開きます。
-2. アプリと環境が分かる名前を付けてキーを作成します。
+1. `phaseo keys create --name <app-and-environment> --json` を実行するか、Phaseo ダッシュボードで **Gateway → API キー**を開きます。
+2. アプリと環境が分かる名前をキーに付けます。
 3. シークレットマネージャーまたはローカルの環境ファイルに値を保存します。
 
 ```bash

@@ -20,7 +20,7 @@ icon: "plug-zap"
 开始之前，请准备好以下内容：
 
 - 一个已开通 Gateway 访问权限的 Phaseo 账户。
-- 从[控制台](https://phaseo.app/settings/keys)获取的 API 密钥。
+- 通过 [Phaseo CLI](../guides/integrations/phaseo-cli) 中的 `phaseo keys create` 或从[控制台](https://phaseo.app/settings/keys)获取的 API 密钥。
 - 一个 HTTP 客户端、OpenAI 兼容 SDK 或 Phaseo SDK。
 - 一个受支持的模型 ID，例如 `google/gemma-3-27b:free`，可用于零积分起步。
 
@@ -28,8 +28,8 @@ icon: "plug-zap"
 
 ## 1. 存储 API 密钥
 
-1. 在 Phaseo 控制台中打开 **Gateway → API 密钥**。
-2. 创建密钥，并用名称标明应用和环境。
+1. 运行 `phaseo keys create --name <app-and-environment> --json`，或在 Phaseo 控制台中打开 **Gateway → API 密钥**。
+2. 用名称标明密钥对应的应用和环境。
 3. 将密钥值存入密钥管理器或本地环境文件：
 
 ```bash

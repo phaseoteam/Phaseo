@@ -17,7 +17,7 @@ Empieza con `balanced`, salvo que un requisito de producción sea claramente má
 | `latency` | La rapidez con que empieza la respuesta sea el requisito principal. |
 | `throughput` | Lo más importante sea mantener una alta velocidad de generación de tokens. |
 
-Configura el valor predeterminado del espacio de trabajo en **Panel -> Ajustes -> Enrutamiento**. Usa preajustes cuando un flujo de trabajo necesite una política de proveedor o modelo más específica que el valor predeterminado del espacio.
+Configura el valor predeterminado del espacio de trabajo en **Panel -> Ajustes -> Enrutamiento**. Usa preajustes cuando un flujo de trabajo necesite una política de proveedor o modelo más específica que el valor predeterminado del espacio. También puedes configurarlo con `phaseo settings update --routing-mode <mode>` o enviando `routing_mode` a `PATCH /v1/settings`.
 
 ### Sufijos de enrutamiento de modelos
 
@@ -51,6 +51,8 @@ Usa `phaseo/auto` cuando el modelo deba adaptarse a la carga de trabajo. Phaseo 
 4. Si quieres, limita los modelos aptos con patrones como `anthropic/*`, `openai/gpt-5.*` o un ID de modelo exacto.
 5. Elige si Phaseo puede probar los modelos restantes según su clasificación después de un fallo recuperable.
 6. Guarda la configuración.
+
+Para configurar las mismas opciones sin el panel, ejecuta `phaseo routing auto update` con `--objective`, `--spend-profile`, `--allowed-patterns` y `--allow-fallbacks`, o llama a `PATCH /v1/routing/auto`. `phaseo routing auto get` muestra la configuración actual.
 
 Así, las aplicaciones pueden activar esta función sin copiar la política de enrutamiento del espacio de trabajo en cada solicitud:
 
@@ -186,15 +188,17 @@ En **Panel -> Ajustes -> Enrutamiento**, los espacios de trabajo pueden ajustar 
 - `latency`
 - `throughput`
 
+Desde la CLI, ejecuta `phaseo settings update --routing-mode <mode>`.
+
 La misma página también ofrece controles de canales beta y alfa para introducir tráfico de vista previa deliberadamente, en lugar de que aparezca como un efecto secundario de enrutamiento sin seguimiento.
 
 ### La alternativa de BYOK es explícita
 
-En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud <Tooltip tip="Usa tu propia clave: Phaseo enruta la solicitud con tu clave de API del proveedor, y el proveedor te factura el uso del modelo directamente.">BYOK</Tooltip> fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
+En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud <Tooltip tip="Usa tu propia clave: Phaseo enruta la solicitud con tu clave de API del proveedor, y el proveedor te factura el uso del modelo directamente.">BYOK</Tooltip> fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia. Los agentes pueden configurarlo con `byok_fallback_enabled` en `PATCH /v1/settings`, por ejemplo `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, y añadir claves de proveedor con `phaseo byok create --provider <id> --name <name> --key-stdin`.
 
 ### Las rutas dinámicas asignan políticas a las claves de API
 
-En **Panel -> Ajustes -> Enrutamiento**, crea una ruta dinámica cuando distintas claves de API o clases de solicitudes necesiten comportamientos de proveedor diferentes. Una ruta puede:
+En **Panel -> Ajustes -> Enrutamiento**, crea una ruta dinámica cuando distintas claves de API o clases de solicitudes necesiten comportamientos de proveedor diferentes. Desde la CLI, usa `phaseo routing dynamic-routes create`, `set-keys` y `deploy`, o la API `/v1/routing/dynamic-routes`. Una ruta puede:
 
 - ramificarse según campos anidados del cuerpo de la solicitud, encabezados, metadatos personalizados, endpoint, modelo o ID de sesión
 - distribuir el tráfico por porcentaje para pruebas A/B y despliegues graduales

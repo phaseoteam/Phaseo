@@ -4,14 +4,14 @@ description: "अपनी टीम के लिए Gateway कॉन्फ़
 icon: "sliders-horizontal"
 ---
 
-प्रीसेट दोबारा इस्तेमाल किए जा सकने वाले कॉन्फ़िगरेशन हैं, जिनसे टीमें prompts, model preferences और routing defaults को मानकीकृत कर सकती हैं। इन्हें Phaseo dashboard में प्रबंधित करके टीम के साथ साझा किया जा सकता है।
+प्रीसेट दोबारा इस्तेमाल किए जा सकने वाले कॉन्फ़िगरेशन हैं, जिनसे टीमें prompts, model preferences और routing defaults को मानकीकृत कर सकती हैं। इन्हें Phaseo dashboard में प्रबंधित करके टीम के साथ साझा किया जा सकता है। आप इन्हें CLI के `phaseo presets` कमांड या `/v1/presets` API से भी प्रबंधित कर सकते हैं।
 
 ## क्विकस्टार्ट
 
 <Steps>
 <Step title="प्रीसेट बनाएँ">
 
-**डैशबोर्ड -> सेटिंग -> प्रीसेट** खोलें और `release-summary` जैसे स्पष्ट slug वाला प्रीसेट बनाएँ। केवल वे defaults जोड़ें जिन्हें callers के बीच साझा करना है।
+**डैशबोर्ड -> सेटिंग -> प्रीसेट** खोलें और `release-summary` जैसे स्पष्ट slug वाला प्रीसेट बनाएँ। केवल वे defaults जोड़ें जिन्हें callers के बीच साझा करना है। CLI से `phaseo presets create --name @release-summary --model <model-id>` चलाएँ।
 
 </Step>
 
@@ -126,7 +126,7 @@ Dashboard में preset flow जानबूझकर request shaping के 
 
 ## प्रीसेट प्रबंधित करें
 
-**डैशबोर्ड -> सेटिंग -> प्रीसेट** में presets बनाएँ और प्रबंधित करें। जिन workflows में prompt, routing या caching behavior का अंतर महत्वपूर्ण हो, उनके लिए अलग slugs रखें।
+**डैशबोर्ड -> सेटिंग -> प्रीसेट** में presets बनाएँ और प्रबंधित करें। जिन workflows में prompt, routing या caching behavior का अंतर महत्वपूर्ण हो, उनके लिए अलग slugs रखें। CLI से `phaseo presets create|update`, `phaseo presets versions create` और `phaseo presets labels set` (`/v1/presets` API) इस्तेमाल करें।
 
 ## प्रीसेट कब उपयोग करें
 

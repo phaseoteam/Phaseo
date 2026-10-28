@@ -17,7 +17,7 @@ Comece com `balanced`, a menos que um requisito de produção seja claramente ma
 | `latency` | Começar a resposta rapidamente for o principal requisito. |
 | `throughput` | Manter uma alta velocidade de geração de tokens for o mais importante. |
 
-Configure o padrão do espaço de trabalho em **Painel -> Configurações -> Roteamento**. Use predefinições quando um fluxo de trabalho precisar de uma política de provedor ou modelo mais restrita do que o padrão do espaço.
+Configure o padrão do espaço de trabalho em **Painel -> Configurações -> Roteamento**. Use predefinições quando um fluxo de trabalho precisar de uma política de provedor ou modelo mais restrita do que o padrão do espaço. Você também pode configurá-lo com `phaseo settings update --routing-mode <mode>` ou enviando `routing_mode` para `PATCH /v1/settings`.
 
 ### Sufixos de roteamento de modelos
 
@@ -51,6 +51,8 @@ Use `phaseo/auto` quando o modelo precisar se adaptar à carga de trabalho. A Ph
 4. Se quiser, restrinja os modelos elegíveis com padrões como `anthropic/*`, `openai/gpt-5.*` ou um ID de modelo exato.
 5. Escolha se a Phaseo pode tentar os próximos modelos classificados após uma falha que permita nova tentativa.
 6. Salve a configuração.
+
+Para definir as mesmas opções sem o painel, execute `phaseo routing auto update` com `--objective`, `--spend-profile`, `--allowed-patterns` e `--allow-fallbacks`, ou chame `PATCH /v1/routing/auto`. `phaseo routing auto get` mostra a configuração atual.
 
 Assim, os aplicativos podem optar pelo roteador sem copiar a política de roteamento do espaço de trabalho para cada solicitação:
 
@@ -186,15 +188,17 @@ Em **Painel -> Configurações -> Roteamento**, os espaços de trabalho podem aj
 - `latency`
 - `throughput`
 
+Pela CLI, execute `phaseo settings update --routing-mode <mode>`.
+
 A mesma página também oferece opções dos canais beta e alpha para introduzir tráfego de prévia intencionalmente, em vez de deixá-lo surgir como um efeito colateral de roteamento sem registro.
 
 ### O fallback de BYOK é explícito
 
-Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
+Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?” Agentes podem configurar isso com `byok_fallback_enabled` em `PATCH /v1/settings`, por exemplo `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, e adicionar chaves de provedor com `phaseo byok create --provider <id> --name <name> --key-stdin`.
 
 ### Rotas dinâmicas associam políticas às chaves de API
 
-Em **Painel -> Configurações -> Roteamento**, crie uma rota dinâmica quando diferentes chaves de API ou classes de solicitação precisarem de comportamentos de provedor distintos. Uma rota pode:
+Em **Painel -> Configurações -> Roteamento**, crie uma rota dinâmica quando diferentes chaves de API ou classes de solicitação precisarem de comportamentos de provedor distintos. Pela CLI, use `phaseo routing dynamic-routes create`, `set-keys` e `deploy`, ou a API `/v1/routing/dynamic-routes`. Uma rota pode:
 
 - ramificar com base em campos aninhados do corpo da solicitação, cabeçalhos, metadados personalizados, endpoint, modelo ou ID da sessão
 - dividir o tráfego por porcentagem para testes A/B e implantações graduais

@@ -30,7 +30,8 @@ Rules:
 <Visibility for="agents">
 エージェント向けクイックスタートのチェックリスト:
 
-- キーはダッシュボード（https://phaseo.app/settings/keys）で作成します。キーを生成したり推測したりしないでください。サーバー側のコードからのみ `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
+- キーは CLI で作成します。`npm install -g @phaseo/cli` を実行し、`phaseo login`（ヘッドレスのシェルでは `phaseo login --device-code`。サインインは人が承認します）、続けて `phaseo keys create --name <name> --json` を実行します。キーを生成したり推測したりしないでください。サーバー側のコードからのみ `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
+- 有料モデルを使う場合は、`phaseo login --scopes billing:write` を一度実行してから、`phaseo credits add --amount <usd> --json` でチャージを開始します。保存済みのカードがある場合は、ワークスペースのオーナーまたは管理者がメールのリンクから確認します。保存済みのカードがない場合は、レスポンスに `next_action: "open_checkout_url"` と支払いリンクが含まれ、オーナーまたは管理者がそれを開いて支払います。カードは以降のチャージ用に保存されます。キー、クレジット、設定のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/v1/developers/manage-from-an-agent.md を参照してください。
 - 最初のリクエストは `POST https://api.phaseo.app/v1/responses` に `model` と `input` を送ります。`phaseo/free` はウォレット残高がなくても使えます。
 - 応答は `output[].content[]` のうち `type` が `output_text` の項目から読み取ります。
 - リクエストが失敗した場合は、https://phaseo.app/docs/v1/api-reference/errors.md の説明に従って JSON の `error` コードで分岐します。
@@ -40,9 +41,15 @@ Rules:
 
 ## 1. API キーを作成する
 
-1. [Phaseo ダッシュボード](https://phaseo.app/settings/keys)を開きます。
-2. **Gateway → キー**でキーを作成します。
-3. キーを一度だけコピーし、安全な場所に保管します。
+[Phaseo CLI](./guides/integrations/phaseo-cli)をインストールし、サインインしてキーを作成します。
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+キーは一度だけ表示されます。`PHASEO_API_KEY` などとして安全に保管してください。有料モデルを使うには、`phaseo login --scopes billing:write` を一度実行してから、`phaseo credits add --amount 20` でクレジットを追加します。保存済みのカードがある場合は、ワークスペースのオーナーまたは管理者がメールのリンクから請求を確認します。保存済みのカードがない場合は、コマンドが支払いリンクを返し、オーナーまたは管理者がそれを開いて支払います。カードは以降のチャージ用に保存されます。[Phaseo ダッシュボード](https://phaseo.app/settings/keys)の **Gateway → キー**でキーを作成することもできます。
 
 次の形式を使用します：
 

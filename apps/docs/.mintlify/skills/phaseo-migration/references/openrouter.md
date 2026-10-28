@@ -37,7 +37,7 @@ Model IDs use the same `<org>/<model>` shape, but verify every one with `GET /v1
 | `provider.zdr` | `provider.require_zero_data_retention` | Confirm a matching provider exists first |
 | `models` fallback array | `models` array | 1 to 25 entries; `model` stays the primary |
 | `:nitro` suffix | `:nitro` (throughput); also `:cheap`, `:fast` | Suffix overrides request and preset routing mode |
-| `openrouter/auto` | Phaseo Auto Routing | Alpha for selected workspaces; configured in the dashboard, so check the docs before relying on it |
+| `openrouter/auto` | Phaseo Auto Routing | Alpha for selected workspaces; configure it with `phaseo routing auto update` or `PATCH /v1/routing/auto`, and check the docs before relying on it |
 | `HTTP-Referer`, `X-Title` | Accepted for app attribution | Add `X-App-Id` for stable grouping |
 | Shared provider and parameter defaults | Presets (`"model": "@slug"`) | Move them out of call sites |
 | OpenRouter-only response fields | No direct equivalent | Normalize in one compatibility layer |
