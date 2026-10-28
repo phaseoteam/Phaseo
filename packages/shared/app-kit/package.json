@@ -1,6 +1,6 @@
 {
 	"name": "@phaseo/app-kit",
-	"description": "Plain code shared by Phaseo's apps (website, desktop, mobile): logos, provider naming, gateway status, benchmark helpers and design tokens",
+	"description": "Plain code shared by Phaseo's apps (website, desktop, mobile): logos, provider naming, gateway status, benchmark helpers, design tokens and class recipes",
 	"version": "0.1.0",
 	"type": "module",
 	"private": true,
@@ -11,7 +11,8 @@
 		"./gateway-status": "./src/providerGatewayStatus.ts",
 		"./benchmarks/epoch": "./src/benchmarks/epoch.ts",
 		"./theme": "./src/theme/index.ts",
-		"./theme/colour": "./src/theme/colour.ts"
+		"./theme/colour": "./src/theme/colour.ts",
+		"./ui-recipes": "./src/ui-recipes/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit -p tsconfig.json",
