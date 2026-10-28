@@ -1,6 +1,17 @@
 export const ChangelogFilters = ({ labels, clearLabel = "Clear" }) => {
 	const [active, setActive] = useState([]);
 
+	// "On this page" links percent-encode non-ASCII date anchors (Japanese, Hindi, Arabic ...), so compare decoded ids.
+	const linkTarget = (link) => {
+		const href = link?.getAttribute("href") ?? "";
+		if (!href.startsWith("#")) return null;
+		try {
+			return decodeURIComponent(href.slice(1));
+		} catch {
+			return href.slice(1);
+		}
+	};
+
 	useEffect(() => {
 		const root = document.documentElement;
 		let scrollMt = "";
@@ -36,11 +47,10 @@ export const ChangelogFilters = ({ labels, clearLabel = "Clear" }) => {
 				if (update.getBoundingClientRect().top <= parseFloat(getComputedStyle(update).scrollMarginTop) + 1) current = update;
 			}
 			if (atBottom) current = updates[updates.length - 1];
-			const href = `#${current.id}`;
 			let activeLink = null;
 			for (const item of toc.querySelectorAll("li")) {
 				const link = item.querySelector("a");
-				const on = link?.getAttribute("href") === href;
+				const on = linkTarget(link) === current.id;
 				if (on) activeLink = link;
 				for (const attribute of ["data-active", "data-active-deepest"]) {
 					if (on && item.getAttribute(attribute) !== "true") item.setAttribute(attribute, "true");
@@ -110,8 +120,8 @@ export const ChangelogFilters = ({ labels, clearLabel = "Clear" }) => {
 			const visible = [...update.querySelectorAll("[data-changelog-category]")].some((section) => !section.hidden);
 			update.classList.toggle("changelog-update-hidden", !visible);
 			if (!update.id) continue;
-			for (const link of document.querySelectorAll(`#table-of-contents a[href="#${CSS.escape(update.id)}"]`)) {
-				(link.closest("li") ?? link).style.display = visible ? "" : "none";
+			for (const link of document.querySelectorAll('#table-of-contents a[href^="#"]')) {
+				if (linkTarget(link) === update.id) (link.closest("li") ?? link).style.display = visible ? "" : "none";
 			}
 		}
 		window.dispatchEvent(new Event("changelog-filters-change"));
