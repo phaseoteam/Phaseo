@@ -1,23 +1,24 @@
 import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { ArrowDown, BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizontal, PenLine, type LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { ActivityIndicator, AppState, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
+import { haptic, streamTick } from "@/lib/haptics";
 import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
 import { Composer } from "./Composer";
-import { buildItems, reconcileItems, type ConversationItem } from "./conversationItems";
+import { buildItems, focusedAnswerPick, focusIndex, reconcileItems, type ConversationItem } from "./conversationItems";
 import { newestMatch } from "./db";
 import { getLive, liveShapes } from "./live";
 import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
 import { ModelChipRow, useOpenModelPicker } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
-import { onChatError, sendMessage, startChat, stopChat } from "./runner";
+import { onAnswerText, onChatError, onChatSettled, sendMessage, startChat, stopChat } from "./runner";
 import { chatModelStore, draftSettingsStore, useChat, useChatRunning } from "./state";
 import { chatReloaded, useChatWindow } from "./window";
 
@@ -29,6 +30,29 @@ function useChatErrors(chatId: string | null) {
     if (error.code === "chat_privacy_review_required") router.push({ pathname: "/sheets/[kind]", params: { kind: "privacy" } });
     else if (error.code === "unauthorized" || error.code === "signed_out") router.push("/sign-in");
   }), [chatId, router]);
+}
+
+/**
+ * This chat's answers are felt while it's on screen and the app is in front: light ticks as their text streams in, then
+ * the success haptic when they've all finished, or the error one if any failed. A stop isn't (the stop press was).
+ */
+function useAnswerHaptics(chatId: string) {
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (!focused) return;
+    const offText = onAnswerText((id) => {
+      if (id === chatId && AppState.currentState === "active") streamTick();
+    });
+    const offSettled = onChatSettled((id, outcome) => {
+      if (id !== chatId || AppState.currentState !== "active") return;
+      if (outcome === "done") haptic("success");
+      else if (outcome === "error") haptic("error");
+    });
+    return () => {
+      offText();
+      offSettled();
+    };
+  }, [chatId, focused]);
 }
 
 const EMPTY: string[] = [];
@@ -47,7 +71,15 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   const [focus] = useState(() => focusMessage ?? (search ? newestMatch(chatId, search) : null));
   const window = useChatWindow(chatId, focus);
   const running = useChatRunning(chatId);
-  const selected = selectedAnswers.use();
+  // Opening on another model's answer picks that model's tab, so the answer has a row to open at.
+  // The first render uses the pick directly (it places the list); once it's saved, the tabs work as usual.
+  const [focusPick] = useState(() => focusedAnswerPick(window.messages, focus));
+  const [storedAtOpen] = useState(() => selectedAnswers.get());
+  const stored = selectedAnswers.use();
+  const selected = useMemo(() => (focusPick && stored === storedAtOpen ? { ...stored, [focusPick.turn]: focusPick.model } : stored), [stored, storedAtOpen, focusPick]);
+  useEffect(() => {
+    if (focusPick) selectedAnswers.set((current) => ({ ...current, [focusPick.turn]: focusPick.model }));
+  }, [focusPick]);
   const shapes = liveShapes.use();
   const models = chat?.models ?? EMPTY;
   const settings = useMemo(() => chat?.modelSettings ?? {}, [chat?.modelSettings]);
@@ -62,10 +94,11 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
     items = reconcileItems(stable.items, built);
     setStable({ source: built, items });
   }
-  const [initialIndex] = useState(() => (focus ? items.findIndex((item) => item.key === `user:${focus}` || item.key === `answer:${focus}:0`) : -1));
+  const [initialIndex] = useState(() => focusIndex(items, window.messages, focus));
   const context = useMemo(() => ({ chatId, labels, settings, workspaceId, focus }), [chatId, labels, settings, workspaceId, focus]);
   const [away, setAway] = useState(false);
   useChatErrors(chatId);
+  useAnswerHaptics(chatId);
 
   const renderItem = useCallback(({ item }: { item: ConversationItem }) => <ConversationRow item={item} />, []);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -76,7 +109,10 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
 
   if (!chat) return <Screen><Header back={!split} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
 
-  const openMenu = async () => showActions({ title: chat.title, anchor: await measureAnchor(moreRef), actions: chatActions(chat, { router, onDeleted: () => router.replace("/chat") }) });
+  const openMenu = async () => {
+    const anchor = await measureAnchor(moreRef);
+    showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, anchor, onDeleted: () => router.replace("/chat") }) });
+  };
   const jumpToLatest = () => {
     if (window.hasLater) window.latest();
     else void listRef.current?.scrollToEnd({ animated: true });

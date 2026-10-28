@@ -1,5 +1,6 @@
 import * as Crypto from "expo-crypto";
 import { ApiError } from "@/lib/api/http";
+import { endTimer, startTimer } from "@/lib/diagnostics";
 import { perf } from "@/perf";
 import { SUMMARY_MAX_TOKENS } from "./compaction";
 import { appendDeltas, copyMessages, createChat, deleteMessagesFrom, finishMessage, getChat, getMessage, indexAnswer, insertMessage, nextPosition, updateChat, type MessagePatch, type StreamDelta } from "./db";
@@ -34,6 +35,34 @@ export function onChatError(listener: ErrorListener) {
   return () => { errorListeners.delete(listener); };
 }
 
+/** How answers started together went, once all have ended: "error" if any failed, else "stopped" if any was stopped. */
+export type ChatOutcome = "done" | "stopped" | "error";
+const OUTCOME_RANK: Record<ChatOutcome, number> = { done: 0, stopped: 1, error: 2 };
+const worseOutcome = (a: ChatOutcome, b: ChatOutcome) => (OUTCOME_RANK[b] > OUTCOME_RANK[a] ? b : a);
+type SettledListener = (chatId: string, outcome: ChatOutcome) => void;
+const settledListeners = new Set<SettledListener>();
+/**
+ * Answers started together: a message's answers from every model, or one retry. Each batch reports on its own, so
+ * answers an edit stopped can't mark the new answers as stopped, and a retry doesn't wait for, or blame, the others.
+ */
+type Batch = { chatId: string; left: number; outcome: ChatOutcome };
+const newBatch = (chatId: string, answers: number): Batch => ({ chatId, left: answers, outcome: "done" });
+
+/** Hears when every answer in a batch has ended, with how they went (the chat screen plays a haptic). */
+export function onChatSettled(listener: SettledListener) {
+  settledListeners.add(listener);
+  return () => { settledListeners.delete(listener); };
+}
+
+type TextListener = (chatId: string) => void;
+const textListeners = new Set<TextListener>();
+
+/** Hears when more of an answer's text reaches the screen, at most once a frame (the chat screen ticks). */
+export function onAnswerText(listener: TextListener) {
+  textListeners.add(listener);
+  return () => { textListeners.delete(listener); };
+}
+
 // ---- Streaming writes (desktop's workspaceRuntime flushes) ----
 // Streamed text goes to the database in small appended rows. Flushes from every running answer share one
 // clock on a 20 ms grid and commit together, and an answer whose flushes cost more waits longer (4× the
@@ -61,6 +90,7 @@ function armFlushClock() {
       // The final write still saves the answer; a failed flush only narrows what a crash would keep.
     }
     const cost = performance.now() - started;
+    endTimer("Stream flush", started, () => `${deltas.length} ${deltas.length === 1 ? "answer" : "answers"}`);
     for (const [, flush] of due) flush.cost(cost);
     armFlushClock();
   }, Math.max(0, next - Date.now()));
@@ -102,18 +132,24 @@ function streamWriter(messageId: string) {
 
 /**
  * What the screen shows while an answer streams, published at most once a frame (and every 200 ms while the
- * unfinished part is long), with the boundaries of its finished chunks worked out from the last one onwards.
+ * unfinished part is long), with the boundaries of its finished chunks worked out from the last one onwards. New answer
+ * text (not reasoning) is reported to `onAnswerText` as it's published.
  */
-function liveWriter(messageId: string) {
+function liveWriter(messageId: string, chatId: string) {
   let value: LiveAnswer = { content: "", reasoning: "", phase: "waiting", boundaries: [] };
   let scheduled = false;
   let closed = false;
+  let shown = 0;
   const publish = () => {
     scheduled = false;
     if (closed) return;
     const added = streamingBoundaries(value.content, value.boundaries.at(-1) ?? 0);
     if (added.length) value = { ...value, boundaries: [...value.boundaries, ...added] };
     setLive(messageId, value);
+    if (value.content.length > shown) {
+      shown = value.content.length;
+      for (const listener of textListeners) listener(chatId);
+    }
   };
   const schedule = () => {
     if (scheduled || closed) return;
@@ -158,7 +194,8 @@ export function sendMessage(args: { chatId: string; text: string; attachments: C
   insertMessage(user);
   updateChat(chat.id, { updatedAt: now, preview: args.text.slice(0, 140) });
   messageAdded(user);
-  for (const model of chat.models) void answer(chat.id, user, model, args.workspaceId ?? chat.workspaceId);
+  const batch = newBatch(chat.id, chat.models.length);
+  for (const model of chat.models) void answer(batch, user, model, args.workspaceId ?? chat.workspaceId);
   notifyChat(chat.id);
 }
 
@@ -177,8 +214,10 @@ const toUsage = (usage: { prompt_tokens?: number; completion_tokens?: number; co
 async function summarise(args: { model: string; settings?: ModelSettings; workspaceId: string | null; signal: AbortSignal; messages: WireMessage[] }) {
   const settings: ModelSettings = { ...args.settings, systemPrompt: undefined, maxOutputTokens: SUMMARY_MAX_TOKENS };
   let text = "";
+  const started = startTimer();
   try {
     const result = await streamCompletion({ model: args.model, messages: args.messages, settings, capabilities: await requestCapabilities(args.model, settings), workspaceId: args.workspaceId, signal: args.signal, onText: (delta) => { text += delta; } });
+    endTimer("Compaction", started, () => `${args.model}, ${args.messages.length} messages summarised`);
     return { text: result.text, usage: toUsage(result.usage) };
   } catch (error) {
     // A summary that ran out of room is still worth keeping.
@@ -188,7 +227,8 @@ async function summarise(args: { model: string; settings?: ModelSettings; worksp
 }
 
 /** Runs one model's answer to one user message. */
-async function answer(chatId: string, parent: ChatMessage, model: string, workspaceId: string | null, reuse?: ChatMessage) {
+async function answer(batch: Batch, parent: ChatMessage, model: string, workspaceId: string | null, reuse?: ChatMessage) {
+  const { chatId } = batch;
   const reset = { content: "", reasoning: "", status: "streaming" as const, error: null, errorCode: null, errorStatus: null, usage: null, notice: null };
   const message: ChatMessage = reuse ? { ...reuse, ...reset } : { id: Crypto.randomUUID(), chatId, role: "assistant", model, parentId: parent.id, attachments: [], createdAt: Date.now(), position: nextPosition(chatId), ...reset };
   if (reuse) {
@@ -202,12 +242,14 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
   const controller = new AbortController();
   running.set(message.id, { controller, chatId });
   setRunning(chatId, 1);
-  const live = liveWriter(message.id);
+  const live = liveWriter(message.id, chatId);
   const writer = streamWriter(message.id);
   let prepared: PreparedThread | null = null;
   perf?.streamStarted(message.id);
 
+  let outcome: ChatOutcome = "error";
   const finish = (patch: MessagePatch) => {
+    if (patch.status === "done" || patch.status === "stopped" || patch.status === "error") outcome = patch.status;
     writer.close();
     finishMessage(message.id, patch);
     messageChanged(chatId, message.id, patch);
@@ -217,7 +259,7 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
   try {
     // Settings are read when the answer starts, so a change applies from the next message or retry.
     const settings = getChat(chatId)?.modelSettings[model];
-    const historyStarted = perf ? performance.now() : 0;
+    const historyStarted = performance.now();
     prepared = await prepareThread({
       chatId,
       model,
@@ -229,6 +271,7 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
       onSummarising: () => live.phase("summarising"),
       summarise: (messages) => summarise({ model, settings, workspaceId, signal: controller.signal, messages }),
     });
+    endTimer("Request history built", historyStarted, () => `${model}, ${prepared?.messages.length ?? 0} messages${prepared?.compacted ? ", with a summary" : ""}`);
     perf?.log("history.build", { model, ms: Math.round(performance.now() - historyStarted), messages: prepared.messages.length, estimate: prepared.estimate, contextTokens: prepared.contextTokens, compacted: prepared.compacted, notice: prepared.notice ?? null });
     if (prepared.summary) {
       summaryAdded(prepared.summary);
@@ -260,6 +303,10 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
     perf?.streamFinished(message.id, { chars: live.get().content.length, reasoningChars: live.get().reasoning.length });
     running.delete(message.id);
     setRunning(chatId, -1);
+    // The last of the batch's answers to end reports how they all went.
+    batch.outcome = worseOutcome(batch.outcome, outcome);
+    batch.left -= 1;
+    if (batch.left === 0) for (const listener of settledListeners) listener(chatId, batch.outcome);
     // The window already holds the final text, so clearing the live copy doesn't flash.
     live.close();
     updateChat(chatId, { updatedAt: Date.now() });
@@ -275,12 +322,17 @@ export function stopChat(chatId: string) {
   for (const entry of running.values()) if (entry.chatId === chatId) entry.controller.abort();
 }
 
+/** Stops every answer that is streaming (before deleting all chats). */
+export function stopAllAnswers() {
+  for (const entry of running.values()) entry.controller.abort();
+}
+
 /** Re-runs one answer in place with the same model. */
 export function retryAnswer(message: ChatMessage, workspaceId: string | null) {
   if (message.role !== "assistant" || !message.parentId || !message.model || running.has(message.id)) return;
   const parent = getMessage(message.parentId);
   if (!parent) return;
-  void answer(message.chatId, parent, message.model, workspaceId, message);
+  void answer(newBatch(message.chatId, 1), parent, message.model, workspaceId, message);
 }
 
 /** Edits a user message: everything after it is discarded and the models answer again. */

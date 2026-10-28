@@ -1,6 +1,7 @@
 import type { EffectivePricingRow, PricingHistoryRule, ProviderPricing } from "@/lib/api/models";
 import {
-  buildPriceHistory, effectivePriceBetween, effectivePriceSummary, effectiveRows, historyTimestamps, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, summaryCutoffMs, weightedEffectivePrice,
+  buildPriceHistory, effectivePriceBetween, effectivePriceSummary, effectiveRows, historyTimestamps, historyUnitLabel, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
+  weightedEffectivePrice,
 } from "./pricingInsights";
 
 const DAY = 86_400_000;
@@ -106,5 +107,24 @@ describe("price history", () => {
 
   test("meters list input and output first and leave out USD-denominated rules", () => {
     expect(meterOptions(rules, table)).toEqual(["input_text_tokens", "native_web_search_requests"]);
+  });
+});
+
+describe("price history ranges", () => {
+  test("are short enough for five to fit a phone, with full names for screen readers", () => {
+    expect(RANGE_OPTIONS.map((option) => option.label)).toEqual(["1W", "1M", "3M", "1Y", "All"]);
+    for (const option of RANGE_OPTIONS) {
+      expect(option.label.length).toBeLessThanOrEqual(3);
+      expect(option.accessibilityLabel.length).toBeGreaterThan(option.label.length);
+    }
+  });
+});
+
+describe("price history unit", () => {
+  const rules = [{ meter: "input_text_tokens", unit: "token" }, { meter: "output_image", unit: "image" }, { meter: "input_audio_seconds", unit: "second" }, { meter: "requests", unit: "request" }] as PricingHistoryRule[];
+  test("names what the chart shows for the chosen meter, as normaliseHistoryPrice converts it", () => {
+    expect(["input_text_tokens", "output_image", "input_audio_seconds", "requests", "unknown"].map((meter) => historyUnitLabel(rules, meter))).toEqual([
+      "USD per million tokens", "USD per image", "USD per minute", "USD per request", "USD per million tokens",
+    ]);
   });
 });

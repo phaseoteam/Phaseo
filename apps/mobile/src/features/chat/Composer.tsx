@@ -5,6 +5,7 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, measureAnchor, showActions, Text, toastError, type MenuAction, type ViewRef } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { pickAudioFile, pickImages, pickTextFile, removeAttachmentFiles } from "./attachments";
 import { ModelLogoStack } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
@@ -86,6 +87,7 @@ export function Composer({ models, settings, onModelPress, running, onSend, onSt
 
   const send = () => {
     if (!canSend) return;
+    haptic("press");
     onSend(text.trim(), attachments);
     setText("");
     setAttachments([]);
@@ -146,7 +148,7 @@ export function Composer({ models, settings, onModelPress, running, onSend, onSt
           </Pressable>
           <View className="flex-1" />
           {running ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={onStop} className="h-9 w-9 items-center justify-center rounded-md bg-foreground">
+            <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={() => { haptic("press"); onStop(); }} className="h-9 w-9 items-center justify-center rounded-md bg-foreground">
               <Icon icon={Square} tone="background" size={14} />
             </Pressable>
           ) : (

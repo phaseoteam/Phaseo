@@ -7,6 +7,7 @@
 //   curl -X POST localhost:8787/__config -d '{"rate":50,"bytes":400000,"failSummary":false}'
 //
 // Never point it at, or run it against, production.
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import http from "node:http";
 import { answer, random } from "../../src/perf/corpus.ts";

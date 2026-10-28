@@ -1,24 +1,29 @@
+import { LegendList } from "@legendapp/list/react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Text, TextField } from "@/components/ui";
+import { Logo } from "@/components/Logo";
+import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Segmented, Text, TextField } from "@/components/ui";
+import { exportAndShare } from "@/features/chat/chatActions";
+import type { ExportFormat } from "@/features/chat/export";
 import { ChatModelPicker } from "@/features/chat/ChatModelPicker";
 import { getChat, getMessage, updateChat } from "@/features/chat/db";
 import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
 import { editAndResend } from "@/features/chat/runner";
-import { notifyChat } from "@/features/chat/state";
+import { notifyChat, useChats } from "@/features/chat/state";
 import { ModelPicker } from "@/features/models/ModelPicker";
 import { draftRuleStore, useRuleNames } from "@/features/notifications/state";
 import { useProviders } from "@/features/providers/ProviderBrowser";
 import { compareStore, toggleCompare } from "@/features/models/state";
 import { acceptChatPrivacyReview, getChatPrivacyReview } from "@/lib/api/account";
 import { MAX_COMPARE } from "@/lib/api/compare";
+import { formatRelativeDay } from "@/lib/format";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
 /** Long pickers take the full dialog height on tablets; short forms size to their content. */
-const TALL_SHEETS = new Set(["compare", "chat-models", "model-settings", "pick"]);
+const TALL_SHEETS = new Set(["compare", "chat-models", "model-settings", "pick", "export-chat"]);
 
 /** Root-level sheets shared by several sections: bottom sheets on phones, centred dialogs on tablets. */
 export default function SheetRoute() {
@@ -33,6 +38,7 @@ export default function SheetRoute() {
         : kind === "edit-message" ? <EditMessageSheet />
         : kind === "privacy" ? <PrivacySheet />
         : kind === "pick" ? <PickSheet />
+        : kind === "export-chat" ? <ExportChatSheet />
         : <EmptyState title="Nothing here" />}
     </RouteSheet>
   );
@@ -72,7 +78,7 @@ function WorkspaceSheet() {
           key={workspace.id}
           title={workspace.name ?? workspace.id}
           subtitle={workspace.role ? workspace.role.replace(/^\w/, (letter) => letter.toUpperCase()) : null}
-          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="primary" size={18} /> : null}
+          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="link" size={18} /> : null}
           chevron={false}
           onPress={() => { selectWorkspace(workspace.id); router.back(); }}
           last={index === workspaces.length - 1}
@@ -195,13 +201,54 @@ function PickSheet() {
           <Row
             key={option.id}
             title={option.name}
+            leading={<Logo id={option.id} label={option.name} size={28} />}
             chevron={false}
-            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="primary" size={18} /> : null}
+            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="link" size={18} /> : null}
             onPress={() => setIds(scope.ids.includes(option.id) ? scope.ids.filter((id) => id !== option.id) : [...scope.ids, option.id])}
             last={index === options.length - 1}
           />
         ))}
       </ScrollView>
+    </View>
+  );
+}
+
+/** Picks one chat to export (Account → Chats on this device), in the format chosen at the top. */
+function ExportChatSheet() {
+  const router = useRouter();
+  const chats = useChats();
+  const [query, setQuery] = useState("");
+  const [format, setFormat] = useState<ExportFormat>("markdown");
+  const shown = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase();
+    return search ? chats.filter((chat) => chat.title.toLocaleLowerCase().includes(search) || chat.preview.toLocaleLowerCase().includes(search)) : chats;
+  }, [chats, query]);
+  return (
+    <View className="flex-1">
+      <Header title="Export a chat" right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />} />
+      <View className="gap-2 px-4 pb-2">
+        <Segmented<ExportFormat> value={format} onChange={setFormat} options={[{ value: "markdown", label: "Markdown" }, { value: "json", label: "JSON" }]} />
+        <SearchField value={query} onChangeText={setQuery} placeholder="Search chats" />
+      </View>
+      <View className="flex-1 overflow-hidden">
+        <LegendList
+          data={shown}
+          keyExtractor={(chat) => chat.id}
+          estimatedItemSize={64}
+          recycleItems
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={<EmptyState title={chats.length ? "No chats match" : "No chats yet"} body={chats.length ? "Try other words." : "Chats you start appear here."} />}
+          renderItem={({ item }) => (
+            <Row
+              title={item.title || "Untitled chat"}
+              subtitle={`${formatRelativeDay(item.updatedAt)}${item.preview ? ` · ${item.preview}` : ""}`}
+              chevron={false}
+              onPress={() => { router.back(); void exportAndShare([item.id], format); }}
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: 32 }}
+        />
+      </View>
     </View>
   );
 }

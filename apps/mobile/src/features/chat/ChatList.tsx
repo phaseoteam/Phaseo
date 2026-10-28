@@ -7,6 +7,7 @@ import { useOpenDetail } from "@/components/shell/SplitStack";
 import { EmptyState, Header, Icon, IconButton, pointAnchor, Screen, SearchField, showActions, Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatRelativeDay } from "@/lib/format";
+import { haptic } from "@/lib/haptics";
 import { perf } from "@/perf";
 import { chatActions } from "./chatActions";
 import { searchChats } from "./db";
@@ -41,7 +42,7 @@ export function ChatList() {
     // From a search, the chat opens at the newest message that matched.
     openDetail((deferred ? `/chat/${chat.id}?q=${encodeURIComponent(deferred)}` : `/chat/${chat.id}`) as Href);
   }, [openDetail, deferred]);
-  const menu = useCallback((chat: Chat, anchor: ReturnType<typeof pointAnchor>) => showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, onDeleted: () => { if (selectedId === chat.id) router.replace("/chat"); } }) }), [router, selectedId]);
+  const menu = useCallback((chat: Chat, anchor: ReturnType<typeof pointAnchor>) => showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, anchor, onDeleted: () => { if (selectedId === chat.id) router.replace("/chat"); } }) }), [router, selectedId]);
 
   const renderItem = useCallback(({ item }: { item: ChatListItem }) => {
     if (item.type === "header") return <Text variant="label" className="px-4 pb-1.5 pt-5 text-muted-foreground">{item.title}</Text>;
@@ -80,7 +81,10 @@ const ChatRow = memo(function ChatRow({ chat, selected, labels, onOpen, onMenu }
       accessibilityLabel={chat.title}
       accessibilityHint="Long press for rename, pin and delete"
       onPress={() => onOpen(chat)}
-      onLongPress={(event) => onMenu(chat, pointAnchor(event))}
+      onLongPress={(event) => {
+        haptic("longPress");
+        onMenu(chat, pointAnchor(event));
+      }}
       delayLongPress={300}
       className={cn("mx-2 rounded-md px-3 py-2.5 active:bg-accent", selected && "bg-accent")}
     >

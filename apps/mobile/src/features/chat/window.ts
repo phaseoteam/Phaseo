@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { endTimer, measure, startTimer } from "@/lib/diagnostics";
 import { createStore } from "@/lib/store";
 import { perf } from "@/perf";
 import { newestPage, newerPage, olderPage, pageAround, type MessagePage } from "./db";
@@ -54,7 +55,7 @@ function mergeSummaries(messages: readonly ChatMessage[], ...lists: ChatSummary[
 }
 
 function open(chatId: string, focus: string | null): Window {
-  const page = (focus ? pageAround(chatId, focus, PAGE_TURNS * 2) : null) ?? (newestPage(chatId, PAGE_TURNS, true) as MessagePage);
+  const page = measure("Chat opened", () => (focus ? pageAround(chatId, focus, PAGE_TURNS * 2) : null) ?? (newestPage(chatId, PAGE_TURNS, true) as MessagePage), (result) => `${result.messages.length} messages${focus ? ", from a link" : ""}`);
   return { store: createStore(fromPage(page)), refs: 0, request: 0 };
 }
 
@@ -66,7 +67,7 @@ async function load(chatId: string, mode: "older" | "newer" | "latest") {
   if ((mode === "older" && !current.hasEarlier) || (mode === "newer" && !current.hasLater)) return;
   const request = ++window.request;
   window.store.set({ ...current, loading: mode, error: null });
-  const started = perf ? performance.now() : 0;
+  const started = startTimer();
   try {
     const first = current.messages[0];
     const last = current.messages.at(-1);
@@ -74,6 +75,7 @@ async function load(chatId: string, mode: "older" | "newer" | "latest") {
       ? await newestPage(chatId, PAGE_TURNS)
       : mode === "older" ? await olderPage(chatId, first.position, PAGE_TURNS) : await newerPage(chatId, last.position, PAGE_TURNS);
     if (windows.get(chatId) !== window || window.request !== request) return;
+    endTimer("Chat page loaded", started, () => `${mode}, ${page.messages.length} messages`);
     perf?.log("window.page", { chatId, mode, ms: Math.round(performance.now() - started), messages: page.messages.length, hasEarlier: page.hasEarlier, hasLater: page.hasLater });
     const latest = window.store.get();
     if (mode === "latest") {
@@ -186,4 +188,9 @@ export function chatReloaded(chatId: string) {
   if (!window) return;
   window.request += 1;
   window.store.set(fromPage(newestPage(chatId, PAGE_TURNS, true) as MessagePage, window.store.get().generation + 1));
+}
+
+/** Every chat was deleted from the device: open windows read their (now empty) chats again. */
+export function reloadAllWindows() {
+  for (const chatId of [...windows.keys()]) chatReloaded(chatId);
 }

@@ -1,5 +1,6 @@
 import { fetch as streamingFetch } from "expo/fetch";
 import { authHeaders, buildUrl, workspaceCookie } from "@/lib/api/http";
+import { endTimer } from "@/lib/diagnostics";
 import { perf } from "@/perf";
 import { buildRequestBody, loggableRequest, type WireMessage } from "./request";
 import type { ModelSettings, RequestCapabilities } from "./settings";
@@ -22,11 +23,12 @@ export async function streamCompletion(args: { model: string; messages: WireMess
   // The perf build can point chat at a local stand-in (scripts/perf/sse-standin.mjs), which takes no sign-in.
   const standIn = perf?.chatStandIn() ?? null;
   const headers: Record<string, string> = { ...(standIn ? standIn.headers : await authHeaders()), ...workspaceCookie(args.workspaceId), "content-type": "application/json", accept: "text/event-stream" };
-  const started = perf ? performance.now() : 0;
+  const started = performance.now();
   const requestBody = buildRequestBody(args);
   // Opt-in (EXPO_PUBLIC_CHAT_DEBUG=1 at build time) proof of what was sent; the bearer token is in the headers, never logged.
   if (process.env.EXPO_PUBLIC_CHAT_DEBUG === "1") console.info(`[phaseo-chat] POST /api/chat/chat-completions ${JSON.stringify({ workspaceId: args.workspaceId ? "<workspace>" : null, requestBody: loggableRequest(requestBody) })}`);
   const body = JSON.stringify({ workspaceId: args.workspaceId, requestBody });
+  endTimer("Request built", started, () => `${args.model}, ${requestBody.messages.length} messages, ${Math.round(body.length / 1024)} KB`);
   perf?.log("request.body", { model: args.model, ms: Math.round((performance.now() - started) * 10) / 10, kb: Math.round(body.length / 1024), messages: requestBody.messages.length, images: requestBody.messages.reduce((sum, message) => sum + (Array.isArray(message.content) ? message.content.filter((part) => part.type === "image_url").length : 0), 0) });
   const response = await streamingFetch(standIn ? new URL("/api/chat/chat-completions", standIn.origin).toString() : buildUrl("/api/chat/chat-completions"), {
     method: "POST",

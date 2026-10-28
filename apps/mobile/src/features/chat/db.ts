@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { endTimer, startTimer } from "@/lib/diagnostics";
 import { perf } from "@/perf";
 import { migrateChatDatabase } from "./migrations";
 import { cleanSettings, type ModelSettings } from "./settings";
@@ -8,6 +9,7 @@ let database: SQLite.SQLiteDatabase | null = null;
 
 export function db() {
   if (database) return database;
+  const started = startTimer();
   database = SQLite.openDatabaseSync("phaseo-chats.db");
   database.execSync("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;");
   perf?.attachDb(database);
@@ -15,6 +17,7 @@ export function db() {
   if (perf) perf.time("db.migrate", () => migrateChatDatabase(opened), (from) => ({ from }));
   else migrateChatDatabase(opened);
   recoverInterrupted(opened);
+  endTimer("Chat database opened", started);
   return database;
 }
 
@@ -181,10 +184,17 @@ export function indexAnswer(chatId: string, content: string) {
   if (content) db().runSync("INSERT INTO chat_search (chat_id, body) VALUES (?, ?)", chatId, content);
 }
 
-/** Edit and resend: the message and everything after it go, with any summary that covered them. */
+/**
+ * Edit and resend: the message and everything after it go, with any summary that covered them. A summary written
+ * after the message was sent goes too: it was written while answering that message or a later one, and saw that
+ * request in full (summaryRequest's latestRequest), even when it ends before it.
+ */
 export function deleteMessagesFrom(chatId: string, position: number) {
   db().withTransactionSync(() => {
-    db().runSync("DELETE FROM chat_summaries WHERE chat_id = ? AND through_position >= ?", chatId, position);
+    db().runSync(
+      "DELETE FROM chat_summaries WHERE chat_id = ? AND (through_position >= ? OR created_at >= (SELECT created_at FROM messages WHERE chat_id = ? AND position = ?))",
+      chatId, position, chatId, position,
+    );
     db().runSync("DELETE FROM messages WHERE chat_id = ? AND position >= ?", chatId, position);
   });
 }
@@ -334,6 +344,48 @@ export function saveSummary(summary: ChatSummary) {
   db().runSync("INSERT OR REPLACE INTO chat_summaries (chat_id, model, through_position, summary, usage, created_at) VALUES (?, ?, ?, ?, ?, ?)", summary.chatId, summary.model, summary.throughPosition, summary.summary, summary.usage ? JSON.stringify(summary.usage) : null, summary.createdAt);
 }
 
+// ---- Export, storage and deleting everything (Account → Chats on this device) ----
+
+/** Up to `limit` messages after a position, read off the JS thread, so an export never holds a whole long chat. */
+export async function messagesAfter(chatId: string, after: number, limit: number): Promise<ChatMessage[]> {
+  return (await db().getAllAsync<MessageRow>(`SELECT ${MESSAGE_COLUMNS} FROM messages WHERE chat_id = ? AND position > ? ORDER BY position LIMIT ?`, chatId, after, limit)).map(toMessage);
+}
+
+export type ChatCounts = { chats: number; messages: number; summaries: number; attachments: number };
+
+/** What's stored, counted in SQLite (attachments are listed in each message's JSON). */
+export function chatCounts(database: Pick<SQLite.SQLiteDatabase, "getFirstSync"> = db()): ChatCounts {
+  const row = database.getFirstSync<ChatCounts>(`SELECT
+    (SELECT count(*) FROM chats) AS chats,
+    (SELECT count(*) FROM messages) AS messages,
+    (SELECT count(*) FROM chat_summaries) AS summaries,
+    (SELECT coalesce(sum(json_array_length(attachments)), 0) FROM messages WHERE attachments != '[]') AS attachments`);
+  return { chats: row?.chats ?? 0, messages: row?.messages ?? 0, summaries: row?.summaries ?? 0, attachments: row?.attachments ?? 0 };
+}
+
+/** The database file's own layout, for Diagnostics. */
+export function databasePages(database: Pick<SQLite.SQLiteDatabase, "getFirstSync"> = db()) {
+  const value = (pragma: string) => Number(Object.values(database.getFirstSync<Record<string, number>>(`PRAGMA ${pragma}`) ?? {})[0] ?? 0);
+  return { pageSize: value("page_size"), pageCount: value("page_count"), freePages: value("freelist_count"), schemaVersion: value("user_version") };
+}
+
+/** Deletes every chat on this device, then compacts the file so the space is given back. */
+export function deleteAllChats() {
+  const database = db();
+  database.withTransactionSync(() => {
+    database.runSync("DELETE FROM chat_search");
+    database.runSync("DELETE FROM message_deltas");
+    database.runSync("DELETE FROM chat_summaries");
+    database.runSync("DELETE FROM messages");
+    database.runSync("DELETE FROM chats");
+  });
+  try {
+    database.execSync("PRAGMA wal_checkpoint(TRUNCATE); VACUUM;");
+  } catch {
+    // The chats are gone either way; the file shrinks at a later checkpoint.
+  }
+}
+
 // ---- Branching ----
 
 /**
@@ -354,7 +406,12 @@ export function copyMessages(args: { from: string; to: string; upTo: number; mod
       copy.finalizeSync();
     }
     database.runSync("INSERT INTO chat_search (chat_id, body) SELECT ?, content FROM messages WHERE chat_id = ? AND content != '' AND (role = 'user' OR status = 'done')", args.to, args.to);
-    database.runSync(`INSERT INTO chat_summaries (chat_id, model, through_position, summary, usage, created_at) SELECT ?, model, through_position, summary, usage, created_at FROM chat_summaries WHERE chat_id = ? AND through_position < ? AND model IN (${placeholders})`, args.to, args.from, args.upTo, ...args.models);
+    // Not a summary written once a later message was sent: it saw that message, which the copy leaves out.
+    database.runSync(
+      `INSERT INTO chat_summaries (chat_id, model, through_position, summary, usage, created_at) SELECT ?, model, through_position, summary, usage, created_at FROM chat_summaries WHERE chat_id = ? AND through_position < ? AND model IN (${placeholders})
+        AND created_at < coalesce((SELECT min(created_at) FROM messages WHERE chat_id = ? AND role = 'user' AND position > ?), 9e15)`,
+      args.to, args.from, args.upTo, ...args.models, args.from, args.upTo,
+    );
   });
   return kept.length;
 }

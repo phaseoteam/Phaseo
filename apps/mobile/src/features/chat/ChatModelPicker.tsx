@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, Header, Icon, SearchField, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatPrice, formatTokens } from "@/lib/format";
+import { haptic } from "@/lib/haptics";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { toggleFavouriteModel, useFavourites } from "./favourites";
 import { isNewModel, isSelectable, normaliseFavouriteId, pickerSections, type ChatModelOption, type PickerFilters, type PickerSection } from "./modelOptions";
@@ -79,6 +80,12 @@ function SectionHeader({ section }: { section: PickerSection }) {
   );
 }
 
+/** A notice for a pick that can't happen, felt as a refusal. */
+function refuse(message: string) {
+  haptic("error");
+  toast(message);
+}
+
 /**
  * Picks the models that answer, like the website's RoomModelSelector: ranked search, Free and New
  * filters, favourites first, then everything by release month (newest first), then coming soon.
@@ -107,17 +114,23 @@ export function ChatModelPicker({ chatId }: { chatId: string | null }) {
     return out;
   }, [options, deferred, favourites, filters, nowMs]);
 
+  // A pick that can't happen gets the error haptic with its notice; one that does, a selection tick.
   const toggle = useCallback((option: ChatModelOption) => {
-    if (!isSelectable(option)) return void toast(`${option.label} isn't on Phaseo yet.`);
+    if (!isSelectable(option)) return refuse(`${option.label} isn't on Phaseo yet.`);
     if (selected.includes(option.modelId)) {
-      if (selected.length === 1) return void toast("A chat needs at least one model.");
+      if (selected.length === 1) return refuse("A chat needs at least one model.");
+      haptic("selection");
       setModelsFor(chatId, selected.filter((id) => id !== option.modelId));
     } else {
-      if (selected.length >= MAX_CHAT_MODELS) return void toast(`Up to ${MAX_CHAT_MODELS} models can answer at once. Remove one first.`);
+      if (selected.length >= MAX_CHAT_MODELS) return refuse(`Up to ${MAX_CHAT_MODELS} models can answer at once. Remove one first.`);
+      haptic("selection");
       setModelsFor(chatId, [...selected, option.modelId]);
     }
   }, [chatId, selected]);
-  const star = useCallback((option: ChatModelOption) => toggleFavouriteModel(favourites, option.modelId), [favourites]);
+  const star = useCallback((option: ChatModelOption) => {
+    haptic("selection");
+    toggleFavouriteModel(favourites, option.modelId);
+  }, [favourites]);
 
   const renderItem = useCallback(({ item }: { item: Item }) => item.type === "header"
     ? <SectionHeader section={item.section} />

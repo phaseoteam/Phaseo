@@ -11,8 +11,11 @@ import { EmptyBox, PageSection } from "./parts";
 import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
 
-/** Providers without a brand colour use the chart tokens, as the website's trend charts do. */
-const CHART_TOKENS = ["--color-chart-1", "--color-chart-2", "--color-chart-3", "--color-chart-4", "--color-chart-5"];
+/**
+ * Providers without a brand colour use the chart tokens, as the website's trend charts do, strongest
+ * first: the steps mixed towards the background are faint on dark palettes.
+ */
+const CHART_TOKENS = ["--color-chart-4", "--color-chart-5", "--color-chart-3", "--color-chart-2", "--color-chart-1"];
 
 /** Shared by Performance and Uptime: the website requests percentile 50 over three days by default. */
 export function usePerformance(modelId: string, options: { range?: RangeDays; colo?: string | null; percentile?: number } = {}, enabled = true) {
@@ -105,17 +108,17 @@ function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string
   const chart = useCSSVariable(CHART_TOKENS).map((value) => String(value ?? "#3b82f6"));
   return (
     <View className="rounded-md border border-border px-4 py-4">
-      <View className="flex-row items-center justify-between">
-        <Text variant="label">{label}</Text>
-        {inspected != null ? <Text variant="caption">{timeLabel(view.resolution)(inspected)}</Text> : null}
-      </View>
+      <Text variant="label">{label}</Text>
       {series.length ? (
         <>
           <LineChart
             className="mt-2"
             height={148}
             showYAxis={false}
-            series={series.map((entry, index) => ({ key: entry.provider, colour: entry.colour ?? chart[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
+            series={series.map((entry, index) => ({ key: entry.provider, label: entry.name, colour: entry.colour ?? chart[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
+            valueFormat={(value) => formatValue(metric, value)}
+            tooltipTitle={timeLabel(view.resolution)}
+            accessibilityLabel={`${label} by provider, ${series.length} ${series.length === 1 ? "provider" : "providers"}`}
             onInspect={setInspected}
           />
           <View className="mt-2 gap-1.5">
@@ -144,6 +147,9 @@ export function UptimeSection({ modelId, onLayoutSection, first }: { modelId: st
   );
 }
 
+/** The uptime buckets are UTC hours (uptimeHours), so their labels are too, as on the website. */
+const utcHour = (time: number) => `${String(new Date(time).getUTCHours()).padStart(2, "0")}:00`;
+
 function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
   const success = useToneColor("success");
   const [inspected, setInspected] = useState<number | null>(null);
@@ -156,18 +162,21 @@ function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
   const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
   return (
     <View className="rounded-md border border-border px-4 py-4">
-      <Text className="text-[34px] font-bold leading-10 tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
-      <Text variant="caption" className="mt-0.5">{shown ? `${String(new Date(shown.bucket).getHours()).padStart(2, "0")}:00 · ${shown.requests.toLocaleString("en-GB")} requests` : "Last 24 hours · hourly average"}</Text>
+      <Text className="text-[24px] font-bold leading-[30px] tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
+      <Text variant="caption" className="mt-0.5">{shown ? `${utcHour(Date.parse(shown.bucket))} UTC · ${shown.requests.toLocaleString("en-GB")} requests` : "Last 24 hours · hourly average"}</Text>
       <LineChart
         className="mt-3"
         height={110}
         yMax={100}
         showYAxis={false}
         xTicks={4}
-        xFormat={(time) => `${String(new Date(time).getHours()).padStart(2, "0")}:00`}
+        xFormat={utcHour}
+        tooltipTitle={(time) => `${formatShortDate(time)}, ${utcHour(time)} UTC`}
+        valueFormat={format}
+        accessibilityLabel={`Uptime per hour over the last 24 hours, ${format(average)} on average`}
         series={[
-          { key: "overall", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
-          ...(leastStable ? [{ key: "worst", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
+          { key: "overall", label: "Phaseo routing", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
+          ...(leastStable ? [{ key: "worst", label: "Without Phaseo Routing", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
         ]}
         onInspect={setInspected}
       />

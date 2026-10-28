@@ -27,6 +27,21 @@ export function chunksOf(message: ChatMessage) {
   return chunks;
 }
 
+/** The tab to pick when a link or search result opens on an answer: its turn (keyed by the question) and its model. */
+export function focusedAnswerPick(messages: readonly ChatMessage[], focus: string | null): { turn: string; model: string } | null {
+  const answer = focus ? messages.find((message) => message.id === focus && message.role === "assistant") : undefined;
+  return answer?.parentId && answer.model ? { turn: answer.parentId, model: answer.model } : null;
+}
+
+/** The row a focused message opens at: the question, or the answer's first chunk, else (side-by-side columns) its question. */
+export function focusIndex(items: readonly ConversationItem[], messages: readonly ChatMessage[], focus: string | null) {
+  if (!focus) return -1;
+  const index = items.findIndex((item) => item.key === `user:${focus}` || item.key === `answer:${focus}:0`);
+  if (index >= 0) return index;
+  const parent = messages.find((message) => message.id === focus)?.parentId;
+  return parent ? items.findIndex((item) => item.key === `user:${parent}`) : -1;
+}
+
 /** The answer a turn shows on phones: the one picked in its tabs, or the first. */
 export function shownAnswer(turn: Turn, selected: Record<string, string>) {
   return turn.answers.find((answer) => answer.model === selected[turn.key]) ?? turn.answers[0];
