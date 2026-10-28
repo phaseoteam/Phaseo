@@ -59,9 +59,13 @@ export function ModelBrowser() {
 
   useEffect(() => {
     if (focusRequest === handledFocusRequest) return;
-    handledFocusRequest = focusRequest;
-    // Wait for the tab switch to settle before raising the keyboard.
-    const timer = setTimeout(() => searchRef.current?.focus(), 250);
+    // Wait for the tab switch to settle before raising the keyboard. The request only counts as handled
+    // once the field has focus, so a remount that cancels the timer still gets the keyboard.
+    const timer = setTimeout(() => {
+      if (!searchRef.current) return;
+      searchRef.current.focus();
+      handledFocusRequest = focusRequest;
+    }, 250);
     return () => clearTimeout(timer);
   }, [focusRequest]);
 

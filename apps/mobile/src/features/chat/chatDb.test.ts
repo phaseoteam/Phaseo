@@ -96,6 +96,12 @@ describe("one model's thread", () => {
     deleteMessagesFrom("edit", 12);
     expect(mockDb.getAllSync<{ through_position: number }>("SELECT through_position FROM chat_summaries WHERE chat_id = 'edit'")).toEqual([{ through_position: 9 }]);
     expect(mockDb.getFirstSync<{ n: number }>("SELECT max(position) AS n FROM messages WHERE chat_id = 'edit'")!.n).toBe(11);
+    // Written while answering turn 3 (sent at 3, position 6): it ends before turn 3 but saw it as the latest request.
+    seed("edit-latest", 6, ["m/one"]);
+    saveSummary({ chatId: "edit-latest", model: "m/one", throughPosition: 3, summary: "before turn 3 was sent", usage: null, createdAt: 2 });
+    saveSummary({ chatId: "edit-latest", model: "m/one", throughPosition: 1, summary: "while answering turn 3", usage: null, createdAt: 3 });
+    deleteMessagesFrom("edit-latest", 6);
+    expect(mockDb.getAllSync<{ summary: string }>("SELECT summary FROM chat_summaries WHERE chat_id = 'edit-latest'")).toEqual([{ summary: "before turn 3 was sent" }]);
   });
 });
 
@@ -123,6 +129,8 @@ describe("streaming writes", () => {
 test("branching copies questions, the kept model's answers and its summaries, with new ids", () => {
   saveSummary({ chatId: "multi", model: "m/two", throughPosition: 7, summary: "two", usage: null, createdAt: 1 });
   saveSummary({ chatId: "multi", model: "m/one", throughPosition: 7, summary: "one", usage: null, createdAt: 1 });
+  // Written while answering turn 4, after the branch point: it saw a question the branch doesn't have.
+  saveSummary({ chatId: "multi", model: "m/two", throughPosition: 4, summary: "saw turn 4", usage: null, createdAt: 4 });
   createChat({ id: "branch", title: "branch", models: ["m/two"], workspaceId: null, createdAt: 1, updatedAt: 1 });
   let next = 0;
   const copied = copyMessages({ from: "multi", to: "branch", upTo: 11, models: ["m/two"], newId: () => `b${next++}` });
