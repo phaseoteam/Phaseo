@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
 	audit: null as any,
 	bindings: {} as Record<string, string>,
 	emails: {} as Record<string, string>,
+	failOutbox: false,
 }));
 
 function query(table: string) {
@@ -29,15 +30,17 @@ function query(table: string) {
 			for (const row of rows()) Object.assign(row, patch);
 			return { data: null, error: null };
 		}
-		return { data: rows(), error: null };
+		return { data: rows(), count: rows().length, error: null };
 	};
 	const builder: any = {
 		select: () => builder,
 		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
 		in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return builder; },
 		lte: (column: string, value: string) => { filters.push((row) => String(row[column]) <= value); return builder; },
+		like: (column: string, pattern: string) => { filters.push((row) => String(row[column] ?? "").startsWith(pattern.replace(/%$/, ""))); return builder; },
 		update: (values: Row) => { mode = "update"; patch = values; return builder; },
 		upsert: async (values: Row[] | Row) => {
+			if (table === "email_outbox" && state.failOutbox) return { data: null, error: { message: "outbox unavailable" } };
 			state.tables[table] = [...(state.tables[table] ?? []), ...(Array.isArray(values) ? values : [values])];
 			return { data: null, error: null };
 		},
@@ -134,6 +137,7 @@ describe("credit top-ups API", () => {
 			return { data: [{ request_id: REQUEST, created: true }], error: null };
 		});
 		state.audit = vi.fn(async () => true);
+		state.failOutbox = false;
 	});
 
 	afterEach(() => {
@@ -289,6 +293,29 @@ describe("credit top-ups API", () => {
 			const token = new URL(again.topup.checkout_url).searchParams.get("token")!;
 			expect(again.topup.checkout_url).not.toBe(first.topup.checkout_url);
 			expect(state.tables.credit_topup_requests[0].confirm_token_hash).toBe(createHash("sha256").update(token).digest("hex"));
+		});
+
+		it("enqueues the confirmation emails on replay when the first attempt failed after creating the request", async () => {
+			state.failOutbox = true;
+			const failed = await post({ amount_usd: 20, idempotency_key: "run-outbox" });
+			expect(failed.status).toBe(500);
+			expect(state.tables.credit_topup_requests).toHaveLength(1);
+			expect(outbox()).toHaveLength(0);
+
+			state.failOutbox = false;
+			const replay = await post({ amount_usd: 20, idempotency_key: "run-outbox" });
+			expect(replay.status).toBe(200);
+			expect((await replay.json() as any).topup).toMatchObject({ id: REQUEST, confirmation_recipients: 2 });
+			expect(outbox().map((row) => row.to_email).sort()).toEqual(["admin@acme.test", "owner@acme.test"]);
+			// The emailed link carries a fresh token whose hash now guards the request.
+			const token = new URL(outbox()[0].payload.confirm_url).searchParams.get("token")!;
+			expect(state.tables.credit_topup_requests[0].confirm_token_hash).toBe(createHash("sha256").update(token).digest("hex"));
+
+			// Once emails exist, later replays leave the request and its emailed links alone.
+			const hash = state.tables.credit_topup_requests[0].confirm_token_hash;
+			expect((await post({ amount_usd: 20, idempotency_key: "run-outbox" })).status).toBe(200);
+			expect(outbox()).toHaveLength(2);
+			expect(state.tables.credit_topup_requests[0].confirm_token_hash).toBe(hash);
 		});
 
 		it("maps the pending cap and key conflicts", async () => {

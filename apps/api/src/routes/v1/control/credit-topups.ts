@@ -374,8 +374,29 @@ async function handleCreate(req: Request) {
 			}
 		}
 
+		// The confirmation emails go out with the request. If enqueueing failed after the request
+		// was created, a replay with the same idempotency key enqueues them (with a fresh link)
+		// instead of leaving a pending request nobody was told about.
+		let sendConfirmation = isNew;
+		if (!isNew && topup.flow === "saved_card" && topup.status === "pending" && confirmation) {
+			const { count, error: outboxReadError } = await supabase
+				.from("email_outbox")
+				.select("id", { count: "exact", head: true })
+				.like("dedupe_key", `credit_topup_confirmation:${topup.id}:%`);
+			if (outboxReadError) throw outboxReadError;
+			if (!count) {
+				const { error: rotateError } = await supabase
+					.from("credit_topup_requests")
+					.update({ confirm_token_hash: tokenHash, updated_at: new Date().toISOString() })
+					.eq("id", topup.id)
+					.eq("status", "pending");
+				if (rotateError) throw rotateError;
+				sendConfirmation = true;
+			}
+		}
+
 		let recipients: number | undefined;
-		if (isNew && topup.flow === "saved_card" && confirmation) {
+		if (sendConfirmation && topup.flow === "saved_card" && confirmation) {
 			const requesterEmail = await userEmail(userId);
 			const reviewUrl = topupReviewUrl(topup.id, token);
 			const { error: outboxError } = await supabase.from("email_outbox").upsert(
