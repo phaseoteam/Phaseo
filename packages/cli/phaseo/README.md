@@ -116,6 +116,44 @@ phaseo webhooks create --url https://example.com/phaseo-events --events batch.co
 phaseo api get /v1/models
 ```
 
+## Workspace management
+
+Every `/v1` management area has its own command group, so agents can run a whole workspace from the CLI. Run `phaseo <group> --help` for exact flags.
+
+| Group | Covers |
+| --- | --- |
+| `byok` | Bring-your-own provider keys: list, create, get, update, delete, reorder |
+| `budgets`, `department-budgets` | Workspace and department spend limits |
+| `spend-rules`, `spend-blocks` | Alert and block rules (with test, preview, history) and active blocks (list, lift) |
+| `rate-limits policies`, `rate-limits assignments` | Rate limit policies and where they apply |
+| `observability` | Logging policy and broadcast destinations |
+| `notifications` | Billing and alert settings (including auto top-up), destinations, event routes |
+| `routing dynamic-routes` | Dynamic routes, their keys, and version deploys |
+| `private-models`, `classifiers`, `data-contribution` | Private model endpoints, request classifiers, data contribution |
+| `presets` | Versions, labels, fork, upstream sync, publisher handle (plus the basic CRUD above) |
+| `workspaces` | Member roles, invites, join requests (plus the basic CRUD above) |
+| `identity` | SSO, SCIM and SCIM tokens, directory, departments, group mappings |
+| `workload-identity policies` | Trusted workload policies |
+| `audit-events`, `apps` | Audit log and app attribution (list, update, merge) |
+| `feedback`, `preset-test-runs` | Feedback records and preset test runs |
+
+```bash
+printf '%s' "$OPENAI_KEY" | phaseo byok create --provider openai --name "Prod" --key-stdin --json
+phaseo budgets create --interval monthly --limit 500 --json
+phaseo spend-rules create --name "80% alert" --metric budget_percent --threshold-percents 80 --destination-ids <id> --json
+phaseo rate-limits assignments create --policy <id> --target-type key --target <key-id> --json
+phaseo notifications settings update --low-balance-email true --low-balance-threshold-usd 10 --json
+phaseo routing dynamic-routes deploy <route-id> 3 --json
+phaseo workspaces invites create <workspace> --role member --max-uses 5 --show-secret
+phaseo spend-blocks lift <block-id> --yes --json
+```
+
+Secrets never go on the command line. BYOK keys come from `--key-stdin`, `--key-env <VAR>`, or `PHASEO_BYOK_KEY`; private model credentials from `--credential-stdin`, `--credential-env <VAR>`, or `PHASEO_PRIVATE_MODEL_CREDENTIAL`. Webhook notification targets and observability configs can be piped with `--target-stdin` and `--config-stdin`. One-time secrets in responses (SCIM tokens, invite tokens, signing secrets) are hidden in human output unless you pass `--show-secret`; `--json` always returns them.
+
+Commands that show `[--yes]` (delete, revoke, lift, rotate-secret, merge) ask before they run in an interactive terminal. In scripts, or with `--json`, they fail unless `--yes` is passed.
+
+Scopes: `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request. Login grants only scopes that are on the CLI OAuth client's allowlist; scopes outside it are dropped without an error. If a command returns `403`, check the `scope` that `phaseo login --json` reported. Request extra scopes with an explicit list, for example `phaseo login --scopes <default scopes>,feedback:read,feedback:write`.
+
 ## Coding-agent integrations
 
 Install and configure a persistent coding integration with one command:
