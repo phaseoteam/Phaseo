@@ -66,7 +66,7 @@ Every `/v1` management area has a dedicated group. Commands that show `[--yes]` 
 
 Secrets are never taken from argv. Pipe BYOK keys with `--key-stdin` or name a variable with `--key-env <VAR>` (default `PHASEO_BYOK_KEY`); private model credentials use `--credential-stdin` / `--credential-env` (default `PHASEO_PRIVATE_MODEL_CREDENTIAL`). One-time secrets (SCIM tokens, invite tokens, notification signing secrets) are hidden in human output unless `--show-secret` is passed; `--json` returns them, so capture them straight into a secret store.
 
-`byok` and `private-models` work with the default login scopes; sessions signed in before those scopes were allowed need `phaseo login` again. `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; add them with an explicit `phaseo login --scopes` list.
+`byok` and `private-models` work with the default login scopes; sessions signed in before those scopes were allowed need `phaseo login` again. `feedback`, `events` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; add them with an explicit `phaseo login --scopes` list.
 
 ### byok
 
@@ -140,9 +140,9 @@ phaseo rate-limits assignments delete <id> [--yes] --json
 phaseo observability logging-policy get --json
 phaseo observability logging-policy update [--enabled true|false] [--retention-days <n>] [--include-provider-payloads true|false] --json
 phaseo observability destinations list [--limit <n>] [--offset <n>] --json
-phaseo observability destinations create --type <type> [--name <name>] (--config-json <json> | --config-stdin) [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>] --json
+phaseo observability destinations create --type <type> --name <name> (--config-stdin | --config-env <VAR> | --config-json <json>) [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>] --json
 phaseo observability destinations get <id> --json
-phaseo observability destinations update <id> [--name <name>] [--config-json <json> | --config-stdin] [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>] --json
+phaseo observability destinations update <id> [--name <name>] [--config-stdin | --config-env <VAR> | --config-json <json>] [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>] --json
 phaseo observability destinations delete <id> [--yes] --json
 ```
 
@@ -261,6 +261,32 @@ phaseo workload-identity policies create --name <name> --provider vercel|github_
 phaseo workload-identity policies get <id> --json
 phaseo workload-identity policies update <id> [--name <name>] [--status active|disabled] [--claim-conditions-json <json>] [--max-token-lifetime-seconds <n>] --json
 phaseo workload-identity policies delete <id> [--yes] --json
+```
+
+### keys
+
+```bash
+phaseo keys rotate <id> [--previous-key-expires-at <iso>] [--show-secret] --json
+phaseo keys invalidate <id> [--yes] --json
+```
+
+### webhooks
+
+```bash
+phaseo webhooks test <id> --json
+```
+
+### analytics
+
+```bash
+phaseo analytics export [--date YYYY-MM-DD] [--workspace <id>] [--key-id <id>] [--model <id>] [--provider <id>] [--endpoint <id>] [--label-key <key> --label-value <value>] [--end-user-id <id>] [--byok true|false] [--success true|false] --json
+```
+
+### events
+
+```bash
+phaseo events list [--request-id <id>] [--session-id <id>] [--preset-id <id>] [--test-run-id <id>] [--category feedback|behavior|outcome|app|test|custom] [--event <name>] [--limit <n>] [--offset <n>] --json
+phaseo events create --event-name <name> [--category feedback|behavior|outcome|app|test|custom] [--request-id <id>] [--session-id <id>] [--preset-id <id>] [--numeric-value <n>] [--value-json <json>] [--occurred-at <iso>] [--body-json <json>] --json
 ```
 
 ### audit-events

@@ -50,11 +50,11 @@ Use `keys` for inference keys and `management-keys` for scoped automation. Verif
 
 ## Secrets and Destructive Commands
 
-Never pass secrets as argv values; the CLI rejects `--key` and `--credential`. Pipe BYOK keys with `--key-stdin` or use `--key-env <VAR>`, and private model credentials with `--credential-stdin` or `--credential-env <VAR>`. Prefer `--target-stdin` for webhook notification targets and `--config-stdin` for observability destination configs that hold API keys.
+Never pass secrets as argv values; the CLI rejects `--key` and `--credential`, and rejects secret fields inside `--body-json` for `byok` and `private-models`. Pipe BYOK keys with `--key-stdin` or use `--key-env <VAR>`, and private model credentials with `--credential-stdin` or `--credential-env <VAR>`. Prefer `--target-stdin` for webhook notification targets and `--config-stdin` or `--config-env <VAR>` for observability destination configs that hold API keys.
 
 Commands whose usage shows `[--yes]` (delete, revoke, lift, rotate-secret, merge) refuse to run non-interactively without `--yes`. Pass `--yes` only after the user has asked for that exact change.
 
-`byok` and `private-models` work with the default login scopes. A `403` from them usually means the session predates those scopes; ask the user to run `phaseo login` again. `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; suggest `phaseo login --scopes` with them added. Do not widen scopes silently or switch to another credential.
+`byok` and `private-models` work with the default login scopes. A `403` from them usually means the session predates those scopes; ask the user to run `phaseo login` again. `feedback`, `events` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; suggest `phaseo login --scopes` with them added. Do not widen scopes silently or switch to another credential.
 
 ## Agent Output Rules
 

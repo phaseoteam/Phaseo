@@ -25,7 +25,7 @@ export type ManagementDeps = ManagementInput & {
 	write: (text: string) => void;
 };
 
-type OutputMode = "list" | "detail" | "action";
+type OutputMode = "list" | "detail" | "action" | "raw";
 
 type CommandSpec = {
 	usage: string;
@@ -142,8 +142,27 @@ export async function readSecretFlag(
 	return value;
 }
 
+/** Rejects secret-bearing fields in --body-json, which would put the secret in argv. */
+export function rejectSecretBodyFields(flags: Flags, fields: string[], secretFlag: string): void {
+	const body = parseJsonFlag(flags, "body-json");
+	const found = fields.filter((field) => body[field] !== undefined);
+	if (found.length) {
+		throw new Error(`--body-json must not contain ${found.join(", ")}. Command-line arguments are visible in shell history and process lists; use --${secretFlag}-stdin or --${secretFlag}-env <VAR>.`);
+	}
+}
+
+const BYOK_SECRET_FIELDS = ["key", "value", "api_key"];
+const PRIVATE_MODEL_SECRET_FIELDS = ["credential", "api_key"];
+
+/** Reads JSON from --<flag>-stdin, the variable named by --<flag>-env, or --<flag>-json. */
 async function readJsonInput(flags: Flags, input: ManagementInput, flag: string): Promise<unknown> {
 	if (flagBool(flags, `${flag}-stdin`)) return JSON.parse(await input.readStdin());
+	const envName = flagString(flags, `${flag}-env`);
+	if (envName) {
+		const value = input.env[envName];
+		if (!value?.trim()) throw new Error(`Environment variable ${envName} is empty or not set`);
+		return JSON.parse(value);
+	}
 	const raw = flagString(flags, `${flag}-json`);
 	return raw === undefined ? undefined : JSON.parse(raw);
 }
@@ -164,12 +183,14 @@ function crud(options: {
 	listBuild?: CommandSpec["build"];
 	updateMethod?: ManagementMethod;
 	skipGet?: boolean;
+	description?: string;
 }): Record<string, CommandSpec> {
 	const { base, noun, label } = options;
 	const specs: Record<string, CommandSpec> = {
 		list: { usage: options.listUsage ?? "", output: "list", build: options.listBuild ?? list(base) },
 		create: {
 			usage: options.createUsage,
+			...(options.description ? { description: options.description } : {}),
 			output: "action",
 			done: `Created ${noun}`,
 			build: async (_args, flags, input) => ({ method: "POST", path: base, body: await options.create(flags, input) }),
@@ -177,6 +198,7 @@ function crud(options: {
 		get: { usage: "<id>", output: "detail", build: (args) => ({ method: "GET", path: `${base}/${id(arg(args, 0, label))}` }) },
 		update: {
 			usage: `<id> ${options.updateUsage}`.trim(),
+			...(options.description ? { description: options.description } : {}),
 			output: "action",
 			done: `Updated ${noun}`,
 			build: async (args, flags, input) => ({
@@ -330,6 +352,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 		output: "action",
 		done: "Created BYOK key",
 		build: async (_args, flags, input) => {
+			rejectSecretBodyFields(flags, BYOK_SECRET_FIELDS, "key");
 			const body = bodyFromFlags(flags, [...BYOK_FIELDS, ["provider", "provider"]]);
 			required(body.provider as string | undefined, "provider");
 			required(body.name as string | undefined, "name");
@@ -344,6 +367,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 		done: "Updated BYOK key",
 		build: async (args, flags, input) => {
 			const keyId = arg(args, 0, "BYOK key id");
+			rejectSecretBodyFields(flags, BYOK_SECRET_FIELDS, "key");
 			const body = bodyFromFlags(flags, BYOK_FIELDS);
 			const key = await readSecretFlag(flags, input, { flag: "key", defaultEnv: "PHASEO_BYOK_KEY", required: false });
 			if (key) body.key = key;
@@ -485,13 +509,15 @@ const COMMANDS: Record<string, CommandSpec> = {
 		base: "/observability/destinations",
 		noun: "observability destination",
 		label: "Destination id",
+		description: "Destination configs usually hold provider credentials. Pass them with --config-stdin or --config-env <VAR>; --config-json puts them in argv, which is visible in shell history and process lists.",
 		listUsage: PAGE,
-		createUsage: "--type <type> [--name <name>] (--config-json <json> | --config-stdin) [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>]",
-		updateUsage: "[--name <name>] [--config-json <json> | --config-stdin] [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>]",
+		createUsage: "--type <type> --name <name> (--config-stdin | --config-env <VAR> | --config-json <json>) [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>]",
+		updateUsage: "[--name <name>] [--config-stdin | --config-env <VAR> | --config-json <json>] [--enabled true|false] [--privacy-mode true|false] [--sampling-rate <0-1>] [--body-json <json>]",
 		create: async (flags, input) => {
 			const body = await observabilityDestinationBody(flags, input);
 			required(body.type as string | undefined, "type");
-			if (body.config === undefined) throw new Error("--config-json or --config-stdin is required");
+			required(body.name as string | undefined, "name");
+			if (body.config === undefined) throw new Error("--config-stdin, --config-env or --config-json is required");
 			return body;
 		},
 		update: async (flags, input) => {
@@ -642,6 +668,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 		createUsage: `--model-reference <ref> --name <name> --base-url <url> --upstream-model <id> [--credential-stdin | --credential-env <VAR>] ${PRIVATE_MODEL_USAGE}`,
 		updateUsage: `[--name <name>] [--base-url <url>] [--upstream-model <id>] [--credential-stdin | --credential-env <VAR>] ${PRIVATE_MODEL_USAGE}`,
 		create: async (flags, input) => {
+			rejectSecretBodyFields(flags, PRIVATE_MODEL_SECRET_FIELDS, "credential");
 			const body = bodyFromFlags(flags, PRIVATE_MODEL_FIELDS);
 			for (const [flag, key] of [["model-reference", "model_reference"], ["name", "name"], ["base-url", "base_url"], ["upstream-model", "upstream_model_id"]]) {
 				required(body[key] as string | undefined, flag);
@@ -650,6 +677,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 			return body;
 		},
 		update: async (flags, input) => {
+			rejectSecretBodyFields(flags, PRIVATE_MODEL_SECRET_FIELDS, "credential");
 			const body = bodyFromFlags(flags, PRIVATE_MODEL_FIELDS);
 			const credential = await readSecretFlag(flags, input, { flag: "credential", defaultEnv: "PHASEO_PRIVATE_MODEL_CREDENTIAL", required: false });
 			if (credential) body.credential = credential;
@@ -830,18 +858,23 @@ const COMMANDS: Record<string, CommandSpec> = {
 	"identity directory list": { usage: "", output: "detail", build: () => ({ method: "GET", path: "/identity/directory" }) },
 	"identity directory update": {
 		usage: "<user-id> [--access-role directory|admin|member] [--department-mode directory|department|none] [--department <id>] [--department-position member|lead]",
+		description: "Replaces the member's whole override: omitted fields fall back to the directory. --department implies --department-mode department.",
 		output: "action",
 		done: "Updated directory member",
-		build: (args, flags) => ({
-			method: "PUT",
-			path: `/identity/directory/members/${id(arg(args, 0, "User id"))}`,
-			body: nonEmpty(bodyFromFlags(flags, [
+		build: (args, flags) => {
+			const body = nonEmpty(bodyFromFlags(flags, [
 				["access-role", "access_role"],
 				["department-mode", "department_mode"],
 				["department", "department_id"],
 				["department-position", "department_position"],
-			]), "a field to update"),
-		}),
+			]), "a field to update");
+			// The API ignores department_id unless department_mode is "department" and defaults the mode to "directory".
+			if (body.department_id !== undefined) {
+				body.department_mode ??= "department";
+				if (body.department_mode !== "department") throw new Error("--department needs --department-mode department");
+			}
+			return { method: "PUT", path: `/identity/directory/members/${id(arg(args, 0, "User id"))}`, body };
+		},
 	},
 	...group("identity departments", crud({
 		base: "/identity/departments",
@@ -902,6 +935,72 @@ const COMMANDS: Record<string, CommandSpec> = {
 		},
 		update: (flags) => nonEmpty(bodyFromFlags(flags, WORKLOAD_POLICY_FIELDS.filter(([flag]) => !["provider", "issuer", "owner-id"].includes(flag))), "a field to update"),
 	})),
+
+	"keys rotate": {
+		usage: "<id> [--previous-key-expires-at <iso>] [--show-secret]",
+		description: "Create a replacement key with the same settings. The old key keeps working until --previous-key-expires-at, if given. The new secret is shown once.",
+		output: "action",
+		done: "Rotated API key",
+		build: (args, flags) => ({
+			method: "POST",
+			path: `/keys/${id(arg(args, 0, "Key id"))}/rotate`,
+			body: bodyFromFlags(flags, [["previous-key-expires-at", "previous_key_expires_at"]]),
+		}),
+	},
+	"keys invalidate": {
+		usage: "<id> [--yes]",
+		description: "Drop the key from the gateway cache so the next request re-reads its current state.",
+		output: "action",
+		done: "Invalidated API key cache",
+		confirm: (args) => `This invalidates cached state for API key ${args[0]}.`,
+		build: (args) => ({ method: "POST", path: `/keys/${id(arg(args, 0, "Key id"))}/invalidate`, body: {} }),
+	},
+	"webhooks test": {
+		usage: "<id>",
+		description: "Send a signed test event to the webhook endpoint and report the response.",
+		output: "detail",
+		build: (args) => ({ method: "POST", path: `/webhook-endpoints/${id(arg(args, 0, "Webhook endpoint id"))}/test`, body: {} }),
+	},
+	"analytics export": {
+		usage: "[--date YYYY-MM-DD] [--workspace <id>] [--key-id <id>] [--model <id>] [--provider <id>] [--endpoint <id>] [--label-key <key> --label-value <value>] [--end-user-id <id>] [--byok true|false] [--success true|false]",
+		description: "Write the analytics CSV to stdout; redirect it to save a file.",
+		output: "raw",
+		build: (_args, flags) => ({
+			method: "GET",
+			path: appendQuery("/analytics/export", {
+				...filterQuery(flags, ["date", "key-id", "model", "provider", "endpoint", "label-key", "label-value", "end-user-id", "byok", "success"]),
+				workspace_id: flagString(flags, "workspace"),
+			}),
+		}),
+	},
+	"events list": {
+		usage: `[--request-id <id>] [--session-id <id>] [--preset-id <id>] [--test-run-id <id>] [--category feedback|behavior|outcome|app|test|custom] [--event <name>] ${PAGE}`,
+		output: "list",
+		build: (_args, flags) => ({
+			method: "GET",
+			path: appendQuery("/events", { ...filterQuery(flags, ["request-id", "session-id", "preset-id", "test-run-id", "category", "event"]), ...pageQuery(flags) }),
+		}),
+	},
+	"events create": {
+		usage: "--event-name <name> [--category feedback|behavior|outcome|app|test|custom] [--request-id <id>] [--session-id <id>] [--preset-id <id>] [--numeric-value <n>] [--value-json <json>] [--occurred-at <iso>] [--body-json <json>]",
+		output: "action",
+		done: "Recorded event",
+		build: (_args, flags) => {
+			const body = bodyFromFlags(flags, [
+				["event-name", "event_name"],
+				["category", "category"],
+				["request-id", "request_id"],
+				["session-id", "session_id"],
+				["preset-id", "preset_id"],
+				["test-run-id", "test_run_id"],
+				["numeric-value", "numeric_value", "number"],
+				["value-json", "value", "json"],
+				["occurred-at", "occurred_at"],
+			]);
+			required(body.event_name as string | undefined, "event-name");
+			return { method: "POST", path: "/events", body };
+		},
+	},
 
 	"audit-events list": {
 		usage: "[--limit <n>] [--cursor <cursor>] [--action <action>] [--target-type <type>]",
@@ -1019,6 +1118,7 @@ export const MANAGEMENT_GROUP_NOTES: Record<string, string> = {
 	byok: "Bring-your-own provider keys. Secrets are read from stdin or the environment and never printed. If these return 403, run `phaseo login` again: older sessions lack the provider_credentials scopes.",
 	"private-models": "If these return 403, run `phaseo login` again: older sessions lack the private_models scopes.",
 	feedback: "Requires feedback:read and feedback:write, which the default login does not request. Log in again with an explicit --scopes list that adds them.",
+	events: "Requires feedback:read and feedback:write, which the default login does not request. Log in again with an explicit --scopes list that adds them.",
 	"preset-test-runs": "Requires feedback:read and feedback:write, which the default login does not request. Log in again with an explicit --scopes list that adds them.",
 };
 
@@ -1164,6 +1264,7 @@ export async function runManagementCommand(tokens: string[], flags: Flags, deps:
 	const request = await match.spec.build(match.args, flags, deps);
 	if (match.spec.confirm) await confirmDestructive(match.spec.confirm(match.args), flags, deps);
 	const body = await deps.request(request.path, { method: request.method, body: request.body });
-	deps.write(flagBool(flags, "json") ? `${JSON.stringify(body, null, 2)}\n` : renderManagementResult(match.key, body, flags));
+	if (match.spec.output === "raw" && typeof body === "string") deps.write(body);
+	else deps.write(flagBool(flags, "json") ?`${JSON.stringify(body, null, 2)}\n` : renderManagementResult(match.key, body, flags));
 	return true;
 }

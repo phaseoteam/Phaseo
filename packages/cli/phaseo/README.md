@@ -134,8 +134,10 @@ Every `/v1` management area has its own command group, so agents can run a whole
 | `workspaces` | Member roles, invites, join requests (plus the basic CRUD above) |
 | `identity` | SSO, SCIM and SCIM tokens, directory, departments, group mappings |
 | `workload-identity policies` | Trusted workload policies |
+| `keys`, `webhooks`, `analytics` | Key rotation and cache invalidation, webhook test events, CSV analytics export (plus the commands above) |
+| `events` | Custom observability events (list, create) |
 | `audit-events`, `apps` | Audit log and app attribution (list, update, merge) |
-| `feedback`, `preset-test-runs` | Feedback records and preset test runs |
+| `feedback`, `preset-test-runs` | Feedback records and preset test runs (`feedback`, `events` and `preset-test-runs` need `feedback:*` scopes) |
 
 ```bash
 printf '%s' "$OPENAI_KEY" | phaseo byok create --provider openai --name "Prod" --key-stdin --json
@@ -148,7 +150,7 @@ phaseo workspaces invites create <workspace> --role member --max-uses 5 --show-s
 phaseo spend-blocks lift <block-id> --yes --json
 ```
 
-Secrets never go on the command line. BYOK keys come from `--key-stdin`, `--key-env <VAR>`, or `PHASEO_BYOK_KEY`; private model credentials from `--credential-stdin`, `--credential-env <VAR>`, or `PHASEO_PRIVATE_MODEL_CREDENTIAL`. Webhook notification targets and observability configs can be piped with `--target-stdin` and `--config-stdin`. One-time secrets in responses (SCIM tokens, invite tokens, signing secrets) are hidden in human output unless you pass `--show-secret`; `--json` always returns them.
+Secrets never go on the command line, including inside `--body-json`. BYOK keys come from `--key-stdin`, `--key-env <VAR>`, or `PHASEO_BYOK_KEY`; private model credentials from `--credential-stdin`, `--credential-env <VAR>`, or `PHASEO_PRIVATE_MODEL_CREDENTIAL`. Webhook notification targets can be piped with `--target-stdin`. Observability destination configs usually hold credentials, so pass them with `--config-stdin` or `--config-env <VAR>` rather than `--config-json`. One-time secrets in responses (SCIM tokens, invite tokens, signing secrets) are hidden in human output unless you pass `--show-secret`; `--json` always returns them.
 
 Commands that show `[--yes]` (delete, revoke, lift, rotate-secret, merge) ask before they run in an interactive terminal. In scripts, or with `--json`, they fail unless `--yes` is passed.
 

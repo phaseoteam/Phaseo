@@ -160,7 +160,7 @@ test("builds observability requests and reads destination config from stdin", as
 		await build(["observability", "destinations", "create", "--type", "langfuse", "--name", "LF", "--config-stdin"], { readStdin: async () => "{\"secret_key\":\"sk\"}", env: {} }),
 		{ method: "POST", path: "/observability/destinations", body: { name: "LF", type: "langfuse", config: { secret_key: "sk" } } },
 	);
-	await assert.rejects(build(["observability", "destinations", "create", "--type", "langfuse"]), /--config-json or --config-stdin/);
+	await assert.rejects(build(["observability", "destinations", "create", "--type", "langfuse", "--name", "LF"]), /--config-stdin, --config-env or --config-json is required/);
 	await assert.rejects(build(["observability", "destinations", "update", "d1", "--type", "s3"]), /cannot be changed/);
 });
 
@@ -267,7 +267,7 @@ test("builds identity requests", async () => {
 	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1", "--department-position", "lead"]), {
 		method: "PUT",
 		path: "/identity/directory/members/u1",
-		body: { department_id: "d1", department_position: "lead" },
+		body: { department_id: "d1", department_position: "lead", department_mode: "department" },
 	});
 	assert.deepEqual(await build(["identity", "departments", "create", "--name", "Eng", "--color", "blue"]), { method: "POST", path: "/identity/departments", body: { name: "Eng", color: "blue" } });
 	assert.deepEqual(await build(["identity", "departments", "set-member", "d1", "u1", "--position", "lead", "--primary", "true"]), {
@@ -402,4 +402,85 @@ test("every management command has help, and nested groups resolve to their own 
 	assert.match(renderHelp(["feedback"]), /feedback:read/);
 	assert.match(renderHelp(["data-contribution"]), /data-contribution classifiers create/);
 	assert.match(renderHelp([]), /phaseo byok --help/);
+});
+
+test("S1: secret fields in --body-json are rejected for BYOK and private models", async () => {
+	const env = { ...noInput, env: { PHASEO_BYOK_KEY: "sk-env", PHASEO_PRIVATE_MODEL_CREDENTIAL: "cred-env" } };
+	for (const field of ["key", "value", "api_key"]) {
+		await assert.rejects(build(["byok", "update", "c1", "--body-json", JSON.stringify({ [field]: "sk-argv" })], env), /must not contain .*--key-stdin or --key-env/);
+	}
+	await assert.rejects(build(["byok", "create", "--provider", "openai", "--name", "P", "--body-json", "{\"key\":\"sk-argv\"}"], env), /must not contain key/);
+	for (const field of ["credential", "api_key"]) {
+		await assert.rejects(build(["private-models", "update", "pm1", "--body-json", JSON.stringify({ [field]: "x" })], env), /--credential-stdin or --credential-env/);
+	}
+	assert.deepEqual(await build(["byok", "update", "c1", "--body-json", "{\"name\":\"ok\"}"], env), { method: "PATCH", path: "/byok/c1", body: { name: "ok" } });
+});
+
+test("S1: observability destination config can come from a named environment variable", async () => {
+	const input = { ...noInput, env: { LF_CONFIG: "{\"secret_key\":\"sk\"}" } };
+	assert.deepEqual(await build(["observability", "destinations", "update", "d1", "--config-env", "LF_CONFIG"], input), {
+		method: "PATCH",
+		path: "/observability/destinations/d1",
+		body: { config: { secret_key: "sk" } },
+	});
+	await assert.rejects(build(["observability", "destinations", "update", "d1", "--config-env", "MISSING"]), /MISSING is empty or not set/);
+	assert.match(renderHelp(["observability", "destinations", "create"]), /process lists/);
+});
+
+test("S2: builds key rotate/invalidate, webhook test, analytics export, and event requests", async () => {
+	assert.deepEqual(await build(["keys", "rotate", "k1", "--previous-key-expires-at", "2026-11-01T00:00:00Z"]), {
+		method: "POST",
+		path: "/keys/k1/rotate",
+		body: { previous_key_expires_at: "2026-11-01T00:00:00Z" },
+	});
+	assert.deepEqual(await build(["keys", "invalidate", "k1"]), { method: "POST", path: "/keys/k1/invalidate", body: {} });
+	assert.deepEqual(await build(["webhooks", "test", "w1"]), { method: "POST", path: "/webhook-endpoints/w1/test", body: {} });
+	assert.deepEqual(await build(["analytics", "export", "--date", "2026-10-27", "--model", "openai/gpt-5", "--workspace", "ws"]), {
+		method: "GET",
+		path: "/analytics/export?date=2026-10-27&model=openai%2Fgpt-5&workspace_id=ws",
+	});
+	assert.deepEqual(await build(["events", "list", "--category", "outcome", "--event", "converted", "--limit", "5"]), {
+		method: "GET",
+		path: "/events?category=outcome&event=converted&limit=5",
+	});
+	assert.deepEqual(await build(["events", "create", "--event-name", "converted", "--request-id", "req_1", "--numeric-value", "1"]), {
+		method: "POST",
+		path: "/events",
+		body: { event_name: "converted", request_id: "req_1", numeric_value: 1 },
+	});
+	await assert.rejects(build(["events", "create", "--category", "app"]), /--event-name is required/);
+
+	const invalidate = fakeDeps();
+	await assert.rejects(runManagementCommand(["keys", "invalidate", "k1"], {}, invalidate.deps), /--yes/);
+	assert.equal(invalidate.calls.length, 0);
+
+	const rotated = renderManagementResult("keys rotate", { data: { id: "k2", name: "Prod", key: "phaseo_v1_sk_secret" } }, {});
+	assert.doesNotMatch(rotated, /phaseo_v1_sk_secret/);
+
+	const csv = "date,model\r\n2026-10-27,openai/gpt-5\r\n";
+	const exported = fakeDeps({ request: async () => csv });
+	await runManagementCommand(["analytics", "export"], { json: true }, exported.deps);
+	assert.equal(exported.output(), csv);
+	assert.match(renderHelp(["keys"]), /phaseo keys rotate/);
+	assert.match(renderHelp(["keys"]), /phaseo keys create/);
+});
+
+test("S3: --department sets department_mode so the override is kept", async () => {
+	assert.deepEqual(await build(["identity", "directory", "update", "u1", "--department", "d1"]), {
+		method: "PUT",
+		path: "/identity/directory/members/u1",
+		body: { department_id: "d1", department_mode: "department" },
+	});
+	await assert.rejects(build(["identity", "directory", "update", "u1", "--department", "d1", "--department-mode", "none"]), /--department-mode department/);
+	assert.deepEqual((await build(["identity", "directory", "update", "u1", "--department-mode", "none"])).body, { department_mode: "none" });
+});
+
+test("S4: observability destination create requires --name before any request", async () => {
+	const { deps, calls } = fakeDeps();
+	await assert.rejects(
+		runManagementCommand(["observability", "destinations", "create"], { type: "langfuse", "config-json": "{}" }, deps),
+		/--name is required/,
+	);
+	assert.equal(calls.length, 0);
+	assert.match(renderHelp(["observability", "destinations", "create"]), /--type <type> --name <name>/);
 });
