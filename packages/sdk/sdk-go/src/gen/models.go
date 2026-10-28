@@ -1486,6 +1486,16 @@ type ClassifierScope struct {
 	Models *[]string `json:"models,omitempty"`
 }
 
+type ClassifierTestRequest struct {
+	Classifier *map[string]interface{} `json:"classifier,omitempty"`
+	ClassifierId *string `json:"classifier_id,omitempty"`
+	Sample map[string]interface{} `json:"sample"`
+}
+
+type ClassifierTestResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
 type ClassifierUpdateInput struct {
 	Description *string `json:"description,omitempty"`
 	Dimensions *[]map[string]interface{} `json:"dimensions,omitempty"`

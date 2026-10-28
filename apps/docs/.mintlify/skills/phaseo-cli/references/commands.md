@@ -27,7 +27,7 @@ phaseo keys current --json
 phaseo keys list [--limit <n>] [--offset <n>] [--json]
 phaseo keys create --name <name> [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--disabled] --json
 phaseo keys get <id-or-hash> --json
-phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] --json
+phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--ip-allowlist <label=address,...>|none] --json
 phaseo keys delete <id-or-hash> --json
 ```
 
@@ -224,7 +224,7 @@ phaseo workspaces set-role <workspace> <user-id> --role admin|member --json
 phaseo workspaces invites list <workspace> [--limit <n>] [--offset <n>] --json
 phaseo workspaces invites create <workspace> [--role admin|member] [--expires-in-days <n>] [--max-uses <n>] [--show-secret] --json
 phaseo workspaces invites revoke <workspace> <invite-id> [--yes] --json
-phaseo workspaces join-requests list <workspace> [--status pending|approved|rejected] [--limit <n>] [--offset <n>] --json
+phaseo workspaces join-requests list <workspace> [--status pending|approved|denied] [--limit <n>] [--offset <n>] --json
 phaseo workspaces join-requests approve <workspace> <request-id> --json
 phaseo workspaces join-requests reject <workspace> <request-id> --json
 ```
@@ -319,6 +319,34 @@ phaseo preset-test-runs create [--preset-id <id>] [--baseline-preset-id <id>] [-
 phaseo preset-test-runs get <id> --json
 phaseo preset-test-runs update <id> [--name <name>] [--description <text>] [--status pending|running|completed|failed|cancelled] [--summary-json <json>] [--body-json <json>] --json
 ```
+
+## Account, routing, and workspace settings
+
+```bash
+phaseo profile get --json
+phaseo profile update [--display-name <name>] [--default-workspace <id>|none] [--obfuscate-info true|false] --json
+phaseo authorized-apps list --json
+phaseo authorized-apps update-scopes <id> --scopes <scope,...> --json
+phaseo authorized-apps revoke <id> --yes --json
+phaseo invites accept <code> --json
+phaseo invites requests [--status pending|approved|denied|cancelled|all] --json
+phaseo rate-limits tier get --json
+phaseo rate-limits tier raise --json
+phaseo routing auto get --json
+phaseo routing auto update [--allowed-patterns <provider/model,...>|none] [--spend-profile <profile>] [--objective balanced|quality|cost|latency] [--allow-fallbacks true|false] --json
+phaseo routing successors list --json
+phaseo routing successors set --model <id> (--successor <id> | --never) --json
+phaseo routing successors remove --model <id> --json
+phaseo observability destinations test <id> --json
+phaseo observability destinations sample <id> --json
+phaseo observability destinations test-config --type <type> --config-stdin --json
+phaseo classifiers test [<id>] --prompt-stdin [--model <id> --dimensions-json '<json>'] --json
+```
+
+- `profile`, `authorized-apps` and `invites` act as the signed-in person; management keys cannot use them.
+- `rate-limits tier raise` works only for the workspace owner. `authorized-apps update-scopes` can only remove scopes.
+- `classifiers test` makes a billed model request with the session's own credential, so the session needs `gateway:access` as well as `classifiers:write`. The CLI sign-in cannot be granted `gateway:access` today, so the command returns `403 gateway_access_required`; use the dashboard's test until that changes. Never run it without the user's approval to spend credits.
+- Destination settings contain credentials: pass them with `--config-stdin` or `--config-env <VAR>`, not on the command line.
 
 ## Raw authenticated API fallback
 

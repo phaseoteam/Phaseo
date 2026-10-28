@@ -803,6 +803,16 @@ pub struct ClassifierScope {
 	pub models: Option<Vec<String>>,
 }
 
+pub struct ClassifierTestRequest {
+	pub classifier: Option<HashMap<String, String>>,
+	pub classifier_id: Option<String>,
+	pub sample: HashMap<String, String>,
+}
+
+pub struct ClassifierTestResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct ClassifierUpdateInput {
 	pub description: Option<Option<String>>,
 	pub dimensions: Option<Vec<HashMap<String, String>>>,

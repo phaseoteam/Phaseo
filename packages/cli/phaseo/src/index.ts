@@ -24,6 +24,7 @@ import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor
 import { runCurie } from "./curie.js";
 import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag } from "./flags.js";
 import { managementHelpEntries, runManagementCommand } from "./management.js";
+import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { revokeIntegrationGatewayCredential } from "./integrations/credential.js";
@@ -180,6 +181,9 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo feedback --help",
 			"phaseo preset-test-runs --help",
 			"phaseo events --help",
+			"phaseo invites --help",
+			"phaseo authorized-apps --help",
+			"phaseo profile --help",
 			"phaseo api --help",
 			"",
 			"Login scopes:",
@@ -248,7 +252,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
 			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
 			"phaseo keys get <id-or-hash> [--json]",
-			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
+			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
 			"phaseo keys delete <id-or-hash> [--json]",
 		],
 	},
@@ -256,7 +260,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
 	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
 	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
 	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
 	workspaces: {
 		usage: [
@@ -446,7 +450,7 @@ for (const [key, usage] of Object.entries(DATA_CONTRIBUTION_USAGE)) {
 	}
 }
 
-for (const [key, entry] of Object.entries(managementHelpEntries())) {
+for (const [key, entry] of [...Object.entries(managementHelpEntries()), ...Object.entries(parityHelpEntries())]) {
 	const existing = HELP_ENTRIES[key];
 	if (!existing) {
 		HELP_ENTRIES[key] = entry;
@@ -1252,10 +1256,11 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
+			ip_allowlist: flagString(flags, "ip-allowlist") === undefined ? undefined : parseIpAllowlist(flagString(flags, "ip-allowlist")!),
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated API key: ${body.data.name ?? body.data.id}\n`);
+	process.stdout.write(`Updated API key:${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteKey(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -2119,6 +2124,9 @@ async function main() {
 			return;
 		}
 		if (!action && await runManagementCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
+		if (!action && await runParityCommand(parsed.command, parsed.flags, managementDeps())) {
 			action = Promise.resolve();
 		}
 		if (action) {

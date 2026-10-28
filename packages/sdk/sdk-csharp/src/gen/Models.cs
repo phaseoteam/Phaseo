@@ -1988,6 +1988,26 @@ public sealed class ClassifierScope
 
 }
 
+public sealed class ClassifierTestRequest
+{
+	[JsonPropertyName("classifier")]
+	public Dictionary<string, object>? Classifier { get; set; }
+
+	[JsonPropertyName("classifier_id")]
+	public string? ClassifierId { get; set; }
+
+	[JsonPropertyName("sample")]
+	public Dictionary<string, object> Sample { get; set; }
+
+}
+
+public sealed class ClassifierTestResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
 public sealed class ClassifierUpdateInput
 {
 	[JsonPropertyName("description")]

@@ -23845,7 +23845,7 @@ export type SaveSuccessorReplacementParams = {
 };
 
 /**
- * Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+ * Sets the model that requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
  */
 export async function saveSuccessorReplacement(
   client: Client,
@@ -24080,6 +24080,78 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestClassifierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    classifier?: {
+      dimensions?: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      instructions?: string;
+      model?: string;
+    };
+    classifier_id?: string;
+    sample: {
+      prompt: string;
+      response?: string;
+    };
+  };
+};
+
+/**
+ * Runs a draft or saved classifier once on a sample prompt and response, with the same request the gateway sends for it. The request is a real, billed model request made with your own credential and labelled phaseo.classifier_test. Owners and admins; the credential needs classifiers:write and gateway:access. Management keys cannot make model requests and are refused.
+ */
+export async function testClassifier(
+  client: Client,
+  args: TestClassifierParams = {},
+): Promise<{
+  data: {
+    answered?: boolean;
+    cost_usd?: number;
+    format?: "json_schema" | "decisions" | "json";
+    labels?: {
+      confidence?: number | null;
+      key?: string;
+      value?: string;
+    }[];
+    model?: string;
+    request_id?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers/test";
+  return client.request<{
+    data: {
+      answered?: boolean;
+      cost_usd?: number;
+      format?: "json_schema" | "decisions" | "json";
+      labels?: {
+        confidence?: number | null;
+        key?: string;
+        value?: string;
+      }[];
+      model?: string;
+      request_id?: string | null;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,

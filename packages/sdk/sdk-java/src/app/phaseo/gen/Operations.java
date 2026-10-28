@@ -1210,6 +1210,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object testClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/test";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object testObservabilityDestination(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/observability/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/test";
 		return client.request("POST", resolvedPath, query, headers, body);

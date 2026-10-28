@@ -796,7 +796,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 		build: (args) => ({ method: "DELETE", path: `/workspaces/${id(arg(args, 0, "Workspace id or slug"))}/invites/${id(arg(args, 1, "Invite id"))}` }),
 	},
 	"workspaces join-requests list": {
-		usage: `<workspace> [--status pending|approved|rejected] ${PAGE}`,
+		usage: `<workspace> [--status pending|approved|denied] ${PAGE}`,
 		output: "list",
 		build: (args, flags) => ({
 			method: "GET",

@@ -5590,6 +5590,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: Testar um classificador com um exemplo
+      description: Executa uma vez um classificador salvo ou um rascunho em um prompt e uma resposta de exemplo, com a mesma solicitação que o gateway envia. É uma solicitação real e cobrada a um modelo, feita com sua própria credencial e marcada como phaseo.classifier_test. Proprietários e administradores; a credencial precisa de classifiers:write e gateway:access. Chaves de gerenciamento não podem fazer solicitações a modelos e são recusadas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: Os rótulos escolhidos pelo modelo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: Classificador ou exemplo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Não é proprietário nem administrador, falta classifiers:write ou a credencial não tem gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Classificador salvo não encontrado neste espaço de trabalho
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: A solicitação ao modelo falhou (por exemplo, créditos insuficientes)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers/{id}:
     parameters:
       - name: id
@@ -9582,23 +9633,23 @@ paths:
       tags:
         - Gateway
       operationId: getMe
-      summary: Get the signed-in user
-      description: Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+      summary: Obter o usuário conectado
+      description: Retorna o usuário do token OAuth, o cliente e os escopos do token e os espaços de trabalho do usuário. Exige um token OAuth com me:read; chaves de gerenciamento são recusadas.
       responses:
         '200':
-          description: The signed-in user
+          description: O usuário conectado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: O token não tem me:read
           content:
             application/json:
               schema:
@@ -9609,23 +9660,23 @@ paths:
       tags:
         - Gateway
       operationId: getMyProfile
-      summary: Get your profile
-      description: Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+      summary: Obter seu perfil
+      description: Retorna os campos de perfil exibidos na página Perfil do painel. Exige um token OAuth com me:read.
       responses:
         '200':
-          description: Profile
+          description: Perfil
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: O token não tem me:read
           content:
             application/json:
               schema:
@@ -9635,8 +9686,8 @@ paths:
       tags:
         - Gateway
       operationId: updateMyProfile
-      summary: Update your profile
-      description: Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+      summary: Atualizar seu perfil
+      description: Altera seu nome de exibição, seu espaço de trabalho padrão (um do qual você participa) ou se seus dados ficam ocultos na tela. Senha, MFA e chaves de acesso são gerenciadas somente no navegador. Exige um token OAuth com settings:write.
       requestBody:
         required: true
         content:
@@ -9645,25 +9696,25 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Updated profile
+          description: Perfil atualizado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '400':
-          description: Invalid field
+          description: Campo inválido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks settings:write, or the default workspace is not one of yours
+          description: O token não tem settings:write, ou o espaço de trabalho padrão não é um dos seus
           content:
             application/json:
               schema:
@@ -9674,23 +9725,23 @@ paths:
       tags:
         - Gateway
       operationId: listAuthorizedApps
-      summary: List apps you have authorized
-      description: Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+      summary: Listar os aplicativos que você autorizou
+      description: Lista os aplicativos que você autorizou com OAuth em todos os espaços de trabalho. Exige um token OAuth com oauth_clients:read.
       responses:
         '200':
-          description: Authorized apps
+          description: Aplicativos autorizados
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppListResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks oauth_clients:read
+          description: O token não tem oauth_clients:read
           content:
             application/json:
               schema:
@@ -9701,8 +9752,8 @@ paths:
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
-      summary: Remove scopes from an authorized app
-      description: Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+      summary: Remover escopos de um aplicativo autorizado
+      description: Restringe o acesso de um aplicativo aos escopos informados. Escopos só podem ser removidos; adicionar um exige seu consentimento no navegador. Exige um token OAuth com oauth_clients:write.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       requestBody:
@@ -9713,25 +9764,25 @@ paths:
               $ref: '#/components/schemas/AuthorizedAppScopesRequest'
       responses:
         '200':
-          description: Scopes reduced
+          description: Escopos reduzidos
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppScopesResponse'
         '400':
-          description: Empty list, or a scope the app does not have
+          description: Lista vazia, ou um escopo que o aplicativo não tem
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: Aplicativo autorizado não encontrado
           content:
             application/json:
               schema:
@@ -9741,25 +9792,25 @@ paths:
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
-      summary: Revoke an authorized app
-      description: Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+      summary: Revogar um aplicativo autorizado
+      description: Revoga o acesso de um aplicativo para que seus tokens parem de funcionar. Revogar a autorização do próprio aplicativo que faz a chamada encerra a sessão dele. Exige um token OAuth com oauth_clients:delete.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       responses:
         '200':
-          description: Authorization revoked
+          description: Autorização revogada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Não é um token OAuth, ou o token é inválido ou expirou
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: Aplicativo autorizado não encontrado
           content:
             application/json:
               schema:
@@ -9770,8 +9821,8 @@ paths:
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
-      summary: Accept a workspace invite
-      description: Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+      summary: Aceitar um convite para um espaço de trabalho
+      description: Pede para entrar no espaço de trabalho ao qual um código de convite pertence. Depois, um proprietário ou administrador aprova ou recusa a solicitação. Exige um token OAuth com workspaces:write; chaves de gerenciamento são recusadas porque pertencem a um espaço de trabalho, não a uma pessoa.
       requestBody:
         required: true
         content:
@@ -9780,31 +9831,31 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
       responses:
         '201':
-          description: Join request created
+          description: Solicitação de entrada criada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
         '400':
-          description: Missing invite code
+          description: Código de convite ausente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:write
+          description: Não é um token OAuth de usuário, ou o token não tem workspaces:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Invalid or expired invite
+          description: Convite inválido ou expirado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Already a member, or a request is already pending
+          description: Já é membro, ou já há uma solicitação pendente
           content:
             application/json:
               schema:
@@ -9815,12 +9866,12 @@ paths:
       tags:
         - Gateway
       operationId: listMyJoinRequests
-      summary: List your requests to join workspaces
-      description: Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+      summary: Listar suas solicitações para entrar em espaços de trabalho
+      description: Lista suas próprias solicitações para entrar em espaços de trabalho, das mais recentes para as mais antigas (no máximo 100). Exige um token OAuth com workspaces:read.
       parameters:
         - name: status
           in: query
-          description: Pending by default; all returns every status.
+          description: Pendentes por padrão; all retorna todos os status.
           schema:
             type: string
             enum:
@@ -9831,7 +9882,7 @@ paths:
               - all
       responses:
         '200':
-          description: Your join requests
+          description: Suas solicitações de entrada
           content:
             application/json:
               schema:
@@ -9843,7 +9894,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:read
+          description: Não é um token OAuth de usuário, ou o token não tem workspaces:read
           content:
             application/json:
               schema:
@@ -9854,11 +9905,11 @@ paths:
       tags:
         - Gateway
       operationId: getRateLimitTier
-      summary: Get the workspace's rate limit tier
-      description: Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+      summary: Obter o nível de limite de taxa do espaço de trabalho
+      description: Retorna o nível de confiança do espaço de trabalho, suas solicitações por minuto e se ele pode subir um nível agora. Proprietários e administradores (OAuth) ou chaves de gerenciamento com rate_limits:read. canRaise só é verdadeiro para o proprietário do espaço de trabalho.
       responses:
         '200':
-          description: Tier and raise status
+          description: Nível e status do aumento
           content:
             application/json:
               schema:
@@ -9870,7 +9921,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an owner or admin, or token lacks rate_limits:read
+          description: Não é proprietário nem administrador, ou o token não tem rate_limits:read
           content:
             application/json:
               schema:
@@ -9881,11 +9932,11 @@ paths:
       tags:
         - Gateway
       operationId: raiseRateLimitTier
-      summary: Raise the workspace's rate limit tier
-      description: Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+      summary: Aumentar o nível de limite de taxa do espaço de trabalho
+      description: Aumenta em um nível um espaço de trabalho qualificado por tempo limitado. Somente o proprietário do espaço de trabalho pode aumentar, com um token OAuth que tenha rate_limits:write; chaves de gerenciamento são recusadas para que uma chave vazada não possa elevar os limites do próprio espaço de trabalho.
       responses:
         '201':
-          description: Raised
+          description: Aumentado
           content:
             application/json:
               schema:
@@ -9897,13 +9948,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not the workspace owner, a management key, or token lacks rate_limits:write
+          description: Não é o proprietário do espaço de trabalho, é uma chave de gerenciamento ou o token não tem rate_limits:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: The workspace cannot raise its limit now (see reason)
+          description: O espaço de trabalho não pode aumentar o limite agora (veja reason)
           content:
             application/json:
               schema:
@@ -9914,11 +9965,11 @@ paths:
       tags:
         - Gateway
       operationId: getAutoRoutingSettings
-      summary: Get auto-routing settings
-      description: Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+      summary: Obter as configurações de roteamento automático
+      description: Retorna os limites dentro dos quais o roteador automático funciona neste espaço de trabalho. Qualquer membro; exige settings:read.
       responses:
         '200':
-          description: Auto-routing settings
+          description: Configurações de roteamento automático
           content:
             application/json:
               schema:
@@ -9934,8 +9985,8 @@ paths:
       tags:
         - Gateway
       operationId: updateAutoRoutingSettings
-      summary: Update auto-routing settings
-      description: Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+      summary: Atualizar as configurações de roteamento automático
+      description: Altera os campos enviados; o resultado é validado como um todo, como o painel o salva. Um spend_profile personalizado precisa dos dois limites de preço. Proprietários e administradores; exige settings:write.
       requestBody:
         required: true
         content:
@@ -9944,13 +9995,13 @@ paths:
               $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
       responses:
         '200':
-          description: Updated auto-routing settings
+          description: Configurações de roteamento automático atualizadas
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoRoutingSettingsResponse'
         '400':
-          description: Invalid settings
+          description: Configurações inválidas
           content:
             application/json:
               schema:
@@ -9967,11 +10018,11 @@ paths:
       tags:
         - Gateway
       operationId: listSuccessorReplacements
-      summary: List successor model replacements
-      description: Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+      summary: Listar substituições de modelos sucessores
+      description: Lista as substituições escolhidas pelo espaço de trabalho para modelos que nenhum provedor oferece mais. O ativador e a política de preços do roteamento para sucessores ficam em /settings. Qualquer membro; exige settings:read.
       responses:
         '200':
-          description: Replacements
+          description: Substituições
           content:
             application/json:
               schema:
@@ -9987,8 +10038,8 @@ paths:
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
-      summary: Save a successor model replacement
-      description: Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+      summary: Salvar uma substituição de modelo sucessor
+      description: Define o modelo para o qual as solicitações de model são enviadas, substituindo qualquer escolha anterior. Um successor nulo significa que as solicitações de model nunca são redirecionadas. Os dois modelos precisam estar no catálogo e o sucessor precisa estar disponível. No máximo 500 por espaço de trabalho. Proprietários e administradores; exige settings:write.
       requestBody:
         required: true
         content:
@@ -9997,13 +10048,13 @@ paths:
               $ref: '#/components/schemas/SuccessorReplacement'
       responses:
         '200':
-          description: Saved replacement
+          description: Substituição salva
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementResponse'
         '400':
-          description: Invalid or unknown model
+          description: Modelo inválido ou desconhecido
           content:
             application/json:
               schema:
@@ -10019,24 +10070,24 @@ paths:
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
-      summary: Remove a successor model replacement
-      description: Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+      summary: Remover uma substituição de modelo sucessor
+      description: Remove a escolha do espaço de trabalho para um modelo, para que o sucessor do catálogo volte a valer. Proprietários e administradores; exige settings:write.
       parameters:
         - name: model
           in: query
           required: true
-          description: The model id whose replacement to remove.
+          description: O ID do modelo cuja substituição será removida.
           schema:
             $ref: '#/components/schemas/ModelId'
       responses:
         '200':
-          description: Replacement removed
+          description: Substituição removida
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
         '400':
-          description: Missing or invalid model
+          description: Modelo ausente ou inválido
           content:
             application/json:
               schema:
@@ -10048,7 +10099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No replacement is saved for this model
+          description: Nenhuma substituição foi salva para este modelo
           content:
             application/json:
               schema:
@@ -10059,8 +10110,8 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
-      summary: Test destination settings before saving
-      description: Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+      summary: Testar as configurações de um destino antes de salvar
+      description: Envia um trace de exemplo sem mensagens para as configurações informadas, da mesma forma que o gateway entrega traces. Nada é salvo. Proprietários e administradores; exige settings:write.
       requestBody:
         required: true
         content:
@@ -10069,13 +10120,13 @@ paths:
               $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
       responses:
         '200':
-          description: Test result; ok is false when the destination refused or could not be reached
+          description: Resultado do teste; ok é falso quando o destino recusou ou não pôde ser alcançado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
         '400':
-          description: Invalid type or settings
+          description: Tipo ou configurações inválidos
           content:
             application/json:
               schema:
@@ -10092,13 +10143,13 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestination
-      summary: Check a destination's connection
-      description: Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+      summary: Verificar a conexão de um destino
+      description: Envia um trace de exemplo sem mensagens a um destino salvo, como faz a verificação de status do painel. O status de integridade do destino não é alterado. Proprietários e administradores; exige settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Test result
+          description: Resultado do teste
           content:
             application/json:
               schema:
@@ -10121,13 +10172,13 @@ paths:
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
-      summary: Send a sample trace
-      description: Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+      summary: Enviar um trace de exemplo
+      description: Envia um trace de exemplo a um destino salvo, com as mensagens, a menos que o destino exclua prompts e saídas. Proprietários e administradores; exige settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Send result
+          description: Resultado do envio
           content:
             application/json:
               schema:
@@ -10150,8 +10201,8 @@ paths:
       tags:
         - Gateway
       operationId: reportLeakedKey
-      summary: Report a leaked API key
-      description: Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+      summary: Denunciar uma chave de API vazada
+      description: Denuncia uma chave do Phaseo encontrada publicada. Sem autenticação. Sempre responde 202 com o mesmo corpo, correspondendo ou não a uma chave, então a rota não serve para verificar chaves. Com limite de taxa por endereço.
       security: []
       requestBody:
         required: true
@@ -10161,7 +10212,7 @@ paths:
               $ref: '#/components/schemas/LeakedKeyReportRequest'
       responses:
         '202':
-          description: Report received
+          description: Denúncia recebida
           content:
             application/json:
               schema:
@@ -10301,7 +10352,7 @@ components:
       name: id
       in: path
       required: true
-      description: Authorization identifier from the authorized apps list.
+      description: Identificador da autorização da lista de aplicativos autorizados.
       schema:
         type: string
     ObservabilityDestinationId:
@@ -10411,7 +10462,7 @@ components:
           nullable: true
         obfuscate_info:
           type: boolean
-          description: Whether your email and name are hidden on screen in the dashboard.
+          description: Se seu e-mail e seu nome ficam ocultos na tela do painel.
     UserProfileResponse:
       type: object
       required:
@@ -10429,7 +10480,7 @@ components:
         default_workspace_id:
           type: string
           nullable: true
-          description: A workspace you belong to, or null to clear.
+          description: Um espaço de trabalho do qual você participa, ou null para limpar.
         obfuscate_info:
           type: boolean
       additionalProperties: false
@@ -10438,7 +10489,7 @@ components:
       properties:
         id:
           type: string
-          description: Authorization id.
+          description: ID da autorização.
         client_id:
           type: string
         app_name:
@@ -10454,7 +10505,7 @@ components:
             type: string
         current:
           type: boolean
-          description: True for the authorization the calling token belongs to.
+          description: Verdadeiro para a autorização à qual o token da chamada pertence.
         authorized_at:
           type: string
           format: date-time
@@ -10479,7 +10530,7 @@ components:
         scopes:
           type: array
           minItems: 1
-          description: The scopes to keep; each must already be granted.
+          description: Os escopos a manter; cada um já precisa estar concedido.
           items:
             type: string
       additionalProperties: false
@@ -10513,7 +10564,7 @@ components:
           type: string
           minLength: 6
           maxLength: 256
-          description: The invite code.
+          description: O código de convite.
       additionalProperties: false
     MyJoinRequestCreatedResponse:
       type: object
@@ -10580,7 +10631,7 @@ components:
             target:
               type: string
               nullable: true
-              description: The tier a raise would move to.
+              description: O nível para o qual um aumento levaria.
             targetRequestsPerMinute:
               type: number
               nullable: true
@@ -10589,15 +10640,15 @@ components:
             refusal:
               type: string
               nullable: true
-              description: Why a raise is not available now; null when eligible.
+              description: Por que um aumento não está disponível agora; null quando qualificado.
             activeUntil:
               type: number
               nullable: true
-              description: When an active raise ends (Unix milliseconds).
+              description: Quando um aumento ativo termina (milissegundos Unix).
             availableAt:
               type: number
               nullable: true
-              description: When the next raise may be requested (Unix milliseconds).
+              description: Quando o próximo aumento pode ser solicitado (milissegundos Unix).
             durationDays:
               type: number
             thresholds:
@@ -10609,14 +10660,14 @@ components:
                   type: number
             canRaise:
               type: boolean
-              description: True when the caller is the workspace owner and the workspace is eligible.
+              description: Verdadeiro quando quem chama é o proprietário do espaço de trabalho e ele está qualificado.
     AutoRoutingSettings:
       type: object
       properties:
         allowed_patterns:
           type: array
           maxItems: 16
-          description: Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.
+          description: Padrões provedor/modelo entre os quais o roteador automático pode escolher, como openai/*. Vazio permite qualquer modelo.
           items:
             type: string
         spend_profile:
@@ -10630,11 +10681,11 @@ components:
         max_input_price_per_million:
           type: number
           nullable: true
-          description: USD per million input tokens; set only for the custom spend profile.
+          description: USD por milhão de tokens de entrada; definido apenas para o perfil de gastos personalizado.
         max_output_price_per_million:
           type: number
           nullable: true
-          description: USD per million output tokens; set only for the custom spend profile.
+          description: USD por milhão de tokens de saída; definido apenas para o perfil de gastos personalizado.
         objective:
           type: string
           enum:
@@ -10699,11 +10750,11 @@ components:
       properties:
         model:
           type: string
-          description: The model whose requests are redirected.
+          description: O modelo cujas solicitações são redirecionadas.
         successor:
           type: string
           nullable: true
-          description: The model to send them to, or null to never redirect them.
+          description: O modelo para o qual enviá-las, ou null para nunca redirecioná-las.
     SuccessorReplacementRow:
       type: object
       properties:
@@ -10749,7 +10800,7 @@ components:
           $ref: '#/components/schemas/ObservabilityDestinationType'
         config:
           type: object
-          description: The destination's settings, as for creating one.
+          description: As configurações do destino, como ao criar um.
           additionalProperties:
             type: string
     ObservabilityDestinationTestResponse:
@@ -10795,11 +10846,11 @@ components:
         token:
           type: string
           maxLength: 4096
-          description: The leaked key as found.
+          description: A chave vazada como foi encontrada.
         source:
           type: string
           maxLength: 64
-          description: Where it was found, such as github.
+          description: Onde foi encontrada, por exemplo github.
         reporter_email:
           type: string
           maxLength: 320
@@ -22954,11 +23005,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: Indica ao modelo quando escolher este valor.
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: Uma pergunta que o classificador responde sobre cada solicitação. A resposta é gravada como um rótulo da solicitação cuja chave é a chave desta dimensão. Se quem chama já enviou um rótulo com essa chave, a dimensão é ignorada.
       required:
         - key
         - values
@@ -22978,14 +23029,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: Permite mais de um valor por solicitação.
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: Permite que o modelo responda "other" quando nenhum valor da lista se encaixa.
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: Entre 2 e 50 valores. Um único valor só é permitido quando allow_other é verdadeiro.
           minItems: 1
           maxItems: 50
           items:
@@ -23216,6 +23267,74 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: Um rascunho para testar. Campos não enviados vêm de classifier_id quando informado.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: Um classificador salvo neste espaço de trabalho para testar ou para rotular o teste.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: Falso quando não foi possível ler a resposta do modelo.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:

@@ -5923,6 +5923,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: Test a classifier on a sample
+      description: >-
+        Runs a draft or saved classifier once on a sample prompt and response,
+        with the same request the gateway sends for it. The request is a real,
+        billed model request made with your own credential and labelled
+        phaseo.classifier_test. Owners and admins; the credential needs
+        classifiers:write and gateway:access. Management keys cannot make model
+        requests and are refused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: The labels the model chose
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: Invalid classifier or sample
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Not an owner or admin, missing classifiers:write, or the credential
+            has no gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Saved classifier not found in this workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: The model request failed (for example, insufficient credits)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers/{id}:
     parameters:
       - name: id
@@ -10509,10 +10568,11 @@ paths:
       operationId: saveSuccessorReplacement
       summary: Save a successor model replacement
       description: >-
-        Sets the model requests for model are sent to, replacing any earlier
-        choice. A null successor means requests for model are never redirected.
-        Both models must be in the catalogue and the successor must be served.
-        At most 500 per workspace. Owners and admins; settings:write required.
+        Sets the model that requests for model are sent to, replacing any
+        earlier choice. A null successor means requests for model are never
+        redirected. Both models must be in the catalogue and the successor must
+        be served. At most 500 per workspace. Owners and admins; settings:write
+        required.
       requestBody:
         required: true
         content:
@@ -24292,6 +24352,78 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: >-
+            A draft to test. Fields not sent come from classifier_id when it is
+            given.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: >-
+            A saved classifier in this workspace to test, or to label the test
+            with.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: False when the model's answer could not be read.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:

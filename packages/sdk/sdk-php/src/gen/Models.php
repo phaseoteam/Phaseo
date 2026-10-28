@@ -1431,6 +1431,22 @@ class ClassifierScope
 	public $models;
 }
 
+class ClassifierTestRequest
+{
+	/** @var array<string, mixed>|null */
+	public $classifier;
+	/** @var string|null */
+	public $classifier_id;
+	/** @var array<string, mixed> */
+	public $sample;
+}
+
+class ClassifierTestResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
 class ClassifierUpdateInput
 {
 	/** @var string|null */

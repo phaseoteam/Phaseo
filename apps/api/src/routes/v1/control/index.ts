@@ -45,6 +45,7 @@ import { workloadIdentityRoutes } from "./workload-identity";
 import { spendRulesRoutes } from "./spend-rules";
 import { spendBlocksRoutes } from "./spend-blocks";
 import { classifiersRoutes } from "./classifiers";
+import { classifierTestRoutes } from "./classifier-test";
 import { privateModelsRoutes } from "./private-models";
 import {
 	feedbackRoutes,
@@ -95,6 +96,7 @@ platformRouter.route("/rate-limits", rateLimitsRoutes);
 platformRouter.route("/workload-identity", workloadIdentityRoutes);
 platformRouter.route("/spend-rules", spendRulesRoutes);
 platformRouter.route("/spend-blocks", spendBlocksRoutes);
+platformRouter.route("/classifiers", classifierTestRoutes);
 platformRouter.route("/classifiers", classifiersRoutes);
 platformRouter.route("/private-models", privateModelsRoutes);
 platformRouter.route("/me", meRoutes);

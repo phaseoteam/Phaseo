@@ -5590,6 +5590,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: किसी नमूने पर क्लासिफ़ायर का परीक्षण करें
+      description: किसी सहेजे गए या ड्राफ़्ट क्लासिफ़ायर को नमूना प्रॉम्प्ट और उत्तर पर एक बार चलाता है, उसी अनुरोध के साथ जो गेटवे भेजता है। यह आपके अपने क्रेडेंशियल से किया गया वास्तविक, बिल योग्य मॉडल अनुरोध है और इसे phaseo.classifier_test लेबल किया जाता है। स्वामी और एडमिन; क्रेडेंशियल में classifiers:write और gateway:access होना चाहिए। मैनेजमेंट कुंजियाँ मॉडल अनुरोध नहीं कर सकतीं और अस्वीकार कर दी जाती हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: मॉडल द्वारा चुने गए लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: अमान्य क्लासिफ़ायर या नमूना
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: स्वामी या एडमिन नहीं, classifiers:write नहीं है, या क्रेडेंशियल में gateway:access नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: मॉडल अनुरोध विफल रहा (उदाहरण के लिए, अपर्याप्त क्रेडिट)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers/{id}:
     parameters:
       - name: id
@@ -9582,23 +9633,23 @@ paths:
       tags:
         - Gateway
       operationId: getMe
-      summary: Get the signed-in user
-      description: Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+      summary: साइन-इन उपयोगकर्ता प्राप्त करें
+      description: OAuth टोकन का उपयोगकर्ता, टोकन का क्लाइंट और स्कोप, और वे वर्कस्पेस लौटाता है जिनका उपयोगकर्ता सदस्य है। me:read वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं।
       responses:
         '200':
-          description: The signed-in user
+          description: साइन-इन उपयोगकर्ता
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: टोकन में me:read नहीं है
           content:
             application/json:
               schema:
@@ -9609,23 +9660,23 @@ paths:
       tags:
         - Gateway
       operationId: getMyProfile
-      summary: Get your profile
-      description: Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+      summary: अपनी प्रोफ़ाइल प्राप्त करें
+      description: डैशबोर्ड के प्रोफ़ाइल पेज पर दिखाए जाने वाले प्रोफ़ाइल फ़ील्ड लौटाता है। me:read वाला OAuth टोकन आवश्यक है।
       responses:
         '200':
-          description: Profile
+          description: प्रोफ़ाइल
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: टोकन में me:read नहीं है
           content:
             application/json:
               schema:
@@ -9635,8 +9686,8 @@ paths:
       tags:
         - Gateway
       operationId: updateMyProfile
-      summary: Update your profile
-      description: Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+      summary: अपनी प्रोफ़ाइल अपडेट करें
+      description: आपका डिस्प्ले नाम, डिफ़ॉल्ट वर्कस्पेस (जिसके आप सदस्य हैं) या स्क्रीन पर आपकी जानकारी छिपी रहे या नहीं, यह बदलता है। पासवर्ड, MFA और पासकी केवल ब्राउज़र में प्रबंधित होते हैं। settings:write वाला OAuth टोकन आवश्यक है।
       requestBody:
         required: true
         content:
@@ -9645,25 +9696,25 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Updated profile
+          description: अपडेट की गई प्रोफ़ाइल
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '400':
-          description: Invalid field
+          description: अमान्य फ़ील्ड
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks settings:write, or the default workspace is not one of yours
+          description: टोकन में settings:write नहीं है, या डिफ़ॉल्ट वर्कस्पेस आपका नहीं है
           content:
             application/json:
               schema:
@@ -9674,23 +9725,23 @@ paths:
       tags:
         - Gateway
       operationId: listAuthorizedApps
-      summary: List apps you have authorized
-      description: Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+      summary: आपके द्वारा अधिकृत ऐप्स सूचीबद्ध करें
+      description: हर वर्कस्पेस में आपके द्वारा OAuth से अधिकृत ऐप्स सूचीबद्ध करता है। oauth_clients:read वाला OAuth टोकन आवश्यक है।
       responses:
         '200':
-          description: Authorized apps
+          description: अधिकृत ऐप्स
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppListResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks oauth_clients:read
+          description: टोकन में oauth_clients:read नहीं है
           content:
             application/json:
               schema:
@@ -9701,8 +9752,8 @@ paths:
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
-      summary: Remove scopes from an authorized app
-      description: Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+      summary: अधिकृत ऐप से स्कोप हटाएँ
+      description: किसी ऐप की पहुँच को दिए गए स्कोप तक सीमित करता है। स्कोप केवल हटाए जा सकते हैं; कोई स्कोप जोड़ने के लिए ब्राउज़र में आपकी सहमति आवश्यक है। oauth_clients:write वाला OAuth टोकन आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       requestBody:
@@ -9713,25 +9764,25 @@ paths:
               $ref: '#/components/schemas/AuthorizedAppScopesRequest'
       responses:
         '200':
-          description: Scopes reduced
+          description: स्कोप घटाए गए
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppScopesResponse'
         '400':
-          description: Empty list, or a scope the app does not have
+          description: खाली सूची, या ऐसा स्कोप जो ऐप के पास नहीं है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: अधिकृत ऐप नहीं मिला
           content:
             application/json:
               schema:
@@ -9741,25 +9792,25 @@ paths:
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
-      summary: Revoke an authorized app
-      description: Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+      summary: अधिकृत ऐप रद्द करें
+      description: किसी ऐप की पहुँच रद्द करता है ताकि उसके टोकन काम करना बंद कर दें। कॉल करने वाले ऐप का अपना प्राधिकरण रद्द करने पर वह साइन आउट हो जाता है। oauth_clients:delete वाला OAuth टोकन आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       responses:
         '200':
-          description: Authorization revoked
+          description: प्राधिकरण रद्द किया गया
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: अधिकृत ऐप नहीं मिला
           content:
             application/json:
               schema:
@@ -9770,8 +9821,8 @@ paths:
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
-      summary: Accept a workspace invite
-      description: Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+      summary: वर्कस्पेस आमंत्रण स्वीकार करें
+      description: उस वर्कस्पेस में शामिल होने का अनुरोध करता है जिसका आमंत्रण कोड है। इसके बाद वर्कस्पेस का स्वामी या एडमिन अनुरोध स्वीकृत या अस्वीकार करता है। workspaces:write वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं क्योंकि वे किसी व्यक्ति की नहीं, वर्कस्पेस की होती हैं।
       requestBody:
         required: true
         content:
@@ -9780,31 +9831,31 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
       responses:
         '201':
-          description: Join request created
+          description: शामिल होने का अनुरोध बनाया गया
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
         '400':
-          description: Missing invite code
+          description: आमंत्रण कोड नहीं है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:write
+          description: OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:write नहीं है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Invalid or expired invite
+          description: अमान्य या समाप्त आमंत्रण
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Already a member, or a request is already pending
+          description: पहले से सदस्य हैं, या कोई अनुरोध पहले से लंबित है
           content:
             application/json:
               schema:
@@ -9815,12 +9866,12 @@ paths:
       tags:
         - Gateway
       operationId: listMyJoinRequests
-      summary: List your requests to join workspaces
-      description: Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+      summary: वर्कस्पेस में शामिल होने के अपने अनुरोध सूचीबद्ध करें
+      description: वर्कस्पेस में शामिल होने के आपके अपने अनुरोध, सबसे नए पहले (अधिकतम 100), सूचीबद्ध करता है। workspaces:read वाला OAuth टोकन आवश्यक है।
       parameters:
         - name: status
           in: query
-          description: Pending by default; all returns every status.
+          description: डिफ़ॉल्ट रूप से लंबित; all हर स्थिति लौटाता है।
           schema:
             type: string
             enum:
@@ -9831,7 +9882,7 @@ paths:
               - all
       responses:
         '200':
-          description: Your join requests
+          description: आपके शामिल होने के अनुरोध
           content:
             application/json:
               schema:
@@ -9843,7 +9894,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:read
+          description: OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:read नहीं है
           content:
             application/json:
               schema:
@@ -9854,11 +9905,11 @@ paths:
       tags:
         - Gateway
       operationId: getRateLimitTier
-      summary: Get the workspace's rate limit tier
-      description: Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+      summary: वर्कस्पेस का रेट लिमिट टियर प्राप्त करें
+      description: वर्कस्पेस का ट्रस्ट टियर, प्रति मिनट अनुरोध, और यह कि क्या वह अभी एक टियर ऊपर जा सकता है, लौटाता है। वर्कस्पेस के स्वामी और एडमिन (OAuth) या rate_limits:read वाली मैनेजमेंट कुंजियाँ। canRaise केवल वर्कस्पेस स्वामी के लिए true होता है।
       responses:
         '200':
-          description: Tier and raise status
+          description: टियर और बढ़ाने की स्थिति
           content:
             application/json:
               schema:
@@ -9870,7 +9921,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an owner or admin, or token lacks rate_limits:read
+          description: स्वामी या एडमिन नहीं, या टोकन में rate_limits:read नहीं है
           content:
             application/json:
               schema:
@@ -9881,11 +9932,11 @@ paths:
       tags:
         - Gateway
       operationId: raiseRateLimitTier
-      summary: Raise the workspace's rate limit tier
-      description: Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+      summary: वर्कस्पेस का रेट लिमिट टियर बढ़ाएँ
+      description: किसी योग्य वर्कस्पेस को सीमित समय के लिए एक टियर ऊपर करता है। केवल वर्कस्पेस स्वामी rate_limits:write वाले OAuth टोकन से टियर बढ़ा सकता है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं ताकि लीक हुई कुंजी अपने ही वर्कस्पेस की सीमाएँ न हटा सके।
       responses:
         '201':
-          description: Raised
+          description: बढ़ाया गया
           content:
             application/json:
               schema:
@@ -9897,13 +9948,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not the workspace owner, a management key, or token lacks rate_limits:write
+          description: वर्कस्पेस स्वामी नहीं, मैनेजमेंट कुंजी है, या टोकन में rate_limits:write नहीं है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: The workspace cannot raise its limit now (see reason)
+          description: वर्कस्पेस अभी अपनी सीमा नहीं बढ़ा सकता (reason देखें)
           content:
             application/json:
               schema:
@@ -9914,11 +9965,11 @@ paths:
       tags:
         - Gateway
       operationId: getAutoRoutingSettings
-      summary: Get auto-routing settings
-      description: Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+      summary: ऑटो-रूटिंग सेटिंग प्राप्त करें
+      description: इस वर्कस्पेस के लिए वे सीमाएँ लौटाता है जिनके भीतर ऑटो-राउटर काम करता है। कोई भी सदस्य; settings:read आवश्यक है।
       responses:
         '200':
-          description: Auto-routing settings
+          description: ऑटो-रूटिंग सेटिंग
           content:
             application/json:
               schema:
@@ -9934,8 +9985,8 @@ paths:
       tags:
         - Gateway
       operationId: updateAutoRoutingSettings
-      summary: Update auto-routing settings
-      description: Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+      summary: ऑटो-रूटिंग सेटिंग अपडेट करें
+      description: भेजे गए फ़ील्ड बदलता है; परिणाम को पूरे रूप में उसी तरह जाँचा जाता है जैसे डैशबोर्ड उसे सहेजता है। कस्टम spend_profile के लिए दोनों मूल्य सीमाएँ आवश्यक हैं। स्वामी और एडमिन; settings:write आवश्यक है।
       requestBody:
         required: true
         content:
@@ -9944,13 +9995,13 @@ paths:
               $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
       responses:
         '200':
-          description: Updated auto-routing settings
+          description: अपडेट की गई ऑटो-रूटिंग सेटिंग
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoRoutingSettingsResponse'
         '400':
-          description: Invalid settings
+          description: अमान्य सेटिंग
           content:
             application/json:
               schema:
@@ -9967,11 +10018,11 @@ paths:
       tags:
         - Gateway
       operationId: listSuccessorReplacements
-      summary: List successor model replacements
-      description: Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन सूचीबद्ध करें
+      description: उन मॉडलों के लिए वर्कस्पेस द्वारा चुने गए प्रतिस्थापन सूचीबद्ध करता है जिन्हें अब कोई प्रदाता सर्व नहीं करता। उत्तराधिकारी रूटिंग का स्विच और मूल्य नीति /settings में हैं। कोई भी सदस्य; settings:read आवश्यक है।
       responses:
         '200':
-          description: Replacements
+          description: प्रतिस्थापन
           content:
             application/json:
               schema:
@@ -9987,8 +10038,8 @@ paths:
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
-      summary: Save a successor model replacement
-      description: Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन सहेजें
+      description: वह मॉडल सेट करता है जिसे model के अनुरोध भेजे जाते हैं, और किसी भी पिछले चुनाव को बदल देता है। null successor का अर्थ है कि model के अनुरोध कभी रीडायरेक्ट नहीं होते। दोनों मॉडल कैटलॉग में होने चाहिए और उत्तराधिकारी सर्व किया जाना चाहिए। प्रति वर्कस्पेस अधिकतम 500। स्वामी और एडमिन; settings:write आवश्यक है।
       requestBody:
         required: true
         content:
@@ -9997,13 +10048,13 @@ paths:
               $ref: '#/components/schemas/SuccessorReplacement'
       responses:
         '200':
-          description: Saved replacement
+          description: सहेजा गया प्रतिस्थापन
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementResponse'
         '400':
-          description: Invalid or unknown model
+          description: अमान्य या अज्ञात मॉडल
           content:
             application/json:
               schema:
@@ -10019,24 +10070,24 @@ paths:
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
-      summary: Remove a successor model replacement
-      description: Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन हटाएँ
+      description: किसी मॉडल के लिए वर्कस्पेस का चुनाव हटाता है, ताकि कैटलॉग का उत्तराधिकारी फिर से लागू हो। स्वामी और एडमिन; settings:write आवश्यक है।
       parameters:
         - name: model
           in: query
           required: true
-          description: The model id whose replacement to remove.
+          description: उस मॉडल की ID जिसका प्रतिस्थापन हटाना है।
           schema:
             $ref: '#/components/schemas/ModelId'
       responses:
         '200':
-          description: Replacement removed
+          description: प्रतिस्थापन हटाया गया
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
         '400':
-          description: Missing or invalid model
+          description: मॉडल नहीं है या अमान्य है
           content:
             application/json:
               schema:
@@ -10048,7 +10099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No replacement is saved for this model
+          description: इस मॉडल के लिए कोई प्रतिस्थापन सहेजा नहीं गया है
           content:
             application/json:
               schema:
@@ -10059,8 +10110,8 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
-      summary: Test destination settings before saving
-      description: Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+      summary: सहेजने से पहले डेस्टिनेशन सेटिंग का परीक्षण करें
+      description: दी गई सेटिंग पर बिना संदेशों वाला नमूना ट्रेस उसी तरह भेजता है जैसे गेटवे ट्रेस डिलीवर करता है। कुछ भी सहेजा नहीं जाता। स्वामी और एडमिन; settings:write आवश्यक है।
       requestBody:
         required: true
         content:
@@ -10069,13 +10120,13 @@ paths:
               $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
       responses:
         '200':
-          description: Test result; ok is false when the destination refused or could not be reached
+          description: परीक्षण परिणाम; जब डेस्टिनेशन ने अस्वीकार किया या उस तक पहुँचा नहीं जा सका, तो ok false होता है
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
         '400':
-          description: Invalid type or settings
+          description: अमान्य प्रकार या सेटिंग
           content:
             application/json:
               schema:
@@ -10092,13 +10143,13 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestination
-      summary: Check a destination's connection
-      description: Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+      summary: डेस्टिनेशन का कनेक्शन जाँचें
+      description: सहेजे गए डेस्टिनेशन को बिना संदेशों वाला नमूना ट्रेस भेजता है, जैसा डैशबोर्ड की स्थिति जाँच करती है। डेस्टिनेशन की स्वास्थ्य स्थिति नहीं बदलती। स्वामी और एडमिन; settings:write आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Test result
+          description: परीक्षण परिणाम
           content:
             application/json:
               schema:
@@ -10121,13 +10172,13 @@ paths:
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
-      summary: Send a sample trace
-      description: Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+      summary: नमूना ट्रेस भेजें
+      description: सहेजे गए डेस्टिनेशन को नमूना ट्रेस भेजता है, संदेशों के साथ, जब तक डेस्टिनेशन प्रॉम्प्ट और आउटपुट को बाहर न रखे। स्वामी और एडमिन; settings:write आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Send result
+          description: भेजने का परिणाम
           content:
             application/json:
               schema:
@@ -10150,8 +10201,8 @@ paths:
       tags:
         - Gateway
       operationId: reportLeakedKey
-      summary: Report a leaked API key
-      description: Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+      summary: लीक हुई API कुंजी की रिपोर्ट करें
+      description: सार्वजनिक रूप से मिली Phaseo कुंजी की रिपोर्ट करता है। प्रमाणीकरण आवश्यक नहीं। कुंजी मेल खाए या नहीं, हमेशा एक ही बॉडी के साथ 202 लौटाता है, इसलिए इस रूट से कुंजियाँ जाँची नहीं जा सकतीं। प्रति पते पर दर सीमित।
       security: []
       requestBody:
         required: true
@@ -10161,7 +10212,7 @@ paths:
               $ref: '#/components/schemas/LeakedKeyReportRequest'
       responses:
         '202':
-          description: Report received
+          description: रिपोर्ट प्राप्त हुई
           content:
             application/json:
               schema:
@@ -10301,7 +10352,7 @@ components:
       name: id
       in: path
       required: true
-      description: Authorization identifier from the authorized apps list.
+      description: अधिकृत ऐप्स सूची से प्राधिकरण पहचानकर्ता।
       schema:
         type: string
     ObservabilityDestinationId:
@@ -10411,7 +10462,7 @@ components:
           nullable: true
         obfuscate_info:
           type: boolean
-          description: Whether your email and name are hidden on screen in the dashboard.
+          description: क्या डैशबोर्ड में स्क्रीन पर आपका ईमेल और नाम छिपे रहते हैं।
     UserProfileResponse:
       type: object
       required:
@@ -10429,7 +10480,7 @@ components:
         default_workspace_id:
           type: string
           nullable: true
-          description: A workspace you belong to, or null to clear.
+          description: ऐसा वर्कस्पेस जिसके आप सदस्य हैं, या साफ़ करने के लिए null।
         obfuscate_info:
           type: boolean
       additionalProperties: false
@@ -10438,7 +10489,7 @@ components:
       properties:
         id:
           type: string
-          description: Authorization id.
+          description: प्राधिकरण ID।
         client_id:
           type: string
         app_name:
@@ -10454,7 +10505,7 @@ components:
             type: string
         current:
           type: boolean
-          description: True for the authorization the calling token belongs to.
+          description: उस प्राधिकरण के लिए true जिससे कॉल करने वाला टोकन संबंधित है।
         authorized_at:
           type: string
           format: date-time
@@ -10479,7 +10530,7 @@ components:
         scopes:
           type: array
           minItems: 1
-          description: The scopes to keep; each must already be granted.
+          description: रखे जाने वाले स्कोप; हर स्कोप पहले से दिया गया होना चाहिए।
           items:
             type: string
       additionalProperties: false
@@ -10513,7 +10564,7 @@ components:
           type: string
           minLength: 6
           maxLength: 256
-          description: The invite code.
+          description: आमंत्रण कोड।
       additionalProperties: false
     MyJoinRequestCreatedResponse:
       type: object
@@ -10580,7 +10631,7 @@ components:
             target:
               type: string
               nullable: true
-              description: The tier a raise would move to.
+              description: वह टियर जिस पर बढ़ाने से जाया जाएगा।
             targetRequestsPerMinute:
               type: number
               nullable: true
@@ -10589,15 +10640,15 @@ components:
             refusal:
               type: string
               nullable: true
-              description: Why a raise is not available now; null when eligible.
+              description: अभी बढ़ाना क्यों उपलब्ध नहीं है; योग्य होने पर null।
             activeUntil:
               type: number
               nullable: true
-              description: When an active raise ends (Unix milliseconds).
+              description: सक्रिय बढ़ोतरी कब समाप्त होती है (Unix मिलीसेकंड)।
             availableAt:
               type: number
               nullable: true
-              description: When the next raise may be requested (Unix milliseconds).
+              description: अगली बढ़ोतरी का अनुरोध कब किया जा सकता है (Unix मिलीसेकंड)।
             durationDays:
               type: number
             thresholds:
@@ -10609,14 +10660,14 @@ components:
                   type: number
             canRaise:
               type: boolean
-              description: True when the caller is the workspace owner and the workspace is eligible.
+              description: जब कॉल करने वाला वर्कस्पेस स्वामी हो और वर्कस्पेस योग्य हो, तब true।
     AutoRoutingSettings:
       type: object
       properties:
         allowed_patterns:
           type: array
           maxItems: 16
-          description: Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.
+          description: प्रदाता/मॉडल पैटर्न जिनमें से ऑटो-राउटर चुन सकता है, जैसे openai/*। खाली होने पर हर मॉडल की अनुमति है।
           items:
             type: string
         spend_profile:
@@ -10630,11 +10681,11 @@ components:
         max_input_price_per_million:
           type: number
           nullable: true
-          description: USD per million input tokens; set only for the custom spend profile.
+          description: प्रति मिलियन इनपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।
         max_output_price_per_million:
           type: number
           nullable: true
-          description: USD per million output tokens; set only for the custom spend profile.
+          description: प्रति मिलियन आउटपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।
         objective:
           type: string
           enum:
@@ -10699,11 +10750,11 @@ components:
       properties:
         model:
           type: string
-          description: The model whose requests are redirected.
+          description: वह मॉडल जिसके अनुरोध रीडायरेक्ट किए जाते हैं।
         successor:
           type: string
           nullable: true
-          description: The model to send them to, or null to never redirect them.
+          description: वह मॉडल जिसे उन्हें भेजना है, या उन्हें कभी रीडायरेक्ट न करने के लिए null।
     SuccessorReplacementRow:
       type: object
       properties:
@@ -10749,7 +10800,7 @@ components:
           $ref: '#/components/schemas/ObservabilityDestinationType'
         config:
           type: object
-          description: The destination's settings, as for creating one.
+          description: डेस्टिनेशन की सेटिंग, जैसे नया डेस्टिनेशन बनाते समय।
           additionalProperties:
             type: string
     ObservabilityDestinationTestResponse:
@@ -10795,11 +10846,11 @@ components:
         token:
           type: string
           maxLength: 4096
-          description: The leaked key as found.
+          description: लीक हुई कुंजी, जैसी मिली।
         source:
           type: string
           maxLength: 64
-          description: Where it was found, such as github.
+          description: यह कहाँ मिली, जैसे github।
         reporter_email:
           type: string
           maxLength: 320
@@ -22954,11 +23005,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: मॉडल को बताता है कि यह मान कब चुनना है।
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: एक प्रश्न जिसका उत्तर क्लासिफ़ायर हर अनुरोध के बारे में देता है। उत्तर अनुरोध लेबल के रूप में लिखा जाता है जिसकी कुंजी इस डाइमेंशन की कुंजी होती है। यदि कॉल करने वाले ने उस कुंजी वाला लेबल पहले ही भेजा है, तो डाइमेंशन छोड़ दिया जाता है।
       required:
         - key
         - values
@@ -22978,14 +23029,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: प्रति अनुरोध एक से अधिक मान की अनुमति दें।
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: जब कोई सूचीबद्ध मान उपयुक्त न हो, तो मॉडल को "other" उत्तर देने दें।
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: 2 से 50 मान। एकल मान की अनुमति केवल तब है जब allow_other true हो।
           minItems: 1
           maxItems: 50
           items:
@@ -23216,6 +23267,74 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: परीक्षण के लिए ड्राफ़्ट। classifier_id दिए जाने पर न भेजे गए फ़ील्ड उसी से लिए जाते हैं।
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर जिसका परीक्षण करना है, या जिससे परीक्षण को लेबल करना है।
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: जब मॉडल का उत्तर पढ़ा नहीं जा सका, तब false।
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:
