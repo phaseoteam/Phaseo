@@ -1200,7 +1200,7 @@ paths:
       tags:
         - Gateway
       operationId: createLiveSession
-      summary: 'GPT Live सत्र बनाएँ'
+      summary: GPT Live सत्र बनाएँ
       description: 'उपयोग मापन के साथ GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है, और रिले कनेक्शन विवरण लौटाता है। फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और उसके बाद `response.create` स्वीकार करता है।'
       requestBody:
         required: true
@@ -1314,7 +1314,7 @@ paths:
                     tools:
                       type: array
                       maxItems: 32
-                      description: 'क्लाइंट द्वारा चलाए जाने वाले फ़ंक्शन टूल, अद्वितीय नामों के साथ।'
+                      description: क्लाइंट द्वारा चलाए जाने वाले फ़ंक्शन टूल, अद्वितीय नामों के साथ।
                       items:
                         type: object
                         additionalProperties: false
@@ -1349,7 +1349,7 @@ paths:
                       default: true
       responses:
         '201':
-          description: 'GPT Live सत्र बनाया गया'
+          description: GPT Live सत्र बनाया गया
           content:
             application/json:
               schema:

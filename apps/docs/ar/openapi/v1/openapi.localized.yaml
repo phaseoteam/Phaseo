@@ -1200,7 +1200,7 @@ paths:
       tags:
         - Gateway
       operationId: createLiveSession
-      summary: 'إنشاء جلسة GPT Live'
+      summary: إنشاء جلسة GPT Live
       description: 'ينشئ جلسة صوتية من GPT Live مع احتساب الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses، ويعرض تفاصيل اتصال الترحيل. تعمل أدوات الدوال على عميلك: يمرّر الترحيل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`.'
       requestBody:
         required: true
@@ -1314,7 +1314,7 @@ paths:
                     tools:
                       type: array
                       maxItems: 32
-                      description: 'أدوات دوال يشغّلها العميل، بأسماء فريدة.'
+                      description: أدوات دوال يشغّلها العميل، بأسماء فريدة.
                       items:
                         type: object
                         additionalProperties: false
@@ -1349,7 +1349,7 @@ paths:
                       default: true
       responses:
         '201':
-          description: 'تم إنشاء جلسة GPT Live'
+          description: تم إنشاء جلسة GPT Live
           content:
             application/json:
               schema:
