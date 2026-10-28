@@ -31,7 +31,7 @@ Rules:
 エージェント向けクイックスタートのチェックリスト:
 
 - キーは CLI で作成します。`npm install -g @phaseo/cli` を実行し、`phaseo login`（ヘッドレスのシェルでは `phaseo login --device-code`。サインインは人が承認します）、続けて `phaseo keys create --name <name> --json` を実行します。キーを生成したり推測したりしないでください。サーバー側のコードからのみ `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
-- 有料モデルには `phaseo credits add --amount <usd> --json` でチャージを開始し、ワークスペースのオーナーまたは管理者が確認します。キー、クレジット、設定のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/v1/developers/manage-from-an-agent.md を参照してください。
+- 有料モデルには `phaseo credits add --amount <usd> --json` でチャージを開始し、ワークスペースのオーナーまたは管理者が確認します。最初のチャージの前に、`phaseo login --scopes billing:write` を一度実行してください。確認はメールで届きます。キー、クレジット、設定のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/v1/developers/manage-from-an-agent.md を参照してください。
 - 最初のリクエストは `POST https://api.phaseo.app/v1/responses` に `model` と `input` を送ります。`phaseo/free` はウォレット残高がなくても使えます。
 - 応答は `output[].content[]` のうち `type` が `output_text` の項目から読み取ります。
 - リクエストが失敗した場合は、https://phaseo.app/docs/v1/api-reference/errors.md の説明に従って JSON の `error` コードで分岐します。
@@ -49,7 +49,7 @@ phaseo login                 # use --device-code over SSH or in an agent sandbox
 phaseo keys create --name "Quickstart" --json
 ```
 
-キーは一度だけ表示されます。`PHASEO_API_KEY` などとして安全に保管してください。有料モデルを使うには `phaseo credits add --amount 20` でクレジットを追加します。請求はワークスペースのオーナーまたは管理者が確認します。[Phaseo ダッシュボード](https://phaseo.app/settings/keys)の **Gateway → キー**でキーを作成することもできます。
+キーは一度だけ表示されます。`PHASEO_API_KEY` などとして安全に保管してください。有料モデルを使うには `phaseo credits add --amount 20` でクレジットを追加します。最初のチャージの前に、`phaseo login --scopes billing:write` を一度実行してください。確認はメールで届きます。請求はワークスペースのオーナーまたは管理者が確認します。[Phaseo ダッシュボード](https://phaseo.app/settings/keys)の **Gateway → キー**でキーを作成することもできます。
 
 次の形式を使用します：
 

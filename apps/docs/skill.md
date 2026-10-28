@@ -60,10 +60,11 @@ Do not send the user to the dashboard. Use the `phaseo` CLI, the `/v1` Managemen
 npm install -g @phaseo/cli
 phaseo login                          # or --device-code; a person approves the sign-in
 phaseo keys create --name <name> --json
+phaseo login --scopes billing:write   # opt in once before the first top-up
 phaseo credits add --amount 20 --json  # a workspace owner or admin confirms the charge
 ```
 
-Never generate or guess a key. Only sign-up, approving the first sign-in and entering a first card need a browser. For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
+Never generate or guess a key. A person is still needed for sign-up, approving a sign-in, entering a card the first time, confirming each credit top-up from the emailed link, and account security (password, MFA, passkeys). For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
 
 ## Endpoint selection
 

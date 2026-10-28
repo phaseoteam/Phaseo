@@ -31,7 +31,7 @@ Você vai:
 Checklist do início rápido para agentes:
 
 - Crie a chave com a CLI: `npm install -g @phaseo/cli`, depois `phaseo login` (ou `phaseo login --device-code` em um shell sem interface gráfica; uma pessoa aprova o login) e então `phaseo keys create --name <name> --json`. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` somente a partir de código do servidor.
-- Para modelos pagos, `phaseo credits add --amount <usd> --json` inicia uma recarga que um proprietário ou administrador do workspace confirma. Não mande o usuário ao painel para chaves, créditos ou configurações; consulte https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
+- Para modelos pagos, `phaseo credits add --amount <usd> --json` inicia uma recarga que um proprietário ou administrador do workspace confirma. Antes da primeira recarga, execute uma vez `phaseo login --scopes billing:write`; a confirmação chega por e-mail. Não mande o usuário ao painel para chaves, créditos ou configurações; consulte https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Faça a primeira solicitação com `POST https://api.phaseo.app/v1/responses`, enviando `model` e `input`. `phaseo/free` funciona sem saldo na carteira.
 - Leia a resposta em `output[].content[]`, onde `type` é `output_text`.
 - Se a solicitação falhar, decida com base no código `error` do JSON, conforme descrito em https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -49,7 +49,7 @@ phaseo login                 # use --device-code over SSH or in an agent sandbox
 phaseo keys create --name "Quickstart" --json
 ```
 
-A chave é exibida uma única vez. Guarde-a em um local seguro, por exemplo como `PHASEO_API_KEY`. Para usar modelos pagos, adicione créditos com `phaseo credits add --amount 20`; um proprietário ou administrador do workspace confirma a cobrança. Você também pode criar a chave no [painel da Phaseo](https://phaseo.app/settings/keys), em **Gateway -> Chaves**.
+A chave é exibida uma única vez. Guarde-a em um local seguro, por exemplo como `PHASEO_API_KEY`. Para usar modelos pagos, adicione créditos com `phaseo credits add --amount 20`; um proprietário ou administrador do workspace confirma a cobrança. Antes da primeira recarga, execute uma vez `phaseo login --scopes billing:write`; a confirmação chega por e-mail. Você também pode criar a chave no [painel da Phaseo](https://phaseo.app/settings/keys), em **Gateway -> Chaves**.
 
 Use este formato:
 

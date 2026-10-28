@@ -6,11 +6,13 @@ icon: "bot"
 
 Phaseo アカウントは、ダッシュボードを開かずに `phaseo` CLI、`/v1` 管理 API、または Phaseo MCP サーバーから管理できます。このページで各作業のコマンド、ルート、ツールを確認してください。
 
-ブラウザーで人が操作する必要があるのは次の 3 つだけです。
+次の操作は設計上、常にブラウザーで人が行う必要があります。
 
 - Phaseo アカウントへの**登録**。
-- **最初のサインインの承認**。`phaseo login` が開くブラウザーのページ、または `phaseo login --device-code` が表示するコードです。
-- クレジットを初めて購入するときの**カードの入力**。以降のチャージには保存済みのカードが使われ、ワークスペースのオーナーまたは管理者がメールのリンクから毎回承認します。
+- **サインインの承認**。`phaseo login` が開くブラウザーのページ、または `phaseo login --device-code` が表示するコードです。
+- クレジットを初めて購入するときの**カードの入力**。
+- **各チャージの確認**。保存済みカードでの `phaseo credits add` は、毎回ワークスペースのオーナーまたは管理者がメールのリンクから確認します。
+- **アカウントのセキュリティ**。パスワード、多要素認証、パスキーです。
 
 <Visibility for="agents">
 Phaseo を管理するエージェント向けのルール:
@@ -35,11 +37,11 @@ phaseo whoami --json
 ```bash
 phaseo keys create --name "Production app" --json
 phaseo credits get --json
-phaseo login --scopes billing:write   # one-time opt-in before the first top-up
+phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` が単独で請求することはありません。保存済みのカードがある場合、Phaseo はワークスペースのすべてのオーナーと管理者に請求を確認するリンクをメールで送り、コマンドは結果を待ちます。保存済みのカードがない場合は、オーナーまたは管理者がカードを入力するリンクを返します。ルートは[クレジット](../api-reference/endpoint/credits)を参照してください。
+`phaseo credits add` には `billing:write` スコープが必要です。このスコープはどのサインインにも既定では付与されません。また、このコマンドが単独で請求することはありません。保存済みのカードがある場合、Phaseo はワークスペースのすべてのオーナーと管理者に請求を確認するリンクをメールで送り、コマンドは結果を待ちます。保存済みのカードがない場合は、オーナーまたは管理者がカードを入力するリンクを返します。ルートは[クレジット](../api-reference/endpoint/credits)を参照してください。
 
 ## インターフェースを選ぶ
 
@@ -57,12 +59,12 @@ phaseo credits add --amount 20 --json
 
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
-| API キーを作成する | `phaseo keys create --name <name>` | `POST /v1/keys` | `api_key_create` |
-| キーを一覧表示、更新、削除する | `phaseo keys list`, `keys update <id>`, `keys delete <id>` | `GET`, `PATCH`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
-| キーをローテーションする | `phaseo keys rotate <id>` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| API キーを作成する | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
+| キーを一覧表示、更新、削除する | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| キーをローテーションする | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | キーを IP アドレスに制限する | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| 管理キーを作成する | `phaseo management-keys create --name <name>` | `POST /v1/management-keys` | — |
-| 承認したアプリを確認または取り消す | `phaseo authorized-apps list`, `authorized-apps revoke <id>` | `GET`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| 管理キーを作成する | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| 承認したアプリを確認、制限、または取り消す | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | プロフィールを更新する | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
 ### クレジット、予算、制限
@@ -70,43 +72,44 @@ phaseo credits add --amount 20 --json
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
 | 残高を確認する | `phaseo credits get` | `GET /v1/credits` | 読み取り専用ツール |
-| クレジットを追加する（人が確認） | `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| クレジットを追加する（人が確認） | `phaseo login --scopes billing:write`, then `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
 | 自動チャージや残高不足メールを有効にする | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
-| ワークスペースの予算を設定する | `phaseo budgets create`, `budgets update <id>` | `/v1/budgets` | `budget_create`, `budget_update` |
-| 部門の予算を設定する | `phaseo department-budgets create` | `/v1/department-budgets` | — |
-| 支出を通知またはブロックする | `phaseo spend-rules create`, `spend-blocks lift <id>` | `/v1/spend-rules`, `/v1/spend-blocks` | `spend_rule_create`, `spend_rule_update` |
-| レート制限ポリシー | `phaseo rate-limits policies create`, `rate-limits assignments create` | `/v1/rate-limits/policies`, `/v1/rate-limits/assignments` | — |
-| ワークスペースのレート制限ティアを確認または引き上げる | `phaseo rate-limits tier get`, `rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+| ワークスペースの予算を設定する | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
+| 部門の予算を設定する | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
+| 支出を通知またはブロックする | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
+| レート制限ポリシー | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
+| ワークスペースのレート制限ティアを確認または引き上げる | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
 
 ### ルーティングとプロバイダー
 
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
 | ルーティングモード、プライバシー、ZDR、BYOK フォールバックを設定する | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
-| 独自のプロバイダーキーを追加する（BYOK） | `phaseo byok create --provider <id> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| 独自のプロバイダーキーを追加する（BYOK） | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
 | Auto Routing を設定する | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
-| 動的ルートを作成してデプロイする | `phaseo routing dynamic-routes create`, `dynamic-routes deploy <id> <version>` | `/v1/routing/dynamic-routes` | — |
-| 提供終了モデルの代替モデルを選ぶ | `phaseo routing successors set --model <id>` | `PUT /v1/routing/successor/replacements` | — |
+| 動的ルートを作成してデプロイする | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
+| 提供終了モデルの代替モデルを選ぶ | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
 | プライベートモデルを追加する | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
 
 ### プリセット、ガードレール、分類器
 
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
-| プリセットを作成または更新する | `phaseo presets create`, `presets update <preset>` | `/v1/presets` | `preset_create`, `preset_update` |
-| プリセットのバージョンを公開する、またはラベルを移動する | `phaseo presets versions create <preset>`, `presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
-| ガードレールを作成してキーを割り当てる | `phaseo guardrails create`, `guardrails set-keys <id>` | `/v1/guardrails` | `guardrail_create`, `guardrail_keys_set` |
-| リクエスト分類器を管理する | `phaseo classifiers create`, `classifiers test` | `/v1/classifiers`, `POST /v1/classifiers/test` | — |
+| プリセットを作成または更新する | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
+| プリセットのバージョンを公開する、またはラベルを移動する | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| ガードレールを作成してキーを割り当てる | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
+| リクエスト分類器を管理する | `phaseo classifiers create` | `POST /v1/classifiers` | — |
+| サンプルで分類器をテストする（`gateway:access` を持つ認証情報が必要です。現在、CLI のサインインと管理キーには `403 gateway_access_required` が返されます） | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
 
 ### ワークスペースと ID
 
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
-| ワークスペースを作成してメンバーを追加する | `phaseo workspaces create`, `workspaces add-members <workspace>` | `/v1/workspaces` | — |
+| ワークスペースを作成してメンバーを追加する | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
 | ユーザーを招待する | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | 招待を承諾する | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
-| SSO、SCIM、部門、ディレクトリ | `phaseo identity sso`, `identity scim`, `identity departments` | `/v1/identity` | — |
-| 信頼済みワークロード（OIDC） | `phaseo workload-identity policies create` | `/v1/workload-identity/policies` | — |
+| SSO、SCIM、部門、ディレクトリ | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
+| 信頼済みワークロード（OIDC） | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
 | アクティビティログを読む | `phaseo audit-events list` | `GET /v1/audit-events` | — |
 
 ### 使用量、ログ、通知
@@ -115,9 +118,9 @@ phaseo credits add --amount 20 --json
 | --- | --- | --- | --- |
 | リクエストログを読む | `phaseo logs list --since 1h` | `GET /v1/logs` | 読み取り専用ツール |
 | 使用量を CSV でエクスポートする | `phaseo analytics export` | `GET /v1/analytics/export` | — |
-| トレースをオブザーバビリティツールに送る | `phaseo observability destinations create`, `destinations test <id>` | `/v1/observability/destinations` | `observability_destination_create` |
-| メール、Slack、Webhook のアラート送信先 | `phaseo notifications destinations create`, `notifications routes set` | `/v1/notifications` | — |
-| 非同期ジョブ用の Webhook | `phaseo webhooks create --url <https-url>` | `/v1/webhook-endpoints` | `webhook_create` |
+| トレースをオブザーバビリティツールに送る | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
+| メール、Slack、Webhook のアラート送信先 | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
+| 非同期ジョブ用の Webhook | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
 
 ## 権限
 

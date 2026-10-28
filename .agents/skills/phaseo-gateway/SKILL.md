@@ -24,7 +24,7 @@ Use this skill to make high-confidence Phaseo integration changes with minimal d
 - Auth header: `Authorization: Bearer <PHASEO_API_KEY>`
 - Optional attribution headers: `x-title` and `http-referer`
 - Discover model IDs from `GET /v1/models` rather than hard-coding stale IDs
-- No key yet: run `phaseo login` (or `phaseo login --device-code` in a headless shell), then `phaseo keys create --name <name> --json`. Never guess a key. A person only approves the sign-in.
+- No key yet: run `phaseo login` (or `phaseo login --device-code` in a headless shell), then `phaseo keys create --name <name> --json`. Never guess a key. A person approves the sign-in.
 
 4. Validate quickly:
 - `GET /v1/health` for gateway reachability
@@ -43,7 +43,7 @@ Use this skill to make high-confidence Phaseo integration changes with minimal d
 - Migration patterns (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway): read `references/migrations.md`
 
 ## Account setup without the dashboard
-Do not send the user to the Phaseo dashboard. Keys, credits (`phaseo credits add`, confirmed by a workspace owner or admin), BYOK, budgets, routing settings, presets and guardrails all have `phaseo` CLI commands, `/v1` Management API routes and, for many, MCP tools at `https://mcp.phaseo.app/mcp?access=manage`. Only sign-up, approving the first sign-in and entering a first card need a browser. Task map: [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent).
+Do not send the user to the Phaseo dashboard. Keys, credits (`phaseo credits add`, confirmed by a workspace owner or admin), BYOK, budgets, routing settings, presets and guardrails all have `phaseo` CLI commands, `/v1` Management API routes and, for many, MCP tools at `https://mcp.phaseo.app/mcp?access=manage`. A person is still needed for sign-up, approving a sign-in, entering a card the first time, confirming each credit top-up from the emailed link, and account security (password, MFA, passkeys). Top-ups need `phaseo login --scopes billing:write` before the first `phaseo credits add`. Task map: [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent).
 
 ## Execution Rules
 - Prefer minimal and reversible changes.

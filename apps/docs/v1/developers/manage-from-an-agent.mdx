@@ -7,16 +7,18 @@ icon: "bot"
 
 You can run a Phaseo account from the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server, without opening the dashboard. Use this page to find the command, route or tool for a task.
 
-Only three steps need a person in a browser:
+Some steps always need a person in a browser, by design:
 
 - **Signing up** for a Phaseo account.
-- **Approving the first sign-in**: the browser page that `phaseo login` opens, or the code that `phaseo login --device-code` shows.
-- **Entering a card the first time** credits are bought. Later top-ups use the saved card, and a workspace owner or admin approves each one from an emailed link.
+- **Approving a sign-in**: the browser page that `phaseo login` opens, or the code that `phaseo login --device-code` shows.
+- **Entering a card** the first time credits are bought.
+- **Confirming each top-up**: every `phaseo credits add` with a saved card is confirmed by a workspace owner or admin from an emailed link.
+- **Account security**: password, multi-factor authentication and passkeys.
 
 <Visibility for="agents">
 Rules for agents managing Phaseo:
 
-- Do not send the user to the dashboard for a task in the table below. Run the CLI command, call the route, or use the MCP tool.
+- Do not send the user to the dashboard for a task in the tables below. Run the CLI command, call the route, or use the MCP tool.
 - Never generate or guess an API key. Create one with `phaseo keys create --name <name> --json` and store the secret once, server-side.
 - Use `--json` on every CLI command. Pass `--yes` to destructive commands only when the user asked for that exact change.
 - Only start a credit top-up the user asked for. Never complete a checkout link yourself, and do not retry a top-up that ended as declined, expired or failed.
@@ -36,11 +38,11 @@ Then create an inference key for the application and add credits if the workspac
 ```bash
 phaseo keys create --name "Production app" --json
 phaseo credits get --json
-phaseo login --scopes billing:write   # one-time opt-in before the first top-up
+phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
 phaseo credits add --amount 20 --json
 ```
 
-`phaseo credits add` never charges on its own. With a saved card, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result. With no saved card, it returns a link where an owner or admin enters a card. See [Credits](../api-reference/endpoint/credits) for the route.
+`phaseo credits add` needs the `billing:write` scope, which no sign-in has by default, and it never charges on its own. With a saved card, Phaseo emails every workspace owner and admin a link to confirm the charge, and the command waits for the result. With no saved card, it returns a link where an owner or admin enters a card. See [Credits](../api-reference/endpoint/credits) for the route.
 
 ## Choose an interface
 
@@ -58,12 +60,12 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
-| Create an API key | `phaseo keys create --name <name>` | `POST /v1/keys` | `api_key_create` |
-| List, update or delete keys | `phaseo keys list`, `keys update <id>`, `keys delete <id>` | `GET`, `PATCH`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
-| Rotate a key | `phaseo keys rotate <id>` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| Create an API key | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
+| List, update or delete keys | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Rotate a key | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | Restrict a key to IP addresses | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| Create a management key | `phaseo management-keys create --name <name>` | `POST /v1/management-keys` | — |
-| Review or revoke apps you authorized | `phaseo authorized-apps list`, `authorized-apps revoke <id>` | `GET`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| Create a management key | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| Review, narrow or revoke apps you authorized | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Update your profile | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
 ### Credits, budgets and limits
@@ -71,43 +73,44 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
 | Check the balance | `phaseo credits get` | `GET /v1/credits` | Read-only tools |
-| Add credits (a person confirms) | `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| Add credits (a person confirms) | `phaseo login --scopes billing:write`, then `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
 | Turn on auto top-up or low-balance emails | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
-| Set workspace budgets | `phaseo budgets create`, `budgets update <id>` | `/v1/budgets` | `budget_create`, `budget_update` |
-| Set department budgets | `phaseo department-budgets create` | `/v1/department-budgets` | — |
-| Alert on or block spend | `phaseo spend-rules create`, `spend-blocks lift <id>` | `/v1/spend-rules`, `/v1/spend-blocks` | `spend_rule_create`, `spend_rule_update` |
-| Rate limit policies | `phaseo rate-limits policies create`, `rate-limits assignments create` | `/v1/rate-limits/policies`, `/v1/rate-limits/assignments` | — |
-| Check or raise the workspace rate limit tier | `phaseo rate-limits tier get`, `rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+| Set workspace budgets | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
+| Set department budgets | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
+| Alert on or block spend | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
+| Rate limit policies | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
+| Check or raise the workspace rate limit tier | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
 
 ### Routing and providers
 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
 | Set the routing mode, privacy, ZDR or BYOK fallback | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
-| Add your own provider keys (BYOK) | `phaseo byok create --provider <id> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| Add your own provider keys (BYOK) | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
 | Configure Auto Routing | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
-| Create and deploy dynamic routes | `phaseo routing dynamic-routes create`, `dynamic-routes deploy <id> <version>` | `/v1/routing/dynamic-routes` | — |
-| Choose replacements for retired models | `phaseo routing successors set --model <id>` | `PUT /v1/routing/successor/replacements` | — |
+| Create and deploy dynamic routes | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
+| Choose replacements for retired models | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
 | Add a private model | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
 
 ### Presets, guardrails and classifiers
 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
-| Create or update presets | `phaseo presets create`, `presets update <preset>` | `/v1/presets` | `preset_create`, `preset_update` |
-| Publish a preset version or move a label | `phaseo presets versions create <preset>`, `presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
-| Create guardrails and attach keys | `phaseo guardrails create`, `guardrails set-keys <id>` | `/v1/guardrails` | `guardrail_create`, `guardrail_keys_set` |
-| Manage request classifiers | `phaseo classifiers create`, `classifiers test` | `/v1/classifiers`, `POST /v1/classifiers/test` | — |
+| Create or update presets | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
+| Publish a preset version or move a label | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| Create guardrails and attach keys | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
+| Manage request classifiers | `phaseo classifiers create` | `POST /v1/classifiers` | — |
+| Test a classifier on a sample (needs a credential with `gateway:access`; CLI sign-ins and management keys get `403 gateway_access_required` today) | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
 
 ### Workspaces and identity
 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
-| Create workspaces and add members | `phaseo workspaces create`, `workspaces add-members <workspace>` | `/v1/workspaces` | — |
+| Create workspaces and add members | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
 | Invite people | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | Accept an invite | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
-| SSO, SCIM, departments and directory | `phaseo identity sso`, `identity scim`, `identity departments` | `/v1/identity` | — |
-| Trusted workloads (OIDC) | `phaseo workload-identity policies create` | `/v1/workload-identity/policies` | — |
+| SSO, SCIM, departments and directory | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
+| Trusted workloads (OIDC) | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
 | Read the activity log | `phaseo audit-events list` | `GET /v1/audit-events` | — |
 
 ### Usage, logs and notifications
@@ -116,9 +119,9 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | --- | --- | --- | --- |
 | Read request logs | `phaseo logs list --since 1h` | `GET /v1/logs` | Read-only tools |
 | Export usage as CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
-| Send traces to an observability tool | `phaseo observability destinations create`, `destinations test <id>` | `/v1/observability/destinations` | `observability_destination_create` |
-| Alert email, Slack or webhook destinations | `phaseo notifications destinations create`, `notifications routes set` | `/v1/notifications` | — |
-| Webhooks for async jobs | `phaseo webhooks create --url <https-url>` | `/v1/webhook-endpoints` | `webhook_create` |
+| Send traces to an observability tool | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
+| Alert email, Slack or webhook destinations | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
+| Webhooks for async jobs | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
 
 ## Permissions
 

@@ -6,11 +6,13 @@ icon: "bot"
 
 يمكنك إدارة حساب Phaseo باستخدام `phaseo` CLI أو واجهة الإدارة `/v1` أو خادم Phaseo MCP، دون فتح لوحة التحكم. استخدم هذه الصفحة لتجد الأمر أو المسار أو الأداة لكل مهمة.
 
-ثلاث خطوات فقط تحتاج إلى شخص في متصفح:
+بعض الخطوات تحتاج دائمًا إلى شخص في متصفح، عن قصد:
 
 - **التسجيل** في حساب Phaseo.
-- **الموافقة على أول تسجيل دخول**: صفحة المتصفح التي يفتحها `phaseo login`، أو الرمز الذي يعرضه `phaseo login --device-code`.
-- **إدخال بطاقة أول مرة** يُشترى فيها رصيد. تستخدم عمليات الشحن اللاحقة البطاقة المحفوظة، ويوافق مالك مساحة العمل أو أحد مسؤوليها على كل عملية من رابط يصله بالبريد الإلكتروني.
+- **الموافقة على تسجيل الدخول**: صفحة المتصفح التي يفتحها `phaseo login`، أو الرمز الذي يعرضه `phaseo login --device-code`.
+- **إدخال بطاقة** أول مرة يُشترى فيها رصيد.
+- **تأكيد كل عملية شحن**: يؤكد مالك مساحة العمل أو أحد مسؤوليها كل `phaseo credits add` ببطاقة محفوظة من رابط يصله بالبريد الإلكتروني.
+- **أمان الحساب**: كلمة المرور والمصادقة متعددة العوامل ومفاتيح المرور.
 
 <Visibility for="agents">
 قواعد للوكلاء الذين يديرون Phaseo:
@@ -35,11 +37,11 @@ phaseo whoami --json
 ```bash
 phaseo keys create --name "Production app" --json
 phaseo credits get --json
-phaseo login --scopes billing:write   # one-time opt-in before the first top-up
+phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
 phaseo credits add --amount 20 --json
 ```
 
-لا يخصم `phaseo credits add` أي مبلغ من تلقاء نفسه. مع بطاقة محفوظة، يرسل Phaseo إلى كل مالك ومسؤول في مساحة العمل رابطًا لتأكيد الدفع، وينتظر الأمر النتيجة. ومن دون بطاقة محفوظة، يعيد رابطًا يُدخل فيه المالك أو المسؤول بطاقة. راجع [الرصيد](../api-reference/endpoint/credits) لمعرفة المسار.
+يحتاج `phaseo credits add` إلى النطاق `billing:write`، الذي لا يملكه أي تسجيل دخول افتراضيًا، ولا يخصم أي مبلغ من تلقاء نفسه. مع بطاقة محفوظة، يرسل Phaseo إلى كل مالك ومسؤول في مساحة العمل رابطًا لتأكيد الدفع، وينتظر الأمر النتيجة. ومن دون بطاقة محفوظة، يعيد رابطًا يُدخل فيه المالك أو المسؤول بطاقة. راجع [الرصيد](../api-reference/endpoint/credits) لمعرفة المسار.
 
 ## اختر واجهة
 
@@ -57,12 +59,12 @@ phaseo credits add --amount 20 --json
 
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
-| إنشاء مفتاح API | `phaseo keys create --name <name>` | `POST /v1/keys` | `api_key_create` |
-| عرض المفاتيح أو تحديثها أو حذفها | `phaseo keys list`, `keys update <id>`, `keys delete <id>` | `GET`, `PATCH`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
-| تدوير مفتاح | `phaseo keys rotate <id>` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| إنشاء مفتاح API | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
+| عرض المفاتيح أو تحديثها أو حذفها | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| تدوير مفتاح | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | قصر مفتاح على عناوين IP | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| إنشاء مفتاح إدارة | `phaseo management-keys create --name <name>` | `POST /v1/management-keys` | — |
-| مراجعة التطبيقات التي أذنت لها أو إلغاؤها | `phaseo authorized-apps list`, `authorized-apps revoke <id>` | `GET`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| إنشاء مفتاح إدارة | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| مراجعة التطبيقات التي أذنت لها أو تقليص صلاحياتها أو إلغاؤها | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | تحديث ملفك الشخصي | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
 ### الرصيد والميزانيات والحدود
@@ -70,43 +72,44 @@ phaseo credits add --amount 20 --json
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
 | معرفة الرصيد | `phaseo credits get` | `GET /v1/credits` | أدوات للقراءة فقط |
-| إضافة رصيد (يؤكد شخص ذلك) | `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| إضافة رصيد (يؤكد شخص ذلك) | `phaseo login --scopes billing:write`, then `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
 | تشغيل الشحن التلقائي أو رسائل انخفاض الرصيد | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
-| تعيين ميزانيات مساحة العمل | `phaseo budgets create`, `budgets update <id>` | `/v1/budgets` | `budget_create`, `budget_update` |
-| تعيين ميزانيات الأقسام | `phaseo department-budgets create` | `/v1/department-budgets` | — |
-| التنبيه على الإنفاق أو حظره | `phaseo spend-rules create`, `spend-blocks lift <id>` | `/v1/spend-rules`, `/v1/spend-blocks` | `spend_rule_create`, `spend_rule_update` |
-| سياسات حدود المعدل | `phaseo rate-limits policies create`, `rate-limits assignments create` | `/v1/rate-limits/policies`, `/v1/rate-limits/assignments` | — |
-| معرفة مستوى حد المعدل لمساحة العمل أو رفعه | `phaseo rate-limits tier get`, `rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+| تعيين ميزانيات مساحة العمل | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
+| تعيين ميزانيات الأقسام | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
+| التنبيه على الإنفاق أو حظره | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
+| سياسات حدود المعدل | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
+| معرفة مستوى حد المعدل لمساحة العمل أو رفعه | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
 
 ### التوجيه والمزوّدون
 
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
 | تعيين وضع التوجيه أو الخصوصية أو ZDR أو البديل الاحتياطي لـ BYOK | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
-| إضافة مفاتيح المزوّدين الخاصة بك (BYOK) | `phaseo byok create --provider <id> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| إضافة مفاتيح المزوّدين الخاصة بك (BYOK) | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
 | ضبط Auto Routing | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
-| إنشاء مسارات ديناميكية ونشرها | `phaseo routing dynamic-routes create`, `dynamic-routes deploy <id> <version>` | `/v1/routing/dynamic-routes` | — |
-| اختيار بدائل للنماذج المتوقفة | `phaseo routing successors set --model <id>` | `PUT /v1/routing/successor/replacements` | — |
+| إنشاء مسارات ديناميكية ونشرها | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
+| اختيار بدائل للنماذج المتوقفة | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
 | إضافة نموذج خاص | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
 
 ### الإعدادات المسبقة والضوابط والمصنِّفات
 
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
-| إنشاء الإعدادات المسبقة أو تحديثها | `phaseo presets create`, `presets update <preset>` | `/v1/presets` | `preset_create`, `preset_update` |
-| نشر إصدار من إعداد مسبق أو نقل تسمية | `phaseo presets versions create <preset>`, `presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
-| إنشاء الضوابط وربط المفاتيح بها | `phaseo guardrails create`, `guardrails set-keys <id>` | `/v1/guardrails` | `guardrail_create`, `guardrail_keys_set` |
-| إدارة مصنِّفات الطلبات | `phaseo classifiers create`, `classifiers test` | `/v1/classifiers`, `POST /v1/classifiers/test` | — |
+| إنشاء الإعدادات المسبقة أو تحديثها | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
+| نشر إصدار من إعداد مسبق أو نقل تسمية | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| إنشاء الضوابط وربط المفاتيح بها | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
+| إدارة مصنِّفات الطلبات | `phaseo classifiers create` | `POST /v1/classifiers` | — |
+| اختبار مصنِّف على عيّنة (يتطلب بيانات اعتماد تملك `gateway:access`؛ تتلقى جلسات CLI ومفاتيح الإدارة حاليًا `403 gateway_access_required`) | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
 
 ### مساحات العمل والهوية
 
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
-| إنشاء مساحات العمل وإضافة الأعضاء | `phaseo workspaces create`, `workspaces add-members <workspace>` | `/v1/workspaces` | — |
+| إنشاء مساحات العمل وإضافة الأعضاء | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
 | دعوة الأشخاص | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
 | قبول دعوة | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
-| SSO وSCIM والأقسام والدليل | `phaseo identity sso`, `identity scim`, `identity departments` | `/v1/identity` | — |
-| أحمال العمل الموثوقة (OIDC) | `phaseo workload-identity policies create` | `/v1/workload-identity/policies` | — |
+| SSO وSCIM والأقسام والدليل | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
+| أحمال العمل الموثوقة (OIDC) | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
 | قراءة سجل النشاط | `phaseo audit-events list` | `GET /v1/audit-events` | — |
 
 ### الاستخدام والسجلات والإشعارات
@@ -115,9 +118,9 @@ phaseo credits add --amount 20 --json
 | --- | --- | --- | --- |
 | قراءة سجلات الطلبات | `phaseo logs list --since 1h` | `GET /v1/logs` | أدوات للقراءة فقط |
 | تصدير الاستخدام بصيغة CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
-| إرسال التتبعات إلى أداة مراقبة | `phaseo observability destinations create`, `destinations test <id>` | `/v1/observability/destinations` | `observability_destination_create` |
-| وجهات التنبيه عبر البريد الإلكتروني أو Slack أو webhook | `phaseo notifications destinations create`, `notifications routes set` | `/v1/notifications` | — |
-| خطافات الويب للمهام غير المتزامنة | `phaseo webhooks create --url <https-url>` | `/v1/webhook-endpoints` | `webhook_create` |
+| إرسال التتبعات إلى أداة مراقبة | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
+| وجهات التنبيه عبر البريد الإلكتروني أو Slack أو webhook | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
+| خطافات الويب للمهام غير المتزامنة | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
 
 ## الأذونات
 

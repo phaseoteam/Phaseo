@@ -31,7 +31,7 @@ Rules:
 एजेंट के लिए क्विकस्टार्ट चेकलिस्ट:
 
 - कुंजी CLI से बनाएँ: `npm install -g @phaseo/cli` चलाएँ, फिर `phaseo login` (headless shell में `phaseo login --device-code`; साइन-इन कोई व्यक्ति स्वीकृत करता है), फिर `phaseo keys create --name <name> --json`। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
-- पेड मॉडल के लिए `phaseo credits add --amount <usd> --json` एक टॉप-अप शुरू करता है, जिसकी पुष्टि वर्कस्पेस का मालिक या एडमिन करता है। कुंजियों, क्रेडिट या सेटिंग के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; https://phaseo.app/docs/v1/developers/manage-from-an-agent.md देखें।
+- पेड मॉडल के लिए `phaseo credits add --amount <usd> --json` एक टॉप-अप शुरू करता है, जिसकी पुष्टि वर्कस्पेस का मालिक या एडमिन करता है। पहले टॉप-अप से पहले एक बार `phaseo login --scopes billing:write` चलाएँ; पुष्टि ईमेल से होती है। कुंजियों, क्रेडिट या सेटिंग के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; https://phaseo.app/docs/v1/developers/manage-from-an-agent.md देखें।
 - पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। `phaseo/free` वॉलेट बैलेंस के बिना भी काम करता है।
 - जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
 - अनुरोध विफल होने पर https://phaseo.app/docs/v1/api-reference/errors.md में बताए अनुसार JSON के `error` कोड के आधार पर निर्णय लें।
@@ -49,7 +49,7 @@ phaseo login                 # use --device-code over SSH or in an agent sandbox
 phaseo keys create --name "Quickstart" --json
 ```
 
-कुंजी केवल एक बार दिखती है। इसे सुरक्षित रखें, उदाहरण के लिए `PHASEO_API_KEY` के रूप में। पेड मॉडल इस्तेमाल करने के लिए `phaseo credits add --amount 20` से क्रेडिट जोड़ें; शुल्क की पुष्टि वर्कस्पेस का मालिक या एडमिन करता है। आप [Phaseo डैशबोर्ड](https://phaseo.app/settings/keys) में **Gateway -> कुंजियाँ** के अंतर्गत भी कुंजी बना सकते हैं।
+कुंजी केवल एक बार दिखती है। इसे सुरक्षित रखें, उदाहरण के लिए `PHASEO_API_KEY` के रूप में। पेड मॉडल इस्तेमाल करने के लिए `phaseo credits add --amount 20` से क्रेडिट जोड़ें; शुल्क की पुष्टि वर्कस्पेस का मालिक या एडमिन करता है। पहले टॉप-अप से पहले एक बार `phaseo login --scopes billing:write` चलाएँ; पुष्टि ईमेल से होती है। आप [Phaseo डैशबोर्ड](https://phaseo.app/settings/keys) में **Gateway -> कुंजियाँ** के अंतर्गत भी कुंजी बना सकते हैं।
 
 इस फ़ॉर्मैट का उपयोग करें:
 
