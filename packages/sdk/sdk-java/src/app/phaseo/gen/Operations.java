@@ -10,6 +10,11 @@ public final class Operations {
 		return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
 	}
 
+	public static Object acceptWorkspaceInvite(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/invites/accept";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object addGuardrailKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/guardrails/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/keys/add";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -480,6 +485,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object getAutoRoutingSettings(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/routing/auto";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object getClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -535,6 +545,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object getMe(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object getMusicGeneration(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/music/generate/" + pathSegment(path != null && path.containsKey("music_id") ? path.get("music_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -542,6 +557,11 @@ public final class Operations {
 
 	public static Object getMusicGenerationAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/music/generations/" + pathSegment(path != null && path.containsKey("music_id") ? path.get("music_id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getMyProfile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me/profile";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -597,6 +617,11 @@ public final class Operations {
 
 	public static Object getRateLimitPolicy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/rate-limits/policies/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getRateLimitTier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/tier";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -682,6 +707,11 @@ public final class Operations {
 
 	public static Object listApiKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listAuthorizedApps(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me/authorized-apps";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -810,6 +840,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listMyJoinRequests(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/invites/requests";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listOAuthClients(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/oauth-clients";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -887,6 +922,11 @@ public final class Operations {
 
 	public static Object listSpendRules(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/spend-rules";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listSuccessorReplacements(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/routing/successor/replacements";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1005,6 +1045,16 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object raiseRateLimitTier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/rate-limits/tier/raise";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object reduceAuthorizedAppScopes(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me/authorized-apps/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
 	public static Object regenerateOAuthClientSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/oauth-clients/" + pathSegment(path != null && path.containsKey("client_id") ? path.get("client_id") : "") + "/regenerate-secret";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -1025,6 +1075,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object removeSuccessorReplacement(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/routing/successor/replacements";
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object removeWorkspaceMembers(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/members/remove";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -1043,6 +1098,11 @@ public final class Operations {
 	public static Object replaceGuardrailKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/guardrails/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/keys";
 		return client.request("PUT", resolvedPath, query, headers, body);
+	}
+
+	public static Object reportLeakedKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/security/report-leaked-key";
+		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Object retrieveBatch(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
@@ -1095,6 +1155,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object revokeAuthorizedApp(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me/authorized-apps/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object revokeWorkspaceScimToken(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/identity/scim/tokens/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
@@ -1115,6 +1180,16 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object saveSuccessorReplacement(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/routing/successor/replacements";
+		return client.request("PUT", resolvedPath, query, headers, body);
+	}
+
+	public static Object sendObservabilityDestinationSample(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/observability/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/sample";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object setPresetLabel(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/presets/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/labels/" + pathSegment(path != null && path.containsKey("label") ? path.get("label") : "");
 		return client.request("PUT", resolvedPath, query, headers, body);
@@ -1128,6 +1203,16 @@ public final class Operations {
 	public static Object summarizeGatewayFeedback(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/feedback/summary";
 		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object testObservabilityDestination(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/observability/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/test";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object testObservabilityDestinationConfig(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/observability/destinations/test";
+		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Object testSpendRule(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
@@ -1152,6 +1237,11 @@ public final class Operations {
 
 	public static Object updateApiKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateAutoRoutingSettings(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/routing/auto";
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 
@@ -1187,6 +1277,11 @@ public final class Operations {
 
 	public static Object updateManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/management-keys/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateMyProfile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/me/profile";
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

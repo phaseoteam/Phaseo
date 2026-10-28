@@ -77,8 +77,9 @@ ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
 STATSIG_ENVIRONMENT_TIER = "production"
 EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
-# Off until the founder approves sending.
-FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+# Approved by the founder on 2026-10-28. Queues up to 10 a day at 10:05 UTC; only this
+# worker runs the cron, so the regional and jobs workers keep it off.
+FEEDBACK_REQUEST_EMAILS_ENABLED = "true"
 # Sends app notifications from catalogue changes; the first run starts from now, with no backlog.
 MOBILE_PUSH_ENABLED = "true"
 FEEDBACK_REQUEST_FROM_EMAIL = "Daniel at Phaseo <daniel@phaseo.app>"

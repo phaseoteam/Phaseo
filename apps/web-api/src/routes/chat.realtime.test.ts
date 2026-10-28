@@ -27,6 +27,32 @@ it.each(["xai", "x-ai", "spacex-ai"])("normalizes the %s Chat provider to the ca
 	expect(body.model).toBe("spacex-ai/grok-voice-think-fast-2.0");
 });
 
+it("passes other catalogue providers through to the gateway", async () => {
+	let body: Record<string, unknown> = {};
+	vi.stubGlobal("fetch", vi.fn(async (_url, init) => {
+		body = JSON.parse(init.body);
+		return Response.json({ clientSecret: "rtsec_test", connect: { url: "/v1/realtime/sessions/rt_test/relay" } });
+	}));
+	const response = await chatRouter.request("https://phaseo.app/realtime/session", {
+		method: "POST", headers: { "content-type": "application/json" },
+		body: JSON.stringify({ provider: "elevenlabs", model: "eleven-labs/eleven-realtime-v1-max", voice: "brian" }),
+	}, { ENV: "development", PHASEO_GATEWAY_URL: "https://api.phaseo.app/v1" });
+	expect(response.status).toBe(200);
+	expect(body).toMatchObject({ provider: "elevenlabs", model: "eleven-labs/eleven-realtime-v1-max", voice: "brian", source: "chat" });
+	expect((await response.json() as any).provider).toBe("elevenlabs");
+});
+
+it.each(["", "Eleven Labs", "../openai"])("rejects the malformed provider %j", async (provider) => {
+	const fetchMock = vi.fn();
+	vi.stubGlobal("fetch", fetchMock);
+	const response = await chatRouter.request("https://phaseo.app/realtime/session", {
+		method: "POST", headers: { "content-type": "application/json" },
+		body: JSON.stringify({ provider, model: "eleven-labs/eleven-realtime-v1-mini" }),
+	}, { ENV: "development", PHASEO_GATEWAY_URL: "https://api.phaseo.app/v1" });
+	expect(response.status).toBe(400);
+	expect(fetchMock).not.toHaveBeenCalled();
+});
+
 it("submits the supported Chat contract and returns the server-owned relay", async () => {
 	let body: Record<string, unknown> = {};
 	vi.stubGlobal("fetch", vi.fn(async (_url, init) => {

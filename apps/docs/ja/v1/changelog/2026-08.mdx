@@ -7,7 +7,73 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
+<Update label="2026年8月31日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- BYOK では、ワークスペースごとに UTC の各月 250,000 件のリクエストまで Phaseo の手数料がかからず、それ以降はプロバイダー換算コストの 2.5% が課金されるようになりました。BYOK のリクエスト単位のメタデータは 90 日間保持されます ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月30日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat のエラーが原因を説明し、再試行、サインイン、別のモデルの選択などの次の操作を提示するようになりました。`402` エラーにはクレジットと `phaseo/free` へのリンクが表示されます ([#2100](https://github.com/phaseoteam/Phaseo/pull/2100))。
+- Chat の入力欄は 5 行までしか広がらず、長いプロンプトは会話を覆わずにスクロール表示されるようになりました ([#2096](https://github.com/phaseoteam/Phaseo/pull/2096))。
+- モデルページで `?provider=openai` のようなリンクからプロバイダーの詳細を開けるようになり、プロバイダーのダイアログにはコピーできるプロバイダー指定モデル ID が表示されます。詳しくは[プロバイダー修飾モデル ID](../guides/provider-qualified-models.mdx)をご覧ください ([#2095](https://github.com/phaseoteam/Phaseo/pull/2095), [#2052](https://github.com/phaseoteam/Phaseo/pull/2052))。
+- モデル検索では、ステータスフィルターを変更するまでゲートウェイ経由でルーティングできるモデルだけが表示されるようになりました。詳しくは[Gatewayの信頼性とステータスを確認する](../developers/reliability-and-status.mdx)をご覧ください ([#2057](https://github.com/phaseoteam/Phaseo/pull/2057))。
+- 公開アプリランキングは、ウェブサイトごとに 1 つのエントリーにまとめられ、`/apps/phaseo-chat` のような読みやすい URL を持つようになりました ([#2087](https://github.com/phaseoteam/Phaseo/pull/2087))。
+- Trust Centre にセキュリティホワイトペーパー、サブプロセッサー一覧、DPA の草案が追加され、アカウントを削除すると Phaseo のすべての稼働中ストアから 30 日以内にデータが削除されるようになりました ([#2058](https://github.com/phaseoteam/Phaseo/pull/2058))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- CLI は不足しているコーディングエージェントをインストールする前に確認し、正確なインストールコマンドを表示するようになりました。自分で管理するツールには `--skip-install` を指定します。詳しくは[コーディングエージェント](../guides/integrations/coding-assistants.mdx)をご覧ください ([#2066](https://github.com/phaseoteam/Phaseo/pull/2066))。
+- 管理 API で `/v1/byok` のプロバイダー認証情報と `/v1/budgets` のワークスペース予算を管理できるようになり、すべての SDK もこれに合わせて再生成されました。詳しくは[プロバイダー資格情報を一覧表示](../api-reference/endpoint/provider-credentials-list.mdx)をご覧ください ([#2086](https://github.com/phaseoteam/Phaseo/pull/2086))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月29日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat にファイルをドラッグして添付できるようになりました。HEIC や AVIF の画像にも対応しています ([#2050](https://github.com/phaseoteam/Phaseo/pull/2050))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- リクエストの `X-Phaseo-Metadata` ヘッダーでラベルを指定できるようになり、ログとアクティビティでリクエストと支出をラベルで絞り込めます。詳しくは[リクエストラベル](../guides/request-labels.mdx)をご覧ください ([#2049](https://github.com/phaseoteam/Phaseo/pull/2049))。
+
+</div>
+
+</Update>
+
 <Update label="2026年8月28日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- プロバイダーはドメイン証明で Phaseo のプロフィールを申請し、プロバイダー設定からモデルカタログのフィードを審査に提出できるようになりました。詳しくは[プロバイダーカタログの公開](../guides/provider-catalog.mdx)をご覧ください ([#2037](https://github.com/phaseoteam/Phaseo/pull/2037))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -22,6 +88,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年8月27日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- リクエストの詳細に、ルーターが順位付けまたは除外したすべてのプロバイダーが、スコアの各要素と、選択・試行・順位引き下げのどれにあたるかとともに表示されるようになりました。詳しくは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)をご覧ください ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011), [#2015](https://github.com/phaseoteam/Phaseo/pull/2015))。
+- Chat に日付の変わり目、6 時間以上の間隔、モデルの切り替えを示すマーカーが表示され、切り替え先モデルのロゴも表示されるようになりました ([#1992](https://github.com/phaseoteam/Phaseo/pull/1992))。
+- リクエスト数の少ないモデルでも、モデルページにパフォーマンスと稼働率が表示されるようになりました。以前はリクエストが 20 件未満だとこれらのセクションは空のままでした ([#1997](https://github.com/phaseoteam/Phaseo/pull/1997))。
+- リリースカレンダーは小さな画面で月の概要と選択した日の予定を表示するようになり、「On this day」はリリース履歴全体を使うようになりました ([#2019](https://github.com/phaseoteam/Phaseo/pull/2019))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- バランス型ルーティングは信頼性、レイテンシー、テールレイテンシー、スループット、価格、トークン適合度を考慮するようになり、プロバイダーの稼働率では `400`、`403`、`413`、`429` の応答を障害として数えなくなりました。詳しくは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)をご覧ください ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -38,6 +123,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年8月26日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- ランキングページに週次の **Return Rate** セクションが追加され、ワークスペースが繰り返し使うモデルを信頼区間とともに表示します ([#1961](https://github.com/phaseoteam/Phaseo/pull/1961))。
+- グローバル検索は入力に応じてラボ、プロバイダー、モデルを関連度順に並べるようになり、Nvidia のような完全一致が先頭に表示されます ([#1974](https://github.com/phaseoteam/Phaseo/pull/1974))。
+- モデルカードで、提供終了したモデルと非推奨のモデルに **End of life** または **Deprecated** のバッジが付くようになりました ([#1977](https://github.com/phaseoteam/Phaseo/pull/1977))。
+- プロバイダーのプライバシー情報は、学習と保持の個別ラベルの代わりに **Data policy**、ZDR、処理拠点を表示するようになりました ([#1954](https://github.com/phaseoteam/Phaseo/pull/1954))。
+- Phaseo のワードマークをクリックするとブランドメニューが開き、ロゴとワードマークをライト版またはダーク版の SVG や PNG でコピー・ダウンロードできます ([#1734](https://github.com/phaseoteam/Phaseo/pull/1734), [#1968](https://github.com/phaseoteam/Phaseo/pull/1968), [#1983](https://github.com/phaseoteam/Phaseo/pull/1983))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `POST /v1/music/generate` は Phaseo のリクエスト ID を返し、`GET /v1/music/generate/{music_id}` はどのプロバイダーでも同じ形式で結果を返します。詳しくは[音楽を生成](../api-reference/endpoint/music-generate.mdx)をご覧ください ([#1941](https://github.com/phaseoteam/Phaseo/pull/1941), [#1952](https://github.com/phaseoteam/Phaseo/pull/1952))。
+- 失敗したリクエストはプロバイダーの `Retry-After` を転送し、BYOK のリクエストでは `X-Phaseo-Upstream-RateLimit-*` のクォータヘッダーも返すようになりました。詳しくは[レート制限](../api-reference/limits.mdx)をご覧ください ([#1960](https://github.com/phaseoteam/Phaseo/pull/1960))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -53,6 +159,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年8月25日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- ワークスペースのアラートごとに通知先を選べるようになり、残高不足のアラートとモデル非推奨のアラートを別々のチャネルに送れます。詳しくは[ワークスペース通知](../guides/workspace-notifications.mdx)をご覧ください ([#1830](https://github.com/phaseoteam/Phaseo/pull/1830))。
+- モデルページと料金ページでは、サービスティア **Priority** が **Fast** と表示されるようになりました。`priority` を送るリクエストはそのまま動作します。詳しくは[サービス階層](../guides/service-tiers.mdx)をご覧ください ([#1931](https://github.com/phaseoteam/Phaseo/pull/1931))。
+- Compare でモデルを追加しても既存のモデルが保持されるようになり、プロバイダーのロゴと、複数プランがあるプロバイダーのティア選択が表示されます ([#1826](https://github.com/phaseoteam/Phaseo/pull/1826))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -74,15 +190,36 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">製品</p>
 
-- SSO、SCIM、ディレクトリ管理、部門管理に対応するEnterpriseワークスペース用セルフサービスアドオンを追加しました。
-- メール、Discord、Slack、Microsoft Teams、カスタムHTTPS Webhookをワークスペースの通知先として追加しました。
-- `X-App-Categories`とTypeScript SDKによるアプリカテゴリの帰属情報を追加しました。
+- ワークスペースのオーナーは、100〜100,000 人のメンバー向けの Enterprise プランを購入できるようになりました。SSO、SCIM 2.0、ディレクトリと部門の設定を含み、モデル利用額の確約は不要です ([#1754](https://github.com/phaseoteam/Phaseo/pull/1754), [#1743](https://github.com/phaseoteam/Phaseo/pull/1743), [#1749](https://github.com/phaseoteam/Phaseo/pull/1749))。
+- ワークスペースは **Workspace settings -> Notifications** から、残高不足、請求、モデル非推奨のアラートをメール、Discord、Slack、Microsoft Teams、カスタム Webhook に送れるようになりました。詳しくは[ワークスペース通知](../guides/workspace-notifications.mdx)をご覧ください ([#1796](https://github.com/phaseoteam/Phaseo/pull/1796))。
+- `/trust` の Trust Centre で、Phaseo のセキュリティ対策、データの取り扱い、サービス提供事業者、コンプライアンスの状況を確認できるようになりました ([#1811](https://github.com/phaseoteam/Phaseo/pull/1811), [#1816](https://github.com/phaseoteam/Phaseo/pull/1816))。
+- 組織ページは **Labs** ページになり、集計したパフォーマンスと最近のモデルカードが表示されるようになりました ([#1807](https://github.com/phaseoteam/Phaseo/pull/1807))。
+- Compare はプリセットの選択画面を挟まず、直接比較ビューで開くようになりました ([#1803](https://github.com/phaseoteam/Phaseo/pull/1803))。
+- BYOK 設定の残り無料リクエスト数が月 1,000,000 件の枠に基づいて計算されるようになりました。以前は廃止済みの 100,000 件の枠が使われていました ([#1595](https://github.com/phaseoteam/Phaseo/pull/1595))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- リクエストの `X-App-Categories` ヘッダーでアプリのカテゴリーを指定できるようになりました。TypeScript SDK も対応しています。詳しくは[アプリの帰属情報](../guides/app-attribution.mdx)をご覧ください ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799))。
+- モデルサフィックス `:nitro`、`:cheap`、`:fast` は、リクエストのフィールド、プリセット、ワークスペースの既定値が別のモードを指定していても、ルーティングモードを決めるようになりました。詳しくは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)をご覧ください ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814))。
+- `provider.quantizations` は量子化が一致するオファーだけにルーティングを限定し、一致するものがない場合は診断情報を返すようになりました。詳しくは[量子化戦略の選び方](../guides/quantization-selection.mdx)をご覧ください ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))。
 
 </div>
 
 </Update>
 
 <Update label="2026年8月21日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- プロバイダーページで BYOK 対応、学習ポリシー、データ保持、データセンターのリージョンで絞り込めるようになり、外部プロバイダーにはラベルが付きます ([#1755](https://github.com/phaseoteam/Phaseo/pull/1755), [#1758](https://github.com/phaseoteam/Phaseo/pull/1758), [#1748](https://github.com/phaseoteam/Phaseo/pull/1748))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -96,7 +233,69 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年8月20日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページに、プロバイダーとサービスティアごとの価格履歴が表示されるようになりました。期間の指定、定価と実効価格の切り替え、CSV エクスポートに対応しています ([#1557](https://github.com/phaseoteam/Phaseo/pull/1557))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月19日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat の回答内のテキストを選択すると、Explain、Improve、Shorten、Change tone、Fix grammar の操作が表示され、入力欄にプロンプトが入ります ([#1619](https://github.com/phaseoteam/Phaseo/pull/1619))。
+- Chat はサインイン中も未送信のプロンプトを保持し、サインイン後に同じチャットとモデルに戻るようになりました ([#1728](https://github.com/phaseoteam/Phaseo/pull/1728))。
+- ログに各リクエストの **Source**（Direct HTTP、言語別の SDK、コーディングエージェントなど）がアプリとは別に表示されるようになりました ([#1723](https://github.com/phaseoteam/Phaseo/pull/1723))。
+- ログでセッションと非同期ジョブをサイドシートで開けるようになり、リクエストのタイムライン、前後への移動ボタン、リクエスト ID で検索する **Investigate** が使えます ([#1724](https://github.com/phaseoteam/Phaseo/pull/1724))。
+- Connected Apps では権限がリソースごとにまとめて表示され、オーナーはアプリ全体を取り消さずに個々のスコープを外せるようになりました ([#1585](https://github.com/phaseoteam/Phaseo/pull/1585))。
+- モバイルのモデルフィルターで、有効なフィルターが個別に外せるチップとして表示され、カード表示と表表示を切り替えてもすべてのフィルターが保持されるようになりました ([#1590](https://github.com/phaseoteam/Phaseo/pull/1590))。
+- Tools ページに、20 MB までの画像と音声をアップロードして確認できるコンテンツ来歴チェッカーが追加されました ([#1529](https://github.com/phaseoteam/Phaseo/pull/1529))。
+- BYOK キーを再び保存できるようになり、変更後すぐにキー一覧が更新されます。以前はキーの保存に失敗していました ([#1591](https://github.com/phaseoteam/Phaseo/pull/1591))。
+- 保存されたワークスペースが利用できなくなった場合でも、ログと Usage Overview はアクセスできるワークスペースを開くようになり、ワークスペースの作成も再びできるようになりました ([#1589](https://github.com/phaseoteam/Phaseo/pull/1589), [#1592](https://github.com/phaseoteam/Phaseo/pull/1592), [#1593](https://github.com/phaseoteam/Phaseo/pull/1593))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月17日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `@publisher/slug` 形式で指定した公開プリセットが再び解決されるようになり、非公開プリセットは作成者が作った API キーでのみ使えるようになりました。詳しくは[プリセット](../guides/presets.mdx)をご覧ください ([#1707](https://github.com/phaseoteam/Phaseo/pull/1707), [#1706](https://github.com/phaseoteam/Phaseo/pull/1706))。
+
+</div>
+
+</Update>
+
 <Update label="2026年8月14日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- プライバシー設定は **Workspace -> Privacy** に移り、ワークスペース全体の Chat、API キー、SDK のトラフィック、アプリに適用されるようになりました ([#1676](https://github.com/phaseoteam/Phaseo/pull/1676), [#1678](https://github.com/phaseoteam/Phaseo/pull/1678))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `phaseo <agent>` の 1 コマンドで、Codex、Claude Code、OpenCode、Hermes、Pi、Prime Agent、DeepSeek Harness、OpenClaw を専用の Phaseo キー付きでセットアップできるようになりました。詳しくは[コーディングエージェント](../guides/integrations/coding-assistants.mdx)をご覧ください ([#1685](https://github.com/phaseoteam/Phaseo/pull/1685), [#1662](https://github.com/phaseoteam/Phaseo/pull/1662))。
+- `POST /v1/messages` のストリーミング応答は、テキスト、推論、ツール引数の差分を届いた時点で送るようになりました。以前は最後にまとめて届いていました。詳しくは[メッセージを作成](../api-reference/endpoint/anthropic-messages.mdx)をご覧ください ([#1679](https://github.com/phaseoteam/Phaseo/pull/1679), [#1681](https://github.com/phaseoteam/Phaseo/pull/1681))。
+- リクエストパラメーターへの対応状況が不明なプロバイダーもルーティング対象に残るようになりました。除外されるのは非対応がわかっているプロバイダーだけです ([#1667](https://github.com/phaseoteam/Phaseo/pull/1667))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -112,6 +311,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年8月13日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- DeepSeek V4 Pro 0813 と DeepSeek V4 Flash 0731 が `reasoning_effort` に対応し、`minimal` は `low` として送られるようになりました ([#1651](https://github.com/phaseoteam/Phaseo/pull/1651), [#1652](https://github.com/phaseoteam/Phaseo/pull/1652), [#1654](https://github.com/phaseoteam/Phaseo/pull/1654))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -130,6 +337,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年8月12日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat は会話ごとに 1 つのセッション ID を送るようになり、ログで会話内のリクエストがまとめて表示されます ([#1599](https://github.com/phaseoteam/Phaseo/pull/1599))。
+- モデルページの Quickstart が **Use This Model** パネルに置き換わり、キーの設定、言語別のコード例、対応エンドポイント、パラメーターをまとめて確認できるようになりました ([#1637](https://github.com/phaseoteam/Phaseo/pull/1637))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -144,6 +360,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年8月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 設定画面は、別々だったナビゲーションに代わり、**Account** と **Workspace** の切り替えを備えた 1 つのサイドバーになりました ([#1509](https://github.com/phaseoteam/Phaseo/pull/1509))。
+- モバイルでサインイン済みのユーザーも Usage Overview を開けるようになりました。以前はサインインページに戻されることがありました ([#1556](https://github.com/phaseoteam/Phaseo/pull/1556))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Gemma 4 へのリクエストが `reasoning_effort` に対応し、最終回答の分の出力枠が残るようになりました。以前は出力上限が小さいと空の `502` 応答が返ることがありました ([#1550](https://github.com/phaseoteam/Phaseo/pull/1550))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -161,6 +394,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年8月10日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- OAuth の同意画面で、要求された権限がリソースごとにまとめられ、読み取り・書き込み・削除のアクセスが要約表示されるようになりました ([#1538](https://github.com/phaseoteam/Phaseo/pull/1538))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** `GET /v1/models` は、ライフサイクル、モダリティ、上限、機能、料金、プロバイダーのオファーを含む新しい Phaseo カタログ形式を返すようになりました。旧フィールドを読むコードを更新してください。詳しくは[モデル一覧](../api-reference/endpoint/models.mdx)をご覧ください ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531))。
+- リモート MCP サーバーがプロトコルバージョン `2026-07-28` に対応し、OAuth クライアントは Client ID Metadata Document の URL で登録できるようになりました。詳しくは[CLI と MCP](../developers/cli-and-mcp.mdx)をご覧ください ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531))。
+- `@phaseo/cli` 0.2.1 で `phaseo update` と `phaseo doctor` が追加されました。CLI をインストールしたパッケージマネージャーを特定し、PATH の競合を報告します。詳しくは[Phaseo CLI](../guides/integrations/phaseo-cli.mdx)をご覧ください ([#1534](https://github.com/phaseoteam/Phaseo/pull/1534), [#1535](https://github.com/phaseoteam/Phaseo/pull/1535))。
+- `phaseo integrations setup` で、設定ファイルに API キーを書き込まずに Codex、Claude Code、OpenCode が Phaseo を使うよう設定できるようになりました。詳しくは[コーディングエージェント](../guides/integrations/coding-assistants.mdx)をご覧ください ([#1510](https://github.com/phaseoteam/Phaseo/pull/1510), [#1545](https://github.com/phaseoteam/Phaseo/pull/1545))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -173,7 +425,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年8月8日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページにモバイル向けのセクションナビゲーターが追加され、旧モデルのサブページはモデルページの該当セクションにリダイレクトされるようになりました ([#1508](https://github.com/phaseoteam/Phaseo/pull/1508))。
+
+</div>
+
+</Update>
+
 <Update label="2026年8月7日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページに、キャッシュから提供された入力トークンの割合を時系列とプロバイダー別に示すグラフが追加されました ([#1499](https://github.com/phaseoteam/Phaseo/pull/1499))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -199,6 +471,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年8月5日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページで TTFT、出力速度、TPOT、ITL、Phaseo のオーバーヘッドを P01 から P99 まで、ストリーミングの有無と入力長別にグラフ表示するようになりました ([#1344](https://github.com/phaseoteam/Phaseo/pull/1344))。
+- プリセットの編集は下書きとして保存され、変更されない番号付きバージョンとして公開されるようになりました。マーケットプレイスのフォークは元のバージョンに固定されます。詳しくは[プリセット](../guides/presets.mdx)をご覧ください ([#1419](https://github.com/phaseoteam/Phaseo/pull/1419))。
+- Broadcast の OTLP 送信先が、ゲートウェイのトレースを OpenTelemetry GenAI 形式でエクスポートするようになりました。プロンプトと応答の内容はオプトインした場合のみ送信されます。詳しくは[Broadcast](../guides/broadcast.mdx)をご覧ください ([#1355](https://github.com/phaseoteam/Phaseo/pull/1355))。
+- Chat でモデルが処理中や返信を作成中のときにアニメーションのオーブが表示されるようになりました。また、Phaseo が使っているオープンソースプロジェクトを紹介する謝辞ページが追加されました ([#1459](https://github.com/phaseoteam/Phaseo/pull/1459))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `GET /v1/models/{author}/{slug}/endpoints` で、モデルごとに各プロバイダーのエンドポイント、対応パラメーター、料金を取得できるようになりました。詳しくは[モデルのエンドポイント機能を一覧表示](../api-reference/endpoint/model-endpoints.mdx)をご覧ください ([#1274](https://github.com/phaseoteam/Phaseo/pull/1274))。
+- `@phaseo/ai-sdk-provider` が AI SDK 7 に対応し、ツール、推論、埋め込み、画像、文字起こし、音声合成を使えるようになりました。AI SDK 6 は 1.x 系で引き続きサポートされます。詳しくは[AI SDK](../guides/integrations/ai-sdk.mdx)をご覧ください ([#1336](https://github.com/phaseoteam/Phaseo/pull/1336))。
+- `POST /v1/feedback` と `POST /v1/events` で、リクエスト、セッション、プリセットに紐づく評価とイベントを記録できるようになりました。新しいキースコープ `feedback:read` と `feedback:write` を使います。詳しくは[プリセットのフィードバックを収集する](../guides/preset-feedback.mdx)をご覧ください ([#1033](https://github.com/phaseoteam/Phaseo/pull/1033))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -214,6 +507,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年8月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- リクエストの詳細に、再試行やフェイルオーバーを含むすべてのプロバイダーへの試行が、終了理由とコストとともに表示されるようになりました ([#1276](https://github.com/phaseoteam/Phaseo/pull/1276))。
+- Chat の並列比較は、ワイド画面で最大 96rem まで広がり、選択したモデル間で幅を分け合うようになりました ([#1365](https://github.com/phaseoteam/Phaseo/pull/1365))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- サーバーツールに Subagent、Fusion、モデル検索が追加され、`max_uses` と `max_tool_calls` が適用されるようになり、ウェブコンテンツは最大 100,000 文字まで取得できます。詳しくは[サーバーツール](../guides/server-tools/index.mdx)をご覧ください ([#1447](https://github.com/phaseoteam/Phaseo/pull/1447))。
+- リクエストでプリセットを使うには `model` に `@slug`、公開プリセットなら `@username/slug` を指定します。別の `preset` フィールドはありません。詳しくは[プリセット](../guides/presets.mdx)をご覧ください ([#1418](https://github.com/phaseoteam/Phaseo/pull/1418))。
+- `POST /v1/audio/transcriptions` が OpenAI の話者分離付きレスポンス形式、`chunking_strategy`、既知の話者のフィールドに対応しました。詳しくは[文字起こしを作成](../api-reference/endpoint/audio-transcriptions.mdx)をご覧ください ([#1451](https://github.com/phaseoteam/Phaseo/pull/1451))。
+
+</div>
+
+</Update>
+
 <Update label="2026年8月3日">
 
 <div data-changelog-category="models">
@@ -224,6 +540,32 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Qwen: Qwen 3.8 Max](https://phaseo.app/models/qwen/qwen3.8-max)
 - [Sakana AI: Namazu](https://phaseo.app/models/sakana/namazu)
+
+</div>
+
+</Update>
+
+<Update label="2026年8月2日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 使用状況に **Geography** タブが追加され、ランキングでは国別の 30 日間の利用状況が表示されるようになりました。新規ユーザーは登録時に国を選びます ([#1425](https://github.com/phaseoteam/Phaseo/pull/1425))。
+- グローバル検索にワークスペースが表示されるようになり、選択するとそのワークスペースに切り替わって設定が開きます ([#1417](https://github.com/phaseoteam/Phaseo/pull/1417), [#1424](https://github.com/phaseoteam/Phaseo/pull/1424))。
+- Chat でモデルを選ばずに送信を押すと、モデル選択画面が開くようになりました。以前はボタンを押しても何も起きませんでした ([#1421](https://github.com/phaseoteam/Phaseo/pull/1421), [#1423](https://github.com/phaseoteam/Phaseo/pull/1423))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月1日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 一時チャットのメッセージが破線の枠で表示されるようになり、一時モードを切り替えても下書きは保持されます ([#1399](https://github.com/phaseoteam/Phaseo/pull/1399), [#1362](https://github.com/phaseoteam/Phaseo/pull/1362))。
 
 </div>
 

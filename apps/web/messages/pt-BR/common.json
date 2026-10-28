@@ -634,6 +634,7 @@
 				"providerCredentials": "as credenciais dos provedores",
 				"guardrails": "as proteções e políticas",
 				"budgets": "os orçamentos de gastos e o uso da equipe",
+				"spendRules": "regras de alerta e bloqueio de gastos",
 				"managementKeys": "os dados de chaves de gerenciamento da máquina",
 				"oauthApps": "as configurações de aplicativos OAuth e integrações",
 				"privateModels": "modelos privados do espaço de trabalho"
@@ -2422,6 +2423,8 @@
 			"selectModelsToCompare": "Selecione modelos para comparar.",
 			"viewFullLeaderboard": "Ver classificação completa",
 			"sourceArtificialAnalysis": "Fonte: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparável entre anos e versões do índice",
 			"fullLeaderboard": "Classificação completa",
 			"noModelsMatchThisSearch": "Nenhum modelo corresponde a esta busca.",
 			"noResultsAvailableForThisMetric": "Nenhum resultado disponível para esta métrica.",

@@ -141,6 +141,7 @@ pub struct ApiKey {
 	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub label: Option<String>,
 	pub last_used_at: Option<String>,
 	pub limit: Option<f64>,
@@ -176,6 +177,8 @@ pub struct ApiKeyCreateRequest {
 	pub storage_locations: Option<Vec<String>>,
 	pub workspace_id: Option<String>,
 }
+
+pub type ApiKeyIpAllowlist = JsonValue;
 
 pub struct ApiKeyLimitBucket {
 	pub cost: Option<f64>,
@@ -227,6 +230,7 @@ pub struct ApiKeyUpdateRequest {
 	pub disabled: Option<bool>,
 	pub expires_at: Option<Option<String>>,
 	pub include_byok_in_limit: Option<bool>,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub limit: Option<Option<f64>>,
 	pub limit_reset: Option<String>,
 	pub limits: Option<HashMap<String, String>>,
@@ -258,6 +262,7 @@ pub struct ApiKeyWithValue {
 	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub key: String,
 	pub label: Option<String>,
 	pub last_used_at: Option<String>,
@@ -380,6 +385,59 @@ pub struct AudioTranslationRequest {
 
 pub struct AudioTranslationResponse {
 	pub text: Option<String>,
+}
+
+pub struct AuthorizedApp {
+	pub app_name: Option<String>,
+	pub authorized_at: Option<String>,
+	pub client_id: Option<String>,
+	pub current: Option<bool>,
+	pub id: Option<String>,
+	pub last_used_at: Option<Option<String>>,
+	pub scopes: Option<Vec<String>>,
+	pub workspace_id: Option<String>,
+	pub workspace_name: Option<Option<String>>,
+}
+
+pub struct AuthorizedAppListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct AuthorizedAppRevokedResponse {
+	pub id: Option<String>,
+	pub revoked: Option<bool>,
+}
+
+pub struct AuthorizedAppScopesRequest {
+	pub scopes: Vec<String>,
+}
+
+pub struct AuthorizedAppScopesResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct AutoRoutingSettings {
+	pub allow_fallbacks: Option<bool>,
+	pub allowed_patterns: Option<Vec<String>>,
+	pub max_input_price_per_million: Option<Option<f64>>,
+	pub max_output_price_per_million: Option<Option<f64>>,
+	pub objective: Option<String>,
+	pub revision: Option<Option<String>>,
+	pub spend_profile: Option<String>,
+	pub updated_at: Option<Option<String>>,
+}
+
+pub struct AutoRoutingSettingsResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct AutoRoutingSettingsUpdateRequest {
+	pub allow_fallbacks: Option<bool>,
+	pub allowed_patterns: Option<Vec<String>>,
+	pub max_input_price_per_million: Option<Option<f64>>,
+	pub max_output_price_per_million: Option<Option<f64>>,
+	pub objective: Option<String>,
+	pub spend_profile: Option<String>,
 }
 
 pub struct BatchBillingSummary {
@@ -1969,6 +2027,18 @@ pub struct KeyInvalidateResponse {
 
 pub type KnownModelId = JsonValue;
 
+pub struct LeakedKeyReportRequest {
+	pub comment: Option<String>,
+	pub evidence_url: Option<String>,
+	pub reporter_email: Option<String>,
+	pub source: Option<String>,
+	pub token: String,
+}
+
+pub struct LeakedKeyReportResponse {
+	pub status: Option<String>,
+}
+
 pub struct LegacyDecisionBoxQuestion {
 	pub instructions: String,
 	pub r#type: String,
@@ -2125,6 +2195,10 @@ pub struct ManagementKeyUpdateRequest {
 pub struct ManagementKeyUpdateResponse {
 	pub message: String,
 	pub ok: bool,
+}
+
+pub struct MeResponse {
+	pub data: HashMap<String, String>,
 }
 
 pub type MessageContentPart = JsonValue;
@@ -2295,6 +2369,23 @@ pub struct MusicGenerateResponse {
 	pub usage: Option<HashMap<String, String>>,
 }
 
+pub struct MyJoinRequest {
+	pub created_at: Option<String>,
+	pub decided_at: Option<Option<String>>,
+	pub id: Option<String>,
+	pub status: Option<String>,
+	pub workspace_id: Option<String>,
+	pub workspace_name: Option<Option<String>>,
+}
+
+pub struct MyJoinRequestCreatedResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct MyJoinRequestListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
 pub struct NotImplementedResponse {
 	pub description: String,
 	pub error: String,
@@ -2450,6 +2541,15 @@ pub struct ObservabilityDestinationPolicyInput {
 }
 
 pub struct ObservabilityDestinationResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct ObservabilityDestinationTestRequest {
+	pub config: HashMap<String, String>,
+	pub r#type: String,
+}
+
+pub struct ObservabilityDestinationTestResponse {
 	pub data: HashMap<String, String>,
 }
 
@@ -3147,6 +3247,10 @@ pub struct RateLimitPolicyUpdateInput {
 
 pub type RateLimitTargetType = JsonValue;
 
+pub struct RateLimitTierResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct ReasoningConfig {
 	pub effort: Option<Option<String>>,
 	pub enabled: Option<bool>,
@@ -3538,6 +3642,30 @@ pub struct SubagentToolDefinition {
 	pub r#type: String,
 }
 
+pub struct SuccessorReplacement {
+	pub model: String,
+	pub successor: Option<String>,
+}
+
+pub struct SuccessorReplacementListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct SuccessorReplacementRemovedResponse {
+	pub deleted: Option<bool>,
+	pub model: Option<String>,
+}
+
+pub struct SuccessorReplacementResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SuccessorReplacementRow {
+	pub model: Option<String>,
+	pub successor: Option<Option<String>>,
+	pub updated_at: Option<Option<String>>,
+}
+
 pub struct SupportedParameterDetails {
 }
 
@@ -3634,6 +3762,23 @@ pub struct Usage {
 
 pub struct UsageCostDetails {
 	pub upstream_inference_cost: Option<Option<f64>>,
+}
+
+pub struct UserProfile {
+	pub default_workspace_id: Option<Option<String>>,
+	pub display_name: Option<Option<String>>,
+	pub obfuscate_info: Option<bool>,
+	pub user_id: Option<String>,
+}
+
+pub struct UserProfileResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct UserProfileUpdateRequest {
+	pub default_workspace_id: Option<Option<String>>,
+	pub display_name: Option<String>,
+	pub obfuscate_info: Option<bool>,
 }
 
 pub struct VideoBillingSummary {
@@ -4234,6 +4379,10 @@ pub struct WorkspaceInvite {
 	pub token_preview: Option<Option<String>>,
 	pub uses_count: Option<i64>,
 	pub workspace_id: String,
+}
+
+pub struct WorkspaceInviteAcceptRequest {
+	pub token: String,
 }
 
 pub struct WorkspaceInviteCreateRequest {

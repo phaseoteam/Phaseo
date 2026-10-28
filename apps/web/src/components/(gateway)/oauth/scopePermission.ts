@@ -22,6 +22,7 @@ const SCOPE_RESOURCES = {
 	private_models: "privateModels",
 	guardrails: "guardrails",
 	budgets: "budgets",
+	spend_rules: "spendRules",
 	management_keys: "managementKeys",
 	oauth_clients: "oauthApps",
 } as const;

@@ -634,6 +634,7 @@
 				"providerCredentials": "提供商凭据",
 				"guardrails": "防护规则和策略设置",
 				"budgets": "团队支出预算和用量",
+				"spendRules": "支出提醒与拦截规则",
 				"managementKeys": "机器级管理密钥详情",
 				"oauthApps": "OAuth 应用和集成设置",
 				"privateModels": "工作空间私有模型"
@@ -2422,6 +2423,8 @@
 			"selectModelsToCompare": "请选择要比较的模型。",
 			"viewFullLeaderboard": "查看完整排行榜",
 			"sourceArtificialAnalysis": "来源：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "可跨年份和指数版本进行比较",
 			"fullLeaderboard": "完整排行榜",
 			"noModelsMatchThisSearch": "没有与此搜索匹配的模型。",
 			"noResultsAvailableForThisMetric": "此指标暂无结果。",

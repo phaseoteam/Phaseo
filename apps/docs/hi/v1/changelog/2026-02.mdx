@@ -7,13 +7,35 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"उत्पाद","api":"API और SDK","models":"मॉडल"}} clearLabel="साफ़ करें" />
 
-<Update label="26 फ़रवरी 2026">
+<Update label="27 फ़रवरी 2026">
 
 <div data-changelog-category="product">
 
 <p className="changelog-category">उत्पाद</p>
 
-- Gemini 3.1 Flash Image Preview को मॉडल खोज, गेटवे संगतता और दस्तावेज़ों में उपलब्ध कराया गया।
+- ईमेल साइन-इन विफल होने पर साइन-इन पेज पर ही कारण दिखता है, जैसे गलत पासवर्ड या असत्यापित ईमेल, सामान्य त्रुटि पेज के बजाय ([#116](https://github.com/phaseoteam/Phaseo/pull/116))।
+- ईमेल साइन-अप पासवर्ड के नियम (लोअरकेस, अपरकेस, संख्या और चिह्न) दिखाता है और फ़ॉर्म भेजने से पहले उनकी जाँच करता है ([#113](https://github.com/phaseoteam/Phaseo/pull/113))।
+- मॉडल तालिका अब प्रति मिलियन यूनिट कीमतें सही दिखाती है और पूरे पेज की चौड़ाई लेती है; पहले कुछ पंक्तियों में बहुत ज़्यादा कीमतें दिखती थीं ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Gemini 3 अनुरोध `reasoning.effort` को हर मॉडल के समर्थित थिंकिंग स्तरों से जोड़ते हैं, `minimal` से `high` तक ([#113](https://github.com/phaseoteam/Phaseo/pull/113))।
+
+</div>
+
+</Update>
+
+<Update label="26 फ़रवरी 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- **असंगत बदलाव:** `/v1/responses/ws` अब प्रायोगिक है और बिना प्रीफ़िक्स वाले मॉडल ID अस्वीकार करता है; `openai/<model>` ID भेजें, और प्रोडक्शन के लिए `POST /v1/responses` इस्तेमाल करें ([#112](https://github.com/phaseoteam/Phaseo/pull/112))।
 
 </div>
 
@@ -66,14 +88,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="19 फ़रवरी 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">उत्पाद</p>
-
-- Gemini 3.1 Pro Preview को मॉडल खोज, मूल्य निर्धारण, गेटवे और दस्तावेज़ों में उपलब्ध कराया गया।
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -93,7 +107,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- Claude Sonnet 4.6 को मॉडल खोज, गेटवे संगतता और दस्तावेज़ों में उपलब्ध कराया गया।
+- मॉडल पेज लाइट मोड में प्रदाता का एक ही लोगो दिखाते हैं; पहले लाइट और डार्क दोनों संस्करण साथ दिख सकते थे ([#81](https://github.com/phaseoteam/Phaseo/pull/81))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Baseten, Chutes, Cohere, Together और Cerebras को भेजे गए अनुरोध वे पैरामीटर हटा देते हैं जिन्हें प्रदाता समर्थित नहीं करता, बजाय प्रदाता के `400` से विफल होने के ([#82](https://github.com/phaseoteam/Phaseo/pull/82))।
 
 </div>
 
@@ -148,6 +170,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="15 फ़रवरी 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- सेटिंग्स में अब **Account**, **Billing**, **Usage** और **API** सेक्शन वाला साइडबार है जो टैब में बँटा है, और **Account** में विवरण, MFA और डेंजर ज़ोन के अलग पेज हैं ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55))।
+- **Settings -> Credits** में वैकल्पिक कम बैलेंस ईमेल अलर्ट जुड़ा है, जो तब भेजा जाता है जब आपका क्रेडिट बैलेंस आपकी तय की गई USD सीमा से नीचे जाता है ([#54](https://github.com/phaseoteam/Phaseo/pull/54))।
+- **Settings -> Keys** हर कुंजी की स्थिति दिखाता है और बताता है कि उसने अपनी अनुरोध और खर्च सीमाओं का कितना हिस्सा इस्तेमाल किया है ([#55](https://github.com/phaseoteam/Phaseo/pull/55))।
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
@@ -172,7 +204,28 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="13 फ़रवरी 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- जब साइन-इन न किया हुआ विज़िटर संदेश भेजने की कोशिश करता है, तो Chat **Create account** और **Sign in** बटन वाला बैनर दिखाता है ([#52](https://github.com/phaseoteam/Phaseo/pull/52))।
+
+</div>
+
+</Update>
+
 <Update label="12 फ़रवरी 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- AI SDK प्रदाता पैकेज npm पर `1.0.1` से उपलब्ध है; देखें [AI SDK](../guides/integrations/ai-sdk.mdx) ([#48](https://github.com/phaseoteam/Phaseo/pull/48))।
+- TypeScript SDK `1.0.1` में devtools अनुरोध कैप्चर शामिल है, इसलिए इंस्टॉल के लिए अलग devtools core पैकेज की ज़रूरत नहीं रही ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48))।
+
+</div>
 
 <div data-changelog-category="models">
 

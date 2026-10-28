@@ -24,6 +24,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 23, 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Chat rooms can now run audio, moderation and embeddings models as well as text models ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#157](https://github.com/phaseoteam/Phaseo/pull/157)).
+- Foundry, a new home for experimental projects, opens with LLM Council, which sends one prompt to several models and merges their answers into one ([#201](https://github.com/phaseoteam/Phaseo/pull/201)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Go, C#, Java, PHP and Ruby SDKs are now available alongside the TypeScript and Python SDKs, all at version `1.1.0` ([#203](https://github.com/phaseoteam/Phaseo/pull/203), [#201](https://github.com/phaseoteam/Phaseo/pull/201)).
+- The SDKs `1.1.0` warn when a request names a deprecated or retired model, and their model types and route paths match the API ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#203](https://github.com/phaseoteam/Phaseo/pull/203)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -42,8 +60,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Product</p>
 
-- New language SDKs shipped, TypeScript and Python SDKs were overhauled, and chat rooms went multimodal.
-- Foundry launched, LLM Council became the first Foundry project, and SDK `1.1.0` aligned model availability and lifecycle warnings with the API.
+- Promo codes can be redeemed for credits on the new **Redeem** page, linked from **Settings -> Credits**; teams billed by invoice cannot redeem them ([#188](https://github.com/phaseoteam/Phaseo/pull/188)).
+- Sign-up no longer fails when an optional account setup step errors ([#187](https://github.com/phaseoteam/Phaseo/pull/187)).
 
 </div>
 
@@ -64,6 +82,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="March 18, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Chat shows the model name above each assistant message instead of the model ID, and the name links to the model's page ([#179](https://github.com/phaseoteam/Phaseo/pull/179)).
+- On phones, the header has a single menu with navigation, account links such as settings, credits and keys, and a light, dark or system theme switch ([#180](https://github.com/phaseoteam/Phaseo/pull/180), [#183](https://github.com/phaseoteam/Phaseo/pull/183), [#181](https://github.com/phaseoteam/Phaseo/pull/181)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -98,6 +125,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 16, 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- The gateway quickstart on model pages offers only the model IDs that the selected endpoint and its active providers accept ([#157](https://github.com/phaseoteam/Phaseo/pull/157)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -127,14 +162,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 12, 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">Product</p>
-
-- The models display page was overhauled for clearer availability, metadata hierarchy, and support context.
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -146,6 +173,24 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="March 11, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- **Settings -> Provisioning Keys** is now **Settings -> Management API Keys**, and the old address redirects to the new page ([#153](https://github.com/phaseoteam/Phaseo/pull/153)).
+- Header search ranks model name matches first, so searching `Grok 4.20` puts Grok 4.20 at the top ([#156](https://github.com/phaseoteam/Phaseo/pull/156)).
+- New guide: [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx) covers reasoning and multi-agent effort controls when adopting Grok 4.20 ([#155](https://github.com/phaseoteam/Phaseo/pull/155)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Breaking:** The `/v1/provisioning/keys` aliases are removed; call `/v1/management/keys` instead; see [Management API Keys](../developers/management-api-keys.mdx) ([#153](https://github.com/phaseoteam/Phaseo/pull/153)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -161,15 +206,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 10, 2026">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">Product</p>
-
-- A broader brand refresh shipped across the website and docs.
-- Alibaba Cloud provider coverage landed across Phaseo, gateway routes, and documentation.
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">Models</p>
@@ -178,20 +214,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [Aion Labs: Aion 2.5](https://phaseo.app/models/aion-labs/aion-2.5)
 - [Google: Gemini Embedding 2 Preview](https://phaseo.app/models/google/gemini-embedding-2-preview)
+- Alibaba Cloud is now a provider for gateway requests.
+
+</div>
+
+</Update>
+
+<Update label="March 6, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Model pricing tables show capabilities a provider has turned off, such as batch, as **Not Active** instead of hiding them ([#141](https://github.com/phaseoteam/Phaseo/pull/141)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Requests accept `service_tier` set to `standard` or `priority` again; see [Service Tiers](../guides/service-tiers.mdx) ([#141](https://github.com/phaseoteam/Phaseo/pull/141)).
+- The `openai/gpt-latest` alias now points to `openai/gpt-5.4` ([#140](https://github.com/phaseoteam/Phaseo/pull/140)).
 
 </div>
 
 </Update>
 
 <Update label="March 5, 2026">
-
-<div data-changelog-category="product">
-
-<p className="changelog-category">Product</p>
-
-- GPT 5.4 and GPT 5.4 Pro landed across discovery, gateway, and docs.
-
-</div>
 
 <div data-changelog-category="models">
 
@@ -208,11 +258,11 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 3, 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">Product</p>
+<p className="changelog-category">API & SDKs</p>
 
-- Gemini 3.1 Flash Lite Preview landed across product surfaces, gateway routing, and docs.
+- The `openai/gpt-chat-latest` alias now points to `openai/gpt-5.3-chat` ([#138](https://github.com/phaseoteam/Phaseo/pull/138)).
 
 </div>
 
@@ -231,11 +281,13 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="March 2, 2026">
 
-<div data-changelog-category="product">
+<div data-changelog-category="api">
 
-<p className="changelog-category">Product</p>
+<p className="changelog-category">API & SDKs</p>
 
-- Responses API assistant `phase` support landed across request handling, response payloads, and OpenAPI docs.
+- The Responses API accepts and returns the assistant message `phase` (`commentary` or `final_answer`), so multi-turn requests can send it back; see [Create a response](../api-reference/endpoint/responses.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
+- Responses requests to OpenAI models accept `provider_options.openai.context_management` with `type: "compaction"` and an optional `compact_threshold`; see [Parameters](../api-reference/parameters.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
+- Requests to OpenAI that omit `safety_identifier` now send one taken from `user` or `user_id`, or else the request ID ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
 
 </div>
 

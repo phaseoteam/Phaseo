@@ -634,6 +634,7 @@
 				"providerCredentials": "بيانات اعتماد المزوّدين",
 				"guardrails": "ضوابط الحماية وسياساتها",
 				"budgets": "ميزانيات إنفاق الفريق واستخدامه",
+				"spendRules": "قواعد تنبيهات الإنفاق وحظره",
 				"managementKeys": "تفاصيل مفاتيح الإدارة على مستوى الجهاز",
 				"oauthApps": "إعدادات تطبيقات OAuth وعمليات التكامل",
 				"privateModels": "نماذج مساحة العمل الخاصة"
@@ -2422,6 +2423,8 @@
 			"selectModelsToCompare": "اختر نماذج للمقارنة.",
 			"viewFullLeaderboard": "عرض لوحة الترتيب الكاملة",
 			"sourceArtificialAnalysis": "المصدر: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "قابل للمقارنة عبر السنوات وإصدارات المؤشر",
 			"fullLeaderboard": "لوحة الترتيب الكاملة",
 			"noModelsMatchThisSearch": "لا توجد نماذج تطابق هذا البحث.",
 			"noResultsAvailableForThisMetric": "لا توجد نتائج متاحة لهذا المقياس.",

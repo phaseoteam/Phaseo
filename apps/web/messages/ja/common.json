@@ -634,6 +634,7 @@
 				"providerCredentials": "プロバイダーの認証情報",
 				"guardrails": "ガードレールとポリシー設定",
 				"budgets": "チームの支出予算と利用状況",
+				"spendRules": "支出アラートとブロックのルール",
 				"managementKeys": "マシンレベルの管理キーの詳細",
 				"oauthApps": "OAuth アプリと連携の設定",
 				"privateModels": "ワークスペースのプライベートモデル"
@@ -2422,6 +2423,8 @@
 			"selectModelsToCompare": "比較するモデルを選択してください。",
 			"viewFullLeaderboard": "すべてのランキングを見る",
 			"sourceArtificialAnalysis": "出典：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "年やインデックスのバージョンをまたいで比較可能",
 			"fullLeaderboard": "すべてのランキング",
 			"noModelsMatchThisSearch": "この検索に一致するモデルはありません。",
 			"noResultsAvailableForThisMetric": "この指標の結果はありません。",

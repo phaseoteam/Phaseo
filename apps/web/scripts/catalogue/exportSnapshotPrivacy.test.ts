@@ -157,3 +157,26 @@ test("removes identity fields recursively while preserving catalog values", () =
 		metadata: { colour: "#fff", sources: [{ url: "https://example.com" }] },
 	}]);
 });
+
+test("allows third-party links that contain a private id but still rejects Phaseo links", () => {
+	const input = new Map<string, Record<string, unknown>[]>([["v2_models", [
+		{ model_slug: "hidden/base", hidden: true },
+		{ model_slug: "public/model", license_url: "https://huggingface.co/hidden/base-it" },
+	]]]);
+	expect(filterPublicSnapshotRows(input).get("v2_models")).toHaveLength(1);
+	input.get("v2_models")![1].license_url = "https://phaseo.app/models/hidden/base";
+	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
+	input.get("v2_models")![1].license_url = "https://phaseo.app./models/hidden/base";
+	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
+	input.get("v2_models")![1].license_url = "See https://huggingface.co/hidden/base-it";
+	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
+});
+
+test("does not treat the Phaseo name as a private provider reference", () => {
+	const result = filterPublicSnapshotRows(new Map<string, Record<string, unknown>[]>([
+		["v2_providers", [{ provider_slug: "phaseo", routable: false, routing_enabled: false, metadata: { self_serve: {} } }]],
+		["v2_model_page_notices", [{ model_slug: null, markdown: "Try it in [the Realtime Room](https://phaseo.app/chat/realtime)." }]],
+	]));
+	expect(result.get("v2_providers")).toEqual([]);
+	expect(result.get("v2_model_page_notices")).toHaveLength(1);
+});

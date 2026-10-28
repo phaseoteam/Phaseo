@@ -756,6 +756,12 @@ export type PipelineContext = {
      * contribution sample or detailed telemetry content.
      */
     zeroDataRetention?: boolean;
+    /**
+     * The request's own limits on where its content may go (requestDataLimits),
+     * read before a provider-qualified model pins its provider, for other gateway
+     * requests that send the same content (request classifiers).
+     */
+    contentDataLimits?: Record<string, unknown> | null;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

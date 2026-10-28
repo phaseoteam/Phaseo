@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- 网关再次进行了全面升级，并支持兼容 Anthropic 的 `/messages`。
-- 我们更新了数据库架构、网站体验、Playground 工具和 SDK 发展方向，以支持更广泛的扩展。
+- [phaseo.app/chat](https://phaseo.app/chat) 上的 Chat 可以与网关模型对话、调整请求参数，并将聊天记录保存在浏览器中 ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- 团队可以在 **Settings -> Routing** 中选择网关挑选提供商的方式：**Balanced**、**Lowest cost**、**Lowest latency** 或 **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- Tools 中的价格计算器根据 token 数量估算请求费用，并在模型之间进行比较 ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/messages` 接受 Anthropic Messages 格式的请求，因此 Anthropic SDK 可以调用网关模型；请参阅[创建消息](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- `POST /v1/ocr` 从通过 URL 或 base64 提供的图片中提取文本；请参阅[使用 OCR 提取文本](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- `POST /v1/music/generate` 生成音乐曲目，`GET /v1/music/generate/{id}` 返回其状态；请参阅[生成音乐](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- 管理 API 新增 `GET /v1/credits`（获取额度余额）、`GET /v1/activity`（获取最近的请求）以及用于列出、更新和删除密钥的 `/v1/provisioning/keys`；请参阅[获取额度](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
 
 </div>
 

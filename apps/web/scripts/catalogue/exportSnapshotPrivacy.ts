@@ -50,6 +50,23 @@ function sanitizePublicValue(value: unknown): unknown {
 	);
 }
 
+// Public names that a private row may also use as its slug (an unpublished
+// "phaseo" provider). Its rows are still dropped; only text mentions pass.
+const PUBLIC_NAMES = new Set(["phaseo"]);
+
+// A whole-value link to another site (licence, paper, model card) is already
+// public there, so it cannot leak a private Phaseo id. Phaseo links still count.
+function isThirdPartyUrl(value: string): boolean {
+	if (/\s/.test(value)) return false;
+	try {
+		const url = new URL(value);
+		const host = url.hostname.toLowerCase().replace(/\.+$/, "");
+		return (url.protocol === "https:" || url.protocol === "http:") && host !== "phaseo.app" && !host.endsWith(".phaseo.app");
+	} catch {
+		return false;
+	}
+}
+
 function hasSelfServeSubmission(row: SnapshotRow): boolean {
 	const metadata = row.metadata;
 	return Boolean(metadata && typeof metadata === "object" && !Array.isArray(metadata) && "self_serve" in metadata);
@@ -177,7 +194,7 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 	// Public metadata and descriptive strings can also reference private IDs.
 	// Abort the entire export instead of publishing a partly-redacted artifact.
 	const privateIds = [...stealthModelSlugs, ...unpublishedProviderSlugs, ...stealthRouteIds, ...unpublishedRouteIds, ...unpublishedSkuIds, ...unpublishedVariantIds, ...privateParentIds]
-		.filter((id) => id.length > 0 && id !== "undefined");
+		.filter((id) => id.length > 0 && id !== "undefined" && !PUBLIC_NAMES.has(id));
 	const publicIds = new Set([...filtered].flatMap(([table, rows]) => rows.flatMap((row) =>
 		(PUBLIC_CATALOG_TABLES[table as keyof typeof PUBLIC_CATALOG_TABLES] as readonly string[]).filter((key) => /_(?:id|slug|key)$/.test(key)).map((key) => String(row[key] ?? "")),
 	)));
@@ -189,6 +206,7 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 		if (value && typeof value === "object") return Object.entries(value).some(([key, entry]) => privateIds.includes(key) || containsPrivateReference(entry, key));
 		if (typeof value !== "string") return false;
 		if (publicIds.has(value)) return false;
+		if (isThirdPartyUrl(value)) return false;
 		if (privateIds.includes(value)) return true;
 		// These fields are complete legacy identifiers, not prose. A public dated
 		// variant may legitimately start with the slug of an unreleased base model.

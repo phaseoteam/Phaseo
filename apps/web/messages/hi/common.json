@@ -634,6 +634,7 @@
 				"providerCredentials": "प्रदाता क्रेडेंशियल",
 				"guardrails": "गार्डरेल और नीतियाँ",
 				"budgets": "टीम के खर्च बजट और उपयोग",
+				"spendRules": "खर्च अलर्ट और ब्लॉक करने के नियम",
 				"managementKeys": "मशीन-स्तर की प्रबंधन कुंजी की जानकारी",
 				"oauthApps": "OAuth ऐप और इंटीग्रेशन की सेटिंग",
 				"privateModels": "वर्कस्पेस के निजी मॉडल"
@@ -2422,6 +2423,8 @@
 			"selectModelsToCompare": "तुलना के लिए मॉडल चुनें।",
 			"viewFullLeaderboard": "पूरी रैंकिंग देखें",
 			"sourceArtificialAnalysis": "स्रोत: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "वर्षों और इंडेक्स संस्करणों के बीच तुलनीय",
 			"fullLeaderboard": "पूरी रैंकिंग",
 			"noModelsMatchThisSearch": "इस खोज से मेल खाता कोई मॉडल नहीं है।",
 			"noResultsAvailableForThisMetric": "इस मेट्रिक के लिए परिणाम उपलब्ध नहीं हैं।",

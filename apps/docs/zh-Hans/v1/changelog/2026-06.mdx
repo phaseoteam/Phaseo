@@ -9,15 +9,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月30日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">产品</p>
-
-- 定价计算器现支持按时间窗口计价和并排比较模型，方便分析突发、实时及特定路由的成本 ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-- 我们简化了定价计算器布局，方便用户在比较成本前调整模型、供应商和用量假设 ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -35,11 +26,32 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月29日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 面向 TypeScript 的 Phaseo Agent SDK `0.1.1` 是首个公开版本，可基于网关构建使用工具的多步智能体循环；请参阅[Agent SDK Overview](../sdk-reference/agent-sdk/overview.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
 
 - [Meituan: LongCat 2.0](https://phaseo.app/models/meituan/longcat-2.0)
+
+</div>
+
+</Update>
+
+<Update label="2026年6月28日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面将已发布公告的模型列为 **Coming Soon** 并显示目录价格，仅限合作伙伴的模型显示为 **Limited Access** ([#850](https://github.com/phaseoteam/Phaseo/pull/850), [#852](https://github.com/phaseoteam/Phaseo/pull/852))。
+- 新指南：[OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx) 介绍如何迁移到 Sol、Terra 和 Luna 层级，包括推理强度和缓存定价 ([#850](https://github.com/phaseoteam/Phaseo/pull/850))。
 
 </div>
 
@@ -89,6 +101,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月15日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 带有 `service_tier: "priority"` 的请求现在只会路由到支持该层级的供应商，xAI 和 Moonshot 的请求按实际提供的层级计费；请参阅[服务层级](../guides/service-tiers.mdx) ([#746](https://github.com/phaseoteam/Phaseo/pull/746), [#741](https://github.com/phaseoteam/Phaseo/pull/741), [#745](https://github.com/phaseoteam/Phaseo/pull/745))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -114,6 +134,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月12日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Monitor** 动态显示模型链接变更以及弃用和退役日期，包含多个套餐的价格更新可切换套餐查看 ([#703](https://github.com/phaseoteam/Phaseo/pull/703), [#704](https://github.com/phaseoteam/Phaseo/pull/704))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **测试版：** Phaseo CLI `0.1.1` 是首个公开版本，支持浏览器登录、`--json` 输出，以及管理密钥、工作区、预设和额度的命令；请参阅[Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#562](https://github.com/phaseoteam/Phaseo/pull/562))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -128,6 +164,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月11日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 在失败的回复下方直接显示请求错误，输入框提供可一键填入常用评估和效率提示词的卡片 ([#691](https://github.com/phaseoteam/Phaseo/pull/691))。
+- 设置将 Activity 和 Usage 拆分为 **Observability** 页面：Overview、Trends、Explore、Guardrails 和 Logs ([#693](https://github.com/phaseoteam/Phaseo/pull/693))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 服务器工具新增网页搜索、网页抓取、Advisor、图像生成、apply patch 和日期时间，可用于 Chat Completions、Responses 和 Messages 请求，按次计费；请参阅[服务器工具](../guides/server-tools/index.mdx) ([#690](https://github.com/phaseoteam/Phaseo/pull/690))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -139,6 +192,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年6月10日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 新账户从 **Onboarding** 开始，通过三个步骤创建 API 密钥、选择模型并预览第一个请求 ([#689](https://github.com/phaseoteam/Phaseo/pull/689))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** `GET /v1/models` 现在是唯一的模型发现端点；`/v1/gateway/models` 和 `/v1/data/models` 已移除，请改为调用 `/v1/models`；请参阅[列出模型](../api-reference/endpoint/models.mdx) ([#681](https://github.com/phaseoteam/Phaseo/pull/681))。
+- 管理 API 新增 `/v1/presets`、`/v1/settings`、`/v1/guardrails` 和 `/v1/management-keys`，`GET /v1/me` 返回 OAuth 令牌对应的用户和工作区 ([#562](https://github.com/phaseoteam/Phaseo/pull/562))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -154,6 +224,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月9日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Monitor** 页面将模型新增、供应商新增和供应商状态变更列为独立事件，页脚的 **Explore** 栏目也链接到该页面 ([#678](https://github.com/phaseoteam/Phaseo/pull/678), [#679](https://github.com/phaseoteam/Phaseo/pull/679))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
@@ -168,7 +246,54 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年6月8日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的生命周期卡片为每个公布、发布、弃用和退役日期显示相对时间标签，悬停时显示精确间隔 ([#671](https://github.com/phaseoteam/Phaseo/pull/671))。
+- 新的 **Methodology** 页面说明 Phaseo 如何计算模型价格、测量延迟和吞吐量、标准化基准测试以及跟踪供应商可用性 ([#639](https://github.com/phaseoteam/Phaseo/pull/639))。
+
+</div>
+
+</Update>
+
+<Update label="2026年6月7日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面现在从顶部打开；此前从模型列表靠下的位置打开时，会保留列表的滚动位置 ([#631](https://github.com/phaseoteam/Phaseo/pull/631))。
+- 模型列表重新按发布或公布日期排序；此前 Whisper 1 等部分旧模型会带着 2026 年的日期排在最前 ([#632](https://github.com/phaseoteam/Phaseo/pull/632))。
+- 已保存的 Stripe 客户缺失或无效的工作区可以重新购买额度；此前结账可能无法开始 ([#633](https://github.com/phaseoteam/Phaseo/pull/633))。
+
+</div>
+
+</Update>
+
+<Update label="2026年6月6日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面可在模型标题上方显示信息、警告或严重级别的通知，例如关于访问限制或退役的说明 ([#624](https://github.com/phaseoteam/Phaseo/pull/624))。
+
+</div>
+
+</Update>
+
 <Update label="2026年6月5日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的 Quickstart 简化为获取 API 密钥和复制现成请求两步，点击可用的模型 ID 现在会更新示例 ([#556](https://github.com/phaseoteam/Phaseo/pull/556), [#619](https://github.com/phaseoteam/Phaseo/pull/619))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -183,6 +308,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年6月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 显示每条回复由哪个供应商返回，模型选择器按发布月份分组，收藏的模型单独成组 ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+- 已保存的聊天使用已弃用的模型时，Chat 会发出提醒，并在目录列出后继模型时切换过去 ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 文本请求现在可以到达只支持 Responses、Chat Completions 或 Messages 其中一个端点的供应商，不再因不支持而失败 ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
+</Update>
+
 <Update label="2026年6月3日">
 
 <div data-changelog-category="models">
@@ -192,6 +338,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Gemma 4 12B 模型发布图片](../../../images/model-releases/2026-06-03--google--gemma-4-12b.png)
 
 - [Google: Gemma 4 12B](https://phaseo.app/models/google/gemma-4-12b)
+
+</div>
+
+</Update>
+
+<Update label="2026年6月2日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 文档更新日志将产品、SDK 和模型的发布说明合并到同一条时间线中，不再分成多个页面 ([#588](https://github.com/phaseoteam/Phaseo/pull/588))。
 
 </div>
 
