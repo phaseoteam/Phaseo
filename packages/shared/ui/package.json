@@ -10,13 +10,24 @@
 		"./base-ui-compat": "./src/base-ui-compat.tsx",
 		"./badge": "./src/badge.tsx",
 		"./button": "./src/button.tsx",
+		"./checkbox": "./src/checkbox.tsx",
+		"./collapsible": "./src/collapsible.tsx",
+		"./command": "./src/command.tsx",
+		"./dialog": "./src/dialog.tsx",
 		"./dropdown-menu": "./src/dropdown-menu.tsx",
 		"./input": "./src/input.tsx",
+		"./input-group": "./src/input-group.tsx",
 		"./kbd": "./src/kbd.tsx",
 		"./popover": "./src/popover.tsx",
 		"./scroll-area": "./src/scroll-area.tsx",
+		"./select": "./src/select.tsx",
 		"./separator": "./src/separator.tsx",
+		"./skeleton": "./src/skeleton.tsx",
+		"./switch": "./src/switch.tsx",
 		"./tabs": "./src/tabs.tsx",
+		"./textarea": "./src/textarea.tsx",
+		"./toggle": "./src/toggle.tsx",
+		"./toggle-group": "./src/toggle-group.tsx",
 		"./tooltip": "./src/tooltip.tsx"
 	},
 	"scripts": {
@@ -29,9 +40,15 @@
 	"peerDependencies": {
 		"@base-ui/react": "^1.6.0",
 		"class-variance-authority": "^0.7.1",
+		"cmdk": "^1.1.1",
 		"lucide-react": "^1.17.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0"
+	},
+	"peerDependenciesMeta": {
+		"cmdk": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
 		"@base-ui/react": "1.6.0",
@@ -39,6 +56,7 @@
 		"@types/react-dom": "19.3.0",
 		"@typescript/native": "catalog:",
 		"class-variance-authority": "^0.7.1",
+		"cmdk": "1.1.1",
 		"lucide-react": "^1.17.0",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
