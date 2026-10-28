@@ -85,6 +85,8 @@ import {
 	loadWorkspaceAutoRouterConfig,
 	providersMeetingResidency,
 	selectAutoRouterModel,
+	unmetResidencyKeys,
+	type AutoRouterResidencyKey,
 	type AutoRouterClassification,
 	type AutoRouterEvaluation,
 } from "./auto-router";
@@ -659,9 +661,11 @@ export async function beforeRequest(
 			};
 		}
 		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
+		// A request with routing limits the gateway can't honour is refused below
+		// (collectUnsupportedRoutingFields), so its text never goes to the classifier.
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
-			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
+			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride && !collectUnsupportedRoutingFields(autoRouterBody).length
 				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
@@ -696,13 +700,18 @@ export async function beforeRequest(
 		// A request that needs zero data retention (or a workspace or key that only
 		// allows it) picks only among models with a route that offers it.
 		const needsZeroDataRetention = autoRouterNeedsZeroDataRetention(autoRouterBody, policyLoad.value);
+		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
+		// The request's residency requirements, with zero data retention when the workspace or key needs it too.
+		const shortlistResidency = { ...residencyRequirement, requireZeroDataRetention: needsZeroDataRetention };
+		// Which requirements each candidate's providers left unmet, for the error when none qualifies.
+		const unmetByModel = new Map<string, AutoRouterResidencyKey[]>();
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
 			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(
 				config,
 				autoRouterBody,
 				classification,
-				{ endpoint, zeroDataRetention: needsZeroDataRetention },
+				{ endpoint, residency: shortlistResidency },
 			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
@@ -717,7 +726,6 @@ export async function beforeRequest(
 			allowedModels: candidateUniverse.models,
 			candidateUniverseSize: candidateUniverse.totalEligible,
 		};
-		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
 			body: autoRouterBody,
@@ -750,6 +758,7 @@ export async function beforeRequest(
 				// gate would otherwise only apply after this model was chosen.
 				const residentProviders = providersMeetingResidency(executableProviders, residencyRequirement);
 				if (!residentProviders.length) {
+					unmetByModel.set(candidateModel, unmetResidencyKeys(executableProviders, residencyRequirement));
 					return { ok: false as const, reason: AUTO_ROUTER_RESIDENCY_REJECTION };
 				}
 				const capabilityResult = await validateCapabilities({
@@ -789,10 +798,10 @@ export async function beforeRequest(
 		if (selection.ok === false) {
 			const unmetRequirements = selection.reason === "no_eligible_models"
 				? autoRouterUnmetResidency({
-					requirement: residencyRequirement,
-					zeroDataRetention: needsZeroDataRetention,
-					rejectedReasons: selection.candidates.map((candidate) => candidate.reason),
-					droppedForZeroDataRetention: candidateUniverse.droppedForZeroDataRetention,
+					requirement: shortlistResidency,
+					rejected: selection.candidates.map((candidate) => ({ reason: candidate.reason, unmet: unmetByModel.get(candidate.model) })),
+					droppedForResidency: candidateUniverse.droppedForResidency,
+					unmetByDropped: candidateUniverse.unmetByDropped,
 				})
 				: null;
 			if (unmetRequirements) {

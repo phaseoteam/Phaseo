@@ -2,15 +2,16 @@ import { createClient } from "@supabase/supabase-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as runtime from "@/runtime/env";
 import { __resetTieredCacheForTests } from "@/core/tiered-cache";
+import { requestDataLimits, withRequestDataLimits } from "../requestRouting";
 import {
 	AUTO_ROUTER_RESIDENCY_REJECTION,
-	autoRouterClassifierDataLimits,
 	autoRouterNeedsZeroDataRetention,
 	autoRouterUnmetResidency,
 	buildAutoRouterClassifierRequestBody,
 	loadManagedAutoRouterCandidates,
 	providersMeetingResidency,
 	routeOffersZeroDataRetention,
+	unmetResidencyKeys,
 	workspaceAutoRouterConfigFromRow,
 } from "./auto-router";
 
@@ -38,8 +39,8 @@ const TABLES: Record<string, unknown[]> = {
 		{ provider_model_id: "plain-co:model/declared", capability_id: "text.generate", params: { data_policy: { zeroDataRetention: true } }, status: "active" },
 	],
 	v2_providers: [
-		{ provider_slug: "zdr-co", zero_data_retention: true, data_policy_variant: "standard" },
-		{ provider_slug: "plain-co", zero_data_retention: false, data_policy_variant: "standard" },
+		{ provider_slug: "zdr-co", zero_data_retention: true, data_policy_variant: "standard", default_execution_regions: ["eu"], default_data_regions: ["eu"] },
+		{ provider_slug: "plain-co", zero_data_retention: false, data_policy_variant: "standard", default_execution_regions: null, default_data_regions: null },
 	],
 	v2_pricing_skus: ["zdr-co:model/kept", "plain-co:model/logged", "plain-co:model/declared"].map((id) => ({
 		sku_id: `sku:${id}`, provider_model_id: id, service_tier_slug: "standard", status: "active", effective_from: null, effective_to: null,
@@ -73,19 +74,26 @@ describe("auto router and zero data retention", () => {
 	it("shortlists only models with a route that keeps no data when the request needs it", async () => {
 		mockCatalogue();
 		const body = { model: "phaseo/auto", input: "hello" };
-		const all = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", zeroDataRetention: false });
+		const all = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", residency: {} });
 		expect([...all.models].sort()).toEqual(["model/declared", "model/kept", "model/logged"]);
-		expect(all.droppedForZeroDataRetention).toBe(0);
+		expect(all.droppedForResidency).toBe(0);
 
-		const zdr = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", zeroDataRetention: true });
+		const zdr = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", residency: { requireZeroDataRetention: true } });
 		expect([...zdr.models].sort()).toEqual(["model/declared", "model/kept"]);
 		expect(zdr.totalEligible).toBe(2);
-		expect(zdr.droppedForZeroDataRetention).toBe(1);
+		expect(zdr.droppedForResidency).toBe(1);
+		expect(zdr.unmetByDropped).toEqual(["zero_data_retention"]);
+
+		// Regions too, from the provider's own columns or, when they're empty, its defaults.
+		const eu = await loadManagedAutoRouterCandidates(unrestricted, body, undefined, { endpoint: "responses", residency: { requiredDataRegion: "eu" } });
+		expect(eu.models).toEqual(["model/kept"]);
+		expect(eu.droppedForResidency).toBe(2);
+		expect(eu.unmetByDropped).toEqual(["data_region"]);
 	});
 
 	it("reads a route's zero data retention the way the gateway context does", () => {
-		const zdrProvider = { provider_slug: "zdr-co", zero_data_retention: true, data_policy_variant: "standard" as const };
-		const plainProvider = { provider_slug: "plain-co", zero_data_retention: false, data_policy_variant: "standard" as const };
+		const zdrProvider = { provider_slug: "zdr-co", zero_data_retention: true, data_policy_variant: "standard" as const, execution_regions: null, data_regions: null };
+		const plainProvider = { provider_slug: "plain-co", zero_data_retention: false, data_policy_variant: "standard" as const, execution_regions: null, data_regions: null };
 		// The provider's own setting, when no capability declares one.
 		expect(routeOffersZeroDataRetention({ data_policies: [] }, zdrProvider, "responses", "model/a")).toBe(true);
 		expect(routeOffersZeroDataRetention({ data_policies: [] }, plainProvider, "responses", "model/a")).toBe(false);
@@ -117,6 +125,13 @@ describe("auto router and zero data retention", () => {
 				data_policies: [policy("text.generate", { zeroDataRetention: true }, unread)],
 			}, plainProvider, "responses", "model/a")).toBe(false);
 		}
+		// Only text.generate and the request's own surface are read, as the context loads them.
+		expect(routeOffersZeroDataRetention({
+			data_policies: [policy("text.generate", null), policy("chat.completions", { zeroDataRetention: true })],
+		}, plainProvider, "responses", "model/a")).toBe(false);
+		expect(routeOffersZeroDataRetention({
+			data_policies: [policy("text.generate", null), policy("chat.completions", { zeroDataRetention: true })],
+		}, plainProvider, "chat.completions", "model/a")).toBe(true);
 		// A deranked capability is still routable.
 		expect(routeOffersZeroDataRetention({
 			data_policies: [policy("text.generate", { zeroDataRetention: true }, { status: "deranked_lvl2" })],
@@ -144,7 +159,7 @@ describe("auto router and zero data retention", () => {
 	});
 
 	it("sends the classifier request with the same limits on where the data may go", () => {
-		expect(autoRouterClassifierDataLimits({ input: "hello" })).toBeNull();
+		expect(requestDataLimits({ input: "hello" })).toBeNull();
 		const body = {
 			input: "Summarize these Slack messages",
 			provider: { require_zero_data_retention: true, only: ["zdr-co"], ignore: ["plain-co"], sort: "price" },
@@ -160,35 +175,41 @@ describe("auto router and zero data retention", () => {
 		// Preferences that don't limit where data goes stay with the request itself.
 		expect(request.provider.sort).toBeUndefined();
 		expect(buildAutoRouterClassifierRequestBody({ input: "hello" }, "responses")).not.toHaveProperty("provider");
+		// Request classifiers' bodies get them too, over any of their own.
+		expect(withRequestDataLimits({ model: "acme/classifier", provider: { sort: "price", only: ["anyone"] } }, requestDataLimits(body))).toEqual({
+			model: "acme/classifier",
+			provider: { sort: "price", only: ["zdr-co"], ignore: ["plain-co"], require_zero_data_retention: true, required_data_region: "eu" },
+		});
+		expect(withRequestDataLimits({ model: "acme/classifier" }, null)).toEqual({ model: "acme/classifier" });
+	});
+
+	it("names only the requirements no provider met", () => {
+		const eu = { residencyMode: "provider_managed" as const, executionRegions: ["eu"], dataRegions: ["eu"], zeroDataRetention: false };
+		const zdrUs = { residencyMode: "provider_managed" as const, executionRegions: ["us"], dataRegions: ["us"], zeroDataRetention: true };
+		expect(unmetResidencyKeys([eu], { requiredDataRegion: "eu", requireZeroDataRetention: true })).toEqual(["zero_data_retention"]);
+		expect(unmetResidencyKeys([zdrUs], { requiredDataRegion: "eu", requireZeroDataRetention: true })).toEqual(["data_region"]);
+		// Each met by some provider, but not by one together: both.
+		expect(unmetResidencyKeys([eu, zdrUs], { requiredDataRegion: "eu", requireZeroDataRetention: true })).toEqual(["data_region", "zero_data_retention"]);
+		expect(unmetResidencyKeys([eu], {})).toEqual([]);
 	});
 
 	it("explains a failure by residency only when residency left every candidate out", () => {
-		const requirement = { requireZeroDataRetention: true };
-		expect(autoRouterUnmetResidency({
-			requirement,
-			zeroDataRetention: true,
-			rejectedReasons: [AUTO_ROUTER_RESIDENCY_REJECTION, AUTO_ROUTER_RESIDENCY_REJECTION],
-			droppedForZeroDataRetention: 0,
-		})).toEqual({
+		const requirement = { requiredDataRegion: "eu", requireZeroDataRetention: true };
+		const residency = (unmet: Array<"execution_region" | "data_region" | "zero_data_retention">) => ({ reason: AUTO_ROUTER_RESIDENCY_REJECTION, unmet });
+		expect(autoRouterUnmetResidency({ requirement, rejected: [residency(["zero_data_retention"]), residency(["zero_data_retention"])], droppedForResidency: 0, unmetByDropped: [] })).toEqual({
 			unmet: { zero_data_retention: true },
 			description: "No model Auto can choose has a provider that offers zero data retention.",
 		});
-		// No zero-retention model to shortlist at all.
-		expect(autoRouterUnmetResidency({ requirement: {}, zeroDataRetention: true, rejectedReasons: [], droppedForZeroDataRetention: 4 })?.unmet)
+		// What the shortlist left out counts too.
+		expect(autoRouterUnmetResidency({ requirement, rejected: [residency(["zero_data_retention"])], droppedForResidency: 3, unmetByDropped: ["data_region"] })).toEqual({
+			unmet: { data_region: "eu", zero_data_retention: true },
+			description: "No model Auto can choose has a provider that meets this request's residency requirements: one that stores data in the EU region, one that offers zero data retention.",
+		});
+		// No compliant model to shortlist at all.
+		expect(autoRouterUnmetResidency({ requirement: { requireZeroDataRetention: true }, rejected: [], droppedForResidency: 4, unmetByDropped: ["zero_data_retention"] })?.unmet)
 			.toEqual({ zero_data_retention: true });
 		// Other reasons too: not residency's doing alone.
-		expect(autoRouterUnmetResidency({
-			requirement,
-			zeroDataRetention: true,
-			rejectedReasons: [AUTO_ROUTER_RESIDENCY_REJECTION, "request_capabilities_unsupported"],
-			droppedForZeroDataRetention: 0,
-		})).toBeNull();
-		expect(autoRouterUnmetResidency({ requirement: {}, zeroDataRetention: false, rejectedReasons: [], droppedForZeroDataRetention: 0 })).toBeNull();
-		expect(autoRouterUnmetResidency({
-			requirement: { requiredExecutionRegion: "eu", requireZeroDataRetention: true },
-			zeroDataRetention: true,
-			rejectedReasons: [AUTO_ROUTER_RESIDENCY_REJECTION],
-			droppedForZeroDataRetention: 0,
-		})?.description).toBe("No model Auto can choose has a provider that meets this request's residency requirements: one that processes requests in the EU region, one that offers zero data retention.");
+		expect(autoRouterUnmetResidency({ requirement, rejected: [residency(["zero_data_retention"]), { reason: "request_capabilities_unsupported" }], droppedForResidency: 0, unmetByDropped: [] })).toBeNull();
+		expect(autoRouterUnmetResidency({ requirement: {}, rejected: [], droppedForResidency: 0, unmetByDropped: [] })).toBeNull();
 	});
 });

@@ -35,6 +35,7 @@ import { RESERVED_CLASSIFIER_LABEL_KEY } from "../before/request-labels";
 import type { PipelineContext } from "../before/types";
 import { isStealthRequest } from "../stealth";
 import { sanitizeDataContributionPayload } from "./data-contribution";
+import { requestDataLimits, withRequestDataLimits } from "../requestRouting";
 
 export const CLASSIFIER_LABEL_KEY = RESERVED_CLASSIFIER_LABEL_KEY;
 const CLASSIFIABLE_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses", "messages"]);
@@ -104,7 +105,10 @@ export function attachRequestClassifierCall(ctx: PipelineContext, req: Request, 
 				"Content-Type": "application/json",
 				"x-phaseo-metadata": JSON.stringify({ labels: [{ key: CLASSIFIER_LABEL_KEY, value: classifierId }] }),
 			},
-			body: JSON.stringify(body),
+			// The classifier sees the request's content, so it goes only where the
+			// request (or its preset) let that content go; if its model can't, the
+			// call fails and the request stays unlabelled.
+			body: JSON.stringify(withRequestDataLimits(body, requestDataLimits(ctx.body))),
 		});
 		classifierSubrequests.add(request);
 		return handler(path)(request);

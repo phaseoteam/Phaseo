@@ -5,11 +5,11 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { knownCatalogueRevision } from "@core/catalogue-revision";
 import { tieredRead } from "@core/tiered-cache";
 import { readHealthManyOptimistic } from "../execute/health";
-import { getEffectiveRoutingHints } from "../requestRouting";
+import { getEffectiveRoutingHints, requestDataLimits } from "../requestRouting";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
 import { ROUTABLE_CAPABILITY_STATUSES } from "./context.shared";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
-import { providerMeetsResidencyRequirement, type ResidencyRequirement } from "@/lib/config/providerResidency";
+import { getProviderResidencyMetadata, providerMeetsResidencyRequirement, type ProviderResidencyMetadata, type ResidencyRequirement } from "@/lib/config/providerResidency";
 
 export const AUTO_ROUTER_MODEL_ID = "phaseo/auto";
 export const AUTO_ROUTER_ALGORITHM_VERSION = "auto-router-v1";
@@ -289,8 +289,14 @@ type AutoRouterCatalogue = {
 		effective_to: string | null;
 		data_policies: AutoRouterRouteDataPolicy[];
 	}>;
-	/** Provider-level data handling, as the gateway context reads it from v2_providers. */
-	providers: Array<{ provider_slug: string; zero_data_retention: boolean; data_policy_variant: "standard" | "zdr" }>;
+	/** Provider-level data handling and regions, as the gateway context reads them from v2_providers (null regions: the column is empty). */
+	providers: Array<{
+		provider_slug: string;
+		zero_data_retention: boolean;
+		data_policy_variant: "standard" | "zdr";
+		execution_regions: string[] | null;
+		data_regions: string[] | null;
+	}>;
 	skus: Array<{ sku_id: string; provider_model_id: string; effective_from: string | null; effective_to: string | null }>;
 	meters: Array<{ sku_id: string; meter_key: string; unit_quantity: unknown; price_nanos: unknown }>;
 };
@@ -331,7 +337,7 @@ async function fetchAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
 				.in("provider_model_id", ids)
 				.in("capability_id", [...AUTO_ROUTER_TEXT_CAPABILITIES]))),
 		Promise.all(chunks(providerSlugs).map((slugs) =>
-			client.from("v2_providers").select("provider_slug,zero_data_retention,data_policy_variant").in("provider_slug", slugs))),
+			client.from("v2_providers").select("provider_slug,zero_data_retention,data_policy_variant,default_execution_regions,default_data_regions").in("provider_slug", slugs))),
 	]);
 	for (const result of [...policyResults, ...providerResults]) if (result.error) throw new Error(result.error.message || "Failed to load auto-router data policies");
 	const dataPoliciesByRoute = new Map<string, AutoRouterRouteDataPolicy[]>();
@@ -373,6 +379,8 @@ async function fetchAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
 			provider_slug: String(row.provider_slug ?? ""),
 			zero_data_retention: row.zero_data_retention === true,
 			data_policy_variant: row.data_policy_variant === "zdr" ? "zdr" as const : "standard" as const,
+			execution_regions: catalogueRegions(row.default_execution_regions),
+			data_regions: catalogueRegions(row.default_data_regions),
 		})),
 		skus: skus.map((row) => ({
 			sku_id: String(row.sku_id ?? ""),
@@ -495,30 +503,14 @@ export function applyAutoRouterHardRequirements(body: any, classification: AutoR
 }
 
 /**
- * The source request's limits on where its data may go, for the classifier
- * request that sees the same text: zero data retention, regions, and the
- * providers it allows or excludes. When the classifier model
+ * The classifier request sees the request's text, so it carries the request's
+ * limits on where that may go (requestDataLimits). When the classifier model
  * can't meet them, the classifier request fails and the router classifies the
  * request itself.
  */
-export function autoRouterClassifierDataLimits(body: any): Record<string, unknown> | null {
-	const hints = getEffectiveRoutingHints(body);
-	const providerList = (value: unknown) => Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : null;
-	const only = providerList(hints.merged.only);
-	const ignore = providerList(hints.merged.ignore);
-	const limits: Record<string, unknown> = {
-		...(hints.requireZeroDataRetention === true ? { require_zero_data_retention: true } : {}),
-		...(hints.requiredExecutionRegion ? { required_execution_region: hints.requiredExecutionRegion } : {}),
-		...(hints.requiredDataRegion ? { required_data_region: hints.requiredDataRegion } : {}),
-		...(only ? { only } : {}),
-		...(ignore?.length ? { ignore } : {}),
-	};
-	return Object.keys(limits).length ? limits : null;
-}
-
 export function buildAutoRouterClassifierRequestBody(body: any, endpoint: Endpoint): Record<string, unknown> {
 	const text = requestText(body);
-	const dataLimits = autoRouterClassifierDataLimits(body);
+	const dataLimits = requestDataLimits(body);
 	return {
 		model: AUTO_ROUTER_CLASSIFIER_MODEL_ID,
 		...(dataLimits ? { provider: dataLimits } : {}),
@@ -629,6 +621,11 @@ function normalizeLowerIsBetter(values: Array<number | null>): Array<number | nu
 	return normalizeHigherIsBetter(values).map((value) => value === null ? null : 1 - value);
 }
 
+/** Region lists as the gateway context normalises them; null when the column is empty, so the provider's defaults apply. */
+function catalogueRegions(value: unknown): string[] | null {
+	return Array.isArray(value) ? value.map(String).map((region) => region.trim().toLowerCase()).filter(Boolean) : null;
+}
+
 function chunks<T>(values: T[], size = 200): T[][] {
 	const result: T[][] = [];
 	for (let index = 0; index < values.length; index += size) result.push(values.slice(index, index + size));
@@ -658,26 +655,54 @@ type ManagedCandidate = {
 export type AutoRouterCandidateUniverse = {
 	models: string[];
 	totalEligible: number;
-	/** Models left out because none of their routes offers zero data retention, when the request needs it. */
-	droppedForZeroDataRetention: number;
+	/** Models left out because none of their routes meets the request's residency requirements. */
+	droppedForResidency: number;
+	/** The requirements no route of some left-out model met (each looked at on its own). */
+	unmetByDropped: AutoRouterResidencyKey[];
 };
 
 /** Why a candidate model was left out when none of its providers meets the request's residency requirements. */
 export const AUTO_ROUTER_RESIDENCY_REJECTION = "no_residency_compliant_providers";
 
-/** The providers that meet the residency requirements, checked as the routing gate checks them. */
-export function providersMeetingResidency<T extends Pick<ProviderCandidate, "residencyMode" | "executionRegions" | "dataRegions" | "zeroDataRetention">>(
-	providers: T[],
-	requirement: ResidencyRequirement,
-): T[] {
-	return providers.filter((provider) => providerMeetsResidencyRequirement({
+/** A residency requirement, by its `unmet_requirements` key. */
+export type AutoRouterResidencyKey = "execution_region" | "data_region" | "zero_data_retention";
+
+function residencyMetadata(provider: Pick<ProviderCandidate, "residencyMode" | "executionRegions" | "dataRegions" | "zeroDataRetention">): ProviderResidencyMetadata {
+	return {
 		residencyMode: provider.residencyMode ?? null,
 		executionRegions: provider.executionRegions ?? null,
 		dataRegions: provider.dataRegions ?? null,
 		zeroDataRetention: provider.zeroDataRetention ?? null,
 		residencyNotes: null,
 		residencySourceUrl: null,
-	}, requirement).ok);
+	};
+}
+
+/** The providers that meet the residency requirements, checked as the routing gate checks them. */
+export function providersMeetingResidency<T extends Pick<ProviderCandidate, "residencyMode" | "executionRegions" | "dataRegions" | "zeroDataRetention">>(
+	providers: T[],
+	requirement: ResidencyRequirement,
+): T[] {
+	return providers.filter((provider) => providerMeetsResidencyRequirement(residencyMetadata(provider), requirement).ok);
+}
+
+/**
+ * The requested requirements that none of these providers meets, each looked
+ * at on its own; all of them when each is met by some provider but none meets
+ * them together.
+ */
+export function unmetResidencyKeys(
+	providers: Array<Pick<ProviderCandidate, "residencyMode" | "executionRegions" | "dataRegions" | "zeroDataRetention">>,
+	requirement: ResidencyRequirement,
+): AutoRouterResidencyKey[] {
+	const metadata = providers.map(residencyMetadata);
+	const requested: Array<[AutoRouterResidencyKey, ResidencyRequirement]> = [
+		...(requirement.requiredExecutionRegion ? [["execution_region", { requiredExecutionRegion: requirement.requiredExecutionRegion }] as [AutoRouterResidencyKey, ResidencyRequirement]] : []),
+		...(requirement.requiredDataRegion ? [["data_region", { requiredDataRegion: requirement.requiredDataRegion }] as [AutoRouterResidencyKey, ResidencyRequirement]] : []),
+		...(requirement.requireZeroDataRetention ? [["zero_data_retention", { requireZeroDataRetention: true }] as [AutoRouterResidencyKey, ResidencyRequirement]] : []),
+	];
+	const unmet = requested.filter(([, single]) => !metadata.some((entry) => providerMeetsResidencyRequirement(entry, single).ok)).map(([key]) => key);
+	return unmet.length ? unmet : requested.map(([key]) => key);
 }
 
 /** The request's own residency requirements, which the routing gate applies to the chosen model's providers. */
@@ -692,26 +717,31 @@ export function autoRouterResidencyRequirement(body: any): ResidencyRequirement 
 
 /**
  * When residency is why Auto found no model (every candidate it looked at was
- * left out for it, or the zero-retention shortlist was empty), what wasn't met
- * and a description, as the routing gate words them. Otherwise null.
+ * left out for it, or the residency-compliant shortlist was empty), what
+ * wasn't met and a description, as the routing gate words them. Otherwise null:
+ * a failure with other causes too isn't put down to residency.
  */
 export function autoRouterUnmetResidency(args: {
 	requirement: ResidencyRequirement;
-	zeroDataRetention: boolean;
-	rejectedReasons: string[];
-	droppedForZeroDataRetention: number;
+	rejected: Array<{ reason: string; unmet?: AutoRouterResidencyKey[] }>;
+	droppedForResidency: number;
+	unmetByDropped: AutoRouterResidencyKey[];
 }): { unmet: Record<string, string | boolean>; description: string } | null {
-	const explained = args.rejectedReasons.length > 0
-		? args.rejectedReasons.every((reason) => reason === AUTO_ROUTER_RESIDENCY_REJECTION)
-		: args.droppedForZeroDataRetention > 0;
+	const explained = args.rejected.length > 0
+		? args.rejected.every((candidate) => candidate.reason === AUTO_ROUTER_RESIDENCY_REJECTION)
+		: args.droppedForResidency > 0;
 	if (!explained) return null;
-	const executionRegion = typeof args.requirement.requiredExecutionRegion === "string" && args.requirement.requiredExecutionRegion.trim()
+	const keys = new Set<AutoRouterResidencyKey>([
+		...args.rejected.flatMap((candidate) => candidate.unmet ?? []),
+		...(args.droppedForResidency > 0 ? args.unmetByDropped : []),
+	]);
+	const executionRegion = keys.has("execution_region") && typeof args.requirement.requiredExecutionRegion === "string" && args.requirement.requiredExecutionRegion.trim()
 		? args.requirement.requiredExecutionRegion
 		: null;
-	const dataRegion = typeof args.requirement.requiredDataRegion === "string" && args.requirement.requiredDataRegion.trim()
+	const dataRegion = keys.has("data_region") && typeof args.requirement.requiredDataRegion === "string" && args.requirement.requiredDataRegion.trim()
 		? args.requirement.requiredDataRegion
 		: null;
-	const zeroDataRetention = args.zeroDataRetention || args.requirement.requireZeroDataRetention === true;
+	const zeroDataRetention = keys.has("zero_data_retention") && args.requirement.requireZeroDataRetention === true;
 	const unmet = {
 		...(executionRegion ? { execution_region: executionRegion } : {}),
 		...(dataRegion ? { data_region: dataRegion } : {}),
@@ -737,11 +767,43 @@ export function autoRouterNeedsZeroDataRetention(body: any, workspacePolicy: { p
 }
 
 /**
+ * The capabilities whose rows the gateway context reads for a text request, in
+ * its order: text.generate, then the request's own surface (as context.ts's
+ * getTextContextCapabilitiesToLoad); otherwise the first candidate.
+ */
+function contextCapabilitiesToRead(endpoint: Endpoint, model: string): string[] {
+	const candidates = getContextCapabilityCandidates(endpoint, model);
+	if (!candidates.includes("text.generate")) return candidates.slice(0, 1);
+	const surface = candidates.find((candidate) => candidate === "responses" || candidate === "chat.completions" || candidate === "messages");
+	return surface ? ["text.generate", surface] : ["text.generate"];
+}
+
+/**
  * Whether a route offers zero data retention for this endpoint, as the gateway
  * context would decide it: the first text capability (in the context's order)
  * whose params say anything, else the provider's own setting. It only narrows
  * the shortlist; the routing gate still checks each provider.
  */
+/**
+ * A route's residency as the gateway context builds it: the provider's own
+ * regions (its defaults when its columns are empty) and whether the route keeps
+ * no data for this endpoint (routeOffersZeroDataRetention).
+ */
+function routeResidency(
+	route: AutoRouterCatalogue["routes"][number],
+	provider: AutoRouterCatalogue["providers"][number] | undefined,
+	endpoint: Endpoint,
+	now: number,
+): Pick<ProviderCandidate, "residencyMode" | "executionRegions" | "dataRegions" | "zeroDataRetention"> {
+	const defaults = getProviderResidencyMetadata({ providerId: route.provider_slug });
+	return {
+		residencyMode: null,
+		executionRegions: provider?.execution_regions ?? defaults.executionRegions,
+		dataRegions: provider?.data_regions ?? defaults.dataRegions,
+		zeroDataRetention: routeOffersZeroDataRetention(route, provider, endpoint, route.model_slug, now),
+	};
+}
+
 export function routeOffersZeroDataRetention(
 	route: Pick<AutoRouterCatalogue["routes"][number], "data_policies">,
 	provider: AutoRouterCatalogue["providers"][number] | undefined,
@@ -752,7 +814,7 @@ export function routeOffersZeroDataRetention(
 	// Only capabilities the context would read: routable, and in effect now.
 	const usable = route.data_policies.filter((policy) =>
 		(ROUTABLE_CAPABILITY_STATUSES as readonly string[]).includes(policy.status) && activeAt(policy, now));
-	const policies = getContextCapabilityCandidates(endpoint, model)
+	const policies = contextCapabilitiesToRead(endpoint, model)
 		.map((capability) => usable.find((policy) => policy.capability_id === capability))
 		.filter((policy): policy is AutoRouterRouteDataPolicy => policy !== undefined);
 	const chosen = policies.find((policy) => policy.has_params) ?? policies[0];
@@ -815,7 +877,7 @@ export async function loadManagedAutoRouterCandidates(
 	config: AutoRouterWorkspaceConfig,
 	body: any,
 	classification = deterministicAutoRouterClassification(body),
-	requirements: { endpoint: Endpoint; zeroDataRetention: boolean } | null = null,
+	requirements: { endpoint: Endpoint; residency: ResidencyRequirement } | null = null,
 ): Promise<AutoRouterCandidateUniverse> {
 	const catalogue = await readAutoRouterCatalogue();
 	const now = Date.now();
@@ -856,21 +918,29 @@ export async function loadManagedAutoRouterCandidates(
 		return [...byModel.values()];
 	};
 	let candidates = candidatesFrom(activeRoutes);
-	let droppedForZeroDataRetention = 0;
-	if (requirements?.zeroDataRetention) {
-		// Only routes that keep no data count, for prices and coverage too.
+	let droppedForResidency = 0;
+	const unmetByDropped = new Set<AutoRouterResidencyKey>();
+	const residency = requirements?.residency;
+	if (requirements && residency && (residency.requireZeroDataRetention || residency.requiredExecutionRegion || residency.requiredDataRegion)) {
+		// Only routes that meet the request's residency requirements count, for prices and coverage too.
 		const providersBySlug = new Map(catalogue.providers.map((provider) => [provider.provider_slug, provider]));
-		const before = candidates.length;
-		candidates = candidatesFrom(activeRoutes.filter((route) =>
-			routeOffersZeroDataRetention(route, providersBySlug.get(route.provider_slug), requirements.endpoint, route.model_slug, now)));
-		droppedForZeroDataRetention = before - candidates.length;
+		const metadataOf = (route: AutoRouterCatalogue["routes"][number]) =>
+			routeResidency(route, providersBySlug.get(route.provider_slug), requirements.endpoint, now);
+		const before = candidates;
+		candidates = candidatesFrom(activeRoutes.filter((route) => providersMeetingResidency([metadataOf(route)], residency).length > 0));
+		const kept = new Set(candidates.map((candidate) => candidate.model));
+		for (const dropped of before.filter((candidate) => !kept.has(candidate.model))) {
+			droppedForResidency += 1;
+			for (const key of unmetResidencyKeys(activeRoutes.filter((route) => route.model_slug === dropped.model).map(metadataOf), residency)) unmetByDropped.add(key);
+		}
 	}
 	const benchmarkIds = benchmarkIdsForClassification(classification);
 	const benchmarks = await loadAutoRouterBenchmarks(candidates.map((candidate) => candidate.model), benchmarkIds);
 	return {
 		models: shortlistManagedCandidates(candidates, benchmarks, benchmarkIds, config.objective, classification),
 		totalEligible: candidates.length,
-		droppedForZeroDataRetention,
+		droppedForResidency,
+		unmetByDropped: [...unmetByDropped],
 	};
 }
 
