@@ -31,6 +31,9 @@ From an agent shell, unset `ELECTRON_RUN_AS_NODE` first.
   `<userData>/factory.json`, saved atomically with a `.bak`. Runs cut short by Factory closing or crashing, or by an
   agent crashing, carry on by themselves on the same session and worktree.
 - `src/shared/stages.ts` holds the stage briefs (Playbooks) and the prompt.
+- `assets/icon.svg` is the app icon: the Phaseo P on blue. `icon.png` is the window's, `icon.ico` is stamped into
+  the Windows program when packaging, and `icon.icns` goes in the macOS app bundle. Remake all three from the SVG
+  when it changes.
 
 ## Releasing
 
