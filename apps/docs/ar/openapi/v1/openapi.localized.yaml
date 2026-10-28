@@ -5590,6 +5590,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: اختبار مصنّف على عينة
+      description: يشغّل مصنّفًا محفوظًا أو مسودة مرة واحدة على مطالبة واستجابة تجريبيتين، بالطلب نفسه الذي ترسله البوابة. هذا طلب نموذج حقيقي ومدفوع يتم ببيانات اعتمادك ويُوسم بـ phaseo.classifier_test. للمالكين والمسؤولين؛ تحتاج بيانات الاعتماد إلى classifiers:write وgateway:access. لا يمكن لمفاتيح الإدارة إجراء طلبات النماذج لذا تُرفض.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: التسميات التي اختارها النموذج
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: مصنّف أو عينة غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس مالكًا أو مسؤولًا، أو ينقص classifiers:write، أو أن بيانات الاعتماد لا تتضمن gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على المصنّف المحفوظ في مساحة العمل هذه
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: فشل طلب النموذج (مثلًا بسبب عدم كفاية الرصيد)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers/{id}:
     parameters:
       - name: id
@@ -9582,23 +9633,23 @@ paths:
       tags:
         - Gateway
       operationId: getMe
-      summary: Get the signed-in user
-      description: Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+      summary: جلب المستخدم الذي سجّل الدخول
+      description: يعيد مستخدم رمز OAuth وعميل الرمز ونطاقاته ومساحات العمل التي ينتمي إليها المستخدم. يتطلب رمز OAuth يتضمن me:read؛ تُرفض مفاتيح الإدارة.
       responses:
         '200':
-          description: The signed-in user
+          description: المستخدم الذي سجّل الدخول
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: الرمز لا يتضمن me:read
           content:
             application/json:
               schema:
@@ -9609,23 +9660,23 @@ paths:
       tags:
         - Gateway
       operationId: getMyProfile
-      summary: Get your profile
-      description: Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+      summary: جلب ملفك الشخصي
+      description: يعيد حقول الملف الشخصي المعروضة في صفحة الملف الشخصي في لوحة التحكم. يتطلب رمز OAuth يتضمن me:read.
       responses:
         '200':
-          description: Profile
+          description: الملف الشخصي
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: الرمز لا يتضمن me:read
           content:
             application/json:
               schema:
@@ -9635,8 +9686,8 @@ paths:
       tags:
         - Gateway
       operationId: updateMyProfile
-      summary: Update your profile
-      description: Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+      summary: تحديث ملفك الشخصي
+      description: يغيّر اسم العرض أو مساحة العمل الافتراضية (مساحة تنتمي إليها) أو ما إذا كانت بياناتك مخفية على الشاشة. تُدار كلمة المرور والمصادقة متعددة العوامل ومفاتيح المرور في المتصفح فقط. يتطلب رمز OAuth يتضمن settings:write.
       requestBody:
         required: true
         content:
@@ -9645,25 +9696,25 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Updated profile
+          description: الملف الشخصي المحدّث
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '400':
-          description: Invalid field
+          description: حقل غير صالح
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks settings:write, or the default workspace is not one of yours
+          description: الرمز لا يتضمن settings:write، أو أن مساحة العمل الافتراضية ليست من مساحاتك
           content:
             application/json:
               schema:
@@ -9674,23 +9725,23 @@ paths:
       tags:
         - Gateway
       operationId: listAuthorizedApps
-      summary: List apps you have authorized
-      description: Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+      summary: عرض التطبيقات التي صرّحت لها
+      description: يعرض التطبيقات التي صرّحت لها عبر OAuth في جميع مساحات العمل. يتطلب رمز OAuth يتضمن oauth_clients:read.
       responses:
         '200':
-          description: Authorized apps
+          description: التطبيقات المصرّح بها
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppListResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks oauth_clients:read
+          description: الرمز لا يتضمن oauth_clients:read
           content:
             application/json:
               schema:
@@ -9701,8 +9752,8 @@ paths:
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
-      summary: Remove scopes from an authorized app
-      description: Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+      summary: إزالة نطاقات من تطبيق مصرّح به
+      description: يقلّص وصول التطبيق إلى النطاقات المحددة. يمكن إزالة النطاقات فقط؛ تتطلب إضافة نطاق موافقتك في المتصفح. يتطلب رمز OAuth يتضمن oauth_clients:write.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       requestBody:
@@ -9713,25 +9764,25 @@ paths:
               $ref: '#/components/schemas/AuthorizedAppScopesRequest'
       responses:
         '200':
-          description: Scopes reduced
+          description: تم تقليص النطاقات
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppScopesResponse'
         '400':
-          description: Empty list, or a scope the app does not have
+          description: قائمة فارغة، أو نطاق لا يملكه التطبيق
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: لم يُعثر على التطبيق المصرّح به
           content:
             application/json:
               schema:
@@ -9741,25 +9792,25 @@ paths:
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
-      summary: Revoke an authorized app
-      description: Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+      summary: إلغاء تصريح تطبيق
+      description: يلغي وصول تطبيق حتى تتوقف رموزه عن العمل. يؤدي إلغاء تصريح التطبيق المستدعي نفسه إلى تسجيل خروجه. يتطلب رمز OAuth يتضمن oauth_clients:delete.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       responses:
         '200':
-          description: Authorization revoked
+          description: تم إلغاء التصريح
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: لم يُعثر على التطبيق المصرّح به
           content:
             application/json:
               schema:
@@ -9770,8 +9821,8 @@ paths:
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
-      summary: Accept a workspace invite
-      description: Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+      summary: قبول دعوة إلى مساحة عمل
+      description: يطلب الانضمام إلى مساحة العمل التي ينتمي إليها رمز الدعوة. بعد ذلك يوافق مالك مساحة العمل أو مسؤولها على الطلب أو يرفضه. يتطلب رمز OAuth يتضمن workspaces:write؛ تُرفض مفاتيح الإدارة لأنها تنتمي إلى مساحة عمل لا إلى شخص.
       requestBody:
         required: true
         content:
@@ -9780,31 +9831,31 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
       responses:
         '201':
-          description: Join request created
+          description: تم إنشاء طلب الانضمام
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
         '400':
-          description: Missing invite code
+          description: رمز الدعوة مفقود
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:write
+          description: ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Invalid or expired invite
+          description: دعوة غير صالحة أو منتهية الصلاحية
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Already a member, or a request is already pending
+          description: أنت عضو بالفعل، أو يوجد طلب قيد الانتظار
           content:
             application/json:
               schema:
@@ -9815,12 +9866,12 @@ paths:
       tags:
         - Gateway
       operationId: listMyJoinRequests
-      summary: List your requests to join workspaces
-      description: Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+      summary: عرض طلباتك للانضمام إلى مساحات العمل
+      description: يعرض طلباتك الخاصة للانضمام إلى مساحات العمل، الأحدث أولًا (100 طلب كحد أقصى). يتطلب رمز OAuth يتضمن workspaces:read.
       parameters:
         - name: status
           in: query
-          description: Pending by default; all returns every status.
+          description: المعلّقة افتراضيًا؛ تعيد all جميع الحالات.
           schema:
             type: string
             enum:
@@ -9831,7 +9882,7 @@ paths:
               - all
       responses:
         '200':
-          description: Your join requests
+          description: طلبات الانضمام الخاصة بك
           content:
             application/json:
               schema:
@@ -9843,7 +9894,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:read
+          description: ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:read
           content:
             application/json:
               schema:
@@ -9854,11 +9905,11 @@ paths:
       tags:
         - Gateway
       operationId: getRateLimitTier
-      summary: Get the workspace's rate limit tier
-      description: Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+      summary: جلب مستوى حد المعدل لمساحة العمل
+      description: يعيد مستوى الثقة لمساحة العمل وعدد طلباتها في الدقيقة وما إذا كان بإمكانها الآن رفع نفسها مستوى واحدًا. لمالكي مساحة العمل ومسؤوليها (OAuth) أو مفاتيح الإدارة التي تتضمن rate_limits:read. تكون canRaise صحيحة لمالك مساحة العمل فقط.
       responses:
         '200':
-          description: Tier and raise status
+          description: المستوى وحالة الرفع
           content:
             application/json:
               schema:
@@ -9870,7 +9921,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an owner or admin, or token lacks rate_limits:read
+          description: ليس مالكًا أو مسؤولًا، أو أن الرمز لا يتضمن rate_limits:read
           content:
             application/json:
               schema:
@@ -9881,11 +9932,11 @@ paths:
       tags:
         - Gateway
       operationId: raiseRateLimitTier
-      summary: Raise the workspace's rate limit tier
-      description: Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+      summary: رفع مستوى حد المعدل لمساحة العمل
+      description: يرفع مساحة عمل مؤهلة مستوى واحدًا لفترة محدودة. لا يمكن الرفع إلا لمالك مساحة العمل باستخدام رمز OAuth يتضمن rate_limits:write؛ تُرفض مفاتيح الإدارة حتى لا يتمكن مفتاح مسرّب من رفع حدود مساحة العمل الخاصة به.
       responses:
         '201':
-          description: Raised
+          description: تم الرفع
           content:
             application/json:
               schema:
@@ -9897,13 +9948,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not the workspace owner, a management key, or token lacks rate_limits:write
+          description: ليس مالك مساحة العمل، أو أنه مفتاح إدارة، أو أن الرمز لا يتضمن rate_limits:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: The workspace cannot raise its limit now (see reason)
+          description: لا يمكن لمساحة العمل رفع حدها الآن (راجع reason)
           content:
             application/json:
               schema:
@@ -9914,11 +9965,11 @@ paths:
       tags:
         - Gateway
       operationId: getAutoRoutingSettings
-      summary: Get auto-routing settings
-      description: Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+      summary: جلب إعدادات التوجيه التلقائي
+      description: يعيد الحدود التي يعمل ضمنها الموجّه التلقائي في مساحة العمل هذه. لأي عضو في مساحة العمل؛ يتطلب settings:read.
       responses:
         '200':
-          description: Auto-routing settings
+          description: إعدادات التوجيه التلقائي
           content:
             application/json:
               schema:
@@ -9934,8 +9985,8 @@ paths:
       tags:
         - Gateway
       operationId: updateAutoRoutingSettings
-      summary: Update auto-routing settings
-      description: Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+      summary: تحديث إعدادات التوجيه التلقائي
+      description: يغيّر الحقول المرسلة؛ ويُتحقق من النتيجة ككل كما تحفظها لوحة التحكم. يحتاج spend_profile المخصص إلى حدّي السعر كليهما. للمالكين والمسؤولين؛ يتطلب settings:write.
       requestBody:
         required: true
         content:
@@ -9944,13 +9995,13 @@ paths:
               $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
       responses:
         '200':
-          description: Updated auto-routing settings
+          description: إعدادات التوجيه التلقائي المحدّثة
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoRoutingSettingsResponse'
         '400':
-          description: Invalid settings
+          description: إعدادات غير صالحة
           content:
             application/json:
               schema:
@@ -9967,11 +10018,11 @@ paths:
       tags:
         - Gateway
       operationId: listSuccessorReplacements
-      summary: List successor model replacements
-      description: Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+      summary: عرض بدائل النماذج اللاحقة
+      description: يعرض البدائل التي اختارتها مساحة العمل للنماذج التي لم يعد أي مزوّد يقدمها. يوجد مفتاح تشغيل توجيه النماذج اللاحقة وسياسة أسعاره في /settings. لأي عضو في مساحة العمل؛ يتطلب settings:read.
       responses:
         '200':
-          description: Replacements
+          description: البدائل
           content:
             application/json:
               schema:
@@ -9987,8 +10038,8 @@ paths:
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
-      summary: Save a successor model replacement
-      description: Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+      summary: حفظ بديل لنموذج لاحق
+      description: يحدد النموذج الذي تُرسل إليه طلبات model، ويستبدل أي اختيار سابق. تعني قيمة successor الفارغة أن طلبات model لا يُعاد توجيهها أبدًا. يجب أن يكون النموذجان في الكتالوج وأن يكون النموذج اللاحق متاحًا. 500 كحد أقصى لكل مساحة عمل. للمالكين والمسؤولين؛ يتطلب settings:write.
       requestBody:
         required: true
         content:
@@ -9997,13 +10048,13 @@ paths:
               $ref: '#/components/schemas/SuccessorReplacement'
       responses:
         '200':
-          description: Saved replacement
+          description: البديل المحفوظ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementResponse'
         '400':
-          description: Invalid or unknown model
+          description: نموذج غير صالح أو غير معروف
           content:
             application/json:
               schema:
@@ -10019,24 +10070,24 @@ paths:
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
-      summary: Remove a successor model replacement
-      description: Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+      summary: إزالة بديل لنموذج لاحق
+      description: يزيل اختيار مساحة العمل لنموذج، حتى يُطبَّق النموذج اللاحق من الكتالوج مرة أخرى. للمالكين والمسؤولين؛ يتطلب settings:write.
       parameters:
         - name: model
           in: query
           required: true
-          description: The model id whose replacement to remove.
+          description: معرّف النموذج المراد إزالة بديله.
           schema:
             $ref: '#/components/schemas/ModelId'
       responses:
         '200':
-          description: Replacement removed
+          description: تمت إزالة البديل
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
         '400':
-          description: Missing or invalid model
+          description: النموذج مفقود أو غير صالح
           content:
             application/json:
               schema:
@@ -10048,7 +10099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No replacement is saved for this model
+          description: لا يوجد بديل محفوظ لهذا النموذج
           content:
             application/json:
               schema:
@@ -10059,8 +10110,8 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
-      summary: Test destination settings before saving
-      description: Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+      summary: اختبار إعدادات الوجهة قبل الحفظ
+      description: يرسل تتبعًا تجريبيًا بدون رسائل إلى الإعدادات المحددة، بالطريقة التي تسلّم بها البوابة التتبعات. لا يُحفظ أي شيء. للمالكين والمسؤولين؛ يتطلب settings:write.
       requestBody:
         required: true
         content:
@@ -10069,13 +10120,13 @@ paths:
               $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
       responses:
         '200':
-          description: Test result; ok is false when the destination refused or could not be reached
+          description: نتيجة الاختبار؛ تكون ok خاطئة عندما ترفض الوجهة أو يتعذّر الوصول إليها
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
         '400':
-          description: Invalid type or settings
+          description: نوع أو إعدادات غير صالحة
           content:
             application/json:
               schema:
@@ -10092,13 +10143,13 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestination
-      summary: Check a destination's connection
-      description: Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+      summary: التحقق من اتصال الوجهة
+      description: يرسل تتبعًا تجريبيًا بدون رسائل إلى وجهة محفوظة، كما يفعل فحص الحالة في لوحة التحكم. لا تتغير حالة سلامة الوجهة. للمالكين والمسؤولين؛ يتطلب settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Test result
+          description: نتيجة الاختبار
           content:
             application/json:
               schema:
@@ -10121,13 +10172,13 @@ paths:
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
-      summary: Send a sample trace
-      description: Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+      summary: إرسال تتبع تجريبي
+      description: يرسل تتبعًا تجريبيًا إلى وجهة محفوظة، مع رسائله ما لم تستبعد الوجهة المطالبات والمخرجات. للمالكين والمسؤولين؛ يتطلب settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Send result
+          description: نتيجة الإرسال
           content:
             application/json:
               schema:
@@ -10150,8 +10201,8 @@ paths:
       tags:
         - Gateway
       operationId: reportLeakedKey
-      summary: Report a leaked API key
-      description: Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+      summary: الإبلاغ عن مفتاح API مسرّب
+      description: يبلّغ عن مفتاح Phaseo عُثر عليه منشورًا للعامة. بدون مصادقة. يعيد دائمًا الرمز 202 بالمحتوى نفسه سواء طابق المفتاح أم لا، لذا لا يمكن استخدام المسار للتحقق من المفاتيح. يخضع لحد معدل لكل عنوان.
       security: []
       requestBody:
         required: true
@@ -10161,7 +10212,7 @@ paths:
               $ref: '#/components/schemas/LeakedKeyReportRequest'
       responses:
         '202':
-          description: Report received
+          description: تم استلام البلاغ
           content:
             application/json:
               schema:
@@ -10301,7 +10352,7 @@ components:
       name: id
       in: path
       required: true
-      description: Authorization identifier from the authorized apps list.
+      description: معرّف التصريح من قائمة التطبيقات المصرّح بها.
       schema:
         type: string
     ObservabilityDestinationId:
@@ -10411,7 +10462,7 @@ components:
           nullable: true
         obfuscate_info:
           type: boolean
-          description: Whether your email and name are hidden on screen in the dashboard.
+          description: ما إذا كان بريدك الإلكتروني واسمك مخفيين على الشاشة في لوحة التحكم.
     UserProfileResponse:
       type: object
       required:
@@ -10429,7 +10480,7 @@ components:
         default_workspace_id:
           type: string
           nullable: true
-          description: A workspace you belong to, or null to clear.
+          description: مساحة عمل تنتمي إليها، أو null للمسح.
         obfuscate_info:
           type: boolean
       additionalProperties: false
@@ -10438,7 +10489,7 @@ components:
       properties:
         id:
           type: string
-          description: Authorization id.
+          description: معرّف التصريح.
         client_id:
           type: string
         app_name:
@@ -10454,7 +10505,7 @@ components:
             type: string
         current:
           type: boolean
-          description: True for the authorization the calling token belongs to.
+          description: صحيحة للتصريح الذي ينتمي إليه الرمز المستدعي.
         authorized_at:
           type: string
           format: date-time
@@ -10479,7 +10530,7 @@ components:
         scopes:
           type: array
           minItems: 1
-          description: The scopes to keep; each must already be granted.
+          description: النطاقات التي ستُحتفظ بها؛ يجب أن يكون كل منها ممنوحًا بالفعل.
           items:
             type: string
       additionalProperties: false
@@ -10513,7 +10564,7 @@ components:
           type: string
           minLength: 6
           maxLength: 256
-          description: The invite code.
+          description: رمز الدعوة.
       additionalProperties: false
     MyJoinRequestCreatedResponse:
       type: object
@@ -10580,7 +10631,7 @@ components:
             target:
               type: string
               nullable: true
-              description: The tier a raise would move to.
+              description: المستوى الذي سينتقل إليه الرفع.
             targetRequestsPerMinute:
               type: number
               nullable: true
@@ -10589,15 +10640,15 @@ components:
             refusal:
               type: string
               nullable: true
-              description: Why a raise is not available now; null when eligible.
+              description: سبب عدم توفر الرفع الآن؛ null عند الأهلية.
             activeUntil:
               type: number
               nullable: true
-              description: When an active raise ends (Unix milliseconds).
+              description: موعد انتهاء الرفع النشط (بالمللي ثانية وفق Unix).
             availableAt:
               type: number
               nullable: true
-              description: When the next raise may be requested (Unix milliseconds).
+              description: موعد إمكانية طلب الرفع التالي (بالمللي ثانية وفق Unix).
             durationDays:
               type: number
             thresholds:
@@ -10609,14 +10660,14 @@ components:
                   type: number
             canRaise:
               type: boolean
-              description: True when the caller is the workspace owner and the workspace is eligible.
+              description: صحيحة عندما يكون المستدعي مالك مساحة العمل وتكون مساحة العمل مؤهلة.
     AutoRoutingSettings:
       type: object
       properties:
         allowed_patterns:
           type: array
           maxItems: 16
-          description: Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.
+          description: أنماط المزوّد/النموذج التي يمكن للموجّه التلقائي الاختيار منها، مثل openai/*. القائمة الفارغة تسمح بكل النماذج.
           items:
             type: string
         spend_profile:
@@ -10630,11 +10681,11 @@ components:
         max_input_price_per_million:
           type: number
           nullable: true
-          description: USD per million input tokens; set only for the custom spend profile.
+          description: دولار أمريكي لكل مليون رمز إدخال؛ يُعيَّن لملف الإنفاق المخصص فقط.
         max_output_price_per_million:
           type: number
           nullable: true
-          description: USD per million output tokens; set only for the custom spend profile.
+          description: دولار أمريكي لكل مليون رمز إخراج؛ يُعيَّن لملف الإنفاق المخصص فقط.
         objective:
           type: string
           enum:
@@ -10699,11 +10750,11 @@ components:
       properties:
         model:
           type: string
-          description: The model whose requests are redirected.
+          description: النموذج الذي يُعاد توجيه طلباته.
         successor:
           type: string
           nullable: true
-          description: The model to send them to, or null to never redirect them.
+          description: النموذج المراد إرسالها إليه، أو null لعدم إعادة توجيهها أبدًا.
     SuccessorReplacementRow:
       type: object
       properties:
@@ -10749,7 +10800,7 @@ components:
           $ref: '#/components/schemas/ObservabilityDestinationType'
         config:
           type: object
-          description: The destination's settings, as for creating one.
+          description: إعدادات الوجهة، كما عند إنشاء وجهة.
           additionalProperties:
             type: string
     ObservabilityDestinationTestResponse:
@@ -10795,11 +10846,11 @@ components:
         token:
           type: string
           maxLength: 4096
-          description: The leaked key as found.
+          description: المفتاح المسرّب كما عُثر عليه.
         source:
           type: string
           maxLength: 64
-          description: Where it was found, such as github.
+          description: مكان العثور عليه، مثل github.
         reporter_email:
           type: string
           maxLength: 320
@@ -22954,11 +23005,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: يخبر النموذج متى يختار هذه القيمة.
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: سؤال يجيب عنه المصنّف عن كل طلب. تُكتب الإجابة كتسمية للطلب مفتاحها هو مفتاح هذا البعد. إذا أرسل المستدعي بالفعل تسمية بهذا المفتاح، يُتخطى البعد.
       required:
         - key
         - values
@@ -22978,14 +23029,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: السماح بأكثر من قيمة واحدة لكل طلب.
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: السماح للنموذج بالإجابة بـ "other" عندما لا تناسب أي قيمة مدرجة.
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: من 2 إلى 50 قيمة. لا يُسمح بقيمة واحدة إلا عندما تكون allow_other صحيحة.
           minItems: 1
           maxItems: 50
           items:
@@ -23216,6 +23267,74 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: مسودة للاختبار. تُؤخذ الحقول غير المرسلة من classifier_id عند تحديده.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: مصنّف محفوظ في مساحة العمل هذه لاختباره، أو لوسم الاختبار به.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: خاطئة عندما يتعذّر قراءة إجابة النموذج.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:

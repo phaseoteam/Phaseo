@@ -156,6 +156,29 @@ Commands that show `[--yes]` (delete, revoke, lift, rotate-secret, merge) ask be
 
 Scopes: the default login covers every group except `feedback` and `preset-test-runs`, which need `feedback:read` and `feedback:write`. Request them with an explicit list, for example `phaseo login --scopes <default scopes>,feedback:read,feedback:write`. Sessions signed in before the CLI could be granted the BYOK and private model scopes do not have them, so `byok` and `private-models` return `403` until you run `phaseo login` again. The `scope` field of `phaseo login --json` shows what was granted.
 
+### Account, routing, and workspace settings
+
+```bash
+phaseo profile update --display-name "Ada Lovelace"
+phaseo authorized-apps list
+phaseo authorized-apps revoke <authorization-id> --yes
+phaseo invites accept <invite-code>
+phaseo invites requests --status all
+phaseo rate-limits tier get
+phaseo routing auto update --allowed-patterns "openai/*,anthropic/*" --objective cost
+phaseo routing successors set --model openai/gpt-4 --successor openai/gpt-5
+phaseo observability destinations test <destination-id>
+phaseo keys update <key-id> --ip-allowlist "Office=203.0.113.0/24,VPN=2001:db8::1"
+```
+
+`profile`, `authorized-apps` and `invites` act as the signed-in person, so they need an OAuth login rather than a management key. `rate-limits tier raise` is for the workspace owner only.
+
+`phaseo classifiers test` sends a real, billed model request with your session's own credential, so the session needs `gateway:access` as well as `classifiers:write`. The CLI sign-in cannot be granted `gateway:access` today, so the command returns `403 gateway_access_required` until it can; the dashboard's classifier test still works.
+
+```bash
+echo "Why was I charged twice?" | phaseo classifiers test <classifier-id> --prompt-stdin
+```
+
 ## Coding-agent integrations
 
 Install and configure a persistent coding integration with one command:

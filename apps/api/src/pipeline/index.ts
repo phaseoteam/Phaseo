@@ -54,8 +54,8 @@ function getAutoRouterClassifierHandler() {
 	return autoRouterClassifierHandler;
 }
 
-/** Request classifiers call Responses, or Decisions for decision models. */
-function getRequestClassifierHandler(path: "responses" | "decisions") {
+/** Request classifiers call Responses, or Decisions for decision models (also the classifier test route). */
+export function getRequestClassifierHandler(path: "responses" | "decisions") {
 	if (path === "responses") return getAutoRouterClassifierHandler();
 	decisionsClassifierHandler ??= makeEndpointHandler({ endpoint: "decisions", schema: DecisionsSchema });
 	return decisionsClassifierHandler;

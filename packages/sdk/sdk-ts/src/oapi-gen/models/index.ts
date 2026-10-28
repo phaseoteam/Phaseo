@@ -80,6 +80,8 @@ export type { ClassifierListResponse } from "./ClassifierListResponse.js";
 export type { ClassifierResponse } from "./ClassifierResponse.js";
 export type { ClassifierSampleBy } from "./ClassifierSampleBy.js";
 export type { ClassifierScope } from "./ClassifierScope.js";
+export type { ClassifierTestRequest } from "./ClassifierTestRequest.js";
+export type { ClassifierTestResponse } from "./ClassifierTestResponse.js";
 export type { ClassifierUpdateInput } from "./ClassifierUpdateInput.js";
 export type { ClassifierValue } from "./ClassifierValue.js";
 export type { CreditsResponse } from "./CreditsResponse.js";

@@ -5590,6 +5590,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: 在示例上测试分类器
+      description: 在示例提示词和回复上运行一次已保存或草稿分类器，使用与网关发送的相同请求。这是一次使用你自己凭据发起的真实计费模型请求，并标记为 phaseo.classifier_test。仅限所有者和管理员；凭据需要 classifiers:write 和 gateway:access。管理密钥无法发起模型请求，因此会被拒绝。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: 模型选择的标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: 分类器或示例无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是所有者或管理员、缺少 classifiers:write，或凭据没有 gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 在此工作区中未找到已保存的分类器
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 模型请求失败（例如额度不足）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers/{id}:
     parameters:
       - name: id
@@ -9582,23 +9633,23 @@ paths:
       tags:
         - Gateway
       operationId: getMe
-      summary: Get the signed-in user
-      description: Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+      summary: 获取已登录用户
+      description: 返回 OAuth 令牌对应的用户、令牌的客户端和作用域，以及该用户所属的工作区。需要具有 me:read 的 OAuth 令牌；管理密钥会被拒绝。
       responses:
         '200':
-          description: The signed-in user
+          description: 已登录用户
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: 令牌缺少 me:read
           content:
             application/json:
               schema:
@@ -9609,23 +9660,23 @@ paths:
       tags:
         - Gateway
       operationId: getMyProfile
-      summary: Get your profile
-      description: Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+      summary: 获取你的个人资料
+      description: 返回控制台个人资料页面上显示的个人资料字段。需要具有 me:read 的 OAuth 令牌。
       responses:
         '200':
-          description: Profile
+          description: 个人资料
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: 令牌缺少 me:read
           content:
             application/json:
               schema:
@@ -9635,8 +9686,8 @@ paths:
       tags:
         - Gateway
       operationId: updateMyProfile
-      summary: Update your profile
-      description: Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+      summary: 更新你的个人资料
+      description: 更改你的显示名称、默认工作区（必须是你所属的工作区）或是否在屏幕上隐藏你的信息。密码、MFA 和通行密钥只能在浏览器中管理。需要具有 settings:write 的 OAuth 令牌。
       requestBody:
         required: true
         content:
@@ -9645,25 +9696,25 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Updated profile
+          description: 更新后的个人资料
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '400':
-          description: Invalid field
+          description: 字段无效
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks settings:write, or the default workspace is not one of yours
+          description: 令牌缺少 settings:write，或默认工作区不属于你
           content:
             application/json:
               schema:
@@ -9674,23 +9725,23 @@ paths:
       tags:
         - Gateway
       operationId: listAuthorizedApps
-      summary: List apps you have authorized
-      description: Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+      summary: 列出你已授权的应用
+      description: 列出你在所有工作区中通过 OAuth 授权的应用。需要具有 oauth_clients:read 的 OAuth 令牌。
       responses:
         '200':
-          description: Authorized apps
+          description: 已授权应用
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppListResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks oauth_clients:read
+          description: 令牌缺少 oauth_clients:read
           content:
             application/json:
               schema:
@@ -9701,8 +9752,8 @@ paths:
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
-      summary: Remove scopes from an authorized app
-      description: Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+      summary: 移除已授权应用的作用域
+      description: 将应用的访问权限缩减为指定的作用域。作用域只能移除；添加作用域需要你在浏览器中同意。需要具有 oauth_clients:write 的 OAuth 令牌。
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       requestBody:
@@ -9713,25 +9764,25 @@ paths:
               $ref: '#/components/schemas/AuthorizedAppScopesRequest'
       responses:
         '200':
-          description: Scopes reduced
+          description: 作用域已缩减
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppScopesResponse'
         '400':
-          description: Empty list, or a scope the app does not have
+          description: 列表为空，或包含应用不具备的作用域
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: 未找到已授权应用
           content:
             application/json:
               schema:
@@ -9741,25 +9792,25 @@ paths:
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
-      summary: Revoke an authorized app
-      description: Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+      summary: 撤销已授权应用
+      description: 撤销应用的访问权限，使其令牌失效。撤销调用方应用自身的授权会使其退出登录。需要具有 oauth_clients:delete 的 OAuth 令牌。
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       responses:
         '200':
-          description: Authorization revoked
+          description: 授权已撤销
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: 不是 OAuth 令牌，或令牌无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: 未找到已授权应用
           content:
             application/json:
               schema:
@@ -9770,8 +9821,8 @@ paths:
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
-      summary: Accept a workspace invite
-      description: Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+      summary: 接受工作区邀请
+      description: 申请加入邀请码所属的工作区。之后由工作区所有者或管理员批准或拒绝该申请。需要具有 workspaces:write 的 OAuth 令牌；管理密钥属于工作区而不属于个人，因此会被拒绝。
       requestBody:
         required: true
         content:
@@ -9780,31 +9831,31 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
       responses:
         '201':
-          description: Join request created
+          description: 加入申请已创建
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
         '400':
-          description: Missing invite code
+          description: 缺少邀请码
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:write
+          description: 不是 OAuth 用户令牌，或令牌缺少 workspaces:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Invalid or expired invite
+          description: 邀请无效或已过期
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Already a member, or a request is already pending
+          description: 已是成员，或已有待处理的申请
           content:
             application/json:
               schema:
@@ -9815,12 +9866,12 @@ paths:
       tags:
         - Gateway
       operationId: listMyJoinRequests
-      summary: List your requests to join workspaces
-      description: Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+      summary: 列出你加入工作区的申请
+      description: 按从新到旧的顺序列出你自己的加入工作区申请（最多 100 条）。需要具有 workspaces:read 的 OAuth 令牌。
       parameters:
         - name: status
           in: query
-          description: Pending by default; all returns every status.
+          description: 默认返回待处理的申请；all 返回所有状态。
           schema:
             type: string
             enum:
@@ -9831,7 +9882,7 @@ paths:
               - all
       responses:
         '200':
-          description: Your join requests
+          description: 你的加入申请
           content:
             application/json:
               schema:
@@ -9843,7 +9894,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:read
+          description: 不是 OAuth 用户令牌，或令牌缺少 workspaces:read
           content:
             application/json:
               schema:
@@ -9854,11 +9905,11 @@ paths:
       tags:
         - Gateway
       operationId: getRateLimitTier
-      summary: Get the workspace's rate limit tier
-      description: Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+      summary: 获取工作区的速率限制等级
+      description: 返回工作区的信任等级、每分钟请求数，以及它现在能否提升一个等级。适用于工作区所有者和管理员（OAuth），或具有 rate_limits:read 的管理密钥。仅当调用者是工作区所有者时 canRaise 才为 true。
       responses:
         '200':
-          description: Tier and raise status
+          description: 等级和提升状态
           content:
             application/json:
               schema:
@@ -9870,7 +9921,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an owner or admin, or token lacks rate_limits:read
+          description: 不是所有者或管理员，或令牌缺少 rate_limits:read
           content:
             application/json:
               schema:
@@ -9881,11 +9932,11 @@ paths:
       tags:
         - Gateway
       operationId: raiseRateLimitTier
-      summary: Raise the workspace's rate limit tier
-      description: Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+      summary: 提升工作区的速率限制等级
+      description: 在限定时间内将符合条件的工作区提升一个等级。只有工作区所有者可以使用具有 rate_limits:write 的 OAuth 令牌提升；管理密钥会被拒绝，以免泄露的密钥解除其所属工作区的限制。
       responses:
         '201':
-          description: Raised
+          description: 已提升
           content:
             application/json:
               schema:
@@ -9897,13 +9948,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not the workspace owner, a management key, or token lacks rate_limits:write
+          description: 不是工作区所有者、使用的是管理密钥，或令牌缺少 rate_limits:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: The workspace cannot raise its limit now (see reason)
+          description: 工作区当前无法提升其限制（参见 reason）
           content:
             application/json:
               schema:
@@ -9914,11 +9965,11 @@ paths:
       tags:
         - Gateway
       operationId: getAutoRoutingSettings
-      summary: Get auto-routing settings
-      description: Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+      summary: 获取自动路由设置
+      description: 返回此工作区中自动路由器运行时遵循的限制。任何工作区成员均可调用；需要 settings:read。
       responses:
         '200':
-          description: Auto-routing settings
+          description: 自动路由设置
           content:
             application/json:
               schema:
@@ -9934,8 +9985,8 @@ paths:
       tags:
         - Gateway
       operationId: updateAutoRoutingSettings
-      summary: Update auto-routing settings
-      description: Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+      summary: 更新自动路由设置
+      description: 更改发送的字段；结果会像控制台保存时一样作为整体进行校验。自定义 spend_profile 需要同时设置两个价格上限。仅限所有者和管理员；需要 settings:write。
       requestBody:
         required: true
         content:
@@ -9944,13 +9995,13 @@ paths:
               $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
       responses:
         '200':
-          description: Updated auto-routing settings
+          description: 更新后的自动路由设置
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoRoutingSettingsResponse'
         '400':
-          description: Invalid settings
+          description: 设置无效
           content:
             application/json:
               schema:
@@ -9967,11 +10018,11 @@ paths:
       tags:
         - Gateway
       operationId: listSuccessorReplacements
-      summary: List successor model replacements
-      description: Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+      summary: 列出后继模型替换
+      description: 列出工作区为已不再由任何提供方提供的模型选择的替换。后继路由的开关和价格策略位于 /settings。任何工作区成员均可调用；需要 settings:read。
       responses:
         '200':
-          description: Replacements
+          description: 替换
           content:
             application/json:
               schema:
@@ -9987,8 +10038,8 @@ paths:
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
-      summary: Save a successor model replacement
-      description: Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+      summary: 保存后继模型替换
+      description: 设置 model 的请求要发送到的模型，并替换之前的任何选择。successor 为 null 表示 model 的请求永不重定向。两个模型都必须在目录中，且后继模型必须可用。每个工作区最多 500 个。仅限所有者和管理员；需要 settings:write。
       requestBody:
         required: true
         content:
@@ -9997,13 +10048,13 @@ paths:
               $ref: '#/components/schemas/SuccessorReplacement'
       responses:
         '200':
-          description: Saved replacement
+          description: 已保存的替换
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementResponse'
         '400':
-          description: Invalid or unknown model
+          description: 模型无效或未知
           content:
             application/json:
               schema:
@@ -10019,24 +10070,24 @@ paths:
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
-      summary: Remove a successor model replacement
-      description: Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+      summary: 移除后继模型替换
+      description: 移除工作区为某个模型做出的选择，使目录中的后继模型重新生效。仅限所有者和管理员；需要 settings:write。
       parameters:
         - name: model
           in: query
           required: true
-          description: The model id whose replacement to remove.
+          description: 要移除其替换的模型 ID。
           schema:
             $ref: '#/components/schemas/ModelId'
       responses:
         '200':
-          description: Replacement removed
+          description: 替换已移除
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
         '400':
-          description: Missing or invalid model
+          description: 缺少模型或模型无效
           content:
             application/json:
               schema:
@@ -10048,7 +10099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No replacement is saved for this model
+          description: 此模型没有已保存的替换
           content:
             application/json:
               schema:
@@ -10059,8 +10110,8 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
-      summary: Test destination settings before saving
-      description: Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+      summary: 保存前测试目标设置
+      description: 按网关投递追踪的方式，向给定设置发送不含消息的示例追踪。不会保存任何内容。仅限所有者和管理员；需要 settings:write。
       requestBody:
         required: true
         content:
@@ -10069,13 +10120,13 @@ paths:
               $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
       responses:
         '200':
-          description: Test result; ok is false when the destination refused or could not be reached
+          description: 测试结果；当目标拒绝或无法访问时，ok 为 false
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
         '400':
-          description: Invalid type or settings
+          description: 类型或设置无效
           content:
             application/json:
               schema:
@@ -10092,13 +10143,13 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestination
-      summary: Check a destination's connection
-      description: Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+      summary: 检查目标的连接
+      description: 像控制台的状态检查一样，向已保存的目标发送不含消息的示例追踪。目标的健康状态不会改变。仅限所有者和管理员；需要 settings:write。
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Test result
+          description: 测试结果
           content:
             application/json:
               schema:
@@ -10121,13 +10172,13 @@ paths:
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
-      summary: Send a sample trace
-      description: Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+      summary: 发送示例追踪
+      description: 向已保存的目标发送示例追踪；除非目标排除了提示词和输出，否则包含消息。仅限所有者和管理员；需要 settings:write。
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Send result
+          description: 发送结果
           content:
             application/json:
               schema:
@@ -10150,8 +10201,8 @@ paths:
       tags:
         - Gateway
       operationId: reportLeakedKey
-      summary: Report a leaked API key
-      description: Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+      summary: 报告泄露的 API 密钥
+      description: 报告在公开场合发现的 Phaseo 密钥。无需身份验证。无论密钥是否匹配，始终返回相同内容的 202，因此此路由不能用来检查密钥。按地址限速。
       security: []
       requestBody:
         required: true
@@ -10161,7 +10212,7 @@ paths:
               $ref: '#/components/schemas/LeakedKeyReportRequest'
       responses:
         '202':
-          description: Report received
+          description: 已收到报告
           content:
             application/json:
               schema:
@@ -10301,7 +10352,7 @@ components:
       name: id
       in: path
       required: true
-      description: Authorization identifier from the authorized apps list.
+      description: 来自已授权应用列表的授权标识符。
       schema:
         type: string
     ObservabilityDestinationId:
@@ -10411,7 +10462,7 @@ components:
           nullable: true
         obfuscate_info:
           type: boolean
-          description: Whether your email and name are hidden on screen in the dashboard.
+          description: 是否在控制台屏幕上隐藏你的邮箱和姓名。
     UserProfileResponse:
       type: object
       required:
@@ -10429,7 +10480,7 @@ components:
         default_workspace_id:
           type: string
           nullable: true
-          description: A workspace you belong to, or null to clear.
+          description: 你所属的工作区，或设为 null 以清除。
         obfuscate_info:
           type: boolean
       additionalProperties: false
@@ -10438,7 +10489,7 @@ components:
       properties:
         id:
           type: string
-          description: Authorization id.
+          description: 授权 ID。
         client_id:
           type: string
         app_name:
@@ -10454,7 +10505,7 @@ components:
             type: string
         current:
           type: boolean
-          description: True for the authorization the calling token belongs to.
+          description: 对于调用令牌所属的授权为 true。
         authorized_at:
           type: string
           format: date-time
@@ -10479,7 +10530,7 @@ components:
         scopes:
           type: array
           minItems: 1
-          description: The scopes to keep; each must already be granted.
+          description: 要保留的作用域；每个作用域都必须已被授予。
           items:
             type: string
       additionalProperties: false
@@ -10513,7 +10564,7 @@ components:
           type: string
           minLength: 6
           maxLength: 256
-          description: The invite code.
+          description: 邀请码。
       additionalProperties: false
     MyJoinRequestCreatedResponse:
       type: object
@@ -10580,7 +10631,7 @@ components:
             target:
               type: string
               nullable: true
-              description: The tier a raise would move to.
+              description: 提升后将到达的等级。
             targetRequestsPerMinute:
               type: number
               nullable: true
@@ -10589,15 +10640,15 @@ components:
             refusal:
               type: string
               nullable: true
-              description: Why a raise is not available now; null when eligible.
+              description: 当前无法提升的原因；符合条件时为 null。
             activeUntil:
               type: number
               nullable: true
-              description: When an active raise ends (Unix milliseconds).
+              description: 当前提升结束的时间（Unix 毫秒）。
             availableAt:
               type: number
               nullable: true
-              description: When the next raise may be requested (Unix milliseconds).
+              description: 可以申请下一次提升的时间（Unix 毫秒）。
             durationDays:
               type: number
             thresholds:
@@ -10609,14 +10660,14 @@ components:
                   type: number
             canRaise:
               type: boolean
-              description: True when the caller is the workspace owner and the workspace is eligible.
+              description: 当调用者是工作区所有者且工作区符合条件时为 true。
     AutoRoutingSettings:
       type: object
       properties:
         allowed_patterns:
           type: array
           maxItems: 16
-          description: Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.
+          description: 自动路由器可选择的提供方/模型模式，例如 openai/*。为空时允许所有模型。
           items:
             type: string
         spend_profile:
@@ -10630,11 +10681,11 @@ components:
         max_input_price_per_million:
           type: number
           nullable: true
-          description: USD per million input tokens; set only for the custom spend profile.
+          description: 每百万输入 token 的美元价格；仅在自定义支出档位中设置。
         max_output_price_per_million:
           type: number
           nullable: true
-          description: USD per million output tokens; set only for the custom spend profile.
+          description: 每百万输出 token 的美元价格；仅在自定义支出档位中设置。
         objective:
           type: string
           enum:
@@ -10699,11 +10750,11 @@ components:
       properties:
         model:
           type: string
-          description: The model whose requests are redirected.
+          description: 其请求会被重定向的模型。
         successor:
           type: string
           nullable: true
-          description: The model to send them to, or null to never redirect them.
+          description: 要发送到的模型，或设为 null 表示永不重定向。
     SuccessorReplacementRow:
       type: object
       properties:
@@ -10749,7 +10800,7 @@ components:
           $ref: '#/components/schemas/ObservabilityDestinationType'
         config:
           type: object
-          description: The destination's settings, as for creating one.
+          description: 目标的设置，与创建目标时相同。
           additionalProperties:
             type: string
     ObservabilityDestinationTestResponse:
@@ -10795,11 +10846,11 @@ components:
         token:
           type: string
           maxLength: 4096
-          description: The leaked key as found.
+          description: 按发现时原样提供的泄露密钥。
         source:
           type: string
           maxLength: 64
-          description: Where it was found, such as github.
+          description: 发现位置，例如 github。
         reporter_email:
           type: string
           maxLength: 320
@@ -22954,11 +23005,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: 告诉模型何时选择此值。
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: 分类器针对每个请求回答的一个问题。答案会写入一个请求标签，其键为该维度的键。如果调用方已发送了该键的标签，则跳过此维度。
       required:
         - key
         - values
@@ -22978,14 +23029,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: 允许每个请求有多个值。
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: 当没有列出的值合适时，允许模型回答 "other"。
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: 2 到 50 个值。仅当 allow_other 为 true 时才允许只有一个值。
           minItems: 1
           maxItems: 50
           items:
@@ -23216,6 +23267,74 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: 要测试的草稿。如果提供了 classifier_id，未发送的字段取自该分类器。
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: 此工作区中要测试的已保存分类器，或用于标记该测试的分类器。
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: 无法读取模型的回答时为 false。
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:

@@ -802,6 +802,16 @@ struct ClassifierScope {
 	std::vector<std::string> models;
 };
 
+struct ClassifierTestRequest {
+	std::map<std::string, std::any> classifier;
+	std::string classifier_id;
+	std::map<std::string, std::any> sample;
+};
+
+struct ClassifierTestResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct ClassifierUpdateInput {
 	std::optional<std::string> description;
 	std::vector<std::map<std::string, std::any>> dimensions;

@@ -1215,6 +1215,11 @@ pub fn summarizeGatewayFeedback<T: Transport>(client: &Client<T>, path: &HashMap
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn testClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/classifiers/test");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn testObservabilityDestination<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/observability/destinations/{}/test", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("POST", &resolved_path, body)

@@ -1215,6 +1215,11 @@ inline Response SummarizeGatewayFeedback(Client& client, const std::map<std::str
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response TestClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/test";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response TestObservabilityDestination(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/observability/destinations/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/test";
 	return client.request("POST", resolved_path, body);

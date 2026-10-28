@@ -805,6 +805,16 @@ public final class Models {
 		public java.util.List<String> models;
 	}
 
+	public static class ClassifierTestRequest {
+		public Object classifier;
+		public String classifier_id;
+		public Object sample;
+	}
+
+	public static class ClassifierTestResponse {
+		public Object data;
+	}
+
 	public static class ClassifierUpdateInput {
 		public String description;
 		public java.util.List<Object> dimensions;

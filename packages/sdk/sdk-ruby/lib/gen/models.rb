@@ -1194,6 +1194,16 @@ module Phaseo
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     ClassifierScope = Struct.new(:app_ids, :key_ids, :models, keyword_init: true)
+    # @!attribute [rw] classifier
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] classifier_id
+    #   @return [String, nil]
+    # @!attribute [rw] sample
+    #   @return [Hash{String => Object}]
+    ClassifierTestRequest = Struct.new(:classifier, :classifier_id, :sample, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ClassifierTestResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] dimensions

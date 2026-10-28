@@ -85,6 +85,8 @@
     "models/ClassifierResponse.ts",
     "models/ClassifierSampleBy.ts",
     "models/ClassifierScope.ts",
+    "models/ClassifierTestRequest.ts",
+    "models/ClassifierTestResponse.ts",
     "models/ClassifierUpdateInput.ts",
     "models/ClassifierValue.ts",
     "models/CreditsResponse.ts",
