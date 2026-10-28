@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, Layers, Layers3, Rocket, RotateCcw, Shuffle, Trash2, Copy as CopyAll, Zap, type LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Pressable, ScrollView, Switch, TextInput, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, confirm, Divider, Header, Icon, Select, Slider, Text, TextField, toast, type SelectOption } from "@/components/ui";
+import { Button, confirm, Divider, Header, Icon, Select, Slider, Switch, Text, TextField, toast, type SelectOption } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { modelReasoningSupport, modelServiceTierSupport, REASONING_LABELS, resolveReasoningEffort, SERVICE_TIER_LABELS, serviceTierOptions, type ReasoningEffort, type ServiceTier } from "./capabilities";
@@ -133,7 +133,7 @@ function SettingsForm({ chatId, modelId, models, onSwitch }: { chatId: string | 
             <>
               <View className="min-h-11 flex-row items-center justify-between gap-3">
                 <Text variant="muted" className="flex-1">Think before answering, at the effort you choose.</Text>
-                <Switch value={Boolean(form.reasoningEnabled)} onValueChange={(on) => update({ reasoningEnabled: on, reasoningEffort: on ? form.reasoningEffort ?? effort : form.reasoningEffort })} trackColorOnClassName="accent-primary" accessibilityLabel="Reasoning" />
+                <Switch value={Boolean(form.reasoningEnabled)} onValueChange={(on) => update({ reasoningEnabled: on, reasoningEffort: on ? form.reasoningEffort ?? effort : form.reasoningEffort })} accessibilityLabel="Reasoning" />
               </View>
               {form.reasoningEnabled ? (
                 <Select value={effort} title="Reasoning effort" options={efforts.map((value) => ({ value, label: REASONING_LABELS[value] }))} onChange={(value: ReasoningEffort) => update({ reasoningEnabled: true, reasoningEffort: value })} className="mt-1" />

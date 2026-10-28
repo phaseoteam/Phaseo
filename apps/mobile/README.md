@@ -49,6 +49,8 @@ cd android
 # app/build/outputs/apk/release/app-release.apk (signed with the debug key; not for the Play Store)
 ```
 
+**Build number.** `app.config.ts` sets the Android `versionCode` and iOS build number to `git rev-list --count HEAD`, so a build from a later commit has a higher number. Account shows it as "0.1.0 (build 2493)", and Diagnostics adds the commit. Prebuild writes the number into `android/app/build.gradle`, so prebuild again after committing. Android won't install a lower `versionCode` over a higher one: a build from a branch with fewer commits needs the installed app removed first. Outside a git checkout, or in a shallow clone, the number falls back to app.json's `versionCode` (1 when unset).
+
 Checks: `pnpm --filter @phaseo/mobile typecheck`, `lint`, `test`, and `pnpm exec expo export --platform android` to bundle the JavaScript.
 
 **Open source licences** (Account → Open source licences) come from `src/features/account/licences.generated.json`, written by `pnpm --filter @phaseo/mobile licences` from `pnpm licenses list --prod` and each package's licence files (identical texts are stored once; copyright lines are kept per package). `pnpm build` regenerates it, and a Jest test fails when it no longer matches the installed packages, so run the script and commit the file after changing dependencies.
@@ -91,6 +93,8 @@ Notification settings and rules are in the app. Delivery needs the mobile push s
 - `EXPO_ACCESS_TOKEN` as a secret on the API worker, and `MOBILE_PUSH_ENABLED=true`.
 
 Until then, the Notifications screen says the service is coming soon.
+
+On Android, pushes arrive on one of ten channels (`src/features/notifications/channels.ts`), so each kind has its own sound and pop-up settings: New models, Prices and providers (silent), Deprecations, Money, Your traffic and Security (these three pop up), Jobs, Account, Digest (silent) and Tests. The server only uses them for phones registered with `channelScheme: 2`; until then it sends everything to the old `model-updates` channel, which the app keeps until a server accepts scheme 2. On every start, a phone with notifications on registers again if anything changed, so existing installs move over by themselves. The same channels, minus Tests, are the Categories on the Notifications screen, which appear once the server returns them. `defaultChannel` in `app.json` is where Firebase puts a push whose channel doesn't exist, so it names a channel that always does; changing it needs `expo prebuild` before a native build.
 
 ## Not yet
 
