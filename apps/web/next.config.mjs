@@ -66,6 +66,7 @@ const nextConfig = {
     globalNotFound: true,
   },
   transpilePackages: [
+    "@phaseo/app-kit",
     "@formatjs/fast-memoize",
     "@formatjs/intl-localematcher",
     "@formatjs/icu-messageformat-parser",

@@ -70,6 +70,7 @@
 		"@modelcontextprotocol/sdk": "1.30.0",
 		"@opencode/client": "2.0.22",
 		"@phaseo/agent-sdk": "workspace:*",
+		"@phaseo/app-kit": "workspace:*",
 		"@pierre/diffs": "1.5.1",
 		"@statsig/js-client": "3.33.5",
 		"@tanstack/react-virtual": "3.14.6",

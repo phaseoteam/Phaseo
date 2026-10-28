@@ -5,9 +5,9 @@ import { Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { WEB_ORIGIN } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
-// The web's logo manifest and resolver are plain data and functions; sharing them
-// keeps organisation and provider logos identical to phaseo.app without a copy.
-import { resolveLogo } from "../../../web/src/lib/logos";
+// The logo list and resolver are shared with the website (@phaseo/app-kit), so organisation
+// and provider logos match phaseo.app, which also serves the files.
+import { resolveLogo } from "@phaseo/app-kit/logos";
 
 /** Where a lab's or provider's logo is on phaseo.app, or null for an unknown ID (also for `Image.prefetch`). */
 export function logoUri(id: string, theme: "light" | "dark") {
