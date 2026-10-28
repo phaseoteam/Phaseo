@@ -4358,6 +4358,126 @@ export async function createImageEdit(
   });
 }
 
+export type CreateLiveSessionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    backend_model?: "openai/gpt-5.6-luna" | "openai/gpt-5.6-terra";
+    backend_settings?: {
+      instructions?: string;
+      max_output_tokens?: number;
+      parallel_tool_calls?: boolean;
+      reasoning_effort?: "none" | "low" | "medium" | "high" | "xhigh";
+      reasoning_summary?: "auto" | "concise" | "detailed";
+      service_tier?: "default" | "flex" | "priority";
+      tool_choice?: "auto" | "none" | "required";
+      tools?: {
+        description?: string;
+        name: string;
+        parameters?: {
+          [key: string]: unknown;
+        };
+        strict?: boolean;
+        type: "function";
+      }[];
+      verbosity?: "low" | "medium" | "high";
+      web_search?: boolean;
+    };
+    instructions?: string;
+    metadata?: {
+      [key: string]: unknown;
+    };
+    model: "openai/gpt-live-1";
+    provider: "openai";
+    source?: "api" | "chat";
+    type?: "live";
+    voice?:
+      | "alloy"
+      | "ash"
+      | "ballad"
+      | "beacon"
+      | "bossa"
+      | "cedar"
+      | "cinder"
+      | "coral"
+      | "delta"
+      | "echo"
+      | "gleam"
+      | "marin"
+      | "meridian"
+      | "quartz"
+      | "ripple"
+      | "sage"
+      | "shimmer"
+      | "stone"
+      | "tempo"
+      | "verse"
+      | "vesper"
+      | "willow";
+  };
+};
+
+/**
+ * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.
+ */
+export async function createLiveSession(
+  client: Client,
+  args: CreateLiveSessionParams = {},
+): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  client_secret?: string;
+  connect?: {
+    transport?: string;
+    url?: string;
+    [key: string]: unknown;
+  };
+  expires_at?: string | null;
+  id?: string;
+  idle_timeout_seconds?: number | null;
+  max_duration_seconds?: number;
+  model?: string;
+  model_id?: string;
+  provider?: string;
+  session_id?: string;
+  status?: string;
+  voice?: string | null;
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/live/sessions";
+  return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    client_secret?: string;
+    connect?: {
+      transport?: string;
+      url?: string;
+      [key: string]: unknown;
+    };
+    expires_at?: string | null;
+    id?: string;
+    idle_timeout_seconds?: number | null;
+    max_duration_seconds?: number;
+    model?: string;
+    model_id?: string;
+    provider?: string;
+    session_id?: string;
+    status?: string;
+    voice?: string | null;
+    [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateManagementKeyParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;

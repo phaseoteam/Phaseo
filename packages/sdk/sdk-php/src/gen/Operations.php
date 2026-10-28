@@ -202,6 +202,13 @@ function createImageEdit(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createLiveSession(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/live/sessions";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createManagementKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

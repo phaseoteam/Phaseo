@@ -6,7 +6,7 @@ icon: "phone"
 ---
 
 <Note>
-Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
+Realtime voice is in beta and access is gated per workspace.
 </Note>
 
 A realtime session is a voice call between your client and a provider's realtime model, relayed by Phaseo so it can be metered and billed. The relay forwards the provider's own events unchanged and adds three of its own: `session.end`, `session.warning` and `session.ended`.
@@ -22,9 +22,59 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI, xAI and ElevenLabs, 16 kHz for Google.
 
 Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
+
+### Google Live connections
+
+Keep streaming microphone audio for the whole call, including silence. Google closes a connection that receives no audio for about 150 seconds (close code `1008`), and the call then ends with `provider_closed`. The relay sends a `provider_closing` warning with `threshold: "input_idle"` after 2 minutes without audio. Silence between turns is not part of any turn, so it isn't billed.
+
+Google also replaces each connection after about 10 minutes. The relay moves the call to a new connection with Google's session resumption, keeps your socket open and sends `{"type": "relay.provider_reconnected", "reconnects": 1}` when the switch is done. Audio you send during the switch (usually under a second) is held and passed on. The resumed connection reprocesses the conversation so far, and Google bills that again as input tokens on the next turn, so a long call costs a little more per turn after each switch. All of it is included in `usage` and the bill. The relay only warns with `provider_closing` if it can't resume, and the call then ends when Google closes the connection.
+
+### GPT Live sessions
+
+GPT Live (`openai/gpt-live-1`) handles the voice and hands reasoning to a Responses backend model. Create it with `POST /v1/live/sessions`:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` is one of `alloy`, `ash`, `ballad`, `beacon`, `bossa`, `cedar`, `cinder`, `coral`, `delta`, `echo`, `gleam`, `marin`, `meridian`, `quartz`, `ripple`, `sage`, `shimmer`, `stone`, `tempo`, `verse`, `vesper` or `willow`. `backend_model` is `openai/gpt-5.6-luna` (default) or `openai/gpt-5.6-terra`. Connect and stream 24 kHz audio the same way as other sessions.
+
+Function tools run on your client. The backend's call arrives as a `response.event` whose `event.item.type` is `function_call`. Its name and `arguments` come from the model, and what the caller says can steer them, so treat them as untrusted input:
+
+1. Run only tools you declared, looked up by `name`, and refuse any other name.
+2. Parse `arguments` as JSON and validate it against the tool's `parameters` schema before using it.
+3. Check that the signed-in user is allowed to do what the call asks, and confirm with them before anything that changes data, spends money or contacts someone.
+
+Then run the tool, send the result and ask for the follow-up reply. If a call fails these checks, send an `output` that says why instead of running it:
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+The relay accepts a `function_call_output` only for a call the backend made, once per call and up to 64 KB, and `response.create` only after at least one output. Anything else gets `{"type": "relay.client_event_rejected", "reason": "..."}` and the call continues. Phaseo never runs function tools itself.
+
+A GPT Live call is billed per second of voice ($0.05 per minute, from GPT Live's own `usage.seconds`) plus the backend model's tokens for every response, including the replies after tool results. GPT Live expires a session that receives no audio for about 30 seconds, which ends the call with `provider_idle_timeout`. Keep streaming microphone audio, silence included.
+
+### ElevenLabs Realtime sessions
+
+ElevenLabs Realtime comes in two models: `eleven-labs/eleven-realtime-v1-mini`, the faster and cheaper default, and `eleven-labs/eleven-realtime-v1-max`, which reasons before it answers and suits complex instructions and multi-step tool use. Both use the same create request and relay as OpenAI, with 24 kHz audio. Phaseo connects to ElevenLabs with its own key; your client only ever sees the relay.
+
+ElevenLabs bills a call for every second it's connected, plus the language-model tokens it uses, and it doesn't report usage during the call. The relay meters connected time while the call runs, so holds and the overdraft cap work as for other providers. When the call ends, Phaseo reads ElevenLabs' bill for the conversation and charges the larger of that and its own list-price total. That usually takes a few seconds. If it takes longer, `session.ended` arrives with `billing_status: "pending"` and a `final_bill` request, and the bill is settled as soon as ElevenLabs reports it, normally within a few minutes. Your holds stay in place until then. If ElevenLabs hasn't reported the bill after 24 hours, the session moves to billing review rather than being charged for connected time alone.
 
 ## End a session
 
@@ -101,7 +151,8 @@ If settlement is still being retried, `billing_status` is `pending` and `cost` s
 | --- | --- | --- |
 | `client_requested` | client | You sent `session.end`. |
 | `client_disconnected` | client | Your socket closed without `session.end`. |
-| `provider_closed` | provider | The provider closed its connection, for example Google after about 150 idle seconds (code `1008`) or after its `goAway`. |
+| `provider_closed` | provider | The provider closed its connection, for example Google after about 150 seconds without audio (code `1008`), or after a `goAway` the relay couldn't resume from. |
+| `provider_idle_timeout` | provider | GPT Live expired the session because it received no audio for about 30 seconds. |
 | `provider_error` | provider | The provider connection failed or reported an error. |
 | `max_duration_reached` | gateway | The provider's session limit was reached. |
 | `insufficient_funds` | gateway | The overdraft cap was reached. |
@@ -129,7 +180,7 @@ Warnings tell you what's coming without ending the call. Each code is sent at mo
 | `code` | Extra fields | When |
 | --- | --- | --- |
 | `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes and 30 seconds before the provider's session limit. |
-| `provider_closing` | `seconds_remaining` | The provider announced it will close the connection (Google `goAway`). |
+| `provider_closing` | `seconds_remaining`, and `threshold: "input_idle"` for the idle case | Google will close the connection: after a `goAway` the relay couldn't resume from, or (`input_idle`) because no audio has arrived for 2 minutes. |
 | `funds_low` | `remaining_usd` | The credit hold couldn't be extended. The call continues on your free balance. |
 | `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Your free balance is used up and the call is running on overdraft. Sent again when less than $0.25 of the cap is left. |
 | `spend_limit_exceeded` | `limit` (`key` or `workspace_budget`) | A key spend limit or workspace budget was reached. The call continues; new requests are refused. |
@@ -145,8 +196,9 @@ API sessions are never ended for being idle, and spend limits only warn. A call 
 | --- | --- |
 | OpenAI Realtime | 60 minutes |
 | xAI | 120 minutes |
-| Google Live | 15 minutes, until session resumption is supported. Google itself may close the connection earlier with `goAway`. |
+| Google Live | 60 minutes, across the connections the relay resumes. The call also ends if your client stops sending audio for about 150 seconds. |
 | GPT Live | 25 minutes |
+| ElevenLabs Realtime | 30 minutes |
 | Overdraft cap | $1 beyond your holds and free balance |
 | Lost access | The key is revoked, expired or paused, or the workspace is removed. Detected within about a minute, then the call ends without a grace period. |
 | Policy change | 30 seconds after a `policy_blocked` warning, if the policy still blocks the call |

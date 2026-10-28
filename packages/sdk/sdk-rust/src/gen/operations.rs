@@ -150,6 +150,11 @@ pub fn createImageEdit<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createLiveSession<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/live/sessions");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/management-keys");
 	client.request("POST", &resolved_path, body)

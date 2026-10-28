@@ -487,7 +487,7 @@ describe("provider duration caps", () => {
 	it.each([
 		["openai", "openai/gpt-realtime-2", 60],
 		["spacex-ai", "spacex-ai/grok-voice", 120],
-		["google-ai-studio", "google/gemini-3.1-flash-live-preview", 15],
+		["google-ai-studio", "google/gemini-3.1-flash-live-preview", 60],
 		["openai", "openai/gpt-live-1", 25],
 	])("%s %s ends at %i minutes from claim, with warnings 2 minutes and 30 seconds before", async (provider, model, minutes) => {
 		vi.useFakeTimers();
@@ -532,7 +532,7 @@ describe("provider duration caps", () => {
 });
 
 describe("Google goAway", () => {
-	it("becomes a provider_closing warning", async () => {
+	it("becomes a provider_closing warning when no resumption handle is available", async () => {
 		const { object } = relay("google-ai-studio");
 		await providerEvent(object, { goAway: { timeLeft: "50s" } });
 		await providerEvent(object, { goAway: { timeLeft: "40s" } });

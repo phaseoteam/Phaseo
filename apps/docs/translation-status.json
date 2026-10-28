@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -343,6 +343,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -641,7 +642,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -982,6 +983,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -1280,7 +1282,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1621,6 +1623,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -1919,7 +1922,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2260,6 +2263,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -2558,7 +2562,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2899,6 +2903,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -3197,7 +3202,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3538,6 +3543,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -3836,7 +3842,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4177,6 +4183,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",
@@ -4475,7 +4482,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "30493977beb7b57189bde37658ff796c0f759d6e7ef2521f302be715dd15f866",
+      "@openapi": "165f6b62916052ebb2d022c9af02f6bd0775505962b2363080d35cd5afcd2266",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4816,6 +4823,7 @@
       "guides/quantization-formats.mdx": "7bd78198469dcdb7efe83d8c38e3b7920adc7c52a1d6e1731950355239a40a91",
       "guides/quantization-methods.mdx": "3df770b3b07639d75001d47d4893c85a6e1b2448cba79af555ff2938e977cb2a",
       "guides/quantization-selection.mdx": "79ba1c8e84085645e0ec57ee596c00715924e34e3caedcbee225d8537eecfb67",
+      "guides/realtime-voice.mdx": "fdaf5f8f3e1fc53830f370b0d1574837dd0d4d7d3b8fd16964002b7c0a7c0b3f",
       "guides/regional-routing.mdx": "dd22e5bb526864d660d3d299cd5e0cb43979759c85355b62654ed6b984304e58",
       "guides/request-classifiers.mdx": "089e7bffda4f97db988e6a4f37546912d9542827fe30bf980de2f2efcb3099fc",
       "guides/request-labels.mdx": "d999e63bb81443d345cd89fdd9bd5e20bdc4c4d2f437f495c016554fdfcb2358",

@@ -145,6 +145,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createLiveSession(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/live/sessions";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/management-keys";
 		return client.request("POST", resolvedPath, query, headers, body);
