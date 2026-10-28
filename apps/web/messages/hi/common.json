@@ -2422,6 +2422,8 @@
 			"selectModelsToCompare": "तुलना के लिए मॉडल चुनें।",
 			"viewFullLeaderboard": "पूरी रैंकिंग देखें",
 			"sourceArtificialAnalysis": "स्रोत: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "वर्षों और इंडेक्स संस्करणों के बीच तुलनीय",
 			"fullLeaderboard": "पूरी रैंकिंग",
 			"noModelsMatchThisSearch": "इस खोज से मेल खाता कोई मॉडल नहीं है।",
 			"noResultsAvailableForThisMetric": "इस मेट्रिक के लिए परिणाम उपलब्ध नहीं हैं।",

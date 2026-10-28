@@ -2422,6 +2422,8 @@
 			"selectModelsToCompare": "Selecciona modelos para comparar.",
 			"viewFullLeaderboard": "Ver clasificación completa",
 			"sourceArtificialAnalysis": "Fuente: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparable entre años y versiones del índice",
 			"fullLeaderboard": "Clasificación completa",
 			"noModelsMatchThisSearch": "No hay modelos que coincidan con esta búsqueda.",
 			"noResultsAvailableForThisMetric": "No hay resultados disponibles para esta métrica.",

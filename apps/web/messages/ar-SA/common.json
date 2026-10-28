@@ -2422,6 +2422,8 @@
 			"selectModelsToCompare": "اختر نماذج للمقارنة.",
 			"viewFullLeaderboard": "عرض لوحة الترتيب الكاملة",
 			"sourceArtificialAnalysis": "المصدر: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "قابل للمقارنة عبر السنوات وإصدارات المؤشر",
 			"fullLeaderboard": "لوحة الترتيب الكاملة",
 			"noModelsMatchThisSearch": "لا توجد نماذج تطابق هذا البحث.",
 			"noResultsAvailableForThisMetric": "لا توجد نتائج متاحة لهذا المقياس.",

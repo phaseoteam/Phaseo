@@ -8,7 +8,7 @@ import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import NumberFlow from "@number-flow/react";
 import { Link } from "@/i18n/navigation";
-import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX } from "lucide-react";
+import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX, TrendingUp } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisProgressIndexId, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
 
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
@@ -131,7 +131,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const tx = useTranslations();
 	const locale = useLocale();
 	const metrics = artificialAnalysisMetrics.map((metric) => localizedArtificialAnalysisMetric(metric, tx));
-	const aaResults = useMemo(() => results.filter((item) => isArtificialAnalysisBenchmark(item.benchmark_id) && item.score !== null), [results]);
+	const aaResults = useMemo(() => results.filter((item) => (isArtificialAnalysisBenchmark(item.benchmark_id) || isArtificialAnalysisProgressIndex(item.benchmark_id)) && item.score !== null), [results]);
 	const variants = useMemo(() => [...new Set(aaResults.map((item) => item.variant).filter((value): value is string => Boolean(value)))].sort((a, b) => {
 		const ai = configurationOrder.indexOf(a);
 		const bi = configurationOrder.indexOf(b);
@@ -162,15 +162,23 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		const firstFrame = requestAnimationFrame(() => requestAnimationFrame(restore));
 		return () => cancelAnimationFrame(firstFrame);
 	}, [pickerOpen]);
-	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant).map((item) => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link })) : [];
+	const toDisplay = (item: ModelBenchmarkResult): DisplayResult => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link });
+	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant && !isArtificialAnalysisProgressIndex(item.benchmark_id)).map(toDisplay) : [];
 	const fallback: DisplayResult[] = highlights.filter((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
-	const available = selectedResults.length ? selectedResults : fallback;
-	if (!available.length) return null;
+	// The importer's effort labels can differ for non-reasoning models; a lone score still belongs to the model.
+	const progressResults = aaResults.filter((item) => isArtificialAnalysisProgressIndex(item.benchmark_id));
+	const progressResult = progressResults.find((item) => item.variant === (selectedVariant || null)) ?? (progressResults.length === 1 ? progressResults[0] : undefined);
+	const progress: DisplayResult | undefined = progressResult ? toDisplay(progressResult) : highlights.find((item) => isArtificialAnalysisProgressIndex(item.benchmarkId) && item.score !== null);
+	const indexResults = selectedResults.length ? selectedResults : fallback;
+	const available = progress ? [...indexResults, progress] : indexResults;
+	if (!indexResults.length && !progressResults.length && !progress) return null;
 
 	const versions = [...new Set(available.map((item) => artificialAnalysisVersion(item.otherInfo)).filter(Boolean))];
 	const activeRanking = rankings.find((ranking) => ranking.benchmark_id === expandedMetric);
 	const lowerIsBetter = activeRanking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(expandedMetric ?? "");
-	const activeMetric = metrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
+	const progressLabel = tx("Common.ui.benchmarkChartCopy.progressIndex" as never);
+	const activeMetric = isArtificialAnalysisProgressIndex(expandedMetric ?? "") ? { label: progressLabel } : metrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
+	const progressActive = expandedMetric === artificialAnalysisProgressIndexId;
 	const comparisonEntries = (benchmarkId: string) => {
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
 		const lowerIsBetter = ranking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(benchmarkId);
@@ -237,6 +245,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		if (!comparisons.some((entry) => entry.model_id !== modelId)) return null;
 		return artificialAnalysisConfigurationRank(comparisons, score, ranking.lower_is_better);
 	};
+	const progressRank = progress?.score == null ? null : rankFor(artificialAnalysisProgressIndexId, progress.score);
 	const setSelectedKeys = (keys: string[]) => expandedMetric && setSelectionByMetric((current) => ({ ...current, [expandedMetric]: keys }));
 
 	return <section aria-label={tx("Common.ui.benchmarkChartCopy.artificialAnalysisBenchmarks" as never)}>
@@ -245,7 +254,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 			{variants.length > 1 ? <div className="flex items-center gap-2 text-sm"><span className="text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.modelConfiguration" as never)}</span><Select value={selectedVariant} onValueChange={setSelectedVariant}><SelectTrigger size="sm" aria-label={tx("Product.latency.configuration" as never)} className="min-w-36"><SelectValue>{localizedBenchmarkConfiguration(selectedVariant, tx)}</SelectValue></SelectTrigger><SelectContent align="end">{variants.map((variant) => <SelectItem key={variant} value={variant}>{localizedBenchmarkConfiguration(variant, tx)}</SelectItem>)}</SelectContent></Select></div> : null}
 		</div>
 
-		<div className="mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
+		{indexResults.length ? <div className="mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
 			{metrics.map(({ id: fallbackId, key, label }, index) => {
 				const result = available.filter((item) => artificialAnalysisMetricKey(item.benchmarkId) === key).sort((left, right) => right.benchmarkId.localeCompare(left.benchmarkId, "en", { numeric: true }))[0];
 				const id = result?.benchmarkId ?? fallbackId;
@@ -257,7 +266,15 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? tx("Product.gatewayBenchmark.notAvailable" as never) : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}>(#<NumberFlow locales={locale} value={rank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}</span></> : null}</span>
 				</button>;
 			})}
-		</div>
+		</div> : null}
+
+		{progress?.score != null ? <button type="button" aria-expanded={progressActive} onClick={() => { setPickerOpen(false); setExpandedMetric(progressActive ? null : artificialAnalysisProgressIndexId); }} className={`group flex w-full items-center justify-between gap-4 border-t py-3 text-left sm:py-4 ${indexResults.length ? "" : "mt-4"}`}>
+			<span className="min-w-0">
+				<span className="flex items-center gap-2 text-sm font-medium"><TrendingUp className={`size-4 transition-colors ${progressActive ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{progressLabel}</span>
+				<span className="mt-0.5 block text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.progressIndexHelp" as never)}</span>
+			</span>
+			<span className="flex shrink-0 items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><AnimatedScore benchmarkId={artificialAnalysisProgressIndexId} score={progress.score} />{progressRank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}>(#<NumberFlow locales={locale} value={progressRank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}</span></> : null}</span>
+		</button> : null}
 
 		{expandedMetric ? <div className="border-b py-5" aria-live="polite">
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
