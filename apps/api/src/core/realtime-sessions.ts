@@ -14,6 +14,14 @@ import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
 import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
+import {
+	ELEVENLABS_DEFAULT_VOICE,
+	ELEVENLABS_PROVIDER,
+	elevenLabsCanonicalModel,
+	applyElevenLabsConversationCost,
+	elevenLabsProviderModel,
+	fetchElevenLabsConversationCost,
+} from "./elevenlabs-realtime";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -30,6 +38,9 @@ export const XAI_REALTIME_MAX_DURATION_SECONDS = 120 * 60;
 // carried context as input tokens, which usageMetadata reports and we bill).
 export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 60 * 60;
 export const LIVE_MAX_DURATION_SECONDS = 25 * 60;
+// ElevenLabs Realtime: the gateway's cap. ElevenLabs is asked for a minute
+// more (max_duration_seconds, default 600) so this end and its warnings come first.
+export const ELEVENLABS_REALTIME_MAX_DURATION_SECONDS = 30 * 60;
 // The longest any relay session may run, whatever its provider.
 export const REALTIME_RELAY_MAX_DURATION_SECONDS = XAI_REALTIME_MAX_DURATION_SECONDS;
 // session.warning max_duration_approaching is sent this many seconds before the cap.
@@ -50,7 +61,15 @@ const GOOGLE_AUTH_TOKENS_URL = "https://generativelanguage.googleapis.com/v1alph
 const GOOGLE_LIVE_CONSTRAINED_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
-export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio";
+export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs";
+
+/**
+ * Providers that bill a relayed session by connected time rather than by
+ * per-turn usage events, so the relay meters the connection's wall clock.
+ */
+export function isDurationBilledRealtimeProvider(provider: string | null | undefined): boolean {
+	return provider === "x-ai" || provider === "spacex-ai" || provider === ELEVENLABS_PROVIDER;
+}
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
 export type GoogleRealtimeThinkingLevel = "low" | "medium" | "high";
@@ -88,6 +107,7 @@ export function realtimeOtelContext(
 export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: string | null): number {
 	if (provider === "google-ai-studio") return GOOGLE_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === "x-ai" || provider === "spacex-ai") return XAI_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === ELEVENLABS_PROVIDER) return ELEVENLABS_REALTIME_MAX_DURATION_SECONDS;
 	if (model && isLiveModel(model)) return LIVE_MAX_DURATION_SECONDS;
 	return OPENAI_REALTIME_MAX_DURATION_SECONDS;
 }
@@ -285,15 +305,18 @@ export function providerFromModel(model: string, explicitProvider?: string | nul
 	if (provider === "openai") return "openai";
 	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
+	if (provider === ELEVENLABS_PROVIDER || provider === "eleven-labs") return ELEVENLABS_PROVIDER;
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
 	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
+	if (/^(eleven-labs|elevenlabs)\//.test(normalized)) return ELEVENLABS_PROVIDER;
 	return null;
 }
 
 export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
+	if (provider === ELEVENLABS_PROVIDER) return elevenLabsCanonicalModel(trimmed);
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
 		if (provider === "x-ai" || provider === "spacex-ai") return `spacex-ai/${trimmed}`;
@@ -305,6 +328,7 @@ export function canonicalModel(provider: RealtimeProvider, model: string): strin
 
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
+	if (provider === ELEVENLABS_PROVIDER) return elevenLabsProviderModel(canonical);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
 	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
 	return canonical.replace(/^google\//, "");
@@ -315,6 +339,7 @@ function defaultVoice(provider: RealtimeProvider, requested?: string | null): st
 	if (trimmed) return trimmed;
 	if (provider === "openai") return "marin";
 	if (provider === "google-ai-studio") return "Puck";
+	if (provider === ELEVENLABS_PROVIDER) return ELEVENLABS_DEFAULT_VOICE;
 	return "eve";
 }
 
@@ -806,7 +831,7 @@ export function assertRealtimeBillingMetersPresent(args: {
 	costNanos: number;
 	estimated?: boolean;
 }) {
-	if (args.provider === "x-ai" || args.provider === "spacex-ai") return;
+	if (isDurationBilledRealtimeProvider(args.provider)) return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
@@ -1012,8 +1037,10 @@ export async function createRealtimeSession(args: {
 			: null;
 	const voice = defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
-	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
-		throw new Error("live_playground_only");
+	// GPT Live runs only through the relay (it owns billing). Playground sessions
+	// also need the signed-in user; API sessions are authorised by the key.
+	if (live && (!args.liveBackendModel || args.relay === false || (args.source === "chat" && !args.auth.userId))) {
+		throw new Error("live_session_invalid");
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
 	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
@@ -1025,6 +1052,8 @@ export async function createRealtimeSession(args: {
 	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider, modelId) * 1000).toISOString();
 
 	const useRelay = args.relay !== false || !args.auth.internal;
+	// ElevenLabs is only reachable through the relay: its key never leaves the gateway.
+	if (provider === ELEVENLABS_PROVIDER && !useRelay) throw new Error("realtime_relay_required");
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
 	const secretHash = relaySecret ? await sha256Hex(relaySecret) : null;
 	const submissionSpanId = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
@@ -1589,6 +1618,32 @@ export async function realtimeReconciliationToken(): Promise<string> {
 	return sha256Hex(`phaseo:realtime-reconciliation:v1:${secret}`);
 }
 
+// How long reconciliation waits for ElevenLabs to report a conversation's
+// charge. Without it the language-model tokens are unknown, so the session
+// then goes to billing review instead of settling for connected time alone.
+export const ELEVENLABS_COST_WAIT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Usage (and provider cost floor) for settling a session whose relay state is
+ * gone. ElevenLabs reports its charge on the conversation after the call; the
+ * session waits for it (the cron retries) for up to a day, then reports
+ * `costUnavailable`.
+ */
+export async function reconciledProviderCost(session: RealtimeSessionRow): Promise<{ usage: Record<string, unknown>; providerCostNanos?: number; costUnavailable?: true }> {
+	const usage = session.usage ?? {};
+	const conversationId = typeof usage.provider_conversation_id === "string" ? usage.provider_conversation_id : "";
+	if (providerFromModel(session.model_id, session.provider) !== ELEVENLABS_PROVIDER || !conversationId) return { usage };
+	const cost = await fetchElevenLabsConversationCost(conversationId).catch((error) => {
+		console.error("realtime_elevenlabs_cost_fetch_failed", { sessionId: session.session_id, error: error instanceof Error ? error.message : String(error) });
+		return null;
+	});
+	if (cost?.ready) return { usage: applyElevenLabsConversationCost(usage, cost), providerCostNanos: cost.costNanos };
+	const lastSeen = Date.parse(session.last_event_at ?? session.connected_at ?? session.started_at);
+	if (Number.isFinite(lastSeen) && Date.now() - lastSeen < ELEVENLABS_COST_WAIT_MS) throw new Error("realtime_elevenlabs_cost_pending");
+	console.error("realtime_elevenlabs_cost_unavailable", { sessionId: session.session_id, conversationId });
+	return { usage: { ...usage, provider_cost_status: "unavailable" }, costUnavailable: true };
+}
+
 export async function runRealtimeSessionReconciliationJob(args?: {
 	limit?: number;
 	relay?: DurableObjectNamespace;
@@ -1648,7 +1703,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 			const relayed = session.metadata?.relay === true;
 			if (session.status !== "created" && !(relayed && session.status === "connecting")) {
 				const provider = providerFromModel(session.model_id, session.provider);
-				if (provider !== "spacex-ai") {
+				if (!isDurationBilledRealtimeProvider(provider)) {
 					await markRealtimeSessionBillingUnresolved({
 						auth: {
 							requestId: `realtime_reconcile_unresolved:${session.session_id}`,
@@ -1666,6 +1721,24 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 					continue;
 				}
 			}
+			const { costUnavailable, ...reconciled } = await reconciledProviderCost(session);
+			if (costUnavailable) {
+				await markRealtimeSessionBillingUnresolved({
+					auth: {
+						requestId: `realtime_reconcile_unresolved:${session.session_id}`,
+						workspaceId: session.workspace_id,
+						apiKeyId: session.key_id ?? "00000000-0000-0000-0000-000000000000",
+						userId: session.user_id ?? null,
+						internal: true,
+					},
+					sessionId: session.session_id,
+					usage: reconciled.usage,
+					reason: "realtime_provider_cost_unavailable",
+					session,
+				});
+				sessionsErrored += 1;
+				continue;
+			}
 			await settleRealtimeSession({
 				auth: {
 					requestId: `realtime_reconcile:${session.session_id}`,
@@ -1676,7 +1749,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 				},
 				sessionId: session.session_id,
 				status: "expired",
-				usage: session.usage ?? {},
+				...reconciled,
 				disconnectReason: "realtime_session_reconciliation_expired",
 			});
 			sessionsExpired += 1;

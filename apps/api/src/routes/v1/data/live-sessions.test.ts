@@ -43,6 +43,20 @@ it("uses the separate Live route and validates backend availability before reser
 		source: "chat", relay: true, auth: expect.objectContaining({ userId }) }));
 });
 
+it("creates GPT Live API sessions for an ordinary key, with function tools", async () => {
+	mocks.auth.apiKeyKid = "ordinary-key";
+	const tools = [{ type: "function", name: "get_time", parameters: { type: "object", properties: {} } }];
+	const response = await post({ model: "openai/gpt-live-1", provider: "openai", voice: "cedar", backend_settings: { tools } });
+	expect(response.status).toBe(201);
+	expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1", source: "api", relay: true,
+		voice: "cedar", liveBackendSettings: expect.objectContaining({ tools }), auth: expect.objectContaining({ userId: null }) }));
+});
+
+it("points GPT Live requests on the Realtime endpoint at the Live endpoint", async () => {
+	const response = await post({ model: "openai/gpt-live-1", provider: "openai" }, false);
+	expect(await response.json()).toMatchObject({ reason: "live_sessions_endpoint_required" });
+});
+
 it("rejects ordinary keys even when they claim to be a playground user", async () => {
 	mocks.auth.apiKeyKid = "ordinary-key";
 	expect((await post(request)).status).toBeGreaterThanOrEqual(400);
