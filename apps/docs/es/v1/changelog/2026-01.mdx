@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Producto</p>
 
-- La pasarela se renovó de nuevo e incorporó compatibilidad con `/messages` de Anthropic.
-- Se actualizaron la arquitectura de la base de datos, la experiencia del sitio, las herramientas del playground y el rumbo del SDK para facilitar una expansión más amplia.
+- Chat en [phaseo.app/chat](https://phaseo.app/chat) permite conversar con los modelos de la pasarela, ajustar los parámetros de la solicitud y guardar el historial en tu navegador ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Los equipos pueden elegir cómo la pasarela selecciona proveedores en **Settings -> Routing**: **Balanced**, **Lowest cost**, **Lowest latency** o **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Una calculadora de precios en Tools estima el coste de las solicitudes a partir del número de tokens y lo compara entre modelos ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- `POST /v1/messages` acepta solicitudes en el formato de Anthropic Messages, así que los SDK de Anthropic pueden llamar a los modelos de la pasarela; consulta [Crear un mensaje](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/ocr` extrae texto de una imagen indicada por URL o en base64; consulta [Extraer texto con OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/music/generate` crea pistas de música y `GET /v1/music/generate/{id}` devuelve su estado; consulta [Generar música](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- La API de gestión añade `GET /v1/credits` para el saldo de créditos, `GET /v1/activity` para las solicitudes recientes y `/v1/provisioning/keys` para listar, actualizar y eliminar claves; consulta [Obtener créditos](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
 
 </div>
 
