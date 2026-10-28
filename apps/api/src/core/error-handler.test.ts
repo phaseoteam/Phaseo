@@ -349,6 +349,27 @@ describe("handleError", () => {
 		expect(classifyErrorType({ stage: "execute", status: 403, errorCode: "forbidden", body: {} })).toBe("system");
 	});
 
+	it("tells the caller which residency requirements no provider met", async () => {
+		const res = await handleError({
+			stage: "execute",
+			res: new Response(JSON.stringify({
+				error: "model_region_unavailable",
+				reason: "no_provider_meets_residency_requirements",
+				description: "This model has no provider that offers zero data retention.",
+				action: "Relax the residency requirements or choose another model.",
+				unmet_requirements: { zero_data_retention: true, data_region: "eu", extra: "dropped" },
+			}), { status: 403, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			ctx: { requestId: "G-TEST-RESIDENCY", meta: {}, model: "acme/model", rawBody: { model: "acme/model" } } as any,
+			auditFailure: async () => {},
+		});
+		const payload = await res.json();
+		expect(res.status).toBe(403);
+		expect(payload.reason).toBe("no_provider_meets_residency_requirements");
+		expect(payload.action).toBe("Relax the residency requirements or choose another model.");
+		expect(payload.unmet_requirements).toEqual({ zero_data_retention: true, data_region: "eu" });
+	});
+
 	it("preserves before-stage system labels from provider candidate gaps", async () => {
 		expect(classifyErrorType({
 			stage: "before",

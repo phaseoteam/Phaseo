@@ -944,6 +944,20 @@ export async function handleError({
         errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
         errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
     }
+    if (errCode === "model_region_unavailable") {
+        // Which residency requirements no provider met, so callers can act on them.
+        for (const field of ["reason", "action"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        const unmet = body?.unmet_requirements;
+        if (unmet && typeof unmet === "object" && !Array.isArray(unmet)) {
+            errorPayload.unmet_requirements = {
+                ...(typeof unmet.execution_region === "string" ? { execution_region: unmet.execution_region } : {}),
+                ...(typeof unmet.data_region === "string" ? { data_region: unmet.data_region } : {}),
+                ...(unmet.zero_data_retention === true ? { zero_data_retention: true } : {}),
+            };
+        }
+    }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;
     }
