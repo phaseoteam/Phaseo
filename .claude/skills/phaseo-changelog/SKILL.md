@@ -1,6 +1,6 @@
 ---
 name: phaseo-changelog
-description: Write and maintain the Phaseo docs changelog (`apps/docs/v1/changelog.mdx` and `apps/docs/v1/changelog/*.mdx`, plus the 8 locale copies) in the tagged Update-component format that Mintlify filters need. Use when adding entries, backfilling product or API/SDK changes from merged PRs, adding model releases, or auditing changelog pages.
+description: Writes Phaseo changelog entries in the right category, format and wording, and keeps every changelog page and its 8 translations valid. Use whenever something shipped needs announcing (a feature, setting, fix users noticed, API or SDK change, breaking change, deprecation, model release, price change or retirement), when backfilling a month from merged PRs, when starting a new month's page, when editing apps/docs/v1/changelog.mdx or apps/docs/v1/changelog/*.mdx, or when checking changelog pages.
 ---
 
 # Phaseo Changelog
@@ -52,15 +52,18 @@ When an item could fit two categories, choose the one where a reader would look 
 
 ## Writing
 
-- One-line bullets that describe the outcome for the user, not how it was built.
-- Exact names: model names, settings paths (`**Settings -> Routing -> ...**`), headers, endpoints and package versions.
-- Link the relevant docs page or model page when there is one. PR links are optional.
-- No marketing language, no "SOTA", and no competitor names.
+`references/writing-guide.md` says how to write each kind of announcement. In short:
+- One change per bullet, one sentence of at most about 25 words, outcome first, then `; see [Docs page](/v1/...)` and up to three PR links.
+- Start with `**Breaking:**`, `**Beta:**` or `**Deprecated:**` when it applies, and say what to do or by when.
+- Include fixes only when users could have noticed the bug.
+- No marketing language, no "SOTA", no competitor names, and nothing customers cannot use yet.
 - Keep historical statements historically accurate.
 
-## Required reference
+## Required references
 
-Read `references/changelog-format.md` before drafting.
+Read both before drafting:
+- `references/changelog-format.md`: blocks, tags, labels and images.
+- `references/writing-guide.md`: how to write each kind of entry.
 
 ## Validation
 

@@ -41,9 +41,7 @@ Rules:
 
 ## Product and API & SDKs entries
 
-- Start with what changed for the user: "Chat can now ...", "`POST /v1/...` accepts ...", "The Python SDK 2.4 adds ...".
-- Add where to find it (settings path, page) and a docs link if there is one.
-- Use one bullet per change. Merge related PRs into one bullet.
+Follow `writing-guide.md` for each kind of entry.
 
 ## Checklist
 
