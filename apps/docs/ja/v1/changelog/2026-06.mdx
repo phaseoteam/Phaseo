@@ -9,15 +9,6 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月30日">
 
-<div data-changelog-category="product">
-
-<p className="changelog-category">製品</p>
-
-- 料金計算ツールが時間枠指定とモデルの並列比較に対応し、バースト、リアルタイム、ルート別の料金を検討しやすくなりました ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-- 料金計算ツールのレイアウトを簡素化し、比較前にモデル、プロバイダー、使用量の前提を調整しやすくしました ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-
-</div>
-
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -35,11 +26,32 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月29日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- TypeScript 向け Phaseo Agent SDK `0.1.1` が初の一般公開版となり、ゲートウェイ上でツールを使う複数ステップのエージェントループを構築できます。詳しくは[Agent SDK Overview](../sdk-reference/agent-sdk/overview.mdx)をご覧ください ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
 
 - [Meituan: LongCat 2.0](https://phaseo.app/models/meituan/longcat-2.0)
+
+</div>
+
+</Update>
+
+<Update label="2026年6月28日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデル一覧ページで、発表済みのモデルがカタログ価格付きで **Coming Soon** として表示され、パートナー限定のモデルは **Limited Access** と表示されます ([#850](https://github.com/phaseoteam/Phaseo/pull/850), [#852](https://github.com/phaseoteam/Phaseo/pull/852))。
+- 新しいガイド [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx) では、推論エフォートやキャッシュ料金を含め、Sol、Terra、Luna の各ティアへの移行方法を説明しています ([#850](https://github.com/phaseoteam/Phaseo/pull/850))。
 
 </div>
 
@@ -89,6 +101,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月15日">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `service_tier: "priority"` を指定したリクエストは対応するプロバイダーにのみルーティングされ、xAI と Moonshot のリクエストは実際に提供されたティアで課金されます。詳しくは[サービスティア](../guides/service-tiers.mdx)をご覧ください ([#746](https://github.com/phaseoteam/Phaseo/pull/746), [#741](https://github.com/phaseoteam/Phaseo/pull/741), [#745](https://github.com/phaseoteam/Phaseo/pull/745))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -114,6 +134,22 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月12日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- **Monitor** フィードにモデルのリンク変更と非推奨日・提供終了日が表示され、複数プランのある価格更新ではプランを切り替えられます ([#703](https://github.com/phaseoteam/Phaseo/pull/703), [#704](https://github.com/phaseoteam/Phaseo/pull/704))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **ベータ:** Phaseo CLI `0.1.1` が初の一般公開版となり、ブラウザーでのサインイン、`--json` 出力、キー・ワークスペース・プリセット・クレジットを管理するコマンドを備えています。詳しくは[Phaseo CLI](../guides/integrations/phaseo-cli.mdx)をご覧ください ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#562](https://github.com/phaseoteam/Phaseo/pull/562))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -128,6 +164,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月11日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat ではリクエストのエラーが失敗した返信の下に会話内で表示され、入力欄には評価や作業効率向けの定番プロンプトを入力できるカードが表示されます ([#691](https://github.com/phaseoteam/Phaseo/pull/691))。
+- 設定の Activity と Usage が、Overview、Trends、Explore、Guardrails、Logs の **Observability** ページに分かれました ([#693](https://github.com/phaseoteam/Phaseo/pull/693))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- サーバーツールに Web 検索、Web 取得、Advisor、画像生成、apply patch、日時が加わり、Chat Completions、Responses、Messages のリクエストで利用でき、使用ごとに課金されます。詳しくは[サーバーツール](../guides/server-tools/index.mdx)をご覧ください ([#690](https://github.com/phaseoteam/Phaseo/pull/690))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -139,6 +192,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 </Update>
 
 <Update label="2026年6月10日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 新しいアカウントは **Onboarding** から始まります。API キーの作成、モデルの選択、最初のリクエストのプレビューを 3 ステップで案内します ([#689](https://github.com/phaseoteam/Phaseo/pull/689))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** モデルを取得するエンドポイントは `GET /v1/models` のみになりました。`/v1/gateway/models` と `/v1/data/models` は削除されたため、`/v1/models` を呼び出してください。詳しくは[モデル一覧](../api-reference/endpoint/models.mdx)をご覧ください ([#681](https://github.com/phaseoteam/Phaseo/pull/681))。
+- 管理 API に `/v1/presets`、`/v1/settings`、`/v1/guardrails`、`/v1/management-keys` が追加され、`GET /v1/me` は OAuth トークンに紐づくユーザーとワークスペースを返します ([#562](https://github.com/phaseoteam/Phaseo/pull/562))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -154,6 +224,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="2026年6月9日">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- **Monitor** ページで、モデルの追加、プロバイダーの追加、プロバイダーのステータス変更が別々のイベントとして表示され、フッターの **Explore** からリンクされます ([#678](https://github.com/phaseoteam/Phaseo/pull/678), [#679](https://github.com/phaseoteam/Phaseo/pull/679))。
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">モデル</p>
@@ -168,7 +246,54 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年6月8日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページのライフサイクルカードに、発表日・リリース日・非推奨日・提供終了日ごとに相対時間のバッジが付き、ホバーすると正確な期間が表示されます ([#671](https://github.com/phaseoteam/Phaseo/pull/671))。
+- 新しい **Methodology** ページでは、Phaseo がモデル料金を計算し、レイテンシーとスループットを測定し、ベンチマークを正規化し、プロバイダーの可用性を追跡する方法を説明しています ([#639](https://github.com/phaseoteam/Phaseo/pull/639))。
+
+</div>
+
+</Update>
+
+<Update label="2026年6月7日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページが常に先頭から開くようになりました。以前は、モデル一覧の下の方から開くと一覧のスクロール位置が引き継がれていました ([#631](https://github.com/phaseoteam/Phaseo/pull/631))。
+- モデル一覧が再びリリース日または発表日の順に並びます。以前は Whisper 1 などの古いモデルが 2026 年の日付で先頭に表示されていました ([#632](https://github.com/phaseoteam/Phaseo/pull/632))。
+- 保存済みの Stripe 顧客が存在しないか無効なワークスペースでも、クレジットを再び購入できます。以前はチェックアウトが開始できないことがありました ([#633](https://github.com/phaseoteam/Phaseo/pull/633))。
+
+</div>
+
+</Update>
+
+<Update label="2026年6月6日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページのヘッダー上に、アクセス制限や提供終了などについての情報・警告・重大のお知らせを表示できるようになりました ([#624](https://github.com/phaseoteam/Phaseo/pull/624))。
+
+</div>
+
+</Update>
+
 <Update label="2026年6月5日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- モデルページの Quickstart が API キーの取得とリクエストのコピーの 2 ステップになり、利用可能なモデル ID をクリックするとサンプルが更新されます ([#556](https://github.com/phaseoteam/Phaseo/pull/556), [#619](https://github.com/phaseoteam/Phaseo/pull/619))。
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -183,6 +308,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="2026年6月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- Chat に各返信を返したプロバイダーが表示され、モデル選択はリリース月ごとにグループ化され、お気に入りは専用のセクションに表示されます ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+- 保存済みのチャットが非推奨のモデルを使っている場合、Chat は警告を表示し、カタログに後継モデルがあればそちらに切り替えます ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- テキストリクエストは、Responses、Chat Completions、Messages のいずれか 1 つのエンドポイントにしか対応しないプロバイダーにも届くようになり、非対応として失敗しなくなりました ([#610](https://github.com/phaseoteam/Phaseo/pull/610))。
+
+</div>
+
+</Update>
+
 <Update label="2026年6月3日">
 
 <div data-changelog-category="models">
@@ -192,6 +338,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Gemma 4 12B モデルリリース画像](../../../images/model-releases/2026-06-03--google--gemma-4-12b.png)
 
 - [Google: Gemma 4 12B](https://phaseo.app/models/google/gemma-4-12b)
+
+</div>
+
+</Update>
+
+<Update label="2026年6月2日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- ドキュメントの変更履歴は、製品・SDK・モデルの更新を別々のページではなく 1 つのタイムラインにまとめて掲載します ([#588](https://github.com/phaseoteam/Phaseo/pull/588))。
 
 </div>
 
