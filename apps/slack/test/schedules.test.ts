@@ -401,7 +401,8 @@ describe("scheduled runs", () => {
 		world.db.rpcResults.claim_slack_agent_schedules = [claimed(), claimed({ schedule_id: "00000000-0000-4000-8000-00000000e5c2", channel_id: "D0DIRECT01" })];
 		expect(await runDueSchedules(world.deps)).toEqual({ claimed: 2, started: 2 });
 		expect(rpcCalls("claim_slack_agent_schedules")).toEqual([{ p_limit: 50 }]);
-		expect(world.turns.created.map((entry) => (entry.params as TurnRef).kind)).toEqual(["mention", "dm"]);
+		// Runs start together, so in no particular order.
+		expect(world.turns.created.map((entry) => (entry.params as TurnRef).kind).sort()).toEqual(["dm", "mention"]);
 		// The installation is read once a tick.
 		expect(world.db.queries.filter((query) => query.table === "slack_installations")).toHaveLength(1);
 		world.db.failingRpcs.add("claim_slack_agent_schedules");
