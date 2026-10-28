@@ -125,6 +125,20 @@ System.out.println(genericSocketUrl);
 System.out.println(resourceSocketUrl);
 ```
 
+## Realtime voice (beta)
+
+`client.realtime.connect(...)` creates a realtime session and opens the relay WebSocket with the JDK's `java.net.http.WebSocket`; there is no extra dependency. Provider events pass through unchanged as `JsonNode`s.
+
+```java
+RealtimeSession session = client.realtime.connect(Map.of("model", "openai/gpt-realtime-2", "voice", "marin"));
+session.onWarning(warning -> System.out.println(warning.path("code").asText()));
+session.on("response.output_audio.delta", event -> play(event.path("delta").asText()));
+session.sendAudio(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+JsonNode ended = session.end("caller hung up", null, Duration.ofSeconds(60)); // session.ended: reason, usage, cost, billing_status
+```
+
+`session.events()` iterates every event until the socket closes. If the socket closes without `session.ended`, `end` throws `RealtimeSessionClosedException`, whose `finalBillPath()` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

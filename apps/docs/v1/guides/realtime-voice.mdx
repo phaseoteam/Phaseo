@@ -22,9 +22,22 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI, xAI and ElevenLabs, 16 kHz for Google.
+The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocols `statsync-realtime` and `rtsec.<client_secret>`. The relay selects `statsync-realtime`; browsers and most WebSocket libraries fail the handshake if you offer only `rtsec.<client_secret>`, because no protocol is selected. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI, xAI and ElevenLabs, 16 kHz for Google.
 
 Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
+
+The [TypeScript](/v1/sdk-reference/typescript/audio-realtime) and [Python](/v1/sdk-reference/python/audio-realtime) SDKs do all of this for you: `client.realtime.connect()` creates the session and opens the socket, and `session.end()` returns `session.ended`. The other SDKs have the same small client; each package README has an example.
+
+| SDK | Connect | WebSocket library |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`, in the separate `realtime` package |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket` (optional, `composer require phrity/websocket`) |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` gem (optional) |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`, behind the `realtime` feature |
+
+The C++ SDK has no realtime client.
 
 ### Google Live connections
 

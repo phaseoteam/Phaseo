@@ -21,9 +21,22 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-レスポンスには `client_secret`、`connect.url`、`max_duration_seconds`、`idle_timeout_seconds`（API セッションでは常に `null`）が含まれます。`api.phaseo.app` 上の `connect.url` に、WebSocket サブプロトコル `rtsec.<client_secret>` を指定して WebSocket を開きます。プロバイダーの準備ができるとリレーは `relay.connected` を送信し、その後マイク音声を `{"type": "client.audio", "audio": "<base64 PCM16>"}` として受け付けます。サンプルレートは OpenAI、xAI、ElevenLabs では 24 kHz、Google では 16 kHz です。
+レスポンスには `client_secret`、`connect.url`、`max_duration_seconds`、`idle_timeout_seconds`（API セッションでは常に `null`）が含まれます。`api.phaseo.app` 上の `connect.url` に、WebSocket サブプロトコル `statsync-realtime` と `rtsec.<client_secret>` を指定して WebSocket を開きます。リレーは `statsync-realtime` を選択します。`rtsec.<client_secret>` だけを提示すると、プロトコルが選択されないため、ブラウザーやほとんどの WebSocket ライブラリではハンドシェイクが失敗します。プロバイダーの準備ができるとリレーは `relay.connected` を送信し、その後マイク音声を `{"type": "client.audio", "audio": "<base64 PCM16>"}` として受け付けます。サンプルレートは OpenAI、xAI、ElevenLabs では 24 kHz、Google では 16 kHz です。
 
 Phaseo はセッション開始時に $5 のクレジットを確保し、通話が続くにつれて確保額を延長します。
+
+[TypeScript](/ja/v1/sdk-reference/typescript/audio-realtime) と [Python](/ja/v1/sdk-reference/python/audio-realtime) の SDK は、これらをすべて代わりに行います。`client.realtime.connect()` がセッションを作成してソケットを開き、`session.end()` が `session.ended` を返します。その他の SDK にも同じ小さなクライアントがあり、各パッケージの README に例があります。
+
+| SDK | 接続 | WebSocket ライブラリ |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`（別パッケージの `realtime` 内） |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket`（任意、`composer require phrity/websocket`） |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` gem（任意） |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`（`realtime` フィーチャーで有効） |
+
+C++ SDK にはリアルタイムクライアントがありません。
 
 ### Google Live の接続
 

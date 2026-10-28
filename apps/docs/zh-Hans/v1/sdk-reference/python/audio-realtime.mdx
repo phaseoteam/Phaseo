@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "实时语音"
+description: "使用 Python SDK 通过 Phaseo 中继进行实时语音通话，并在通话结束时获得最终账单。"
+---
+
+<Note>
+实时语音目前处于 Beta 阶段，并按工作区控制访问权限。
+</Note>
+
+**方法**: `AsyncPhaseo` 上的 `await client.realtime.connect()` 会创建会话（`POST /v1/audio/realtime/sessions`），打开中继 WebSocket，并在中继发送 `relay.connected` 后返回。实时客户端仅支持异步，并且需要可选的 `websockets` 包：
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+如果未安装该包，`connect()` 会抛出包含该安装命令的 `ImportError`。中继协议、警告和原因代码请参阅 [实时语音会话](/zh-Hans/v1/guides/realtime-voice)。
+
+### 示例
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+如果要读取每一个事件，可以迭代会话。第一个迭代器还会收到自 `connect()` 返回以来接收到的事件，从 `relay.connected` 开始；套接字关闭时迭代结束。
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+`async with session:` 会在代码块退出时，如果通话尚未结束，就用 `end()` 结束通话。
+
+### 连接选项
+
+- `model`（必填）：实时模型 ID，例如 `openai/gpt-realtime-2`。
+- `voice`、`instructions`、`provider`、`metadata`：传递给创建会话请求。
+- `connect_timeout`：等待 `relay.connected` 的秒数。默认 30。
+- `websocket_connect`：一个返回已连接套接字的异步可调用对象 `(url, subprotocols)`，用于改用其他 WebSocket 库。
+
+### 会话
+
+| 成员 | 说明 |
+| --- | --- |
+| `id`, `info` | 会话 ID 和创建会话的响应，不含 `client_secret`。 |
+| `await send_audio(pcm16)` | 将 PCM16 `bytes` 作为 `client.audio` 发送。SDK 会对其进行 base64 编码。 |
+| `await send(event)` | 以 JSON 形式发送任意事件，用于供应商特定的消息。 |
+| `on(type, listener)` | 订阅一种事件类型，或使用 `"*"` 订阅所有事件。返回一个取消订阅的函数。供应商事件以 dict 形式原样到达。 |
+| `on_warning(listener)`, `on_ended(listener)` | 用于 `session.warning` 和 `session.ended` 的辅助方法。 |
+| `async for event in session` | 产出每一个事件，直到套接字关闭。 |
+| `await end(reason=None, cancel_response=None, timeout=60)` | 发送 `session.end` 并返回 `session.ended`：包含 `reason`、`initiated_by`、`duration_seconds`、`usage`、`cost`、`billing_status`，以及未结算时的 `final_bill`。 |
+| `ended` | 无论通话以何种方式结束，都会得到 `session.ended` 的 Future，包括由供应商或网关发起的结束。 |
+| `await close()` | 关闭套接字而不等待账单。通话仍会计费。 |
+
+### 错误
+
+如果套接字关闭或 `end()` 超时，而没有收到 `session.ended`，`end()` 和 `ended` 会抛出 `RealtimeSessionClosedError`。它包含 `session_id`、`close_code`、`close_reason` 和 `final_bill`，后者是在结算完成后返回最终成本的请求：`GET /v1/generations?id=realtime%3A<session_id>`。`realtime_final_bill(session_id)` 会构建相同的请求。
+
+如果中继在连接之前就结束了会话，`connect()` 会抛出异常；如果 `relay.connected` 未能及时到达，则抛出 `TimeoutError`。

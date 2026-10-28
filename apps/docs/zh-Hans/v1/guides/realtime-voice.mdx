@@ -21,9 +21,22 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-响应包含 `client_secret`、`connect.url`、`max_duration_seconds` 和 `idle_timeout_seconds`（API 会话中始终为 `null`）。在 `api.phaseo.app` 上向 `connect.url` 打开一个 WebSocket，并使用 WebSocket 子协议 `rtsec.<client_secret>`。供应商就绪后，中继会发送 `relay.connected`，然后以 `{"type": "client.audio", "audio": "<base64 PCM16>"}` 的形式接收麦克风音频：OpenAI、xAI 和 ElevenLabs 使用 24 kHz，Google 使用 16 kHz。
+响应包含 `client_secret`、`connect.url`、`max_duration_seconds` 和 `idle_timeout_seconds`（API 会话中始终为 `null`）。在 `api.phaseo.app` 上向 `connect.url` 打开一个 WebSocket，并使用 WebSocket 子协议 `statsync-realtime` 和 `rtsec.<client_secret>`。中继会选择 `statsync-realtime`；如果只提供 `rtsec.<client_secret>`，由于没有选中任何协议，浏览器和大多数 WebSocket 库都会握手失败。供应商就绪后，中继会发送 `relay.connected`，然后以 `{"type": "client.audio", "audio": "<base64 PCM16>"}` 的形式接收麦克风音频：OpenAI、xAI 和 ElevenLabs 使用 24 kHz，Google 使用 16 kHz。
 
 会话开始时，Phaseo 会预留 $5 的额度，并在通话进行过程中延长预留。
+
+[TypeScript](/zh-Hans/v1/sdk-reference/typescript/audio-realtime) 和 [Python](/zh-Hans/v1/sdk-reference/python/audio-realtime) SDK 会替你完成以上所有步骤：`client.realtime.connect()` 创建会话并打开套接字，`session.end()` 返回 `session.ended`。其他 SDK 也有同样的小型客户端，每个包的 README 中都有示例。
+
+| SDK | 连接 | WebSocket 库 |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`，位于单独的 `realtime` 包中 |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket`（可选，`composer require phrity/websocket`） |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` gem（可选） |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`，需启用 `realtime` feature |
+
+C++ SDK 没有实时客户端。
 
 ### Google Live 连接
 

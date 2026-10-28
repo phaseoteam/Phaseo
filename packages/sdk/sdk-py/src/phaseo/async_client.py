@@ -19,6 +19,7 @@ from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
 from .pagination import aiter_items, aiter_pages
+from .realtime import AsyncRealtime
 from gen import models
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
@@ -339,6 +340,7 @@ class AsyncPhaseo:
         self.music = AsyncJobs(self, "/music/generate", "music")
         self.videos = AsyncListableJobs(self, "/videos", "video")
         self.batches = AsyncListableJobs(self, "/batches", "batch")
+        self.realtime = AsyncRealtime(self)
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
         return AsyncPhaseo(api_key=self._api_key, base_url=self.base_url,

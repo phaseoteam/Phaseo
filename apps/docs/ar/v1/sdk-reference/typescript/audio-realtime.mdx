@@ -1,0 +1,106 @@
+---
+icon: "phone"
+title: "الصوت في الوقت الفعلي"
+description: "أجرِ مكالمة صوتية في الوقت الفعلي عبر مرحّل Phaseo باستخدام SDK TypeScript، واحصل على الفاتورة النهائية عند انتهائها."
+---
+
+<Note>
+الصوت في الوقت الفعلي في مرحلة تجريبية (beta)، ويُتاح الوصول إليه لكل مساحة عمل على حدة.
+</Note>
+
+**الطريقة**: تنشئ `client.realtime.connect()` الجلسة (`POST /v1/audio/realtime/sessions`)، وتفتح اتصال WebSocket بالمرحّل، وتكتمل بمجرد أن يرسل المرحّل `relay.connected`. وهي ترسل مفتاح API الخاص بك، لذا استدعِها على خادمك فقط. يتوفر `WebSocket` عام في Node.js 22 أو أحدث؛ أما في بيئات التشغيل الأقدم، فثبّت الحزمة `ws` أو مرّر المُنشئ الخاص بك بوصفه `webSocket`.
+
+للمكالمات التي تجري في المتصفح، أنشئ الجلسة على خادمك وافتح المقبس في المتصفح باستخدام `connectRealtimeSession()`. تأخذ هذه الدالة الجلسة التي أنشأها خادمك، بما فيها `client_secret` الخاص بها الذي يعمل لتلك الجلسة وحدها، ولا تحتاج أبدًا إلى مفتاح API. يعرض قسم [مكالمات المتصفح](#browser-calls) الجزأين كليهما.
+
+يرد وصف بروتوكول المرحّل والتحذيرات ورموز الأسباب في [جلسات الصوت في الوقت الفعلي](/ar/v1/guides/realtime-voice).
+
+### مثال
+
+```typescript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // The call is still billed. Fetch the final cost later with error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+لقراءة كل حدث بدلًا من ذلك، كرّر على الجلسة. يتوقف التكرار عند إغلاق المقبس.
+
+```typescript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+<span id="browser-calls"></span>
+
+### مكالمات المتصفح
+
+لا تضع مفتاح Phaseo API في كود المتصفح أبدًا. على خادمك، أنشئ الجلسة باستخدام `client.realtime.createSession()`، التي تأخذ خيارات `model` و`voice` و`instructions` و`provider` و`metadata` نفسها التي تأخذها `connect()`، وأعِد الاستجابة إلى صفحتك:
+
+```typescript
+// Server route, for example POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+في المتصفح، انضم إلى الجلسة باستخدام `connectRealtimeSession()`. تفتح هذه الدالة المرحّل باستخدام `client_secret` الخاص بالجلسة، وتعيد كائن الجلسة نفسه الذي تعيده `connect()`:
+
+```typescript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+تقبل `connectRealtimeSession(info, options)` الخيارين `webSocket` و`connectTimeoutMs` مثل `connect()`، إضافةً إلى `baseUrl` (القيمة الافتراضية `https://api.phaseo.app/v1`) إذا كنت تستخدم نقطة نهاية إقليمية.
+
+### خيارات الاتصال
+
+- `model` (مطلوب): معرّف نموذج للوقت الفعلي، مثل `openai/gpt-realtime-2`.
+- `voice` و`instructions` و`provider` و`metadata`: تُمرَّر إلى طلب إنشاء الجلسة.
+- `webSocket`: مُنشئ WebSocket يُستخدم بدلًا من المُنشئ العام.
+- `connectTimeoutMs`: مدة انتظار `relay.connected`. القيمة الافتراضية 30 ثانية.
+
+### الجلسة
+
+| العضو | الوصف |
+| --- | --- |
+| `id`, `info` | معرّف الجلسة واستجابة إنشاء الجلسة، دون `client_secret`. |
+| `sendAudio(pcm16)` | يرسل `Uint8Array` أو `ArrayBuffer` من صوت PCM16 بوصفه `client.audio`. تتولى SDK ترميزه بصيغة base64. |
+| `send(event)` | يرسل أي حدث بصيغة JSON، للرسائل الخاصة بالمزوّد. |
+| `on(type, listener)` | يشترك في نوع حدث واحد، أو في كل الأحداث باستخدام `"*"`. يعيد دالة لإلغاء الاشتراك. تصل أحداث المزوّد دون تغيير. |
+| `onWarning(listener)`, `onEnded(listener)` | دوال مساعدة محددة الأنواع لـ `session.warning` و`session.ended`. |
+| `[Symbol.asyncIterator]` | يُنتج كل حدث من لحظة بدء التكرار حتى إغلاق المقبس. |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | يرسل `session.end` ويكتمل بالحدث `session.ended`: ‏`reason` و`initiated_by` و`duration_seconds` و`usage` و`cost` و`billing_status`، و`final_bill` ما لم تكن الفاتورة قد سُوّيت. المهلة الافتراضية 60 ثانية. |
+| `ended` | وعد (promise) بالحدث `session.ended` أيًّا كانت طريقة انتهاء المكالمة، بما في ذلك حالات الإنهاء التي بدأها المزوّد أو البوابة. |
+| `close()` | يغلق المقبس دون انتظار الفاتورة. تظل المكالمة خاضعة للفوترة. |
+
+### الأخطاء
+
+إذا أُغلق المقبس، أو انتهت مهلة `end()`، دون وصول `session.ended`، فإن `end()` و`ended` يُرفضان بالخطأ `RealtimeSessionClosedError`. يتضمن هذا الخطأ `sessionId` و`closeCode` و`closeReason` و`finalBill`، وهو الطلب الذي يعيد التكلفة النهائية بعد تسويتها: `GET /v1/generations?id=realtime%3A<session_id>`. وتبني `realtimeFinalBill(sessionId)` الطلب نفسه.
+
+تُرفض `connect()` إذا أنهى المرحّل الجلسة قبل الاتصال أو إذا لم يصل `relay.connected` في الوقت المحدد.

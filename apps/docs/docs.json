@@ -896,7 +896,8 @@
                     "pages": [
                       "v1/sdk-reference/typescript/audio-speech",
                       "v1/sdk-reference/typescript/audio-transcriptions",
-                      "v1/sdk-reference/typescript/audio-translations"
+                      "v1/sdk-reference/typescript/audio-translations",
+                      "v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -954,7 +955,8 @@
                     "pages": [
                       "v1/sdk-reference/python/audio-speech",
                       "v1/sdk-reference/python/audio-transcriptions",
-                      "v1/sdk-reference/python/audio-translations"
+                      "v1/sdk-reference/python/audio-translations",
+                      "v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -2582,7 +2584,8 @@
                     "pages": [
                       "es/v1/sdk-reference/typescript/audio-speech",
                       "es/v1/sdk-reference/typescript/audio-transcriptions",
-                      "es/v1/sdk-reference/typescript/audio-translations"
+                      "es/v1/sdk-reference/typescript/audio-translations",
+                      "es/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -2640,7 +2643,8 @@
                     "pages": [
                       "es/v1/sdk-reference/python/audio-speech",
                       "es/v1/sdk-reference/python/audio-transcriptions",
-                      "es/v1/sdk-reference/python/audio-translations"
+                      "es/v1/sdk-reference/python/audio-translations",
+                      "es/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -4302,7 +4306,8 @@
                     "pages": [
                       "fr/v1/sdk-reference/typescript/audio-speech",
                       "fr/v1/sdk-reference/typescript/audio-transcriptions",
-                      "fr/v1/sdk-reference/typescript/audio-translations"
+                      "fr/v1/sdk-reference/typescript/audio-translations",
+                      "fr/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -4360,7 +4365,8 @@
                     "pages": [
                       "fr/v1/sdk-reference/python/audio-speech",
                       "fr/v1/sdk-reference/python/audio-transcriptions",
-                      "fr/v1/sdk-reference/python/audio-translations"
+                      "fr/v1/sdk-reference/python/audio-translations",
+                      "fr/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -6022,7 +6028,8 @@
                     "pages": [
                       "de/v1/sdk-reference/typescript/audio-speech",
                       "de/v1/sdk-reference/typescript/audio-transcriptions",
-                      "de/v1/sdk-reference/typescript/audio-translations"
+                      "de/v1/sdk-reference/typescript/audio-translations",
+                      "de/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -6080,7 +6087,8 @@
                     "pages": [
                       "de/v1/sdk-reference/python/audio-speech",
                       "de/v1/sdk-reference/python/audio-transcriptions",
-                      "de/v1/sdk-reference/python/audio-translations"
+                      "de/v1/sdk-reference/python/audio-translations",
+                      "de/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -7742,7 +7750,8 @@
                     "pages": [
                       "pt-BR/v1/sdk-reference/typescript/audio-speech",
                       "pt-BR/v1/sdk-reference/typescript/audio-transcriptions",
-                      "pt-BR/v1/sdk-reference/typescript/audio-translations"
+                      "pt-BR/v1/sdk-reference/typescript/audio-translations",
+                      "pt-BR/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -7800,7 +7809,8 @@
                     "pages": [
                       "pt-BR/v1/sdk-reference/python/audio-speech",
                       "pt-BR/v1/sdk-reference/python/audio-transcriptions",
-                      "pt-BR/v1/sdk-reference/python/audio-translations"
+                      "pt-BR/v1/sdk-reference/python/audio-translations",
+                      "pt-BR/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -9462,7 +9472,8 @@
                     "pages": [
                       "ja/v1/sdk-reference/typescript/audio-speech",
                       "ja/v1/sdk-reference/typescript/audio-transcriptions",
-                      "ja/v1/sdk-reference/typescript/audio-translations"
+                      "ja/v1/sdk-reference/typescript/audio-translations",
+                      "ja/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -9520,7 +9531,8 @@
                     "pages": [
                       "ja/v1/sdk-reference/python/audio-speech",
                       "ja/v1/sdk-reference/python/audio-transcriptions",
-                      "ja/v1/sdk-reference/python/audio-translations"
+                      "ja/v1/sdk-reference/python/audio-translations",
+                      "ja/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -11182,7 +11194,8 @@
                     "pages": [
                       "zh-Hans/v1/sdk-reference/typescript/audio-speech",
                       "zh-Hans/v1/sdk-reference/typescript/audio-transcriptions",
-                      "zh-Hans/v1/sdk-reference/typescript/audio-translations"
+                      "zh-Hans/v1/sdk-reference/typescript/audio-translations",
+                      "zh-Hans/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -11240,7 +11253,8 @@
                     "pages": [
                       "zh-Hans/v1/sdk-reference/python/audio-speech",
                       "zh-Hans/v1/sdk-reference/python/audio-transcriptions",
-                      "zh-Hans/v1/sdk-reference/python/audio-translations"
+                      "zh-Hans/v1/sdk-reference/python/audio-translations",
+                      "zh-Hans/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -12902,7 +12916,8 @@
                     "pages": [
                       "hi/v1/sdk-reference/typescript/audio-speech",
                       "hi/v1/sdk-reference/typescript/audio-transcriptions",
-                      "hi/v1/sdk-reference/typescript/audio-translations"
+                      "hi/v1/sdk-reference/typescript/audio-translations",
+                      "hi/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -12960,7 +12975,8 @@
                     "pages": [
                       "hi/v1/sdk-reference/python/audio-speech",
                       "hi/v1/sdk-reference/python/audio-transcriptions",
-                      "hi/v1/sdk-reference/python/audio-translations"
+                      "hi/v1/sdk-reference/python/audio-translations",
+                      "hi/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -14622,7 +14638,8 @@
                     "pages": [
                       "ar/v1/sdk-reference/typescript/audio-speech",
                       "ar/v1/sdk-reference/typescript/audio-transcriptions",
-                      "ar/v1/sdk-reference/typescript/audio-translations"
+                      "ar/v1/sdk-reference/typescript/audio-translations",
+                      "ar/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -14680,7 +14697,8 @@
                     "pages": [
                       "ar/v1/sdk-reference/python/audio-speech",
                       "ar/v1/sdk-reference/python/audio-transcriptions",
-                      "ar/v1/sdk-reference/python/audio-translations"
+                      "ar/v1/sdk-reference/python/audio-translations",
+                      "ar/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
