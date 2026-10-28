@@ -1,6 +1,6 @@
 # Writing Changelog Entries
 
-How to write each kind of announcement. `changelog-format.md` covers where entries go and how blocks are built; this file covers what each bullet says.
+How to write each kind of announcement. `changelog-format.md` covers where entries go and how updates and sections are built; this file covers what each bullet says.
 
 Some examples are made up to show a pattern. Never copy a fact, date, price or version from an example; take it from the source.
 
@@ -190,7 +190,7 @@ Release artwork first when it exists, then the link. Add one short clause only w
 
 ### Model family
 
-One block, one artwork for the family if there is one, one bullet per model, largest first.
+One Models section, one artwork for the family if there is one, one bullet per model, largest first.
 
 ```md
 - [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
@@ -205,7 +205,7 @@ One block, one artwork for the family if there is one, one bullet per model, lar
 
 ### A new provider
 
-List it once, with the models it brings, in a Models block.
+List it once, with the models it brings, in the Models section.
 
 ```md
 - Alibaba Cloud is now a provider, serving [Qwen: Qwen 3.8 Max](https://phaseo.app/models/qwen/qwen-3.8-max) and 12 other Qwen models.

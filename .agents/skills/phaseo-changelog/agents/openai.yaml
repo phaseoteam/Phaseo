@@ -1,4 +1,4 @@
 interface:
   display_name: "Phaseo Changelog"
-  short_description: "Write tagged Phaseo changelog entries, with a style guide per announcement type"
-  default_prompt: "Use $phaseo-changelog to add or backfill Phaseo changelog entries as one tagged <Update> per date and category, in all docs languages."
+  short_description: "Write Phaseo changelog entries by date and category, with a style guide per announcement type"
+  default_prompt: "Use $phaseo-changelog to add or backfill Phaseo changelog entries, one dated update with Product, API & SDKs and Models sections, in all docs languages."

@@ -4,27 +4,53 @@ description: "10月 2026 - Phaseo"
 rss: true
 ---
 
-<Update label="2026年10月24日" tags={["製品"]} rss={{ title: "2026年10月24日: 製品" }}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
+
+<ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
+
+<Update label="2026年10月24日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
 
 - 提供終了モデルのルーティングをすべてのワークスペースで利用できるようになりました。提供終了したモデルを提供するプロバイダーがなくなったとき、そのリクエストを失敗させずに承認済みの後継モデルへ送れます。初期設定ではオフです。オーナーと管理者が **設定 -> ルーティング -> 提供終了モデルのルーティング** でオンにし、後継モデルの料金が高くなってもよいかを選びます。リダイレクトされたレスポンスには `x-phaseo-model-substitution` ヘッダーが付きます。詳しくは[モデルの非推奨化と提供終了](./guides/model-retirement.mdx)をご覧ください。
 
+</div>
+
 </Update>
 
-<Update label="2026年10月9日" tags={["製品"]} rss={{ title: "2026年10月9日: 製品" }}>
+<Update label="2026年10月9日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
 
 - チャットに、任意で有効にできるインタラクティブな回答の実験機能を追加しました。一時チャットの隣から切り替えられ、比較カード、表、棒グラフ、フォローアップフォームに対応しています。フォームの値は回答の各バリエーションに保存され、送信すると会話が続きます。
 
+</div>
+
 </Update>
 
-<Update label="2026年10月7日" tags={["モデル"]} rss={{ title: "2026年10月7日: モデル" }}>
+<Update label="2026年10月7日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Claude Haiku 5.5](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
 
 - [Anthropic: Claude Haiku 5.5](https://phaseo.app/models/anthropic/claude-haiku-5.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年10月6日" tags={["モデル"]} rss={{ title: "2026年10月6日: モデル" }}>
+<Update label="2026年10月6日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Mistral Large 4](/images/model-releases/2026-10-06--mistral--mistral-large-4.0.png)
 
@@ -32,9 +58,15 @@ rss: true
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
 
+</div>
+
 </Update>
 
-<Update label="2026年10月1日" tags={["モデル"]} rss={{ title: "2026年10月1日: モデル" }}>
+<Update label="2026年10月1日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Clef](/images/model-releases/2026-10-01--cloudflare--clef.png)
 
@@ -43,5 +75,7 @@ rss: true
 - [Microsoft: MAI-Voice-2.1](https://phaseo.app/models/microsoft/mai-voice-2.1)
 - [Microsoft: MAI-Voice-2.1-Flash](https://phaseo.app/models/microsoft/mai-voice-2.1-flash)
 - [Microsoft: MAI-Transcribe-2-Streaming](https://phaseo.app/models/microsoft/mai-transcribe-2-streaming)
+
+</div>
 
 </Update>

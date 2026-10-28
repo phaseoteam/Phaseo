@@ -16,25 +16,27 @@ The changelog is a clean release log: product changes, API and SDK changes, and 
 
 ## How filtering works (why the format is strict)
 
-Mintlify turns `tags` on `<Update>` into filters in the right-hand panel, which replace the table of contents.
-- A filter shows or hides whole `<Update>` blocks, never single bullets.
-- Selecting several tags shows only updates that have every selected tag.
-- Updates without tags are hidden whenever a filter is active.
-- Filters only apply to the page you are on.
+Each page has one `<Update>` per date, so the "On this page" panel lists every date once. Inside it, each category is a `<div data-changelog-category="...">` section. The `<ChangelogFilters />` bar at the top of the page (`apps/docs/snippets/changelog-filters.jsx`) hides the sections that don't match the selected categories, hides dates left with no sections from the page and from "On this page", and keeps the URL in sync (`?category=product,api`). Several selected categories show either kind.
 
-So each `<Update>` holds one category and has exactly one tag. A day with product work and new models gets two `<Update>` blocks with the same date label.
+Don't use Mintlify's own `tags` on `<Update>`: they replace "On this page" with a filter panel, and they combine several selected tags with AND.
 
-## Tags
+The snippet also adjusts two Mintlify behaviours, which can break when Mintlify changes its markup:
+- It raises Mintlify's `--scroll-mt` by the bar's height, so sticky date labels and date links stop below the bar.
+- It sets the "On this page" highlight itself, because Mintlify measures date positions once and doesn't update them after a filter hides dates.
 
-Use only these three tags. Use the localized name on locale pages:
+After a Mintlify upgrade, open a changelog page on desktop and phone, turn a filter on, scroll, and click a date in "On this page". The highlighted date must match the date at the top, and the date must land below the bar.
 
-| Category | en | es | fr | de | pt-BR | ja | zh-Hans | hi | ar |
+## Categories
+
+Use only these three categories. The section key is the same in every language; the label is localized:
+
+| Section key | en | es | fr | de | pt-BR | ja | zh-Hans | hi | ar |
 |---|---|---|---|---|---|---|---|---|---|
-| Product | Product | Producto | Produit | Produkt | Produto | 製品 | 产品 | उत्पाद | المنتج |
-| API & SDKs | API & SDKs | API y SDK | API et SDK | API & SDKs | API e SDKs | API と SDK | API 与 SDK | API और SDK | API وحزم SDK |
-| Models | Models | Modelos | Modèles | Modelle | Modelos | モデル | 模型 | मॉडल | النماذج |
+| `product` | Product | Producto | Produit | Produkt | Produto | 製品 | 产品 | उत्पाद | المنتج |
+| `api` | API & SDKs | API y SDK | API et SDK | API & SDKs | API e SDKs | API と SDK | API 与 SDK | API और SDK | API وحزم SDK |
+| `models` | Models | Modelos | Modèles | Modelle | Modelos | モデル | 模型 | मॉडल | النماذج |
 
-On a given day, write them in this order: Product, API & SDKs, Models.
+Within a date, sections go in this order: Product, API & SDKs, Models. Leave out a category that has nothing that day.
 
 - **Product**: anything people use in phaseo.app or the apps, including Chat, dashboard, settings, billing and credits, workspaces and teams, the models/providers/compare pages, docs-site features, and the desktop and mobile apps.
 - **API & SDKs**: gateway and management API behaviour such as new endpoints, parameters, headers, routing and limits, plus SDK, CLI, MCP server and integration releases.
@@ -47,8 +49,8 @@ When an item could fit two categories, choose the one where a reader would look 
 1. Build the source list first: merged PRs for the period (`gh pr list --state merged --search "merged:YYYY-MM-DD..YYYY-MM-DD"`), release records, and any existing entries.
 2. Keep only changes users can see that have shipped. Skip refactors, tests, CI, dependency bumps, internal tooling, reverted work, and anything still behind an internal flag. Check that a feature reached users before dating it.
 3. Use the merge date (UTC), or the launch date if it is known and differs.
-4. Merge each day into at most one `<Update>` per category.
-5. Write the English page, then update all 8 locale pages with the same dates, tags and links. Then record freshness for each page (see Validation).
+4. Put each day in one `<Update>`, with at most one section per category.
+5. Write the English page, then update all 8 locale pages with the same dates, sections and links. Then record freshness for each page (see Validation).
 
 ## Writing
 
@@ -62,13 +64,12 @@ When an item could fit two categories, choose the one where a reader would look 
 ## Required references
 
 Read both before drafting:
-- `references/changelog-format.md`: blocks, tags, labels and images.
+- `references/changelog-format.md`: updates, sections, labels and images.
 - `references/writing-guide.md`: how to write each kind of entry.
 
 ## Validation
 
-- Every `<Update>` has exactly one tag from the table.
-- Never more than one `<Update>` per (date, tag) on a page. Dates run newest first.
-- Locale pages have the same blocks, dates and tags as English.
+- Run `node apps/docs/scripts/validate-changelog.mjs` (it also runs in the docs build). It checks one `<Update>` per date, section keys, labels and order, the filter bar, and that locale pages match English.
+- Dates run newest first.
 - Record each changed locale page: `node scripts/translation-freshness.mjs record --locale <l> --page changelog/<file>.mdx` (one `--page` per run, from `apps/docs`).
 - Then run `node scripts/translation-freshness.mjs check` and `node scripts/validate-locales.mjs`.

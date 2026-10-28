@@ -4,27 +4,53 @@ description: "octobre 2026 - Phaseo"
 rss: true
 ---
 
-<Update label="24 octobre 2026" tags={["Produit"]} rss={{ title: "24 octobre 2026: Produit" }}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
+
+<ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
+
+<Update label="24 octobre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Le routage des modèles retirés est disponible pour tous les espaces de travail. Lorsqu'aucun fournisseur ne sert plus un modèle retiré, ses requêtes peuvent être envoyées au remplaçant approuvé au lieu d'échouer. Il est désactivé par défaut : les propriétaires et les administrateurs l'activent dans **Paramètres -> Routage -> Routage des modèles retirés** et choisissent si un remplaçant peut coûter plus cher. Les réponses redirigées portent l'en-tête `x-phaseo-model-substitution`. Voir [Dépréciation et retrait des modèles](./guides/model-retirement.mdx).
 
+</div>
+
 </Update>
 
-<Update label="9 octobre 2026" tags={["Produit"]} rss={{ title: "9 octobre 2026: Produit" }}>
+<Update label="9 octobre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
 
 - Le chat propose une expérience facultative de réponses interactives à côté du chat temporaire, avec des cartes comparatives, des tableaux, des graphiques à barres et des formulaires de suivi. Les valeurs des formulaires sont conservées pour chaque variante de réponse, et les envois poursuivent la conversation.
 
+</div>
+
 </Update>
 
-<Update label="7 octobre 2026" tags={["Modèles"]} rss={{ title: "7 octobre 2026: Modèles" }}>
+<Update label="7 octobre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Claude Haiku 5.5](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
 
 - [Anthropic: Claude Haiku 5.5](https://phaseo.app/models/anthropic/claude-haiku-5.5)
 
+</div>
+
 </Update>
 
-<Update label="6 octobre 2026" tags={["Modèles"]} rss={{ title: "6 octobre 2026: Modèles" }}>
+<Update label="6 octobre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Mistral Large 4](/images/model-releases/2026-10-06--mistral--mistral-large-4.0.png)
 
@@ -32,9 +58,15 @@ rss: true
 - [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1)
 - [Google: EmbeddingGemma 2](https://phaseo.app/models/google/embeddinggemma-2)
 
+</div>
+
 </Update>
 
-<Update label="1 octobre 2026" tags={["Modèles"]} rss={{ title: "1 octobre 2026: Modèles" }}>
+<Update label="1 octobre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Clef](/images/model-releases/2026-10-01--cloudflare--clef.png)
 
@@ -43,5 +75,7 @@ rss: true
 - [Microsoft: MAI-Voice-2.1](https://phaseo.app/models/microsoft/mai-voice-2.1)
 - [Microsoft: MAI-Voice-2.1-Flash](https://phaseo.app/models/microsoft/mai-voice-2.1-flash)
 - [Microsoft: MAI-Transcribe-2-Streaming](https://phaseo.app/models/microsoft/mai-transcribe-2-streaming)
+
+</div>
 
 </Update>
