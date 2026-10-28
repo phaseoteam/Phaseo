@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RealtimeRelayDurableObject, validateRealtimeAudioIngress } from "./realtime-relay-durable-object";
-import { computeRealtimeFundingPosition, REALTIME_MAX_OVERDRAFT_NANOS } from "./realtime-sessions";
+import { computeRealtimeFundingPosition, REALTIME_MAX_OVERDRAFT_NANOS, realtimeUnheldCostNanos } from "./realtime-sessions";
 import { classifyRealtimeEnd, REALTIME_END_REASONS } from "./realtime-session-events";
 import { LIVE_PRICE_CARD, type LiveConfig } from "./live-sessions";
 
@@ -390,6 +390,20 @@ describe("running out of funds on an API call", () => {
 		expect(computeRealtimeFundingPosition({ estimatedCostNanos: 8e9, sessionReservedNanos: 5e9, walletBalanceNanos: 7e9, walletReservedNanos: 5e9 }).capReached).toBe(true);
 		// Existing debt shrinks the room.
 		expect(computeRealtimeFundingPosition({ estimatedCostNanos: 5.6e9, sessionReservedNanos: 5e9, walletBalanceNanos: 4.5e9, walletReservedNanos: 5e9 }).capReached).toBe(true);
+	});
+
+	it("shares one overdraft across a workspace's concurrent calls", () => {
+		// Two calls, each with a $5 hold, $2 free. The other call has spent $7, $2 beyond its hold.
+		const other = realtimeUnheldCostNanos([{ estimated_cost_nanos: 7e9, captured_nanos: 0, reserved_nanos: 5e9 }]);
+		expect(other).toBe(2e9);
+		// Alone, $6 spent would leave $2 of room; with the other call's $2 the free balance is gone.
+		expect(computeRealtimeFundingPosition({ estimatedCostNanos: 6e9, sessionReservedNanos: 5e9, walletBalanceNanos: 12e9, walletReservedNanos: 10e9, otherSessionsUnheldNanos: other }))
+			.toEqual({ overdraftUsedNanos: 1e9, remainingNanos: 0, capReached: true });
+		// Captured cost and a session within its hold add nothing.
+		expect(realtimeUnheldCostNanos([
+			{ estimated_cost_nanos: 3e9, captured_nanos: 1e9, reserved_nanos: 2e9 },
+			{ estimated_cost_nanos: 1e9, captured_nanos: 0, reserved_nanos: 5e9 },
+		])).toBe(0);
 	});
 });
 

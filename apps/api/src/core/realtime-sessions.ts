@@ -120,7 +120,9 @@ export function isPlaygroundRealtimeSession(session: Pick<RealtimeSessionRow, "s
 /**
  * Where a session stands against the overdraft cap, mirroring
  * gateway_realtime_settle_once: the cost is charged from the session's holds,
- * then free balance, then up to REALTIME_MAX_OVERDRAFT_NANOS of debt.
+ * then free balance, then up to REALTIME_MAX_OVERDRAFT_NANOS of debt. The
+ * overdraft is per workspace, so the free balance is first reduced by what the
+ * workspace's other live sessions have spent beyond their own holds.
  */
 export function computeRealtimeFundingPosition(args: {
 	estimatedCostNanos: number;
@@ -128,23 +130,46 @@ export function computeRealtimeFundingPosition(args: {
 	capturedNanos?: number;
 	walletBalanceNanos: number;
 	walletReservedNanos: number;
+	otherSessionsUnheldNanos?: number;
 }): { overdraftUsedNanos: number; remainingNanos: number; capReached: boolean } {
 	const due = Math.max(0, Math.round(args.estimatedCostNanos) - Math.max(0, Math.round(args.capturedNanos ?? 0)));
 	const held = Math.max(0, Math.round(args.sessionReservedNanos));
-	const free = Math.round(args.walletBalanceNanos) - Math.max(0, Math.round(args.walletReservedNanos));
+	const free = Math.round(args.walletBalanceNanos) - Math.max(0, Math.round(args.walletReservedNanos))
+		- Math.max(0, Math.round(args.otherSessionsUnheldNanos ?? 0));
 	const overdraftUsedNanos = Math.max(0, due - held - Math.max(0, free));
 	const remainingNanos = held + free + REALTIME_MAX_OVERDRAFT_NANOS - due;
 	return { overdraftUsedNanos, remainingNanos, capReached: remainingNanos <= 0 };
 }
 
+/** Cost the given live sessions have run up beyond what was captured or is still held. */
+export function realtimeUnheldCostNanos(rows: Array<Pick<RealtimeSessionRow, "estimated_cost_nanos" | "captured_nanos" | "reserved_nanos">>): number {
+	return rows.reduce((total, row) => total + Math.max(0,
+		(Number(row.estimated_cost_nanos ?? 0) || 0)
+		- Math.max(0, Number(row.captured_nanos ?? 0) || 0)
+		- Math.max(0, Number(row.reserved_nanos ?? 0) || 0)), 0);
+}
+
 export async function getRealtimeFundingPosition(session: RealtimeSessionRow) {
-	const { data, error } = await getSupabaseAdmin()
-		.from("wallets")
-		.select("balance_nanos,reserved_nanos")
-		.eq("workspace_id", session.workspace_id)
-		.maybeSingle();
-	if (error) throw error;
+	const supabase = getSupabaseAdmin();
+	const [wallet, others] = await Promise.all([
+		supabase
+			.from("wallets")
+			.select("balance_nanos,reserved_nanos")
+			.eq("workspace_id", session.workspace_id)
+			.maybeSingle(),
+		// At most REALTIME_MAX_WORKSPACE_SESSIONS rows.
+		supabase
+			.from("gateway_realtime_sessions")
+			.select("estimated_cost_nanos,captured_nanos,reserved_nanos")
+			.eq("workspace_id", session.workspace_id)
+			.in("status", ["connecting", "connected", "ending"])
+			.neq("session_id", session.session_id),
+	]);
+	if (wallet.error) throw wallet.error;
+	if (others.error) throw others.error;
+	const data = wallet.data;
 	return computeRealtimeFundingPosition({
+		otherSessionsUnheldNanos: realtimeUnheldCostNanos(others.data ?? []),
 		estimatedCostNanos: Number(session.estimated_cost_nanos ?? 0) || 0,
 		sessionReservedNanos: Number(session.reserved_nanos ?? 0) || 0,
 		capturedNanos: Number(session.captured_nanos ?? 0) || 0,
