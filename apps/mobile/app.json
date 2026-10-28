@@ -2,6 +2,7 @@
   "expo": {
     "name": "Phaseo",
     "slug": "phaseo",
+    "owner": "danielphaseo",
     "scheme": "phaseo",
     "version": "0.1.0",
     "platforms": [
@@ -67,8 +68,9 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
           "color": "#2563eb",
-          "defaultChannel": "model-updates"
+          "defaultChannel": "new-models"
         }
       ],
       [
@@ -84,7 +86,10 @@
     },
     "extra": {
       "phaseoOrigin": "https://phaseo.app",
-      "phaseoApiOrigin": "https://api.phaseo.app"
+      "phaseoApiOrigin": "https://api.phaseo.app",
+      "eas": {
+        "projectId": "85d872c7-e3e1-4409-a75c-ff51e158341b"
+      }
     }
   }
 }
