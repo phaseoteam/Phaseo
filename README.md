@@ -80,6 +80,7 @@ console.log(response.choices[0]?.message?.content);
 | `apps/web` | Next.js product, dashboard, model catalog, gateway UI, blog, and public site. |
 | `apps/api` | Cloudflare Workers + Hono gateway API. |
 | `apps/docs` | Mintlify documentation and OpenAPI reference. |
+| `apps/desktop` | Phaseo Desktop, the Electron workspace for chats, coding agents, projects, Git and a built-in browser. |
 | `packages/sdk/*` | TypeScript, Python, Go, C#, PHP, Ruby, Java, C++, Rust, and Agent SDK packages. |
 | `packages/data/catalog` | Catalog schemas, archived compatibility fixtures, and daily public database exports. |
 | `examples/*` | Small apps and smoke projects for gateway and OAuth flows. |
@@ -93,6 +94,7 @@ console.log(response.choices[0]?.message?.content);
 | Model and provider catalog | Available | Model metadata, pricing, providers, capabilities, and benchmark context. |
 | Web dashboard | Available | Usage, keys, routing, apps, settings, model pages, and internal tools. |
 | Docs | Available | Guides, API reference, SDK examples, cookbook, and changelog. |
+| Desktop app | Preview | Chats and coding agents (Phaseo, Claude Code, Codex and more) with projects, Git, terminals and a built-in browser. Build it from [`apps/desktop`](apps/desktop/README.md). |
 | SDKs | Available | TypeScript, Python, Go, C#, PHP, Ruby, Rust, and Agent SDKs. The [Java SDK](packages/sdk/sdk-java/README.md) supports a pinned source install; C++ remains a transport-dependent preview. |
 
 ## Local Development
