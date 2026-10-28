@@ -8,16 +8,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { capturePosthogSurvey, ZERO_BALANCE_BLOCKER_SURVEY } from "@/lib/posthogSurveys";
 import { useTranslations } from "next-intl";
 
+// `choice` must match the PostHog survey's choices exactly so results aggregate.
 const REASON_OPTIONS = [
-	{ key: "setup_unclear", labelKey: "surveySetup" },
-	{ key: "pricing_unclear", labelKey: "surveyPricing" },
-	{ key: "model_choice_unclear", labelKey: "surveyModel" },
-	{ key: "payment_issue", labelKey: "surveyPayment" },
-	{ key: "just_exploring", labelKey: "surveyExploring" },
-	{ key: "not_ready_yet", labelKey: "surveyNotReady" },
-	{ key: "other", labelKey: "other" },
+	{ key: "setup_unclear", labelKey: "surveySetup", choice: "Setup is unclear" },
+	{ key: "pricing_unclear", labelKey: "surveyPricing", choice: "Pricing is unclear" },
+	{ key: "model_choice_unclear", labelKey: "surveyModel", choice: "Not sure which model to use" },
+	{ key: "payment_issue", labelKey: "surveyPayment", choice: "Payment problem" },
+	{ key: "just_exploring", labelKey: "surveyExploring", choice: "Just exploring" },
+	{ key: "not_ready_yet", labelKey: "surveyNotReady", choice: "Not ready yet" },
+	{ key: "other", labelKey: "other", choice: "Other" },
 ] as const;
 
 const LOCAL_STORAGE_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
@@ -68,6 +70,11 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 		captureProductEvent("credits_purchase_blocker_survey_viewed", {
 			surface: "settings_credits_zero_balance",
 		});
+		capturePosthogSurvey({
+			surveyId: ZERO_BALANCE_BLOCKER_SURVEY.id,
+			action: "shown",
+			properties: { surface: "settings_credits_zero_balance" },
+		});
 	}, [cooldownChecked, props.workspaceId, submitted]);
 
 	async function handleSubmit() {
@@ -79,6 +86,27 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 				has_details: details.trim().length > 0,
 				reason_key: reasonKey,
 				surface: "settings_credits_zero_balance",
+			});
+			const reason = REASON_OPTIONS.find((option) => option.key === reasonKey);
+			const trimmedDetails = details.trim().slice(0, 4_000);
+			capturePosthogSurvey({
+				surveyId: ZERO_BALANCE_BLOCKER_SURVEY.id,
+				action: "sent",
+				properties: { surface: "settings_credits_zero_balance", reason_key: reasonKey },
+				answers: [
+					{
+						questionId: ZERO_BALANCE_BLOCKER_SURVEY.reasonQuestionId,
+						question: "What is stopping you from adding credits?",
+						response: reason?.choice ?? "Other",
+					},
+					...(trimmedDetails
+						? [{
+							questionId: ZERO_BALANCE_BLOCKER_SURVEY.detailsQuestionId,
+							question: "Anything else we should know?",
+							response: trimmedDetails,
+						}]
+						: []),
+				],
 			});
 
 			if (typeof window !== "undefined") {

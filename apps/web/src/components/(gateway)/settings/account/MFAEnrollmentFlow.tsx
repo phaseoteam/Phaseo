@@ -169,7 +169,7 @@ export function MFAEnrollmentFlow({
                                 {/* QR Code */}
                                 {qrCode && (
                                     <div className="flex justify-center">
-                                        <div className="rounded-lg border bg-white p-4">
+                                        <div className="ph-no-capture rounded-lg border bg-white p-4">
                                             <Image
                                                 src={qrCode.trim()}
                                                 alt={s('MFA QR Code')}
@@ -189,7 +189,7 @@ export function MFAEnrollmentFlow({
 											{s('Can&apos;t scan? Enter this code manually:')}
                                         </Label>
                                         <div className="flex items-center gap-2">
-                                            <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm">
+                                            <code className="ph-no-capture flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm">
                                                 {secret}
                                             </code>
                                             <Button
