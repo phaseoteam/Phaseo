@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Produto</p>
 
-- O gateway foi reformulado novamente, incluindo suporte a `/messages` compatível com a Anthropic.
-- A arquitetura do banco de dados, a experiência do site, as ferramentas do playground e a direção do SDK foram atualizadas para uma expansão mais ampla.
+- O Chat em [phaseo.app/chat](https://phaseo.app/chat) permite conversar com os modelos do gateway, ajustar os parâmetros da requisição e manter o histórico no seu navegador ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- As equipes podem escolher como o gateway seleciona provedores em **Settings -> Routing**: **Balanced**, **Lowest cost**, **Lowest latency** ou **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Uma calculadora de preços em Tools estima o custo das requisições a partir da contagem de tokens e o compara entre modelos ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- `POST /v1/messages` aceita requisições no formato Anthropic Messages, para que os SDKs da Anthropic chamem modelos do gateway; veja [Criar uma mensagem](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/ocr` extrai texto de uma imagem enviada por URL ou em base64; veja [Extrair texto com OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/music/generate` cria faixas de música, e `GET /v1/music/generate/{id}` retorna o status delas; veja [Gerar música](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- A API de gerenciamento adiciona `GET /v1/credits` para o saldo de créditos, `GET /v1/activity` para as requisições recentes e `/v1/provisioning/keys` para listar, atualizar e excluir chaves; veja [Obter créditos](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
 
 </div>
 

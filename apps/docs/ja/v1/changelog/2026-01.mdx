@@ -13,8 +13,20 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">製品</p>
 
-- ゲートウェイを再び刷新し、Anthropic互換の`/messages`をサポートしました。
-- データベースのアーキテクチャ、ウェブサイトの使いやすさ、プレイグラウンドのツール、SDKの方針を見直し、さらなる拡張に備えました。
+- [phaseo.app/chat](https://phaseo.app/chat) の Chat では、ゲートウェイのモデルと会話し、リクエストのパラメーターを調整でき、チャット履歴はブラウザーに保存されます ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- チームは **Settings -> Routing** で、ゲートウェイがプロバイダーを選ぶ方法を **Balanced**、**Lowest cost**、**Lowest latency**、**Highest throughput** から選べます ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- Tools の料金計算ツールは、トークン数からリクエストの費用を見積もり、モデル間で比較します ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `POST /v1/messages` は Anthropic Messages 形式のリクエストを受け付けるため、Anthropic の SDK からゲートウェイのモデルを呼び出せます。詳しくは[メッセージを作成](../api-reference/endpoint/anthropic-messages.mdx)をご覧ください ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- `POST /v1/ocr` は URL または base64 で渡した画像からテキストを抽出します。詳しくは[OCR でテキストを抽出](../api-reference/endpoint/ocr.mdx)をご覧ください ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- `POST /v1/music/generate` は楽曲を生成し、`GET /v1/music/generate/{id}` はその状態を返します。詳しくは[音楽を生成](../api-reference/endpoint/music-generate.mdx)をご覧ください ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
+- 管理 API に、クレジット残高を返す `GET /v1/credits`、最近のリクエストを返す `GET /v1/activity`、キーの一覧・更新・削除ができる `/v1/provisioning/keys` が加わりました。詳しくは[クレジットを取得](../api-reference/endpoint/credits.mdx)をご覧ください ([#21](https://github.com/phaseoteam/Phaseo/pull/21))。
 
 </div>
 
