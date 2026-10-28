@@ -22,6 +22,8 @@ import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
+import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag } from "./flags.js";
+import { managementHelpEntries, runManagementCommand } from "./management.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { revokeIntegrationGatewayCredential } from "./integrations/credential.js";
@@ -104,23 +106,6 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	return passthrough ? { command, flags, passthrough } : { command, flags };
 }
 
-function flagString(flags: Record<string, string | boolean>, key: string): string | undefined {
-	const value = flags[key];
-	return typeof value === "string" ? value : undefined;
-}
-
-function flagBool(flags: Record<string, string | boolean>, key: string): boolean {
-	return flags[key] === true || flags[key] === "true" || flags[key] === "1";
-}
-
-function flagNumber(flags: Record<string, string | boolean>, key: string): number | undefined {
-	const value = flagString(flags, key);
-	if (value === undefined) return undefined;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed)) throw new Error(`--${key} must be a number`);
-	return parsed;
-}
-
 function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -135,38 +120,6 @@ function randomBase64Url(byteLength: number): string {
 
 function sha256Base64Url(value: string): string {
 	return base64Url(createHash("sha256").update(value).digest());
-}
-
-function appendQuery(path: string, params: Record<string, string | number | boolean | undefined>): string {
-	const [base, existingQuery] = path.split("?", 2);
-	const query = new URLSearchParams(existingQuery ?? "");
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === "") continue;
-		query.set(key, String(value));
-	}
-	const text = query.toString();
-	return text ? `${base}?${text}` : base;
-}
-
-function parseJsonFlag(flags: Record<string, string | boolean>, key: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
-	const raw = flagString(flags, key);
-	if (!raw) return fallback;
-	const parsed = JSON.parse(raw);
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error(`--${key} must be a JSON object`);
-	}
-	return parsed as Record<string, unknown>;
-}
-
-function compact(value: Record<string, unknown>): Record<string, unknown> {
-	return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
-}
-
-function parseCsvFlag(flags: Record<string, string | boolean>, key: string): string[] {
-	return (flagString(flags, key) ?? "")
-		.split(",")
-		.map((value) => value.trim())
-		.filter(Boolean);
 }
 
 function formatMoneyFromNanos(nanos: unknown): string {
@@ -208,11 +161,35 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo curie --help",
 			"phaseo integrations --help",
 			"phaseo webhooks --help",
+			"phaseo byok --help",
+			"phaseo budgets --help",
+			"phaseo department-budgets --help",
+			"phaseo spend-rules --help",
+			"phaseo spend-blocks --help",
+			"phaseo rate-limits --help",
+			"phaseo observability --help",
+			"phaseo notifications --help",
+			"phaseo routing --help",
+			"phaseo private-models --help",
+			"phaseo classifiers --help",
+			"phaseo data-contribution --help",
+			"phaseo identity --help",
+			"phaseo workload-identity --help",
+			"phaseo audit-events --help",
+			"phaseo apps --help",
+			"phaseo feedback --help",
+			"phaseo preset-test-runs --help",
+			"phaseo events --help",
 			"phaseo api --help",
 			"",
 			"Login scopes:",
 			"  Default login requests full first-party CLI access across the control plane.",
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
+			"  feedback, events and preset-test-runs need feedback:read,feedback:write, which are not requested by default.",
+			"  byok and private-models work with the default scopes; sessions from before they were allowed need phaseo login again.",
+			"",
+			"Confirmation:",
+			"  Commands that show [--yes] ask before they delete, revoke, lift, rotate, or merge. Agents and scripts pass --yes.",
 			"",
 			"Environment:",
 			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
@@ -450,13 +427,41 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"api delete": { usage: ["phaseo api delete <v1-path> [--json]"] },
 };
 
+const DATA_CONTRIBUTION_USAGE: Record<string, string> = {
+	"data-contribution get": "phaseo data-contribution get [--json]",
+	"data-contribution enable": "phaseo data-contribution enable [--reason <text>] [--json]",
+	"data-contribution disable": "phaseo data-contribution disable [--reason <text>] [--json]",
+	"data-contribution classifiers create": "phaseo data-contribution classifiers create --name <name> [--body-json <json>] [--json]",
+	"data-contribution classifiers update": "phaseo data-contribution classifiers update <id> --body-json <json> [--json]",
+	"data-contribution classifiers delete": "phaseo data-contribution classifiers delete <id> [--json]",
+};
+
+for (const [key, usage] of Object.entries(DATA_CONTRIBUTION_USAGE)) {
+	HELP_ENTRIES[key] = { usage: [usage] };
+	const words = key.split(" ");
+	for (let length = 1; length < words.length; length++) {
+		const prefix = words.slice(0, length).join(" ");
+		HELP_ENTRIES[prefix] ??= { usage: [] };
+		HELP_ENTRIES[prefix].usage.push(usage);
+	}
+}
+
+for (const [key, entry] of Object.entries(managementHelpEntries())) {
+	const existing = HELP_ENTRIES[key];
+	if (!existing) {
+		HELP_ENTRIES[key] = entry;
+		continue;
+	}
+	for (const line of entry.usage) if (!existing.usage.includes(line)) existing.usage.push(line);
+	if (!existing.description && entry.description) existing.description = entry.description;
+}
+
 export function helpKeyForCommand(command: string[]): string {
 	if (command[0]?.toLowerCase() === "v") return "version";
-	if (command.length >= 2) {
-		const twoPart = `${command[0]} ${command[1]}`;
-		if (twoPart in HELP_ENTRIES) return twoPart;
+	for (let length = Math.min(command.length, 4); length >= 1; length--) {
+		const key = command.slice(0, length).join(" ");
+		if (key in HELP_ENTRIES) return key;
 	}
-	if (command.length >= 1 && command[0] in HELP_ENTRIES) return command[0];
 	return "root";
 }
 
@@ -599,7 +604,9 @@ async function maybePrintUpdateNotice(json: boolean) {
 }
 
 export function shouldPrintUpdateNoticeForCommand(command: string[]): boolean {
-	return !(command[0] === "integrations" && command[1] === "credential");
+	// Commands whose stdout is data (a credential, a CSV export) must not get a trailing notice.
+	if (command[0] === "integrations" && command[1] === "credential") return false;
+	return !(command[0] === "analytics" && command[1] === "export");
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {
@@ -609,6 +616,35 @@ async function request(path: string, options: { method?: HttpMethod; body?: Reco
 		accessToken: session.accessToken,
 		...(options.body ? { body: JSON.stringify(options.body) } : {}),
 	});
+}
+
+async function readAllStdin(): Promise<string> {
+	if (input.isTTY) process.stderr.write("Reading from stdin. Paste the value, then press Ctrl+D (Ctrl+Z then Enter on Windows).\n");
+	const chunks: Buffer[] = [];
+	for await (const chunk of input) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+	return Buffer.concat(chunks).toString("utf8");
+}
+
+async function askYesNo(question: string): Promise<boolean> {
+	const prompt = createInterface({ input, output });
+	try {
+		return /^y(es)?$/i.test((await prompt.question(question)).trim());
+	} finally {
+		prompt.close();
+	}
+}
+
+function managementDeps() {
+	return {
+		request: (path: string, options: { method: HttpMethod; body?: Record<string, unknown> }) => request(path, options),
+		readStdin: readAllStdin,
+		env: process.env,
+		confirm: askYesNo,
+		interactive: isInteractiveTerminal(),
+		write: (text: string) => {
+			process.stdout.write(text);
+		},
+	};
 }
 
 function printList(items: any[], render: (item: any) => string): void {
@@ -2078,6 +2114,13 @@ async function main() {
 		else if (first === "api" && second === "put") action = rawApi("PUT", third, parsed.flags);
 		else if (first === "api" && second === "patch") action = rawApi("PATCH", third, parsed.flags);
 		else if (first === "api" && second === "delete") action = rawApi("DELETE", third, parsed.flags);
+		if (!action && isCommandGroup(parsed.command.join(" "))) {
+			printHelp(parsed.command);
+			return;
+		}
+		if (!action && await runManagementCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
 		if (action) {
 			await action;
 			if (shouldPrintUpdateNoticeForCommand(parsed.command)) {
