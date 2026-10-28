@@ -63,7 +63,7 @@ phaseo credits add --amount 20 --json
 | कुंजियाँ सूचीबद्ध करें, अपडेट करें या हटाएँ | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | कुंजी रोटेट करें | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | कुंजी को IP पतों तक सीमित करें | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| प्रबंधन कुंजी बनाएँ | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| प्रबंधन कुंजी बनाएँ | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | आपके द्वारा अधिकृत ऐप देखें, सीमित करें या रद्द करें | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | अपनी प्रोफ़ाइल अपडेट करें | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 

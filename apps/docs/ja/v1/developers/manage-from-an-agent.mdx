@@ -63,7 +63,7 @@ phaseo credits add --amount 20 --json
 | キーを一覧表示、更新、削除する | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | キーをローテーションする | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | キーを IP アドレスに制限する | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| 管理キーを作成する | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| 管理キーを作成する | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | 承認したアプリを確認、制限、または取り消す | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | プロフィールを更新する | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 

@@ -63,7 +63,7 @@ Execute `phaseo <group> --help` para ver as opções aceitas pela CLI instalada.
 | Listar, atualizar ou excluir chaves | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | Rotacionar uma chave | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | Restringir uma chave a endereços IP | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| Criar uma chave de gerenciamento | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| Criar uma chave de gerenciamento | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | Revisar, restringir ou revogar apps que você autorizou | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Atualizar seu perfil | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 

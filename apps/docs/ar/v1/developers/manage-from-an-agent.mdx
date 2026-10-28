@@ -63,7 +63,7 @@ phaseo credits add --amount 20 --json
 | عرض المفاتيح أو تحديثها أو حذفها | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | تدوير مفتاح | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | قصر مفتاح على عناوين IP | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| إنشاء مفتاح إدارة | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| إنشاء مفتاح إدارة | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | مراجعة التطبيقات التي أذنت لها أو تقليص صلاحياتها أو إلغاؤها | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | تحديث ملفك الشخصي | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 

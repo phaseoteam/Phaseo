@@ -63,7 +63,7 @@ phaseo credits add --amount 20 --json
 | 列出、更新或删除密钥 | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | 轮换密钥 | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | 将密钥限制为特定 IP 地址 | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| 创建管理密钥 | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| 创建管理密钥 | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | 查看、缩小或撤销你授权的应用 | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | 更新个人资料 | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 

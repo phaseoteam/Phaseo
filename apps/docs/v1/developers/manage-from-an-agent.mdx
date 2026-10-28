@@ -64,7 +64,7 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | List, update or delete keys | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | Rotate a key | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
 | Restrict a key to IP addresses | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| Create a management key | `phaseo management-keys create --name <name> --json` | `POST /v1/management-keys` | — |
+| Create a management key | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
 | Review, narrow or revoke apps you authorized | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Update your profile | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
