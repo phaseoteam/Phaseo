@@ -9,6 +9,25 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="31 de julho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Os workspaces podem criar rotas dinâmicas em **Settings -> Routing** que se ramificam por campos da requisição, dividem o tráfego e definem fallbacks, e vinculá-las a chaves de API; veja [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx) ([#1314](https://github.com/phaseoteam/Phaseo/pull/1314)).
+- Os logs são divididos em **Requests**, **Upstream Requests**, **Jobs** e **Sessions**, e cada linha abre seus detalhes em um painel lateral ([#1314](https://github.com/phaseoteam/Phaseo/pull/1314)).
+- As ações dos menus suspensos, como Suporte, troca de workspace e gerenciamento de chaves, voltam a responder aos cliques; antes, algumas não faziam nada ([#1378](https://github.com/phaseoteam/Phaseo/pull/1378)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- IDs de modelo podem indicar um provedor, como `baseten:thinking-machines/inkling-small`, para enviar a requisição só a esse provedor, sem fallback; veja [IDs de modelo qualificados por provedor](../guides/provider-qualified-models.mdx) ([#1369](https://github.com/phaseoteam/Phaseo/pull/1369)).
+- O servidor MCP da Phaseo oferece suporte à versão `2026-07-28` do protocolo MCP e continua aceitando clientes de versões anteriores ([#1341](https://github.com/phaseoteam/Phaseo/pull/1341)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -25,6 +44,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="30 de julho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A página Models não mostra mais "Something went wrong" para a maioria dos visitantes e volta a listar modelos em breve e inativos com as contagens por status ([#1345](https://github.com/phaseoteam/Phaseo/pull/1345), [#1347](https://github.com/phaseoteam/Phaseo/pull/1347)).
+- Os seletores de modelo do Chat mostram o criador de cada modelo, como Moonshot AI para o Kimi K3, em vez do primeiro provedor que o atende ([#1349](https://github.com/phaseoteam/Phaseo/pull/1349)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- `service_tier` aceita `"fast"` como alias de `"priority"`, e ambos selecionam o mesmo roteamento e os mesmos preços Priority; veja [Níveis de serviço](../guides/service-tiers.mdx) ([#1359](https://github.com/phaseoteam/Phaseo/pull/1359), [#1357](https://github.com/phaseoteam/Phaseo/pull/1357)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -40,7 +76,84 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="27 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- **Beta:** o Fusion agora é uma sala no seletor de salas do Chat, e o Chat abre dentro do painel, sob o cabeçalho principal do site ([#1313](https://github.com/phaseoteam/Phaseo/pull/1313)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- `POST /v1/chat/completions` aceita o campo `stream_options` em vez de rejeitar a requisição ([#1300](https://github.com/phaseoteam/Phaseo/pull/1300)).
+
+</div>
+
+</Update>
+
+<Update label="26 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A calculadora de preços compara vários modelos lado a lado, incluindo tarifas de contexto longo, e mantém a seleção na URL da página ([#1299](https://github.com/phaseoteam/Phaseo/pull/1299)).
+- Requisições BYOK são gratuitas no primeiro milhão de cada mês e depois têm uma taxa de serviço de 2,5%, conforme a página de preços ([#1299](https://github.com/phaseoteam/Phaseo/pull/1299)).
+- As páginas de modelo têm links para o modelo anterior e o próximo da família e para a licença do modelo, e as páginas de família listam as versões da mais recente para a mais antiga ([#1266](https://github.com/phaseoteam/Phaseo/pull/1266)).
+- Os guias de migração de modelos levam o nome do modelo de destino e são ordenados do mais recente para o mais antigo, com um novo guia do Claude Opus 5; veja [Migrações de modelos](../model-migrations/index.mdx) ([#1273](https://github.com/phaseoteam/Phaseo/pull/1273)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Os pacotes do Agent SDK estão publicados para Python, Go, C#, PHP e Ruby junto com o TypeScript `0.2.0`, com aprovação de ferramentas, condições de parada e streaming cancelável; veja [Visão geral do Agent SDK](../sdk-reference/agent-sdk/overview.mdx) ([#1263](https://github.com/phaseoteam/Phaseo/pull/1263), [#1269](https://github.com/phaseoteam/Phaseo/pull/1269), [#1259](https://github.com/phaseoteam/Phaseo/pull/1259)).
+- O cliente Rust `phaseo` e o Agent SDK síncrono para Rust `phaseo-agent` `0.1.0` estão publicados no crates.io; veja [SDK Rust](../sdk-reference/rust/overview.mdx) ([#1287](https://github.com/phaseoteam/Phaseo/pull/1287), [#1289](https://github.com/phaseoteam/Phaseo/pull/1289)).
+- `GET /v1/models` retorna um objeto `variants` que liga as versões padrão e `:free` de um modelo, e a página Models lista cada versão separadamente ([#1298](https://github.com/phaseoteam/Phaseo/pull/1298)).
+- O servidor MCP da Phaseo oferece dez ferramentas somente leitura para modelos, provedores, custos, créditos, uso e saúde das requisições, e pede apenas os sete escopos de que precisam; veja [CLI e MCP](../developers/cli-and-mcp.mdx) ([#1290](https://github.com/phaseoteam/Phaseo/pull/1290), [#1292](https://github.com/phaseoteam/Phaseo/pull/1292), [#1297](https://github.com/phaseoteam/Phaseo/pull/1297)).
+
+</div>
+
+</Update>
+
+<Update label="25 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Links para um modelo, organização, país ou provedor que ainda não existe abrem uma página de não encontrado em vez de um erro do servidor ([#1234](https://github.com/phaseoteam/Phaseo/pull/1234), [#1240](https://github.com/phaseoteam/Phaseo/pull/1240)).
+- As páginas de novidades da Web e do YouTube foram removidas; Model Updates e o calendário de lançamentos continuam ([#1235](https://github.com/phaseoteam/Phaseo/pull/1235)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Requisições em streaming ao OpenAI Chat Completions registram e cobram o uso de tokens; antes, muitas eram registradas com zero tokens ([#1225](https://github.com/phaseoteam/Phaseo/pull/1225)).
+- Os comandos de análise e de preços da CLI da Phaseo voltam a retornar dados, e os comandos de leitura funcionam com login via OAuth ([#1245](https://github.com/phaseoteam/Phaseo/pull/1245), [#1244](https://github.com/phaseoteam/Phaseo/pull/1244)).
+- O SDK TypeScript `2.1.1` é instalado sem uma etapa interativa de postinstall, que podia fazer instalações limpas falharem ([#1251](https://github.com/phaseoteam/Phaseo/pull/1251), [#1249](https://github.com/phaseoteam/Phaseo/pull/1249)).
+
+</div>
+
+</Update>
+
 <Update label="24 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As tabelas de provedores nas páginas de modelo mostram a tarifa em vigor quando há preços de horário de pico e fora de pico, com a tarifa do outro período abaixo ([#1120](https://github.com/phaseoteam/Phaseo/pull/1120)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -56,6 +169,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="23 de julho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As páginas de modelo ganham filtros de status e privacidade de provedores ao lado de **Providers** e ocultam provedores externos, a menos que você os ative ([#1205](https://github.com/phaseoteam/Phaseo/pull/1205)).
+- Os cards da página Models voltam a mostrar o uso dos últimos sete dias, contado em tokens, imagens, horas de vídeo, segundos de áudio ou requisições, conforme o modelo ([#1210](https://github.com/phaseoteam/Phaseo/pull/1210)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -66,7 +188,27 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="22 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat mostra as chamadas a ferramentas do servidor, como a de data e hora, para o Gemini 3.6 Flash e o Gemini 3.5 Flash-Lite ([#1198](https://github.com/phaseoteam/Phaseo/pull/1198), [#1199](https://github.com/phaseoteam/Phaseo/pull/1199), [#1196](https://github.com/phaseoteam/Phaseo/pull/1196)).
+
+</div>
+
+</Update>
+
 <Update label="21 de julho de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Requisições com ferramentas ao Gemini 3.6 Flash e ao Gemini 3.5 Flash-Lite não falham mais com `502`, e respostas vazias do Google passam para outro provedor ([#1182](https://github.com/phaseoteam/Phaseo/pull/1182), [#1190](https://github.com/phaseoteam/Phaseo/pull/1190)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -96,7 +238,30 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="17 de julho de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- O servidor MCP da Phaseo aceita login com OAuth, incluindo registro dinâmico de clientes e troca de tokens para clientes MCP no navegador; veja [CLI e MCP](../developers/cli-and-mcp.mdx) ([#1123](https://github.com/phaseoteam/Phaseo/pull/1123), [#1126](https://github.com/phaseoteam/Phaseo/pull/1126), [#1128](https://github.com/phaseoteam/Phaseo/pull/1128)).
+
+</div>
+
+</Update>
+
 <Update label="16 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Todas as contas podem adicionar passkeys nas configurações da conta e usá-las para entrar; adicionar ou remover uma pede que você confirme sua identidade novamente ([#1041](https://github.com/phaseoteam/Phaseo/pull/1041), [#1046](https://github.com/phaseoteam/Phaseo/pull/1046)).
+- Escolher um modelo em uma nova página do Chat inicia o chat; antes, o seletor ficava aberto e o campo de mensagem continuava desativado ([#1044](https://github.com/phaseoteam/Phaseo/pull/1044)).
+- As configurações de **Personalization** do Chat permitem escolher se novos chats começam vazios ou mantêm os modelos selecionados ([#1047](https://github.com/phaseoteam/Phaseo/pull/1047)).
+- As tabelas de preços dos modelos mostram os preços de tabela dos provedores quando um modelo ainda não tem tráfego roteado, em vez de valores vazios ([#1037](https://github.com/phaseoteam/Phaseo/pull/1037)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -112,6 +277,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="15 de julho de 2026">
 
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Apps de terceiros podem usar OAuth com PKCE para obter uma chave de gateway com escopo limitado, cobrada no workspace do usuário, somente depois que ele concede `gateway:access` ([#1028](https://github.com/phaseoteam/Phaseo/pull/1028), [#1019](https://github.com/phaseoteam/Phaseo/pull/1019), [#1032](https://github.com/phaseoteam/Phaseo/pull/1032)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -126,7 +299,85 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </Update>
 
+<Update label="14 de julho de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- As chaves da API de gerenciamento usam o prefixo `phaseo_v1_mk_` e exigem escopos explícitos, com os modelos **Read**, **Write** e **All**; veja [Chaves da API de gerenciamento](../developers/management-api-keys.mdx) ([#969](https://github.com/phaseoteam/Phaseo/pull/969)).
+- A CLI da Phaseo adiciona `phaseo logs list` e `phaseo logs get <request-id>` para inspecionar registros de requisições sem conteúdo sensível e usa `https://api.phaseo.app` por padrão ([#972](https://github.com/phaseoteam/Phaseo/pull/972)).
+
+</div>
+
+</Update>
+
+<Update label="13 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As páginas de modelo abrem um painel de provedor que agrupa os preços por modalidade, incluindo medidores de imagem, vídeo, embeddings e OCR, e compara os níveis de serviço ([#1000](https://github.com/phaseoteam/Phaseo/pull/1000), [#1001](https://github.com/phaseoteam/Phaseo/pull/1001)).
+
+</div>
+
+</Update>
+
+<Update label="11 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A página Models tem visualizações em cards e em tabela com os mesmos filtros, como nível de serviço, tamanho de contexto e parâmetros; links antigos de Collections redirecionam para os filtros correspondentes ([#971](https://github.com/phaseoteam/Phaseo/pull/971)).
+- A página Rankings ganha um seletor de modalidade fixo e um sumário das seções de classificação ([#967](https://github.com/phaseoteam/Phaseo/pull/967)).
+- O Chat renderiza fórmulas LaTeX nas respostas, tanto em linha quanto em bloco ([#965](https://github.com/phaseoteam/Phaseo/pull/965)).
+
+</div>
+
+</Update>
+
+<Update label="10 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat mostra o erro quando uma resposta em streaming falha, em vez de salvar uma resposta vazia ([#955](https://github.com/phaseoteam/Phaseo/pull/955), [#952](https://github.com/phaseoteam/Phaseo/pull/952)).
+- O Chat mostra resumos detalhados do raciocínio para os modelos OpenAI GPT-5.6 ([#963](https://github.com/phaseoteam/Phaseo/pull/963)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Responses e Chat Completions aceitam `reasoning.effort: "max"` e um campo `reasoning.mode`, que envia os modelos GPT-5.6 `-pro` à OpenAI no modo Pro ([#950](https://github.com/phaseoteam/Phaseo/pull/950)).
+- As requisições à OpenAI levam um `safety_identifier` que a Phaseo define a partir do seu workspace; qualquer valor enviado na requisição é ignorado ([#950](https://github.com/phaseoteam/Phaseo/pull/950)).
+
+</div>
+
+</Update>
+
 <Update label="9 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A AI Stats agora é Phaseo: o site, o Chat, o painel e a documentação usam o novo nome em phaseo.app ([#913](https://github.com/phaseoteam/Phaseo/pull/913)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- **Alteração incompatível:** pacotes, imports e variáveis de ambiente dos SDKs usam nomes Phaseo, como `@phaseo/sdk` e `PHASEO_API_KEY`, sem aliases da AI Stats; atualize-os ao fazer upgrade ([#913](https://github.com/phaseoteam/Phaseo/pull/913)).
+- **Obsoleto:** chaves de API no formato antigo da AI Stats deixam de funcionar em 1º de janeiro de 2027; as novas chaves usam o prefixo `phaseo_`, então substitua as antigas antes disso ([#913](https://github.com/phaseoteam/Phaseo/pull/913)).
+
+</div>
 
 <div data-changelog-category="models">
 
@@ -163,6 +414,15 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="7 de julho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- Depois de criar ou rotacionar uma chave de API, você pode copiá-la como arquivo `.env` ou trecho de configuração, salvá-la no 1Password ou enviar uma requisição de teste ([#812](https://github.com/phaseoteam/Phaseo/pull/812)).
+- O campo de mensagem do Chat pode gravar áudio e anexá-lo a uma mensagem, e o menu da conta mostra seu saldo de créditos ([#922](https://github.com/phaseoteam/Phaseo/pull/922)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -183,6 +443,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <Update label="6 de julho de 2026">
 
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- A calculadora de preços ganha um campo **Pricing Time (HH:MM UTC)** que mostra as tarifas em vigor nesse horário para modelos com preços de horário de pico e fora de pico ([#864](https://github.com/phaseoteam/Phaseo/pull/864)).
+
+</div>
+
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelos</p>
@@ -190,6 +458,52 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - [OpenAI: GPT Realtime 2.1](https://phaseo.app/models/openai/gpt-realtime-2.1)
 - [OpenAI: GPT Realtime 2.1 Mini](https://phaseo.app/models/openai/gpt-realtime-2.1-mini)
 - [Tencent Hunyuan: Hy3](https://phaseo.app/models/tencent/hy3)
+
+</div>
+
+</Update>
+
+<Update label="5 de julho de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- Requisições ao Claude Sonnet 5 usam o raciocínio adaptativo da Anthropic e não enviam mais orçamentos de raciocínio nem parâmetros de amostragem que o modelo rejeita ([#901](https://github.com/phaseoteam/Phaseo/pull/901)).
+
+</div>
+
+</Update>
+
+<Update label="4 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat ganha atalhos de teclado com uma janela de referência, uma fila para prompts enviados durante uma resposta e edição em lote de chats ([#896](https://github.com/phaseoteam/Phaseo/pull/896)).
+
+</div>
+
+</Update>
+
+<Update label="3 de julho de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat volta a permitir marcar conversas com tags e filtrar a barra lateral por tag; as tags ficam salvas no seu navegador ([#894](https://github.com/phaseoteam/Phaseo/pull/894)).
+- O Chat mostra o raciocínio, as chamadas de ferramentas e a resposta na ordem em que aconteceram, e a entrada e a saída de cada chamada podem ser expandidas ([#895](https://github.com/phaseoteam/Phaseo/pull/895), [#919](https://github.com/phaseoteam/Phaseo/pull/919)).
+- No Android, o campo de mensagem do Chat fica acima do teclado na tela em vez de ser coberto por ele ([#891](https://github.com/phaseoteam/Phaseo/pull/891)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- A ferramenta de servidor `phaseo:datetime` pode retornar a hora atual em vários fusos horários em uma única chamada; veja [Ferramenta de servidor de data e hora](../guides/server-tools/datetime.mdx) ([#895](https://github.com/phaseoteam/Phaseo/pull/895)).
 
 </div>
 
