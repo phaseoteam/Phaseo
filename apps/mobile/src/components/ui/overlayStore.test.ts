@@ -1,4 +1,4 @@
-import { closeActions, confirm, dismissToast, MAX_TOASTS, overlayStore, settleConfirm, showActions, toast, TOAST_MS } from "./overlayStore";
+import { closeActions, confirm, dismissToast, MAX_TOASTS, onToast, overlayStore, settleConfirm, showActions, toast, TOAST_MS } from "./overlayStore";
 
 describe("in-app dialogs", () => {
   beforeEach(() => {
@@ -66,5 +66,18 @@ describe("in-app dialogs", () => {
     expect(overlayStore.get().menu).toMatchObject({ title: "Chat", open: true, anchor: { x: 10, y: 20 } });
     closeActions();
     expect(overlayStore.get().menu).toMatchObject({ open: false, actions: [{ key: "pin" }] });
+  });
+
+  test("a listener hears every toast as it's shown, a repeat too (OverlayHost plays its haptic)", () => {
+    const heard: string[] = [];
+    onToast((shown) => heard.push(`${shown.tone}:${shown.message}`));
+    toast("Copied.", { tone: "success" });
+    toast("Copied.", { tone: "success" });
+    toast("Couldn't save that", { tone: "error" });
+    toast("Version copied.", { key: "version" });
+    expect(heard).toEqual(["success:Copied.", "success:Copied.", "error:Couldn't save that", "neutral:Version copied."]);
+    onToast(null);
+    toast("Nobody listening.");
+    expect(heard).toHaveLength(4);
   });
 });

@@ -15,15 +15,15 @@ jest.mock("react-native-reanimated", () => {
     withTiming: jest.fn((value: number) => value),
   };
 });
-jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn(() => Promise.resolve()) }));
-const haptics = jest.requireMock<{ selectionAsync: jest.Mock }>("expo-haptics");
+jest.mock("@/lib/haptics", () => ({ haptic: jest.fn() }));
+const haptics = jest.requireMock<{ haptic: jest.Mock }>("@/lib/haptics");
 const reanimated = jest.requireMock<{ withTiming: jest.Mock }>("react-native-reanimated");
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: Root;
 beforeEach(() => {
-  haptics.selectionAsync.mockClear();
+  haptics.haptic.mockClear();
   root = createRoot();
 });
 afterEach(() => act(() => root.unmount()));
@@ -46,12 +46,16 @@ describe("Switch", () => {
     expect(control().props.accessibilityState).toEqual({ checked: true, disabled: false });
   });
 
-  it("asks for the opposite value with a haptic tick", async () => {
+  it("asks for the opposite value with the toggle haptic for it", async () => {
     const onValueChange = jest.fn();
     await render(<Switch value={false} onValueChange={onValueChange} />);
     await tap(control());
     expect(onValueChange).toHaveBeenCalledWith(true);
-    expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    expect(haptics.haptic.mock.calls).toEqual([["toggleOn"]]);
+    await render(<Switch value onValueChange={onValueChange} />);
+    await tap(control());
+    expect(onValueChange).toHaveBeenLastCalledWith(false);
+    expect(haptics.haptic).toHaveBeenLastCalledWith("toggleOff");
   });
 
   it("toggles back and forth when its owner keeps the value", async () => {
@@ -79,7 +83,7 @@ describe("Switch", () => {
     expect(control().props.accessibilityState).toEqual({ checked: true, disabled: true });
     await tap(control());
     expect(onValueChange).not.toHaveBeenCalled();
-    expect(haptics.selectionAsync).not.toHaveBeenCalled();
+    expect(haptics.haptic).not.toHaveBeenCalled();
     expect(control().props.className).toContain("opacity-50");
   });
 

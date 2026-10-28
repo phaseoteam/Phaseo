@@ -66,6 +66,12 @@ export function settleConfirm(ok: boolean) {
 }
 
 const toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
+let toastListener: ((shown: Toast) => void) | null = null;
+
+/** Hears every toast as it's shown, a repeat included (OverlayHost plays its haptic). One listener; null removes it. */
+export function onToast(listener: ((shown: Toast) => void) | null) {
+  toastListener = listener;
+}
 
 /**
  * A short notice that goes away by itself, instead of a native alert. Returns its ID.
@@ -85,6 +91,7 @@ export function toast(message: string, options: { tone?: ToastTone; title?: stri
   }));
   clearTimeout(toastTimers.get(id));
   toastTimers.set(id, setTimeout(() => dismissToast(id), options.durationMs ?? TOAST_MS));
+  toastListener?.({ id, ...entry });
   return id;
 }
 

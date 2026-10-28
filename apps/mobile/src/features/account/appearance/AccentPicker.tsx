@@ -4,6 +4,7 @@ import { Text as NativeText, Pressable, ScrollView, View } from "react-native";
 import { Button, Icon, Sheet, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { readableForegroundForAccent } from "@/lib/theme/colour";
 import { accentFor, checkAccent, PALETTE_NAMES, previewColours, SUGGESTED_ACCENTS, type AccentCheck, type Scheme, type ThemeFields } from "@/lib/theme/model";
 import { ColourPicker } from "./ColourPicker";
@@ -32,7 +33,10 @@ function AccentSwatch({ colour, selected, onPress }: { colour: string; selected:
       accessibilityState={{ checked: selected }}
       accessibilityLabel={colour}
       hitSlop={2}
-      onPress={onPress}
+      onPress={() => {
+        if (!selected) haptic("selection");
+        onPress();
+      }}
       className={cn("h-10 w-10 items-center justify-center rounded-md border-2", selected ? "border-foreground" : "border-transparent")}
     >
       <View className="h-8 w-8 items-center justify-center rounded-[5px] border border-black/10" style={{ backgroundColor: colour }}>

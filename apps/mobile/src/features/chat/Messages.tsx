@@ -11,6 +11,7 @@ import { Button, Icon, measureAnchor, pointAnchor, showActions, Text, toast, use
 import { WEB_ORIGIN } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import { formatUsd } from "@/lib/format";
+import { haptic } from "@/lib/haptics";
 import { createStore } from "@/lib/store";
 import { perf } from "@/perf";
 import type { ConversationItem } from "./conversationItems";
@@ -35,9 +36,13 @@ export const selectedAnswers = createStore<Record<string, string>>({});
 
 const FREE_ROUTER = "phaseo/free";
 
-/** Android 13 and later show their own clipboard confirmation, so the app only confirms copies on older versions. */
+/**
+ * Android 13 and later show their own clipboard confirmation, so the app only confirms copies on older versions; the
+ * success haptic plays either way.
+ */
 function copyWithNotice(text: string, what: string) {
   void Clipboard.setStringAsync(text);
+  haptic("success");
   if (Platform.OS !== "android" || Number(Platform.Version) < 33) toast(`Copied the ${what}.`, { tone: "success" });
 }
 
@@ -49,7 +54,7 @@ function useCopy() {
     const timer = setTimeout(() => setCopied(false), 1600);
     return () => clearTimeout(timer);
   }, [copied]);
-  return { copied, copy: (text: string) => { void Clipboard.setStringAsync(text); setCopied(true); } };
+  return { copied, copy: (text: string) => { void Clipboard.setStringAsync(text); haptic("success"); setCopied(true); } };
 }
 
 /** A message reached from a link or a search is marked for a moment. */
@@ -126,7 +131,7 @@ function UserMessage({ message }: { message: ChatMessage }) {
     ],
   });
   return (
-    <Pressable onLongPress={actions} delayLongPress={300} accessibilityHint="Long press for copy, edit and branch" className={cn("items-end px-4 pt-3", focused && "bg-accent")}>
+    <Pressable onLongPress={(event) => { haptic("longPress"); actions(event); }} delayLongPress={300} accessibilityHint="Long press for copy, edit and branch" className={cn("items-end px-4 pt-3", focused && "bg-accent")}>
       {message.attachments.length ? (
         <View className="mb-1.5 max-w-[85%] flex-row flex-wrap justify-end gap-1.5">
           {message.attachments.map((attachment) => attachment.kind === "image" ? (
@@ -180,7 +185,7 @@ function AnswerRow({ item }: { item: Extract<ConversationItem, { type: "answer" 
   const focused = useFocused(item.first ? message.id : "");
   const { menu } = useAnswerMenu(message);
   return (
-    <Pressable onLongPress={(event) => menu(pointAnchor(event))} delayLongPress={350} accessibilityHint="Long press for answer actions" className={cn("px-4", item.first && "pt-4", item.last && "pb-5", focused && "bg-accent")}>
+    <Pressable onLongPress={(event) => { haptic("longPress"); menu(pointAnchor(event)); }} delayLongPress={350} accessibilityHint="Long press for answer actions" className={cn("px-4", item.first && "pt-4", item.last && "pb-5", focused && "bg-accent")}>
       {item.first ? <AnswerTop message={message} header={item.header} /> : null}
       {item.text != null ? (item.text ? <Markdown text={item.text} /> : null) : <LiveTail message={message} />}
       {item.last ? <AnswerBottom message={message} /> : null}
@@ -299,7 +304,7 @@ function AnswerColumn({ message }: { message: ChatMessage }) {
   const long = !streaming && message.content.length > COLUMN_PREVIEW_CHARS * 1.25;
   const shown = long && !full ? message.content.slice(0, message.content.lastIndexOf("\n\n", COLUMN_PREVIEW_CHARS) > 0 ? message.content.lastIndexOf("\n\n", COLUMN_PREVIEW_CHARS) : COLUMN_PREVIEW_CHARS) : message.content;
   return (
-    <Pressable onLongPress={(event) => menu(pointAnchor(event))} delayLongPress={350} accessibilityHint="Long press for answer actions">
+    <Pressable onLongPress={(event) => { haptic("longPress"); menu(pointAnchor(event)); }} delayLongPress={350} accessibilityHint="Long press for answer actions">
       <AnswerTop message={message} header compact />
       {streaming ? <LiveTail message={message} /> : shown ? <Markdown text={shown} /> : null}
       {long ? (
