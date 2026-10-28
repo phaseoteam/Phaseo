@@ -12,7 +12,7 @@ import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
 import { Composer } from "./Composer";
-import { buildItems, reconcileItems, type ConversationItem } from "./conversationItems";
+import { buildItems, focusedAnswerPick, focusIndex, reconcileItems, type ConversationItem } from "./conversationItems";
 import { newestMatch } from "./db";
 import { getLive, liveShapes } from "./live";
 import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
@@ -71,7 +71,15 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   const [focus] = useState(() => focusMessage ?? (search ? newestMatch(chatId, search) : null));
   const window = useChatWindow(chatId, focus);
   const running = useChatRunning(chatId);
-  const selected = selectedAnswers.use();
+  // Opening on another model's answer picks that model's tab, so the answer has a row to open at.
+  // The first render uses the pick directly (it places the list); once it's saved, the tabs work as usual.
+  const [focusPick] = useState(() => focusedAnswerPick(window.messages, focus));
+  const [storedAtOpen] = useState(() => selectedAnswers.get());
+  const stored = selectedAnswers.use();
+  const selected = useMemo(() => (focusPick && stored === storedAtOpen ? { ...stored, [focusPick.turn]: focusPick.model } : stored), [stored, storedAtOpen, focusPick]);
+  useEffect(() => {
+    if (focusPick) selectedAnswers.set((current) => ({ ...current, [focusPick.turn]: focusPick.model }));
+  }, [focusPick]);
   const shapes = liveShapes.use();
   const models = chat?.models ?? EMPTY;
   const settings = useMemo(() => chat?.modelSettings ?? {}, [chat?.modelSettings]);
@@ -86,7 +94,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
     items = reconcileItems(stable.items, built);
     setStable({ source: built, items });
   }
-  const [initialIndex] = useState(() => (focus ? items.findIndex((item) => item.key === `user:${focus}` || item.key === `answer:${focus}:0`) : -1));
+  const [initialIndex] = useState(() => focusIndex(items, window.messages, focus));
   const context = useMemo(() => ({ chatId, labels, settings, workspaceId, focus }), [chatId, labels, settings, workspaceId, focus]);
   const [away, setAway] = useState(false);
   useChatErrors(chatId);

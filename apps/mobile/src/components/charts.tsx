@@ -6,7 +6,7 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from "react-native-
 import { Text, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { barLayout, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
 
 export { niceTicks } from "./chartMath";
 
@@ -220,17 +220,8 @@ export function LineChart({ series, height = 160, yFormat = String, xFormat, val
   const title = tooltipTitle ?? xFormat ?? ((x: number) => String(x));
 
   const paths = series.map((entry) => {
-    let d = "";
-    let previous: { x: number; y: number } | null = null;
-    for (const point of [...entry.points].sort((a, b) => a.x - b.x)) {
-      if (point.y == null || !Number.isFinite(point.y)) { previous = null; continue; }
-      const x = scaleX(point.x);
-      const y = scaleY(point.y);
-      if (!previous) d += `M${x.toFixed(1)},${y.toFixed(1)}`;
-      else d += step ? `H${x.toFixed(1)}V${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`;
-      previous = { x, y };
-    }
-    return { entry, d };
+    const points = [...entry.points].sort((a, b) => a.x - b.x).map((point) => ({ x: scaleX(point.x), y: point.y == null || !Number.isFinite(point.y) ? null : scaleY(point.y) }));
+    return { entry, ...linePath(points, step) };
   });
 
   /** A series' value at an x; a step line holds its last value until the next change. */
@@ -286,10 +277,11 @@ export function LineChart({ series, height = 160, yFormat = String, xFormat, val
             <SvgText key={`y${tick}`} x={left - 6} y={scaleY(tick) + 3.5} fontSize={10} fill={muted} textAnchor="end">{yFormat(tick)}</SvgText>
           )) : null}
           {xFormat ? tickXs.map((x, index) => (
-            <SvgText key={`x${index}`} x={scaleX(x)} y={height - 4} fontSize={10} fill={muted} textAnchor={index === 0 ? "start" : index === tickXs.length - 1 ? "end" : "middle"}>{xFormat(x)}</SvgText>
+            <SvgText key={`x${index}`} x={scaleX(x)} y={height - 4} fontSize={10} fill={muted} textAnchor={tickXs.length === 1 ? "middle" : index === 0 ? "start" : index === tickXs.length - 1 ? "end" : "middle"}>{xFormat(x)}</SvgText>
           )) : null}
           {activeX != null ? <Line x1={scaleX(activeX)} x2={scaleX(activeX)} y1={8} y2={8 + plotHeight} stroke={muted} strokeWidth={1} strokeDasharray="3 3" /> : null}
           {paths.map(({ entry, d }) => (d ? <Path key={entry.key} d={d} stroke={entry.colour} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" strokeDasharray={entry.dash} /> : null))}
+          {paths.flatMap(({ entry, dots }) => dots.map((dot, index) => <Circle key={`lone${entry.key}${index}`} cx={dot.x} cy={dot.y} r={3} fill={entry.colour} />))}
           {activeX != null ? series.map((entry, seriesIndex) => {
             const value = valueAt(seriesIndex, activeX);
             return value == null ? null : <Circle key={`dot${entry.key}`} cx={scaleX(activeX)} cy={scaleY(value)} r={4} fill={entry.colour} stroke={background} strokeWidth={2} />;

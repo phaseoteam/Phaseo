@@ -35,16 +35,20 @@ export function onChatError(listener: ErrorListener) {
   return () => { errorListeners.delete(listener); };
 }
 
-/** How a chat's answers to a message went, once all have ended: "error" if any failed, else "stopped" if any was stopped. */
+/** How answers started together went, once all have ended: "error" if any failed, else "stopped" if any was stopped. */
 export type ChatOutcome = "done" | "stopped" | "error";
 const OUTCOME_RANK: Record<ChatOutcome, number> = { done: 0, stopped: 1, error: 2 };
 const worseOutcome = (a: ChatOutcome, b: ChatOutcome) => (OUTCOME_RANK[b] > OUTCOME_RANK[a] ? b : a);
 type SettledListener = (chatId: string, outcome: ChatOutcome) => void;
 const settledListeners = new Set<SettledListener>();
-/** How the answers that have ended so far went, for each chat with answers still running. */
-const outcomes = new Map<string, ChatOutcome>();
+/**
+ * Answers started together: a message's answers from every model, or one retry. Each batch reports on its own, so
+ * answers an edit stopped can't mark the new answers as stopped, and a retry doesn't wait for, or blame, the others.
+ */
+type Batch = { chatId: string; left: number; outcome: ChatOutcome };
+const newBatch = (chatId: string, answers: number): Batch => ({ chatId, left: answers, outcome: "done" });
 
-/** Hears when a chat's last running answer ends, with how they went (the chat screen plays a haptic). */
+/** Hears when every answer in a batch has ended, with how they went (the chat screen plays a haptic). */
 export function onChatSettled(listener: SettledListener) {
   settledListeners.add(listener);
   return () => { settledListeners.delete(listener); };
@@ -190,7 +194,8 @@ export function sendMessage(args: { chatId: string; text: string; attachments: C
   insertMessage(user);
   updateChat(chat.id, { updatedAt: now, preview: args.text.slice(0, 140) });
   messageAdded(user);
-  for (const model of chat.models) void answer(chat.id, user, model, args.workspaceId ?? chat.workspaceId);
+  const batch = newBatch(chat.id, chat.models.length);
+  for (const model of chat.models) void answer(batch, user, model, args.workspaceId ?? chat.workspaceId);
   notifyChat(chat.id);
 }
 
@@ -222,7 +227,8 @@ async function summarise(args: { model: string; settings?: ModelSettings; worksp
 }
 
 /** Runs one model's answer to one user message. */
-async function answer(chatId: string, parent: ChatMessage, model: string, workspaceId: string | null, reuse?: ChatMessage) {
+async function answer(batch: Batch, parent: ChatMessage, model: string, workspaceId: string | null, reuse?: ChatMessage) {
+  const { chatId } = batch;
   const reset = { content: "", reasoning: "", status: "streaming" as const, error: null, errorCode: null, errorStatus: null, usage: null, notice: null };
   const message: ChatMessage = reuse ? { ...reuse, ...reset } : { id: Crypto.randomUUID(), chatId, role: "assistant", model, parentId: parent.id, attachments: [], createdAt: Date.now(), position: nextPosition(chatId), ...reset };
   if (reuse) {
@@ -297,13 +303,10 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
     perf?.streamFinished(message.id, { chars: live.get().content.length, reasoningChars: live.get().reasoning.length });
     running.delete(message.id);
     setRunning(chatId, -1);
-    // The last of the chat's answers to end reports how they all went.
-    const overall = worseOutcome(outcomes.get(chatId) ?? "done", outcome);
-    if ([...running.values()].some((entry) => entry.chatId === chatId)) outcomes.set(chatId, overall);
-    else {
-      outcomes.delete(chatId);
-      for (const listener of settledListeners) listener(chatId, overall);
-    }
+    // The last of the batch's answers to end reports how they all went.
+    batch.outcome = worseOutcome(batch.outcome, outcome);
+    batch.left -= 1;
+    if (batch.left === 0) for (const listener of settledListeners) listener(chatId, batch.outcome);
     // The window already holds the final text, so clearing the live copy doesn't flash.
     live.close();
     updateChat(chatId, { updatedAt: Date.now() });
@@ -329,7 +332,7 @@ export function retryAnswer(message: ChatMessage, workspaceId: string | null) {
   if (message.role !== "assistant" || !message.parentId || !message.model || running.has(message.id)) return;
   const parent = getMessage(message.parentId);
   if (!parent) return;
-  void answer(message.chatId, parent, message.model, workspaceId, message);
+  void answer(newBatch(message.chatId, 1), parent, message.model, workspaceId, message);
 }
 
 /** Edits a user message: everything after it is discarded and the models answer again. */
