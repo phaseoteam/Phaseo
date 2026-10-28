@@ -23,10 +23,20 @@ export function sentenceCase(title: string) {
   return title.trim().split(/\s+/).map((word, index) => (index === 0 || /^[A-Z0-9]{2,}$/.test(word) ? word : word.toLowerCase())).join(" ");
 }
 
+/** HTML tags out, repeated until none are left, so removing one can't join the text around it into another. */
+export function stripTags(value: string) {
+  let previous: string;
+  do {
+    previous = value;
+    value = value.replace(/<[^>]*>/g, "");
+  } while (value !== previous);
+  return value;
+}
+
 /** Inline Markdown to plain text with links: [label](url), **bold**, `code` and HTML tags. */
 export function inlineSegments(text: string): ChangelogSegment[] {
   const segments: ChangelogSegment[] = [];
-  const clean = (value: string) => value.replace(/<[^>]+>/g, "").replace(/\*\*|__|`/g, "").replace(/\\([\\`*_[\]()#+.!-])/g, "$1");
+  const clean = (value: string) => stripTags(value).replace(/\*\*|__|`/g, "").replace(/\\([\\`*_[\]()#+.!-])/g, "$1");
   const link = /\[([^\]]+)\]\(([^)\s]+)\)/g;
   let last = 0;
   for (const match of text.matchAll(link)) {
@@ -89,7 +99,7 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
     const current: ChangelogEntry = entry;
     const title = GROUP_PARAGRAPH.exec(line)?.[1] ?? GROUP_HEADING.exec(line)?.[1];
     if (title != null) {
-      group = { title: sentenceCase(title.replace(/<[^>]+>/g, "")), items: [] };
+      group = { title: sentenceCase(stripTags(title)), items: [] };
       current.groups.push(group);
       continue;
     }

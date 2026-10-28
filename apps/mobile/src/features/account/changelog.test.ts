@@ -1,4 +1,4 @@
-import { changelogDate, inlineSegments, mergeChangelogs, modelIdFromUrl, parseChangelog, previousMonth, sentenceCase } from "./changelog";
+import { changelogDate, inlineSegments, mergeChangelogs, modelIdFromUrl, parseChangelog, previousMonth, sentenceCase, stripTags } from "./changelog";
 
 const CURRENT = `> ## Documentation Index
 > Fetch the complete documentation index at: https://phaseo.app/docs/llms.txt
@@ -73,4 +73,10 @@ describe("changelog", () => {
     expect(modelIdFromUrl("https://phaseo.app/models/liquid-ai/d1:free", "https://phaseo.app")).toBe("liquid-ai/d1:free");
     expect(modelIdFromUrl("https://example.com/models/a/b", "https://phaseo.app")).toBeNull();
   });
+});
+
+test("tags are stripped until none are left", () => {
+  expect(stripTags("<b>New</b> models")).toBe("New models");
+  expect(stripTags("<scr<b>ipt>alert(1)</script>")).not.toMatch(/<[a-z/]/i);
+  expect(stripTags("<<b>script>x")).not.toMatch(/<[a-z/]/i);
 });

@@ -105,7 +105,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(503, { "content-type": "application/json" }).end(JSON.stringify({ error: { code: "upstream_error", message: "The stand-in refused the summary (failSummary)." } }));
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, config.summaryDelayMs));
+      await new Promise((resolve) => setTimeout(resolve, Math.min(Math.max(Number(config.summaryDelayMs) || 0, 0), 60_000)));
       const summaryText = `## Summary so far\n\n- The user has asked ${messages.length} questions about databases, lists and streaming.\n- Key decisions: keep pages small, batch writes, measure before and after.\n- Open thread: the last question, which the assistant should answer next.\n\n(Stand-in summary of ${chars.toLocaleString("en-GB")} characters.)`;
       record({ ...entry, status: 200 });
       await stream(res, { reasoningTokens: [], contentTokens: summaryText.match(/[\s\S]{1,4}/g), promptTokens, closed: () => closedEarly });
