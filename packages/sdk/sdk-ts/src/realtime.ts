@@ -113,7 +113,9 @@ const OPEN = 1;
 const RELAY_PROTOCOL = "statsync-realtime";
 
 export function realtimeRelayUrl(baseUrl: string, connectUrl: string): string {
-  const url = new URL(connectUrl, `${baseUrl.replace(/\/+$/, "")}/`);
+  let end = baseUrl.length;
+  while (end > 0 && baseUrl[end - 1] === "/") end -= 1;
+  const url = new URL(connectUrl, `${baseUrl.slice(0, end)}/`);
   if (url.protocol === "https:") url.protocol = "wss:";
   else if (url.protocol === "http:") url.protocol = "ws:";
   return url.toString();
