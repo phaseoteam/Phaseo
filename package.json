@@ -71,6 +71,8 @@
 		"validate:slack-secrets": "node scripts/sync-slack-secrets.mjs --check",
 		"validate:key-storage-locations": "node scripts/sync-key-storage-locations.mjs --check",
 		"validate:spend-rules": "node scripts/sync-spend-rules.mjs --check",
+		"validate:key-ip-allowlist": "node scripts/sync-key-ip-allowlist.mjs --check",
+		"validate:workspace-routing-settings": "node scripts/sync-workspace-routing-settings.mjs --check",
 		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",
 		"data:sync-epoch-eci": "tsx scripts/sync-epoch-eci-benchmarks.ts",

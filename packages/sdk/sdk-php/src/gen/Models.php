@@ -245,6 +245,8 @@ class ApiKey
 	public $id;
 	/** @var bool */
 	public $include_byok_in_limit;
+	/** @var array|null */
+	public $ip_allowlist;
 	/** @var string|null */
 	public $label;
 	/** @var string|null */
@@ -312,6 +314,8 @@ class ApiKeyCreateRequest
 	/** @var string|null */
 	public $workspace_id;
 }
+
+class ApiKeyIpAllowlist { }
 
 class ApiKeyLimitBucket
 {
@@ -393,6 +397,8 @@ class ApiKeyUpdateRequest
 	public $expires_at;
 	/** @var bool|null */
 	public $include_byok_in_limit;
+	/** @var array|null */
+	public $ip_allowlist;
 	/** @var float|null */
 	public $limit;
 	/** @var string|null */
@@ -449,6 +455,8 @@ class ApiKeyWithValue
 	public $id;
 	/** @var bool */
 	public $include_byok_in_limit;
+	/** @var array|null */
+	public $ip_allowlist;
 	/** @var string */
 	public $key;
 	/** @var string|null */
@@ -667,6 +675,96 @@ class AudioTranslationResponse
 {
 	/** @var string|null */
 	public $text;
+}
+
+class AuthorizedApp
+{
+	/** @var string|null */
+	public $app_name;
+	/** @var string|null */
+	public $authorized_at;
+	/** @var string|null */
+	public $client_id;
+	/** @var bool|null */
+	public $current;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
+	public $last_used_at;
+	/** @var array|null */
+	public $scopes;
+	/** @var string|null */
+	public $workspace_id;
+	/** @var string|null */
+	public $workspace_name;
+}
+
+class AuthorizedAppListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class AuthorizedAppRevokedResponse
+{
+	/** @var string|null */
+	public $id;
+	/** @var bool|null */
+	public $revoked;
+}
+
+class AuthorizedAppScopesRequest
+{
+	/** @var array */
+	public $scopes;
+}
+
+class AuthorizedAppScopesResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class AutoRoutingSettings
+{
+	/** @var bool|null */
+	public $allow_fallbacks;
+	/** @var array|null */
+	public $allowed_patterns;
+	/** @var float|null */
+	public $max_input_price_per_million;
+	/** @var float|null */
+	public $max_output_price_per_million;
+	/** @var string|null */
+	public $objective;
+	/** @var string|null */
+	public $revision;
+	/** @var string|null */
+	public $spend_profile;
+	/** @var string|null */
+	public $updated_at;
+}
+
+class AutoRoutingSettingsResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class AutoRoutingSettingsUpdateRequest
+{
+	/** @var bool|null */
+	public $allow_fallbacks;
+	/** @var array|null */
+	public $allowed_patterns;
+	/** @var float|null */
+	public $max_input_price_per_million;
+	/** @var float|null */
+	public $max_output_price_per_million;
+	/** @var string|null */
+	public $objective;
+	/** @var string|null */
+	public $spend_profile;
 }
 
 class BatchBillingSummary
@@ -3459,6 +3557,26 @@ class KeyInvalidateResponse
 
 class KnownModelId { }
 
+class LeakedKeyReportRequest
+{
+	/** @var string|null */
+	public $comment;
+	/** @var string|null */
+	public $evidence_url;
+	/** @var string|null */
+	public $reporter_email;
+	/** @var string|null */
+	public $source;
+	/** @var string */
+	public $token;
+}
+
+class LeakedKeyReportResponse
+{
+	/** @var string|null */
+	public $status;
+}
+
 class LegacyDecisionBoxQuestion
 {
 	/** @var string|array<string, mixed>|array */
@@ -3735,6 +3853,12 @@ class ManagementKeyUpdateResponse
 	public $message;
 	/** @var string */
 	public $ok;
+}
+
+class MeResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
 }
 
 class MessageContentPart { }
@@ -4041,6 +4165,34 @@ class MusicGenerateResponse
 	public $usage;
 }
 
+class MyJoinRequest
+{
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $decided_at;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
+	public $status;
+	/** @var string|null */
+	public $workspace_id;
+	/** @var string|null */
+	public $workspace_name;
+}
+
+class MyJoinRequestCreatedResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class MyJoinRequestListResponse
+{
+	/** @var array */
+	public $data;
+}
+
 class NotImplementedResponse
 {
 	/** @var string */
@@ -4324,6 +4476,20 @@ class ObservabilityDestinationPolicyInput
 }
 
 class ObservabilityDestinationResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ObservabilityDestinationTestRequest
+{
+	/** @var array<string, mixed> */
+	public $config;
+	/** @var string */
+	public $type;
+}
+
+class ObservabilityDestinationTestResponse
 {
 	/** @var array<string, mixed> */
 	public $data;
@@ -5527,6 +5693,12 @@ class RateLimitPolicyUpdateInput
 
 class RateLimitTargetType { }
 
+class RateLimitTierResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
 class ReasoningConfig
 {
 	/** @var string|null */
@@ -6231,6 +6403,44 @@ class SubagentToolDefinition
 	public $type;
 }
 
+class SuccessorReplacement
+{
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $successor;
+}
+
+class SuccessorReplacementListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class SuccessorReplacementRemovedResponse
+{
+	/** @var bool|null */
+	public $deleted;
+	/** @var string|null */
+	public $model;
+}
+
+class SuccessorReplacementResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class SuccessorReplacementRow
+{
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $successor;
+	/** @var string|null */
+	public $updated_at;
+}
+
 class SupportedParameterDetails
 {
 }
@@ -6391,6 +6601,34 @@ class UsageCostDetails
 {
 	/** @var float|null */
 	public $upstream_inference_cost;
+}
+
+class UserProfile
+{
+	/** @var string|null */
+	public $default_workspace_id;
+	/** @var string|null */
+	public $display_name;
+	/** @var bool|null */
+	public $obfuscate_info;
+	/** @var string|null */
+	public $user_id;
+}
+
+class UserProfileResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class UserProfileUpdateRequest
+{
+	/** @var string|null */
+	public $default_workspace_id;
+	/** @var string|null */
+	public $display_name;
+	/** @var bool|null */
+	public $obfuscate_info;
 }
 
 class VideoBillingSummary
@@ -7443,6 +7681,12 @@ class WorkspaceInvite
 	public $uses_count;
 	/** @var string */
 	public $workspace_id;
+}
+
+class WorkspaceInviteAcceptRequest
+{
+	/** @var string */
+	public $token;
 }
 
 class WorkspaceInviteCreateRequest

@@ -201,6 +201,8 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] include_byok_in_limit
     #   @return [Boolean]
+    # @!attribute [rw] ip_allowlist
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] label
     #   @return [String, nil]
     # @!attribute [rw] last_used_at
@@ -239,7 +241,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :ip_allowlist, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
@@ -265,6 +267,7 @@ module Phaseo
     # @!attribute [rw] workspace_id
     #   @return [String, nil]
     ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, :workspace_id, keyword_init: true)
+    ApiKeyIpAllowlist = Object
     # @!attribute [rw] cost
     #   @return [Float, nil]
     # @!attribute [rw] requests
@@ -317,6 +320,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] include_byok_in_limit
     #   @return [Boolean, nil]
+    # @!attribute [rw] ip_allowlist
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] limit
     #   @return [Float, nil]
     # @!attribute [rw] limit_reset
@@ -331,7 +336,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] storage_locations
     #   @return [Object, nil]
-    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, keyword_init: true)
+    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :ip_allowlist, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float]
     # @!attribute [rw] requests
@@ -364,6 +369,8 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] include_byok_in_limit
     #   @return [Boolean]
+    # @!attribute [rw] ip_allowlist
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] key
     #   @return [String]
     # @!attribute [rw] label
@@ -404,7 +411,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :ip_allowlist, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     # @!attribute [rw] key
@@ -544,6 +551,72 @@ module Phaseo
     # @!attribute [rw] text
     #   @return [String, nil]
     AudioTranslationResponse = Struct.new(:text, keyword_init: true)
+    # @!attribute [rw] app_name
+    #   @return [String, nil]
+    # @!attribute [rw] authorized_at
+    #   @return [String, nil]
+    # @!attribute [rw] client_id
+    #   @return [String, nil]
+    # @!attribute [rw] current
+    #   @return [Boolean, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] last_used_at
+    #   @return [String, nil]
+    # @!attribute [rw] scopes
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_name
+    #   @return [String, nil]
+    AuthorizedApp = Struct.new(:app_name, :authorized_at, :client_id, :current, :id, :last_used_at, :scopes, :workspace_id, :workspace_name, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    AuthorizedAppListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] revoked
+    #   @return [Boolean, nil]
+    AuthorizedAppRevokedResponse = Struct.new(:id, :revoked, keyword_init: true)
+    # @!attribute [rw] scopes
+    #   @return [Array<String>]
+    AuthorizedAppScopesRequest = Struct.new(:scopes, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    AuthorizedAppScopesResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] allow_fallbacks
+    #   @return [Boolean, nil]
+    # @!attribute [rw] allowed_patterns
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max_input_price_per_million
+    #   @return [Float, nil]
+    # @!attribute [rw] max_output_price_per_million
+    #   @return [Float, nil]
+    # @!attribute [rw] objective
+    #   @return [String, nil]
+    # @!attribute [rw] revision
+    #   @return [String, nil]
+    # @!attribute [rw] spend_profile
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    AutoRoutingSettings = Struct.new(:allow_fallbacks, :allowed_patterns, :max_input_price_per_million, :max_output_price_per_million, :objective, :revision, :spend_profile, :updated_at, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    AutoRoutingSettingsResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] allow_fallbacks
+    #   @return [Boolean, nil]
+    # @!attribute [rw] allowed_patterns
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max_input_price_per_million
+    #   @return [Float, nil]
+    # @!attribute [rw] max_output_price_per_million
+    #   @return [Float, nil]
+    # @!attribute [rw] objective
+    #   @return [String, nil]
+    # @!attribute [rw] spend_profile
+    #   @return [String, nil]
+    AutoRoutingSettingsUpdateRequest = Struct.new(:allow_fallbacks, :allowed_patterns, :max_input_price_per_million, :max_output_price_per_million, :objective, :spend_profile, keyword_init: true)
     # @!attribute [rw] billed
     #   @return [Boolean, nil]
     # @!attribute [rw] charged
@@ -2792,6 +2865,20 @@ module Phaseo
     #   @return [String]
     KeyInvalidateResponse = Struct.new(:key, :message, :ok, keyword_init: true)
     KnownModelId = Object
+    # @!attribute [rw] comment
+    #   @return [String, nil]
+    # @!attribute [rw] evidence_url
+    #   @return [String, nil]
+    # @!attribute [rw] reporter_email
+    #   @return [String, nil]
+    # @!attribute [rw] source
+    #   @return [String, nil]
+    # @!attribute [rw] token
+    #   @return [String]
+    LeakedKeyReportRequest = Struct.new(:comment, :evidence_url, :reporter_email, :source, :token, keyword_init: true)
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    LeakedKeyReportResponse = Struct.new(:status, keyword_init: true)
     # @!attribute [rw] instructions
     #   @return [String, Hash{String => Object}, Array<Object>]
     # @!attribute [rw] type
@@ -3013,6 +3100,9 @@ module Phaseo
     # @!attribute [rw] ok
     #   @return [String]
     ManagementKeyUpdateResponse = Struct.new(:message, :ok, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    MeResponse = Struct.new(:data, keyword_init: true)
     MessageContentPart = Object
     # @!attribute [rw] aliases
     #   @return [Array<String>]
@@ -3275,6 +3365,25 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     MusicGenerateResponse = Struct.new(:audio_base64, :audio_url, :id, :model, :nativeResponseId, :object, :output, :provider, :result, :status, :usage, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] decided_at
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_name
+    #   @return [String, nil]
+    MyJoinRequest = Struct.new(:created_at, :decided_at, :id, :status, :workspace_id, :workspace_name, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    MyJoinRequestCreatedResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    MyJoinRequestListResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] description
     #   @return [String]
     # @!attribute [rw] error
@@ -3521,6 +3630,14 @@ module Phaseo
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     ObservabilityDestinationResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] config
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] type
+    #   @return [String]
+    ObservabilityDestinationTestRequest = Struct.new(:config, :type, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ObservabilityDestinationTestResponse = Struct.new(:data, keyword_init: true)
     ObservabilityDestinationType = Object
     # @!attribute [rw] config
     #   @return [Hash{String => Object}, nil]
@@ -4452,6 +4569,9 @@ module Phaseo
     #   @return [Integer, nil]
     RateLimitPolicyUpdateInput = Struct.new(:concurrent_requests, :description, :fail_closed, :name, :requests_per_minute, :tokens_per_minute, keyword_init: true)
     RateLimitTargetType = Object
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    RateLimitTierResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] effort
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -5053,6 +5173,29 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     SubagentToolDefinition = Struct.new(:parameters, :type, keyword_init: true)
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] successor
+    #   @return [String, nil]
+    SuccessorReplacement = Struct.new(:model, :successor, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    SuccessorReplacementListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] deleted
+    #   @return [Boolean, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    SuccessorReplacementRemovedResponse = Struct.new(:deleted, :model, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    SuccessorReplacementResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] successor
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    SuccessorReplacementRow = Struct.new(:model, :successor, :updated_at, keyword_init: true)
     SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] criteria
     #   @return [Hash{String => Object}]
@@ -5170,6 +5313,25 @@ module Phaseo
     # @!attribute [rw] upstream_inference_cost
     #   @return [Float, nil]
     UsageCostDetails = Struct.new(:upstream_inference_cost, keyword_init: true)
+    # @!attribute [rw] default_workspace_id
+    #   @return [String, nil]
+    # @!attribute [rw] display_name
+    #   @return [String, nil]
+    # @!attribute [rw] obfuscate_info
+    #   @return [Boolean, nil]
+    # @!attribute [rw] user_id
+    #   @return [String, nil]
+    UserProfile = Struct.new(:default_workspace_id, :display_name, :obfuscate_info, :user_id, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    UserProfileResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] default_workspace_id
+    #   @return [String, nil]
+    # @!attribute [rw] display_name
+    #   @return [String, nil]
+    # @!attribute [rw] obfuscate_info
+    #   @return [Boolean, nil]
+    UserProfileUpdateRequest = Struct.new(:default_workspace_id, :display_name, :obfuscate_info, keyword_init: true)
     # @!attribute [rw] billable
     #   @return [Boolean, nil]
     # @!attribute [rw] billed_at
@@ -6012,6 +6174,9 @@ module Phaseo
     # @!attribute [rw] workspace_id
     #   @return [String]
     WorkspaceInvite = Struct.new(:created_at, :creator_user_id, :expires_at, :id, :max_uses, :role, :token_preview, :uses_count, :workspace_id, keyword_init: true)
+    # @!attribute [rw] token
+    #   @return [String]
+    WorkspaceInviteAcceptRequest = Struct.new(:token, keyword_init: true)
     # @!attribute [rw] expires_in_days
     #   @return [Integer, nil]
     # @!attribute [rw] max_uses
