@@ -47,6 +47,7 @@ import {
 	collectUnsupportedRoutingFields,
 	getEffectiveRoutingHints,
 	normalizeRequestRoutingBody,
+	requestDataLimits,
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
 import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
@@ -1269,6 +1270,9 @@ export async function beforeRequest(
 	}
 	mergedBody = deploymentRegionResult.body;
 
+    // Read before the pin below, which is a routing choice rather than a limit on where the content may go.
+    const contentDataLimits = requestDataLimits(mergedBody);
+
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a
     // provider preference that presets or other routing hints may widen.
@@ -1760,6 +1764,7 @@ export async function beforeRequest(
 		zeroDataRetention:
 			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
 			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
+		contentDataLimits,
         endpoint,
         capability,
         requestId,

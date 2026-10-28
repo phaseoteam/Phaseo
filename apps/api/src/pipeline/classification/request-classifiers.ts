@@ -108,7 +108,7 @@ export function attachRequestClassifierCall(ctx: PipelineContext, req: Request, 
 			// The classifier sees the request's content, so it goes only where the
 			// request (or its preset) let that content go; if its model can't, the
 			// call fails and the request stays unlabelled.
-			body: JSON.stringify(withRequestDataLimits(body, requestDataLimits(ctx.body))),
+			body: JSON.stringify(withRequestDataLimits(body, ctx.contentDataLimits !== undefined ? ctx.contentDataLimits : requestDataLimits(ctx.body))),
 		});
 		classifierSubrequests.add(request);
 		return handler(path)(request);

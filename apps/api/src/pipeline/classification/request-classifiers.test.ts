@@ -491,4 +491,18 @@ describe("attachRequestClassifierCall", () => {
 		expect(routed.requestClassifierCall).toBeUndefined();
 		expect(routed.classifierSubrequest).toBeUndefined();
 	});
+
+	it("sends the call only where the request let its content go", async () => {
+		const handler = vi.fn(async (_request: Request) => new Response("{}"));
+		const sentBody = async (index: number) => JSON.parse(await handler.mock.calls[index][0].text());
+		const limited = ctx({ body: { model: "m", provider: { require_zero_data_retention: true, ignore: ["logs-co"] } } });
+		attachRequestClassifierCall(limited, new Request("https://gateway.test/v1/responses", { headers: { Authorization: "Bearer key" } }), () => handler);
+		await limited.requestClassifierCall({ path: "responses", body: { model: "classifier", provider: { sort: "price" } } }, "clf_1");
+		expect((await sentBody(0)).provider).toEqual({ sort: "price", require_zero_data_retention: true, ignore: ["logs-co"] });
+		// A provider-qualified model's pin (openai:gpt-…) is a routing choice, not a limit: the limits read before it are used.
+		const pinned = ctx({ body: { model: "gpt", provider: { only: ["openai"] } }, contentDataLimits: null });
+		attachRequestClassifierCall(pinned, new Request("https://gateway.test/v1/responses", { headers: { Authorization: "Bearer key" } }), () => handler);
+		await pinned.requestClassifierCall({ path: "decisions", body: { model: "classifier" } }, "clf_1");
+		expect(await sentBody(1)).toEqual({ model: "classifier" });
+	});
 });

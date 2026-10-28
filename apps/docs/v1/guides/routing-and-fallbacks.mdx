@@ -121,7 +121,7 @@ with current Phaseo provider health, latency, and pricing. Missing benchmark or
 operational data is neutral; it does not widen the allow-list.
 
 The request's limits on where its data may go apply to Auto too. When a
-request sets `provider.require_zero_data_retention`, or the workspace or the
+request sets `provider.require_zero_data_retention: true`, or the workspace or the
 key's guardrail allows only providers with zero data retention, the router
 shortlists only models with a provider that offers it. Required regions are
 checked against each candidate's providers in the same way. The classifier
