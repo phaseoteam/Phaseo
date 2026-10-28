@@ -60,7 +60,7 @@ function isThirdPartyUrl(value: string): boolean {
 	if (/\s/.test(value)) return false;
 	try {
 		const url = new URL(value);
-		const host = url.hostname.toLowerCase();
+		const host = url.hostname.toLowerCase().replace(/\.+$/, "");
 		return (url.protocol === "https:" || url.protocol === "http:") && host !== "phaseo.app" && !host.endsWith(".phaseo.app");
 	} catch {
 		return false;

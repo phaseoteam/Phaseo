@@ -166,6 +166,8 @@ test("allows third-party links that contain a private id but still rejects Phase
 	expect(filterPublicSnapshotRows(input).get("v2_models")).toHaveLength(1);
 	input.get("v2_models")![1].license_url = "https://phaseo.app/models/hidden/base";
 	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
+	input.get("v2_models")![1].license_url = "https://phaseo.app./models/hidden/base";
+	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
 	input.get("v2_models")![1].license_url = "See https://huggingface.co/hidden/base-it";
 	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.license_url");
 });
