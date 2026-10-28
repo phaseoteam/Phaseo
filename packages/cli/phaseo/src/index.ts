@@ -185,6 +185,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"  Default login requests full first-party CLI access across the control plane.",
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
 			"  feedback and preset-test-runs need feedback:read,feedback:write, which are not requested by default.",
+			"  byok and private-models work with the default scopes; sessions from before they were allowed need phaseo login again.",
 			"",
 			"Confirmation:",
 			"  Commands that show [--yes] ask before they delete, revoke, lift, rotate, or merge. Agents and scripts pass --yes.",

@@ -1016,9 +1016,10 @@ async function notificationTarget(flags: Flags, input: ManagementInput): Promise
 }
 
 export const MANAGEMENT_GROUP_NOTES: Record<string, string> = {
-	byok: "Bring-your-own provider keys. Secrets are read from stdin or the environment and never printed.",
-	feedback: "Requires feedback:read and feedback:write, which the default login does not request. Log in with an explicit --scopes list that adds them; login only grants scopes the CLI client allows.",
-	"preset-test-runs": "Requires feedback:read and feedback:write, which the default login does not request. Log in with an explicit --scopes list that adds them; login only grants scopes the CLI client allows.",
+	byok: "Bring-your-own provider keys. Secrets are read from stdin or the environment and never printed. If these return 403, run `phaseo login` again: older sessions lack the provider_credentials scopes.",
+	"private-models": "If these return 403, run `phaseo login` again: older sessions lack the private_models scopes.",
+	feedback: "Requires feedback:read and feedback:write, which the default login does not request. Log in again with an explicit --scopes list that adds them.",
+	"preset-test-runs": "Requires feedback:read and feedback:write, which the default login does not request. Log in again with an explicit --scopes list that adds them.",
 };
 
 export function managementCommandKeys(): string[] {

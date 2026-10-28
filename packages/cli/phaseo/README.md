@@ -152,7 +152,7 @@ Secrets never go on the command line. BYOK keys come from `--key-stdin`, `--key-
 
 Commands that show `[--yes]` (delete, revoke, lift, rotate-secret, merge) ask before they run in an interactive terminal. In scripts, or with `--json`, they fail unless `--yes` is passed.
 
-Scopes: `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request. Login grants only scopes that are on the CLI OAuth client's allowlist; scopes outside it are dropped without an error. If a command returns `403`, check the `scope` that `phaseo login --json` reported. Request extra scopes with an explicit list, for example `phaseo login --scopes <default scopes>,feedback:read,feedback:write`.
+Scopes: the default login covers every group except `feedback` and `preset-test-runs`, which need `feedback:read` and `feedback:write`. Request them with an explicit list, for example `phaseo login --scopes <default scopes>,feedback:read,feedback:write`. Sessions signed in before the CLI could be granted the BYOK and private model scopes do not have them, so `byok` and `private-models` return `403` until you run `phaseo login` again. The `scope` field of `phaseo login --json` shows what was granted.
 
 ## Coding-agent integrations
 

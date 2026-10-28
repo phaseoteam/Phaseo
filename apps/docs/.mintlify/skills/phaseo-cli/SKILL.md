@@ -54,7 +54,7 @@ Never pass secrets as argv values; the CLI rejects `--key` and `--credential`. P
 
 Commands whose usage shows `[--yes]` (delete, revoke, lift, rotate-secret, merge) refuse to run non-interactively without `--yes`. Pass `--yes` only after the user has asked for that exact change.
 
-`feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request. Login only grants scopes on the CLI client allowlist and drops the rest without an error. On `403`, tell the user which scope is missing and suggest `phaseo login --scopes` with it added; do not widen scopes silently or switch to another credential.
+`byok` and `private-models` work with the default login scopes. A `403` from them usually means the session predates those scopes; ask the user to run `phaseo login` again. `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; suggest `phaseo login --scopes` with them added. Do not widen scopes silently or switch to another credential.
 
 ## Agent Output Rules
 

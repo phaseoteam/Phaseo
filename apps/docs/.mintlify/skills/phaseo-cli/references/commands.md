@@ -66,7 +66,7 @@ Every `/v1` management area has a dedicated group. Commands that show `[--yes]` 
 
 Secrets are never taken from argv. Pipe BYOK keys with `--key-stdin` or name a variable with `--key-env <VAR>` (default `PHASEO_BYOK_KEY`); private model credentials use `--credential-stdin` / `--credential-env` (default `PHASEO_PRIVATE_MODEL_CREDENTIAL`). One-time secrets (SCIM tokens, invite tokens, notification signing secrets) are hidden in human output unless `--show-secret` is passed; `--json` returns them, so capture them straight into a secret store.
 
-`feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request. Request them with an explicit `phaseo login --scopes` list. Login drops scopes the CLI client does not allow, so a `403` after re-login means the scope is not available to CLI sessions.
+`byok` and `private-models` work with the default login scopes; sessions signed in before those scopes were allowed need `phaseo login` again. `feedback` and `preset-test-runs` need `feedback:read` and `feedback:write`, which the default login does not request; add them with an explicit `phaseo login --scopes` list.
 
 ### byok
 
