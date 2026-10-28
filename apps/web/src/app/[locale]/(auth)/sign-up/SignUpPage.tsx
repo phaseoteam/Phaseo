@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
+import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
@@ -15,9 +16,13 @@ export type SignUpPageProps = {
 
 export function SignUpPage({ locale, searchParams }: SignUpPageProps) {
 	return (
-		<Suspense fallback={<AuthSuspenseFallback />}>
-			<SignUpPageContent locale={locale} searchParams={searchParams} />
-		</Suspense>
+		<>
+			{/* Whoever signs in or up here may be another account: drop a stale identified person. */}
+			<AnalyticsIdentitySync userId={null} workspaceId={null} signedUpAt={null} />
+			<Suspense fallback={<AuthSuspenseFallback />}>
+				<SignUpPageContent locale={locale} searchParams={searchParams} />
+			</Suspense>
+		</>
 	);
 }
 
