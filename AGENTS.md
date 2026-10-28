@@ -3,14 +3,14 @@
 ## Project Structure & Module Organization
 - Monorepo managed by pnpm + turbo: `apps/web` (Next.js 16 App Router, React 19, Tailwind 4, shared UI in `src/components` and `src/components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
 - SDKs: `packages/sdk/sdk-ts` TypeScript client (`src`, generated `src/oapi-gen`, builds to `dist`); `packages/sdk/sdk-py` Python client (`src`, tests in `packages/sdk/sdk-py/tests`).
-- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the database owns catalog data. `packages/data/catalog/src/data` contains archived compatibility fixtures; daily public exports live under `packages/data/catalog/generated/database-v2`.
+- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the production database owns catalog data; there is no committed catalog JSON.
 
 ## Build, Test, and Development Commands
 - Install: `pnpm install` (Node ^22.19.0 or >=24).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 - TypeScript: `tsc` is TypeScript 7 (`@typescript/native`); the `typescript` package is the TypeScript 6 API (`@typescript/typescript6`, bin `tsc6`) kept for typescript-eslint and scripts that import the compiler. Both come from the `catalog:` in `pnpm-workspace.yaml`. tsconfigs can't use `baseUrl`, `ignoreDeprecations` or `moduleResolution: node`.
-- Archived fixture checks (only when fixtures or validators change): `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`. These do not validate live catalogue data. Docs: `pnpm docs:links` then `pnpm docs:build`.
+- Docs: `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
 ## Safety Notes

@@ -40,8 +40,7 @@
         "./src/app/[locale]/(legal)/*"
       ],
       "@/*": [
-        "./src/*",
-        "../../packages/data/catalog/src/*"
+        "./src/*"
       ]
     }
   },

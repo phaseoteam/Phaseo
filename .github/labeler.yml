@@ -7,7 +7,6 @@
 "Area: Data":
   - changed-files:
       - any-glob-to-any-file:
-          - packages/data/catalog/src/data/**
           - apps/web/src/lib/data/**
           - scripts/**
 

@@ -1,5 +1,0 @@
-{
-  "key":"minimax:minimax/speech-2.6-turbo:audio.speech","api_provider_id":"minimax","provider_slug":"minimax","api_model_id":"minimax/speech-2.6-turbo","capability_id":"audio.speech",
-  "rules":[{"meter":"input_characters","unit":"character","unit_size":1000000,"price_per_unit":60,"currency":"USD","pricing_plan":"standard","note":"MiniMax legacy Turbo T2A pricing.","match":[],"priority":100,"effective_from":"2025-10-29T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://platform.minimax.io/docs/guides/pricing-paygo","accessed_at":"2026-08-21T00:00:00Z"}}],
-  "regions":[],"service_tiers":["standard"],"sources":[{"kind":"pricing","url":"https://platform.minimax.io/docs/guides/pricing-paygo","accessed_at":"2026-08-21T00:00:00Z"}],"verification":{"status":"verified","checked_at":"2026-08-21T00:00:00Z","notes":"Verified legacy Turbo pricing at $60 per million characters."}
-}
