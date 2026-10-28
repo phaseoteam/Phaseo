@@ -33,9 +33,9 @@ const TABLES: Record<string, unknown[]> = {
 		{ provider_model_id: "plain-co:model/declared", capability_id: "text.generate", status: "active" },
 	],
 	v2_effective_route_capabilities: [
-		{ provider_model_id: "zdr-co:model/kept", capability_id: "text.generate", params: {} },
-		{ provider_model_id: "plain-co:model/logged", capability_id: "text.generate", params: {} },
-		{ provider_model_id: "plain-co:model/declared", capability_id: "text.generate", params: { data_policy: { zeroDataRetention: true } } },
+		{ provider_model_id: "zdr-co:model/kept", capability_id: "text.generate", params: {}, status: "active" },
+		{ provider_model_id: "plain-co:model/logged", capability_id: "text.generate", params: {}, status: "active" },
+		{ provider_model_id: "plain-co:model/declared", capability_id: "text.generate", params: { data_policy: { zeroDataRetention: true } }, status: "active" },
 	],
 	v2_providers: [
 		{ provider_slug: "zdr-co", zero_data_retention: true, data_policy_variant: "standard" },
@@ -64,6 +64,11 @@ function mockCatalogue() {
 
 const unrestricted = workspaceAutoRouterConfigFromRow({ auto_routing_spend_profile: "unrestricted" });
 
+/** A route's text capability policy, routable and in effect unless `overrides` say otherwise. */
+function policy(capability_id: string, data_policy: unknown, overrides: Partial<{ status: string; effective_from: string | null; effective_to: string | null }> = {}) {
+	return { capability_id, has_params: data_policy !== null, data_policy, status: "active", effective_from: null, effective_to: null, ...overrides };
+}
+
 describe("auto router and zero data retention", () => {
 	it("shortlists only models with a route that keeps no data when the request needs it", async () => {
 		mockCatalogue();
@@ -87,24 +92,34 @@ describe("auto router and zero data retention", () => {
 		expect(routeOffersZeroDataRetention({ data_policies: [] }, undefined, "responses", "model/a")).toBe(false);
 		// A capability's declaration wins over the provider's, both ways.
 		expect(routeOffersZeroDataRetention({
-			data_policies: [{ capability_id: "text.generate", has_params: true, data_policy: { zdrEligibility: "ineligible" } }],
+			data_policies: [policy("text.generate", { zdrEligibility: "ineligible" })],
 		}, zdrProvider, "responses", "model/a")).toBe(false);
 		expect(routeOffersZeroDataRetention({
-			data_policies: [{ capability_id: "text.generate", has_params: true, data_policy: { zeroDataRetention: true } }],
+			data_policies: [policy("text.generate", { zeroDataRetention: true })],
 		}, plainProvider, "responses", "model/a")).toBe(true);
 		// An empty text.generate defers to the endpoint's own capability.
 		expect(routeOffersZeroDataRetention({
-			data_policies: [
-				{ capability_id: "text.generate", has_params: false, data_policy: null },
-				{ capability_id: "responses", has_params: true, data_policy: { zeroDataRetention: true } },
-			],
+			data_policies: [policy("text.generate", null), policy("responses", { zeroDataRetention: true })],
 		}, plainProvider, "responses", "model/a")).toBe(true);
 		// A catalogue guarantee past its deadline no longer counts.
 		expect(routeOffersZeroDataRetention({
-			data_policies: [{ capability_id: "text.generate", has_params: true, data_policy: { zeroDataRetention: true, catalogManaged: true, validUntil: PAST } }],
+			data_policies: [policy("text.generate", { zeroDataRetention: true, catalogManaged: true, validUntil: PAST })],
 		}, plainProvider, "responses", "model/a")).toBe(false);
 		expect(routeOffersZeroDataRetention({
-			data_policies: [{ capability_id: "text.generate", has_params: true, data_policy: { zeroDataRetention: true, catalogManaged: true, validUntil: FUTURE } }],
+			data_policies: [policy("text.generate", { zeroDataRetention: true, catalogManaged: true, validUntil: FUTURE })],
+		}, plainProvider, "responses", "model/a")).toBe(true);
+		// Capabilities the context wouldn't read don't count: not routable, or not in effect.
+		for (const unread of [{ status: "disabled" }, { status: "internal_testing" }, { effective_to: PAST }, { effective_from: FUTURE }]) {
+			expect(routeOffersZeroDataRetention({
+				data_policies: [policy("text.generate", { zdrEligibility: "ineligible" }, unread), policy("responses", { zeroDataRetention: true })],
+			}, plainProvider, "responses", "model/a")).toBe(true);
+			expect(routeOffersZeroDataRetention({
+				data_policies: [policy("text.generate", { zeroDataRetention: true }, unread)],
+			}, plainProvider, "responses", "model/a")).toBe(false);
+		}
+		// A deranked capability is still routable.
+		expect(routeOffersZeroDataRetention({
+			data_policies: [policy("text.generate", { zeroDataRetention: true }, { status: "deranked_lvl2" })],
 		}, plainProvider, "responses", "model/a")).toBe(true);
 	});
 

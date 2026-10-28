@@ -7,6 +7,7 @@ import { tieredRead } from "@core/tiered-cache";
 import { readHealthManyOptimistic } from "../execute/health";
 import { getEffectiveRoutingHints } from "../requestRouting";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
+import { ROUTABLE_CAPABILITY_STATUSES } from "./context.shared";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
 import { providerMeetsResidencyRequirement, type ResidencyRequirement } from "@/lib/config/providerResidency";
 
@@ -264,8 +265,19 @@ export async function loadWorkspaceAutoRouterConfig(workspaceId: string): Promis
 	return config ?? workspaceAutoRouterConfigFromRow(null);
 }
 
-/** A text capability's declared data policy on a route, with whether its params had anything in them (the context prefers the first that does). */
-type AutoRouterRouteDataPolicy = { capability_id: string; has_params: boolean; data_policy: unknown };
+/**
+ * A text capability's declared data policy on a route, with whether its params
+ * had anything in them (the context prefers the first that does), and its
+ * status and effective window (the context reads only routable ones in effect).
+ */
+type AutoRouterRouteDataPolicy = {
+	capability_id: string;
+	has_params: boolean;
+	data_policy: unknown;
+	status: string;
+	effective_from: string | null;
+	effective_to: string | null;
+};
 
 type AutoRouterCatalogue = {
 	revision: string | null;
@@ -315,7 +327,7 @@ async function fetchAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
 	const [policyResults, providerResults] = await Promise.all([
 		Promise.all(chunks(textProviderIds).map((ids) =>
 			client.from("v2_effective_route_capabilities")
-				.select("provider_model_id,capability_id,params")
+				.select("provider_model_id,capability_id,params,status,effective_from,effective_to")
 				.in("provider_model_id", ids)
 				.in("capability_id", [...AUTO_ROUTER_TEXT_CAPABILITIES]))),
 		Promise.all(chunks(providerSlugs).map((slugs) =>
@@ -330,6 +342,9 @@ async function fetchAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
 			capability_id: String(row.capability_id ?? ""),
 			has_params: Object.keys(params).length > 0,
 			data_policy: params.data_policy ?? null,
+			status: String(row.status ?? "").toLowerCase(),
+			effective_from: row.effective_from ?? null,
+			effective_to: row.effective_to ?? null,
 		}]);
 	}
 	const skuResults = await Promise.all(chunks(textProviderIds).map((ids) =>
@@ -732,9 +747,13 @@ export function routeOffersZeroDataRetention(
 	provider: AutoRouterCatalogue["providers"][number] | undefined,
 	endpoint: Endpoint,
 	model: string,
+	now = Date.now(),
 ): boolean {
+	// Only capabilities the context would read: routable, and in effect now.
+	const usable = route.data_policies.filter((policy) =>
+		(ROUTABLE_CAPABILITY_STATUSES as readonly string[]).includes(policy.status) && activeAt(policy, now));
 	const policies = getContextCapabilityCandidates(endpoint, model)
-		.map((capability) => route.data_policies.find((policy) => policy.capability_id === capability))
+		.map((capability) => usable.find((policy) => policy.capability_id === capability))
 		.filter((policy): policy is AutoRouterRouteDataPolicy => policy !== undefined);
 	const chosen = policies.find((policy) => policy.has_params) ?? policies[0];
 	return resolveEffectiveDataPolicy({
@@ -843,7 +862,7 @@ export async function loadManagedAutoRouterCandidates(
 		const providersBySlug = new Map(catalogue.providers.map((provider) => [provider.provider_slug, provider]));
 		const before = candidates.length;
 		candidates = candidatesFrom(activeRoutes.filter((route) =>
-			routeOffersZeroDataRetention(route, providersBySlug.get(route.provider_slug), requirements.endpoint, route.model_slug)));
+			routeOffersZeroDataRetention(route, providersBySlug.get(route.provider_slug), requirements.endpoint, route.model_slug, now)));
 		droppedForZeroDataRetention = before - candidates.length;
 	}
 	const benchmarkIds = benchmarkIdsForClassification(classification);
