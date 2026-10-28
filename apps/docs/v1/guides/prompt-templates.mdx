@@ -267,7 +267,7 @@ Public presets use `@publisher/support-triage@production`. If `model` and `promp
 
 A label is a name, such as `production` or `staging`, that points at one published version. Labels are 1 to 32 lowercase letters, numbers, hyphens or underscores, start with a letter, and cannot look like a version label (`v1`, `v2`).
 
-In **Settings -> Presets**, open the preset and use **Point a label** on a version to add a label or move one there. The preset's creator can change its labels, and so can workspace owners and admins when the preset is shared. With a [management API key](/v1/developers/management-api-keys) that has `presets:write`:
+In **Settings -> Presets**, open the preset. **Publish**, next to **Save Draft**, saves your changes and publishes them as the next version. Open **Versions and labels** to manage labels: each label has a version picker, so choosing another version moves the label and choosing an earlier one rolls back. Use **Add label** for a new one. Open a version to see its models and template messages and how they differ from the default version (the one requests run when they don't pin a version), and use **Run** to try that version with the test values from **Prompt template**. The preset's creator can change its labels, and so can workspace owners and admins when the preset is shared. With a [management API key](/v1/developers/management-api-keys) that has `presets:write`:
 
 ```bash
 curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \

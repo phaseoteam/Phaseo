@@ -238,7 +238,10 @@ describe("account policy settings routes", () => {
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
 				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
-				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([{ id: "version-3", version_number: 3, version_label: "v3" }, { id: "version-2", version_number: 2, version_label: "v2" }]), { status: 200 });
+				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
+					{ id: "version-3", version_number: 3, version_label: "v3", config: { models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] }, parameters: { temperature: 0.2 } } },
+					{ id: "version-2", version_number: 2, version_label: "v2", config: null },
+				]), { status: 200 });
 				if (url.includes("/preset_version_labels?")) return new Response(JSON.stringify([{ label: "production", version_id: "version-2", updated_at: "2026-10-27T00:00:00Z" }, { label: "staging", version_id: "version-3", updated_at: "2026-10-27T00:00:00Z" }]), { status: 200 });
 				const rpcMatch = url.match(/\/rpc\/([a-z_]+)/);
 				if (rpcMatch) {
@@ -264,6 +267,20 @@ describe("account policy settings routes", () => {
 				activeVersionId: "version-3",
 				canManageLabels: true,
 			});
+		});
+
+		it("returns each version's models and template, and no other config, so the editor can show and compare them", async () => {
+			stubLabels({ role: "member" });
+			const body = await (await request("/versions")).json() as { versions: Array<{ config: unknown }> };
+			expect(body.versions.map((version) => version.config)).toEqual([
+				{ models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] } },
+				{ models: [], prompt: null },
+			]);
+		});
+
+		it("does not show a private preset's versions to other members", async () => {
+			stubLabels({ role: "member", visibility: "private" });
+			expect((await request("/versions")).status).toBe(404);
 		});
 
 		it("tells members who did not create the preset that they cannot move labels", async () => {

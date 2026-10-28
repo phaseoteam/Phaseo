@@ -422,6 +422,28 @@ export async function publishPresetVersionAction(id: string, releaseNotes?: stri
 	return data;
 }
 
+export type PublishedPresetVersion = { version_number?: number; version_label?: string | null };
+/** The outcome of publishing from the editor. Errors are returned, not thrown, so their codes survive production server actions. */
+export type PresetPublishResult = { ok: true; version: PublishedPresetVersion | null } | { ok: false; error: string };
+
+/** Publishes the saved draft as a new version, returning the gateway's error code (such as no_draft_changes) instead of throwing. */
+export async function publishPresetDraftAction(id: string, releaseNotes?: string): Promise<PresetPublishResult> {
+	if (!id) return { ok: false, error: "bad_request" };
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) return { ok: false, error: "unauthorized" };
+	let data: { version?: PublishedPresetVersion };
+	try {
+		data = await fetchAccountWebApi<{ version?: PublishedPresetVersion }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes: releaseNotes?.trim() || undefined }) });
+	} catch (error) {
+		if (error instanceof WebApiError) return { ok: false, error: error.code ?? error.detail ?? "failed" };
+		throw error;
+	}
+	revalidatePath("/settings/presets"); revalidatePath(`/gateway/marketplace/${id}`); revalidatePresetDataCache(id);
+	return { ok: true, version: data.version ?? null };
+}
+
+/** The parts of a version the editor shows and compares. */
+export type PresetVersionContent = { models: string[]; prompt: unknown };
+
 export type PresetVersionSummary = {
 	id: string;
 	version_number: number;
@@ -430,6 +452,8 @@ export type PresetVersionSummary = {
 	visibility: string | null;
 	created_at: string | null;
 	labels: string[];
+	/** Missing from responses made before the editor compared versions. */
+	config?: PresetVersionContent | null;
 };
 export type PresetVersionsWithLabels = {
 	versions: PresetVersionSummary[];
