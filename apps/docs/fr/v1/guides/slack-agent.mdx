@@ -282,7 +282,8 @@ Chaque exécution est une réponse ordinaire à la personne qui a créé la tâc
 
 Quand une exécution ne peut pas avoir lieu :
 
-- Si la personne qui l’a créée ne peut plus utiliser l’agent, si l’agent a été mis en pause dans Phaseo ou s’il ne peut plus publier dans la conversation (par exemple parce qu’il a été retiré du canal), l’exécution est ignorée et la tâche est mise en pause, avec la raison dans **Paramètres → Slack**.
+- Si l’agent a été mis en pause dans Phaseo ou qu’une facture Phaseo est impayée (**Paiement en attente**), l’exécution est ignorée et la tâche continue : elle s’exécute de nouveau à son heure suivante dès que l’agent est réactivé, sans rien à reprendre. Ces exécutions ignorées ne comptent pas comme des échecs, et **Paramètres → Slack** indique pourquoi la dernière exécution a été ignorée.
+- Si la personne qui l’a créée ne peut plus utiliser l’agent ou si l’agent ne peut plus publier dans la conversation (par exemple parce qu’il a été retiré du canal), l’exécution est ignorée et la tâche est mise en pause, avec la raison dans **Paramètres → Slack**.
 - Toute autre exécution qui n’aboutit pas, comme une exécution refusée parce que le **Plafond de dépenses mensuel** est atteint, compte comme un échec. Après 3 échecs d’affilée, la tâche est mise en pause et l’agent prévient la personne qui l’a créée par message direct.
 
 Chacun peut annuler les tâches qu’il a créées en le demandant à l’agent. Les propriétaires et administrateurs de l’espace de travail Phaseo qui ont associé leur compte Slack (voir « Associer un compte Slack » plus haut) peuvent annuler celles de tout le monde. Les personnes d’autres entreprises dans des canaux Slack Connect partagés voient les tâches d’une conversation mais ne peuvent pas en créer. L’onglet **Home** de l’agent liste vos propres tâches.
@@ -545,7 +546,7 @@ Quelques règles pour votre propre application :
 
 ## Mettre en pause ou désinstaller
 
-- **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause. Les tâches récurrentes qui arrivent à échéance pendant la pause sont aussi mises en pause ; reprenez-les sous **Tâches récurrentes**.
+- **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause. Les tâches récurrentes ignorent les exécutions qui arrivent à échéance pendant la pause, puis continuent à leur heure suivante une fois les réponses reprises.
 - **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes, ses compétences enregistrées et ses tâches récurrentes, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
 - La désinstallation supprime aussi les pages partagées de l’agent, si bien que leurs liens cessent de fonctionner.
 - Retirer l’application dans Slack, ou révoquer son token de bot, la désinstalle de la même façon dans Phaseo.

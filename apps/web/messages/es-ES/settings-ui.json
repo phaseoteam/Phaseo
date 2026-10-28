@@ -7176,6 +7176,12 @@
 				"running": "En curso",
 				"none": "Aún no se ha ejecutado"
 			},
+			"skipReasons": {
+				"installationPaused": "Omitida: el agente estaba en pausa",
+				"paymentDue": "Omitida: había una factura de Phaseo sin pagar",
+				"schedulesOff": "Omitida: las tareas recurrentes estaban desactivadas",
+				"limit": "Omitida: se alcanzó un límite de uso"
+			},
 			"failuresInRow": "Fallos seguidos: {count}",
 			"pause": "Pausar",
 			"resume": "Reanudar",

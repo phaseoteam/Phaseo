@@ -7176,6 +7176,12 @@
 				"running": "Läuft",
 				"none": "Noch nicht gelaufen"
 			},
+			"skipReasons": {
+				"installationPaused": "Übersprungen: Der Agent war pausiert",
+				"paymentDue": "Übersprungen: Eine Phaseo-Rechnung war unbezahlt",
+				"schedulesOff": "Übersprungen: Wiederkehrende Aufgaben waren ausgeschaltet",
+				"limit": "Übersprungen: Ein Nutzungslimit war erreicht"
+			},
 			"failuresInRow": "Fehler hintereinander: {count}",
 			"pause": "Pausieren",
 			"resume": "Fortsetzen",

@@ -33,6 +33,7 @@ import {
 	scheduleSettingsDraft,
 	scheduleSettingsPatch,
 	scheduleWhere,
+	skipReasonKey,
 	slackScheduleError,
 	type SlackAgentSchedule,
 	type SlackAgentSchedules,
@@ -244,6 +245,8 @@ export function SchedulesList({ data, onChanged, now = Date.now() }: { data: Sla
 						<TableBody>
 							{data.schedules.map((schedule) => {
 								const last = lastRunState(schedule, now);
+								// A skipped run says why, e.g. the agent was paused.
+								const skippedBecause = last === "skipped" ? skipReasonKey(schedule.last_result_reason) : null;
 								return (
 									<TableRow key={schedule.id}>
 										<TableCell className="min-w-56 max-w-sm align-top">
@@ -265,7 +268,7 @@ export function SchedulesList({ data, onChanged, now = Date.now() }: { data: Sla
 										</TableCell>
 										<TableCell className="whitespace-nowrap align-top text-muted-foreground">{schedule.created_by}</TableCell>
 										<TableCell className="align-top">
-											<span className={cn(last === "failed" && "text-destructive")}>{t(`schedules.lastResult.${last}`)}</span>
+											<span className={cn(last === "failed" && "text-destructive")}>{skippedBecause ? t(`schedules.skipReasons.${skippedBecause}`) : t(`schedules.lastResult.${last}`)}</span>
 											{schedule.last_run_at && last !== "none" ? <span className="block whitespace-nowrap text-xs text-muted-foreground">{inZone(schedule.last_run_at, schedule.timezone)}</span> : null}
 											{schedule.failures > 0 ? <span className="block text-xs text-muted-foreground">{t("schedules.failuresInRow", { count: number(schedule.failures) })}</span> : null}
 										</TableCell>

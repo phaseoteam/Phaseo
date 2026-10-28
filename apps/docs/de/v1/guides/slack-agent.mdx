@@ -282,7 +282,8 @@ Jeder Lauf ist eine normale Antwort an die Person, die die Aufgabe eingerichtet 
 
 Wenn ein Lauf nicht stattfinden kann:
 
-- Kann die Person, die die Aufgabe eingerichtet hat, den Agenten nicht mehr nutzen, wurde der Agent in Phaseo pausiert oder kann er nicht mehr in der Unterhaltung posten (etwa weil er aus dem Kanal entfernt wurde), wird der Lauf übersprungen und die Aufgabe pausiert, mit dem Grund unter **Einstellungen → Slack**.
+- Wurde der Agent in Phaseo pausiert oder ist eine Phaseo-Rechnung unbezahlt (**Zahlung offen**), wird der Lauf übersprungen und die Aufgabe läuft weiter: Sobald der Agent wieder an ist, läuft sie zu ihrer nächsten Zeit, ohne dass du sie fortsetzen musst. Solche übersprungenen Läufe zählen nicht als Fehler, und **Einstellungen → Slack** zeigt, warum der letzte Lauf übersprungen wurde.
+- Kann die Person, die die Aufgabe eingerichtet hat, den Agenten nicht mehr nutzen oder kann der Agent nicht mehr in der Unterhaltung posten (etwa weil er aus dem Kanal entfernt wurde), wird der Lauf übersprungen und die Aufgabe pausiert, mit dem Grund unter **Einstellungen → Slack**.
 - Jeder andere Lauf, der nicht durchgeht, etwa einer, der abgelehnt wird, weil die **Monatliche Ausgabengrenze** erreicht ist, zählt als Fehler. Nach 3 Fehlern hintereinander wird die Aufgabe pausiert, und der Agent sagt es der Person, die sie eingerichtet hat, in einer Direktnachricht.
 
 Personen können die Aufgaben, die sie eingerichtet haben, stornieren, indem sie den Agenten darum bitten. Inhaber und Administratoren des Phaseo-Workspace, die ihr Slack-Konto verknüpft haben (siehe „Ein Slack-Konto verknüpfen“ oben), können die Aufgaben aller stornieren. Personen aus anderen Unternehmen in geteilten Slack-Connect-Kanälen sehen die Aufgaben einer Unterhaltung, können aber keine einrichten. Der Tab **Home** des Agenten listet deine eigenen Aufgaben.
@@ -545,7 +546,7 @@ Ein paar Regeln für deine eigene App:
 
 ## Pausieren oder deinstallieren
 
-- **Antworten pausieren** unter **Einstellungen → Slack** stoppt alle Antworten, bis du **Antworten fortsetzen** wählst. Wer dem Agenten schreibt, bekommt einen privaten Hinweis, dass er pausiert ist. Wiederkehrende Aufgaben, die fällig werden, während er pausiert ist, werden ebenfalls pausiert; setze sie unter **Wiederkehrende Aufgaben** fort.
+- **Antworten pausieren** unter **Einstellungen → Slack** stoppt alle Antworten, bis du **Antworten fortsetzen** wählst. Wer dem Agenten schreibt, bekommt einen privaten Hinweis, dass er pausiert ist. Wiederkehrende Aufgaben überspringen die Läufe, die fällig werden, während er pausiert ist, und laufen zu ihrer nächsten Zeit weiter, sobald du die Antworten fortsetzt.
 - **Deinstallieren** stoppt den Agenten sofort, löscht seinen API-Schlüssel, seine Notizen, gespeicherten Skills und wiederkehrenden Aufgaben, entfernt seine Guardrail und entfernt die App aus Slack. Wenn Slack das Entfernen nicht bestätigt, sagt Phaseo dir das, und du solltest die App auch in Slack entfernen. Die Guardrail bleibt, wenn du sie anderen Schlüsseln oder Mitgliedern zugewiesen hast.
 - Beim Deinstallieren werden auch die geteilten Seiten des Agenten gelöscht, sodass ihre Links nicht mehr funktionieren.
 - Wenn die App in Slack entfernt oder ihr Bot-Token widerrufen wird, wird sie in Phaseo auf dieselbe Weise deinstalliert.

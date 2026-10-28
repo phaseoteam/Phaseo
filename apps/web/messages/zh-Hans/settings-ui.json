@@ -7176,6 +7176,12 @@
 				"running": "运行中",
 				"none": "尚未运行"
 			},
+			"skipReasons": {
+				"installationPaused": "已跳过：智能体已被暂停",
+				"paymentDue": "已跳过：有一笔 Phaseo 账单未支付",
+				"schedulesOff": "已跳过：定期任务已关闭",
+				"limit": "已跳过：已达到使用限额"
+			},
 			"failuresInRow": "连续失败次数：{count}",
 			"pause": "暂停",
 			"resume": "恢复",

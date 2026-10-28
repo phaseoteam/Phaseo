@@ -3,7 +3,7 @@ import { isAutoModel } from "./agent";
 import type { Env } from "./env";
 import type { Installation } from "./installations";
 import { allowedModels, modelChoiceOn, modelNames } from "./model-choice";
-import { describeTiming, formatRunTime, pauseReasonText, type ScheduleRow } from "./schedules";
+import { describeTiming, formatRunTime, lastRunText, pauseReasonText, type ScheduleRow } from "./schedules";
 import type { SlackClient } from "./slack-api";
 import type { Db } from "./supabase";
 import { isWorkspaceMember, linkedUserId } from "./usage-tools";
@@ -18,9 +18,9 @@ import { isWorkspaceMember, linkedUserId } from "./usage-tools";
 
 /** The most of a person's recurring tasks the tab lists. */
 const HOME_SCHEDULES = 10;
-const HOME_SCHEDULE_COLUMNS = "title,channel_id,status,pause_reason,next_run_at,frequency,hour,minute,day_of_week,day_of_month,timezone";
+const HOME_SCHEDULE_COLUMNS = "title,channel_id,status,pause_reason,next_run_at,last_result,last_result_reason,frequency,hour,minute,day_of_week,day_of_month,timezone";
 
-export type HomeSchedule = Pick<ScheduleRow, "title" | "channel_id" | "status" | "pause_reason" | "next_run_at" | "frequency" | "hour" | "minute" | "day_of_week" | "day_of_month" | "timezone">;
+export type HomeSchedule = Pick<ScheduleRow, "title" | "channel_id" | "status" | "pause_reason" | "next_run_at" | "last_result" | "last_result_reason" | "frequency" | "hour" | "minute" | "day_of_week" | "day_of_month" | "timezone">;
 
 export type HomeAccount = "member" | "linked" | "not_linked";
 
@@ -42,7 +42,9 @@ export type HomeFacts = {
 
 function scheduleLine(schedule: HomeSchedule): string {
 	const where = schedule.channel_id.startsWith("D") ? "here in Messages" : `in <#${schedule.channel_id}>`;
-	const state = schedule.status === "active" ? `next ${formatRunTime(schedule.next_run_at, schedule.timezone)}` : `_${pauseReasonText(schedule.pause_reason)}_`;
+	// A skipped run says why (the agent was paused, say); answers and failures aren't listed here.
+	const skipped = schedule.last_result === "skipped" ? `; last run ${lastRunText(schedule.last_result, schedule.last_result_reason)}` : "";
+	const state = schedule.status === "active" ? `next ${formatRunTime(schedule.next_run_at, schedule.timezone)}${skipped}` : `_${pauseReasonText(schedule.pause_reason)}_`;
 	return `• *${escapeText(schedule.title)}*, ${escapeText(describeTiming(schedule))} ${where}: ${escapeText(state)}`;
 }
 
@@ -98,6 +100,7 @@ export function homeView(facts: HomeFacts) {
 		blocks.push(section([
 			"*Your recurring tasks*",
 			...facts.schedules.mine.map(scheduleLine),
+			...(installation.status !== "active" ? ["_While the agent is paused their runs are skipped, and they carry on by themselves once it's back on._"] : []),
 			"_Ask the agent to list or cancel them. Owners and admins can also pause them in Phaseo settings._",
 		].join("\n"), true));
 	}

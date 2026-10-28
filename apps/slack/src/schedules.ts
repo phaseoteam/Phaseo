@@ -31,7 +31,7 @@ const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 /** IANA names, as the schedules table accepts them. */
 const TIME_ZONE_PATTERN = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+){0,2}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const LIST_COLUMNS = "id,channel_id,title,prompt,frequency,hour,minute,day_of_week,day_of_month,timezone,created_by,status,pause_reason,next_run_at,last_result";
+const LIST_COLUMNS = "id,channel_id,title,prompt,frequency,hour,minute,day_of_week,day_of_month,timezone,created_by,status,pause_reason,next_run_at,last_result,last_result_reason";
 
 export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number];
 
@@ -55,6 +55,8 @@ export type ScheduleRow = ScheduleTiming & {
 	pause_reason: string | null;
 	next_run_at: string;
 	last_result: "answered" | "failed" | "skipped" | null;
+	/** Why the last run was skipped or failed, e.g. installation_paused. */
+	last_result_reason: string | null;
 };
 
 /** Text for Slack's mrkdwn, which reads &, < and > as markup. */
@@ -238,6 +240,26 @@ export function pauseReasonText(reason: string | null): string {
 	}
 }
 
+/** What a schedule's last run did, in words, e.g. "skipped: the agent was paused". */
+export function lastRunText(result: NonNullable<ScheduleRow["last_result"]>, reason: string | null): string {
+	if (result !== "skipped") return result;
+	switch (reason) {
+		case "installation_paused":
+			return "skipped: the agent was paused";
+		case "payment_due":
+			return "skipped: a Phaseo bill was unpaid";
+		case "schedules_off":
+			return "skipped: recurring tasks were turned off";
+		case "max_people":
+		case "plan_full":
+		case "hourly_limit":
+		case "monthly_cap":
+			return "skipped: a usage limit was reached";
+		default:
+			return "skipped";
+	}
+}
+
 function scheduleView(row: ScheduleRow, channel: string) {
 	return {
 		id: row.id,
@@ -247,7 +269,7 @@ function scheduleView(row: ScheduleRow, channel: string) {
 		where: where(row, channel),
 		status: row.status === "active" ? "active" : pauseReasonText(row.pause_reason),
 		...(row.status === "active" ? { next_run: formatRunTime(row.next_run_at, row.timezone) } : {}),
-		...(row.last_result ? { last_run: row.last_result } : {}),
+		...(row.last_result ? { last_run: lastRunText(row.last_result, row.last_result_reason) } : {}),
 		set_up_by: `<@${row.created_by}>`,
 	};
 }

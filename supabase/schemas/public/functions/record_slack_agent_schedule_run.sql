@@ -14,15 +14,20 @@ CREATE OR REPLACE FUNCTION public.record_slack_agent_schedule_run (
 -- ends or when it skips the run. answered clears the failures in a row; failed
 -- and skipped add one. p_pause pauses the schedule at once, with p_reason as the
 -- reason (its creator can no longer use the agent, or the agent isn't in the
--- channel); otherwise the third failure in a row pauses it (failures). Only the
--- run claimed last is recorded, and only once: a repeat (a retried Workflow
--- step) or an older run changes nothing and returns recorded false.
+-- channel); otherwise the third failure in a row pauses it (failures). A run
+-- skipped because the agent is paused or a bill is due (installation_paused,
+-- payment_due) is neither: it leaves the failures in a row as they were and never
+-- pauses the schedule, even with p_pause, so the schedule runs again at its next
+-- time once the agent is back on. Only the run claimed last is recorded, and
+-- only once: a repeat (a retried Workflow step) or an older run changes nothing
+-- and returns recorded false.
 -- Returns {recorded, paused (by this call), pause_reason, failures, created_by,
 -- channel_id, title}. Service role only.
 declare
   v_schedule public.slack_agent_schedules%rowtype;
   v_failures integer;
   v_pause text;
+  v_agent_paused boolean := p_result = 'skipped' and coalesce(p_reason in ('installation_paused', 'payment_due'), false);
 begin
   if p_result is null or p_result not in ('answered', 'failed', 'skipped') then
     raise exception 'invalid_result' using errcode = '22023';
@@ -34,10 +39,14 @@ begin
   if not found then
     return jsonb_build_object('recorded', false, 'paused', false);
   end if;
-  v_failures := case when p_result = 'answered' then 0 else v_schedule.failures + 1 end;
+  v_failures := case
+    when p_result = 'answered' then 0
+    when v_agent_paused then v_schedule.failures
+    else v_schedule.failures + 1
+  end;
   -- One an admin paused meanwhile keeps that reason.
   v_pause := case
-    when v_schedule.status <> 'active' then null
+    when v_schedule.status <> 'active' or v_agent_paused then null
     when coalesce(p_pause, false) then p_reason
     when v_failures >= 3 then 'failures'
   end;
@@ -60,7 +69,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."record_slack_agent_schedule_run"(uuid, timestamp with time zone, text, text, boolean) IS 'For the Slack Worker: records the result of a schedule''s latest claimed run once, counts failures in a row and pauses the schedule when asked or at the third. Returns {recorded, paused, pause_reason, failures, created_by, channel_id, title}.';
+COMMENT ON FUNCTION "public"."record_slack_agent_schedule_run"(uuid, timestamp with time zone, text, text, boolean) IS 'For the Slack Worker: records the result of a schedule''s latest claimed run once, counts failures in a row and pauses the schedule when asked or at the third; a run skipped while the agent is paused or a bill is due neither counts nor pauses it. Returns {recorded, paused, pause_reason, failures, created_by, channel_id, title}.';
 
 GRANT EXECUTE ON FUNCTION "public"."record_slack_agent_schedule_run"(uuid, timestamp with time zone, text, text, boolean) TO "service_role";
 

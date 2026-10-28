@@ -282,7 +282,8 @@ Cada execução é uma resposta normal à pessoa que a configurou. O agente veri
 
 Quando uma execução não pode acontecer:
 
-- Se a pessoa que a configurou não pode mais usar o agente, se o agente foi pausado na Phaseo ou se ele não consegue mais publicar na conversa (por exemplo, porque foi removido do canal), a execução é pulada e a tarefa é pausada, com o motivo em **Configurações → Slack**.
+- Se o agente foi pausado na Phaseo ou há uma fatura da Phaseo não paga (**Pagamento pendente**), a execução é pulada e a tarefa continua: ela roda de novo no próximo horário assim que o agente volta a funcionar, sem que você precise retomá-la. Essas execuções puladas não contam como falhas, e **Configurações → Slack** mostra por que a última execução foi pulada.
+- Se a pessoa que a configurou não pode mais usar o agente ou se o agente não consegue mais publicar na conversa (por exemplo, porque foi removido do canal), a execução é pulada e a tarefa é pausada, com o motivo em **Configurações → Slack**.
 - Qualquer outra execução que não dê certo, como uma recusada porque o **Teto de gastos mensal** foi atingido, conta como falha. Depois de 3 seguidas, a tarefa é pausada e o agente avisa a pessoa que a configurou em uma mensagem direta.
 
 Cada pessoa pode cancelar as tarefas que configurou pedindo ao agente. Proprietários e administradores do workspace da Phaseo que vincularam a conta do Slack (veja "Vincular uma conta do Slack" mais acima) podem cancelar as de qualquer pessoa. Pessoas de outras empresas em canais compartilhados do Slack Connect veem as tarefas de uma conversa, mas não podem configurá-las. A aba **Home** do agente lista as suas próprias tarefas.
@@ -545,7 +546,7 @@ Algumas regras para o seu próprio app:
 
 ## Pausar ou desinstalar
 
-- **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado. Tarefas recorrentes que vencem enquanto ele está pausado também são pausadas; retome-as em **Tarefas recorrentes**.
+- **Pausar respostas**, em **Configurações → Slack**, interrompe todas as respostas até você selecionar **Retomar respostas**. Quem escrever para o agente recebe um aviso privado de que ele está pausado. Tarefas recorrentes pulam as execuções que vencem enquanto ele está pausado e continuam no próximo horário depois que você retomar as respostas.
 - **Desinstalar** interrompe o agente na hora, exclui a chave de API, as notas, as habilidades salvas e as tarefas recorrentes dele, remove o guardrail e remove o app do Slack. Se o Slack não confirmar a remoção, a Phaseo avisa você, e você deve remover o app no Slack também. O guardrail continua se você o tiver adicionado a outras chaves ou membros.
 - Desinstalar também exclui as páginas compartilhadas do agente, então os links delas param de funcionar.
 - Remover o app dentro do Slack, ou revogar o token de bot dele, desinstala o agente na Phaseo da mesma forma.

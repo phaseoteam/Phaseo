@@ -7176,6 +7176,12 @@
 				"running": "Running",
 				"none": "Not run yet"
 			},
+			"skipReasons": {
+				"installationPaused": "Skipped: the agent was paused",
+				"paymentDue": "Skipped: a Phaseo bill was unpaid",
+				"schedulesOff": "Skipped: recurring tasks were off",
+				"limit": "Skipped: a usage limit was reached"
+			},
 			"failuresInRow": "Failures in a row: {count}",
 			"pause": "Pause",
 			"resume": "Resume",
