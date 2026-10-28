@@ -14,8 +14,8 @@ export type LogoAssets = {
 	dark?: string;
 };
 
-export type ResolvedLogo = {
-	id?: KnownLogoId;
+export type ResolvedLogo<Id extends string = KnownLogoId> = {
+	id?: Id;
 	label: string;
 	src?: string;
 	variant: "color" | "light" | "dark";
@@ -28,16 +28,8 @@ export type ResolveLogoOptions = {
 	fallbackToColor?: boolean;
 };
 
-const manifestEntries = Object.entries(logoManifest) as Array<
-	[KnownLogoId, LogoAssets]
->;
-
-const normalisedKeyMap = new Map<string, KnownLogoId>();
-const normalisedAliasMap = new Map<string, KnownLogoId>();
-
-const pathToKeyMap = new Map<string, KnownLogoId>();
-
-const labelOverrides: Partial<Record<KnownLogoId, string>> = {
+/** Display names where title-casing the ID would be wrong. */
+export const logoLabels: Partial<Record<KnownLogoId, string>> = {
 	baselabs: "Base Labs",
 	nace: "Nace.AI",
 	"abliteration-ai": "Abliteration AI",
@@ -113,81 +105,53 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	"observability-whylabs": "WhyLabs",
 };
 
-for (const [key, assets] of manifestEntries) {
-	normalisedKeyMap.set(normalise(key), key);
-	for (const value of Object.values(assets)) {
-		if (!value) continue;
-		pathToKeyMap.set(value, key);
-	}
-}
-
-// Provider/catalog IDs are not always identical to logo IDs.
-// Keep common aliases here so callers can pass provider IDs directly.
-normalisedAliasMap.set(normalise("novitaai"), "novita");
-normalisedAliasMap.set(normalise("EmpirioLabs AI"), "empiriolabs");
-normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
-normalisedAliasMap.set(normalise("inference-net"), "inference");
-normalisedAliasMap.set(normalise("io-net"), "ionet");
-normalisedAliasMap.set(normalise("anthropic-aws"), "aws");
-normalisedAliasMap.set(normalise("anthropic-aws-us"), "aws");
-normalisedAliasMap.set(normalise("azure-cognitive-services"), "azure");
-normalisedAliasMap.set(normalise("cloudflare-workers-ai"), "cloudflare");
-normalisedAliasMap.set(normalise("fireworks-ai"), "fireworks");
-normalisedAliasMap.set(normalise("github-copilot"), "github");
-normalisedAliasMap.set(normalise("google-vertex-anthropic"), "google-vertex");
-normalisedAliasMap.set(normalise("alibaba-coding-plan"), "alibaba");
-normalisedAliasMap.set(normalise("alibaba-coding-plan-cn"), "alibaba");
-normalisedAliasMap.set(normalise("alibaba-token-plan"), "alibaba");
-normalisedAliasMap.set(normalise("alibaba-token-plan-cn"), "alibaba");
-normalisedAliasMap.set(normalise("minimax-cn"), "minimax");
-normalisedAliasMap.set(normalise("minimax-coding-plan"), "minimax");
-normalisedAliasMap.set(normalise("minimax-cn-coding-plan"), "minimax");
-normalisedAliasMap.set(normalise("moonshot"), "moonshotai");
-normalisedAliasMap.set(normalise("kimi"), "moonshotai");
-normalisedAliasMap.set(normalise("moonshotai-cn"), "moonshotai");
-normalisedAliasMap.set(normalise("ollama-cloud"), "ollama");
-normalisedAliasMap.set(normalise("cline-pass"), "cline");
-normalisedAliasMap.set(normalise("kimi-for-coding"), "moonshotai");
-normalisedAliasMap.set(normalise("llama"), "meta");
-normalisedAliasMap.set(normalise("opencode-go"), "opencode");
-normalisedAliasMap.set(normalise("stepfun-ai"), "stepfun");
-normalisedAliasMap.set(normalise("stepfun-ai-step-plan"), "stepfun");
-normalisedAliasMap.set(normalise("stepfun-step-plan"), "stepfun");
-normalisedAliasMap.set(normalise("zai-coding-plan"), "zai");
-normalisedAliasMap.set(normalise("zhipuai-coding-plan"), "zhipuai");
-normalisedAliasMap.set(normalise("snowflake-cortex"), "snowflake");
-normalisedAliasMap.set(normalise("sap-ai-core"), "sap");
-normalisedAliasMap.set(normalise("tencent-coding-plan"), "tencent");
-normalisedAliasMap.set(normalise("tencent-token-plan"), "tencent");
-normalisedAliasMap.set(normalise("tencent-tokenhub"), "tencent");
-normalisedAliasMap.set(normalise("wafer.ai"), "wafer");
-normalisedAliasMap.set(normalise("reflection-ai"), "reflection");
-normalisedAliasMap.set(normalise("x-ai"), "spacex-ai");
-normalisedAliasMap.set(normalise("xai"), "spacex-ai");
+/** Provider and catalogue IDs that use another ID's logo, so callers can pass provider IDs directly. */
+export const logoAliases: Record<string, KnownLogoId> = {
+	"novitaai": "novita",
+	"EmpirioLabs AI": "empiriolabs",
+	"cogito-ai": "cogito",
+	"inference-net": "inference",
+	"io-net": "ionet",
+	"anthropic-aws": "aws",
+	"anthropic-aws-us": "aws",
+	"azure-cognitive-services": "azure",
+	"cloudflare-workers-ai": "cloudflare",
+	"fireworks-ai": "fireworks",
+	"github-copilot": "github",
+	"google-vertex-anthropic": "google-vertex",
+	"alibaba-coding-plan": "alibaba",
+	"alibaba-coding-plan-cn": "alibaba",
+	"alibaba-token-plan": "alibaba",
+	"alibaba-token-plan-cn": "alibaba",
+	"minimax-cn": "minimax",
+	"minimax-coding-plan": "minimax",
+	"minimax-cn-coding-plan": "minimax",
+	"moonshot": "moonshotai",
+	"kimi": "moonshotai",
+	"moonshotai-cn": "moonshotai",
+	"ollama-cloud": "ollama",
+	"cline-pass": "cline",
+	"kimi-for-coding": "moonshotai",
+	"llama": "meta",
+	"opencode-go": "opencode",
+	"stepfun-ai": "stepfun",
+	"stepfun-ai-step-plan": "stepfun",
+	"stepfun-step-plan": "stepfun",
+	"zai-coding-plan": "zai",
+	"zhipuai-coding-plan": "zhipuai",
+	"snowflake-cortex": "snowflake",
+	"sap-ai-core": "sap",
+	"tencent-coding-plan": "tencent",
+	"tencent-token-plan": "tencent",
+	"tencent-tokenhub": "tencent",
+	"wafer.ai": "wafer",
+	"reflection-ai": "reflection",
+	"x-ai": "spacex-ai",
+	"xai": "spacex-ai",
+};
 
 function normalise(value: string): string {
 	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function lookupKnownId(input: string): KnownLogoId | undefined {
-	if (!input) return undefined;
-	if ((logoManifest as Record<string, LogoAssets>)[input]) {
-		return input as KnownLogoId;
-	}
-	const normalised = normalise(input);
-	if (!normalised) return undefined;
-	return normalisedKeyMap.get(normalised) ?? normalisedAliasMap.get(normalised);
-}
-
-function labelFromId(id?: KnownLogoId | string): string {
-	if (!id) return "Logo";
-	if (labelOverrides[id as KnownLogoId]) return labelOverrides[id as KnownLogoId]!;
-	const words = id
-		.replace(/[-_]+/g, " ")
-		.split(" ")
-		.filter(Boolean)
-		.map((word) => word.charAt(0).toUpperCase() + word.slice(1));
-	return words.join(" ");
 }
 
 function pickVariant(
@@ -278,70 +242,130 @@ function pickVariant(
 	return { src, variant: theme };
 }
 
-export function resolveLogo(
-	input: string,
-	options: ResolveLogoOptions = {}
-): ResolvedLogo {
-	const { variant = "auto", theme = "light", fallbackToColor = true } =
-		options;
+/**
+ * Everything a resolver needs: each ID's files, display names and aliases. The website publishes the built-in
+ * data at /logos/manifest.json, so the mobile app can show logos added after it was built.
+ */
+export type LogoData = {
+	logos: Record<string, LogoAssets>;
+	labels: Partial<Record<string, string>>;
+	aliases: Record<string, string>;
+};
 
-	let key = lookupKnownId(input);
-	let assets: LogoAssets = key ? logoManifest[key] : {};
+export type LogoResolver<Id extends string = string> = {
+	resolveLogo(input: string, options?: ResolveLogoOptions): ResolvedLogo<Id>;
+	listKnownLogos(): Array<{ id: Id; label: string; assets: LogoAssets }>;
+	getLogoLabel(id: string): string;
+	getKnownLogoIds(): Id[];
+};
 
-	if (!key && input.startsWith("/")) {
-		key = pathToKeyMap.get(input);
-		if (key) {
-			assets = logoManifest[key];
-		} else if (input.endsWith(".svg")) {
-			// treat arbitrary static path as color-only asset
-			assets = { color: input };
+/** A resolver over some logo data. The exports below use the built-in data; the mobile app adds the published data to it. */
+export function createLogoResolver(data: LogoData): LogoResolver {
+	const entries = Object.entries(data.logos);
+	const keyMap = new Map<string, string>();
+	const aliasMap = new Map<string, string>();
+	const pathMap = new Map<string, string>();
+	for (const [key, assets] of entries) {
+		keyMap.set(normalise(key), key);
+		for (const value of Object.values(assets)) {
+			if (!value) continue;
+			pathMap.set(value, key);
 		}
 	}
+	for (const [alias, key] of Object.entries(data.aliases)) aliasMap.set(normalise(alias), key);
 
-	if (!key && !assets.color && !assets.light && !assets.dark) {
-		// final fallback: assume the caller passed a bare id that matches the filename exactly
-		const assumedPath = `/logos/${input}.svg`;
-		if (pathToKeyMap.has(assumedPath)) {
-			key = pathToKeyMap.get(assumedPath);
-			assets = logoManifest[key!];
+	const lookupKnownId = (input: string): string | undefined => {
+		if (!input) return undefined;
+		if (data.logos[input]) return input;
+		const normalised = normalise(input);
+		if (!normalised) return undefined;
+		return keyMap.get(normalised) ?? aliasMap.get(normalised);
+	};
+
+	const labelFromId = (id?: string): string => {
+		if (!id) return "Logo";
+		const label = data.labels[id];
+		if (label) return label;
+		return id
+			.replace(/[-_]+/g, " ")
+			.split(" ")
+			.filter(Boolean)
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(" ");
+	};
+
+	const resolveLogo = (input: string, options: ResolveLogoOptions = {}): ResolvedLogo<string> => {
+		const { variant = "auto", theme = "light", fallbackToColor = true } = options;
+
+		let key = lookupKnownId(input);
+		let assets: LogoAssets = key ? data.logos[key] ?? {} : {};
+
+		if (!key && input.startsWith("/")) {
+			key = pathMap.get(input);
+			if (key) {
+				assets = data.logos[key] ?? {};
+			} else if (input.endsWith(".svg")) {
+				// treat arbitrary static path as color-only asset
+				assets = { color: input };
+			}
 		}
-	}
 
-	const { src, variant: resolvedVariant } = pickVariant(
-		assets,
-		variant,
-		theme,
-		fallbackToColor
-	);
+		if (!key && !assets.color && !assets.light && !assets.dark) {
+			// final fallback: assume the caller passed a bare id that matches the filename exactly
+			const assumedPath = `/logos/${input}.svg`;
+			if (pathMap.has(assumedPath)) {
+				key = pathMap.get(assumedPath);
+				assets = data.logos[key!] ?? {};
+			}
+		}
+
+		const { src, variant: resolvedVariant } = pickVariant(assets, variant, theme, fallbackToColor);
+
+		return {
+			id: key,
+			label: key ? labelFromId(key) : labelFromId(input),
+			src,
+			variant: resolvedVariant,
+			assets,
+		};
+	};
 
 	return {
-		id: key,
-		label: key ? labelFromId(key) : labelFromId(input),
-		src,
-		variant: resolvedVariant,
-		assets,
+		resolveLogo,
+		listKnownLogos: () => entries.map(([id, assets]) => ({ id, label: labelFromId(id), assets })),
+		getLogoLabel: (id) => labelFromId(lookupKnownId(id) ?? id),
+		getKnownLogoIds: () => entries.map(([id]) => id),
 	};
 }
 
-export function listKnownLogos(): Array<{
-	id: KnownLogoId;
-	label: string;
-	assets: LogoAssets;
-}> {
-	return manifestEntries.map(([id, assets]) => ({
-		id,
-		label: labelFromId(id),
-		assets,
-	}));
+/** The logo data built into this version of the code. */
+export const builtInLogoData: LogoData = { logos: logoManifest, labels: logoLabels, aliases: logoAliases };
+
+const builtIn = createLogoResolver(builtInLogoData) as LogoResolver<KnownLogoId>;
+
+export function resolveLogo(input: string, options: ResolveLogoOptions = {}): ResolvedLogo {
+	return builtIn.resolveLogo(input, options);
+}
+
+export function listKnownLogos(): Array<{ id: KnownLogoId; label: string; assets: LogoAssets }> {
+	return builtIn.listKnownLogos();
 }
 
 export function getLogoLabel(id: string): string {
-	const key = lookupKnownId(id);
-	return labelFromId(key ?? id);
+	return builtIn.getLogoLabel(id);
 }
 
 export function getKnownLogoIds(): KnownLogoId[] {
-	return manifestEntries.map(([id]) => id);
+	return builtIn.getKnownLogoIds();
+}
+
+/** Built-in data plus logo data downloaded later (the published data wins where both have an ID). */
+export function mergeLogoData(base: LogoData, extra: LogoData): LogoData {
+	return {
+		logos: { ...base.logos, ...extra.logos },
+		labels: { ...base.labels, ...extra.labels },
+		aliases: { ...base.aliases, ...extra.aliases },
+	};
 }
 
 export { logoManifest } from "./manifest";
