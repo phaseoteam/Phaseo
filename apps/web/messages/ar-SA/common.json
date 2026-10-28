@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "يتيح هذا للتطبيق التحقق من هوية من يسجل الدخول.",
 			"gatewayPermissionLabel": "استخدام AI Gateway برصيدك",
 			"gatewayPermissionDescription": "يتيح للتطبيق إرسال طلبات النماذج التي تخصم من رصيد الفريق المحدد.",
+			"billingPermissionLabel": "بدء شحن الرصيد",
+			"billingPermissionDescription": "يتيح للتطبيق طلب شراء رصيد للفريق المحدد. يجب أن يؤكد مالك الفريق أو مسؤوله كل عملية خصم عبر البريد الإلكتروني.",
 			"readPermissionLabel": "قراءة {resource}",
 			"readPermissionDescription": "يتيح هذا للتطبيق قراءة: {resource}.",
 			"managePermissionLabel": "إدارة {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "تطبيقات OAuth",
 					"description": "تهيئة عملاء OAuth وعمليات التكامل."
+				},
+				"billing": {
+					"title": "الفوترة",
+					"description": "عمليات شراء الرصيد التي يؤكدها مالك الفريق أو مسؤوله عبر البريد الإلكتروني."
 				}
 			},
 			"resources": {

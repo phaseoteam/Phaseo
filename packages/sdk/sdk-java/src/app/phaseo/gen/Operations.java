@@ -95,6 +95,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createCreditTopup(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/credits/topups";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -502,6 +507,11 @@ public final class Operations {
 
 	public static Object getCredits(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/credits";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getCreditTopup(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/credits/topups/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

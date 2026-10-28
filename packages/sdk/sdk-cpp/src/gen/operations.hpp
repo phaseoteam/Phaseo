@@ -100,6 +100,11 @@ inline Response CreateClassifier(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateCreditTopup(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/credits/topups";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers";
 	return client.request("POST", resolved_path, body);
@@ -507,6 +512,11 @@ inline Response GetClassifier(Client& client, const std::map<std::string, std::s
 
 inline Response GetCredits(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/credits";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetCreditTopup(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/credits/topups/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 

@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "Lets this application verify who is signing in.",
 			"gatewayPermissionLabel": "Use AI Gateway with your credits",
 			"gatewayPermissionDescription": "Lets the application run model requests charged to the selected team’s credits.",
+			"billingPermissionLabel": "Start credit top-ups",
+			"billingPermissionDescription": "Lets the application request credit purchases for the selected team. A team owner or admin must confirm each charge by email.",
 			"readPermissionLabel": "Read {resource}",
 			"readPermissionDescription": "Allows this application to read {resource}.",
 			"managePermissionLabel": "Manage {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth apps",
 					"description": "OAuth client and integration configuration."
+				},
+				"billing": {
+					"title": "Billing",
+					"description": "Credit purchases that a team owner or admin confirms by email."
 				}
 			},
 			"resources": {

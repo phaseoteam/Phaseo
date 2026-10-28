@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "允许此应用验证登录用户的身份。",
 			"gatewayPermissionLabel": "使用你的额度调用 AI Gateway",
 			"gatewayPermissionDescription": "允许应用使用所选团队的额度发送模型请求。",
+			"billingPermissionLabel": "发起额度充值",
+			"billingPermissionDescription": "允许应用为所选团队请求购买额度。每笔扣款都必须由团队所有者或管理员通过邮件确认。",
 			"readPermissionLabel": "读取{resource}",
 			"readPermissionDescription": "允许此应用读取：{resource}。",
 			"managePermissionLabel": "管理{resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth 应用",
 					"description": "OAuth 客户端和集成配置。"
+				},
+				"billing": {
+					"title": "账单",
+					"description": "由团队所有者或管理员通过邮件确认的额度购买。"
 				}
 			},
 			"resources": {

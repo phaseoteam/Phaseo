@@ -2823,6 +2823,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: Lancer une recharge de crédits
+      description: Demande l’ajout de crédits à l’espace de travail authentifié. Nécessite le scope facultatif billing:write et l’appartenance à l’espace de travail. Rien n’est débité ici. Avec une carte enregistrée, chaque propriétaire et administrateur de l’espace de travail reçoit par e-mail un lien à usage unique, et l’un d’eux confirme ou refuse le débit. Sinon, la réponse contient un checkout_url où un propriétaire ou un administrateur paie avec une nouvelle carte, enregistrée pour les recharges suivantes. Les montants vont de $5 à $500. Un espace de travail peut avoir 5 recharges en attente, et chacune expire au bout de 30 minutes.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre. Équivaut au champ idempotency_key.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: Recharge existante pour cette clé d’idempotence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: Recharge créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Montant non valide (invalid_amount, amount_below_minimum ou amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Interdit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Clé d’idempotence déjà utilisée pour une autre recharge, ou aucun propriétaire ni administrateur ne peut la confirmer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: L’espace de travail a déjà 5 recharges en attente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Les paiements par carte ne sont pas disponibles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: Obtenir une recharge de crédits
+      description: Renvoie l’état d’une recharge de crédits de l’espace de travail authentifié. Nécessite credits:read ou billing:write. Interrogez jusqu’à ce que final soit true. Les recharges refusées, expirées ou échouées comportent un code de motif ; ne les relancez pas automatiquement.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la recharge.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: État de la recharge
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: ID de recharge non valide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Non autorisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Interdit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recharge introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /key:
     get:
       x-beta: true
@@ -20171,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: Montant en dollars américains, avec au plus deux décimales.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: Facultatif. Doit correspondre à l’espace de travail authentifié.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: true dès que l’état ne changera plus (paid, declined, expired ou failed). Arrêtez alors d’interroger.
+        reason:
+          type: string
+          nullable: true
+          description: Code de motif des recharges refusées, expirées ou échouées, par exemple declined, expired, card_declined ou authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: Une phrase qui explique la suite.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout lorsqu’un propriétaire ou un administrateur paie avec une nouvelle carte sur checkout_url ; saved_card lorsqu’un propriétaire ou un administrateur confirme par e-mail un débit sur la carte enregistrée.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Page Phaseo où un propriétaire ou un administrateur paie avec une nouvelle carte. Présente uniquement dans la réponse qui a créé une recharge checkout en attente.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: Nombre de propriétaires et d’administrateurs à qui un e-mail a été envoyé pour confirmer une recharge saved_card.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:

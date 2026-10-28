@@ -3067,6 +3067,99 @@ export async function createClassifier(
   });
 }
 
+export type CreateCreditTopupParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: {
+    "Idempotency-Key"?: string;
+  };
+  body?: {
+    amount_usd: number;
+    idempotency_key?: string;
+    workspace_id?: string;
+  };
+};
+
+/**
+ * Asks to add credits to the authenticated workspace. Needs the opt-in billing:write scope and workspace membership. Nothing is charged here. With a saved card, every workspace owner and admin is emailed a single-use link and one of them confirms or declines the charge. Without one, the response has a checkout_url where an owner or admin pays with a new card, which is saved for later top-ups. Amounts are $5 to $500. A workspace can have 5 pending top-ups, and each expires after 30 minutes.
+ */
+export async function createCreditTopup(
+  client: Client,
+  args: CreateCreditTopupParams = {},
+): Promise<{
+  ok: true;
+  topup: {
+    amount_cents: number;
+    amount_usd: number;
+    checkout_url: string | null;
+    confirmation_recipients?: number;
+    created_at: string;
+    currency: string;
+    decided_at: string | null;
+    expires_at: string;
+    final: boolean;
+    flow: "checkout" | "saved_card";
+    id: string;
+    message: string;
+    next_action:
+      | "open_checkout_url"
+      | "await_email_confirmation"
+      | "await_payment"
+      | null
+      | null;
+    paid_at: string | null;
+    payment_method: {
+      brand?: string | null;
+      last4?: string | null;
+    } | null;
+    reason: string | null;
+    status:
+      "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/credits/topups";
+  return client.request<{
+    ok: true;
+    topup: {
+      amount_cents: number;
+      amount_usd: number;
+      checkout_url: string | null;
+      confirmation_recipients?: number;
+      created_at: string;
+      currency: string;
+      decided_at: string | null;
+      expires_at: string;
+      final: boolean;
+      flow: "checkout" | "saved_card";
+      id: string;
+      message: string;
+      next_action:
+        | "open_checkout_url"
+        | "await_email_confirmation"
+        | "await_payment"
+        | null
+        | null;
+      paid_at: string | null;
+      payment_method: {
+        brand?: string | null;
+        last4?: string | null;
+      } | null;
+      reason: string | null;
+      status:
+        "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateDataContributionClassifierParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -10624,6 +10717,97 @@ export async function getCredits(
       thirty_day_usage: number | null;
     };
     ok: true;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetCreditTopupParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the status of a credit top-up in the authenticated workspace. Needs credits:read or billing:write. Poll until final is true. Declined, expired and failed top-ups carry a reason code; do not retry them automatically.
+ */
+export async function getCreditTopup(
+  client: Client,
+  args: GetCreditTopupParams,
+): Promise<{
+  ok: true;
+  topup: {
+    amount_cents: number;
+    amount_usd: number;
+    checkout_url: string | null;
+    confirmation_recipients?: number;
+    created_at: string;
+    currency: string;
+    decided_at: string | null;
+    expires_at: string;
+    final: boolean;
+    flow: "checkout" | "saved_card";
+    id: string;
+    message: string;
+    next_action:
+      | "open_checkout_url"
+      | "await_email_confirmation"
+      | "await_payment"
+      | null
+      | null;
+    paid_at: string | null;
+    payment_method: {
+      brand?: string | null;
+      last4?: string | null;
+    } | null;
+    reason: string | null;
+    status:
+      "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/credits/topups/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    ok: true;
+    topup: {
+      amount_cents: number;
+      amount_usd: number;
+      checkout_url: string | null;
+      confirmation_recipients?: number;
+      created_at: string;
+      currency: string;
+      decided_at: string | null;
+      expires_at: string;
+      final: boolean;
+      flow: "checkout" | "saved_card";
+      id: string;
+      message: string;
+      next_action:
+        | "open_checkout_url"
+        | "await_email_confirmation"
+        | "await_payment"
+        | null
+        | null;
+      paid_at: string | null;
+      payment_method: {
+        brand?: string | null;
+        last4?: string | null;
+      } | null;
+      reason: string | null;
+      status:
+        "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+      workspace_id: string;
+    };
   }>({
     method: "GET",
     path: resolvedPath,

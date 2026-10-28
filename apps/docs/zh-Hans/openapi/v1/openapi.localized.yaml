@@ -2823,6 +2823,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: 发起额度充值
+      description: 请求为已认证的工作区添加额度。需要可选的 billing:write 范围，并且必须是工作区成员。此操作本身不会扣款。如果有已保存的银行卡，工作区的每位所有者和管理员都会收到一封含一次性链接的邮件，由其中一人确认或拒绝扣款。如果没有，响应中会包含 checkout_url，由所有者或管理员使用新卡付款，该卡会保存以供之后充值。金额为 $5 至 $500。每个工作区最多有 5 个待处理的充值，每个充值 30 分钟后过期。
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。与 idempotency_key 字段相同。
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: 此幂等键对应的现有充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: 已创建充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 金额无效（invalid_amount、amount_below_minimum 或 amount_above_maximum）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 幂等键已用于其他充值，或没有可以确认的所有者或管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 该工作区已有 5 个待处理的充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 银行卡付款不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: 获取额度充值
+      description: 返回已认证工作区中某个额度充值的状态。需要 credits:read 或 billing:write。轮询直到 final 为 true。被拒绝、已过期和失败的充值带有原因代码；不要自动重试。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 充值 ID。
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 充值状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 充值 ID 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /key:
     get:
       x-beta: true
@@ -20171,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: 以美元计的金额，最多两位小数。
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: 可选。必须与已认证的工作区一致。
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: 可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: 状态不会再改变时为 true（paid、declined、expired 或 failed）。此时停止轮询。
+        reason:
+          type: string
+          nullable: true
+          description: 被拒绝、已过期和失败的充值的原因代码，例如 declined、expired、card_declined 或 authentication_failed。
+          example: declined
+        message:
+          type: string
+          description: 一句说明接下来会发生什么的话。
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout 表示所有者或管理员在 checkout_url 用新卡付款；saved_card 表示所有者或管理员通过邮件确认对已保存银行卡的扣款。
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 所有者或管理员用新卡付款的 Phaseo 页面。仅出现在创建待处理 checkout 充值的响应中。
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: 收到邮件以确认 saved_card 充值的所有者和管理员人数。
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:

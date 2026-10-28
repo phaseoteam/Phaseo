@@ -14,6 +14,7 @@ import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStr
 import { createAdminClient } from "@/utils/supabase/admin";
 import { normaliseCountryCode } from "@/lib/countryCodes";
 import { isValidTopUpAmountPence, TOP_UP_CURRENCY } from "@/lib/server/topUpValidation";
+import { CREDIT_TOPUP_METADATA } from "@/lib/server/creditTopups";
 
 type CheckoutKind = "oneoff" | "pay_and_save" | "save_only";
 type CheckoutStartedNotificationKind =
@@ -27,7 +28,23 @@ type CreateStripeCheckoutResponseArgs = {
 	originHeader: string | null;
 	refererHeader: string | null;
 	requestedWorkspaceId?: string;
+	/**
+	 * A top-up request from the API or CLI (credit_topup_requests). Bills that request's
+	 * workspace instead of the active one, tags the PaymentIntent so the webhook can mark the
+	 * request paid, shows the saved-card terms, and expires the session with the request.
+	 */
+	topUpRequest?: {
+		id: string;
+		workspaceId: string;
+		onSessionCreated: (sessionId: string) => Promise<void>;
+	};
 };
+
+// Terms shown when an API or CLI top-up saves the card for later top-ups.
+const TOP_UP_REQUEST_MANDATE =
+	"By paying, you allow Phaseo to save this card and charge it for later credit top-ups. Each top-up requested through the Phaseo API or CLI is charged only after a workspace owner or admin confirms it from an email. You can remove the card at any time in Settings.";
+// Stripe needs at least 30 minutes; the request itself expires 30 minutes after it was made.
+const TOP_UP_REQUEST_SESSION_SECONDS = 31 * 60;
 
 async function sendCheckoutStartedNotifications(args: {
 	checkoutSessionId: string;
@@ -78,6 +95,7 @@ export async function createStripeCheckoutResponse(
 		originHeader,
 		refererHeader,
 		requestedWorkspaceId,
+		topUpRequest,
 	} = args;
 	const configuredBaseUrl = resolveConfiguredStripeCheckoutBaseUrl(process.env);
 	if (process.env.NODE_ENV === "production" && !configuredBaseUrl) {
@@ -92,6 +110,7 @@ export async function createStripeCheckoutResponse(
 		userDisplayName,
 	} = await requireActiveWorkspaceStripeCustomer({
 		createIfMissing: true,
+		...(topUpRequest ? { workspaceId: topUpRequest.workspaceId } : {}),
 	});
 	const firstName = deriveFirstName(userDisplayName);
 	const rateLimit = await createAdminClient().rpc("consume_checkout_rate_limit", {
@@ -135,6 +154,12 @@ export async function createStripeCheckoutResponse(
 	});
 
 	const stripe = getStripe();
+	const topUpRequestMetadata: Record<string, string> = topUpRequest
+		? { [CREDIT_TOPUP_METADATA.requestId]: topUpRequest.id, [CREDIT_TOPUP_METADATA.flow]: "checkout" }
+		: {};
+	if (topUpRequest && kind !== "pay_and_save") {
+		return NextResponse.json({ error: "Top-up requests use pay_and_save checkout" }, { status: 400 });
+	}
 
 	if (kind === "oneoff") {
 		if (!isValidTopUpAmountPence(amountPence)) {
@@ -255,6 +280,7 @@ export async function createStripeCheckoutResponse(
 					purpose: "top_up",
 					country_code: countryCode!,
 					...(workspaceId ? { workspace_id: workspaceId } : {}),
+					...topUpRequestMetadata,
 				},
 			},
 			success_url: paymentSuccessUrl,
@@ -265,8 +291,16 @@ export async function createStripeCheckoutResponse(
 				purpose: "top_up",
 				country_code: countryCode!,
 				...(workspaceId ? { workspace_id: workspaceId } : {}),
+				...topUpRequestMetadata,
 			},
+			...(topUpRequest
+				? {
+						custom_text: { submit: { message: TOP_UP_REQUEST_MANDATE } },
+						expires_at: Math.floor(Date.now() / 1000) + TOP_UP_REQUEST_SESSION_SECONDS,
+					}
+				: {}),
 		});
+		if (topUpRequest) await topUpRequest.onSessionCreated(session.id);
 
 		const startedAtIso = new Date().toISOString();
 		const checkoutKindForNotifications =

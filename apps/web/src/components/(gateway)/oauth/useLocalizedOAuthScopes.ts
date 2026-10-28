@@ -22,6 +22,12 @@ export function useLocalizedOAuthScopes() {
 				description: t("gatewayPermissionDescription"),
 			};
 		}
+		if (permission.action === "billing") {
+			return {
+				label: t("billingPermissionLabel"),
+				description: t("billingPermissionDescription"),
+			};
+		}
 		if (permission.action === "unknown" || !permission.resourceKey) {
 			return {
 				label: t("unknownPermissionLabel", { scope }),

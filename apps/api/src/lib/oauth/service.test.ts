@@ -116,9 +116,11 @@ describe("OAuth service helpers", () => {
 	it("grants the first-party CLI its supported control-plane scopes by default", () => {
 		const expectedScopes = [
 			...IDENTITY_SCOPES,
-			...Object.values(CAPABILITIES).filter((scope) => scope !== "feedback:read" && scope !== "feedback:write"),
+			...Object.values(CAPABILITIES).filter((scope) => scope !== "feedback:read" && scope !== "feedback:write" && scope !== "billing:write"),
 		];
 		expect(CLI_DEFAULT_SCOPES).toEqual(expectedScopes);
+		// billing:write starts credit purchases, so CLI users opt in with --scopes billing:write.
+		expect(CLI_DEFAULT_SCOPES).not.toContain("billing:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:read");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:delete");

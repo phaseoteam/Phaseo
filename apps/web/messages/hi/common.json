@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "यह ऐप किसने साइन इन किया है, इसकी पुष्टि कर सकता है।",
 			"gatewayPermissionLabel": "अपने क्रेडिट से AI Gateway इस्तेमाल करें",
 			"gatewayPermissionDescription": "ऐप चुनी गई टीम के क्रेडिट से मॉडल अनुरोध भेज सकता है।",
+			"billingPermissionLabel": "क्रेडिट टॉप-अप शुरू करें",
+			"billingPermissionDescription": "ऐप चुनी गई टीम के लिए क्रेडिट खरीद का अनुरोध कर सकता है। हर शुल्क की पुष्टि टीम के owner या admin को ईमेल से करनी होगी।",
 			"readPermissionLabel": "{resource} पढ़ें",
 			"readPermissionDescription": "यह ऐप {resource} पढ़ सकता है।",
 			"managePermissionLabel": "{resource} प्रबंधित करें",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth ऐप",
 					"description": "OAuth क्लाइंट और इंटीग्रेशन का कॉन्फ़िगरेशन।"
+				},
+				"billing": {
+					"title": "बिलिंग",
+					"description": "क्रेडिट खरीद, जिनकी पुष्टि टीम का owner या admin ईमेल से करता है।"
 				}
 			},
 			"resources": {

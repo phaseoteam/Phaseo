@@ -107,6 +107,8 @@ phaseo organisations list
 phaseo endpoints list
 phaseo pricing models
 phaseo credits get
+phaseo credits add --amount 20          # needs: phaseo login --scopes billing:write
+phaseo credits topups get <id>
 phaseo activity list --days 7
 phaseo logs list --since 1h --status error --json
 phaseo logs get <request-id> --json
@@ -178,6 +180,15 @@ phaseo keys update <key-id> --ip-allowlist "Office=203.0.113.0/24,VPN=2001:db8::
 ```bash
 echo "Why was I charged twice?" | phaseo classifiers test <classifier-id> --prompt-stdin
 ```
+
+## Adding credits
+
+`phaseo credits add --amount <usd>` starts a top-up of $5 to $500 for the workspace. Nothing is charged until a person approves it:
+
+- With a saved card, every workspace owner and admin gets an email with a single-use link, and one of them confirms or declines the charge on Phaseo.
+- Without one, the command prints a checkout link where an owner or admin pays with a new card, which is saved for later top-ups.
+
+The command waits until the top-up is paid, declined, expired (after 30 minutes) or failed. Use `--no-wait` to return straight away and `phaseo credits topups get <id>` to check later. It needs the opt-in `billing:write` scope: `phaseo login --scopes billing:write` keeps the default scopes and adds it.
 
 ## Coding-agent integrations
 

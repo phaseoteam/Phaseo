@@ -7,6 +7,7 @@ import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-sub
 import { renderSlackAgentRefusedEmail } from "@/pipeline/notifications/slack-agent-refused";
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
 import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
+import { renderCreditTopupConfirmationEmail } from "@/pipeline/notifications/credit-topup-confirmation";
 
 type OutboxRow = {
 	id: string;
@@ -328,6 +329,10 @@ function renderEmailForRow(row: OutboxRow): {
 	}
 	if (row.template === "slack_agent_refused" || row.kind === "slack_agent_refused") {
 		const rendered = renderSlackAgentRefusedEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
+	if (row.template === "credit_topup_confirmation" || row.kind === "credit_topup_confirmation") {
+		const rendered = renderCreditTopupConfirmationEmail(row.payload ?? {});
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
