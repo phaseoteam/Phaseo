@@ -103,7 +103,7 @@ with openai/gpt-6-luna: draft a reply to this customer
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- 模型的匹配方式与 `with <model>:` 相同，只在允许的模型中匹配。如果某个模型不在列表中、某个名称能对应多个模型、你写的模型少于 2 个或多于 3 个，或者冒号后面没有问题，智能体会私下回复，不回答这条消息。这条消息不计为一次回答。 完全没有指定模型的消息（例如 `compare the two plans, then pick one: …`）是普通文本，智能体会照常回答。
+- 模型的匹配方式与 `with <model>:` 相同，只在允许的模型中匹配。如果某个模型不在列表中、某个名称能对应多个模型、你写的模型少于 2 个或多于 3 个，或者冒号后面没有问题，智能体会私下回复，不回答这条消息。这条消息不计为一次回答。 完全没有指定模型的消息（例如 `compare the two plans, then pick one: …`）是普通文本，智能体会照常回答。 关闭模型选择时，如果 `compare …:` 消息指定了目录中的模型，智能体会私下回复说比较功能未开启，这条消息也不计为一次回答。
 - 每个模型只收到你的问题，不会收到线程的其余内容，并且可以搜索网页和阅读网页。它们同时回答。
 - 回复中每个模型有一个部分：模型名称（链接到它在 Phaseo 上的页面）、费用和它的回答。每个模型都会被要求简短回答，过长的回答会被截断，以便全部放进一条 Slack 消息。
 - 如果某个模型失败，它的部分会说明原因，其他回答照常显示。
@@ -579,6 +579,7 @@ Slack 的 API 条款不允许用 Slack 数据训练模型，也不允许归档�
 | "The model this agent uses can't read the files shared here." | 智能体所用模型的提供商都无法读取所分享的图片或 PDF。 | 不带文件再问，或在 **设置 → Slack** 中选择一个能读取图片的模型。 |
 | "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | 这次回答搜索过 Slack，而该模型没有零数据保留的提供商能够回答。 | 在 **设置 → Slack** 中选择一个不保留数据的模型。如果消息以 `with <model>:` 开头，请在那里选择一个不保留数据的模型，或去掉它以使用智能体的模型。 |
 | "…so I didn't compare them." 或 "Name 2 or 3 different models to compare…" | 消息以 `compare …:` 开头，并且有模型不在 **模型选择** 中、某个名称能对应多个允许的模型，或者写了少于 2 个或多于 3 个不同的模型。 | 使用回复列表中的 2 到 3 个模型。 |
+| "Comparing models isn't turned on here, so I didn't answer." | 消息以 `compare …:` 开头并指定了目录中的模型，但模型选择已关闭。 | 请所有者或管理员在 **模型选择** 下打开 **允许按消息选择模型**，或者去掉 `compare …:`。 |
 
 如果智能体完全没有回复：
 

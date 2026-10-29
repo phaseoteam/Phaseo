@@ -103,7 +103,7 @@ Para ver como 2 ou 3 modelos permitidos respondem à mesma pergunta, comece a me
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- Os modelos são reconhecidos como em `with <model>:`, só entre os permitidos. Se um modelo não estiver na lista, se um nome servir para mais de um modelo, se você citar menos de 2 ou mais de 3, ou se não houver pergunta depois dos dois-pontos, o agente responde em particular e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que não nomeia nenhum modelo, como `compare the two plans, then pick one: …`, é texto comum e o agente responde normalmente.
+- Os modelos são reconhecidos como em `with <model>:`, só entre os permitidos. Se um modelo não estiver na lista, se um nome servir para mais de um modelo, se você citar menos de 2 ou mais de 3, ou se não houver pergunta depois dos dois-pontos, o agente responde em particular e não responde à mensagem. Essa mensagem não conta como resposta. Uma mensagem que não nomeia nenhum modelo, como `compare the two plans, then pick one: …`, é texto comum e o agente responde normalmente. Enquanto a escolha de modelo estiver desligada, uma mensagem `compare …:` que cite modelos do catálogo recebe uma resposta em particular dizendo que a comparação está desligada, e não conta como resposta.
 - Cada modelo recebe a sua pergunta, não o resto da thread, e pode pesquisar na web e ler páginas. Eles respondem ao mesmo tempo.
 - A resposta tem uma seção para cada modelo: o nome dele, com link para a página dele na Phaseo, quanto custou e a resposta. Cada modelo é instruído a responder de forma curta, e respostas longas são cortadas para que todas caibam em uma mensagem do Slack.
 - Se um modelo falhar, a seção dele explica o motivo, e as outras respostas continuam aparecendo.
@@ -579,6 +579,7 @@ Quando o agente não consegue responder a alguém, ele responde em particular no
 | "The model this agent uses can't read the files shared here." | Nenhum provedor do modelo do agente consegue ler as imagens ou os PDFs compartilhados. | Pergunte sem os arquivos, ou escolha em **Configurações → Slack** um modelo que leia imagens. |
 | "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | A resposta pesquisou no Slack, e nenhum provedor do modelo com retenção zero de dados conseguiu responder. | Escolha em **Configurações → Slack** um modelo que não guarde dados. Se a mensagem começou com `with <model>:`, escolha ali um modelo que não guarde dados, ou tire isso para usar o modelo do agente. |
 | "…so I didn't compare them." ou "Name 2 or 3 different models to compare…" | A mensagem começou com `compare …:`, e um modelo não está em **Escolha de modelo**, um nome serve para mais de um modelo permitido, ou ela citou menos de 2 ou mais de 3 modelos diferentes. | Use 2 ou 3 modelos da lista da resposta. |
+| "Comparing models isn't turned on here, so I didn't answer." | A mensagem começou com `compare …:` e citou modelos do catálogo, mas a escolha de modelo está desligada. | Peça a um proprietário ou administrador para ativar **Permitir escolher um modelo por mensagem** em **Escolha de modelo**, ou tire `compare …:`. |
 
 Se o agente não responder nada:
 
