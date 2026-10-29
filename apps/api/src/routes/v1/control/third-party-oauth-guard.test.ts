@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTROL_CAPABILITIES } from "@/lib/authz/capabilities";
+import { guardManagementAuth } from "@/pipeline/before/guards";
+import { getSupabaseActor } from "@/lib/oauth/service";
 import { isThirdPartyOAuthApp } from "./route-helpers";
 
 // Every control-API write that could create, re-enable or reshape something that spends the workspace's
 // money, or change a limit on that spending, refuses an app that signs in with Phaseo, and only such an app.
-// Supabase is a recording fake: the guard must refuse before anything is written.
+// Supabase is a recording fake: the guard must refuse before anything is written. Its auth accepts any
+// JWT-shaped token as user_1's, as the auth provider accepts the tokens its OAuth server issues to apps.
 
 const state = vi.hoisted(() => ({
 	auth: null as Record<string, unknown> | null,
@@ -52,6 +55,11 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
 	getBindings: () => ({}),
 	getSupabaseAdmin: () => ({
+		auth: {
+			getUser: async (token: string) => token.split(".").length === 3
+				? { data: { user: { id: "user_1", factors: [], user_metadata: {} } }, error: null }
+				: { data: { user: null }, error: { message: "invalid JWT" } },
+		},
 		from: (table: string) => query(table),
 		rpc: async (name: string) => {
 			state.writes.push({ table: name, op: "rpc" });
@@ -104,6 +112,8 @@ const loaders: Record<string, () => Promise<{ request: (input: string, init?: Re
 	"rate-limits": async () => (await import("./rate-limits")).rateLimitsRoutes,
 	"spend-rules": async () => (await import("./spend-rules")).spendRulesRoutes,
 	"spend-blocks": async () => (await import("./spend-blocks")).spendBlocksRoutes,
+	routing: async () => (await import("./routing")).routingRoutes,
+	settings: async () => (await import("./settings")).settingsRoutes,
 };
 
 const POLICY = "00000000-0000-4000-8000-000000000001";
@@ -156,13 +166,30 @@ const CASES: Case[] = [
 	...[["POST", "/"], ["PATCH", `/${POLICY}`], ["DELETE", `/${POLICY}`], ["POST", `/${POLICY}/test`]]
 		.map(([method, path]) => ({ route: "spend-rules", method, path, body: {}, refusal: "can't change spend rules" })),
 	{ route: "spend-blocks", method: "POST", path: `/${BLOCK}/lift`, body: {}, refusal: "can't lift spend blocks" },
+	// Workspace price limits: auto-routing's spend profile and price ceilings (either spelling), what a successor
+	// redirect may cost (a workspace's own replacement ignores that policy), and BYOK fallback to credits.
+	...[
+		{ spend_profile: "unrestricted" }, { spendProfile: "premium" }, { max_input_price_per_million: 1000 },
+		{ maxInputPricePerMillion: 1000 }, { max_output_price_per_million: 1000 }, { maxOutputPricePerMillion: 1000 },
+		{ spend_profile: "custom", max_input_price_per_million: 100, max_output_price_per_million: 100 },
+		{ objective: "quality", spend_profile: "economy" },
+	].map((body) => ({ route: "routing", method: "PATCH", path: "/auto", body, refusal: "can't change auto-routing's spend profile or price limits" })),
+	{
+		route: "routing", method: "PUT", path: "/successor/replacements",
+		body: { model: "openai/gpt-4", successor: "openai/gpt-5" }, refusal: "can't save successor replacements",
+	},
+	...[
+		{ model_successor_price_policy: "any" }, { modelSuccessorPricePolicy: "any" }, { model_successor_max_price_increase_percent: 1000 },
+		{ modelSuccessorMaxPriceIncreasePercent: 1000 }, { byok_fallback_enabled: true }, { byokFallbackEnabled: true },
+		{ routing_mode: "price", model_successor_price_policy: "limit" },
+	].map((body) => ({ route: "settings", method: "PATCH", path: "/", body, refusal: "can't change the successor price policy or BYOK fallback to credits" })),
 ];
 
-async function send(testCase: Case): Promise<{ status: number; body: Record<string, unknown> | null }> {
+async function send(testCase: Case, headers: Record<string, string> = {}): Promise<{ status: number; body: Record<string, unknown> | null }> {
 	const routes = await loaders[testCase.route]();
 	const response = await routes.request(`https://example.com${testCase.path}`, {
 		method: testCase.method,
-		headers: { "content-type": "application/json" },
+		headers: { "content-type": "application/json", ...headers },
 		...(testCase.body === undefined ? {} : { body: JSON.stringify(testCase.body) }),
 	});
 	return { status: response.status, body: await response.json().catch(() => null) };
@@ -206,12 +233,84 @@ describe("apps that use Sign in with Phaseo can't create or reshape what spends 
 		expect(state.writes).toContainEqual({ table: "keys", op: "update" });
 	});
 
+	it("still lets an app change routing and settings that aren't limits on spending", async () => {
+		state.auth = PARTNER_APP;
+		for (const testCase of [
+			{ route: "routing", method: "PATCH", path: "/auto", body: { objective: "quality", allowed_patterns: ["openai/*"], allow_fallbacks: false }, refusal: "" },
+			{ route: "routing", method: "DELETE", path: "/successor/replacements?model=openai%2Fgpt-4", refusal: "" },
+			{ route: "settings", method: "PATCH", path: "/", body: { routing_mode: "price", privacy_zdr_only: true, model_successor_redirect_enabled: true }, refusal: "" },
+		]) {
+			const { body } = await send(testCase);
+			expect(String(body?.message ?? ""), label(testCase)).not.toContain("Sign in with Phaseo");
+		}
+		expect(state.writes).toContainEqual({ table: "workspace_settings", op: "upsert" });
+	});
+
 	it.each(Object.entries(ALLOWED))("leaves %s to the usual scope and role checks", async (_name, auth) => {
 		for (const testCase of CASES) {
 			state.auth = auth;
 			const { body } = await send(testCase);
 			expect(String(body?.message ?? ""), label(testCase)).not.toContain("Sign in with Phaseo");
 		}
+	});
+});
+
+// The auth provider's OAuth server issues Supabase access tokens to apps as well, with the app's client_id.
+// Sent with the workspace header, such a token must not pass as the person's dashboard session, which carries
+// every scope the route has and is never an app. Unsigned here: the fake's getUser stands in for the signature.
+function supabaseToken(claims: Record<string, unknown>): string {
+	const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	return `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: "user_1", aud: "authenticated", role: "authenticated", ...claims })}.signature`;
+}
+const DASHBOARD_CASES: Case[] = [
+	{ route: "rate-limits", method: "POST", path: "/policies", body: {}, refusal: "can't change rate limits" },
+	{ route: "rate-limits", method: "POST", path: "/tier/raise", body: {}, refusal: "can't raise the workspace's rate limit tier" },
+	{ route: "workload-identity", method: "POST", path: "/policies", body: { name: "CI", provider: "github_actions", owner_id: "999" }, refusal: "can't create trusted workloads" },
+];
+
+describe("tokens the auth provider issued to apps, at the dashboard-session boundary", () => {
+	beforeEach(() => {
+		state.writes.length = 0;
+		state.auth = null;
+		vi.mocked(guardManagementAuth).mockClear();
+	});
+
+	it.each(DASHBOARD_CASES.map((testCase) => [label(testCase), testCase] as const))(
+		"judges a third-party app's token as that app, not as the person: %s",
+		async (_name, testCase) => {
+			// What management authentication makes of the app's token: an OAuth caller with the app's client ID.
+			state.auth = PARTNER_APP;
+			const token = supabaseToken({ client_id: "partner_app", user_id: "user_1", workspace_id: "ws_1" });
+			const { status, body } = await send(testCase, { authorization: `Bearer ${token}`, "x-phaseo-workspace-id": "ws_1" });
+			expect(guardManagementAuth).toHaveBeenCalled();
+			expect(status).toBe(403);
+			expect(String(body?.message)).toContain(`Apps that use Sign in with Phaseo ${testCase.refusal}`);
+			expect(state.writes).toEqual([]);
+		},
+	);
+
+	it.each([
+		["the person's own session", {}],
+		["the Phaseo CLI's token", { client_id: "phaseo_cli" }],
+		["the desktop app's token", { client_id: "phaseo_desktop" }],
+	])("keeps %s a dashboard session", async (_name, claims) => {
+		for (const testCase of DASHBOARD_CASES) {
+			const token = supabaseToken(claims);
+			const { body } = await send(testCase, { authorization: `Bearer ${token}`, "x-phaseo-workspace-id": "ws_1" });
+			expect(String(body?.message ?? ""), label(testCase)).not.toContain("Sign in with Phaseo");
+		}
+		expect(guardManagementAuth).not.toHaveBeenCalled();
+	});
+
+	it("reads the client from the token: none for the person, Phaseo's own apps kept, anything else refused", async () => {
+		expect(await getSupabaseActor(supabaseToken({ aal: "aal2" }))).toMatchObject({ userId: "user_1", clientId: null, assuranceLevel: "aal2" });
+		expect(await getSupabaseActor(supabaseToken({ client_id: "phaseo_cli" }))).toMatchObject({ userId: "user_1", clientId: "phaseo_cli" });
+		expect(await getSupabaseActor(supabaseToken({ client_id: "aistats_cli" }))).toMatchObject({ clientId: "aistats_cli" });
+		expect(await getSupabaseActor(supabaseToken({ client_id: "phaseo_desktop" }))).toMatchObject({ clientId: "phaseo_desktop" });
+		for (const clientId of ["partner_app", "", " ", 42, { id: "phaseo_cli" }]) {
+			expect(await getSupabaseActor(supabaseToken({ client_id: clientId })), JSON.stringify(clientId)).toBeNull();
+		}
+		expect(await getSupabaseActor("not-a-token")).toBeNull();
 	});
 });
 
@@ -222,6 +321,8 @@ describe("isThirdPartyOAuthApp", () => {
 		expect(isThirdPartyOAuthApp({ authMethod: "oauth", oauthClientId: "aistats_cli" })).toBe(false);
 		expect(isThirdPartyOAuthApp({ authMethod: "oauth", oauthClientId: "phaseo_desktop" })).toBe(false);
 		expect(isThirdPartyOAuthApp({ authMethod: "oauth", apiKeyRef: "dashboard" })).toBe(false);
+		expect(isThirdPartyOAuthApp({ authMethod: "oauth", apiKeyRef: "dashboard", oauthClientId: "phaseo_desktop" })).toBe(false);
+		expect(isThirdPartyOAuthApp({ authMethod: "oauth", apiKeyRef: "dashboard", oauthClientId: "partner_app" })).toBe(true);
 		expect(isThirdPartyOAuthApp({ authMethod: "api_key" })).toBe(false);
 		expect(isThirdPartyOAuthApp({})).toBe(false);
 	});

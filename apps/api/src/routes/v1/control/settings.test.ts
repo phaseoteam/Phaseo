@@ -36,6 +36,7 @@ vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => ({
 vi.mock("./route-helpers", () => ({
 	requireCapability: () => null,
 	requireOAuthWorkspaceRole: async () => null,
+	rejectThirdPartyOAuthSpendingChange: () => null,
 	requireJsonBody: async (req: Request) => req.json(),
 	isResponse: (value: unknown) => value instanceof Response,
 	internalServerError: (_name: string, error: unknown) => new Response(JSON.stringify({ error: String(error) }), { status: 500 }),

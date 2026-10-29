@@ -13,7 +13,7 @@ import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/securi
 import { generateGatewayKey, hmacSecret, INFERENCE_KEY_PREFIX, randomBase62, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
-import { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient } from "./clientIds";
+import { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient, isFirstPartyOAuthClient } from "./clientIds";
 
 const encoder = new TextEncoder();
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
@@ -97,6 +97,8 @@ export function isReservedOAuthClientName(value: string): boolean {
 
 export type OAuthActor = {
 	userId: string;
+	/** The Phaseo app (CLI or desktop) the auth provider issued the token to, or null for the person's own session. */
+	clientId?: string | null;
 	mfaRequired?: boolean;
 	assuranceLevel?: string | null;
 	email?: string | null;
@@ -432,16 +434,26 @@ async function fetchUserProfile(userId: string): Promise<{ email?: string | null
 	};
 }
 
+/**
+ * The person a Supabase access token belongs to, for the routes that act as that person: consent approval,
+ * device activation, the desktop key and dashboard sessions. The auth provider's OAuth server also issues
+ * such tokens to apps, with the app's client_id claim. A third-party app's token is the app acting for the
+ * person, not the person, so it is refused here (null, as if signed out); Phaseo's own apps keep theirs.
+ */
 export async function getSupabaseActor(accessToken: string): Promise<OAuthActor | null> {
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase.auth.getUser(accessToken);
 	if (error || !data?.user?.id) return null;
+	// getUser above authenticates this exact token before its claims are used.
+	const claims = decodeJWT(accessToken)?.payload ?? {};
+	const clientId = claims.client_id === undefined || claims.client_id === null ? null : String(claims.client_id).trim();
+	if (clientId !== null && !isFirstPartyOAuthClient(clientId)) return null;
 	const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
 	return {
 		userId: data.user.id,
+		clientId,
 		mfaRequired: (data.user.factors ?? []).some((factor) => factor.status === "verified"),
-		// getUser above authenticates this exact token before its assurance claim is used.
-		assuranceLevel: decodeJWT(accessToken)?.payload?.aal ?? null,
+		assuranceLevel: claims.aal ?? null,
 		email: data.user.email ?? null,
 		name:
 			typeof metadata.full_name === "string"

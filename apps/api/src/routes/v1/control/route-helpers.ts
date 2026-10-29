@@ -13,8 +13,8 @@ export type ManagementRouteAuth = {
 
 /**
  * Whether the caller is an app that signs in with Phaseo OAuth: any OAuth client except Phaseo's own CLI
- * and desktop app. Dashboard sessions (the person in Settings) are OAuth-shaped but carry no client; any
- * other OAuth caller without a client counts as an app, so a missing ID fails closed.
+ * and desktop app. Dashboard sessions (the person in Settings) are OAuth-shaped but carry no client, or
+ * Phaseo's own app's; any other OAuth caller without a client counts as an app, so a missing ID fails closed.
  */
 export function isThirdPartyOAuthApp(auth: ManagementRouteAuth): boolean {
 	if (auth.authMethod !== "oauth") return false;
