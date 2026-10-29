@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import type { ModelCard } from "@/lib/api/models";
 import {
   ART_LABS, FRONTIER_LABS, LABEL_FADE_MS, LABEL_MS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, newestByLab, nextTap, shortVersion, tapLabel, versionDetail,
@@ -141,7 +139,13 @@ describe("tapLabel", () => {
 });
 
 describe("the frontier labs", () => {
-  const ORGANISATIONS = path.resolve(__dirname, "../../../../../packages/data/catalog/src/data/organisations");
+  // Snapshot of the catalogue's organisation rows (organisation_id, name).
+  const ORGANISATIONS: Record<string, { organisation_id: string; name: string }> = Object.fromEntries([
+    ["openai", "OpenAI"], ["anthropic", "Anthropic"], ["google", "Google"], ["meta", "Meta"],
+    ["spacex-ai", "SpaceXAI"], ["deepseek", "DeepSeek"], ["mistral", "Mistral"], ["qwen", "Qwen"],
+    ["moonshotai", "Moonshot"], ["z-ai", "z.AI"], ["minimax", "MiniMax"], ["bytedance", "ByteDance"],
+    ["nvidia", "Nvidia"], ["microsoft", "Microsoft"], ["amazon", "Amazon"], ["xiaomi", "Xiaomi"],
+  ].map(([organisation_id, name]) => [organisation_id, { organisation_id, name }]));
 
   it("are a fixed list, in order", () => {
     expect(FRONTIER_LABS.map((lab) => lab.name)).toEqual([
@@ -152,8 +156,8 @@ describe("the frontier labs", () => {
 
   it("use the catalogue's organisation IDs and names, so a tap finds the newest model", () => {
     for (const lab of FRONTIER_LABS) {
-      const organisation = JSON.parse(fs.readFileSync(path.join(ORGANISATIONS, lab.id, "organisation.json"), "utf8")) as { organisation_id: string; name: string };
-      expect({ id: organisation.organisation_id, name: organisation.name }).toEqual(lab);
+      const organisation = ORGANISATIONS[lab.id];
+      expect({ id: organisation?.organisation_id, name: organisation?.name }).toEqual(lab);
     }
     // xAI's models are listed under SpaceXAI.
     expect(FRONTIER_LABS.map((lab) => lab.id)).toContain("spacex-ai");

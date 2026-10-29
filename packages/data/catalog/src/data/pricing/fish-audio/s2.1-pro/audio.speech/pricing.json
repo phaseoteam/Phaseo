@@ -1,5 +1,0 @@
-{
-  "key": "fish-audio:fish-audio/s2.1-pro:audio.speech", "api_provider_id": "fish-audio", "provider_slug": "fish-audio", "api_model_id": "fish-audio/s2.1-pro", "capability_id": "audio.speech",
-  "rules": [{ "meter": "input_text_bytes", "unit": "byte", "unit_size": 1000000, "price_per_unit": 15, "currency": "USD", "pricing_plan": "standard", "note": "Fish Audio bills UTF-8 encoded input bytes, not Unicode characters.", "match": [], "priority": 100, "effective_from": "2026-06-23T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits" }],
-  "regions": [], "service_tiers": ["standard"], "sources": [], "verification": { "status": "verified", "checked_at": "2026-08-01T00:00:00Z", "notes": null }
-}

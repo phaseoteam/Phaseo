@@ -71,7 +71,7 @@ phaseo-example/
 - Write for an agent that is already capable: include only what it would not know about Phaseo.
 - Use one term per concept (`model ID`, `API key`, `workspace`, `preset`).
 - Give workflows as numbered steps with a checklist the agent can copy, and include a validation step.
-- Use `phaseo/free` for smoke tests and placeholder-free examples. Any other model ID in an example must exist in `packages/data/catalog/src/data` and not be retired; tell agents to confirm IDs with `GET /v1/models`.
+- Use `phaseo/free` for smoke tests and placeholder-free examples. Any other model ID in an example must be in `KnownModelId` in `apps/docs/openapi/v1/openapi.yaml` and not be retired; tell agents to confirm IDs with `GET /v1/models`.
 - `POST /v1/responses` bodies use `input`; `POST /v1/chat/completions` and `POST /v1/messages` bodies use `messages`.
 - No dates or "new"/"latest" claims that go stale; no secrets, even fake-looking ones.
 - Reference files over 100 lines start with a table of contents.

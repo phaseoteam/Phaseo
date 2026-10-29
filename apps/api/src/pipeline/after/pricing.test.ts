@@ -1,10 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import type { PriceCard, PriceRule } from "../pricing";
 import { calculatePricing, loadProviderPricing } from "./pricing";
 import { shapeUsageForClient } from "../usage";
+import { deepSeekV4ProCard } from "./__fixtures__/deepseek-v4-pro-card";
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
 
@@ -50,12 +48,15 @@ it.each([false, true])("resolves pricing for billable admin internal requests wh
     expect(result).toEqual(priced ? card : null);
     expect(ctx.internalPricingAvailable).toBe(priced);
 });
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "../../../../..");
-const deepSeekV4ProPricingPath = path.join(
-	repoRoot,
-	"packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json",
-);
+
+type CatalogCardFixture = {
+	api_provider_id: string;
+	api_model_id: string;
+	capability_id: string;
+	effective_from?: string | null;
+	effective_to?: string | null;
+	rules: ReadonlyArray<Record<string, unknown>>;
+};
 
 vi.mock("../pricing", async () => {
 	const actual = await vi.importActual<typeof import("../pricing")>("../pricing");
@@ -126,8 +127,7 @@ const TTS_CARD: PriceCard = {
 	],
 };
 
-function loadActiveCatalogPriceCard(pricingPath: string, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
-	const raw = JSON.parse(fs.readFileSync(pricingPath, "utf8"));
+function loadActiveCatalogPriceCard(raw: CatalogCardFixture, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
 	const nowMs = Date.parse(nowIso);
 	const rules = raw.rules
 		.filter((rule: Record<string, unknown>) => {
@@ -599,7 +599,7 @@ describe("after/pricing calculatePricing", () => {
 
 	it("applies DeepSeek V4 Pro peak pricing from gateway upstream-start metadata", () => {
 		const card = activateDeepSeekV4ProPeakWindows(
-			loadActiveCatalogPriceCard(deepSeekV4ProPricingPath),
+			loadActiveCatalogPriceCard(deepSeekV4ProCard),
 		);
 
 		const result = calculatePricing(

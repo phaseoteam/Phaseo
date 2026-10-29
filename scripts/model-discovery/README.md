@@ -61,7 +61,7 @@ order by status, failing_since nulls last;
 
 Public Phaseo catalog additions are checked by the same Cloudflare Worker schedule as provider discovery. The Worker reads `v2_models`, keeps a database-backed cursor in `model_discovery_public_announcements`, silently baselines the existing catalog on first run, and leaves later public additions pending until the public Discord webhook accepts the embed. Failed deliveries remain pending for a later retry. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
 
-The legacy file-based helper still reads `packages/data/catalog/src/data/models` for local/manual investigations. It is no longer the production source for public model announcements, and the old push-triggered `check-new-models.yml` workflow has been retired because the catalog is database-backed.
+The legacy file-based internal helper (`run-internal.ts`) read committed catalog JSON, which has been removed, so it no longer works. It was not the production source for public model announcements, and the old push-triggered `check-new-models.yml` workflow has been retired because the catalog is database-backed.
 
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.

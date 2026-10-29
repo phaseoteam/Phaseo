@@ -15,7 +15,7 @@ import { PLUGIN_ONLY_SKILLS, PUBLIC_SKILLS } from "./public-skills.mjs";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const skillsRoot = join(repoRoot, ".agents/skills");
-const catalogueRoot = join(repoRoot, "packages/data/catalog/src/data");
+const openapiPath = join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const pluginRoot = join(repoRoot, "apps/mcp/plugin/phaseo");
 
 const errors = [];
@@ -61,28 +61,10 @@ function listFiles(dir) {
 	return files;
 }
 
-// Model IDs Phaseo knows: catalogue models (model_id and api_model_id) and aliases. Retired ones are kept with
-// their retirement date so an example that uses one fails.
+// Model IDs Phaseo knows: the KnownModelId list in the public OpenAPI spec.
 function loadCatalogue() {
-	const models = new Map();
-	const modelsRoot = join(catalogueRoot, "models");
-	for (const org of readdirSync(modelsRoot)) {
-		for (const model of readdirSync(join(modelsRoot, org))) {
-			const file = join(modelsRoot, org, model, "model.json");
-			if (!existsSync(file)) continue;
-			const data = JSON.parse(readFileSync(file, "utf8"));
-			const entry = { retirement: data.retirement_date ?? null, deprecation: data.deprecation_date ?? null };
-			for (const id of [data.model_id, data.api_model_id]) if (id) models.set(id, entry);
-		}
-	}
-	const aliasesRoot = join(catalogueRoot, "aliases");
-	for (const alias of readdirSync(aliasesRoot)) {
-		const file = join(aliasesRoot, alias, "alias.json");
-		if (!existsSync(file)) continue;
-		const data = JSON.parse(readFileSync(file, "utf8"));
-		if (data.alias_slug && data.is_enabled !== false) models.set(data.alias_slug, { retirement: null, deprecation: null });
-	}
-	return models;
+	const spec = yaml.load(readFileSync(openapiPath, "utf8"));
+	return new Set(spec?.components?.schemas?.KnownModelId?.enum ?? []);
 }
 
 function codeBlocks(markdown) {
@@ -96,15 +78,12 @@ const MODEL_PATTERNS = [
 ];
 const PLACEHOLDER = /[<>{}$@]|\.\.\.|…|^(your|my|example)[-_/]/i;
 
-function checkExamples(path, markdown, catalogue, today) {
+function checkExamples(path, markdown, catalogue) {
 	for (const block of codeBlocks(markdown)) {
 		for (const pattern of MODEL_PATTERNS) {
 			for (const [, id] of block.matchAll(pattern)) {
 				if (PLACEHOLDER.test(id) || !id.includes("/") || ROUTER_MODELS.has(id)) continue;
-				const model = catalogue.get(id);
-				if (!model) error(path, `example model "${id}" is not in the catalogue (packages/data/catalog/src/data)`);
-				else if (model.retirement && model.retirement.slice(0, 10) <= today) error(path, `example model "${id}" retired on ${model.retirement.slice(0, 10)}`);
-				else if (model.deprecation && model.deprecation.slice(0, 10) <= today) warn(path, `example model "${id}" is deprecated`);
+				if (!catalogue.has(id)) error(path, `example model "${id}" is not a known model ID (KnownModelId in apps/docs/openapi/v1/openapi.yaml)`);
 			}
 		}
 		// Responses API bodies take `input`; chat completions and messages take `messages`.
@@ -177,7 +156,7 @@ function checkEvals(skillDir) {
 	}
 }
 
-function checkSkill(skillDir, catalogue, today) {
+function checkSkill(skillDir, catalogue) {
 	const name = skillDir.split(/[\\/]/).pop();
 	const skillFile = join(skillDir, "SKILL.md");
 	if (!existsSync(skillFile)) return error(skillDir, "missing SKILL.md");
@@ -196,7 +175,7 @@ function checkSkill(skillDir, catalogue, today) {
 		const markdown = readFileSync(file, "utf8");
 		checkLinks(file, markdown, skillDir, isPublic);
 		if (!isPublic) continue;
-		checkExamples(file, markdown, catalogue, today);
+		checkExamples(file, markdown, catalogue);
 		if (file !== skillFile && markdown.split("\n").length > 100 && !/^#+\s*(table of )?contents\b/im.test(markdown)) {
 			error(file, "reference files over 100 lines need a table of contents");
 		}
@@ -327,13 +306,12 @@ function checkMarketplaces() {
 }
 
 const catalogue = loadCatalogue();
-const today = new Date().toISOString().slice(0, 10);
 const skillDirs = readdirSync(skillsRoot)
 	.map((name) => join(skillsRoot, name))
 	.filter((path) => statSync(path).isDirectory());
 for (const skill of PUBLIC_SKILLS) if (!existsSync(join(skillsRoot, skill))) error(join(skillsRoot, skill), "public skill directory is missing");
-for (const skillDir of skillDirs) checkSkill(skillDir, catalogue, today);
-for (const skill of PLUGIN_ONLY_SKILLS) checkSkill(join(pluginRoot, "skills", skill), catalogue, today);
+for (const skillDir of skillDirs) checkSkill(skillDir, catalogue);
+for (const skill of PLUGIN_ONLY_SKILLS) checkSkill(join(pluginRoot, "skills", skill), catalogue);
 checkPlugin();
 checkListing();
 checkMarketplaces();

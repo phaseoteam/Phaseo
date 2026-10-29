@@ -46,7 +46,7 @@ pnpm build
 
 Additional checks by area:
 
-- Web/data changes: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`, and relevant tests.
+- Web changes: relevant tests.
 - Docs changes: `pnpm docs:links` and `pnpm docs:build`.
 - API/SDK/OpenAPI changes: run generation/validation steps required by the touched area.
 

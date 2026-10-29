@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "omnidocbench-1.5",
-  "benchmark_name": "OmniDocBench 1.5",
-  "category": null,
-  "ascending_order": true,
-  "type": "percentage",
-  "link": null,
-  "total_models": 16
-}

@@ -1253,8 +1253,6 @@ importers:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
 
-  packages/data/catalog: {}
-
   packages/devtools/devtools:
     dependencies:
       '@phaseo/devtools-core':
