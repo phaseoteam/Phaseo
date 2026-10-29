@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { formatDuration } from "@phaseo/app-kit/format";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -47,15 +47,8 @@ function formatServiceTierLabel(value: string | null | undefined, labels: Record
 		.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function formatThroughputLabel(value: number | null) {
-	if (typeof value !== "number" || !Number.isFinite(value)) return "-";
-	const normalized = Math.max(0, value);
-	if (normalized === 0) return "0 tps";
-	if (normalized < 1) return `${normalized.toFixed(2)} tps`;
-	if (normalized < 10) {
-		return `${normalized.toFixed(1).replace(/\.0$/, "")} tps`;
-	}
-	return `${Math.round(normalized)} tps`;
+function formatThroughputLabel(value: number | null, locale: string) {
+	return formatTps(value, locale) ?? "-";
 }
 
 function MetadataSection({
@@ -95,7 +88,7 @@ function TimingMetricRow({
 	return (
 		<MetadataRow label={label}>
 			<NumericValue>
-				{formatDuration(normalizedValue, locale)}
+				{formatLatency(normalizedValue, locale)}
 			</NumericValue>
 		</MetadataRow>
 	);
@@ -242,6 +235,7 @@ export function AssistantMessageFooter({
 	variantCount,
 }: AssistantMessageFooterProps) {
 	const t = useTranslations("Product.chat.messageActions");
+	const locale = useLocale();
 	const providerHref = metadataProviderId && metadataProviderId !== "auto"
 		? `/api-providers/${encodeURIComponent(metadataProviderId)}`
 		: null;
@@ -418,14 +412,14 @@ export function AssistantMessageFooter({
 									</MetadataRow>
 									<MetadataRow label={t("throughput")}>
 										<NumericValue>
-											{formatThroughputLabel(throughputTps)}
+											{formatThroughputLabel(throughputTps, locale)}
 										</NumericValue>
 									</MetadataRow>
 									{typeof outputSpeedTps === "number" &&
 									Number.isFinite(outputSpeedTps) ? (
 										<MetadataRow label={t("outputSpeed")}>
 											<NumericValue>
-												{formatThroughputLabel(outputSpeedTps)}
+												{formatThroughputLabel(outputSpeedTps, locale)}
 											</NumericValue>
 										</MetadataRow>
 									) : null}

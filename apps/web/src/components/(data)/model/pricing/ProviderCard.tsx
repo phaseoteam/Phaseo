@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 import { CacheWritePricing, groupCacheWriteTiers } from "./CacheWritePricing";
@@ -192,9 +193,7 @@ function hasUptimeObservation(
 
 function formatLatencySeconds(value: number | null | undefined, locale: string): string {
 	if (!hasObservedValue(value)) return "--";
-	const seconds = value / 1000;
-	const decimals = seconds >= 10 ? 1 : 2;
-	return `${seconds.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}s`;
+	return formatLatency(value, locale) ?? "--";
 }
 
 function formatThroughputValue(value: number | null | undefined, locale: string): string | null {
@@ -545,7 +544,7 @@ function getPerformanceMetricNumberFlowProps(
 			const seconds = value / 1000;
 			return {
 				value: seconds,
-				suffix: "s",
+				suffix: " s",
 				format: {
 					minimumFractionDigits: seconds >= 10 ? 1 : 2,
 					maximumFractionDigits: seconds >= 10 ? 1 : 2,
@@ -893,14 +892,10 @@ function getRoutingHealthSummary(
 	return null;
 }
 
-function formatTokenLimit(value: number | null | undefined, locale: string): string {
+/** "131,072 tokens": token limits in full in the provider details, worded as the /models cards word them. */
+function formatTokenLimit(value: number | null | undefined, locale: string, tokens: (count: string) => string): string {
 	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
-	return value.toLocaleString(locale, { notation: "compact", maximumFractionDigits: value >= 1_000_000 ? 1 : 0 });
-}
-
-function formatTokenLimit1dp(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
-	return value.toLocaleString(locale, { notation: "compact", maximumFractionDigits: value >= 1_000_000 ? 0 : 1 });
+	return tokens(value.toLocaleString(locale, { maximumFractionDigits: 0 }));
 }
 
 
@@ -1897,6 +1892,7 @@ export default function ProviderCard({
 	isSummaryActive?: boolean;
 }) {
 	const tx = useTranslations();
+	const tokenCount = (count: string) => tx("Catalogue.models.tokenCountDisplay", { count });
 	const tPolicy = useTranslations("Common.ui.localisationGaps");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
@@ -2261,14 +2257,14 @@ export default function ProviderCard({
 				? {
 						key: "totalContext",
 						label: tSections("totalContext"),
-						value: formatTokenLimit1dp(maxContextTokens, locale),
+						value: formatTokenLimit(maxContextTokens, locale, tokenCount),
 				}
 				: null,
 			maxOutputTokens !== null
 				? {
 						key: "maxOutput",
 						label: tSections("maxOutput"),
-						value: formatTokenLimit(maxOutputTokens, locale),
+						value: formatTokenLimit(maxOutputTokens, locale, tokenCount),
 				}
 				: null,
 		].filter(

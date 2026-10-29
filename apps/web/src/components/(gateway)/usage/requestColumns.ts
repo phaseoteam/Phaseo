@@ -58,13 +58,19 @@ export function normalizeRequestColumns(
 	return normalizeTableColumns(value, REQUEST_COLUMNS);
 }
 
-export function formatRequestMetric(value: unknown, suffix = ""): string {
-	if (value == null || (typeof value === "string" && !value.trim())) return "—";
+/** A logged figure as a number: null when it's missing, negative or not a number. */
+export function requestMetricNumber(value: unknown): number | null {
+	if (value == null || (typeof value === "string" && !value.trim())) return null;
 	const number =
 		typeof value === "number" || typeof value === "string"
 			? Number(value)
 			: NaN;
-	return Number.isFinite(number) && number >= 0
-		? `${number.toLocaleString("en-US", { maximumFractionDigits: 1 })}${suffix}`
-		: "—";
+	return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+export function formatRequestMetric(value: unknown, suffix = ""): string {
+	const number = requestMetricNumber(value);
+	return number === null
+		? "—"
+		: `${number.toLocaleString("en-US", { maximumFractionDigits: 1 })}${suffix}`;
 }
