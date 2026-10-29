@@ -22,6 +22,7 @@ import {
 	__resetSpendLimitsForTests,
 	checkSpendLimit,
 	createSpendLimitSlot,
+	ENFORCE_WAIT_MS,
 	enforcedSpendLimit,
 	flushSpendRecordsForTests,
 	getSpendLimitMode,
@@ -54,6 +55,8 @@ class FakeDatabase {
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
 	fail = false;
+	/** Holds every seed read until resolved (a stalled Postgres call). */
+	stall: Promise<void> | null = null;
 
 	static windows(now: number) {
 		const date = new Date(now);
@@ -130,6 +133,7 @@ let coordinator: SpendLimitDurableObject;
 class TestSpendLimitDurableObject extends SpendLimitDurableObject {
 	protected override async loadSeed(workspaceId: string, keyIds: string[], exclude: string[]): Promise<SpendLimitSeed> {
 		await Promise.resolve();
+		if (database.stall) await database.stall;
 		return database.seed(workspaceId, keyIds, exclude);
 	}
 }
@@ -674,6 +678,26 @@ describe("spend-limit coordinator", () => {
 		beforeEach(() => {
 			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [1, 0] });
 			runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "enforce";
+		});
+
+		it("falls back to the legacy check when the coordinator stalls, and frees the late admission", async () => {
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+			try {
+				const slot = createSpendLimitSlot();
+				const decision = enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r-stall", slot });
+				await vi.advanceTimersByTimeAsync(ENFORCE_WAIT_MS);
+				expect(await decision).toMatchObject({ outcome: "unavailable", error: "spend_limit_timeout" });
+				expect(await slotAdmission(slot)).toBeNull();
+			} finally {
+				vi.useFakeTimers({ toFake: ["Date"] });
+			}
+			database.stall = null;
+			unstall();
+			await flush();
+			// The late admission was released, so the key's single daily request is free again.
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r-next" })).toMatchObject({ outcome: "allowed" });
 		});
 
 		it("decides once per request slot, only in enforce mode and only for API keys", async () => {
