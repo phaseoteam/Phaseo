@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
-import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, moveHighlight, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, relativeTime, reviewerEntries, summarizeChecks, summaryChecksRollup, canEditDescription, canEditComment, fixFindingPrompt, findingKey, handoffLabels, resolveConflictsPrompt, checksStale, baseFreshness, behindSummary, sectionCollapseAnchorScrollTop } from "./pullRequestLogic";
+import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, moveHighlight, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, reviewerEntries, summarizeChecks, summaryChecksRollup, canEditDescription, canEditComment, fixFindingPrompt, findingKey, handoffLabels, resolveConflictsPrompt, checksStale, baseFreshness, behindSummary, sectionCollapseAnchorScrollTop } from "./pullRequestLogic";
 
 const check = (status: PullRequestCheck["status"], url?: string): PullRequestCheck => ({ name: status, status, ...(url ? { url } : {}) });
 const comment = (id: string, at: string, patch: Partial<PullRequestComment> = {}): PullRequestComment => ({ id, kind: "comment", author: { login: "a" }, body: "Hi", createdAt: at, reactions: [], ...patch });
@@ -109,12 +109,6 @@ describe("code tab helpers", () => {
 	it("keeps a pinned section heading in place when it folds", () => {
 		expect(sectionCollapseAnchorScrollTop({ scrollTop: 900, viewportTop: 100, sectionTop: -300, headingTop: 100 })).toBe(500);
 		expect(sectionCollapseAnchorScrollTop({ scrollTop: 900, viewportTop: 100, sectionTop: 200, headingTop: 200 })).toBeNull();
-	});
-	it("writes short relative times", () => {
-		const now = Date.parse("2026-10-16T12:00:00Z");
-		expect(relativeTime("2026-10-16T11:59:50Z", now)).toBe("just now");
-		expect(relativeTime("2026-10-16T11:00:00Z", now)).toBe("1h ago");
-		expect(relativeTime("2026-10-13T12:00:00Z", now)).toBe("3d ago");
 	});
 	it("shows reaction presses at once and says who reacted as GitHub does", () => {
 		const reactions = [{ content: "HEART", count: 1, viewerHasReacted: true }, { content: "THUMBS_UP", count: 2, actors: ["octo", "mona"] }];

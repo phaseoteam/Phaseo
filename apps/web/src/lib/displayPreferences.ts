@@ -1,3 +1,5 @@
+import { relativeUnit } from "@phaseo/app-kit/format";
+
 export const DISPLAY_LOCALES = ["system", "en-GB", "en-US"] as const;
 export const DISPLAY_DATE_STYLES = ["short", "medium", "long", "iso"] as const;
 export const DISPLAY_HOUR_CYCLES = ["system", "12h", "24h"] as const;
@@ -290,16 +292,6 @@ export function formatDisplayDateTimeRange(
 		return `${startDate}, ${formatDisplayTime(start, preferences)} – ${formatDisplayTime(end, preferences)}`;
 	}
 	return `${formatDisplayDateTime(start, preferences)} – ${formatDisplayDateTime(end, preferences)}`;
-}
-
-function relativeUnit(milliseconds: number): { unit: Intl.RelativeTimeFormatUnit; value: number } {
-	const absolute = Math.abs(milliseconds);
-	if (absolute < 60_000) return { unit: "second", value: Math.round(milliseconds / 1_000) };
-	if (absolute < 3_600_000) return { unit: "minute", value: Math.round(milliseconds / 60_000) };
-	if (absolute < 86_400_000) return { unit: "hour", value: Math.round(milliseconds / 3_600_000) };
-	if (absolute < 2_592_000_000) return { unit: "day", value: Math.round(milliseconds / 86_400_000) };
-	if (absolute < 31_536_000_000) return { unit: "month", value: Math.round(milliseconds / 2_592_000_000) };
-	return { unit: "year", value: Math.round(milliseconds / 31_536_000_000) };
 }
 
 export function formatDisplayTimestamp(

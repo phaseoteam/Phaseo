@@ -1,3 +1,4 @@
+import { formatDateParts } from "@phaseo/app-kit/format";
 import { RotateCw } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HarnessLogo } from "../components/HarnessLogo";
@@ -22,7 +23,7 @@ function countdown(resetsAt: number | null) { return resetText(resetsAt).replace
 /** One account's share of a window; hovering or clicking shows its details, with the email still blurred. */
 function Segment({ column, provider, compact }: { column: PoolColumn; provider: ProviderPool["provider"]; compact: boolean }) {
 	const { account, remaining, resetsAt } = column;
-	const details: [string, string][] = [["Plan", account.status.plan ?? "Unknown"], ["Via", account.source], ["Left", `${remaining}%`], ...resetsAt !== null ? [["Resets", `${new Date(resetsAt * 1000).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })} · ${countdown(resetsAt)}`] as [string, string]] : []];
+	const details: [string, string][] = [["Plan", account.status.plan ?? "Unknown"], ["Via", account.source], ["Left", `${remaining}%`], ...resetsAt !== null ? [["Resets", `${formatDateParts(resetsAt * 1000, { weekday: "short", hour: "2-digit", minute: "2-digit" })} · ${countdown(resetsAt)}`] as [string, string]] : []];
 	return <Popover>
 		<PopoverTrigger openOnHover delay={250} render={<button type="button" aria-label={`${initials(account.email ?? account.label)}: ${remaining}% left${resetsAt !== null ? `, resets ${countdown(resetsAt)}` : ""}`}
 			className="relative h-8 min-w-0 overflow-hidden rounded-md bg-muted text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 data-popup-open:ring-2 data-popup-open:ring-ring/40" />}>
