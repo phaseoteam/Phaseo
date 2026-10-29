@@ -3,7 +3,6 @@
 Phaseo is an AI gateway and model catalogue: one API in front of many model providers, with live pricing, benchmarks, and usage-based billing. This file is for agents changing the code. Nested `AGENTS.md` files in `apps/*`, `packages/*`, and `supabase/` add rules for their area; read the one closest to the files you change. Treat these instructions as strong defaults: the maintainer's instructions override them, and if a rule here fights the task in front of you, say so plainly and get sign-off before breaking it.
 
 ## What We Never Compromise On
-<!-- Draft written by an agent from MANIFESTO.md and maintainer feedback. Daniel to review the wording before merge. -->
 Customers choose models and pay real money based on what Phaseo shows and charges. These hold for every change:
 
 1. **The numbers are right.** Prices, model facts, usage, and spend come from a source and are read back after every change. If a fact is unknown, leave it unknown; never guess, infer from a similar model, or round in the customer's disfavour.
@@ -15,7 +14,6 @@ Customers choose models and pay real money based on what Phaseo shows and charge
 7. **Customer data stays private.** Respect zero-data-retention settings, never log secrets or request content you were not asked to keep, and redact evidence.
 
 ## A Note from Daniel
-<!-- Draft written by an agent for Daniel to rewrite in Daniel's own words before merge. -->
 I care more about knowing why a change was made and what it actually achieved than about how much changed. Show me the evidence: the failure you saw, the number before and after, the page as a customer sees it. Prefer the smallest change that makes the right behaviour obvious, and do not add machinery because it looks impressive. If you are unsure, check the code or the data instead of guessing, and tell me what you could not verify.
 
 ## Words We Use
@@ -123,6 +121,14 @@ Most code changes do not need an internal documentation change; agents can read 
 - Before merging a PR, make sure all actionable review comments and unresolved review threads are either fixed and resolved or explicitly confirmed as outdated/non-blocking. Do not treat green CI alone as sufficient if unresolved review-thread state is still blocking merge.
 - PRs: link issues and write the description in the structure below (see Pull Request Descriptions).
 - When creating/editing PR descriptions via CLI/API, use real multiline Markdown (or a body file). Do not submit escaped newline text like `\n` in the final PR body.
+
+## Changesets and Releases
+- Add a changeset with `pnpm changeset` when a change should version a published package, the API, or the web app. Choose the packages and the bump, then commit the generated `.changeset/*.md` file with your change.
+- `patch` is for compatible fixes, `minor` for compatible additions such as a new optional parameter or endpoint, and `major` for breaking changes; the pre-1.0 Rust crates use `minor` for breaking changes. Changed model ID helper constants are not a semver signal.
+- `pnpm changeset status` shows what is queued, and `pnpm changeset --empty` records a note without a version bump.
+- Do not run `pnpm changeset:version` or publish from your machine. On `main`, CI opens the "Version Packages" pull request, which bumps versions and syncs `pyproject.toml` and the language manifests; merging it publishes with trusted publishing.
+- Pre-releases use `pnpm changeset pre enter <tag>` and `pnpm changeset pre exit`. Keep `.changeset/pre.json` committed while a pre-release is open.
+- `docs/operations/release.md` has the full release and deploy mechanics.
 
 ## Pull Request Descriptions
 Every PR opened by an agent must have these five sections, in this order, and end with a model line, with no exceptions. The only thing allowed after it is a footer the harness adds automatically, such as `🤖 Generated with …`. Human-authored PRs should follow them too; `.github/PULL_REQUEST_TEMPLATE.md` has a heading for each. A reviewer should be able to see what changed, why, and what it achieved without re-investigating.
