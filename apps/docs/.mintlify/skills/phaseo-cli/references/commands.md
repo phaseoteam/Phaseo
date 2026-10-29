@@ -14,7 +14,7 @@ Use `--json` for agent workflows. Run `phaseo <group> --help` for the complete i
 ## Authentication
 
 ```bash
-phaseo login [--browser|--device-code] [--scopes <csv>] [--json]
+phaseo login [--browser|--device-code] [--scopes <csv>] [--api-url <url> [--allow-custom-api-url]] [--json]   # non-Phaseo, non-loopback API hosts need the explicit flag
 phaseo logout --json
 phaseo whoami --json
 phaseo version --json

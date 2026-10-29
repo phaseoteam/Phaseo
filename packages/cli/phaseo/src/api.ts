@@ -37,7 +37,7 @@ export function normalizeApiRoot(input?: string): string {
 	} catch {
 		throw new Error("Phaseo API URL must be a valid absolute URL");
 	}
-	const isLoopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
+	const isLoopback = isLoopbackHostname(url.hostname);
 	if (url.protocol !== "https:" && !(url.protocol === "http:" && isLoopback)) {
 		throw new Error("Phaseo API URL must use HTTPS (HTTP is only allowed for loopback development)");
 	}
@@ -45,6 +45,49 @@ export function normalizeApiRoot(input?: string): string {
 		throw new Error("Phaseo API URL must not contain credentials, a query string, or a fragment");
 	}
 	return url.toString().replace(/\/+$/, "").replace(/\/v1$/, "");
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+	return hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]" || hostname === "localhost";
+}
+
+/** True for API roots other than the default production API and loopback development servers. */
+export function isCustomApiRoot(apiRoot: string): boolean {
+	if (apiRoot === DEFAULT_API_URL) return false;
+	try {
+		return !isLoopbackHostname(new URL(apiRoot).hostname);
+	} catch {
+		return true;
+	}
+}
+
+/**
+ * Login sends the OAuth code and verifier to the API root, and later commands send the session token
+ * there, so a non-default host needs an explicit opt-in. Returns the host to warn about, if any.
+ */
+export function assertApiRootAllowed(
+	apiRoot: string,
+	options: { allowCustom?: boolean; env?: NodeJS.ProcessEnv } = {},
+): string | null {
+	if (!isCustomApiRoot(apiRoot)) return null;
+	const host = new URL(apiRoot).host;
+	const env = options.env ?? process.env;
+	if (options.allowCustom || env.PHASEO_ALLOW_CUSTOM_API_URL === "1") return host;
+	throw new Error(
+		`Refusing to sign in to ${host}, which is not the Phaseo API (${new URL(DEFAULT_API_URL).host}). Pass --allow-custom-api-url or set PHASEO_ALLOW_CUSTOM_API_URL=1 only if you trust this host with your Phaseo credentials.`,
+	);
+}
+
+/** Server-supplied links are opened in a browser only when they use HTTPS on phaseo.app or a subdomain. */
+export function isTrustedBrowserUrl(value: unknown): value is string {
+	if (typeof value !== "string") return false;
+	try {
+		const url = new URL(value);
+		const host = url.hostname.toLowerCase();
+		return url.protocol === "https:" && !url.username && !url.password && (host === "phaseo.app" || host.endsWith(".phaseo.app"));
+	} catch {
+		return false;
+	}
 }
 
 export function v1Url(apiRoot: string, path: string): string {

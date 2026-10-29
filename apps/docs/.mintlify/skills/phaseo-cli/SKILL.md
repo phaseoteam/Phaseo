@@ -17,7 +17,7 @@ phaseo version --json
 phaseo whoami --json
 ```
 
-If authentication is missing, use `phaseo login`. Prefer `phaseo login --device-code` in SSH, CI, remote shells, or non-interactive environments. Never automate entry of a user's credentials.
+If authentication is missing, use `phaseo login`. Prefer `phaseo login --device-code` in SSH, CI, remote shells, or non-interactive environments. Never automate entry of a user's credentials. Never add `--allow-custom-api-url` or `PHASEO_ALLOW_CUSTOM_API_URL=1` unless the user asks to sign in to that specific API host; if `phaseo whoami` reports an API host, the session is not on the default Phaseo API.
 
 2. Prefer a dedicated subcommand with `--json`. Read [references/commands.md](https://raw.githubusercontent.com/phaseoteam/Phaseo/main/.agents/skills/phaseo-cli/references/commands.md) when exact syntax is needed.
 

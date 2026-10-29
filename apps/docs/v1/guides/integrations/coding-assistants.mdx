@@ -147,7 +147,7 @@ Aider often expects OpenAI-compatible custom models to be prefixed with `openai/
 
 `phaseo pi` adds a dedicated provider extension that resolves its key from the Phaseo CLI at runtime. `phaseo prime-agent` writes a command-backed provider to `~/.prime/agent/models.json`. Both receive the compatible Phaseo model catalog. `phaseo openclaw` registers the compatible model catalog plus an exec-backed SecretRef, without placing the API key in `openclaw.json`.
 
-`phaseo hermes` offers to run the official Nous Research installer when Hermes is missing, then configures the installed agent. It saves the previous Hermes model settings, configures Phaseo as the custom endpoint, and uses Hermes' official `hermes config set` command to place the dedicated key in `~/.hermes/.env` as `OPENAI_API_KEY`. Hermes deliberately uses this plaintext file for provider credentials; protect it like any other API-key file. Removal restores the previous model settings, removes `OPENAI_API_KEY`, deletes Phaseo's recovery state, and revokes the key.
+`phaseo hermes` offers to run the official Nous Research installer when Hermes is missing, then configures the installed agent. It saves the previous Hermes model settings, configures Phaseo as the custom endpoint, and writes the dedicated key to Hermes' `~/.hermes/.env` file (or `$HERMES_HOME/.env`) as `OPENAI_API_KEY`, so the key is never passed on a command line. Hermes deliberately uses this plaintext file for provider credentials; protect it like any other API-key file. Removal restores the previous model settings, removes `OPENAI_API_KEY`, deletes Phaseo's recovery state, and revokes the key.
 
 ## MiniMax Code
 

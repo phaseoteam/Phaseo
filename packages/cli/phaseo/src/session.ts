@@ -13,7 +13,7 @@ export type Session = {
 	integrationGatewayKey?: string;
 	integrationGatewayKeyId?: string;
 	integrationGatewayKeyExpiresAt?: number;
-	integrationGatewayCredentials?: Record<string, { key: string; keyId: string }>;
+	integrationGatewayCredentials?: Record<string, { key: string; keyId: string; expiresAt?: number }>;
 };
 
 type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file" | "unavailable";
@@ -111,6 +111,7 @@ function parseSession(raw: string): Session | null {
 			if (!parsed.integrationGatewayCredentials || typeof parsed.integrationGatewayCredentials !== "object" || Array.isArray(parsed.integrationGatewayCredentials)) return null;
 			for (const value of Object.values(parsed.integrationGatewayCredentials)) {
 				if (!value || typeof value !== "object" || typeof value.key !== "string" || !value.key || typeof value.keyId !== "string" || !value.keyId) return null;
+				if (value.expiresAt !== undefined && (typeof value.expiresAt !== "number" || !Number.isFinite(value.expiresAt))) return null;
 			}
 		}
 		const integrationFields = [
@@ -241,7 +242,24 @@ async function readKeychainSession(): Promise<Session | null> {
 	}
 }
 
+/**
+ * `security -i` reads commands from stdin, so the session (hex-encoded with -X) never appears in a
+ * process argument list. `-w` with no value prompts on the terminal instead, so it cannot be piped.
+ */
+export function keychainWriteCommand(session: Session): { args: string[]; input: string } {
+	const hex = Buffer.from(JSON.stringify(session), "utf8").toString("hex");
+	return {
+		args: ["-i"],
+		input: `add-generic-password -U -a ${SESSION_ACCOUNT} -s ${SESSION_SERVICE} -X ${hex}\n`,
+	};
+}
+
 async function writeKeychainSession(session: Session): Promise<void> {
+	const command = keychainWriteCommand(session);
+	await runCommand(credentialHelperPath("keychain"), command.args, command.input).catch(() => undefined);
+	// Interactive mode can exit 0 after a failed command, so confirm the stored value.
+	if (JSON.stringify(await readKeychainSession()) === JSON.stringify(session)) return;
+	// Fallback for keychain tools that reject the stdin form; this passes the session as an argument.
 	await runCommand(credentialHelperPath("keychain"), [
 		"add-generic-password",
 		"-U",

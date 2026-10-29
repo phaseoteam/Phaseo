@@ -250,7 +250,9 @@ phaseo minimax --model openai/gpt-5.6-terra --
 
 The first interactive run offers to install a missing Cline, Kilo Code, or oh-my-pi CLI. Muse Code and MiniMax Code use their official installers when the command is missing. MiniMax Code uses the official PowerShell installer on Windows. All five runners use isolated temporary provider state so existing user configuration is not overwritten.
 
-Hermes setup is automatic and uses Hermes' supported plaintext `~/.hermes/.env` credential store. Phaseo CLI records the previous non-secret model settings so removal can restore them.
+Hermes setup is automatic and writes the key to Hermes' supported plaintext `~/.hermes/.env` credential store (or `$HERMES_HOME/.env`) directly, so the key never appears in a command line. Phaseo CLI records the previous non-secret model settings so removal can restore them.
+
+Each integration gets its own key. Keys created by setup expire after 90 days and have a $100 monthly spend limit (raise it with `phaseo keys update <id> --limit <usd>`). When a stored key has less than 7 days left, or was created before keys expired, the next setup or credential request creates a replacement, writes it through the integration's normal configuration path, and then revokes the old key.
 
 Codex receives a dedicated `phaseo` profile at `~/.codex/phaseo.config.toml`, leaving the default profile unchanged:
 
@@ -335,7 +337,7 @@ Keep the test CLI session isolated from your normal Phaseo session:
 
 ```powershell
 $env:PHASEO_CONFIG_DIR = "$env:TEMP\phaseo-oauth-e2e"
-node ./dist/index.js login --browser --api-url http://127.0.0.1:8790
+node ./dist/index.js login --browser --api-url http://127.0.0.1:8790   # loopback needs no extra flag
 node ./dist/index.js whoami --json
 ```
 
@@ -371,7 +373,10 @@ argument.
   - Windows: DPAPI-protected local blob
   - macOS: Keychain
   - Linux: Secret Service via `secret-tool`
-- `phaseo logout` revokes the stored refresh token before clearing local state.
+- `phaseo logout` revokes the stored refresh token and integration keys before clearing local state. Signing in again to the same API keeps integration keys so they can still be revoked later; signing in to a different API revokes them first and reports any it could not revoke.
+- `phaseo login` only signs in to `https://api.phaseo.app` or a loopback development API unless you pass `--allow-custom-api-url` (or set `PHASEO_ALLOW_CUSTOM_API_URL=1`). It then prints the host, and `phaseo whoami` shows it while the session is active.
+- Links returned by the API, such as top-up checkout links, open in a browser only when they are `https://` links on `phaseo.app` or a subdomain; otherwise the CLI prints them.
+- On Windows, package managers are run from their absolute path on `PATH`, never from the current directory.
 - Management keys use `phaseo_v1_mk_` and require explicit scopes; `phaseo_v1_sk_` keys are inference-only.
 - Regular inference/API keys are policy- and guardrail-driven rather than scope-driven.
 
@@ -379,7 +384,7 @@ Override behavior when needed:
 
 - `PHASEO_CONFIG_DIR` changes the config/session directory
 - `PHASEO_SESSION_BACKEND=file` explicitly opts into plain-file session storage when an OS credential store is unavailable. This stores refresh tokens on disk and should be used only when you accept that tradeoff.
-- `PHASEO_API_URL` points the CLI at a different API host
+- `PHASEO_API_URL` points the CLI at a different API host (login to a host other than `api.phaseo.app` or loopback also needs `--allow-custom-api-url` or `PHASEO_ALLOW_CUSTOM_API_URL=1`)
 
 ## Local Validation
 

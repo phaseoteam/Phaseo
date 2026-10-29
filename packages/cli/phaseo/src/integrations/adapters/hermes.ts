@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { getIntegrationGatewayCredential } from "../credential.js";
 import { isCommandAvailable } from "../files.js";
 import type { IntegrationAdapter, IntegrationOptions } from "../types.js";
@@ -42,6 +42,30 @@ async function get(key: string): Promise<PreviousValue> {
 
 async function set(key: string, value: unknown): Promise<void> {
 	await run(["config", "set", key, typeof value === "string" ? value : JSON.stringify(value)]);
+}
+
+export function hermesEnvPath(options: IntegrationOptions, env: NodeJS.ProcessEnv = process.env): string {
+	return join(env.HERMES_HOME || join(options.homeDir, ".hermes"), ".env");
+}
+
+/** Sets OPENAI_API_KEY in Hermes' .env contents, replacing an existing assignment. */
+export function renderHermesEnv(before: string | null, key: string): string {
+	if (/[\r\n]/.test(key)) throw new Error("Phaseo returned an invalid gateway credential");
+	const lines = (before ?? "").split(/\r?\n/).filter((line, index, all) => !(index === all.length - 1 && line === ""));
+	const kept = lines.filter((line) => !/^\s*(?:export\s+)?OPENAI_API_KEY\s*=/.test(line));
+	return `${[...kept, `OPENAI_API_KEY=${key}`].join("\n")}\n`;
+}
+
+/** Writes the key to Hermes' .env file directly, so it never appears in a process argument list. */
+async function writeHermesKey(options: IntegrationOptions, key: string): Promise<void> {
+	const path = hermesEnvPath(options);
+	await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+	const before = await readFile(path, "utf8").catch((error: NodeJS.ErrnoException) => {
+		if (error.code === "ENOENT") return null;
+		throw error;
+	});
+	await writeFile(path, renderHermesEnv(before, key), { mode: 0o600 });
+	await chmod(path, 0o600);
 }
 
 async function restore(state: HermesState): Promise<void> {
@@ -88,7 +112,7 @@ export const hermesAdapter: IntegrationAdapter = {
 		await mkdir(join(options.homeDir, ".config", "phaseo", "integrations"), { recursive: true });
 		await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
 		try {
-			await set("OPENAI_API_KEY", await getIntegrationGatewayCredential("hermes"));
+			await writeHermesKey(options, await getIntegrationGatewayCredential("hermes"));
 			await set("model.provider", "custom");
 			await set("model.base_url", BASE_URL);
 			await set("model.default", options.model ?? DEFAULT_MODEL);

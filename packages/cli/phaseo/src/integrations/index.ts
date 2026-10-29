@@ -12,7 +12,7 @@ import { zedAdapter } from "./adapters/zed.js";
 import { aiderAdapter } from "./adapters/aider.js";
 import { continueAdapter } from "./adapters/continue.js";
 import { applyChanges, renderPlan } from "./files.js";
-import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "./credential.js";
+import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, prepareIntegrationGatewayCredential, revokeIntegrationGatewayCredential, type PreparedIntegrationCredential } from "./credential.js";
 import { fetchIntegrationModels, supportsModelCatalog } from "./catalog.js";
 import { confirmHarnessInstall, harnessInstallPlan, installHarness, isPrimaryHarness, renderInstallInvocation } from "./installer.js";
 import { createSpinner, terminalUi } from "../output.js";
@@ -218,18 +218,17 @@ export async function runIntegrationCommand(
 		}
 	}
 
-	let provisionedCredential = false;
+	let preparedCredential: PreparedIntegrationCredential | undefined;
 	if (command === "setup") {
 		const spinner = createSpinner("Preparing a dedicated credential", { enabled: interactive });
 		try {
 			const credentialExisted = await hasIntegrationGatewayCredential(adapter.id);
-			const credential = await getIntegrationGatewayCredential(adapter.id);
-			provisionedCredential = !credentialExisted;
-			if (adapter.planCredential) changes = [...changes, ...await adapter.planCredential(options, credential)];
-			spinner.succeed(credentialExisted ? "Reused the existing credential" : "Created a dedicated credential");
+			preparedCredential = await prepareIntegrationGatewayCredential(adapter.id);
+			if (adapter.planCredential) changes = [...changes, ...await adapter.planCredential(options, preparedCredential.key)];
+			spinner.succeed(!preparedCredential.created ? "Reused the existing credential" : credentialExisted ? "Replaced an expiring credential" : "Created a dedicated credential");
 		} catch (error) {
 			spinner.fail("Could not prepare the credential");
-			if (provisionedCredential) await revokeIntegrationGatewayCredential(adapter.id).catch(() => undefined);
+			await preparedCredential?.rollback().catch(() => undefined);
 			throw error;
 		}
 	}
@@ -263,9 +262,10 @@ export async function runIntegrationCommand(
 		configurationSpinner.succeed(command === "setup" ? `${adapter.name} configured` : `${adapter.name} configuration removed`);
 	} catch (error) {
 		configurationSpinner.fail(command === "setup" ? `Could not configure ${adapter.name}` : `Could not remove ${adapter.name}`);
-		if (provisionedCredential) await revokeIntegrationGatewayCredential(adapter.id).catch(() => undefined);
+		await preparedCredential?.rollback().catch(() => undefined);
 		throw error;
 	}
+	await preparedCredential?.commit();
 	if (command === "remove") await revokeIntegrationGatewayCredential(adapter.id);
 	if (!json) {
 		const outcome = command === "remove"
