@@ -246,8 +246,11 @@ jobs:
               run: pnpm --filter "@phaseo/agent-sdk..." build
 
             # These apps have no CI build job; TypeScript 7 checks each in seconds.
-            - name: Typecheck desktop, mobile and perf-upstream
-              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream run typecheck
+            - name: Typecheck desktop, mobile, perf-upstream and the shared packages
+              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream --filter @phaseo/ui --filter @phaseo/app-kit run typecheck
+
+            - name: Test the shared app-kit package
+              run: pnpm --filter @phaseo/app-kit test
 
     check-paths:
         name: Check changed paths
@@ -269,6 +272,8 @@ jobs:
                       data: 'packages/data/catalog/src/data/**'
                       factory:
                           - 'apps/factory/**'
+                          - 'packages/shared/app-kit/**'
+                          - 'packages/shared/ui/**'
                           - 'pnpm-lock.yaml'
                           - '.github/workflows/ci.yml'
                       migrations:
@@ -939,13 +944,15 @@ jobs:
                       # Everything outside apps/web that the web build reads:
                       # - packages/data/catalog/src, compiled through a tsconfig path;
                       # - apps/docs, read by the prebuild for the docs search index;
+                      # - packages/shared/app-kit and packages/shared/ui, workspace packages
+                      #   the website compiles from source (transpilePackages);
                       # - the two model-discovery modules imported by the internal
                       #   model-discovery-notifier server action.
                       # Add any new import that reaches outside apps/web here too.
                       if [ -n "$production_sha" ] \
                           && git fetch --quiet --depth=1 origin "$production_sha" \
                           && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
-                              apps/web apps/docs packages/data/catalog \
+                              apps/web apps/docs packages/data/catalog packages/shared/app-kit packages/shared/ui \
                               apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
                               apps/api/src/pipeline/model-discovery/discord-webhook.ts \
                               package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then

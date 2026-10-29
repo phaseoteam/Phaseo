@@ -363,6 +363,9 @@ html[data-font="arabic"] {
 /* Class recipes shared with the mobile app (the callout tones). */
 @source "../../../../packages/shared/app-kit/src/ui-recipes/callout.ts";
 
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
 @layer utilities {
 	@keyframes token-stream {
 		0% {

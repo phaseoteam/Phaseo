@@ -10,6 +10,9 @@
 /* The theme's colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
 @import "./theme-tokens.generated.css";
 
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {

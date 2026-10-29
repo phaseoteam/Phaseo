@@ -7,6 +7,9 @@
 /* The theme's colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
 @import "./theme-tokens.generated.css";
 
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
 @font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Regular.ttf") format("truetype"); }
 @font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-SemiBold.ttf") format("truetype"); }
 @font-face { font-family: Montserrat; font-style: normal; font-weight: 700; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Bold.ttf") format("truetype"); }

@@ -1,3 +1,4 @@
+import { formatTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parsePatchFiles, type FileDiffContentsLoader, type FileDiffMetadata } from "@pierre/diffs";
 import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Columns2, Copy, FolderTree, Pilcrow, Rows3, TextWrap } from "lucide-react";
@@ -184,7 +185,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 		else if (value === "latest") select({ kind: "turn" });
 		else if (typeof value === "string" && value.startsWith("turn:")) select({ kind: "turn", messageId: value.slice(5) });
 	};
-	const timeOf = (iso?: string) => iso ? new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+	const timeOf = (iso?: string) => iso ? formatTime(iso) : "";
 
 	const header = <div className={cn(SURFACE_HEADER_CLASS, "justify-between gap-2")} data-surface-subheader>
 		<div className="flex min-w-0 flex-1 items-center gap-3">

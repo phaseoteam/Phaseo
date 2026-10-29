@@ -1,16 +1,17 @@
 # @phaseo/app-kit
 
-Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`) and the mobile app (`apps/mobile`). These files used to live in the website, and the other apps reached into `apps/web` for them.
+Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`), the mobile app (`apps/mobile`) and Factory (`apps/factory`). These files used to live in the website, and the other apps reached into `apps/web` for them.
 
 | Import | What it is |
 |---|---|
-| `@phaseo/app-kit/logos` | The logo list (`manifest.ts`) and `resolveLogo`, which turns an organisation or provider ID into its logo path for a theme. |
+| `@phaseo/app-kit/logos` | The logo list (`manifest.ts`) and `resolveLogo`, which turns an organisation or provider ID into its logo path for a theme. Also `phaseoMarkPath`, the SVG path of the Phaseo "P" mark. |
 | `@phaseo/app-kit/provider-offers` | Provider display names and logo IDs for offers such as regional or fast routes. |
 | `@phaseo/app-kit/gateway-status` | Gateway route statuses: normalising, ranking and choosing between them. |
 | `@phaseo/app-kit/benchmarks/epoch` | Epoch AI benchmark helpers (the Capabilities Index and its confidence intervals). |
 | `@phaseo/app-kit/theme` | Design tokens: the theme model (palettes, accents, presets, swatches), each palette's colours, the status colours, the chart mixes and the radius scale. Also `themeVariables`, a theme's colours as CSS variables (the mobile app applies them), and the colour maths below. |
 | `@phaseo/app-kit/ui-recipes` | Class recipes: plain Tailwind class strings the website and the mobile app (Uniwind) both understand. Callout tones, badge tones and the mobile type scale. |
 | `@phaseo/app-kit/theme/colour` | Colour maths: hex, HSV, OKLCH, WCAG contrast, `mixOklch` (CSS `color-mix(in oklch, …)`) and `readableForegroundForAccent`. |
+| `@phaseo/app-kit/format` | Display formatters: money, counts, speed, latency, token limits, durations, dates and times, relative times and the usage dashboard's figures. |
 
 ## Rules
 
@@ -58,3 +59,27 @@ Rules for a recipe:
 - **Only classes both apps understand.** No `has-*`, no arbitrary selectors such as `[&_svg]`, no `color-mix`.
 - **Keep surface and text classes apart**, because React Native text doesn't inherit its container's colour.
 - **One file per recipe, listed with `@source` by each app that uses it.** Tailwind only generates classes it finds in the files it scans, and this package is outside the apps. The website lists `ui-recipes/callout.ts` in `globals.css`; the mobile app lists the whole folder in `global.css`. Without that line the classes silently disappear.
+
+## Formatters
+
+The website is the reference. Each formatter is the website's own style for that kind of figure, so a figure reads the same in every app:
+
+| Figure | Formatter | Looks like | Website original |
+|---|---|---|---|
+| A balance, spend, budget or usage total | `formatUsd` | $0.00 · $0.0035 · $12.50 · $1,234.50 | The budgets pages (`useSpendUsd`) |
+| What one request, message or chat cost | `formatUsdCost` | $0 · $0.00004 · $0.1234 · $0.5 | Chat message costs |
+| A unit price, such as per million tokens | `formatUsdPrice` | $0.035 · $2.5 · $1,234.5 | The /models list |
+| A model's headline price per million tokens | `formatUsdHeadlinePrice` | $0.0035 · $0.50 · $15 | The /models card headline |
+| A count of tokens or requests | `formatRoundedCount` | 999 · 1.15K · 1.23M (rounded down) | Rankings and usage |
+| Output speed | `formatTps` | 45.3 tps · 123 tps | The model page's providers |
+| A latency: time to first token, end-to-end, how long a response took | `formatLatency` | 0.85 s · 12.3 s · 16.7 min | The model page's providers. Overhead-like timings stay in ms |
+| A context window or other token limit | `formatTokenCount`, or `formatTokenCountShort` where space is tight | 131,072 tokens · 131K | /models cards; page titles (`formatContextLength`) |
+| How long a piece of work took, such as an agent's turn | `formatDuration` | 850 ms · 1.5 s · 2.08 min | The chat's old timings |
+| Spend, counts, shares and changes on the usage dashboard | `formatUsageUsd`, `formatUsageNumber`, `formatUsagePercent`, `usageDeltaPercent` | $1,234 · 1.2M · 12.3% | The usage dashboard (moved) |
+| A date | `formatDate`, or `formatCalendarDate` for a release date (UTC) | 29 Oct 2026 | Dates (`formatDisplayDate`) |
+| A time of day, or a date and time | `formatTime`, `formatDateTime` | 14:05 · 29 Oct 2026, 14:05 | `formatDisplayTime`, `formatDisplayDateTime` |
+| A time that may be recent | `formatTimestamp` | 3 hours ago, then 29 Oct 2026, 14:05 | `formatDisplayTimestamp` |
+| A time | `formatRelativeTime` | now · 5 minutes ago · yesterday | Timestamps |
+| A time in a narrow list | `formatAgoShort` | now · 5m · 3h · 2d | None: the same units, abbreviated |
+
+Money always uses `MONEY_LOCALE` (`en-US`), so it shows `$12.50` and never `US$12.50`. Dates and times use `DATE_LOCALE` (`en-GB`), the website's default language; `formatDateParts` takes any other Intl options. They give the same text without `dateStyle` or `Intl.RelativeTimeFormat`, which Hermes (the mobile app's engine) may lack. Tests: `pnpm --filter @phaseo/app-kit test`.

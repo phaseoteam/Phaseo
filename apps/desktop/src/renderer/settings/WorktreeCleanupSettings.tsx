@@ -1,3 +1,4 @@
+import { formatDateTime } from "@phaseo/app-kit/format";
 import { useState } from "react";
 import type { WorkspacePreferences, WorktreeCleanupRules } from "../../shared/preferences";
 import type { WorktreeCleanupEntry, WorktreeCleanupReport } from "../../shared/worktreeCleanup";
@@ -60,7 +61,7 @@ export function WorktreeCleanupSettings({ preferences, save, disabled }: { prefe
 			control={<Select label="Remove worktrees after their chats settle" disabled={disabled} value={String(rules.settledAfterDays ?? "never")} onValueChange={value => set({ settledAfterDays: value === "never" ? null : Number(value) })} options={dayOptions([0, 1, 3, 7, 14, 30], rules.settledAfterDays)} />} />
 		<SettingsRow title="After inactivity" description="Nothing has happened in its chats for this long."
 			control={<Select label="Remove inactive worktrees" disabled={disabled} value={String(rules.afterDays ?? "never")} onValueChange={value => set({ afterDays: value === "never" ? null : Number(value) })} options={dayOptions([7, 14, 30, 60, 90], rules.afterDays)} />} />
-		<SettingsRow title="Clean up now" description={last ? `Last run ${new Date(last.checkedAt).toLocaleString()}${last.automatic ? " (automatic)" : ""}: ${cleanupSummary(last)}` : "Lists what these rules would remove, and asks before removing anything."}
+		<SettingsRow title="Clean up now" description={last ? `Last run ${formatDateTime(last.checkedAt)}${last.automatic ? " (automatic)" : ""}: ${cleanupSummary(last)}` : "Lists what these rules would remove, and asks before removing anything."}
 			control={<SettingsButton disabled={!api || busy} onClick={() => void check()}>{busy && !plan ? "Checking…" : "Clean up now"}</SettingsButton>} />
 		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
 		<Dialog open={plan !== undefined} onOpenChange={open => { if (!open && !busy) setPlan(undefined); }}>
