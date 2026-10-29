@@ -1,6 +1,6 @@
 import type { ModelCard } from "@/lib/api/models";
 import { contextWindow, isOnPhaseo, isRetired, modelName, organisationName } from "@/lib/catalogue";
-import { formatDate, formatPrice, formatTokens } from "@/lib/format";
+import { formatCalendarDate, formatPrice, formatTokens } from "@/lib/format";
 
 /**
  * "Higher or lower", the game inside the version art (long-press the Phaseo mark there, as on Android's version
@@ -157,7 +157,7 @@ export function describeFigure(contestant: Contestant, kind: QuestionKind): stri
   const value = contestant[kind];
   if (value == null) return "Unknown";
   if (kind === "context") return `${formatTokens(value)} tokens`;
-  if (kind === "released") return formatDate(value);
+  if (kind === "released") return formatCalendarDate(value, "—");
   return `${formatPrice(value)} / 1M`;
 }
 

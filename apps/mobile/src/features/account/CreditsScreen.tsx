@@ -3,7 +3,7 @@ import { ExternalLink, Plus } from "lucide-react-native";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { Button, ErrorState, Fact, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
-import { formatDate, formatRelativeDay, formatUsd, nanosToUsd } from "@/lib/format";
+import { formatDate, formatTimestamp, formatUsd, nanosToUsd } from "@/lib/format";
 import { openWeb } from "@/lib/web";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { projectCreditRunway, transactionLabel, transactionStatus } from "./credits";
@@ -73,7 +73,7 @@ export function CreditsScreen({ workspaceId }: { workspaceId: string }) {
                     <Row
                       key={entry.id}
                       title={transactionLabel(entry.kind, entry.description)}
-                      subtitle={[entry.created_at ? formatRelativeDay(entry.created_at) : null, status].filter(Boolean).join(" · ")}
+                      subtitle={[entry.created_at ? formatTimestamp(entry.created_at) : null, status].filter(Boolean).join(" · ")}
                       trailing={<Text variant="small" className={amount < 0 ? "font-semibold text-foreground" : "font-semibold text-success"}>{`${amount > 0 ? "+" : ""}${formatUsd(amount)}`}</Text>}
                     />
                   );

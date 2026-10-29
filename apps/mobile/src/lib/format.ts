@@ -1,7 +1,8 @@
 import { formatRoundedCount, formatUsdPrice } from "@phaseo/app-kit/format";
 
 // Money, counts and unit prices are the website's styles, shared through @phaseo/app-kit/format.
-export { formatUsd, formatUsdCost, MONEY_LOCALE } from "@phaseo/app-kit/format";
+// So are calendar dates, timestamps and "how long ago", in the website's wording.
+export { formatCalendarDate, formatDateParts, formatRelativeTime, formatRelativeUnit, formatTimestamp, formatUsd, formatUsdCost, MONEY_LOCALE } from "@phaseo/app-kit/format";
 
 const whole = new Intl.NumberFormat("en-GB");
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
