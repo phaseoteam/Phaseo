@@ -427,7 +427,7 @@ export function makeChartTool(options: {
 }): AgentTool<any, any> {
 	return {
 		id: MAKE_CHART_TOOL_ID,
-		description: `Draw a chart and post it in this Slack thread as an image. Use it when a chart shows numbers better than a list: a bar chart to compare amounts, a line chart for change over time, a pie chart for parts of a whole (2 to 6 slices). Give at most ${MAX_SERIES} series, one number per label in each, and a short title. Chart text must use Latin or Cyrillic letters, digits and common symbols. The chart appears in the thread on its own; in your reply, say what it shows in a sentence or two rather than repeating every number.`,
+		description: `Draw a chart and post it in this Slack thread as an image. Use it when a chart shows numbers better than a list: a bar chart to compare amounts, a line chart for change over time, a pie chart for parts of a whole (2 to 6 slices). Give at most ${MAX_SERIES} series, one number per label in each, and a short title. Chart text must use Latin or Cyrillic letters, digits and common symbols. The chart appears in the thread on its own, before or after your reply, so never say it is above or below; in your reply, say what it shows in a sentence or two rather than repeating every number.`,
 		parameters: {
 			type: "object",
 			properties: {

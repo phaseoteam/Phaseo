@@ -316,7 +316,7 @@ export class FakeDb implements Db {
 		slack_installations: [], slack_apps: [], slack_user_links: [], workspace_audit_events: [],
 		workspace_members: [], workspaces: [], wallets: [], v2_models: [],
 	};
-	/** What rpc() answers, by function name. */
+	/** What rpc() answers, by function name: a value, or a function of the call's arguments. */
 	rpcResults: Record<string, unknown> = {};
 	queries: Array<{ table: string; query: Record<string, string> }> = [];
 	flushes: Array<{ installationId: string; period: string; people: Array<{ slack_user_id: string; first_answer_at: string; answers: number }> }> = [];
@@ -357,7 +357,8 @@ export class FakeDb implements Db {
 			this.tables.workspace_audit_events.push({ action: "slack_agent.uninstalled_in_slack", target_id: row.id, metadata: { event: args.p_event } });
 			return true as T;
 		}
-		return (this.rpcResults[fn] ?? null) as T;
+		const result = this.rpcResults[fn];
+		return (typeof result === "function" ? result(args) : result ?? null) as T;
 	}
 }
 

@@ -331,6 +331,29 @@ async function firstCatalogueName(db: Db, names: string[]): Promise<string | nul
 	return index >= 0 ? checked[index] : null;
 }
 
+/**
+ * Whether a `compare …:` message lists a catalogue model, read like chooseComparison's
+ * likeliest list (the text before the first colon that holds a comma). events.ts asks
+ * while model choice is off: such a message gets COMPARE_OFF_TEXT privately, rather than
+ * an answer by the installation's model alone that reads as if it had compared.
+ * "Compare the two plans, then pick one: …" lists none and is answered as written.
+ */
+export async function listsCatalogueModel(db: Db, message: string): Promise<boolean> {
+	const listed = readings(message, COMPARE_PREFIX, MAX_COMPARED_CHARS)
+		.reverse()
+		.map((reading) => listedNames(reading.named))
+		.find((names) => names.length >= MIN_COMPARED);
+	if (!listed) return false;
+	return (await firstCatalogueName(db, listed.map((name) => name.named))) !== null;
+}
+
+/** The private reply to a Compare while model choice is off (listsCatalogueModel). */
+export const COMPARE_OFF_TEXT = [
+	"Comparing models isn't turned on here, so I didn't answer.",
+	"",
+	"An admin can turn it on in Phaseo, under Settings → Slack → Model choice, by letting people choose a model per message and picking the models they may use. Without `compare …:`, I answer with this workspace's model.",
+].join("\n");
+
 export type ComparisonDecision =
 	| { kind: "none" }
 	| { kind: "chosen"; models: string[]; prompt: string }

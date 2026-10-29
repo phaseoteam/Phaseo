@@ -3,6 +3,7 @@ import { verifySlackToken as webApiVerifySlackToken } from "../../web-api/src/li
 import { clearUserFactsCache, refusalText } from "../src/access";
 import { meterSettings, processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, installationSecrets, type Installation } from "../src/installations";
+import { COMPARE_OFF_TEXT } from "../src/model-choice";
 import type { TurnRunner } from "../src/turns";
 import {
 	BOT_TOKEN,
@@ -396,13 +397,21 @@ describe("events: choosing a model per message", () => {
 		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
 	});
 
-	it("answers ordinary text that starts with \"Compare …:\" as written, and every Compare when model choice is off", async () => {
+	it("answers ordinary text that starts with \"Compare …:\" as written, with model choice on or off", async () => {
 		await expect(run(mention({ text: "<@U0BOT00001> Compare the two plans, then pick one: which is cheaper?" }))).resolves.toBe("started");
 		expect(thread().turnInput(1)).toMatchObject({ text: "<@U0BOT00001> Compare the two plans, then pick one: which is cheaper?" });
 		await install({ model: "openai/gpt-6-luna", model_choice_enabled: false, allowed_models: ["anthropic/claude-opus-5-5", "phaseo/auto"] });
-		await expect(run(mention({ text: "<@U0BOT00001> compare claude opus, auto: hi", ts: "1792600000.000200" }))).resolves.toBe("started");
+		await expect(run(mention({ text: "<@U0BOT00001> Compare the two plans, then pick one: which is cheaper?", ts: "1792600000.000200" }))).resolves.toBe("started");
 		expect(world.turns.created.map((entry) => (entry.params as { compare?: string[] }).compare)).toEqual([undefined, undefined]);
 		expect(world.slack.ephemerals()).toEqual([]);
+	});
+
+	it("says privately that Compare is off when model choice is off, rather than answering with one model", async () => {
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: false, allowed_models: [] });
+		await expect(run(mention({ text: "<@U0BOT00001> compare claude opus, auto: hi" }))).resolves.toBe("model_refused");
+		expect(world.slack.ephemerals().map((call) => String(call.args.text))).toEqual([COMPARE_OFF_TEXT]);
+		expect(world.turns.created).toEqual([]);
+		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
 	});
 });
 

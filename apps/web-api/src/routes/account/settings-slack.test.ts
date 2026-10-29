@@ -80,6 +80,10 @@ type Fixture = {
 	alert?: number | ((request: Request) => Response | Promise<Response>);
 	/** Statsig's answer for the Auto Routing gate (default: closed), or "error" for a failed check. */
 	autoRouting?: boolean | "error";
+	/** Statsig's answer for the slack_agent rollout gate (default: open), or "error" for a failed check. */
+	slackGate?: boolean | "error";
+	/** The installer's Phaseo role (users.role); "admin" installs outside the rollout. */
+	phaseoRole?: string | null;
 	/** The agent key's created_by (default user-a, the installer). */
 	keyCreatedBy?: string | null;
 	/** Public catalogue models (v2_models, not hidden or disabled), or "error" when the catalogue can't be read. */
@@ -113,9 +117,14 @@ function database(fixture: Fixture = {}) {
 			return new Response(null, { status: fixture.alert ?? 204 });
 		}
 		if (url.hostname === "api.statsig.com") {
+			if (parse(text)?.gateName === "slack_agent") {
+				if (fixture.slackGate === "error") return new Response("unavailable", { status: 503 });
+				return Response.json({ name: "slack_agent", value: fixture.slackGate ?? true });
+			}
 			if (fixture.autoRouting === "error") return new Response("unavailable", { status: 503 });
 			return Response.json({ name: "gateway_auto_routing", value: fixture.autoRouting ?? false });
 		}
+		if (path.endsWith("/users")) return rows(fixture.phaseoRole ? [{ role: fixture.phaseoRole }] : []);
 		if (path.endsWith("/auth/v1/user")) {
 			const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
 			const id = TOKENS[token];
@@ -214,7 +223,8 @@ async function installState(overrides: Record<string, unknown> = {}, now = Date.
 
 const find = (requests: Recorded[], method: string, suffix: string) =>
 	requests.filter((entry) => entry.method === method && entry.url.pathname.endsWith(suffix));
-const gateChecks = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "api.statsig.com");
+const gateChecks = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "api.statsig.com" && entry.body?.gateName === "gateway_auto_routing");
+const rolloutChecks = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "api.statsig.com" && entry.body?.gateName === "slack_agent");
 
 function location(response: Response) {
 	return new URL(response.headers.get("location") ?? "");
@@ -391,6 +401,43 @@ describe("Slack agent install", () => {
 		const response = await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) });
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ error: "chat_privacy_review_required" });
+	});
+
+	it("installs only inside the slack_agent rollout, asked for the installer as the web app asks", async () => {
+		let requests = database({ role: "admin", slackGate: false });
+		const refused = await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) });
+		expect(refused.status).toBe(403);
+		expect(await refused.json()).toMatchObject({ error: "slack_agent_unavailable" });
+		expect(find(requests, "GET", "/slack_installations")).toHaveLength(0);
+		expect(rolloutChecks(requests)[0].headers.get("statsig-api-key")).toBe("statsig-server-key");
+		expect(rolloutChecks(requests)[0].body.user).toEqual({
+			userID: "user-a",
+			email: "user-a@example.com",
+			customIDs: { workspaceID: WORKSPACE },
+			custom: { workspace_id: WORKSPACE },
+			statsigEnvironment: { tier: "production" },
+		});
+
+		// A failed check is a no.
+		database({ role: "admin", slackGate: "error" });
+		expect((await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) })).status).toBe(403);
+
+		requests = database({ role: "admin", slackGate: true });
+		expect((await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) })).status).toBe(200);
+		expect(rolloutChecks(requests)).toHaveLength(1);
+	});
+
+	it("lets Phaseo admins install outside the rollout, as Settings → Slack shows them", async () => {
+		const requests = database({ role: "admin", slackGate: false, phaseoRole: "admin" });
+		const response = await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) });
+		expect(response.status).toBe(200);
+		expect(rolloutChecks(requests)).toHaveLength(0);
+	});
+
+	it("still updates an installed agent's permissions outside the rollout", async () => {
+		database({ role: "admin", slackGate: false, installation: {} });
+		const response = await call("/slack/permissions", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(response.status).toBe(200);
 	});
 
 	it("refuses a second live installation", async () => {
