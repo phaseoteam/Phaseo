@@ -6,7 +6,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import { json, withRuntime } from "@/routes/utils";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const ICONS = new Set(["users", "briefcase", "megaphone", "code", "palette", "headphones", "landmark", "scale", "heart-pulse", "globe", "flask", "graduation-cap", "shield-check", "shopping-bag", "wrench", "truck", "handshake", "chart"]);
@@ -17,6 +17,9 @@ async function authorize(req: Request, write: boolean, roleAuthority = false) {
 	if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ);
 	if (capability) return { response: capability };
+	// Directory roles and departments decide who can create keys and which department budget holds them.
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change the member directory or departments. The person can change them under Settings.") : null;
+	if (appError) return { response: appError };
 	if (roleAuthority) {
 		const workspaceCapability = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE, {
 			requireExplicitNonOAuthScope: true,

@@ -10,6 +10,7 @@ import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireJsonBody,
 	requireCapability,
 	requireOAuthWorkspaceRole,
@@ -71,6 +72,14 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	modelSuccessorPricePolicy: "model_successor_price_policy",
 	modelSuccessorMaxPriceIncreasePercent: "model_successor_max_price_increase_percent",
 };
+
+// What a successor redirect may cost, and whether a failed BYOK request may spend credits instead: limits
+// on spending, which apps that sign in with Phaseo can't change.
+const SPENDING_LIMIT_FIELDS = new Set([
+	"model_successor_price_policy",
+	"model_successor_max_price_increase_percent",
+	"byok_fallback_enabled",
+]);
 
 const WORKSPACE_POLICY_FIELDS = new Set([
 	"provider_restriction_mode",
@@ -195,6 +204,10 @@ async function handleUpdateSettings(req: Request) {
 	const patch = normalized.data;
 	if (Object.keys(patch).length === 0) {
 		return json({ error: "bad_request", message: "No supported settings fields were provided" }, 400, { "Cache-Control": "no-store" });
+	}
+	if (Object.keys(patch).some((field) => SPENDING_LIMIT_FIELDS.has(field))) {
+		const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change the successor price policy or BYOK fallback to credits. The person can change them under Settings, Routing or Settings, BYOK.");
+		if (appError) return appError;
 	}
 
 	try {

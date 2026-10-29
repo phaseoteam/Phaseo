@@ -31,8 +31,9 @@ const send = (handler: (req: Request) => Promise<Response>, method: string, body
 		headers: { "content-type": "application/json" },
 		body: body === undefined ? undefined : JSON.stringify(body),
 	}));
+// The Phaseo CLI acting for a member with that role.
 const oauth = (role: string) => {
-	state.auth = { workspaceId: WS, authMethod: "oauth", userId: "user_1", requestId: "req_1", oauthScopes: ["settings:read", "settings:write"] };
+	state.auth = { workspaceId: WS, authMethod: "oauth", oauthClientId: "phaseo_cli", userId: "user_1", requestId: "req_1", oauthScopes: ["settings:read", "settings:write"] };
 	state.db.tables.workspace_members = [{ workspace_id: WS, user_id: "user_1", role }];
 };
 
