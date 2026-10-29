@@ -1,3 +1,4 @@
+import { formatRelativeTime, formatAgoShort } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { ArrowLeft, ArrowUpRight, Eye, EyeOff, Link as LinkIcon, MoreHorizontal, Plus, RefreshCw } from "lucide-react";
@@ -15,7 +16,7 @@ import { useBackgroundRefresh } from "../../lib/useBackgroundRefresh";
 import { cn } from "../../lib/utils";
 import { linkValidation, resolveLinkInput } from "./linkLogic";
 import { ActorAvatar, ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, PullRequestListGhost, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
-import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
+import { summaryChecksRollup } from "./pullRequestLogic";
 import { PullRequestSurface } from "./PullRequestSurface";
 import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { RowChecksPopover } from "./RowChecksPopover";
@@ -33,7 +34,7 @@ export const WATCHING_LABEL = "Watching: the agent wakes when checks finish, som
 function RowLines({ number, title, signals, status, meta, updatedAt }: { number: ReactNode; title: ReactNode; signals?: ReactNode; status?: ReactNode; meta?: ReactNode; updatedAt?: string }) {
 	return <span className="min-w-0 flex-1">
 		<span className="flex min-w-0 items-center gap-1.5">{number}<span className="min-w-0 truncate text-sm">{title}</span>{signals && <span className="flex shrink-0 items-center gap-1 text-2xs">{signals}</span>}{status && <span className="ml-auto flex shrink-0 items-center gap-1.5 text-2xs">{status}</span>}</span>
-		<span className="flex min-w-0 items-center gap-1.5 overflow-hidden text-2xs text-muted-foreground">{meta}{updatedAt && <span className="ml-auto shrink-0 whitespace-nowrap tabular-nums">{relativeTime(updatedAt)}</span>}</span>
+		<span className="flex min-w-0 items-center gap-1.5 overflow-hidden text-2xs text-muted-foreground">{meta}{updatedAt && <span className="ml-auto shrink-0 whitespace-nowrap tabular-nums">{formatAgoShort(updatedAt)}</span>}</span>
 	</span>;
 }
 const Branches = ({ head, base }: { head: string; base: string }) => <span className="flex min-w-0 items-center gap-1 font-mono"><MiddleTruncate value={head} limit={28} /><span className="shrink-0">→</span><MiddleTruncate value={base} limit={16} className="shrink-0" /></span>;
@@ -75,7 +76,7 @@ function LinkRow({ projectId, line, openable, onOpen, onExternal, onCopy, onUnli
 		{snapshot ? <PullRequestRowGlyph state={snapshot.state} draft={snapshot.draft} mergeable={snapshot.mergeable} base={snapshot.base} /> : <PullRequestGlyph.pullRequest aria-label="Waiting for GitHub" className="size-4 shrink-0 text-muted-foreground" />}
 		<button type="button" onClick={openable ? onOpen : onExternal} className="flex min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
 			<RowLines
-				number={<PullRequestNumberMenu url={link.url} onCopy={onCopy} onNotice={onNotice} className="shrink-0"><Tip label={`${PULL_REQUEST_SOURCE_LABELS[link.source]} · ${relativeTime(link.linkedAt)}`}><span className={NUMBER_CLASS}>#{link.number}</span></Tip></PullRequestNumberMenu>}
+				number={<PullRequestNumberMenu url={link.url} onCopy={onCopy} onNotice={onNotice} className="shrink-0"><Tip label={`${PULL_REQUEST_SOURCE_LABELS[link.source]} · ${formatRelativeTime(link.linkedAt)}`}><span className={NUMBER_CLASS}>#{link.number}</span></Tip></PullRequestNumberMenu>}
 				title={snapshot?.title ?? link.repository}
 				signals={open ? <>{link.watching && <Tip label={WATCHING_LABEL}><span className="inline-flex shrink-0"><Eye role="img" aria-label="Watching" className="size-3.5" /></span></Tip>}{rollup && (openable ? <RowChecksPopover rollup={rollup} projectId={projectId} number={link.number} /> : <ChecksGlyph rollup={rollup} />)}{snapshot && <ReviewDecisionGlyph decision={snapshot.review} />}</> : null}
 				status={snapshot && <DiffStat additions={snapshot.additions} deletions={snapshot.deletions} className="font-mono" />}
@@ -222,7 +223,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 						onWatch={watching => void run({ type: "watch-pull-request", id: taskId, repository: link.repository, number: link.number, watching }).then(failure => failure && setError(failure))} />; })}
 				</div></ScrollArea>
 				<footer className="flex items-center gap-1 border-t border-border/60 px-2 py-1.5 text-2xs text-muted-foreground">
-					<span className="min-w-0 flex-1 truncate">{openCount} open · {links.length} linked{lastSynced ? ` · synced ${relativeTime(lastSynced)}` : ""}</span>
+					<span className="min-w-0 flex-1 truncate">{openCount} open · {links.length} linked{lastSynced ? ` · synced ${formatRelativeTime(lastSynced)}` : ""}</span>
 					{showOpen}
 					<Button size="xs" variant="ghost" onClick={() => setLinkOpen(true)}><Plus className="size-3.5" />Link</Button>
 				</footer>

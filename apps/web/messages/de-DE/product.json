@@ -1688,7 +1688,7 @@
 		"hideAllRuns": "Alle Durchläufe ausblenden",
 		"yourGateway": "Dein Gateway",
 		"yourGatewayTtft": "Dein Gateway (TTFT)",
-		"yourGatewayThroughput": "Dein Gateway (Tokens/s)",
+		"yourGatewayThroughput": "Dein Gateway (tps)",
 		"tie": "Unentschieden",
 		"latestProvider": "Letztes Ergebnis: {provider}",
 		"requestFailed": "Die Anfrage konnte nicht abgeschlossen werden. Prüfe Endpunkt und Zugangsdaten und versuche es erneut.",
@@ -1706,7 +1706,7 @@
 		"throughput": "Durchsatz",
 		"responsePlaceholder": "Antwort erscheint hier...",
 		"gatewayLabel": "Gateway",
-		"openaiThroughput": "OpenAI API (Tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Feedbackkategorie",

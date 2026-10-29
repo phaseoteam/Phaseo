@@ -20,7 +20,8 @@ describe("priceLines", () => {
     expect(lines.map((line) => [line.label, line.value, line.longContext])).toEqual([
       ["Input", "$0.1", { value: "$0.5", above: "100K" }],
       ["Output", "$0.5", { value: "$2.5", above: "100K" }],
-      ["Cache write (5 min)", "$0.125", null],
+      // Two places from ten cents, as on the website's /models list.
+      ["Cache write (5 min)", "$0.13", null],
     ]);
   });
 

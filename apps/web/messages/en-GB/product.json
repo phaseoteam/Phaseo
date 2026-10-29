@@ -1515,9 +1515,9 @@
 			"exploreQuestion": "Explore a question",
 			"exploreQuestionPrompt": "Explore this question through several distinct expert perspectives."
 		},
-		"completedWithUsage": "Complete ({tokens} {tokenLabel}, {seconds}s)",
-		"completedWithoutUsage": "Complete ({seconds}s)",
-		"outputSummary": "{tokens} {tokenLabel} · {seconds}s",
+		"completedWithUsage": "Complete ({tokens} {tokenLabel}, {seconds} s)",
+		"completedWithoutUsage": "Complete ({seconds} s)",
+		"outputSummary": "{tokens} {tokenLabel} · {seconds} s",
 		"title": "LLM Council",
 		"chats": "Council chats",
 		"recentRuns": "Recent Runs",
@@ -1688,7 +1688,7 @@
 		"hideAllRuns": "Hide all runs",
 		"yourGateway": "Your Gateway",
 		"yourGatewayTtft": "Your Gateway (TTFT)",
-		"yourGatewayThroughput": "Your Gateway (tokens/sec)",
+		"yourGatewayThroughput": "Your Gateway (tps)",
 		"tie": "Tie",
 		"latestProvider": "Latest: {provider}",
 		"requestFailed": "The request could not be completed. Check the endpoint and credentials, then try again.",
@@ -1706,7 +1706,7 @@
 		"throughput": "Throughput",
 		"responsePlaceholder": "Response will appear here...",
 		"gatewayLabel": "Gateway",
-		"openaiThroughput": "OpenAI API (tokens/sec)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Feedback category",
@@ -1827,7 +1827,7 @@
 	},
 	"interactiveOnboarding": {
 		"responseTitle": "Response",
-		"responseStats": "{seconds}s · {count, plural, one {# token} other {# tokens}}",
+		"responseStats": "{seconds} s · {count, plural, one {# token} other {# tokens}}",
 		"parsedView": "Parsed",
 		"fullObjectView": "Full object",
 		"copyCode": "Copy code",

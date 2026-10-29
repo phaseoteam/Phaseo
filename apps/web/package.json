@@ -54,6 +54,7 @@
 		"@octokit/rest": "^22.0.1",
 		"@openuidev/react-lang": "0.3.2",
 		"@phaseo/app-kit": "workspace:*",
+		"@phaseo/ui": "workspace:*",
 		"@posthog/nextjs-config": "^1.11.3",
 		"@react-three/drei": "^10.7.9",
 		"@react-three/fiber": "^9.6.1",

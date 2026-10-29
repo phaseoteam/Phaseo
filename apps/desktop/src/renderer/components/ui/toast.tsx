@@ -17,7 +17,7 @@ function ToastList() {
   const { toasts } = Toast.useToastManager()
   return toasts.map(toast => {
     const type = (toast.type ?? "info") as ToastType, Icon = icons[type] ?? Info
-    return <Toast.Root key={toast.id} toast={toast} data-toast-type={type} className="absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] flex w-full origin-bottom items-start gap-2 rounded-lg border border-border/60 bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-lg transition-[transform,opacity] duration-200 ease-out select-none [transform:translateY(calc(var(--toast-index)*-0.6rem))_scale(calc(1-var(--toast-index)*0.04))] data-[ending-style]:opacity-0 data-[expanded]:[transform:translateY(calc(var(--toast-offset-y)*-1-var(--toast-index)*0.5rem))] data-[limited]:opacity-0 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0">
+    return <Toast.Root key={toast.id} toast={toast} data-toast-type={type} className="absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] flex w-full origin-bottom items-start gap-2 rounded-md border border-border/60 bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-lg transition-[transform,opacity] duration-200 ease-out select-none [transform:translateY(calc(var(--toast-index)*-0.6rem))_scale(calc(1-var(--toast-index)*0.04))] data-[ending-style]:opacity-0 data-[expanded]:[transform:translateY(calc(var(--toast-offset-y)*-1-var(--toast-index)*0.5rem))] data-[limited]:opacity-0 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0">
       <Icon aria-hidden className={cn("mt-px size-3.5 shrink-0", tones[type])} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <Toast.Title className="font-medium text-foreground [overflow-wrap:anywhere]" />

@@ -6,7 +6,7 @@ import { LabelChip } from "../../components/LabelChip";
 import { MERGED, PersonMark } from "../../components/Marks";
 import { Markdown } from "../../components/Markdown";
 import { Button } from "../../components/ui/button";
-import { since } from "../../lib/format";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { factory, href } from "../../lib/useFactory";
 import { cn } from "../../lib/utils";
 
@@ -76,7 +76,7 @@ export function CommentEntry({ comment, item, inline, compact }: { comment: Time
 			<PersonMark login={comment.author} avatar={comment.avatar} className={compact ? "size-4" : "size-5"} />
 			<span className="font-medium">{comment.author}</span>
 			{comment.factory && <span className="rounded-[4px] border px-1.5 text-2xs text-muted-foreground">Factory</span>}
-			<span className="text-muted-foreground">{since(comment.at)}</span>
+			<span className="text-muted-foreground">{formatRelativeTime(comment.at)}</span>
 			<span className="flex-1" />
 			{id && comment.canEdit && editing === null && <button type="button" onClick={() => setEditing(comment.body)} className="text-muted-foreground hover:text-foreground">Edit</button>}
 			{id && comment.canDelete && editing === null && <button type="button" disabled={busy} onClick={() => (asking ? void run({ kind: "delete-comment", commentId: id, inline }) : setAsking(true))} className={cn("hover:text-foreground", asking ? "font-medium text-destructive" : "text-muted-foreground")}>{busy ? "Deleting…" : asking ? "Delete it? Click again" : "Delete"}</button>}
@@ -110,7 +110,7 @@ function ReviewEntry({ review, item }: { review: Extract<TimelineEntry, { kind: 
 			<span className={cn("grid size-5 place-items-center", look.className)}><Icon className="size-4" /></span>
 			<PersonMark login={review.author} avatar={review.avatar} className="size-5" />
 			<span><span className="font-medium">{review.author}</span> <span className="text-muted-foreground">{look.text}</span></span>
-			<span className="text-muted-foreground">{since(review.at)}</span>
+			<span className="text-muted-foreground">{formatRelativeTime(review.at)}</span>
 			<span className="flex-1" />
 			{review.url && <button type="button" onClick={() => void factory().openExternal(review.url!)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">On GitHub<ArrowUpRight className="size-3" /></button>}
 		</div>
@@ -160,7 +160,7 @@ function EventEntry({ event, item, snapshot }: { event: Extract<TimelineEntry, {
 				? <a href={href({ page: "work", item: target.id })} className="text-foreground hover:underline">#{event.ref.number} {event.ref.title}</a>
 				: <button type="button" onClick={() => void factory().openExternal(`https://github.com/${event.ref!.repo}/${event.ref!.pull ? "pull" : "issues"}/${event.ref!.number}`)} className="text-foreground hover:underline">{event.ref.repo === item.repo ? "" : event.ref.repo}#{event.ref.number} {event.ref.title}</button>}</>}
 		</span>
-		<span className="shrink-0">{since(event.at)}</span>
+		<span className="shrink-0">{formatRelativeTime(event.at)}</span>
 	</div>;
 }
 
