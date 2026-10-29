@@ -11674,26 +11674,6 @@
 			"zh-Hans": "已删除受信任的工作负载策略",
 			"ar": "تم حذف سياسة حمل العمل الموثوق"
 		},
-		"False for rules the evaluator does not handle yet (forecast and spike metrics, rolling spend periods and previous_period bases). They are saved and fire from a later release. Balance rules are evaluated.": {
-			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast y spike, periodos rolling de gasto y bases previous_period). Se guardan y empezarán a activarse en una versión posterior. Las reglas balance sí se evalúan.",
-			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast et spike, périodes rolling de dépenses et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure. Les règles balance sont évaluées.",
-			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.",
-			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast e spike, períodos rolling de gastos e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura. Regras balance são avaliadas.",
-			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।",
-			"ja": "評価がまだ対応していないルール（forecast・spike の指標、支出の rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。balance ルールは評価されます。",
-			"zh-Hans": "对于评估尚未支持的规则（forecast 和 spike 指标、支出的 rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。balance 规则会被评估。",
-			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقياسا forecast وspike، وفترات الإنفاق rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق. تُقيَّم قواعد balance."
-		},
-		"Where a spend rule stands now. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Other rules without a calendar period have period, value and alert null.": {
-			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las demás reglas sin periodo de calendario tienen period, value y alert en null.",
-			"fr": "Où en est une règle de dépenses à présent. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les autres règles sans période calendaire ont period, value et alert à null.",
-			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Andere Regeln ohne Kalenderzeitraum haben period, value und alert null.",
-			"pt-BR": "A situação atual de uma regra de gastos. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. As demais regras sem período de calendário têm period, value e alert nulos.",
-			"hi": "खर्च नियम अभी कहाँ है। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। कैलेंडर अवधि के बिना अन्य नियमों में period, value और alert null होते हैं।",
-			"ja": "支出ルールの現在の状況です。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。暦の期間を持たないその他のルールでは period、value、alert は null です。",
-			"zh-Hans": "支出规则当前的状态。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。其他没有日历周期的规则，其 period、value 和 alert 为 null。",
-			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما القواعد الأخرى التي ليس لها فترة تقويمية فتكون فيها period وvalue وalert فارغة (null)."
-		},
 		"Balance rules only: where the balance stands, as the evaluator sees it. Null for other rules.": {
 			"es": "Solo reglas balance: dónde se encuentra el saldo, tal como lo ve la evaluación. Es null para las demás reglas.",
 			"fr": "Règles balance uniquement : où en est le solde, tel que l’évaluation le voit. Vaut null pour les autres règles.",
@@ -11743,6 +11723,116 @@
 			"ja": "balance ルール：アラート後、残高がしきい値を再び上回るまで false です。",
 			"zh-Hans": "balance 规则：发出警报后为 false，直到余额重新高于阈值。",
 			"ar": "قواعد balance: تكون false بعد التنبيه حتى يعود الرصيد فوق الحد."
+		},
+		"False for rules the evaluator does not handle yet (spike rules). They are saved and fire from a later release.": {
+			"es": "Es false para las reglas que la evaluación aún no admite (reglas spike). Se guardan y empezarán a activarse en una versión posterior.",
+			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (règles spike). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.",
+			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Regeln vom Typ spike). Sie werden gespeichert und lösen erst ab einer späteren Version aus.",
+			"pt-BR": "É false para regras que a avaliação ainda não suporta (regras spike). Elas são salvas e passarão a disparar em uma versão futura.",
+			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।",
+			"ja": "評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。",
+			"zh-Hans": "对于评估尚未支持的规则（spike 规则）为 false。这些规则会被保存，并将在后续版本中开始触发。",
+			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق."
+		},
+		"Where a spend rule stands now. Rolling rules have their window as period. Forecast rules have a forecast object, and their thresholds are measured against the projection. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Spike rules have period, value and alert null.": {
+			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas rolling tienen su ventana como period. Las reglas forecast tienen un objeto forecast y sus umbrales se miden con la proyección. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las reglas spike tienen period, value y alert en null.",
+			"fr": "Où en est une règle de dépenses à présent. Les règles rolling ont leur fenêtre comme period. Les règles forecast ont un objet forecast et leurs seuils sont mesurés par rapport à la projection. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les règles spike ont period, value et alert à null.",
+			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ rolling haben ihr Fenster als period. Regeln vom Typ forecast haben ein forecast-Objekt, und ihre Schwellenwerte werden an der Prognose gemessen. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Regeln vom Typ spike haben period, value und alert null.",
+			"pt-BR": "A situação atual de uma regra de gastos. Regras rolling têm sua janela como period. Regras forecast têm um objeto forecast, e seus limites são medidos em relação à projeção. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. Regras spike têm period, value e alert nulos.",
+			"hi": "खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में period, value और alert null होते हैं।",
+			"ja": "支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period、value、alert は null です。",
+			"zh-Hans": "支出规则当前的状态。rolling 规则以其窗口作为 period。forecast 规则包含 forecast 对象，其阈值按预测值衡量。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。spike 规则的 period、value 和 alert 为 null。",
+			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما قواعد spike فتكون فيها period وvalue وalert فارغة (null)."
+		},
+		"Rolling rules only: the window length in hours.": {
+			"es": "Solo reglas rolling: la duración de la ventana en horas.",
+			"fr": "Règles rolling uniquement : la durée de la fenêtre en heures.",
+			"de": "Nur Regeln vom Typ rolling: die Länge des Fensters in Stunden.",
+			"pt-BR": "Somente regras rolling: a duração da janela em horas.",
+			"hi": "केवल rolling नियम: घंटों में विंडो की अवधि।",
+			"ja": "rolling ルールのみ：ウィンドウの長さ（時間）。",
+			"zh-Hans": "仅限 rolling 规则：窗口时长（小时）。",
+			"ar": "قواعد rolling فقط: طول النافذة بالساعات."
+		},
+		"previous_period bases only: the stretch of the previous period the base covers (the same point in the previous period, the window before a rolling one, or the whole previous period for a forecast). Null for other bases.": {
+			"es": "Solo bases previous_period: el tramo del periodo anterior que cubre la base (el mismo punto del periodo anterior, la ventana anterior de una regla rolling o el periodo anterior completo para un forecast). Es null para las demás bases.",
+			"fr": "Bases previous_period uniquement : la partie de la période précédente couverte par la base (le même moment de la période précédente, la fenêtre précédente d’une règle rolling, ou toute la période précédente pour un forecast). Vaut null pour les autres bases.",
+			"de": "Nur Basen vom Typ previous_period: der Abschnitt des vorherigen Zeitraums, den die Basis abdeckt (derselbe Zeitpunkt im vorherigen Zeitraum, das vorherige Fenster einer rolling-Regel oder der gesamte vorherige Zeitraum bei einem forecast). Null für andere Basen.",
+			"pt-BR": "Somente bases previous_period: o trecho do período anterior coberto pela base (o mesmo ponto do período anterior, a janela anterior de uma regra rolling ou o período anterior inteiro para um forecast). Nulo para as demais bases.",
+			"hi": "केवल previous_period आधार: पिछली अवधि का वह हिस्सा जिसे आधार कवर करता है (पिछली अवधि में वही बिंदु, rolling नियम की पिछली विंडो, या forecast के लिए पूरी पिछली अवधि)। अन्य आधारों के लिए null।",
+			"ja": "previous_period 基準のみ：基準が対象とする前期間の範囲（前期間の同時点まで、rolling ルールでは直前のウィンドウ、forecast では前期間全体）。その他の基準では null です。",
+			"zh-Hans": "仅限 previous_period 基数：基数所覆盖的上一周期区间（上一周期的同一时间点、rolling 规则的前一个窗口，或 forecast 的整个上一周期）。其他基数为 null。",
+			"ar": "أسس previous_period فقط: الجزء من الفترة السابقة الذي يغطيه الأساس (النقطة نفسها في الفترة السابقة، أو النافذة السابقة لقاعدة rolling، أو الفترة السابقة كاملة في حالة forecast). تكون null للأسس الأخرى."
+		},
+		"Forecast rules only: spend at the period end if the pace so far continues (a straight line from the period start, as the usage dashboard projects). Null for other rules.": {
+			"es": "Solo reglas forecast: el gasto al final del periodo si el ritmo actual continúa (una línea recta desde el inicio del periodo, como proyecta el panel de uso). Es null para las demás reglas.",
+			"fr": "Règles forecast uniquement : les dépenses en fin de période si le rythme actuel se poursuit (une ligne droite depuis le début de la période, comme le projette le tableau de bord d’utilisation). Vaut null pour les autres règles.",
+			"de": "Nur Regeln vom Typ forecast: die Ausgaben am Ende des Zeitraums, wenn das bisherige Tempo anhält (eine Gerade ab Beginn des Zeitraums, wie sie das Nutzungs-Dashboard projiziert). Null für andere Regeln.",
+			"pt-BR": "Somente regras forecast: o gasto no fim do período se o ritmo atual continuar (uma linha reta desde o início do período, como o painel de uso projeta). Nulo para as demais regras.",
+			"hi": "केवल forecast नियम: अगर अब तक की रफ़्तार जारी रहे तो अवधि के अंत में खर्च (अवधि की शुरुआत से एक सीधी रेखा, जैसा उपयोग डैशबोर्ड अनुमान लगाता है)। अन्य नियमों के लिए null।",
+			"ja": "forecast ルールのみ：これまでのペースが続いた場合の期間終了時の支出（使用状況ダッシュボードと同じく、期間の開始からの直線による予測）。その他のルールでは null です。",
+			"zh-Hans": "仅限 forecast 规则：若保持目前的速度，周期结束时的支出（与使用情况仪表板相同，从周期开始按直线推算）。其他规则为 null。",
+			"ar": "قواعد forecast فقط: الإنفاق في نهاية الفترة إذا استمر المعدل الحالي (خط مستقيم من بداية الفترة، كما تتوقعه لوحة الاستخدام). تكون null للقواعد الأخرى."
+		},
+		"False until enough of the period has passed to project: 3 hours of a day, 24 hours of a week or 72 hours of a month.": {
+			"es": "Es false hasta que haya pasado suficiente parte del periodo para proyectar: 3 horas de un día, 24 horas de una semana o 72 horas de un mes.",
+			"fr": "Vaut false tant qu’une part suffisante de la période n’est pas écoulée pour projeter : 3 heures d’une journée, 24 heures d’une semaine ou 72 heures d’un mois.",
+			"de": "False, bis genug vom Zeitraum vergangen ist, um zu projizieren: 3 Stunden eines Tages, 24 Stunden einer Woche oder 72 Stunden eines Monats.",
+			"pt-BR": "É false até que tenha passado uma parte suficiente do período para projetar: 3 horas de um dia, 24 horas de uma semana ou 72 horas de um mês.",
+			"hi": "जब तक अनुमान लगाने के लिए अवधि का पर्याप्त हिस्सा न बीत जाए, तब तक false: दिन के 3 घंटे, सप्ताह के 24 घंटे या महीने के 72 घंटे।",
+			"ja": "予測に十分な期間が経過するまでは false です（1日なら3時間、1週間なら24時間、1か月なら72時間）。",
+			"zh-Hans": "在周期经过足够时间之前为 false：一天需经过 3 小时，一周需经过 24 小时，一个月需经过 72 小时。",
+			"ar": "تكون false إلى أن يمر جزء كافٍ من الفترة لإجراء التوقع: 3 ساعات من اليوم، أو 24 ساعة من الأسبوع، أو 72 ساعة من الشهر."
+		},
+		"When the projection starts.": {
+			"es": "Cuándo empieza la proyección.",
+			"fr": "Quand la projection commence.",
+			"de": "Wann die Prognose beginnt.",
+			"pt-BR": "Quando a projeção começa.",
+			"hi": "अनुमान कब शुरू होता है।",
+			"ja": "予測の開始時刻。",
+			"zh-Hans": "预测开始的时间。",
+			"ar": "متى يبدأ التوقع."
+		},
+		"The period end the projection is for.": {
+			"es": "El final del periodo para el que se hace la proyección.",
+			"fr": "La fin de période visée par la projection.",
+			"de": "Das Ende des Zeitraums, für das die Prognose gilt.",
+			"pt-BR": "O fim do período a que a projeção se refere.",
+			"hi": "अवधि का वह अंत जिसके लिए अनुमान है।",
+			"ja": "予測の対象となる期間の終了時刻。",
+			"zh-Hans": "预测所对应的周期结束时间。",
+			"ar": "نهاية الفترة التي يخصها التوقع."
+		},
+		"What the forecast is measured against: the amount threshold, else the base.": {
+			"es": "Con qué se compara la previsión: el umbral de importe o, si no lo hay, la base.",
+			"fr": "Ce à quoi la prévision est comparée : le seuil en montant, sinon la base.",
+			"de": "Woran die Prognose gemessen wird: am Betragsschwellenwert, sonst an der Basis.",
+			"pt-BR": "Com o que a previsão é comparada: o limite em valor ou, se não houver, a base.",
+			"hi": "पूर्वानुमान की तुलना किससे होती है: राशि सीमा से, अन्यथा आधार से।",
+			"ja": "予測の比較対象：金額しきい値、なければ基準額。",
+			"zh-Hans": "预测的衡量对象：金额阈值，若无则为基数。",
+			"ar": "ما يُقاس به التوقع: عتبة المبلغ، وإلا فالأساس."
+		},
+		"When the pace so far reaches the limit, if it does before the period ends.": {
+			"es": "Cuándo el ritmo actual alcanza el límite, si ocurre antes de que termine el periodo.",
+			"fr": "Quand le rythme actuel atteint la limite, si cela arrive avant la fin de la période.",
+			"de": "Wann das bisherige Tempo das Limit erreicht, sofern das vor Ende des Zeitraums geschieht.",
+			"pt-BR": "Quando o ritmo atual atinge o limite, se isso acontecer antes do fim do período.",
+			"hi": "अब तक की रफ़्तार से सीमा कब पूरी होगी, अगर यह अवधि खत्म होने से पहले होता है।",
+			"ja": "これまでのペースで上限に達する時刻（期間の終了前に達する場合）。",
+			"zh-Hans": "按目前的速度达到上限的时间（若在周期结束前达到）。",
+			"ar": "متى يصل المعدل الحالي إلى الحد، إذا حدث ذلك قبل انتهاء الفترة."
+		},
+		"The projection as a percent of the base.": {
+			"es": "La proyección como porcentaje de la base.",
+			"fr": "La projection en pourcentage de la base.",
+			"de": "Die Prognose als Prozentsatz der Basis.",
+			"pt-BR": "A projeção como porcentagem da base.",
+			"hi": "आधार के प्रतिशत के रूप में अनुमान।",
+			"ja": "基準額に対する予測値の割合。",
+			"zh-Hans": "预测值占基数的百分比。",
+			"ar": "التوقع كنسبة مئوية من الأساس."
 		}
 	},
 	"GET /apps": {

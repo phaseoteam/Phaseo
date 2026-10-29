@@ -97,7 +97,9 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 		? `${preview.alert.message} ${TEST_NOTE}`
 		: !preview.evaluated
 			? `This is a test of spend rule "${rule.name}". ${rule.metric} rules are evaluated from a later release, so this rule does not send alerts yet.`
-			: `This is a test of spend rule "${rule.name}". Its base is not set (a missing budget or key limit), so it cannot fire until it is. ${TEST_NOTE}`;
+			: preview.forecast && !preview.forecast.ready
+				? `This is a test of spend rule "${rule.name}". Too little of the ${preview.period?.kind ?? "period"} has passed to project its spend; the forecast starts ${preview.forecast.from ?? "later this period"} (${preview.time_zone} periods). ${TEST_NOTE}`
+				: `This is a test of spend rule "${rule.name}". Its base is not set (a missing budget or key limit, or no spend in the previous period), so it cannot fire until it is. ${TEST_NOTE}`;
 	const payload = {
 		test: true,
 		title,
@@ -113,6 +115,17 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 		threshold_percent: preview.reached_threshold_percent,
 		threshold_percents: preview.threshold_percents,
 		threshold_amount_nanos: preview.threshold_amount_nanos,
+		...(preview.forecast ? {
+			forecast: {
+				projected_nanos: preview.forecast.projected_nanos,
+				projected_percent: preview.forecast.projected_percent,
+				by: preview.forecast.by,
+				limit_nanos: preview.forecast.limit_nanos,
+				reaches_at: preview.forecast.reaches_at,
+				from: preview.forecast.from,
+			},
+		} : {}),
+		...(preview.previous_period ? { previous_period: preview.previous_period } : {}),
 		evaluated_at: preview.computed_at,
 		url: "https://phaseo.app/settings/notifications",
 	};

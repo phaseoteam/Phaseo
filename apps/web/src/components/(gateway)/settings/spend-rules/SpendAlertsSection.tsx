@@ -27,7 +27,7 @@ import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget }
 import { SpendBlocksList } from "./SpendBlocksList";
 import { SpendRuleHistorySheet } from "./SpendRuleHistorySheet";
 import { SpendWorkspaceSettings, type DepartmentSpendAttribution } from "./SpendWorkspaceSettings";
-import { useBalanceSummary, useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { useBalanceSummary, useForecastSummary, useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SPEND_ALERT_ANCHOR, prefillFromSearchParams, previewSummary } from "./spendRuleDraft";
 import type { SpendBlock, SpendRule } from "./spendRules";
 
@@ -183,6 +183,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 	const usd = useSpendUsd();
 	const percentText = useSpendPercent();
 	const balanceSummary = useBalanceSummary();
+	const forecastSummary = useForecastSummary();
 	const scopeLabel = useScopeLabel(data.options);
 	const summarize = useRuleSummary();
 	const actionError = useSpendActionError();
@@ -248,6 +249,11 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 						<p className="text-sm font-medium" title={balanceSummary.text(summary)}>
 							{usd(summary.availableUsd)}
 							{summary.runwayDays !== null ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{balanceSummary.runway(summary.runwayDays)}</span> : null}
+						</p>
+					) : summary?.kind === "forecast" || summary?.kind === "forecastPending" ? (
+						<p className="text-sm font-medium" title={forecastSummary.text(summary)}>
+							{usd(summary.kind === "forecast" ? summary.projectedUsd : summary.valueUsd)}
+							{forecastSummary.short(summary) ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{forecastSummary.short(summary)}</span> : null}
 						</p>
 					) : null}
 					{rule.evaluated && rule.enabled ? (

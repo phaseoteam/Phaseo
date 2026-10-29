@@ -3644,10 +3644,12 @@ public final class Models {
 		public Double block_at_usd;
 		public String computed_at;
 		public Boolean evaluated;
+		public Object forecast;
 		public Object metric;
 		public Object next_threshold;
 		public Double percent;
 		public Object period;
+		public Object previous_period;
 		public Integer reached_threshold_percent;
 		public String rule_id;
 		public Object state;

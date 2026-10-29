@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: खर्च नियम अभी कहाँ है। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। कैलेंडर अवधि के बिना अन्य नियमों में period, value और alert null होते हैं।
+      description: खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में period, value और alert null होते हैं।
       required:
         - rule_id
         - metric
@@ -24461,6 +24461,8 @@ components:
         - base_ref
         - base_nanos
         - base_usd
+        - previous_period
+        - forecast
         - percent
         - threshold_percents
         - threshold_amount_nanos
@@ -24480,7 +24482,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
         computed_at:
           type: string
           format: date-time
@@ -24502,6 +24504,9 @@ components:
             end:
               type: string
               format: date-time
+            window_hours:
+              type: integer
+              description: 'केवल rolling नियम: घंटों में विंडो की अवधि।'
         value_nanos:
           type: integer
           format: int64
@@ -24531,6 +24536,71 @@ components:
         base_usd:
           type: number
           nullable: true
+        previous_period:
+          type: object
+          nullable: true
+          description: 'केवल previous_period आधार: पिछली अवधि का वह हिस्सा जिसे आधार कवर करता है (पिछली अवधि में वही बिंदु, rolling नियम की पिछली विंडो, या forecast के लिए पूरी पिछली अवधि)। अन्य आधारों के लिए null।'
+          required:
+            - start
+            - end
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        forecast:
+          type: object
+          nullable: true
+          description: 'केवल forecast नियम: अगर अब तक की रफ़्तार जारी रहे तो अवधि के अंत में खर्च (अवधि की शुरुआत से एक सीधी रेखा, जैसा उपयोग डैशबोर्ड अनुमान लगाता है)। अन्य नियमों के लिए null।'
+          required:
+            - ready
+            - from
+            - projected_nanos
+            - projected_usd
+            - projected_percent
+            - by
+            - limit_nanos
+            - limit_usd
+            - reaches_at
+          properties:
+            ready:
+              type: boolean
+              description: 'जब तक अनुमान लगाने के लिए अवधि का पर्याप्त हिस्सा न बीत जाए, तब तक false: दिन के 3 घंटे, सप्ताह के 24 घंटे या महीने के 72 घंटे।'
+            from:
+              type: string
+              format: date-time
+              nullable: true
+              description: अनुमान कब शुरू होता है।
+            projected_nanos:
+              type: integer
+              format: int64
+              nullable: true
+            projected_usd:
+              type: number
+              nullable: true
+            projected_percent:
+              type: number
+              nullable: true
+              description: आधार के प्रतिशत के रूप में अनुमान।
+            by:
+              type: string
+              format: date-time
+              description: अवधि का वह अंत जिसके लिए अनुमान है।
+            limit_nanos:
+              type: integer
+              format: int64
+              nullable: true
+              description: 'पूर्वानुमान की तुलना किससे होती है: राशि सीमा से, अन्यथा आधार से।'
+            limit_usd:
+              type: number
+              nullable: true
+            reaches_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: अब तक की रफ़्तार से सीमा कब पूरी होगी, अगर यह अवधि खत्म होने से पहले होता है।
         percent:
           type: number
           nullable: true

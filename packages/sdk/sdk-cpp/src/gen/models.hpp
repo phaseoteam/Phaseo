@@ -3609,10 +3609,12 @@ struct SpendRulePreview {
 	std::optional<double> block_at_usd;
 	std::string computed_at;
 	bool evaluated;
+	std::optional<std::map<std::string, std::any>> forecast;
 	std::any metric;
 	std::optional<std::map<std::string, std::any>> next_threshold;
 	std::optional<double> percent;
 	std::optional<std::map<std::string, std::any>> period;
+	std::optional<std::map<std::string, std::any>> previous_period;
 	std::optional<int> reached_threshold_percent;
 	std::string rule_id;
 	std::optional<std::map<std::string, std::any>> state;
