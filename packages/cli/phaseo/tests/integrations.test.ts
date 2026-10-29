@@ -973,7 +973,9 @@ test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_AP
 
 test("Hermes .env files with multiline or complex quoting are refused and left unchanged", async () => {
 	assert.equal(hermesEnvHasComplexQuoting("A=1\nB=\"x\"\nC='y'\n"), false);
-	for (const complex of ['A="open', "A='it\\'s'", "A=`cmd`", "# don't"]) {
+	assert.equal(hermesEnvHasComplexQuoting("A=1\r\nB=\"x\"\r\nWIN=C:\\dir\\sub\r\n"), false);
+	assert.equal(hermesEnvHasComplexQuoting("A=1\rB=2"), true);
+	for (const complex of ['A="open', "A='it\\'s'", "A=`cmd`", "# don't", 'A="x\\"y"', "A='x\\y'"]) {
 		assert.equal(hermesEnvHasComplexQuoting(`${complex}\n`), true, complex);
 	}
 
@@ -986,6 +988,10 @@ test("Hermes .env files with multiline or complex quoting are refused and left u
 			markersInMultiline: `NOTE="before\n${HERMES_BLOCK_START}\nOPENAI_API_KEY=user-data\n${HERMES_BLOCK_END}\nafter"\n`,
 			// An exact legacy line inside a user's multiline value.
 			legacyLineInMultiline: "NOTE=\"before\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\"\n",
+			// Escaped quotes keep the quote count even while the value still spans lines.
+			escapedDoubleQuotes: 'NOTE="before\\"\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\\""\n',
+			// python-dotenv treats a lone CR as a newline, hiding a user key from a LF-only scan.
+			crOnlyNewlines: "KEEP=1\rOPENAI_API_KEY=user-secret\r",
 		};
 		for (const [name, contents] of Object.entries(cases)) {
 			const envPath = join(root, name, ".env");

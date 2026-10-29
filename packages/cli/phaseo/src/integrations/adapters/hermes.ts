@@ -104,13 +104,17 @@ function withoutLegacyLine(text: string, legacyKey: string | undefined): string 
 }
 
 /**
- * True when any line has an odd number of `"` or `'` characters (escapes are not considered) or a
- * backtick. Such files may hold multiline quoted values, so Phaseo does not edit them; every other
- * file has single-line values only, and the line-based edits below are exact.
+ * True when the file might not split into single-line values the way python-dotenv reads it: a
+ * `\r` not followed by `\n` (dotenv treats a lone CR as a newline), or any line with a backtick, an
+ * odd number of `"` or `'` characters, or a backslash together with any quote character (escaped
+ * quotes can keep the counts even). Phaseo does not edit such files; in every other file each value
+ * is on one line, and the line-based edits below are exact.
  */
 export function hermesEnvHasComplexQuoting(text: string): boolean {
+	if (/\r(?!\n)/.test(text)) return true;
 	return text.split("\n").some((line) => {
 		if (line.includes("`")) return true;
+		if (line.includes("\\") && /["']/.test(line)) return true;
 		const count = (quote: string) => line.split(quote).length - 1;
 		return count("\"") % 2 === 1 || count("'") % 2 === 1;
 	});
@@ -118,7 +122,7 @@ export function hermesEnvHasComplexQuoting(text: string): boolean {
 
 export class HermesEnvQuotingError extends Error {}
 
-const QUOTING_REASON = "it has multiline or complex quoting (a line with an odd number of \" or ' characters, or a backtick)";
+const QUOTING_REASON = "it has multiline or complex quoting (a line with a backtick, an odd number of \" or ' characters, or a backslash with a quote; or a carriage return without a line feed)";
 
 function setupQuotingMessage(path: string): string {
 	return `Phaseo will not edit ${path}: ${QUOTING_REASON}. Add this line to it by hand: ${OPENAI_API_KEY}=<key>. Print the key with \`phaseo integrations credential hermes\`, then run phaseo setup hermes again after simplifying the file, or set Hermes' model settings yourself.`;
