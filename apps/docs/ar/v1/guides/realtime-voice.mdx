@@ -90,7 +90,7 @@ curl https://api.phaseo.app/v1/live/sessions \
 
 ### النسخ المتدفق
 
-تنسخ نماذج Voxtral Realtime من Mistral الصوت المباشر فور وصوله: `mistral/voxtral-mini-transcribe-realtime-3` و`mistral/voxtral-mini-transcribe-realtime`. وهي لا ترد بالصوت، لذا أنشئ الجلسة دون `voice`:
+تنسخ نماذج Voxtral Realtime من Mistral الصوت المباشر فور وصوله: `mistral/voxtral-mini-transcribe-realtime-3` و`mistral/voxtral-mini-transcribe-realtime`. وهي لا ترد بالصوت، لذا أنشئ الجلسة دون `voice` أو `instructions`:
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -99,7 +99,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
 ```
 
-اتصل بالطريقة نفسها وأرسل PCM16 بتردد 16 kHz بصيغة `client.audio`. تُمرَّر أحداث Mistral دون تغيير: `session.created`، ثم `transcription.text.delta` مع كل جزء جديد من النص، و`transcription.language` و`transcription.segment` عندما ترسلها Mistral. لتغيير إعدادات النسخ، أرسل `{"type": "session.update", "session": {...}}` مع أي من `language` و`target_streaming_delay_ms` (من 80 إلى 2,400) و`context_bias` و`diarize` و`turn_detection`. تُرفض الحقول الأخرى، ومنها تنسيق الصوت، مع `relay.client_event_rejected`.
+اتصل بالطريقة نفسها وأرسل PCM16 بتردد 16 kHz بصيغة `client.audio`. تُمرَّر أحداث Mistral دون تغيير: `session.created`، ثم `transcription.text.delta` مع كل جزء جديد من النص، و`transcription.language` و`transcription.segment` عندما ترسلها Mistral. لتغيير إعدادات النسخ، أرسل `{"type": "session.update", "session": {...}}` مع أي من `language` و`target_streaming_delay_ms` (من 80 إلى 1,200، أو 2,400) و`context_bias` و`diarize` و`turn_detection`. تُرفض الحقول الأخرى، ومنها تنسيق الصوت، مع `relay.client_event_rejected`. تُثبَّت الإعدادات بمجرد بدء الصوت، لذا أرسل `session.update` قبل أول `client.audio`؛ وتُرفض التحديثات اللاحقة بالطريقة نفسها.
 
 عندما ترسل `session.end`، ينهي المرحّل تدفق الصوت إلى Mistral وينتظر حتى 10 ثوانٍ وصول `transcription.done` الذي يحمل النص الكامل، ثم يسوّي الفاتورة ويرسل `session.ended`. يُستخدم الصوت الذي أرسلته بالفعل؛ ولا يُهمَل منه شيء.
 

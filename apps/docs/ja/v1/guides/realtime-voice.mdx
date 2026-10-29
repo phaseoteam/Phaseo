@@ -90,7 +90,7 @@ ElevenLabs は通話の接続時間 1 秒ごとに加えて、使用した言語
 
 ### ストリーミング文字起こし
 
-Mistral の Voxtral Realtime モデルは、届いたライブ音声をその場で文字起こしします： `mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`。音声で応答しないため、`voice` を指定せずにセッションを作成します：
+Mistral の Voxtral Realtime モデルは、届いたライブ音声をその場で文字起こしします： `mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`。音声で応答しないため、`voice` や `instructions` を指定せずにセッションを作成します：
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -99,7 +99,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
 ```
 
-同じ方法で接続し、16 kHz の PCM16 を `client.audio` として送信します。Mistral のイベントはそのまま転送されます： `session.created`、続いて新しいテキストごとに `transcription.text.delta`、Mistral が送信した場合は `transcription.language` と `transcription.segment` です。文字起こしの設定を変更するには、`language`、`target_streaming_delay_ms`（80〜2,400）、`context_bias`、`diarize`、`turn_detection` のいずれかを含めて `{"type": "session.update", "session": {...}}` を送信します。音声フォーマットを含むその他のフィールドは `relay.client_event_rejected` で拒否されます。
+同じ方法で接続し、16 kHz の PCM16 を `client.audio` として送信します。Mistral のイベントはそのまま転送されます： `session.created`、続いて新しいテキストごとに `transcription.text.delta`、Mistral が送信した場合は `transcription.language` と `transcription.segment` です。文字起こしの設定を変更するには、`language`、`target_streaming_delay_ms`（80〜1,200、または 2,400）、`context_bias`、`diarize`、`turn_detection` のいずれかを含めて `{"type": "session.update", "session": {...}}` を送信します。音声フォーマットを含むその他のフィールドは `relay.client_event_rejected` で拒否されます。音声の送信が始まると設定は固定されるため、`session.update` は最初の `client.audio` より前に送信してください。それ以降の更新も同様に拒否されます。
 
 `session.end` を送信すると、リレーは Mistral への音声ストリームを終了し、完全な文字起こしを含む `transcription.done` を最大 10 秒待ってから精算し、`session.ended` を送信します。送信済みの音声はすべて使われ、破棄されるものはありません。
 

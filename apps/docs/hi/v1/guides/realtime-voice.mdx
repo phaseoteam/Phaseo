@@ -90,7 +90,7 @@ ElevenLabs कॉल के जुड़े रहने के हर सेक
 
 ### स्ट्रीमिंग ट्रांसक्रिप्शन
 
-Mistral के Voxtral Realtime मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`। ये बोलकर जवाब नहीं देते, इसलिए सत्र `voice` के बिना बनाएँ:
+Mistral के Voxtral Realtime मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`। ये बोलकर जवाब नहीं देते, इसलिए सत्र `voice` या `instructions` के बिना बनाएँ:
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -99,7 +99,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
 ```
 
-उसी तरह कनेक्ट करें और 16 kHz PCM16 को `client.audio` के रूप में स्ट्रीम करें। Mistral के इवेंट बिना बदलाव के आगे भेजे जाते हैं: `session.created`, फिर हर नए टेक्स्ट टुकड़े के साथ `transcription.text.delta`, और जब Mistral भेजे तब `transcription.language` और `transcription.segment`। ट्रांसक्रिप्शन सेटिंग बदलने के लिए `{"type": "session.update", "session": {...}}` भेजें, जिसमें `language`, `target_streaming_delay_ms` (80 से 2,400), `context_bias`, `diarize` और `turn_detection` में से कोई भी हो। ऑडियो फ़ॉर्मैट सहित अन्य फ़ील्ड `relay.client_event_rejected` के साथ अस्वीकार किए जाते हैं।
+उसी तरह कनेक्ट करें और 16 kHz PCM16 को `client.audio` के रूप में स्ट्रीम करें। Mistral के इवेंट बिना बदलाव के आगे भेजे जाते हैं: `session.created`, फिर हर नए टेक्स्ट टुकड़े के साथ `transcription.text.delta`, और जब Mistral भेजे तब `transcription.language` और `transcription.segment`। ट्रांसक्रिप्शन सेटिंग बदलने के लिए `{"type": "session.update", "session": {...}}` भेजें, जिसमें `language`, `target_streaming_delay_ms` (80 से 1,200, या 2,400), `context_bias`, `diarize` और `turn_detection` में से कोई भी हो। ऑडियो फ़ॉर्मैट सहित अन्य फ़ील्ड `relay.client_event_rejected` के साथ अस्वीकार किए जाते हैं। ऑडियो शुरू होते ही सेटिंग तय हो जाती हैं, इसलिए पहले `client.audio` से पहले `session.update` भेजें; बाद के अपडेट भी इसी तरह अस्वीकार किए जाते हैं।
 
 जब आप `session.end` भेजते हैं, तो रिले Mistral की ऑडियो स्ट्रीम समाप्त करता है और पूरा ट्रांसक्रिप्ट लाने वाले `transcription.done` के लिए 10 सेकंड तक प्रतीक्षा करता है, फिर बिल तय करके `session.ended` भेजता है। आपके द्वारा पहले से भेजा गया ऑडियो इस्तेमाल होता है; कुछ भी छोड़ा नहीं जाता।
 

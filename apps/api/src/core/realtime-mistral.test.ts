@@ -121,6 +121,11 @@ describe("Mistral realtime transcription models", () => {
 		} })).toBeNull();
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { audio_format: {} } })).toBeNull();
 		expect(sanitizeMistralSessionUpdate({ type: "session.update" })).toBeNull();
+		// Mistral: the older realtime model can't diarize, and diarize can't be combined with turn detection.
+		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true } }, "voxtral-mini-transcribe-realtime-3-0"))
+			.toEqual({ type: "session.update", session: { diarize: true } });
+		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true } }, "voxtral-mini-transcribe-realtime-2602")).toBeNull();
+		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true, turn_detection: { type: "server_vad" } } })).toBeNull();
 	});
 });
 
@@ -162,6 +167,33 @@ describe("Mistral realtime relay", () => {
 		await object.handleClientMessage(JSON.stringify({ type: "session.update", session: { audio_format: {} } }));
 		expect(upstreamSent(object)).toEqual([{ type: "session.update", session: { target_streaming_delay_ms: 240 } }]);
 		expect(sentOfType(object, "relay.client_event_rejected")).toHaveLength(1);
+	});
+
+	it("rejects session settings once audio has started, because Mistral fixes them at the first chunk", async () => {
+		vi.useFakeTimers();
+		const { object } = relay();
+		await play(object, [created]);
+		await speak(object, 1);
+		await object.handleClientMessage(JSON.stringify({ type: "session.update", session: { language: "fr" } }));
+		expect(upstreamSent(object).filter((event: any) => event.type === "session.update")).toEqual([]);
+		expect(sentOfType(object, "relay.client_event_rejected")).toHaveLength(1);
+	});
+
+	it("waits for Mistral's session.created before the relay reports itself connected", async () => {
+		vi.useFakeTimers();
+		const { object } = relay();
+		object.providerSetupComplete = false;
+		object.session.provider_model_id = "voxtral-mini-transcribe-realtime-3-0";
+		const socket = { readyState: OPEN, bufferedAmount: 0, send: vi.fn(), close: vi.fn(), addEventListener: vi.fn() };
+		vi.stubGlobal("fetch", vi.fn(async () => ({ status: 101, webSocket: { ...socket, accept: vi.fn() } })));
+		let connected = false;
+		const connecting = object.connectProvider().then(() => { connected = true; });
+		await vi.advanceTimersByTimeAsync(0);
+		expect(connected).toBe(false);
+		await object.handleUpstreamMessage(JSON.stringify(created.event));
+		await connecting;
+		expect(connected).toBe(true);
+		vi.unstubAllGlobals();
 	});
 
 	it("on session.end flushes and ends the stream, forwards the final transcript, then settles once", async () => {

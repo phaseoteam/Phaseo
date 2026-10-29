@@ -29,6 +29,14 @@ const MISTRAL_CLIENT_SESSION_FIELDS = [
 	"turn_detection",
 ] as const;
 
+// Mistral's guide for the older realtime model: realtime is not compatible with diarize.
+const MISTRAL_FIELDS_UNSUPPORTED_BY_MODEL: Record<string, readonly string[]> = {
+	"voxtral-mini-transcribe-realtime-2602": ["diarize"],
+};
+
+/** How long the relay waits for Mistral's session.created before giving up. */
+export const MISTRAL_REALTIME_SETUP_TIMEOUT_MS = 10_000;
+
 export function isMistralRealtimeModel(model: string | null | undefined): boolean {
 	return /^(mistral|mistralai)\/voxtral-[a-z0-9-]*realtime/i.test(String(model ?? "").trim());
 }
@@ -64,16 +72,23 @@ export function mistralProviderModel(model: string): string {
 /**
  * A client session.update with only the fields a client may set. Returns null,
  * so the whole update is rejected, when it sets anything else (such as the
- * audio format the relay meters) or nothing at all.
+ * audio format the relay meters), a field the model doesn't support, or
+ * nothing at all.
  */
-export function sanitizeMistralSessionUpdate(message: Record<string, unknown>): Record<string, unknown> | null {
+export function sanitizeMistralSessionUpdate(
+	message: Record<string, unknown>,
+	providerModel?: string | null,
+): Record<string, unknown> | null {
 	if (!message.session || typeof message.session !== "object" || Array.isArray(message.session)) return null;
+	const unsupported = MISTRAL_FIELDS_UNSUPPORTED_BY_MODEL[providerModel ?? ""] ?? [];
 	const allowed: Record<string, unknown> = {};
 	for (const [field, value] of Object.entries(message.session as Record<string, unknown>)) {
 		if (value === undefined) continue;
-		if (!(MISTRAL_CLIENT_SESSION_FIELDS as readonly string[]).includes(field)) return null;
+		if (!(MISTRAL_CLIENT_SESSION_FIELDS as readonly string[]).includes(field) || unsupported.includes(field)) return null;
 		allowed[field] = value;
 	}
+	// Mistral: diarization is not compatible with turn detection.
+	if (allowed.diarize && allowed.turn_detection) return null;
 	return Object.keys(allowed).length > 0 ? { type: "session.update", session: allowed } : null;
 }
 

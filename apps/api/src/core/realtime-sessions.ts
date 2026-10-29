@@ -1081,7 +1081,10 @@ export async function createRealtimeSession(args: {
 		providerModelId === "gemini-3.8-live-extended-thinking"
 			? args.thinkingLevel ?? "low"
 			: null;
-	// Streaming transcription has no voice: nothing is spoken back.
+	// Streaming transcription has no voice or instructions: nothing is spoken back.
+	if (provider === MISTRAL_REALTIME_PROVIDER && (args.voice || args.instructions)) {
+		throw new Error("realtime_transcription_option_not_supported");
+	}
 	const voice = provider === MISTRAL_REALTIME_PROVIDER ? null : defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
 	// GPT Live runs only through the relay (it owns billing). Playground sessions

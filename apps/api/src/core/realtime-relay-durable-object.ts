@@ -55,6 +55,7 @@ import {
 import {
 	MISTRAL_REALTIME_INPUT_SAMPLE_RATE,
 	MISTRAL_REALTIME_PROVIDER,
+	MISTRAL_REALTIME_SETUP_TIMEOUT_MS,
 	applyMistralTranscriptionUsage,
 	mistralRealtimeUrl,
 	resolveMistralRealtimeKey,
@@ -519,6 +520,7 @@ export class RealtimeRelayDurableObject {
 	};
 	private responseInFlight = false;
 	private providerSetupComplete = false;
+	private mistralSetupWaiter: ((ready: boolean) => void) | null = null;
 	private upstreamEvents: Promise<void> = Promise.resolve();
 	private providerEventSeen = false;
 	private providerCompletedResponseSeen = false;
@@ -790,11 +792,19 @@ export class RealtimeRelayDurableObject {
 		}
 
 		if (provider === MISTRAL_REALTIME_PROVIDER) {
-			// Header auth from the relay; Mistral's session.created ends setup.
+			// Header auth from the relay. Audio is only accepted after Mistral's
+			// session.created, so wait for it before the client hears relay.connected.
 			const key = resolveMistralRealtimeKey();
 			if (!key) throw new Error("mistral_key_missing");
 			this.upstream = await connectWebSocket(mistralRealtimeUrl(model), { headers: { Authorization: `Bearer ${key}` } });
+			const ready = new Promise<boolean>((resolve) => {
+				const timer = setTimeout(() => resolve(false), MISTRAL_REALTIME_SETUP_TIMEOUT_MS);
+				this.mistralSetupWaiter = (ok) => { clearTimeout(timer); resolve(ok); };
+			});
 			this.attachUpstream();
+			const setUp = await ready;
+			this.mistralSetupWaiter = null;
+			if (!setUp && !this.providerSetupComplete) throw new Error("mistral_setup_timeout");
 			return;
 		}
 
@@ -859,6 +869,8 @@ export class RealtimeRelayDurableObject {
 			this.queueUpstreamEvent(() => this.handleUpstreamMessage(event.data, upstream));
 		});
 		upstream.addEventListener("close", (event) => {
+			// A Mistral socket that closes during setup ends the wait at once.
+			if (upstream === this.upstream) this.mistralSetupWaiter?.(false);
 			this.queueUpstreamEvent(() => this.handleUpstreamClose(event, upstream));
 		});
 		upstream.addEventListener("error", () => {
@@ -971,8 +983,9 @@ export class RealtimeRelayDurableObject {
 		const provider = this.session ? providerFromSession(this.session) : null;
 		if (provider === MISTRAL_REALTIME_PROVIDER && type === "session.update") {
 			// Transcription settings only; the audio format stays what the relay meters.
-			const update = sanitizeMistralSessionUpdate(message as unknown as Record<string, unknown>);
-			if (update && this.acceptingAudio && this.providerSetupComplete) this.sendUpstream(update);
+			// Mistral fixes the settings at the first audio chunk and errors on later updates.
+			const update = sanitizeMistralSessionUpdate(message as unknown as Record<string, unknown>, this.session?.provider_model_id);
+			if (update && this.acceptingAudio && this.providerSetupComplete && this.receivedAudioMs === 0) this.sendUpstream(update);
 			else this.sendClient({ type: "relay.client_event_rejected", event_type: type, reason: "realtime_session_update_not_accepted" });
 			return;
 		}
@@ -1212,6 +1225,7 @@ export class RealtimeRelayDurableObject {
 	private async handleMistralEvent(event: Record<string, unknown>, type: string, forward: () => void): Promise<boolean> {
 		if (type === "session.created") {
 			this.providerSetupComplete = true;
+			this.mistralSetupWaiter?.(true);
 			return false;
 		}
 		if (type === "transcription.text.delta" || type === "transcription.segment") {

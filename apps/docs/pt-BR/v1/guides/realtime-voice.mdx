@@ -90,7 +90,7 @@ O ElevenLabs cobra cada segundo em que a chamada fica conectada, mais os tokens 
 
 ### Transcrição em streaming
 
-Os modelos Voxtral Realtime da Mistral transcrevem o áudio ao vivo conforme ele chega: `mistral/voxtral-mini-transcribe-realtime-3` e `mistral/voxtral-mini-transcribe-realtime`. Eles não respondem com voz, então crie a sessão sem `voice`:
+Os modelos Voxtral Realtime da Mistral transcrevem o áudio ao vivo conforme ele chega: `mistral/voxtral-mini-transcribe-realtime-3` e `mistral/voxtral-mini-transcribe-realtime`. Eles não respondem com voz, então crie a sessão sem `voice` nem `instructions`:
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -99,7 +99,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
 ```
 
-Conecte-se da mesma forma e envie PCM16 em 16 kHz como `client.audio`. Os eventos da Mistral são repassados sem alterações: `session.created`, depois `transcription.text.delta` com cada novo trecho de texto, e `transcription.language` e `transcription.segment` quando a Mistral os envia. Para mudar as configurações de transcrição, envie `{"type": "session.update", "session": {...}}` com qualquer um de `language`, `target_streaming_delay_ms` (de 80 a 2.400), `context_bias`, `diarize` e `turn_detection`. Outros campos, incluindo o formato de áudio, são rejeitados com `relay.client_event_rejected`.
+Conecte-se da mesma forma e envie PCM16 em 16 kHz como `client.audio`. Os eventos da Mistral são repassados sem alterações: `session.created`, depois `transcription.text.delta` com cada novo trecho de texto, e `transcription.language` e `transcription.segment` quando a Mistral os envia. Para mudar as configurações de transcrição, envie `{"type": "session.update", "session": {...}}` com qualquer um de `language`, `target_streaming_delay_ms` (de 80 a 1.200, ou 2.400), `context_bias`, `diarize` e `turn_detection`. Outros campos, incluindo o formato de áudio, são rejeitados com `relay.client_event_rejected`. As configurações ficam fixas assim que o áudio começa, então envie `session.update` antes do primeiro `client.audio`; atualizações posteriores são rejeitadas da mesma forma.
 
 Quando você envia `session.end`, o relay encerra o fluxo de áudio da Mistral e espera até 10 segundos por `transcription.done`, que traz a transcrição completa, antes de liquidar e enviar `session.ended`. O áudio que você já enviou é usado; nada é descartado.
 

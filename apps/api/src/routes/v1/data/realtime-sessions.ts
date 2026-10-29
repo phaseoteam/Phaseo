@@ -240,6 +240,14 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 			workspace_id: workspaceId,
 		});
 	}
+	if (message === "realtime_transcription_option_not_supported") {
+		return err("validation_error", {
+			reason: message,
+			description: "Streaming transcription sessions don't speak back; remove voice and instructions",
+			request_id: requestId,
+			workspace_id: workspaceId,
+		});
+	}
 	if (message === "realtime_session_not_found") {
 		return err("not_found", {
 			reason: "realtime_session_not_found",
