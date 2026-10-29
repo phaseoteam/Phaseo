@@ -52,6 +52,8 @@ interface Watch {
 	revision?: number;
 	/** The thread's revision once the brief was queued: a thread that failed before then failed in an earlier run. */
 	queuedRevision?: number;
+	/** When the brief was sent: a stop after this is this run's, one before it an earlier run's. */
+	queuedAt: number;
 	stopping: boolean;
 	ending: boolean;
 	/** The thread's usage when the run started, so a thread carried on counts only this run's. */
@@ -132,7 +134,8 @@ export class StageThreads implements FactoryThreads {
 		const source = projects.find((project) => same(project.directory, workspace.clone) && !project.worktree) ?? this.host.store.addProject(path.resolve(workspace.clone));
 		const baseCommit = await git(workspace.dir, ["rev-parse", "HEAD"]).catch(() => "");
 		const project = this.host.store.addProject(path.resolve(workspace.dir));
-		project.name = `${source.name} · ${workspace.branch}`;
+		// Named after the clone: the branch shows beside it wherever the project does.
+		project.name = source.name;
 		project.worktree = { sourceProjectId: source.id, branch: workspace.branch, baseCommit };
 		this.host.store.saveProject(project);
 		return project.id;
@@ -144,6 +147,7 @@ export class StageThreads implements FactoryThreads {
 		const projectId = await this.worktreeProject(workspace);
 		const title = `${stageLabel(stage)} · #${item.number}`;
 		let threadId: string, startId: string | undefined, baseUsage = { tokens: 0, costNanos: 0 };
+		const queuedAt = Date.now();
 		const previous = input.resume ? this.reusable(input.resume, agent) : undefined;
 		if (previous) {
 			// A reply, or carrying on after an interruption: the same conversation goes on.
@@ -158,7 +162,7 @@ export class StageThreads implements FactoryThreads {
 			startId = child.queue[0]?.id ?? child.messages.find((message) => message.role === "user")?.id;
 		}
 		if (!startId) throw new Error("The stage's thread didn't take its brief");
-		const watch: Watch = { runId: input.runId, threadId, startId, stage, cwd: workspace.dir, proof: input.proof, changedBefore: input.changedBefore, handlers, logged: new Set(), stopping: false, ending: false, baseUsage };
+		const watch: Watch = { runId: input.runId, threadId, startId, stage, cwd: workspace.dir, proof: input.proof, changedBefore: input.changedBefore, handlers, logged: new Set(), stopping: false, ending: false, baseUsage, queuedAt };
 		watch.queuedRevision = this.revisionOf(threadId);
 		this.watches.set(input.runId, watch);
 		handlers.session(threadId);
@@ -235,9 +239,10 @@ export class StageThreads implements FactoryThreads {
 		const start = task.messages.findIndex((message) => message.id === watch.startId);
 		if (start < 0) {
 			// Not started yet; or stopped, or failed, before it could. A thread carried on still shows its last run's failure or
-			// interruption until it starts, so only a failure after the brief was queued, or Stop, ends a queued run.
+			// interruption until it starts, so only a failure after the brief was queued, or a stop since it was sent, ends a queued run.
 			const queued = task.queue.some((message) => message.id === watch.startId);
-			if (queued && !watch.stopping && !(["failed", "limited"].includes(task.status) && (task.revision ?? 0) > (watch.queuedRevision ?? 0))) return;
+			const stoppedSince = task.status === "interrupted" && Date.parse(task.interruptedAt ?? "") >= watch.queuedAt;
+			if (queued && !watch.stopping && !stoppedSince && !(["failed", "limited"].includes(task.status) && (task.revision ?? 0) > (watch.queuedRevision ?? 0))) return;
 			if (settled) void this.finish(watch, task, []);
 			return;
 		}

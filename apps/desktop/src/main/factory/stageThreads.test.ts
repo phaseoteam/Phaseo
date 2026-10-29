@@ -110,6 +110,31 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("tells a stop of the queued brief apart from the interruption before it", async () => {
+		// A thread interrupted earlier, whose new brief stays queued: the stand-in host never starts it.
+		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false } as unknown as Task;
+		let changed = () => {};
+		const host = {
+			store: { getTask: () => task, getTaskTail: () => task, getOverview: () => ({ tasks: [{ id: "t", revision: task.revision }] }), getProjects: () => [], addProject: (directory: string) => ({ id: directory, name: "clone", directory }), saveProject: () => {} },
+			command: async (command: { type: string; text?: string }) => { if (command.type === "send") { task.queue.push({ id: "brief", text: command.text!, createdAt: new Date().toISOString() }); task.revision = (task.revision ?? 0) + 1; } return {}; },
+			createThread: () => { throw new Error("unused"); }, startStageThread: () => { throw new Error("unused"); },
+			onThreadsChange: (listener: () => void) => { changed = listener; return () => {}; },
+		} as unknown as ConstructorParameters<typeof StageThreads>[0];
+		const threads = new StageThreads(host, { get: () => "t", set: () => {} });
+		const finished: Parameters<RunHandlers["finish"]>[0][] = [];
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-factory-queued-"));
+		try {
+			await threads.start({ item, runId: "run-10", agent, stage: "review", workspace: { dir: directory, branch: "factory/pr-3", clone: directory }, proof: path.join(directory, "proof"), prompt: "Carry on.", resume: "t", changedBefore: [], handlers: { log: () => {}, session: () => {}, finish: result => { finished.push(result); } } });
+			changed();
+			// The earlier interruption doesn't end the new run.
+			expect(finished).toEqual([]);
+			// Stopping the thread in Code while the brief is queued does.
+			task.interruptedAt = new Date().toISOString(); task.revision = (task.revision ?? 0) + 1;
+			changed();
+			await vi.waitFor(() => expect(finished).toEqual([expect.objectContaining({ status: "cancelled" })]));
+		} finally { threads.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+
 	it("carries a reply on in the run's own thread, and one failure ends the run as failed to carry on", async () => {
 		let fail = true;
 		const { runtime, finished, handlers, start, threads, close, worktree, clone } = setup(async (_task, callbacks) => {

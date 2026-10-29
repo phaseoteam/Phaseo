@@ -932,7 +932,7 @@ export class WorkspaceStore {
 				if (index >= 0 && next >= 0 && next < task.queue.length) [task.queue[index], task.queue[next]] = [task.queue[next], task.queue[index]];
 				break;
 			}
-			case "cancel": task.status = "interrupted"; task.usageLimit = undefined; break;
+			case "cancel": task.status = "interrupted"; task.usageLimit = undefined; task.interruptedAt = new Date().toISOString(); break;
 			case "resume":
 				if (task.status === "running" || task.status === "waiting") throw new Error("This task is already running.");
 				if (!task.queue.length && task.nativeSessionId) task.queue.push({ id: randomUUID(), text: "Continue from where you stopped.", createdAt: new Date().toISOString() });

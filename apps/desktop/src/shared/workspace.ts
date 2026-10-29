@@ -128,6 +128,8 @@ export type Task = {
 	usageLimit?: UsageLimitState;
 	/** The app quit during this chat's turn; startup offers to continue it. */
 	interruptedByQuit?: true;
+	/** When the chat was last stopped, so a run queued before then can tell its own stop from an earlier one. */
+	interruptedAt?: string;
 	/** The agent's request_secret asks and their outcomes; never the values (shared/secretRequests.ts). */
 	secretRequests?: SecretRequest[];
 };
