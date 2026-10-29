@@ -126,6 +126,13 @@ describe("Mistral realtime transcription models", () => {
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true } }, "voxtral-mini-transcribe-realtime-3-0"))
 			.toEqual({ type: "session.update", session: { diarize: true } });
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true } }, "voxtral-mini-transcribe-realtime-2602")).toBeNull();
+		// Live 2026-10-29: the older model errors and closes on everything but the delay.
+		for (const session of [{ language: "en" }, { context_bias: ["Phaseo"] }, { turn_detection: {} }]) {
+			expect(sanitizeMistralSessionUpdate({ type: "session.update", session }, "voxtral-mini-transcribe-realtime-2602")).toBeNull();
+			expect(sanitizeMistralSessionUpdate({ type: "session.update", session }, "voxtral-mini-transcribe-realtime-3-0")).toEqual({ type: "session.update", session });
+		}
+		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { target_streaming_delay_ms: 480 } }, "voxtral-mini-transcribe-realtime-2602"))
+			.toEqual({ type: "session.update", session: { target_streaming_delay_ms: 480 } });
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { diarize: true, turn_detection: { type: "server_vad" } } })).toBeNull();
 	});
 });
