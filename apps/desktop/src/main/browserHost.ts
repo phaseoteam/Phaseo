@@ -99,7 +99,7 @@ export class BrowserHost {
 			case "focus": contents.focus(); break;
 			case "viewport": page.viewport = command.viewport; page.configured = true; this.applyViewport(view); break;
 			case "zoom": { const changed = page.zoom !== command.zoom; page.zoom = command.zoom; contents.setZoomFactor(command.zoom); if (changed) this.showZoom(view); break; }
-			case "colorScheme": page.colorScheme = command.colorScheme; void this.applyColorScheme(contents, command.colorScheme); break;
+			case "colorScheme": page.colorScheme = command.colorScheme; void this.applyColorScheme(contents, command.colorScheme, page.emulated); break;
 			case "mute": contents.setAudioMuted(command.muted); break;
 			case "clearData": { const browserSession = this.session(); void (command.data === "cookies" ? browserSession.clearStorageData({ storages: ["cookies"] }) : browserSession.clearCache()); break; }
 			case "popOut": this.popOut(owner, view); break;
@@ -298,19 +298,34 @@ export class BrowserHost {
 	private applyViewport(view: WebContentsView) {
 		const page = this.page(view), viewport = page.viewport, contents = view.webContents;
 		const frame = this.frames.get(view) ?? view.getBounds();
-		if (viewport.mode === "fill") { view.setBounds(frame); if (page.emulated && contents.getURL()) { contents.disableDeviceEmulation(); page.emulated = false; } return; }
+		if (viewport.mode === "fill") { view.setBounds(frame); if (page.emulated && contents.getURL()) { contents.disableDeviceEmulation(); page.emulated = false; void this.applyDeviceMetrics(contents, undefined, 1, page.colorScheme !== "system"); } return; }
 		const bounds = browserDeviceFrame(frame, viewport);
 		view.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
 		if (!contents.getURL()) return;
 		const size = { width: viewport.width, height: viewport.height };
-		contents.enableDeviceEmulation({ screenPosition: "mobile", screenSize: size, viewPosition: { x: 0, y: 0 }, deviceScaleFactor: 1, viewSize: size, scale: Math.max(.1, Math.min(1, bounds.width / size.width, bounds.height / size.height)) });
 		page.emulated = true;
+		void this.applyDeviceMetrics(contents, size, Math.max(.1, Math.min(1, bounds.width / size.width, bounds.height / size.height)));
 	}
-	/** prefers-color-scheme for one page, through the DevTools protocol; System detaches and lets the page follow the computer. */
-	private async applyColorScheme(contents: Electron.WebContents, scheme: BrowserColorScheme) {
+	/**
+	 * The device size through the DevTools protocol. Electron 45's enableDeviceEmulation ignores the page's viewport tag
+	 * and lays pages out 980px wide, so it is only the fallback for a page whose debugger is taken.
+	 */
+	private async applyDeviceMetrics(contents: Electron.WebContents, size: { width: number; height: number } | undefined, scale: number, keepAttached = false) {
 		const debug = contents.debugger;
 		try {
-			if (scheme === "system") { if (debug.isAttached()) { await debug.sendCommand("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "" }] }); debug.detach(); } return; }
+			if (!size) { if (debug.isAttached()) { await debug.sendCommand("Emulation.clearDeviceMetricsOverride"); if (!keepAttached) debug.detach(); } return; }
+			if (!debug.isAttached()) debug.attach("1.3");
+			await debug.sendCommand("Emulation.setDeviceMetricsOverride", { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: true, screenWidth: size.width, screenHeight: size.height, scale });
+		} catch {
+			if (size && !contents.isDestroyed()) contents.enableDeviceEmulation({ screenPosition: "mobile", screenSize: size, viewPosition: { x: 0, y: 0 }, deviceScaleFactor: 1, viewSize: size, scale });
+		}
+	}
+	/** prefers-color-scheme for one page, through the DevTools protocol; System detaches and lets the page follow the computer. */
+	private async applyColorScheme(contents: Electron.WebContents, scheme: BrowserColorScheme, keepAttached = false) {
+		const debug = contents.debugger;
+		try {
+			// An emulated device size also lives on this debugger, so it stays attached while one is set.
+			if (scheme === "system") { if (debug.isAttached()) { await debug.sendCommand("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "" }] }); if (!keepAttached) debug.detach(); } return; }
 			if (!debug.isAttached()) debug.attach("1.3");
 			await debug.sendCommand("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] });
 		} catch { /* A page that is closing or has its own debugger keeps its colours. */ }
