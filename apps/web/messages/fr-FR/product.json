@@ -1716,7 +1716,7 @@
 		"hideAllRuns": "Masquer toutes les exécutions",
 		"yourGateway": "Votre Gateway",
 		"yourGatewayTtft": "Votre Gateway (TTFT)",
-		"yourGatewayThroughput": "Votre Gateway (jetons/s)",
+		"yourGatewayThroughput": "Votre Gateway (tps)",
 		"tie": "Égalité",
 		"latestProvider": "Dernier résultat : {provider}",
 		"requestFailed": "La requête n’a pas abouti. Vérifiez le point de terminaison et les identifiants, puis réessayez.",
@@ -1734,7 +1734,7 @@
 		"throughput": "Débit",
 		"responsePlaceholder": "La réponse apparaîtra ici...",
 		"gatewayLabel": "Passerelle",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "Comparaison des performances des passerelles",

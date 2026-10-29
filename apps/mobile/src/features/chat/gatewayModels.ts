@@ -1,6 +1,6 @@
-// The website's provider naming and logo rules are plain functions; sharing them keeps provider names
-// and logos in chat identical to phaseo.app (as Logo.tsx does with the logo manifest).
-import { inferProviderFamilyIdFromSiblings, resolveProviderDisplayName, resolveProviderLogoId, type ProviderOfferScope } from "../../../../web/src/lib/providers/providerOffers";
+// Provider naming and logo rules are shared with the website (@phaseo/app-kit), so provider names and
+// logos in chat match phaseo.app.
+import { inferProviderFamilyIdFromSiblings, resolveProviderDisplayName, resolveProviderLogoId, type ProviderOfferScope } from "@phaseo/app-kit/provider-offers";
 import { routeReasoningSupport, routeServiceTierSupport, type RouteCapabilities } from "./capabilities";
 
 /** One provider route of a chat model, reduced to what chat needs (the raw feed is ~1.5 MB). */

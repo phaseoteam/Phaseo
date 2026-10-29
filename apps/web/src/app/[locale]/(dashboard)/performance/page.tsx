@@ -13,7 +13,7 @@ const metrics = [
 	{
 		index: "01",
 		nameKey: "timeToFirstToken",
-		unit: "ms",
+		unit: "s",
 		descriptionKey: "timeToFirstTokenDescription",
 		goodForKey: "timeToFirstTokenGoodFor",
 		icon: Clock3,
@@ -21,7 +21,7 @@ const metrics = [
 	{
 		index: "02",
 		nameKey: "outputSpeed",
-		unit: "tokens/s",
+		unit: "tps",
 		descriptionKey: "outputSpeedDescription",
 		goodForKey: "outputSpeedGoodFor",
 		icon: Gauge,
@@ -29,7 +29,7 @@ const metrics = [
 	{
 		index: "03",
 		nameKey: "endToEndLatency",
-		unit: "ms",
+		unit: "s",
 		descriptionKey: "endToEndLatencyDescription",
 		goodForKey: "endToEndLatencyGoodFor",
 		icon: Route,
@@ -175,7 +175,7 @@ export default async function PerformancePage() {
 					<div className="border-b border-border/70 p-6 lg:border-b-0 lg:border-r">
 						<div className="flex items-end justify-between gap-4">
 							<div><p className="text-sm font-medium">{t("requestJourney")}</p><p className="mt-1 text-xs text-muted-foreground">{t("browserToToken")}</p></div>
-							<p className="font-mono text-2xl font-semibold">302 ms</p>
+							<p className="font-mono text-2xl font-semibold">0.30 s</p>
 						</div>
 						<div className="mt-10 flex h-12 overflow-hidden rounded-md border border-border/70">
 							{latencyJourney.map((stage) => <div key={stage.labelKey} className={`${stage.tone} h-full border-r border-background/40 last:border-r-0`} style={{ width: `${stage.width}%` }} />)}

@@ -11,5 +11,5 @@ it("groups complete turns while preserving commentary and tool order", () => {
 it("retains partial history and never fabricates duration", () => {
 	expect(conversationTurns([{id:"final",role:"assistant",text:"Done"}] as Message[],[])[0].entries).toHaveLength(1);
 	expect(turnDuration()).toBe("Worked");
-	expect(turnDuration({startedAt:"2026-10-05T00:00:00Z",completedAt:"2026-10-05T00:01:06Z"} as Message)).toBe("Worked for 1m 6s");
+	expect(turnDuration({startedAt:"2026-10-05T00:00:00Z",completedAt:"2026-10-05T00:01:06Z"} as Message)).toBe("Worked for 1.1 min");
 });

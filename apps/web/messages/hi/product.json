@@ -1716,7 +1716,7 @@
 		"hideAllRuns": "सभी रन छिपाएँ",
 		"yourGateway": "आपका Gateway",
 		"yourGatewayTtft": "आपका Gateway (TTFT)",
-		"yourGatewayThroughput": "आपका Gateway (टोकन/सेकंड)",
+		"yourGatewayThroughput": "आपका Gateway (tps)",
 		"tie": "बराबरी",
 		"latestProvider": "नवीनतम परिणाम: {provider}",
 		"requestFailed": "अनुरोध पूरा नहीं हो सका। एंडपॉइंट और क्रेडेंशियल जाँचकर फिर कोशिश करें।",
@@ -1734,7 +1734,7 @@
 		"throughput": "थ्रूपुट",
 		"responsePlaceholder": "प्रतिक्रिया यहाँ दिखाई देगी...",
 		"gatewayLabel": "गेटवे",
-		"openaiThroughput": "OpenAI API (टोकन/सेकंड)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "गेटवे प्रदर्शन तुलना",

@@ -1,3 +1,4 @@
+import { BADGE_TONES, type BadgeTone } from "@phaseo/app-kit/ui-recipes";
 import { ChevronDown, type LucideIcon } from "lucide-react-native";
 import { Pressable, ScrollView, View } from "react-native";
 import { cn } from "@/lib/cn";
@@ -29,19 +30,12 @@ export function ChipRow({ children, className }: { children: React.ReactNode; cl
   );
 }
 
-/** Small inline label, e.g. "Free", "On Phaseo", "Deprecated". */
-export function Badge({ label, tone = "neutral" }: { label: string; tone?: "neutral" | "primary" | "success" | "warning" | "destructive" }) {
-  const tones = {
-    neutral: "bg-muted text-muted-foreground",
-    primary: "bg-primary/12 text-link",
-    success: "bg-success/12 text-success",
-    warning: "bg-warning/15 text-warning",
-    destructive: "bg-destructive/12 text-destructive",
-  } as const;
-  const [bg, fg] = tones[tone].split(" ");
+/** Small inline label, e.g. "Free", "On Phaseo", "Deprecated". The tones are shared (packages/shared/app-kit/src/ui-recipes/badge.ts). */
+export function Badge({ label, tone = "neutral" }: { label: string; tone?: BadgeTone }) {
+  const { surface, text } = BADGE_TONES[tone];
   return (
-    <View className={cn("rounded-md px-1.5 py-0.5", bg)}>
-      <Text variant="caption" className={cn("font-semibold", fg)}>{label}</Text>
+    <View className={cn("rounded-md px-1.5 py-0.5", surface)}>
+      <Text variant="caption" className={cn("font-semibold", text)}>{label}</Text>
     </View>
   );
 }

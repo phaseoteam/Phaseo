@@ -6,7 +6,7 @@ import { effortLabel } from "../components/AgentPicker";
 import { AgentMark, PersonMark } from "../components/Marks";
 import { Choice, Field, Group, Row, SettingsPage } from "../components/Settings";
 import { Button } from "../components/ui/button";
-import { since } from "../lib/format";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { factory, useNow } from "../lib/useFactory";
 import { cn } from "../lib/utils";
 
@@ -36,7 +36,7 @@ function CheckNow({ snapshot }: { snapshot: FactorySnapshot }) {
 	return <Button variant="outline" size="sm" disabled={busy} onClick={() => {
 		setBusy(true);
 		void factory().refresh().finally(() => setBusy(false));
-	}}>{busy ? "Checking…" : snapshot.loadedAt ? `Checked ${since(snapshot.loadedAt, now)}` : "Check now"}</Button>;
+	}}>{busy ? "Checking…" : snapshot.loadedAt ? `Checked ${formatRelativeTime(snapshot.loadedAt, now)}` : "Check now"}</Button>;
 }
 
 /** One repository: what's been read from it, its local clone, and buttons to read it again or remove it. */
@@ -54,7 +54,7 @@ function RepoRow({ repo, checkout, status, handle }: { repo: string; checkout: s
 		: status?.error
 			? status.error
 			: status?.importedAt
-				? `${counts}. Read in full ${since(status.importedAt, now)}${status.syncedAt ? `, changes checked ${since(status.syncedAt, now)}` : ""}.`
+				? `${counts}. Read in full ${formatRelativeTime(status.importedAt, now)}${status.syncedAt ? `, changes checked ${formatRelativeTime(status.syncedAt, now)}` : ""}.`
 				: "Not read yet.";
 	return <div className="px-4 py-3.5">
 		<div className="flex items-center gap-4">

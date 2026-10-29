@@ -4,7 +4,6 @@ import {
 	buildPublicProfileSlug,
 	calculatePeriodChange,
 	calculateStreaks,
-	formatUsdFromNanos,
 } from "./profile"
 
 describe("profile helpers", () => {
@@ -88,9 +87,5 @@ describe("profile helpers", () => {
 				isFuture: true,
 			}),
 		)
-	})
-
-	it("formats profile currency in US format whatever the locale", () => {
-		expect(formatUsdFromNanos(1_234_500_000, "de-DE")).toBe("$1.2345")
 	})
 })

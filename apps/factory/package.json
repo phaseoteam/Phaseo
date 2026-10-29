@@ -26,9 +26,10 @@
 	"dependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.3.304",
 		"@base-ui/react": "1.6.0",
+		"@phaseo/app-kit": "workspace:*",
+		"@phaseo/ui": "workspace:*",
 		"@tanstack/react-virtual": "^3.14.6",
 		"class-variance-authority": "^0.7.1",
-		"clsx": "^2.1.1",
 		"lucide-react": "^1.17.0",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
@@ -36,8 +37,7 @@
 		"rehype-raw": "^7.0.0",
 		"rehype-sanitize": "^6.0.0",
 		"remark-breaks": "^4.0.0",
-		"remark-gfm": "^4.0.1",
-		"tailwind-merge": "^3.6.0"
+		"remark-gfm": "^4.0.1"
 	},
 	"devDependencies": {
 		"@electron/asar": "4.3.1",
