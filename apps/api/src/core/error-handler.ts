@@ -23,6 +23,7 @@ import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { releaseSpend } from "./spend-limits";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -700,6 +701,8 @@ export async function handleError({
     }
 
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
+    // Enforce mode: a request failing after admission frees its spend-limit slot (no-op without one).
+    releaseSpend(ctx?.spendAdmission);
 
     const body = await safeJson(res);
     const debugHeader = req?.headers.get("x-gateway-debug");

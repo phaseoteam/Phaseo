@@ -1,4 +1,4 @@
-// Purpose: Isolate-side client for API-key spend/request caps and workspace budgets.
+// Purpose: Isolate-side client for API-key spend/request caps, department budgets and workspace budgets.
 // Why: Capped keys bypass the cached gateway context and recount usage in Postgres per request.
 // How: The per-workspace SpendLimit Durable Object grants this isolate leases (slices of the
 //      remaining allowance). Requests are admitted from a held slice without awaiting; only a
@@ -9,13 +9,17 @@
 //   shadow (wired): guardContext calls shadowSpendLimitOnce beside the legacy key-limit check, and
 //            handleSuccessAudit calls recordShadowSpend once the gateway_requests row is written.
 //            Neither changes what the request gets; divergences are logged.
-//   enforce (not wired yet):
-//   before:  const decision = await checkSpendLimit({ workspaceId, keyId, admissionId })
-//            "denied" -> respond like `!context.keyLimit.ok` with decision.keyLimit;
-//            "unavailable" -> fall back to the request-context RPC path.
-//   after:   recordSpend({ admission, workspaceId, keyId, billingRequestId, requestId, costNanos })
-//            once the request is charged and its gateway_requests row (success = true) is queued;
-//            releaseSpend(admission) when the request ends without a successful charge.
+//   enforce (wired): beforeRequest gives each non-OAuth API-key request one SpendLimitSlot, and
+//            guardContext (which can run once per candidate model) decides it once through
+//            enforcedSpendLimit (checkSpendLimit with admissionId = requestId:attempt):
+//              "denied"      -> the same `key_limit_exceeded` 429 as the legacy key-limit check;
+//              "allowed"     -> the coordinator is authoritative: the legacy denial is skipped;
+//              "unavailable" -> the legacy request-context check decides, as before.
+//            The admission rides on ctx.spendAdmission. handleSuccessAudit calls recordSpend once
+//            the request is charged; handleFailureAudit, execute-stage handleError and a failed
+//            beforeRequest call releaseSpend. An admission that is never settled (a path that
+//            reaches neither) stops holding allowance after SPEND_LEASE.inFlightHoldMs.
+//            Batch, realtime and OAuth requests get no slot and keep the legacy check.
 
 import type { GateCheck } from "@pipeline/before/types";
 import { LeasePool, type LeaseTransport } from "@core/lease-pool";
@@ -356,6 +360,85 @@ export function recordShadowSpend(args: {
 		});
 	} catch (error) {
 		console.warn("spend_limit_shadow_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+/**
+ * One beforeRequest attempt's enforce-mode decision, shared by every guardContext run of it. A
+ * request retried with a fallback model makes a new attempt, so `attempt` keeps its admission
+ * (and the coordinator's lease ids derived from it) apart from the previous attempt's.
+ */
+export type SpendLimitSlot = { attempt: string; decision: Promise<SpendLimitDecision> | null };
+
+export function createSpendLimitSlot(): SpendLimitSlot {
+	return { attempt: crypto.randomUUID(), decision: null };
+}
+
+/**
+ * Enforce mode, before the request: the coordinator's decision for this request, computed once
+ * per slot (admissionId = requestId:attempt). Null (use the legacy key-limit check alone) unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "enforce" and the request is a non-internal API-key request with
+ * a slot. Never throws.
+ */
+export function enforcedSpendLimit(args: {
+	workspaceId: string;
+	keyId: string | null | undefined;
+	requestId: string;
+	internal?: boolean;
+	slot?: SpendLimitSlot | null;
+}): Promise<SpendLimitDecision> | null {
+	try {
+		if (!args.slot || args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return null;
+		if (args.slot.decision) return args.slot.decision;
+		if (currentMode() !== "enforce") return null;
+		args.slot.decision = checkSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` });
+		return args.slot.decision;
+	} catch (error) {
+		console.warn("spend_limit_enforce_failed", { error: error instanceof Error ? error.message : String(error) });
+		return null;
+	}
+}
+
+/** The admission a slot's decision allowed, if any (for recordSpend / releaseSpend). */
+export async function slotAdmission(slot: SpendLimitSlot | null | undefined): Promise<SpendAdmission | null> {
+	const decision = await slot?.decision?.catch(() => null);
+	return decision?.outcome === "allowed" ? decision.admission : null;
+}
+
+/**
+ * Enforce mode, after a successful request: counts its cost once its gateway_requests row is
+ * written (with the request's admission when it had one), or releases the admission when no row
+ * was written, as the legacy check would not count it either. Does nothing unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "enforce". Never throws.
+ */
+export function settleEnforcedSpend(args: {
+	admission?: SpendAdmission | null;
+	rowWritten: boolean;
+	workspaceId: string;
+	keyId: string | null | undefined;
+	billingRequestId: string;
+	requestId: string;
+	costNanos: number;
+	internal?: boolean;
+}): void {
+	try {
+		if (!args.rowWritten) {
+			releaseSpend(args.admission);
+			return;
+		}
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return;
+		// An admission means the request was admitted in enforce mode: always settle it.
+		if (!args.admission && currentMode() !== "enforce") return;
+		recordSpend({
+			admission: args.admission,
+			workspaceId: args.workspaceId,
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos: args.costNanos,
+		});
+	} catch (error) {
+		console.warn("spend_limit_enforce_record_failed", { error: error instanceof Error ? error.message : String(error) });
 	}
 }
 

@@ -7,7 +7,7 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
-import { recordShadowSpend } from "@core/spend-limits";
+import { recordShadowSpend, releaseSpend, settleEnforcedSpend } from "@core/spend-limits";
 import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
@@ -248,6 +248,8 @@ export async function handleFailureAudit(
     },
 ) {
 	finishStreamingProvider(ctx, "error");
+	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
+	releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -695,6 +697,20 @@ export async function handleSuccessAudit(
 	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
 	if (rowWritten && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
 		recordShadowSpend({
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
+	// Enforce mode only: count the charge with the coordinator (or release the admission when no
+	// row was written). Independent of the legacy key-limit state.
+	if (ctx.meta.authMethod !== "oauth") {
+		settleEnforcedSpend({
+			admission: ctx.spendAdmission,
+			rowWritten,
 			workspaceId: ctx.workspaceId,
 			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
 			billingRequestId: ctx.billingRequestId,

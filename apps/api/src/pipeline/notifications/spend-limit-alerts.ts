@@ -11,6 +11,8 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 // where MOBILE_PUSH_ENABLED is off: the central job that sends pushes fans the alert out. Only
 // the sweep is tied to that job.
 
+// Department budget rejections (`department_<window>_cost_budget_reached`) are not recorded here:
+// sweep_department_budget_alerts already sends their 100% alert to the same people.
 const SPEND_LIMIT_REASON =
 	/^(?:workspace_(daily|weekly|monthly|lifetime)_cost_budget_reached|(daily|weekly|monthly)_(?:request|cost)_limit_reached)$/;
 // Each isolate tells the database at most once an hour per budget or key limit and period. The

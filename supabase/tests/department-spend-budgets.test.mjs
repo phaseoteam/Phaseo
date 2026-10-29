@@ -18,11 +18,15 @@ const KEY = { linked: id('3', 1), u2: id('3', 2), u3: id('3', 3), u4: id('3', 4)
 const DOLLAR = 1_000_000_000;
 const NOW = '2026-10-21T12:00:00Z';
 const migrationFile = '../migrations/20261021194940_department_spend_budgets.sql';
+// Moves the department attribution into a helper shared with gateway_spend_limit_seed.
+const attributionMigrationFile = '../migrations/20261029095151_department_budgets_in_spend_limit_seed.sql';
 const schemaFiles = [
     '../schemas/public/tables/workspace_department_budgets.sql',
     '../schemas/public/functions/workspace_department_budget_status.sql',
     '../schemas/public/functions/sweep_department_budget_alerts.sql',
+    '../schemas/private/functions/department_budget_key_departments.sql',
 ];
+const redefinedLater = /workspace_department_budget_status|department_budget_key_departments/;
 const sweep = at => asService(async () => (await one('select public.sweep_department_budget_alerts($1) r', [at])).r);
 const status = (workspace, at = NOW) => asService(async () => (await one('select public.workspace_department_budget_status($1, $2) r', [workspace, at])).r);
 const usage = (workspace, key, bucket, cost) => db.query(
@@ -34,7 +38,8 @@ const events = () => rows(`select kind, dedupe_key, payload -> 'push' ->> 'title
 try {
     // The migration carries every schema file it adds, and the manifest lists them.
     const migration = await read(migrationFile);
-    for (const file of schemaFiles) assert.ok(migration.includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
+    const attributionMigration = await read(attributionMigrationFile);
+    for (const file of schemaFiles) assert.ok((redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {
         const path = file.replace('../schemas/', '');
@@ -90,6 +95,7 @@ try {
         '../schemas/public/functions/lock_workspace_budget_change.sql',
     ]) await db.exec(await read(file));
     await db.exec(migration);
+    await db.exec(attributionMigration);
 
     // Acme: Engineering and Sales. u2 is in both; u3 is granted Sales but a directory override
     // moves them to Engineering only; u4's override takes them out of every department; u5 is in
