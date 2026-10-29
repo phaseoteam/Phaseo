@@ -81,7 +81,7 @@ function AnimatedScore({ benchmarkId, score }: { benchmarkId: string; score: num
 }
 
 function barScore(benchmarkId: string, score: number, locale: string) {
-	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
+	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(MONEY_LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
 	return Number(score).toLocaleString(locale, { maximumFractionDigits: 1 });
 }
 

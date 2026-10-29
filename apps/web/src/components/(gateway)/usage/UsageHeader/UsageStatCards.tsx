@@ -126,10 +126,12 @@ export default function UsageStatCards(props: {
 											// duration={0.8}
 											format={format}
 											className="leading-none"
-											aria-label={`${c.title}: ${display.number(c.value, {
-												minimumFractionDigits: 0,
-												maximumFractionDigits: 2,
-											})}`}
+											aria-label={`${c.title}: ${format.style === "currency"
+												? new Intl.NumberFormat(MONEY_LOCALE, format).format(c.value)
+												: display.number(c.value, {
+														minimumFractionDigits: 0,
+														maximumFractionDigits: 2,
+													})}`}
 										/>
 										{c.suffix ? (
 											<span
