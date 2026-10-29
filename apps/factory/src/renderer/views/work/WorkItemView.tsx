@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowUpRight, ChevronDown, FastForward, FolderGit2, GitBranch, MessageSquare } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { autopilot, autopilotFits, lastRun, linkedItem, nextActions, stageAgent } from "../../../shared/actions";
 import { matchingRule } from "../../../shared/intake";
 import { RISK_LABEL } from "../../../shared/report";
@@ -160,8 +160,33 @@ function AutopilotBar({ item, running }: { item: WorkItem; running?: StageId }) 
 	</div>;
 }
 
+/** Height of the bar that takes the title's place once it scrolls away. */
+const BAR_HEIGHT = 44;
+
+/** True once `target` has scrolled up under the top of `viewport`, where the bar covers it. */
+function useScrolledPast(viewport: RefObject<HTMLElement | null>, target: RefObject<HTMLElement | null>, key: string) {
+	const [past, setPast] = useState(false);
+	useEffect(() => {
+		const root = viewport.current;
+		const element = target.current;
+		if (!root || !element) return;
+		setPast(false);
+		const observer = new IntersectionObserver(([entry]) => {
+			if (!entry) return;
+			// Gone below the fold doesn't count, only gone above.
+			setPast(!entry.isIntersecting && entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0));
+		}, { root, rootMargin: `-${BAR_HEIGHT}px 0px 0px 0px` });
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [viewport, target, key]);
+	return past;
+}
+
 export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem; snapshot: FactorySnapshot; route: Route; narrow?: boolean }) {
 	const [error, setError] = useState<string | null>(null);
+	const viewport = useRef<HTMLDivElement>(null);
+	const titleRef = useRef<HTMLHeadingElement>(null);
+	const scrolled = useScrolledPast(viewport, titleRef, item.id);
 	const [openRunId, setOpenRunId] = useState<string | undefined>();
 	const tab = route.tab ?? "overview";
 	const body = useItemBody(item);
@@ -209,8 +234,24 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 		{ id: "chat", label: "Chat", count: snapshot.chats.find((chat) => chat.itemId === item.id)?.messages.filter((message) => message.role === "you").length },
 	];
 
-	return <ScrollArea className="min-h-0 min-w-0 flex-1">
+	return <ScrollArea className="min-h-0 min-w-0 flex-1" viewportRef={viewport}>
 		<div className="@container px-4 pt-6 pb-16 @xl:px-6 @3xl:px-8">
+			{/* Takes no room: the bar floats over the top of the view once the title has scrolled away. */}
+			<div className="sticky top-0 z-20 h-0">
+				<div inert={!scrolled} style={{ height: BAR_HEIGHT }} className={cn("absolute inset-x-0 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 shadow-xs backdrop-blur transition-all duration-200 @xl:-mx-6 @xl:px-6 @3xl:-mx-8 @3xl:px-8", scrolled ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0")}>
+					<button type="button" onClick={() => viewport.current?.scrollTo({ top: 0, behavior: "smooth" })} className="-ml-1.5 flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-accent/60" aria-label="Back to the top">
+						<ItemMark item={item} className="size-4 shrink-0" />
+						<span className="shrink-0 text-sm font-medium text-muted-foreground tabular-nums">#{item.number}</span>
+						<span className="min-w-0 truncate text-sm font-semibold">{item.title}</span>
+					</button>
+					<div className="flex shrink-0 items-center gap-2">
+						{lead && !liveRun
+							? <ActionButton item={item} action={lead} onError={setError} />
+							: liveRun && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><StatusMark status="running" className="size-3.5" />{stageLabel(liveRun.stage)} is running</span>}
+						<GithubMenu item={item} />
+					</div>
+				</div>
+			</div>
 			{narrow && <a href={href({ page: "work" })} className="-mt-2 mb-3 -ml-1.5 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground"><ArrowLeft className="size-4" />All work</a>}
 			{/* The controls drop to their own line when the breadcrumb and they don't fit side by side. */}
 			<div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-xs text-muted-foreground">
@@ -260,7 +301,7 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 			</div>
 
 			<TitleEditor item={item}>
-				<h1 data-selectable className="min-w-0 text-[26px] leading-tight font-bold tracking-tight">
+				<h1 ref={titleRef} data-selectable className="min-w-0 text-[26px] leading-tight font-bold tracking-tight">
 					<span className="mr-2.5 font-medium text-muted-foreground/70 tabular-nums">{item.number}</span>{item.title}
 				</h1>
 			</TitleEditor>
