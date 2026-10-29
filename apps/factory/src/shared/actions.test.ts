@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextActions, pullsFor } from "./actions";
+import { nextActions, pullsFor, withItemEffort } from "./actions";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoConnections, demoItems, demoRepos, demoRuns } from "./demo";
 import type { FactorySnapshot } from "./types";
 
@@ -83,5 +83,17 @@ describe("nextActions", () => {
 	it("has nothing to press while a stage runs, or once an item is closed", () => {
 		expect(actionsFor(3131)).toEqual([]);
 		expect(actionsFor(3098)).toEqual([]);
+	});
+});
+
+describe("withItemEffort", () => {
+	const [opus] = DEMO_AGENTS;
+
+	it("runs the item's effort when the agent offers it, and the agent's own otherwise", () => {
+		expect(withItemEffort({ ...opus!, effort: "high" }, { effort: "max" }).effort).toBe("max");
+		expect(withItemEffort({ ...opus!, effort: "high" }, {}).effort).toBe("high");
+		// Codex's "ultra" isn't one of Opus's levels, so Opus keeps its own rather than getting a level it would refuse.
+		expect(withItemEffort({ ...opus!, effort: "high" }, { effort: "ultra" }).effort).toBe("high");
+		expect(withItemEffort({ ...opus!, efforts: undefined }, { effort: "max" }).effort).toBeUndefined();
 	});
 });

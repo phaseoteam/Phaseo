@@ -8,9 +8,9 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 
 export const DEMO_AGENTS: AgentProfile[] = [
-	{ id: "claude-opus", harness: "claude", label: "Opus 5.5", model: "claude-opus-5-5", billing: "subscription", connectionId: "claude-cli" },
-	{ id: "claude-sonnet", harness: "claude", label: "Sonnet 5.5", model: "claude-sonnet-5-5", billing: "subscription", connectionId: "claude-cli" },
-	{ id: "codex-gpt", harness: "codex", label: "GPT-5.5 Codex", model: "gpt-5.5-codex", billing: "subscription", connectionId: "codex-cli" },
+	{ id: "claude-opus", harness: "claude", label: "Opus 5.5", model: "claude-opus-5-5", billing: "subscription", connectionId: "claude-cli", efforts: ["low", "medium", "high", "xhigh", "max"], defaultEffort: "high" },
+	{ id: "claude-sonnet", harness: "claude", label: "Sonnet 5.5", model: "claude-sonnet-5-5", billing: "subscription", connectionId: "claude-cli", efforts: ["low", "medium", "high"], defaultEffort: "medium" },
+	{ id: "codex-gpt", harness: "codex", label: "GPT-5.5 Codex", model: "gpt-5.5-codex", billing: "subscription", connectionId: "codex-cli", efforts: ["low", "medium", "high", "xhigh"], defaultEffort: "medium" },
 	{ id: "hub-sonnet", harness: "claude", label: "Sonnet 5.5", model: "claude-sonnet-5-5", billing: "hub", connectionId: "hub" },
 	{ id: "phaseo-auto", harness: "phaseo", label: "Phaseo Auto", model: "phaseo/auto", billing: "api", connectionId: "phaseo" },
 ];

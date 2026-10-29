@@ -130,6 +130,7 @@ function registerIpc() {
 	ipcMain.handle("factory:start-run", (_event, input: StartRunInput) => store.startRun(input));
 	ipcMain.handle("factory:cancel-run", (_event, runId: string) => store.cancelRun(runId));
 	ipcMain.handle("factory:assign", (_event, itemId: string, agentId: string | null) => store.assign(itemId, agentId));
+	ipcMain.handle("factory:set-effort", (_event, itemId: string, effort: string | null) => store.setEffort(itemId, effort));
 	ipcMain.handle("factory:send-message", (_event, itemId: string, text: string) => store.sendMessage(itemId, text));
 	ipcMain.handle("factory:create-issue", (_event, input: NewIssueInput) => store.createIssue(input));
 	ipcMain.handle("factory:add-repo", (_event, repo: string, checkout: string) => store.addRepo(repo, checkout));
