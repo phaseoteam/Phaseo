@@ -13,7 +13,7 @@ export type SimByokKey = {
 	sortOrder?: number;
 };
 
-/** One provider route offered to the request, built from the catalogue fixtures. */
+/** One provider route offered to the request, built from the catalogue rows. */
 export type SimRoute = {
 	providerId: string;
 	apiModelId: string;

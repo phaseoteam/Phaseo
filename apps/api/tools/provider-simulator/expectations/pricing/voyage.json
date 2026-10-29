@@ -1,290 +1,411 @@
 {
 	"provider": "voyage",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
-			"key": "voyage:voyage/voyage-01:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-01/text.embed/pricing.json",
+			"key": "voyage:voyage/rerank-1:text.rerank",
+			"routes": ["voyage:voyage/rerank-1"],
+			"skus": ["offer-de7525d987281b19155d@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-de7525d987281b19155d@v1#input_text_tokens","standard","input_text_tokens","0.05/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":50000,"lines":[["input_text_tokens",1000,"offer-de7525d987281b19155d@v1#input_text_tokens","input_text_tokens",50000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-de7525d987281b19155d@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":617350,"lines":[["input_text_tokens",12347,"offer-de7525d987281b19155d@v1#input_text_tokens","input_text_tokens",617350]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-2-lite:text.rerank",
+			"routes": ["voyage:voyage/rerank-2-lite"],
+			"skus": ["offer-8ef4f7dc1b9bceb73173@v1"],
+			"rules": [
+				["offer-8ef4f7dc1b9bceb73173@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-8ef4f7dc1b9bceb73173@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8ef4f7dc1b9bceb73173@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-8ef4f7dc1b9bceb73173@v1#input_text_tokens","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-2:text.rerank",
+			"routes": ["voyage:voyage/rerank-2"],
+			"skus": ["offer-d9a76d3b3232f8600e6d@v1"],
+			"rules": [
+				["offer-d9a76d3b3232f8600e6d@v1#input_text_tokens","standard","input_text_tokens","0.05/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":50000,"lines":[["input_text_tokens",1000,"offer-d9a76d3b3232f8600e6d@v1#input_text_tokens","input_text_tokens",50000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-d9a76d3b3232f8600e6d@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":617350,"lines":[["input_text_tokens",12347,"offer-d9a76d3b3232f8600e6d@v1#input_text_tokens","input_text_tokens",617350]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-2.5-lite:text.rerank",
+			"routes": ["voyage:voyage/rerank-2.5-lite"],
+			"skus": ["offer-770b6725ed631c4dd95a@v1"],
+			"rules": [
+				["offer-770b6725ed631c4dd95a@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-770b6725ed631c4dd95a@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-770b6725ed631c4dd95a@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-770b6725ed631c4dd95a@v1#input_text_tokens","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-2.5:text.rerank",
+			"routes": ["voyage:voyage/rerank-2.5"],
+			"skus": ["offer-a2faccfaf0cb9af0f3df@v1"],
+			"rules": [
+				["offer-a2faccfaf0cb9af0f3df@v1#input_text_tokens","standard","input_text_tokens","0.05/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":50000,"lines":[["input_text_tokens",1000,"offer-a2faccfaf0cb9af0f3df@v1#input_text_tokens","input_text_tokens",50000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a2faccfaf0cb9af0f3df@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":617350,"lines":[["input_text_tokens",12347,"offer-a2faccfaf0cb9af0f3df@v1#input_text_tokens","input_text_tokens",617350]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-3-lite:text.rerank",
+			"routes": ["voyage:voyage/rerank-3-lite"],
+			"skus": ["official-20261001@v1"],
+			"rules": [
+				["official-20261001@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",10,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"official-20261001@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20261001@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"official-20261001@v1#input_text_tokens","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-3:text.rerank",
+			"routes": ["voyage:voyage/rerank-3"],
+			"skus": ["official-20261001@v1"],
+			"rules": [
+				["official-20261001@v1#input_text_tokens","standard","input_text_tokens","0.05/1000000 token",10,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":50000,"lines":[["input_text_tokens",1000,"official-20261001@v1#input_text_tokens","input_text_tokens",50000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20261001@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":617350,"lines":[["input_text_tokens",12347,"official-20261001@v1#input_text_tokens","input_text_tokens",617350]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/rerank-lite-1:text.rerank",
+			"routes": ["voyage:voyage/rerank-lite-1"],
+			"skus": ["offer-0e503ae03ba5ee0b0551@v1"],
+			"rules": [
+				["offer-0e503ae03ba5ee0b0551@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-0e503ae03ba5ee0b0551@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-0e503ae03ba5ee0b0551@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-0e503ae03ba5ee0b0551@v1#input_text_tokens","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "voyage:voyage/voyage-01:text.embed",
+			"routes": ["voyage:voyage/voyage-01"],
+			"skus": ["offer-7422a5675df172adcd4e@v1"],
+			"rules": [
+				["offer-7422a5675df172adcd4e@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-7422a5675df172adcd4e@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-7422a5675df172adcd4e@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-7422a5675df172adcd4e@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-02:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-02/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-02"],
+			"skus": ["offer-4e937e1f1cf2776e7c80@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-4e937e1f1cf2776e7c80@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-4e937e1f1cf2776e7c80@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-4e937e1f1cf2776e7c80@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-4e937e1f1cf2776e7c80@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-2"],
+			"skus": ["offer-affa107877ee3eb878a9@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-affa107877ee3eb878a9@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-affa107877ee3eb878a9@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-affa107877ee3eb878a9@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-affa107877ee3eb878a9@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-3-large:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-3-large/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-3-large"],
+			"skus": ["offer-a52243f4e028ac8302fa@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
+				["offer-a52243f4e028ac8302fa@v1#input_text_tokens","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",180000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2222460]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"offer-a52243f4e028ac8302fa@v1#input_text_tokens","input_text_tokens",180000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a52243f4e028ac8302fa@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"offer-a52243f4e028ac8302fa@v1#input_text_tokens","input_text_tokens",2222460]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-3-lite:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-3-lite/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-3-lite"],
+			"skus": ["offer-c6cb455fab9006b018d0@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+				["offer-c6cb455fab9006b018d0@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",20000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-c6cb455fab9006b018d0@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-c6cb455fab9006b018d0@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-c6cb455fab9006b018d0@v1#input_text_tokens","input_text_tokens",246940]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-3:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-3/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-3"],
+			"skus": ["offer-59eca214f2d0bd6da46e@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
+				["offer-59eca214f2d0bd6da46e@v1#input_text_tokens","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",60000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"offer-59eca214f2d0bd6da46e@v1#input_text_tokens","input_text_tokens",60000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-59eca214f2d0bd6da46e@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"offer-59eca214f2d0bd6da46e@v1#input_text_tokens","input_text_tokens",740820]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-3.5-lite:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-3.5-lite/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-3.5-lite"],
+			"skus": ["offer-26272d75670a8247ec69@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+				["offer-26272d75670a8247ec69@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",20000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-26272d75670a8247ec69@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-26272d75670a8247ec69@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-26272d75670a8247ec69@v1#input_text_tokens","input_text_tokens",246940]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-3.5:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-3.5/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-3.5"],
+			"skus": ["offer-b124ef0967d0031b8cdd@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
+				["offer-b124ef0967d0031b8cdd@v1#input_text_tokens","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",60000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"offer-b124ef0967d0031b8cdd@v1#input_text_tokens","input_text_tokens",60000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-b124ef0967d0031b8cdd@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"offer-b124ef0967d0031b8cdd@v1#input_text_tokens","input_text_tokens",740820]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-4-large:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-4-large/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-4-large"],
+			"skus": ["offer-d1f92b0b95786e3011c8@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-d1f92b0b95786e3011c8@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-d1f92b0b95786e3011c8@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-d1f92b0b95786e3011c8@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-d1f92b0b95786e3011c8@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-4-lite:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-4-lite/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-4-lite"],
+			"skus": ["offer-49310880d7da39ed6749@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+				["offer-49310880d7da39ed6749@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",20000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-49310880d7da39ed6749@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-49310880d7da39ed6749@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-49310880d7da39ed6749@v1#input_text_tokens","input_text_tokens",246940]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-4:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-4/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-4"],
+			"skus": ["offer-8f9d44d1c90232945969@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
+				["offer-8f9d44d1c90232945969@v1#input_text_tokens","standard","input_text_tokens","0.06/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",60000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":60000,"lines":[["input_text_tokens",1000,"offer-8f9d44d1c90232945969@v1#input_text_tokens","input_text_tokens",60000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8f9d44d1c90232945969@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":740820,"lines":[["input_text_tokens",12347,"offer-8f9d44d1c90232945969@v1#input_text_tokens","input_text_tokens",740820]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-code-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-code-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-code-2"],
+			"skus": ["offer-e6e2a21e15bb5d0ec7cc@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-e6e2a21e15bb5d0ec7cc@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-e6e2a21e15bb5d0ec7cc@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-e6e2a21e15bb5d0ec7cc@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-e6e2a21e15bb5d0ec7cc@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-code-3:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-code-3/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-code-3"],
+			"skus": ["offer-b071a425529f6a14cc4b@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
+				["offer-b071a425529f6a14cc4b@v1#input_text_tokens","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",180000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2222460]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"offer-b071a425529f6a14cc4b@v1#input_text_tokens","input_text_tokens",180000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-b071a425529f6a14cc4b@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"offer-b071a425529f6a14cc4b@v1#input_text_tokens","input_text_tokens",2222460]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-code-4:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-code-4/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-code-4"],
+			"skus": ["offer-18a8c9da41582287c423@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-18a8c9da41582287c423@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-18a8c9da41582287c423@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-18a8c9da41582287c423@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-18a8c9da41582287c423@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-context-3:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-context-3/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-context-3"],
+			"skus": ["offer-8fd19a1355e1e0691fc4@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
+				["offer-8fd19a1355e1e0691fc4@v1#input_text_tokens","standard","input_text_tokens","0.18/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",180000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2222460]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":180000,"lines":[["input_text_tokens",1000,"offer-8fd19a1355e1e0691fc4@v1#input_text_tokens","input_text_tokens",180000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8fd19a1355e1e0691fc4@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2222460,"lines":[["input_text_tokens",12347,"offer-8fd19a1355e1e0691fc4@v1#input_text_tokens","input_text_tokens",2222460]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-finance-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-finance-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-finance-2"],
+			"skus": ["offer-03b6f741caca50859277@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-03b6f741caca50859277@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-03b6f741caca50859277@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-03b6f741caca50859277@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-03b6f741caca50859277@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-large-2-instruct:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-large-2-instruct/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-large-2-instruct"],
+			"skus": ["offer-a09512cb2b08e47d0541@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-a09512cb2b08e47d0541@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-a09512cb2b08e47d0541@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a09512cb2b08e47d0541@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-a09512cb2b08e47d0541@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-large-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-large-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-large-2"],
+			"skus": ["offer-d9ada8153d77814aa6a2@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-d9ada8153d77814aa6a2@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-d9ada8153d77814aa6a2@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-d9ada8153d77814aa6a2@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-d9ada8153d77814aa6a2@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-law-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-law-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-law-2"],
+			"skus": ["offer-2a363c38ad6b6ea70f4c@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-2a363c38ad6b6ea70f4c@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-2a363c38ad6b6ea70f4c@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-2a363c38ad6b6ea70f4c@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-2a363c38ad6b6ea70f4c@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-lite-01-instruct:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-lite-01-instruct/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-lite-01-instruct"],
+			"skus": ["offer-6b8741b045919fd642ea@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-6b8741b045919fd642ea@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-6b8741b045919fd642ea@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-6b8741b045919fd642ea@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-6b8741b045919fd642ea@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-lite-01:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-lite-01/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-lite-01"],
+			"skus": ["offer-e0ac668468b27e7e62ca@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-e0ac668468b27e7e62ca@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-e0ac668468b27e7e62ca@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-e0ac668468b27e7e62ca@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-e0ac668468b27e7e62ca@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-lite-02-instruct:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-lite-02-instruct/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-lite-02-instruct"],
+			"skus": ["offer-ee7f158c430557db9fe7@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-ee7f158c430557db9fe7@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-ee7f158c430557db9fe7@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-ee7f158c430557db9fe7@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-ee7f158c430557db9fe7@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-multilingual-2:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-multilingual-2/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-multilingual-2"],
+			"skus": ["offer-7b39c16b7a3ecd577989@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
+				["offer-7b39c16b7a3ecd577989@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",120000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":120000,"lines":[["input_text_tokens",1000,"offer-7b39c16b7a3ecd577989@v1#input_text_tokens","input_text_tokens",120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-7b39c16b7a3ecd577989@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-7b39c16b7a3ecd577989@v1#input_text_tokens","input_text_tokens",1481640]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-multimodal-3:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-multimodal-3/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-multimodal-3"],
+			"skus": ["offer-47f78ad89eb2f114230f@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null],
-				["#1","standard","image_pixels","0.6/1000000000 pixel",100,null,null,null],
-				["#2","standard","video_pixels","0.6/1000000000 pixel",100,null,null,null]
+				["offer-47f78ad89eb2f114230f@v1#image_pixels","standard","image_pixels","0.6/1000000000 pixel",100,null,null,null],
+				["offer-47f78ad89eb2f114230f@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null],
+				["offer-47f78ad89eb2f114230f@v1#video_pixels","standard","video_pixels","0.6/1000000000 pixel",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"image_pixels":1048576,"video_pixels":1048576,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":1378292,"lines":[["image_pixels",1048576,"#1","image_pixels",629146],["input_text_tokens",1000,"#0","input_text_tokens",120000],["video_pixels",1048576,"#2","video_pixels",629146]]}},
-				{"id":"rule.standard.image_pixels","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"image_pixels":1048576,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2110786,"lines":[["image_pixels",1048576,"#1","image_pixels",629146],["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}},
-				{"id":"rule.standard.video_pixels","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"video_pixels":2073600,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2725800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640],["video_pixels",2073600,"#2","video_pixels",1244160]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"image_pixels":1048576,"input_text_tokens":1000,"video_pixels":1048576,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":1378292,"lines":[["image_pixels",1048576,"offer-47f78ad89eb2f114230f@v1#image_pixels","image_pixels",629146],["input_text_tokens",1000,"offer-47f78ad89eb2f114230f@v1#input_text_tokens","input_text_tokens",120000],["video_pixels",1048576,"offer-47f78ad89eb2f114230f@v1#video_pixels","video_pixels",629146]]}},
+				{"id":"rule.standard.image_pixels","kind":"rule","targets":["offer-47f78ad89eb2f114230f@v1#image_pixels"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"image_pixels":1048576,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2110786,"lines":[["image_pixels",1048576,"offer-47f78ad89eb2f114230f@v1#image_pixels","image_pixels",629146],["input_text_tokens",12347,"offer-47f78ad89eb2f114230f@v1#input_text_tokens","input_text_tokens",1481640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-47f78ad89eb2f114230f@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-47f78ad89eb2f114230f@v1#input_text_tokens","input_text_tokens",1481640]]}},
+				{"id":"rule.standard.video_pixels","kind":"rule","targets":["offer-47f78ad89eb2f114230f@v1#video_pixels"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"video_pixels":2073600,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2725800,"lines":[["input_text_tokens",12347,"offer-47f78ad89eb2f114230f@v1#input_text_tokens","input_text_tokens",1481640],["video_pixels",2073600,"offer-47f78ad89eb2f114230f@v1#video_pixels","video_pixels",1244160]]}}
 			]
 		},
 		{
 			"key": "voyage:voyage/voyage-multimodal-3.5:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/voyage/voyage-voyage-multimodal-3.5/text.embed/pricing.json",
+			"routes": ["voyage:voyage/voyage-multimodal-3.5"],
+			"skus": ["offer-81eacb6b3477324b3e02@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.12/1000000 token",100,null,null,null],
-				["#1","standard","image_pixels","0.6/1000000000 pixel",100,null,null,null],
-				["#2","standard","video_pixels","0.6/1000000000 pixel",100,null,null,null]
+				["offer-81eacb6b3477324b3e02@v1#image_pixels","standard","image_pixels","0.6/1000000000 pixel",100,null,null,null],
+				["offer-81eacb6b3477324b3e02@v1#input_text_tokens","standard","input_text_tokens","0.12/1000000 token",100,null,null,null],
+				["offer-81eacb6b3477324b3e02@v1#video_pixels","standard","video_pixels","0.6/1000000000 pixel",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"image_pixels":1048576,"video_pixels":1048576,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":1378292,"lines":[["image_pixels",1048576,"#1","image_pixels",629146],["input_text_tokens",1000,"#0","input_text_tokens",120000],["video_pixels",1048576,"#2","video_pixels",629146]]}},
-				{"id":"rule.standard.image_pixels","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"image_pixels":1048576,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2110786,"lines":[["image_pixels",1048576,"#1","image_pixels",629146],["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640]]}},
-				{"id":"rule.standard.video_pixels","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"video_pixels":2073600,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2725800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1481640],["video_pixels",2073600,"#2","video_pixels",1244160]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"image_pixels":1048576,"input_text_tokens":1000,"video_pixels":1048576,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":1378292,"lines":[["image_pixels",1048576,"offer-81eacb6b3477324b3e02@v1#image_pixels","image_pixels",629146],["input_text_tokens",1000,"offer-81eacb6b3477324b3e02@v1#input_text_tokens","input_text_tokens",120000],["video_pixels",1048576,"offer-81eacb6b3477324b3e02@v1#video_pixels","video_pixels",629146]]}},
+				{"id":"rule.standard.image_pixels","kind":"rule","targets":["offer-81eacb6b3477324b3e02@v1#image_pixels"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"image_pixels":1048576,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2110786,"lines":[["image_pixels",1048576,"offer-81eacb6b3477324b3e02@v1#image_pixels","image_pixels",629146],["input_text_tokens",12347,"offer-81eacb6b3477324b3e02@v1#input_text_tokens","input_text_tokens",1481640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-81eacb6b3477324b3e02@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1481640,"lines":[["input_text_tokens",12347,"offer-81eacb6b3477324b3e02@v1#input_text_tokens","input_text_tokens",1481640]]}},
+				{"id":"rule.standard.video_pixels","kind":"rule","targets":["offer-81eacb6b3477324b3e02@v1#video_pixels"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"video_pixels":2073600,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2725800,"lines":[["input_text_tokens",12347,"offer-81eacb6b3477324b3e02@v1#input_text_tokens","input_text_tokens",1481640],["video_pixels",2073600,"offer-81eacb6b3477324b3e02@v1#video_pixels","video_pixels",1244160]]}}
 			]
 		}
 	]

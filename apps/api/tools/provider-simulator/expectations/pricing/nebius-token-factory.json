@@ -1,395 +1,312 @@
 {
 	"provider": "nebius-token-factory",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "nebius-token-factory:deepseek/deepseek-v4-flash-0731:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:deepseek/deepseek-v4-flash-0731"],
+			"skus": ["offer-7ca8daf2c31bc14b69bf@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+				["offer-7ca8daf2c31bc14b69bf@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.01/1000000 token",100,null,null,null],
+				["offer-7ca8daf2c31bc14b69bf@v2#input_text_tokens","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["offer-7ca8daf2c31bc14b69bf@v2#output_text_tokens","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":489440,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",125440]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":489440,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",143360,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_text_tokens",448,"#1","output_text_tokens",125440]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",967960]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:deepseek/deepseek-v4-flash:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/deepseek-deepseek-v4-flash/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":489440,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_text_tokens",448,"#1","output_text_tokens",125440]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":489440,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",143360,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_text_tokens",448,"#1","output_text_tokens",125440]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#1","output_text_tokens",967960]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":356320,"lines":[["cached_read_text_tokens",1024,"offer-7ca8daf2c31bc14b69bf@v2#cached_read_text_tokens","cached_read_text_tokens",10240],["input_text_tokens",1576,"offer-7ca8daf2c31bc14b69bf@v2#input_text_tokens","input_text_tokens",220640],["output_text_tokens",448,"offer-7ca8daf2c31bc14b69bf@v2#output_text_tokens","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-7ca8daf2c31bc14b69bf@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2742210,"lines":[["cached_read_text_tokens",4567,"offer-7ca8daf2c31bc14b69bf@v2#cached_read_text_tokens","cached_read_text_tokens",45670],["input_text_tokens",12347,"offer-7ca8daf2c31bc14b69bf@v2#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-7ca8daf2c31bc14b69bf@v2#output_text_tokens","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-7ca8daf2c31bc14b69bf@v2#input_text_tokens","offer-7ca8daf2c31bc14b69bf@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"offer-7ca8daf2c31bc14b69bf@v2#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-7ca8daf2c31bc14b69bf@v2#output_text_tokens","output_text_tokens",967960]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:deepseek/deepseek-v4-pro:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:deepseek/deepseek-v4-pro"],
+			"skus": ["offer-fd67e43e82adcb4ce75f@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","1.75/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+				["offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","standard","input_text_tokens","1.75/1000000 token",100,null,null,null],
+				["offer-fd67e43e82adcb4ce75f@v1#output_text_tokens","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":6118000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",4550000],["output_text_tokens",448,"#1","output_text_tokens",1568000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":6118000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1792000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",2758000],["output_text_tokens",448,"#1","output_text_tokens",1568000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":33706750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",21607250],["output_text_tokens",3457,"#1","output_text_tokens",12099500]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:google/gemma-3-27b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/google-gemma-3-27b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":394400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",102400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#1","output_text_tokens",134400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:meta/llama-3.3-70b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/meta-llama-3.3-70b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":517200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",338000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":517200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",133120,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",204880],["output_text_tokens",448,"#1","output_text_tokens",179200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2987910,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1605110],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:minimax/minimax-m2.5:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/minimax-minimax-m2.5/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1317600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",537600]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1317600,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",307200,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#1","output_text_tokens",537600]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",4148400]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":6118000,"lines":[["input_text_tokens",2600,"offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","input_text_tokens",4550000],["output_text_tokens",448,"offer-fd67e43e82adcb4ce75f@v1#output_text_tokens","output_text_tokens",1568000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":6118000,"lines":[["cached_read_text_tokens",1024,"offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","input_text_tokens",1792000,"cache read at the input price"],["input_text_tokens",1576,"offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","input_text_tokens",2758000],["output_text_tokens",448,"offer-fd67e43e82adcb4ce75f@v1#output_text_tokens","output_text_tokens",1568000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","offer-fd67e43e82adcb4ce75f@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":33706750,"lines":[["input_text_tokens",12347,"offer-fd67e43e82adcb4ce75f@v1#input_text_tokens","input_text_tokens",21607250],["output_text_tokens",3457,"offer-fd67e43e82adcb4ce75f@v1#output_text_tokens","output_text_tokens",12099500]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:minimax/minimax-m3:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/minimax-minimax-m3/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:minimax/minimax-m3"],
+			"skus": ["offer-c86dd30a23a2aa7d90a0@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+				["offer-c86dd30a23a2aa7d90a0@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-c86dd30a23a2aa7d90a0@v2#input_text_tokens","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["offer-c86dd30a23a2aa7d90a0@v2#output_text_tokens","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1317600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",537600]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1317600,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",307200,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#1","output_text_tokens",537600]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",4148400]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1071840,"lines":[["cached_read_text_tokens",1024,"offer-c86dd30a23a2aa7d90a0@v2#cached_read_text_tokens","cached_read_text_tokens",61440],["input_text_tokens",1576,"offer-c86dd30a23a2aa7d90a0@v2#input_text_tokens","input_text_tokens",472800],["output_text_tokens",448,"offer-c86dd30a23a2aa7d90a0@v2#output_text_tokens","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-c86dd30a23a2aa7d90a0@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8126520,"lines":[["cached_read_text_tokens",4567,"offer-c86dd30a23a2aa7d90a0@v2#cached_read_text_tokens","cached_read_text_tokens",274020],["input_text_tokens",12347,"offer-c86dd30a23a2aa7d90a0@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-c86dd30a23a2aa7d90a0@v2#output_text_tokens","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-c86dd30a23a2aa7d90a0@v2#input_text_tokens","offer-c86dd30a23a2aa7d90a0@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"offer-c86dd30a23a2aa7d90a0@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-c86dd30a23a2aa7d90a0@v2#output_text_tokens","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "nebius-token-factory:minimax/minimax-m3.1-flash:text.generate",
+			"routes": ["nebius-token-factory:minimax/minimax-m3.1-flash"],
+			"skus": ["m3.1-flash-standard-20261023@v1"],
+			"rules": [
+				["m3.1-flash-standard-20261023@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
+				["m3.1-flash-standard-20261023@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["m3.1-flash-standard-20261023@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":635760,"lines":[["cached_read_text_tokens",1024,"m3.1-flash-standard-20261023@v1#cached_read_text_tokens","cached_read_text_tokens",15360],["input_text_tokens",1576,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",236400],["output_reasoning_tokens",192,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",115200,"reasoning at the output price"],["output_text_tokens",448,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["m3.1-flash-standard-20261023@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4468155,"lines":[["cached_read_text_tokens",4567,"m3.1-flash-standard-20261023@v1#cached_read_text_tokens","cached_read_text_tokens",68505],["input_text_tokens",12347,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",1852050],["output_reasoning_tokens",789,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["m3.1-flash-standard-20261023@v1#input_text_tokens","m3.1-flash-standard-20261023@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4399650,"lines":[["input_text_tokens",12347,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",1852050],["output_reasoning_tokens",789,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",2074200]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:moonshotai/kimi-k2.6:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:moonshotai/kimi-k2.6"],
+			"skus": ["offer-0f68ce1c02f3e176c3dc@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+				["offer-0f68ce1c02f3e176c3dc@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.16/1000000 token",100,null,null,null],
+				["offer-0f68ce1c02f3e176c3dc@v2#input_text_tokens","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["offer-0f68ce1c02f3e176c3dc@v2#output_text_tokens","standard","output_text_tokens","4/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":4262000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2470000],["output_text_tokens",448,"#1","output_text_tokens",1792000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4262000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",972800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1497200],["output_text_tokens",448,"#1","output_text_tokens",1792000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#1","output_text_tokens",13828000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3453040,"lines":[["cached_read_text_tokens",1024,"offer-0f68ce1c02f3e176c3dc@v2#cached_read_text_tokens","cached_read_text_tokens",163840],["input_text_tokens",1576,"offer-0f68ce1c02f3e176c3dc@v2#input_text_tokens","input_text_tokens",1497200],["output_text_tokens",448,"offer-0f68ce1c02f3e176c3dc@v2#output_text_tokens","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-0f68ce1c02f3e176c3dc@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":26288370,"lines":[["cached_read_text_tokens",4567,"offer-0f68ce1c02f3e176c3dc@v2#cached_read_text_tokens","cached_read_text_tokens",730720],["input_text_tokens",12347,"offer-0f68ce1c02f3e176c3dc@v2#input_text_tokens","input_text_tokens",11729650],["output_text_tokens",3457,"offer-0f68ce1c02f3e176c3dc@v2#output_text_tokens","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-0f68ce1c02f3e176c3dc@v2#input_text_tokens","offer-0f68ce1c02f3e176c3dc@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"offer-0f68ce1c02f3e176c3dc@v2#input_text_tokens","input_text_tokens",11729650],["output_text_tokens",3457,"offer-0f68ce1c02f3e176c3dc@v2#output_text_tokens","output_text_tokens",13828000]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:moonshotai/kimi-k2.7-code:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:moonshotai/kimi-k2.7-code"],
+			"skus": ["offer-5faeddccb35061ed9181@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+				["offer-5faeddccb35061ed9181@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-5faeddccb35061ed9181@v2#input_text_tokens","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["offer-5faeddccb35061ed9181@v2#output_text_tokens","standard","output_text_tokens","4/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":4262000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2470000],["output_text_tokens",448,"#1","output_text_tokens",1792000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4262000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",972800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1497200],["output_text_tokens",448,"#1","output_text_tokens",1792000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#1","output_text_tokens",13828000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3442800,"lines":[["cached_read_text_tokens",1024,"offer-5faeddccb35061ed9181@v2#cached_read_text_tokens","cached_read_text_tokens",153600],["input_text_tokens",1576,"offer-5faeddccb35061ed9181@v2#input_text_tokens","input_text_tokens",1497200],["output_text_tokens",448,"offer-5faeddccb35061ed9181@v2#output_text_tokens","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-5faeddccb35061ed9181@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":26242700,"lines":[["cached_read_text_tokens",4567,"offer-5faeddccb35061ed9181@v2#cached_read_text_tokens","cached_read_text_tokens",685050],["input_text_tokens",12347,"offer-5faeddccb35061ed9181@v2#input_text_tokens","input_text_tokens",11729650],["output_text_tokens",3457,"offer-5faeddccb35061ed9181@v2#output_text_tokens","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-5faeddccb35061ed9181@v2#input_text_tokens","offer-5faeddccb35061ed9181@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"offer-5faeddccb35061ed9181@v2#input_text_tokens","input_text_tokens",11729650],["output_text_tokens",3457,"offer-5faeddccb35061ed9181@v2#output_text_tokens","output_text_tokens",13828000]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:moonshotai/kimi-k3:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/moonshotai-kimi-k3/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:moonshotai/kimi-k3"],
+			"skus": ["offer-cf4075c5fca7bd26e358@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","3/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+				["offer-cf4075c5fca7bd26e358@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["offer-cf4075c5fca7bd26e358@v2#input_text_tokens","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["offer-cf4075c5fca7bd26e358@v2#output_text_tokens","standard","output_text_tokens","15/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":14520000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",7800000],["output_text_tokens",448,"#1","output_text_tokens",6720000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":14520000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",3072000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",4728000],["output_text_tokens",448,"#1","output_text_tokens",6720000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#1","output_text_tokens",51855000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11755200,"lines":[["cached_read_text_tokens",1024,"offer-cf4075c5fca7bd26e358@v2#cached_read_text_tokens","cached_read_text_tokens",307200],["input_text_tokens",1576,"offer-cf4075c5fca7bd26e358@v2#input_text_tokens","input_text_tokens",4728000],["output_text_tokens",448,"offer-cf4075c5fca7bd26e358@v2#output_text_tokens","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-cf4075c5fca7bd26e358@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":90266100,"lines":[["cached_read_text_tokens",4567,"offer-cf4075c5fca7bd26e358@v2#cached_read_text_tokens","cached_read_text_tokens",1370100],["input_text_tokens",12347,"offer-cf4075c5fca7bd26e358@v2#input_text_tokens","input_text_tokens",37041000],["output_text_tokens",3457,"offer-cf4075c5fca7bd26e358@v2#output_text_tokens","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-cf4075c5fca7bd26e358@v2#input_text_tokens","offer-cf4075c5fca7bd26e358@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"offer-cf4075c5fca7bd26e358@v2#input_text_tokens","input_text_tokens",37041000],["output_text_tokens",3457,"offer-cf4075c5fca7bd26e358@v2#output_text_tokens","output_text_tokens",51855000]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:nousresearch/hermes-4-405b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nousresearch-hermes-4-405b/text.generate/pricing.json",
+			"key": "nebius-token-factory:nous/hermes-4-405b:text.generate",
+			"routes": ["nebius-token-factory:nousresearch/hermes-4-405b"],
+			"skus": ["offer-9c80da9f5c2628b447f0@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+				["offer-9c80da9f5c2628b447f0@v1#input_text_tokens","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["offer-9c80da9f5c2628b447f0@v1#output_text_tokens","standard","output_text_tokens","3/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3944000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2600000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3944000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1024000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#1","output_text_tokens",10371000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3944000,"lines":[["input_text_tokens",2600,"offer-9c80da9f5c2628b447f0@v1#input_text_tokens","input_text_tokens",2600000],["output_text_tokens",448,"offer-9c80da9f5c2628b447f0@v1#output_text_tokens","output_text_tokens",1344000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3944000,"lines":[["cached_read_text_tokens",1024,"offer-9c80da9f5c2628b447f0@v1#input_text_tokens","input_text_tokens",1024000,"cache read at the input price"],["input_text_tokens",1576,"offer-9c80da9f5c2628b447f0@v1#input_text_tokens","input_text_tokens",1576000],["output_text_tokens",448,"offer-9c80da9f5c2628b447f0@v1#output_text_tokens","output_text_tokens",1344000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-9c80da9f5c2628b447f0@v1#input_text_tokens","offer-9c80da9f5c2628b447f0@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"offer-9c80da9f5c2628b447f0@v1#input_text_tokens","input_text_tokens",12347000],["output_text_tokens",3457,"offer-9c80da9f5c2628b447f0@v1#output_text_tokens","output_text_tokens",10371000]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:nousresearch/hermes-4-70b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nousresearch-hermes-4-70b/text.generate/pricing.json",
+			"key": "nebius-token-factory:nvidia/nemotron-3-nano-30b-a3b:text.generate",
+			"routes": ["nebius-token-factory:nvidia/nvidia-nemotron-3-nano-30b-a3b"],
+			"skus": ["offer-1eba65458747d7a24d7d@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+				["offer-1eba65458747d7a24d7d@v1#input_text_tokens","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-1eba65458747d7a24d7d@v1#output_text_tokens","standard","output_text_tokens","0.24/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":517200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",338000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":517200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",133120,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",204880],["output_text_tokens",448,"#1","output_text_tokens",179200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2987910,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1605110],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:nvidia/cosmos3-super-reasoner:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-cosmos3-super-reasoner/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":394400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",102400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#1","output_text_tokens",134400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:nvidia/llama-3.1-nemotron-ultra-253b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-llama-3.1-nemotron-ultra-253b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","1.8/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2366400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1560000],["output_text_tokens",448,"#1","output_text_tokens",806400]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2366400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",614400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",945600],["output_text_tokens",448,"#1","output_text_tokens",806400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13630800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#1","output_text_tokens",6222600]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:nvidia/nemotron-3-nano-omni:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nemotron-3-nano-omni/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.24/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":263520,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",156000],["output_text_tokens",448,"#1","output_text_tokens",107520]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":263520,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",61440,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",94560],["output_text_tokens",448,"#1","output_text_tokens",107520]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1570500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820],["output_text_tokens",3457,"#1","output_text_tokens",829680]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":263520,"lines":[["input_text_tokens",2600,"offer-1eba65458747d7a24d7d@v1#input_text_tokens","input_text_tokens",156000],["output_text_tokens",448,"offer-1eba65458747d7a24d7d@v1#output_text_tokens","output_text_tokens",107520]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":263520,"lines":[["cached_read_text_tokens",1024,"offer-1eba65458747d7a24d7d@v1#input_text_tokens","input_text_tokens",61440,"cache read at the input price"],["input_text_tokens",1576,"offer-1eba65458747d7a24d7d@v1#input_text_tokens","input_text_tokens",94560],["output_text_tokens",448,"offer-1eba65458747d7a24d7d@v1#output_text_tokens","output_text_tokens",107520]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1eba65458747d7a24d7d@v1#input_text_tokens","offer-1eba65458747d7a24d7d@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1570500,"lines":[["input_text_tokens",12347,"offer-1eba65458747d7a24d7d@v1#input_text_tokens","input_text_tokens",740820],["output_text_tokens",3457,"offer-1eba65458747d7a24d7d@v1#output_text_tokens","output_text_tokens",829680]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:nvidia/nemotron-3-super-120b-a12b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nemotron-3-super-120b-a12b/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:nvidia/nemotron-3-super-120b-a12b"],
+			"skus": ["offer-1470471a4ec0040a378b@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
+				["offer-1470471a4ec0040a378b@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-1470471a4ec0040a378b@v2#input_text_tokens","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["offer-1470471a4ec0040a378b@v2#output_text_tokens","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1183200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",403200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1183200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",307200,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#1","output_text_tokens",403200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6815400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",3111300]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":937440,"lines":[["cached_read_text_tokens",1024,"offer-1470471a4ec0040a378b@v2#cached_read_text_tokens","cached_read_text_tokens",61440],["input_text_tokens",1576,"offer-1470471a4ec0040a378b@v2#input_text_tokens","input_text_tokens",472800],["output_text_tokens",448,"offer-1470471a4ec0040a378b@v2#output_text_tokens","output_text_tokens",403200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-1470471a4ec0040a378b@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7089420,"lines":[["cached_read_text_tokens",4567,"offer-1470471a4ec0040a378b@v2#cached_read_text_tokens","cached_read_text_tokens",274020],["input_text_tokens",12347,"offer-1470471a4ec0040a378b@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-1470471a4ec0040a378b@v2#output_text_tokens","output_text_tokens",3111300]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1470471a4ec0040a378b@v2#input_text_tokens","offer-1470471a4ec0040a378b@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6815400,"lines":[["input_text_tokens",12347,"offer-1470471a4ec0040a378b@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-1470471a4ec0040a378b@v2#output_text_tokens","output_text_tokens",3111300]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:nvidia/nemotron-3-ultra-550b-a55b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nemotron-3-ultra-550b-a55b/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:nvidia/nemotron-3-ultra-550b-a55b"],
+			"skus": ["offer-9b313abb70bea3780bbf@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+				["offer-9b313abb70bea3780bbf@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.12/1000000 token",100,null,null,null],
+				["offer-9b313abb70bea3780bbf@v2#input_text_tokens","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["offer-9b313abb70bea3780bbf@v2#output_text_tokens","standard","output_text_tokens","3/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3944000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2600000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3944000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1024000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#1","output_text_tokens",10371000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3042880,"lines":[["cached_read_text_tokens",1024,"offer-9b313abb70bea3780bbf@v2#cached_read_text_tokens","cached_read_text_tokens",122880],["input_text_tokens",1576,"offer-9b313abb70bea3780bbf@v2#input_text_tokens","input_text_tokens",1576000],["output_text_tokens",448,"offer-9b313abb70bea3780bbf@v2#output_text_tokens","output_text_tokens",1344000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-9b313abb70bea3780bbf@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":23266040,"lines":[["cached_read_text_tokens",4567,"offer-9b313abb70bea3780bbf@v2#cached_read_text_tokens","cached_read_text_tokens",548040],["input_text_tokens",12347,"offer-9b313abb70bea3780bbf@v2#input_text_tokens","input_text_tokens",12347000],["output_text_tokens",3457,"offer-9b313abb70bea3780bbf@v2#output_text_tokens","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-9b313abb70bea3780bbf@v2#input_text_tokens","offer-9b313abb70bea3780bbf@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"offer-9b313abb70bea3780bbf@v2#input_text_tokens","input_text_tokens",12347000],["output_text_tokens",3457,"offer-9b313abb70bea3780bbf@v2#output_text_tokens","output_text_tokens",10371000]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:nvidia/nemotron-3.5-lightning:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nemotron-3.5-lightning/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:nvidia/Nemotron-3_5-Lightning"],
+			"skus": ["offer-fbdc0239447b41a956a9@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.24/1000000 token",100,null,null,null]
+				["offer-fbdc0239447b41a956a9@v1#input_text_tokens","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-fbdc0239447b41a956a9@v1#output_text_tokens","standard","output_text_tokens","0.24/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":263520,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",156000],["output_text_tokens",448,"#1","output_text_tokens",107520]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":263520,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",61440,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",94560],["output_text_tokens",448,"#1","output_text_tokens",107520]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1570500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820],["output_text_tokens",3457,"#1","output_text_tokens",829680]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":263520,"lines":[["input_text_tokens",2600,"offer-fbdc0239447b41a956a9@v1#input_text_tokens","input_text_tokens",156000],["output_text_tokens",448,"offer-fbdc0239447b41a956a9@v1#output_text_tokens","output_text_tokens",107520]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":263520,"lines":[["cached_read_text_tokens",1024,"offer-fbdc0239447b41a956a9@v1#input_text_tokens","input_text_tokens",61440,"cache read at the input price"],["input_text_tokens",1576,"offer-fbdc0239447b41a956a9@v1#input_text_tokens","input_text_tokens",94560],["output_text_tokens",448,"offer-fbdc0239447b41a956a9@v1#output_text_tokens","output_text_tokens",107520]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-fbdc0239447b41a956a9@v1#input_text_tokens","offer-fbdc0239447b41a956a9@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1570500,"lines":[["input_text_tokens",12347,"offer-fbdc0239447b41a956a9@v1#input_text_tokens","input_text_tokens",740820],["output_text_tokens",3457,"offer-fbdc0239447b41a956a9@v1#output_text_tokens","output_text_tokens",829680]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:nvidia/nvidia-nemotron-3-nano-30b-a3b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/nvidia-nvidia-nemotron-3-nano-30b-a3b/text.generate/pricing.json",
+			"key": "nebius-token-factory:nvidia/nemotron-3.5-super-vl-120b-a12b:text.generate",
+			"routes": ["nebius-token-factory:nvidia/nemotron-3.5-super-vl-120b-a12b"],
+			"skus": ["standard-text-generate@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.24/1000000 token",100,null,null,null]
+				["standard-text-generate@v2#output_text_tokens","standard","output_text_tokens","0.9/1000000 token",2,null,null,null],
+				["standard-text-generate@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.06/1000000 token",0,null,null,null],
+				["standard-text-generate@v2#input_text_tokens","standard","input_text_tokens","0.3/1000000 token",0,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":263520,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",156000],["output_text_tokens",448,"#1","output_text_tokens",107520]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":263520,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",61440,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",94560],["output_text_tokens",448,"#1","output_text_tokens",107520]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1570500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",740820],["output_text_tokens",3457,"#1","output_text_tokens",829680]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:openai/gpt-oss-120b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/openai-gpt-oss-120b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":658800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":658800,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",153600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_text_tokens",448,"#1","output_text_tokens",268800]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:qwen/qwen2.5-vl-72b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen2.5-vl-72b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.75/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":986000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",336000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":986000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",256000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#1","output_text_tokens",336000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5679500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",2592750]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":937440,"lines":[["cached_read_text_tokens",1024,"standard-text-generate@v2#cached_read_text_tokens","cached_read_text_tokens",61440],["input_text_tokens",1576,"standard-text-generate@v2#input_text_tokens","input_text_tokens",472800],["output_text_tokens",448,"standard-text-generate@v2#output_text_tokens","output_text_tokens",403200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["standard-text-generate@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7089420,"lines":[["cached_read_text_tokens",4567,"standard-text-generate@v2#cached_read_text_tokens","cached_read_text_tokens",274020],["input_text_tokens",12347,"standard-text-generate@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"standard-text-generate@v2#output_text_tokens","output_text_tokens",3111300]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["standard-text-generate@v2#output_text_tokens","standard-text-generate@v2#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6815400,"lines":[["input_text_tokens",12347,"standard-text-generate@v2#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"standard-text-generate@v2#output_text_tokens","output_text_tokens",3111300]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:qwen/qwen3-235b-a22b-2507:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:qwen/qwen3-235b-a22b-2507"],
+			"skus": ["offer-cbd8a325a123b92deec5@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+				["offer-cbd8a325a123b92deec5@v1#input_text_tokens","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["offer-cbd8a325a123b92deec5@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":788800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",268800]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":788800,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",204800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",315200],["output_text_tokens",448,"#1","output_text_tokens",268800]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4543600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",2074200]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":788800,"lines":[["input_text_tokens",2600,"offer-cbd8a325a123b92deec5@v1#input_text_tokens","input_text_tokens",520000],["output_text_tokens",448,"offer-cbd8a325a123b92deec5@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":788800,"lines":[["cached_read_text_tokens",1024,"offer-cbd8a325a123b92deec5@v1#input_text_tokens","input_text_tokens",204800,"cache read at the input price"],["input_text_tokens",1576,"offer-cbd8a325a123b92deec5@v1#input_text_tokens","input_text_tokens",315200],["output_text_tokens",448,"offer-cbd8a325a123b92deec5@v1#output_text_tokens","output_text_tokens",268800]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-cbd8a325a123b92deec5@v1#input_text_tokens","offer-cbd8a325a123b92deec5@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4543600,"lines":[["input_text_tokens",12347,"offer-cbd8a325a123b92deec5@v1#input_text_tokens","input_text_tokens",2469400],["output_text_tokens",3457,"offer-cbd8a325a123b92deec5@v1#output_text_tokens","output_text_tokens",2074200]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:qwen/qwen3-30b-a3b-2507:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3-30b-a3b-2507/text.generate/pricing.json",
+			"key": "nebius-token-factory:qwen/qwen3-30b-a3b-instruct-2507:text.generate",
+			"routes": ["nebius-token-factory:qwen/qwen3-30b-a3b-2507"],
+			"skus": ["offer-a23e409af1e388b60639@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+				["offer-a23e409af1e388b60639@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["offer-a23e409af1e388b60639@v1#output_text_tokens","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":394400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",102400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#1","output_text_tokens",134400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"offer-a23e409af1e388b60639@v1#input_text_tokens","input_text_tokens",260000],["output_text_tokens",448,"offer-a23e409af1e388b60639@v1#output_text_tokens","output_text_tokens",134400]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":394400,"lines":[["cached_read_text_tokens",1024,"offer-a23e409af1e388b60639@v1#input_text_tokens","input_text_tokens",102400,"cache read at the input price"],["input_text_tokens",1576,"offer-a23e409af1e388b60639@v1#input_text_tokens","input_text_tokens",157600],["output_text_tokens",448,"offer-a23e409af1e388b60639@v1#output_text_tokens","output_text_tokens",134400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a23e409af1e388b60639@v1#input_text_tokens","offer-a23e409af1e388b60639@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"offer-a23e409af1e388b60639@v1#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"offer-a23e409af1e388b60639@v1#output_text_tokens","output_text_tokens",1037100]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:qwen/qwen3-32b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3-32b/text.generate/pricing.json",
+			"key": "nebius-token-factory:qwen/qwen3-embedding-8b:text.embed",
+			"routes": ["nebius-token-factory:qwen/qwen3-embedding-8b"],
+			"skus": ["offer-9cb33fce5acb736d3ba8@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+				["offer-9cb33fce5acb736d3ba8@v1#input_text_tokens","standard","input_text_tokens","0.01/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":394400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":394400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",102400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#1","output_text_tokens",134400]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":10000,"lines":[["input_text_tokens",1000,"offer-9cb33fce5acb736d3ba8@v1#input_text_tokens","input_text_tokens",10000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-9cb33fce5acb736d3ba8@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":123470,"lines":[["input_text_tokens",12347,"offer-9cb33fce5acb736d3ba8@v1#input_text_tokens","input_text_tokens",123470]]}}
 			]
 		},
 		{
-			"key": "nebius-token-factory:qwen/qwen3-embedding-8b:embeddings",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3-embedding-8b/embeddings/pricing.json",
+			"key": "nebius-token-factory:reflection/beam-501b-a23b:text.generate",
+			"routes": ["nebius-token-factory:reflection/beam-501b-a23b"],
+			"skus": ["standard-text-generate@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.01/1000000 token",100,null,null,null]
+				["standard-text-generate@v2#output_text_tokens","standard","output_text_tokens","1/1000000 token",1,null,null,null],
+				["standard-text-generate@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.05/1000000 token",0,null,null,null],
+				["standard-text-generate@v2#input_text_tokens","standard","input_text_tokens","0.25/1000000 token",0,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":10000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",10000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":123470,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",123470]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:qwen/qwen3-next-80b-a3b-thinking:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3-next-80b-a3b-thinking/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":927600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",537600]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":927600,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",153600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_text_tokens",448,"#1","output_text_tokens",537600]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6000450,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",4148400]]}}
-			]
-		},
-		{
-			"key": "nebius-token-factory:qwen/qwen3.5-397b-a17b:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/qwen-qwen3.5-397b-a17b/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","3.6/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3172800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1560000],["output_text_tokens",448,"#1","output_text_tokens",1612800]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3172800,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",614400,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",945600],["output_text_tokens",448,"#1","output_text_tokens",1612800]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":19853400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#1","output_text_tokens",12445200]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":893200,"lines":[["cached_read_text_tokens",1024,"standard-text-generate@v2#cached_read_text_tokens","cached_read_text_tokens",51200],["input_text_tokens",1576,"standard-text-generate@v2#input_text_tokens","input_text_tokens",394000],["output_text_tokens",448,"standard-text-generate@v2#output_text_tokens","output_text_tokens",448000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["standard-text-generate@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":6772100,"lines":[["cached_read_text_tokens",4567,"standard-text-generate@v2#cached_read_text_tokens","cached_read_text_tokens",228350],["input_text_tokens",12347,"standard-text-generate@v2#input_text_tokens","input_text_tokens",3086750],["output_text_tokens",3457,"standard-text-generate@v2#output_text_tokens","output_text_tokens",3457000]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["standard-text-generate@v2#output_text_tokens","standard-text-generate@v2#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6543750,"lines":[["input_text_tokens",12347,"standard-text-generate@v2#input_text_tokens","input_text_tokens",3086750],["output_text_tokens",3457,"standard-text-generate@v2#output_text_tokens","output_text_tokens",3457000]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:z-ai/glm-5.1:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/z-ai-glm-5.1/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:z-ai/glm-5.1"],
+			"skus": ["offer-049f2581c5b98dcea3e8@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+				["offer-049f2581c5b98dcea3e8@v1#input_text_tokens","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["offer-049f2581c5b98dcea3e8@v1#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":5611200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",3640000],["output_text_tokens",448,"#1","output_text_tokens",1971200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":5611200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1433600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",2206400],["output_text_tokens",448,"#1","output_text_tokens",1971200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#1","output_text_tokens",15210800]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":5611200,"lines":[["input_text_tokens",2600,"offer-049f2581c5b98dcea3e8@v1#input_text_tokens","input_text_tokens",3640000],["output_text_tokens",448,"offer-049f2581c5b98dcea3e8@v1#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":5611200,"lines":[["cached_read_text_tokens",1024,"offer-049f2581c5b98dcea3e8@v1#input_text_tokens","input_text_tokens",1433600,"cache read at the input price"],["input_text_tokens",1576,"offer-049f2581c5b98dcea3e8@v1#input_text_tokens","input_text_tokens",2206400],["output_text_tokens",448,"offer-049f2581c5b98dcea3e8@v1#output_text_tokens","output_text_tokens",1971200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-049f2581c5b98dcea3e8@v1#input_text_tokens","offer-049f2581c5b98dcea3e8@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"offer-049f2581c5b98dcea3e8@v1#input_text_tokens","input_text_tokens",17285800],["output_text_tokens",3457,"offer-049f2581c5b98dcea3e8@v1#output_text_tokens","output_text_tokens",15210800]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:z-ai/glm-5.2:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/z-ai-glm-5.2/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:z-ai/glm-5.2"],
+			"skus": ["offer-758f3301521da8557292@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+				["offer-758f3301521da8557292@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.14/1000000 token",100,null,null,null],
+				["offer-758f3301521da8557292@v2#input_text_tokens","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["offer-758f3301521da8557292@v2#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":5611200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",3640000],["output_text_tokens",448,"#1","output_text_tokens",1971200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":5611200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1433600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",2206400],["output_text_tokens",448,"#1","output_text_tokens",1971200]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#1","output_text_tokens",15210800]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4320960,"lines":[["cached_read_text_tokens",1024,"offer-758f3301521da8557292@v2#cached_read_text_tokens","cached_read_text_tokens",143360],["input_text_tokens",1576,"offer-758f3301521da8557292@v2#input_text_tokens","input_text_tokens",2206400],["output_text_tokens",448,"offer-758f3301521da8557292@v2#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-758f3301521da8557292@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":33135980,"lines":[["cached_read_text_tokens",4567,"offer-758f3301521da8557292@v2#cached_read_text_tokens","cached_read_text_tokens",639380],["input_text_tokens",12347,"offer-758f3301521da8557292@v2#input_text_tokens","input_text_tokens",17285800],["output_text_tokens",3457,"offer-758f3301521da8557292@v2#output_text_tokens","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-758f3301521da8557292@v2#input_text_tokens","offer-758f3301521da8557292@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"offer-758f3301521da8557292@v2#input_text_tokens","input_text_tokens",17285800],["output_text_tokens",3457,"offer-758f3301521da8557292@v2#output_text_tokens","output_text_tokens",15210800]]}}
 			]
 		},
 		{
 			"key": "nebius-token-factory:z-ai/glm-5.3-flash:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/nebius-token-factory/z-ai-glm-5.3-flash/text.generate/pricing.json",
+			"routes": ["nebius-token-factory:zai-org/GLM-5.3-Flash"],
+			"skus": ["offer-3671cbf7dda76df0e3f3@v2"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+				["offer-3671cbf7dda76df0e3f3@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["offer-3671cbf7dda76df0e3f3@v2#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-3671cbf7dda76df0e3f3@v2#output_text_tokens","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":710000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_reasoning_tokens",192,"#1","output_text_tokens",96000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",224000]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":710000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",153600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_reasoning_tokens",192,"#1","output_text_tokens",96000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",224000]]},"source":{"kind":"spec","spec":"nebius-token-factory","path":"usage schema"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3975050,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#1","output_text_tokens",394500,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",1728500]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":491120,"lines":[["cached_read_text_tokens",1024,"offer-3671cbf7dda76df0e3f3@v2#cached_read_text_tokens","cached_read_text_tokens",30720],["input_text_tokens",1576,"offer-3671cbf7dda76df0e3f3@v2#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"offer-3671cbf7dda76df0e3f3@v2#output_text_tokens","output_text_tokens",224000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-3671cbf7dda76df0e3f3@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":3717560,"lines":[["cached_read_text_tokens",4567,"offer-3671cbf7dda76df0e3f3@v2#cached_read_text_tokens","cached_read_text_tokens",137010],["input_text_tokens",12347,"offer-3671cbf7dda76df0e3f3@v2#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-3671cbf7dda76df0e3f3@v2#output_text_tokens","output_text_tokens",1728500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-3671cbf7dda76df0e3f3@v2#input_text_tokens","offer-3671cbf7dda76df0e3f3@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3580550,"lines":[["input_text_tokens",12347,"offer-3671cbf7dda76df0e3f3@v2#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-3671cbf7dda76df0e3f3@v2#output_text_tokens","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "nebius-token-factory:z-ai/glm-5.3:text.generate",
+			"routes": ["nebius-token-factory:zai-org/GLM-5.3"],
+			"skus": ["offer-zai-glm-5-3-20260911@v2"],
+			"rules": [
+				["offer-zai-glm-5-3-20260911@v2#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",1,null,null,null],
+				["offer-zai-glm-5-3-20260911@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.26/1000000 token",0,null,null,null],
+				["offer-zai-glm-5-3-20260911@v2#input_text_tokens","standard","input_text_tokens","1.4/1000000 token",0,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":5288640,"lines":[["cached_read_text_tokens",1024,"offer-zai-glm-5-3-20260911@v2#cached_read_text_tokens","cached_read_text_tokens",266240],["input_text_tokens",1576,"offer-zai-glm-5-3-20260911@v2#input_text_tokens","input_text_tokens",2206400],["output_reasoning_tokens",192,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",844800,"reasoning at the output price"],["output_text_tokens",448,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-zai-glm-5-3-20260911@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":37155620,"lines":[["cached_read_text_tokens",4567,"offer-zai-glm-5-3-20260911@v2#cached_read_text_tokens","cached_read_text_tokens",1187420],["input_text_tokens",12347,"offer-zai-glm-5-3-20260911@v2#input_text_tokens","input_text_tokens",17285800],["output_reasoning_tokens",789,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["offer-zai-glm-5-3-20260911@v2#output_text_tokens","offer-zai-glm-5-3-20260911@v2#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":35968200,"lines":[["input_text_tokens",12347,"offer-zai-glm-5-3-20260911@v2#input_text_tokens","input_text_tokens",17285800],["output_reasoning_tokens",789,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"offer-zai-glm-5-3-20260911@v2#output_text_tokens","output_text_tokens",15210800]]}}
 			]
 		}
 	]

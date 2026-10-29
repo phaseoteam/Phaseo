@@ -1,11 +1,10 @@
-// Purpose: Gateway context and price cards for the end-to-end harness, built from the catalogue fixtures.
-// Why: fetchGatewayContext and loadPriceCard read the database; the harness must answer them offline with real rows.
-// How: Route rows and pricing come from packages/data/catalog/src/data; the case decides which routes are offered.
+// Purpose: Gateway context and price cards for the end-to-end harness, built from the catalogue database rows.
+// Why: fetchGatewayContext and loadPriceCard read the database through the gateway client, which the harness stubs;
+//      it answers them from the rows src/catalogue.ts loaded once for the run.
+// How: Route rows, capability params and price cards come from src/catalogue.ts; the case decides which routes are offered.
 
-import fs from "node:fs";
-import path from "node:path";
 import type { PriceCard } from "@pipeline/pricing/types";
-import { CATALOGUE_ROOT, loadCataloguePriceCard } from "../src/catalogue";
+import { catalogueRouteRows, loadCataloguePriceCard, routeIsActive, type CatalogueRouteRow } from "../src/catalogue";
 import { currentCase, harnessState, type SimRoute } from "./state";
 
 type RouteRow = {
@@ -20,56 +19,41 @@ type RouteRow = {
 	capabilities: string[];
 };
 
-let rowIndex: Map<string, RouteRow> | null = null;
-
-function splitList(value: unknown, fallback: string): string[] {
-	return String(value ?? fallback).split(",").map((entry) => entry.trim()).filter(Boolean);
+function objectParams(value: unknown): Record<string, any> {
+	return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
 }
 
-/** Every catalogue route row, keyed by `${providerId}|${apiModelId}`. */
-function routeRows(): Map<string, RouteRow> {
-	if (rowIndex) return rowIndex;
-	rowIndex = new Map();
-	const root = path.join(CATALOGUE_ROOT, "api_providers");
-	for (const providerId of fs.readdirSync(root)) {
-		const file = path.join(root, providerId, "models.json");
-		if (!fs.existsSync(file)) continue;
-		for (const row of JSON.parse(fs.readFileSync(file, "utf8")) as any[]) {
-			const capabilities = (row.capabilities ?? []) as any[];
-			const params: Record<string, any> = {};
-			for (const cap of capabilities) {
-				if (cap.params && typeof cap.params === "object" && !Array.isArray(cap.params)) Object.assign(params, cap.params);
-			}
-			rowIndex.set(`${providerId}|${row.api_model_id}`, {
-				providerId,
-				apiModelId: row.api_model_id,
-				providerModelSlug: row.provider_model_slug ?? null,
-				inputModalities: splitList(row.input_modalities, "text"),
-				outputModalities: splitList(row.output_modalities, "text"),
-				maxOutputTokens: typeof row.max_output_tokens === "number" ? row.max_output_tokens : null,
-				contextLength: typeof row.context_length === "number" ? row.context_length : null,
-				capabilityParams: params,
-				capabilities: capabilities.map((cap) => String(cap.capability_id)),
-			});
-		}
-	}
-	return rowIndex;
+/** The route row the gateway would pick for provider and model (an active one when there is one). */
+function dbRouteRow(providerId: string, apiModelId: string): CatalogueRouteRow | null {
+	const rows = catalogueRouteRows(providerId, apiModelId);
+	return rows.find((row) => routeIsActive(row)) ?? rows[0] ?? null;
+}
+
+export function findRouteRow(providerId: string, apiModelId: string): RouteRow | null {
+	const row = dbRouteRow(providerId, apiModelId);
+	if (!row) return null;
+	const params: Record<string, any> = {};
+	for (const cap of row.capabilities) Object.assign(params, objectParams(cap.params));
+	return {
+		providerId,
+		apiModelId,
+		providerModelSlug: row.providerModelSlug,
+		inputModalities: row.inputModalities,
+		outputModalities: row.outputModalities,
+		maxOutputTokens: row.maxOutputTokens,
+		contextLength: row.contextLength,
+		capabilityParams: params,
+		capabilities: row.capabilities.map((cap) => cap.capabilityId),
+	};
 }
 
 /** Capability-specific params (a route row can list several capabilities with different params). */
 function capabilityParamsFor(providerId: string, apiModelId: string, capabilities: string[]): Record<string, any> {
-	const file = path.join(CATALOGUE_ROOT, "api_providers", providerId, "models.json");
-	const rows = JSON.parse(fs.readFileSync(file, "utf8")) as any[];
-	const row = rows.find((entry) => entry.api_model_id === apiModelId);
-	const cap = (row?.capabilities ?? []).find((entry: any) => capabilities.includes(entry.capability_id));
-	return cap?.params && typeof cap.params === "object" && !Array.isArray(cap.params) ? cap.params : {};
+	const cap = dbRouteRow(providerId, apiModelId)?.capabilities.find((entry) => capabilities.includes(entry.capabilityId));
+	return objectParams(cap?.params);
 }
 
-export function findRouteRow(providerId: string, apiModelId: string): RouteRow | null {
-	return routeRows().get(`${providerId}|${apiModelId}`) ?? null;
-}
-
-/** Pricing fixtures use several names for one capability; the database loader resolves the same aliases. */
+/** SKU operations use several names for one capability; the database loader resolves the same aliases. */
 export const PRICING_CAPABILITY_ALIASES: Record<string, string[]> = {
 	"text.generate": ["text.generate"],
 	embeddings: ["embeddings", "text.embed"],
@@ -156,7 +140,7 @@ function snapshotFor(route: SimRoute, capability: string) {
 			capabilityParams,
 			maxInputTokens: row.contextLength,
 			maxOutputTokens: row.maxOutputTokens,
-			// The fixtures carry no data-policy evidence; mark routes as private so privacy filters never drop them.
+			// Data-policy evidence is not under test here; mark routes as private so privacy filters never drop them.
 			dataPolicyTier: "private" as const,
 			dataPolicyConfidence: "confirmed" as const,
 			promptTrainingPolicy: "no_train" as const,
@@ -210,7 +194,7 @@ export function buildGatewayContext(args: { workspaceId: string; model: string; 
 	};
 }
 
-/** Answers loadPriceCard (after-stage re-reads and executor fallbacks) from the fixtures. */
+/** Answers loadPriceCard (after-stage re-reads and executor fallbacks) from the catalogue rows. */
 export function lookupPriceCard(provider: string, model: string, capability: string): PriceCard | null {
 	const normalised = capability === "embeddings" || capability === "text.embed" ? "embeddings" : capability;
 	const card = cataloguePriceCard(provider, model, normalised);

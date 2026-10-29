@@ -7,65 +7,61 @@
 | audio.speech | 19 | – | 1/19 (5%) |
 | audio.transcription | 21 | – | 1/21 (5%) |
 | audio.translations | 5 | – | 1/5 (20%) |
-| decisions.make | 14 | – | 0/14 (0%) |
+| decisions.make | 15 | – | 0/15 (0%) |
 | embeddings | 31 | – | 1/31 (3%) |
-| image.edit | 16 | – | 1/16 (6%) |
-| image.generate | 24 | – | 1/24 (4%) |
+| extraction.extract | 1 | – | 0/1 (0%) |
+| image.edit | 16 | – | 0/16 (0%) |
+| image.generate | 24 | – | 0/24 (0%) |
 | moderations | 4 | – | 1/4 (25%) |
 | music.generate | 4 | – | 0/4 (0%) |
 | ocr | 2 | – | 1/2 (50%) |
 | parse | 1 | – | 0/1 (0%) |
 | rerank | 10 | – | 1/10 (10%) |
-| text.generate | 113 | 108/113 (96%) | 6/113 (5%) |
+| text.generate | 113 | 108/113 (96%) | 5/113 (4%) |
 | video.edit | 3 | – | 0/3 (0%) |
-| video.generate | 22 | – | 1/22 (5%) |
+| video.generate | 22 | – | 0/22 (0%) |
 
 Text executors with no upstream request in the executor layer: private-model, scaledown, liquid, liquid-ai, venice-e2ee (see results/MATRIX.md for each error).
 
 ## Catalogue routes and price cards
 
-- Active text routes driven through their executor (up to three per provider, one per model family): 109/1281 (9%).
-- Active routes (all capabilities) with a price card: 1550/1571 (99%); cards exercised by the pricing sweep: 1532/1550 (99%).
-- Price meters exercised: 5344/5347 (100%); condition branches (tiers, resolutions, windows): 1466/1466 (100%).
+- Active text routes driven through their executor (up to three per provider, one per model family): 109/1060 (10%).
+- Active routes (all capabilities) with a price card: 1327/1345 (99%); cards exercised by the pricing sweep: 1325/1327 (100%).
+- Price meters exercised: 5162/5168 (100%); condition branches (tiers, resolutions, windows): 1964/1968 (100%).
 
 | Capability | Cards | Exercised | Meters | Exercised |
 |---|---|---|---|---|
-| audio.generate | 0 | 0 | 0 | 0 |
-| audio.realtime | 7 | 7 | 44 | 44 |
-| audio.speech | 28 | 25 | 29 | 29 |
-| audio.transcribe | 3 | 3 | 3 | 3 |
-| audio.transcription | 22 | 22 | 26 | 26 |
+| audio.realtime | 10 | 10 | 58 | 58 |
+| audio.speech | 32 | 32 | 58 | 58 |
+| audio.transcription | 27 | 27 | 31 | 31 |
 | audio.translations | 4 | 4 | 4 | 4 |
-| batch | 40 | 40 | 106 | 106 |
-| embeddings | 11 | 11 | 11 | 11 |
-| image.edit | 26 | 25 | 54 | 54 |
-| image.generate | 36 | 35 | 60 | 60 |
-| images.edits | 1 | 1 | 2 | 2 |
-| images.generations | 4 | 4 | 33 | 33 |
-| music.generate | 6 | 5 | 5 | 5 |
-| ocr | 5 | 5 | 8 | 8 |
+| batch | 30 | 30 | 99 | 99 |
+| decisions.make | 10 | 10 | 18 | 18 |
+| extraction.extract | 1 | 1 | 1 | 1 |
+| image.edit | 17 | 17 | 43 | 43 |
+| image.generate | 31 | 31 | 89 | 89 |
+| music.generate | 3 | 3 | 3 | 3 |
+| ocr | 4 | 4 | 6 | 6 |
 | parse | 1 | 1 | 1 | 1 |
-| rerank | 7 | 7 | 8 | 8 |
-| text.embed | 48 | 48 | 65 | 65 |
-| text.generate | 1266 | 1256 | 4836 | 4833 |
+| text.embed | 58 | 58 | 75 | 75 |
+| text.generate | 1062 | 1060 | 4632 | 4626 |
 | text.moderate | 2 | 2 | 2 | 2 |
-| text.rerank | 1 | 1 | 1 | 1 |
-| video.edit | 1 | 1 | 3 | 3 |
-| video.generate | 31 | 29 | 46 | 46 |
+| text.rerank | 17 | 17 | 18 | 18 |
+| video.generate | 18 | 18 | 30 | 30 |
 
 ## Documented request parameters (apps/docs/openapi/v1/openapi.yaml)
 
 | Surface | Documented | Reached an upstream provider for at least one route | Never reached (all routes rejected or dropped) |
 |---|---|---|---|
-| chat | 36 | 33/36 (92%) | usage, meta, echo_upstream_request |
-| responses | 28 | 27/28 (96%) | previous_response_id |
-| messages | 16 | 16/16 (100%) | – |
+| chat | 39 | 34/39 (87%) | prompt, usage, include_reasoning, meta, echo_upstream_request |
+| responses | 29 | 28/29 (97%) | previous_response_id |
+| messages | 20 | 19/20 (95%) | prompt |
 
 Gateway-only parameters (`session_id`, `usage`, `meta`, `echo_upstream_request`, `debug`) are expected never to reach a provider.
 
 ## Executor-layer cases per route
 
-Client scenarios: 218 (base 3, param 127, content 25, tools 17, cache 8, reasoning 8, stream 3, agent 27), plus BYOK on each surface, a tool-loop round trip per surface, and response variants (text, max usage, four finish reasons, refusal, mid-stream error) on each surface in both modes; HTTP error variants on chat.
+Client scenarios: 211 (base 3, param 120, content 25, tools 17, cache 8, reasoning 8, stream 3, agent 27), plus BYOK on each surface, a tool-loop round trip per surface, and response variants (text, max usage, four finish reasons, refusal, mid-stream error) on each surface in both modes; HTTP error variants on chat.
 
 ## Not covered
 
@@ -75,296 +71,236 @@ Client scenarios: 218 (base 3, param 127, content 25, tools 17, cache 8, reasoni
 - **Video completion and download**: Only submission runs through the pipeline; completion is polled by routes/v1/data/videos.ts and settled by core/video-finalization outside makeEndpointHandler.
 - **Parse (/v1/parse), decisions (/v1/decisions)**: Not in the requested family list for this pass; both run through the same non-text and decisions runners and can be added with a writer each.
 - **Response cache hits, guardrail blocking, auto-router (phaseo/auto)**: getResponseCache() returns null in this build, guardrails need workspace guardrail rows, and the auto-router needs benchmark data; the harness uses an empty guardrail policy and never requests phaseo/auto.
-- **route deepinfra:hexgrad/kokoro-82m:audio.generate**: active route with no price card
-- **route fireworks:qwen/qwen3-reranker:rerank**: active route with no price card
 - **route openai:openai/gpt-6-astra-pro:batch**: active route with no price card
 - **route openai:openai/gpt-6-astra:batch**: active route with no price card
+- **route openai:openai/gpt-6-luna-pro:batch**: active route with no price card
+- **route openai:openai/gpt-6-luna:batch**: active route with no price card
+- **route openai:openai/gpt-6-sol-pro:batch**: active route with no price card
+- **route openai:openai/gpt-6-sol:batch**: active route with no price card
+- **route openai:openai/gpt-6.1-sol-pro:batch**: active route with no price card
+- **route openai:openai/gpt-6.1-sol:batch**: active route with no price card
+- **route openai:openai/gpt-6.1-terra:batch**: active route with no price card
 - **route openai:openai/gpt-image-1-mini:batch**: active route with no price card
-- **route openai:openai/gpt-image-1:batch**: active route with no price card
-- **route openai:openai/gpt-image-1:image.generate**: active route with no price card
 - **route openai:openai/gpt-image-1.5:batch**: active route with no price card
 - **route openai:openai/gpt-image-2:batch**: active route with no price card
 - **route openai:openai/omni-moderation:batch**: active route with no price card
-- **route openai:openai/sora-2-pro:batch**: active route with no price card
-- **route openai:openai/sora-2:batch**: active route with no price card
 - **route openai:openai/text-embedding-3-large:batch**: active route with no price card
 - **route openai:openai/text-embedding-3-small:batch**: active route with no price card
 - **route openai:openai/text-embedding-ada-002:batch**: active route with no price card
-- **route voyage:voyage/rerank-1:rerank**: active route with no price card
-- **route voyage:voyage/rerank-2-lite:rerank**: active route with no price card
-- **route voyage:voyage/rerank-2:rerank**: active route with no price card
-- **route voyage:voyage/rerank-2.5-lite:rerank**: active route with no price card
-- **route voyage:voyage/rerank-2.5:rerank**: active route with no price card
-- **route voyage:voyage/rerank-lite-1:rerank**: active route with no price card
-- **card deepseek:deepseek/deepseek-v4.1-flash-preview:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card elevenlabs:eleven-labs/eleven-v4-turbo:audio.speech**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card elevenlabs:eleven-labs/eleven-v4:audio.speech**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:minimax/minimax-m2.7:free:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:minimax/minimax-m3:free:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:minimax/music-3.0:free:music.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:minimax/speech-2.8:free:audio.speech**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:tencent/hy-image-v3.5-preview:free:image.edit**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card gmicloud:tencent/hy-image-v3.5-preview:free:image.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card google-vertex:anthropic/claude-3-haiku:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card ltx:ltx-2-fast:video.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card ltx:ltx-2-pro:video.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/devstral-small-2:free:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/devstral-small-2:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/leanstral:free:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/magistral-small-1.2:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/mistral-small-3.2:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **card mistral:mistral/mistral-small-creative:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
-- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate #3**: shadowed by #0 (same plan, meter and conditions; priority 100 vs 90, price 1.392 vs 1.74)
-- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate #4**: shadowed by #1 (same plan, meter and conditions; priority 100 vs 90, price 0.116 vs 0.145)
-- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate #5**: shadowed by #2 (same plan, meter and conditions; priority 100 vs 90, price 2.784 vs 3.48)
-- **rule google-ai-studio:google/gemini-2.5-flash-image:text.generate #0**: shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule google-ai-studio:google/gemini-2.5-flash-image:text.generate #1**: shadowed by #4 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #28**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #29**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #30**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #31**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #32**: shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #33**: shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #34**: shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #35**: shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #36**: shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #37**: shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #38**: shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #39**: shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #40**: shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #41**: shadowed by #73 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #42**: shadowed by #74 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #43**: shadowed by #75 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #44**: shadowed by #76 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #45**: shadowed by #77 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #46**: shadowed by #78 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #47**: shadowed by #79 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #48**: shadowed by #80 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #49**: shadowed by #81 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #50**: shadowed by #82 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #51**: shadowed by #83 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #52**: shadowed by #84 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #53**: shadowed by #85 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #54**: shadowed by #86 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #55**: shadowed by #87 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #56**: shadowed by #88 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #57**: shadowed by #89 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #58**: shadowed by #90 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.6-flash:text.generate #59**: shadowed by #91 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #0**: shadowed by #32 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #1**: shadowed by #33 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #2**: shadowed by #34 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #3**: shadowed by #35 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #4**: shadowed by #36 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #5**: shadowed by #37 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #6**: shadowed by #38 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #7**: shadowed by #39 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #8**: shadowed by #40 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #9**: shadowed by #41 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #10**: shadowed by #42 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #11**: shadowed by #43 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #12**: shadowed by #44 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #13**: shadowed by #45 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #14**: shadowed by #46 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #15**: shadowed by #47 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #16**: shadowed by #48 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #17**: shadowed by #49 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #18**: shadowed by #50 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #19**: shadowed by #51 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #20**: shadowed by #52 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #21**: shadowed by #53 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #22**: shadowed by #54 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #23**: shadowed by #55 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #24**: shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #25**: shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #26**: shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #27**: shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #28**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #29**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #30**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-ai-studio:google/gemini-3.7-flash:text.generate #31**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #28**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #29**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #30**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #31**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #32**: shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #33**: shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #34**: shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #35**: shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #36**: shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #37**: shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #38**: shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #39**: shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #40**: shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #41**: shadowed by #73 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #42**: shadowed by #74 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #43**: shadowed by #75 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #44**: shadowed by #76 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #45**: shadowed by #77 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #46**: shadowed by #78 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #47**: shadowed by #79 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #48**: shadowed by #80 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #49**: shadowed by #81 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #50**: shadowed by #82 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #51**: shadowed by #83 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #52**: shadowed by #84 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #53**: shadowed by #85 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #54**: shadowed by #86 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #55**: shadowed by #87 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #56**: shadowed by #88 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #57**: shadowed by #89 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #58**: shadowed by #90 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.6-flash:text.generate #59**: shadowed by #91 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #0**: shadowed by #32 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #1**: shadowed by #33 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #2**: shadowed by #34 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #3**: shadowed by #35 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #4**: shadowed by #36 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #5**: shadowed by #37 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #6**: shadowed by #38 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #7**: shadowed by #39 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #8**: shadowed by #40 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #9**: shadowed by #41 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #10**: shadowed by #42 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #11**: shadowed by #43 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #12**: shadowed by #44 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #13**: shadowed by #45 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #14**: shadowed by #46 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #15**: shadowed by #47 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #16**: shadowed by #48 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #17**: shadowed by #49 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #18**: shadowed by #50 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #19**: shadowed by #51 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #20**: shadowed by #52 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #21**: shadowed by #53 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #22**: shadowed by #54 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #23**: shadowed by #55 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #24**: shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #25**: shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #26**: shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #27**: shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #28**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #29**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #30**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule google-vertex:google/gemini-3.7-flash:text.generate #31**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
-- **rule longcat:meituan/longcat-2.0:text.generate #3**: shadowed by #0 (same plan, meter and conditions; priority 100 vs 90, price 0.3 vs 0.75)
-- **rule longcat:meituan/longcat-2.0:text.generate #4**: shadowed by #1 (same plan, meter and conditions; priority 100 vs 90, price 0.006 vs 0.015)
-- **rule longcat:meituan/longcat-2.0:text.generate #5**: shadowed by #2 (same plan, meter and conditions; priority 100 vs 90, price 1.2 vs 2.95)
-- **rule mistral:mistral/ministral-3-3b:text.generate #0**: shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ministral-3-3b:text.generate #2**: shadowed by #4 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ministral-3-3b:text.generate #5**: shadowed by #7 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ministral-3-3b:text.generate #6**: shadowed by #8 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ministral-3-3b:text.generate #9**: shadowed by #11 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ministral-3-3b:text.generate #10**: shadowed by #12 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule mistral:mistral/ocr-4:ocr #0**: shadowed by #1 (same plan, meter and conditions; priority 110 vs 100, price 2 vs 4)
-- **rule mistral:mistral/ocr-4:ocr #2**: shadowed by #3 (same plan, meter and conditions; priority 110 vs 100, price 0.5 vs 2)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #0**: shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2.2 vs 2.75)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #1**: shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.22 vs 0.275)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #2**: shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.75 vs 3.4375)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #3**: shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 16.5)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #4**: shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #5**: shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #6**: shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)
-- **rule openai-eu:openai/gpt-5.6-sol:batch #7**: shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 16.5 vs 24.75)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #32**: shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #33**: shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #34**: shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #35**: shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 22 vs 33)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #36**: shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8.8 vs 11)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #37**: shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.88 vs 1.1)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #38**: shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 13.75)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #39**: shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 33 vs 49.5)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #40**: shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 2.2 vs 2.75)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #41**: shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 0.22 vs 0.275)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #42**: shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 2.75 vs 3.4375)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #43**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 16.5)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #44**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #45**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #46**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #47**: shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 16.5 vs 24.75)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #48**: shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 8.8 vs 11)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #49**: shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.88 vs 1.1)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #50**: shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 13.75)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #51**: shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 44 vs 66)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #52**: shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 17.6 vs 22)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #53**: shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 1.76 vs 2.2)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #54**: shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 22 vs 27.5)
-- **rule openai-eu:openai/gpt-5.6-sol:text.generate #55**: shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 66 vs 99)
-- **rule openai:openai/gpt-5.2:batch #3**: shadowed by #0 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.2:batch #4**: shadowed by #1 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.2:batch #5**: shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.3-chat:text.generate #3**: shadowed by #0 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.3-chat:text.generate #4**: shadowed by #1 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.3-chat:text.generate #5**: shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #0**: shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #1**: shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #2**: shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #3**: shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #4**: shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #5**: shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #6**: shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol-pro:batch #7**: shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #32**: shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #33**: shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #34**: shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #35**: shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #36**: shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #37**: shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #38**: shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #39**: shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #40**: shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #41**: shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #42**: shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #43**: shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #44**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #45**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #46**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #47**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #48**: shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #49**: shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #50**: shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #51**: shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #52**: shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #53**: shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #54**: shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)
-- **rule openai:openai/gpt-5.6-sol-pro:text.generate #55**: shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)
-- **rule openai:openai/gpt-5.6-sol:batch #0**: shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
-- **rule openai:openai/gpt-5.6-sol:batch #1**: shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
-- **rule openai:openai/gpt-5.6-sol:batch #2**: shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
-- **rule openai:openai/gpt-5.6-sol:batch #3**: shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
-- **rule openai:openai/gpt-5.6-sol:batch #4**: shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol:batch #5**: shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol:batch #6**: shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol:batch #7**: shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #32**: shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #33**: shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #34**: shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol:text.generate #35**: shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)
-- **rule openai:openai/gpt-5.6-sol:text.generate #36**: shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
-- **rule openai:openai/gpt-5.6-sol:text.generate #37**: shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
-- **rule openai:openai/gpt-5.6-sol:text.generate #38**: shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #39**: shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)
-- **rule openai:openai/gpt-5.6-sol:text.generate #40**: shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #41**: shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
-- **rule openai:openai/gpt-5.6-sol:text.generate #42**: shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
-- **rule openai:openai/gpt-5.6-sol:text.generate #43**: shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
-- **rule openai:openai/gpt-5.6-sol:text.generate #44**: shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #45**: shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #46**: shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
-- **rule openai:openai/gpt-5.6-sol:text.generate #47**: shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #48**: shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
-- **rule openai:openai/gpt-5.6-sol:text.generate #49**: shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
-- **rule openai:openai/gpt-5.6-sol:text.generate #50**: shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
-- **rule openai:openai/gpt-5.6-sol:text.generate #51**: shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)
-- **rule openai:openai/gpt-5.6-sol:text.generate #52**: shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)
-- **rule openai:openai/gpt-5.6-sol:text.generate #53**: shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)
-- **rule openai:openai/gpt-5.6-sol:text.generate #54**: shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)
-- **rule openai:openai/gpt-5.6-sol:text.generate #55**: shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)
-- **rule weights-and-biases:nvidia/nemotron-3-super-120b-a12b:text.generate #0**: shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)
-- **rule weights-and-biases:nvidia/nemotron-3-super-120b-a12b:text.generate #1**: shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)
+- **route respan:respan/span-01:free:decisions.make**: active route with no price card
+- **route weights-and-biases:z-ai/glm-5.3-flash:text.generate**: active route with no price card
+- **card mistral-eu:mistral/mistral-large-4.0:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
+- **card mistral:mistral/mistral-large-4.0:text.generate**: no rule in effect at the sweep clock (all expired or not yet effective)
+- **rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#cached_read_text_tokens**: shadowed by ambient:ambient/large/feed-text.generate@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#input_text_tokens**: shadowed by ambient:ambient/large/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#output_text_tokens**: shadowed by ambient:ambient/large/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, price 0.4704 vs 1.323)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, price 0.4704 vs 1.323)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#output_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#cached_read_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#cached_read_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, price 0.0294 vs 0.11025)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#cached_read_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, price 0.0294 vs 0.11025)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#cached_read_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, price 0.1176 vs 0.441)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, price 0.1176 vs 0.441)
+- **rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#input_text_tokens**: shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/baidu-ernie50-thinking-latest-gt32k-20261022@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/baidu-ernie50-thinking-preview-gt32k-20261022@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/baidu-ernie50-gt32k-20261022@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/offer-baidu-ernie-5-0-thinking-latest@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/offer-baidu-ernie-5-0-thinking-preview@v1#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/offer-1f9bb3a10af1a4f6da4d@v3#output_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/baidu-ernie50-thinking-latest-gt32k-20261022@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/baidu-ernie50-thinking-preview-gt32k-20261022@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/baidu-ernie50-gt32k-20261022@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/offer-baidu-ernie-5-0-thinking-latest@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/offer-baidu-ernie-5-0-thinking-preview@v1#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/offer-1f9bb3a10af1a4f6da4d@v3#input_text_tokens**: shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)
+- **rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#cached_read_text_tokens**: shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.14 vs 0.21)
+- **rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#input_text_tokens**: shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 1.4 vs 2.1)
+- **rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#output_text_tokens**: shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 4.4 vs 6.6)
+- **rule baseten:z-ai/glm-5.3:text.generate baseten:zai-org/GLM-5.3/offer-f0747a428547616c9e8a@v1#input_text_tokens**: shadowed by baseten:z-ai/glm-5.3-fast/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 2.1 vs 1.4)
+- **rule baseten:z-ai/glm-5.3:text.generate baseten:zai-org/GLM-5.3/offer-f0747a428547616c9e8a@v1#output_text_tokens**: shadowed by baseten:z-ai/glm-5.3-fast/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 6.6 vs 4.4)
+- **rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#cached_read_text_tokens**: shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.19 vs 0.38)
+- **rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#input_text_tokens**: shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.95 vs 1.9)
+- **rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#output_text_tokens**: shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 4 vs 8)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#cached_read_text_tokens**: shadowed by deepinfra-flash-1017-flex-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.002352 vs 0.0048)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#input_text_tokens**: shadowed by deepinfra-flash-1017-flex-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0784 vs 0.16)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#output_text_tokens**: shadowed by deepinfra-flash-1017-flex-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2352 vs 0.48)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#cached_read_text_tokens**: shadowed by deepinfra-flash-1017-priority-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.00441 vs 0.009)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#input_text_tokens**: shadowed by deepinfra-flash-1017-priority-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.147 vs 0.3)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#output_text_tokens**: shadowed by deepinfra-flash-1017-priority-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.441 vs 0.9)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#cached_read_text_tokens**: shadowed by deepinfra-flash-1017-standard-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.00294 vs 0.006)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#input_text_tokens**: shadowed by deepinfra-flash-1017-standard-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.098 vs 0.2)
+- **rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#output_text_tokens**: shadowed by deepinfra-flash-1017-standard-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.294 vs 0.6)
+- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#cached_read_text_tokens**: shadowed by offer-ac5909636657ca3439cd@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)
+- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#input_text_tokens**: shadowed by offer-ac5909636657ca3439cd@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)
+- **rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#output_text_tokens**: shadowed by offer-ac5909636657ca3439cd@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_audio_tokens**: shadowed by offer-20259613359a6a8de049@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_image_tokens**: shadowed by offer-20259613359a6a8de049@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_text_tokens**: shadowed by offer-20259613359a6a8de049@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_video_tokens**: shadowed by offer-20259613359a6a8de049@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_audio_tokens**: shadowed by offer-20259613359a6a8de049@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_image_tokens**: shadowed by offer-20259613359a6a8de049@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_text_tokens**: shadowed by offer-20259613359a6a8de049@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_video_tokens**: shadowed by offer-20259613359a6a8de049@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#output_text_tokens**: shadowed by offer-20259613359a6a8de049@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_audio_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_image_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_text_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_video_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_audio_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_image_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_text_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_video_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#output_text_tokens**: shadowed by offer-30ae0335a23f64028d27@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_audio_tokens**: shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_image_tokens**: shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_text_tokens**: shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_video_tokens**: shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#output_text_tokens**: shadowed by offer-cc7320006df249a0bea6-r20261022@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_audio_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_image_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_text_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_video_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_audio_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_image_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_text_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_video_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#output_text_tokens**: shadowed by offer-c46fd1fecd1dc9c9acc2@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_audio_tokens**: shadowed by offer-853591cb468357acde26@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_image_tokens**: shadowed by offer-853591cb468357acde26@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_text_tokens**: shadowed by offer-853591cb468357acde26@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_video_tokens**: shadowed by offer-853591cb468357acde26@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_audio_tokens**: shadowed by offer-853591cb468357acde26@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_image_tokens**: shadowed by offer-853591cb468357acde26@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_text_tokens**: shadowed by offer-853591cb468357acde26@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_video_tokens**: shadowed by offer-853591cb468357acde26@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#output_text_tokens**: shadowed by offer-853591cb468357acde26@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_audio_tokens**: shadowed by offer-d98629fe82623351c76b@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_image_tokens**: shadowed by offer-d98629fe82623351c76b@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_text_tokens**: shadowed by offer-d98629fe82623351c76b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_video_tokens**: shadowed by offer-d98629fe82623351c76b@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_audio_tokens**: shadowed by offer-d98629fe82623351c76b@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_image_tokens**: shadowed by offer-d98629fe82623351c76b@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_text_tokens**: shadowed by offer-d98629fe82623351c76b@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_video_tokens**: shadowed by offer-d98629fe82623351c76b@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#output_text_tokens**: shadowed by offer-d98629fe82623351c76b@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_audio_tokens**: shadowed by offer-ac594ef5226734f20808@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_image_tokens**: shadowed by offer-ac594ef5226734f20808@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_text_tokens**: shadowed by offer-ac594ef5226734f20808@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_video_tokens**: shadowed by offer-ac594ef5226734f20808@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#output_text_tokens**: shadowed by offer-ac594ef5226734f20808@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_audio_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_image_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_text_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_video_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_audio_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_image_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_text_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_video_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#output_text_tokens**: shadowed by offer-faa7d9d61cfc993b9015@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_audio_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_image_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_text_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_video_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_audio_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_image_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_text_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_video_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#output_text_tokens**: shadowed by offer-e9ea401e5b65dd00fd29@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_audio_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_image_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_text_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_video_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_audio_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_image_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_text_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_video_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#output_text_tokens**: shadowed by offer-94d9c9a92a239c106b0c@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_audio_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_image_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_text_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_video_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_audio_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_image_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_text_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_video_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#output_text_tokens**: shadowed by offer-d923cac4cf2aae6999bd@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_audio_tokens**: shadowed by offer-aff7fa666355bff4a4e9@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_image_tokens**: shadowed by offer-aff7fa666355bff4a4e9@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_text_tokens**: shadowed by offer-aff7fa666355bff4a4e9@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_video_tokens**: shadowed by offer-aff7fa666355bff4a4e9@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)
+- **rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#output_text_tokens**: shadowed by offer-aff7fa666355bff4a4e9@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)
+- **rule inception:inception/mercury-3:text.generate standard-list@v1#cached_read_text_tokens**: shadowed by standard-launch@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.01 vs 0.02)
+- **rule inception:inception/mercury-3:text.generate standard-list@v1#input_text_tokens**: shadowed by standard-launch@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.1 vs 0.2)
+- **rule inception:inception/mercury-3:text.generate standard-list@v1#output_text_tokens**: shadowed by standard-launch@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.35 vs 0.7)
+- **rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#output_text_tokens**: shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#output_text_tokens (same plan, meter and conditions; priority 30 vs 30, same price)
+- **rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#cached_read_text_tokens**: shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#cached_read_text_tokens (same plan, meter and conditions; priority 20 vs 20, same price)
+- **rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#input_text_tokens**: shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#input_text_tokens (same plan, meter and conditions; priority 10 vs 10, same price)
+- **rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#cached_read_text_tokens**: shadowed by offer-83c0ba2d7c8ea229e35b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 0.006 vs 0.015)
+- **rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#input_text_tokens**: shadowed by offer-83c0ba2d7c8ea229e35b@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 0.3 vs 0.75)
+- **rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#output_text_tokens**: shadowed by offer-83c0ba2d7c8ea229e35b@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 1.2 vs 2.95)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-a98fd9287002d224000a@v1#input_text_tokens**: shadowed by offer-657b4ff589c2b50b7569@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-a98fd9287002d224000a@v1#output_text_tokens**: shadowed by offer-657b4ff589c2b50b7569@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-d28f6ff8d7497ac43cc7@v1#input_text_tokens**: shadowed by offer-284312c7cb2736c5bc74@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-d28f6ff8d7497ac43cc7@v1#output_text_tokens**: shadowed by offer-284312c7cb2736c5bc74@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-e98cac1eb88f2f7f44ad@v1#input_text_tokens**: shadowed by offer-6b3e9753206acd7f7864@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule mistral:mistral/ministral-3.0-3b:text.generate offer-e98cac1eb88f2f7f44ad@v1#output_text_tokens**: shadowed by offer-6b3e9753206acd7f7864@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#cached_read_text_tokens**: shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.38 vs 0.19)
+- **rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#input_text_tokens**: shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 1.9 vs 0.95)
+- **rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#output_text_tokens**: shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 8 vs 4)
+- **rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#cached_read_text_tokens**: shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.29 vs 0.6)
+- **rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#input_text_tokens**: shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 2.5 vs 6)
+- **rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#output_text_tokens**: shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 14 vs 22.5)
+- **rule openai:openai/gpt-4o-mini-tts:audio.speech offer-e70f8e6f993c0fdf8ba5@v1#input_text_tokens**: shadowed by offer-50e77712185309a3a56e@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule openai:openai/gpt-4o-mini-tts:audio.speech offer-e70f8e6f993c0fdf8ba5@v1#output_audio_tokens**: shadowed by offer-50e77712185309a3a56e@v1#output_audio_tokens (same plan, meter and conditions; priority 100 vs 100, same price)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_read_text_tokens**: shadowed by offer-850159d429eefdb19353@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_write_text_tokens_12h**: shadowed by offer-850159d429eefdb19353@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_write_text_tokens_30m**: shadowed by offer-850159d429eefdb19353@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#input_text_tokens**: shadowed by offer-850159d429eefdb19353@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#output_text_tokens**: shadowed by offer-850159d429eefdb19353@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_read_text_tokens**: shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_write_text_tokens_12h**: shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_write_text_tokens_30m**: shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#input_text_tokens**: shadowed by offer-1cbe6277fa5cc6c771de@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
+- **rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#output_text_tokens**: shadowed by offer-1cbe6277fa5cc6c771de@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_read_text_tokens**: shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_write_text_tokens_12h**: shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_write_text_tokens_30m**: shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#input_text_tokens**: shadowed by offer-275a7f1d7e8dfc85ba1b@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#output_text_tokens**: shadowed by offer-275a7f1d7e8dfc85ba1b@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_read_text_tokens**: shadowed by offer-1f002f72af7a90dc56a1@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_write_text_tokens_12h**: shadowed by offer-1f002f72af7a90dc56a1@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_write_text_tokens_30m**: shadowed by offer-1f002f72af7a90dc56a1@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#input_text_tokens**: shadowed by offer-1f002f72af7a90dc56a1@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#output_text_tokens**: shadowed by offer-1f002f72af7a90dc56a1@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_read_text_tokens**: shadowed by offer-5016b59162c296e571fd@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_write_text_tokens_12h**: shadowed by offer-5016b59162c296e571fd@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_write_text_tokens_30m**: shadowed by offer-5016b59162c296e571fd@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#input_text_tokens**: shadowed by offer-5016b59162c296e571fd@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#output_text_tokens**: shadowed by offer-5016b59162c296e571fd@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_read_text_tokens**: shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_write_text_tokens_12h**: shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_write_text_tokens_30m**: shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#input_text_tokens**: shadowed by offer-d2c92a59710ba50e7dcf@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#output_text_tokens**: shadowed by offer-d2c92a59710ba50e7dcf@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_read_text_tokens**: shadowed by offer-c1bb180eb436aee922e6@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_write_text_tokens_12h**: shadowed by offer-c1bb180eb436aee922e6@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 40 vs 50)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_write_text_tokens_30m**: shadowed by offer-c1bb180eb436aee922e6@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#input_text_tokens**: shadowed by offer-c1bb180eb436aee922e6@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#output_text_tokens**: shadowed by offer-c1bb180eb436aee922e6@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_read_text_tokens**: shadowed by offer-3f61be28bc52c5a59036@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_write_text_tokens_12h**: shadowed by offer-3f61be28bc52c5a59036@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_write_text_tokens_30m**: shadowed by offer-3f61be28bc52c5a59036@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#input_text_tokens**: shadowed by offer-3f61be28bc52c5a59036@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)
+- **rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#output_text_tokens**: shadowed by offer-3f61be28bc52c5a59036@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)
+- **rule openai:openai/omni-moderation:text.moderate offer-d1dcec6daddc1ca9bd5c@v1#requests**: shadowed by offer-ade99a21cb50f0f31e16@v1#requests (same plan, meter and conditions; priority 100 vs 100, same price)
 - **adapter-side condition extraction for media cards**: condition values (image_params, video_params, resolution, mode, ...) are handed to the engine in usage.context; media adapters derive them from the request, which this layer does not run
 - **executor usage mapping**: documented cases start from the gateway IR usage (core/ir.ts); the executor layer of the simulator covers native-to-IR mapping
 - **BYOK fees, data-contribution discounts, tier markup, credits**: applied after calculatePricing
-- **live catalogue rows**: the sweep reads the archived fixtures in packages/data/catalog/src/data; the database owns live rows
+- **SKUs that are not active (draft, deprecated, disabled)**: the sweep prices active SKUs only, as the gateway does
 - **Executor layer: presets, guardrails, the auto-router, candidate ranking and sticky reads**: they need the database; the end-to-end layer covers what it can with module mocks
 - **Executor layer: routes beyond three per provider**: routes of one provider share one executor and request mapping; every active route is still priced in the pricing sweep
