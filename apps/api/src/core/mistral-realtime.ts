@@ -29,9 +29,11 @@ const MISTRAL_CLIENT_SESSION_FIELDS = [
 	"turn_detection",
 ] as const;
 
-// Mistral's guide for the older realtime model: realtime is not compatible with diarize.
+// The older realtime model only takes target_streaming_delay_ms. Mistral answers
+// the others with an error and closes the connection (tested live 2026-10-29),
+// and its guide says it can't diarize.
 const MISTRAL_FIELDS_UNSUPPORTED_BY_MODEL: Record<string, readonly string[]> = {
-	"voxtral-mini-transcribe-realtime-2602": ["diarize"],
+	"voxtral-mini-transcribe-realtime-2602": ["language", "context_bias", "turn_detection", "diarize"],
 };
 
 /** How long the relay waits for Mistral's session.created before giving up. */
