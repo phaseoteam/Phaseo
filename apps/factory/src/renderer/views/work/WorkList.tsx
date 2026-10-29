@@ -9,7 +9,7 @@ import { repoName } from "../../components/RepoPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Tip } from "../../components/ui/tooltip";
-import { ago } from "../../lib/format";
+import { formatAgoShort, formatRelativeTime } from "@phaseo/app-kit/format";
 import { factory, href, lastActivity, useNow, useSeen } from "../../lib/useFactory";
 import { cn } from "../../lib/utils";
 
@@ -18,14 +18,14 @@ function Checked({ snapshot }: { snapshot: FactorySnapshot }) {
 	const now = useNow(15_000);
 	const [busy, setBusy] = useState(false);
 	const minutes = snapshot.settings.pollMinutes;
-	const when = snapshot.loadedAt ? ago(snapshot.loadedAt, now) : null;
+	const when = snapshot.loadedAt ? formatRelativeTime(snapshot.loadedAt, now) : null;
 	return <Tip label={`Factory checks GitHub every ${minutes === 1 ? "minute" : `${minutes} minutes`}, and when you come back to the window. Click to check now.`}>
 		<button type="button" disabled={busy} onClick={() => {
 			setBusy(true);
 			void factory().refresh().finally(() => setBusy(false));
 		}} className="flex min-w-0 items-center gap-1.5 hover:text-foreground">
 			<RefreshCw className={cn("size-3 shrink-0", busy && "animate-spin")} />
-			<span className="truncate">{busy ? "Checking GitHub…" : !when ? "Not checked yet" : when === "now" ? "Checked just now" : `Checked ${when} ago`}</span>
+			<span className="truncate">{busy ? "Checking GitHub…" : !when ? "Not checked yet" : `Checked ${when}`}</span>
 		</button>
 	</Tip>;
 }
@@ -134,7 +134,7 @@ function Row({ item, snapshot, selected, showRepo, child, isNew, replies = 0 }: 
 		<div className="flex shrink-0 flex-col items-end gap-1">
 			<span className={cn("flex items-center gap-1.5 text-2xs tabular-nums", isNew ? "font-medium text-info" : "text-muted-foreground")}>
 				{isNew && <Tip label="Changed since you last opened it"><span className="size-1.5 rounded-[2px] bg-info" /></Tip>}
-				{ago(lastActivity(item, snapshot.runs))}
+				{formatAgoShort(lastActivity(item, snapshot.runs))}
 			</span>
 			{agent && <Tip label={`${agent.label}${state?.status === "running" ? " is working on this" : ""}`}><span><AgentMark agent={agent} className="size-4" /></span></Tip>}
 		</div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import React, { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -621,7 +622,7 @@ export default function OAuthAppDetailPanel({
 														{formatCostUsd(request.cost_nanos)}
 													</TableCell>
 													<TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-														{request.latency_ms ? `${request.latency_ms}ms` : "--"}
+														{request.latency_ms ? formatLatency(request.latency_ms) : "--"}
 													</TableCell>
 												</TableRow>
 											);

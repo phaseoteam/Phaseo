@@ -10,7 +10,7 @@ import { Markdown } from "@/components/Markdown";
 import { Button, Icon, measureAnchor, pointAnchor, showActions, Text, toast, useToneColor, type ViewRef } from "@/components/ui";
 import { WEB_ORIGIN } from "@/lib/config";
 import { cn } from "@/lib/cn";
-import { formatUsd } from "@/lib/format";
+import { formatUsdCost } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { createStore } from "@/lib/store";
 import { perf } from "@/perf";
@@ -245,8 +245,8 @@ const formatUsage = (usage: MessageUsage | null) => {
   const cost = usage.costUsd != null || usage.summary?.costUsd != null ? (usage.costUsd ?? 0) + (usage.summary?.costUsd ?? 0) : null;
   const parts = [
     usage.outputTokens != null ? `${usage.outputTokens.toLocaleString("en-GB")} tokens` : null,
-    cost != null ? formatUsd(cost, { precise: true }) : null,
-    usage.summary ? (usage.summary.costUsd != null ? `includes ${formatUsd(usage.summary.costUsd, { precise: true })} to summarise earlier messages` : "includes a summary of earlier messages") : null,
+    cost != null ? formatUsdCost(cost) : null,
+    usage.summary ? (usage.summary.costUsd != null ? `includes ${formatUsdCost(usage.summary.costUsd) ?? "$0"} to summarise earlier messages` : "includes a summary of earlier messages") : null,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : null;
 };
@@ -340,7 +340,7 @@ function SummaryRow({ summaries }: { summaries: ChatSummary[] }) {
             {expanded ? (
               <View className="mt-2 rounded-md border border-border bg-muted/40 px-3 pb-1 pt-3">
                 <Markdown text={summary.summary} />
-                <Text variant="caption" className="mb-2">{[`Written ${new Date(summary.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, summary.usage?.costUsd != null ? formatUsd(summary.usage.costUsd, { precise: true }) : null].filter(Boolean).join(" · ")}</Text>
+                <Text variant="caption" className="mb-2">{[`Written ${new Date(summary.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`, summary.usage?.costUsd != null ? formatUsdCost(summary.usage.costUsd) : null].filter(Boolean).join(" · ")}</Text>
               </View>
             ) : null}
           </View>

@@ -5,11 +5,11 @@ import { Logo } from "@/components/Logo";
 import { Button, Icon, OptionSheet, Sheet, Text, useMenu, type ViewRef } from "@/components/ui";
 import type { ProviderPricing } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
-import { formatMs, formatPrice } from "@/lib/format";
+import { formatPrice, formatSeconds, formatSpeed } from "@/lib/format";
 import { basePricePerMillion, tablePrices } from "../pricing";
 import { EmptyBox, PolicyIcon, ServiceTierBadge, StatusIcon, STATUS_META } from "./parts";
 import { formatPercentile, PERCENTILES } from "./performance";
-import { formatThroughput, formatUptime, ProviderSheet, sheetKey, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
+import { formatUptime, ProviderSheet, sheetKey, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
 import {
   dataPolicyTier, DEFAULT_STATUS_FILTERS, defaultPlan, executionRegions, isRouteVariant, listingCategory, providerDisplayName, providerLogoId, providerPlans,
   providerStatus, sortProviders, statsKey, type ListingCategory, type RuntimeStats,
@@ -165,8 +165,8 @@ function ProviderRow({ provider, stats, onOpen, last }: { provider: ProviderPric
         <Metric label="Input $/1M" value={formatPrice(prices.input)} />
         <Metric label="Output $/1M" value={formatPrice(prices.output)} />
         <Metric label="Cache read $/1M" value={formatPrice(prices.cacheRead)} />
-        <Metric label="Latency" value={formatMs(runtime?.latencyMs)} />
-        <Metric label="Throughput" value={formatThroughput(runtime?.throughput)} />
+        <Metric label="Latency" value={formatSeconds(runtime?.latencyMs)} />
+        <Metric label="Throughput" value={formatSpeed(runtime?.throughput)} />
         <Metric label="Uptime" value={formatUptime(runtime?.uptimePct)} />
       </View>
     </Pressable>
