@@ -1,0 +1,12 @@
+---
+title: "Richtlinie für vertrauenswürdige Workloads aktualisieren"
+sidebarTitle: "Richtlinie für vertrauenswürdige Workloads aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
+description: "Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie für vertrauenswürdige Workloads."
+---
+<Note>Erfordert `keys:write` für einen Management-Schlüssel oder ein OAuth-Token oder einen Workspace-Inhaber oder -Admin. Vertrauenswürdige Workloads sind in der Beta; Workspaces ohne die Funktion erhalten `404`.</Note>
+
+Plattform, Aussteller und Inhaber lassen sich nicht ändern. Erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute.
+
+Unter [Vertrauenswürdige Workloads](../../developers/trusted-workloads.mdx) erfährst du, wie Richtlinien funktionieren und wie du sie mit Terraform verwaltest.

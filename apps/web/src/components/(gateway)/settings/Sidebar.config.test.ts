@@ -80,6 +80,16 @@ describe("settings sidebar navigation", () => {
 		expect(getActiveSettingsNav("/settings/keys/prod-key")?.item.children?.find((child) => isSettingsNavChildActive("/settings/keys/prod-key", child))?.label).toBe("Keys");
 	});
 
+	it("groups Trusted workloads under API Keys only when the beta is on", () => {
+		const active = getActiveSettingsNav("/settings/trusted-workloads", { showWorkloadIdentity: true });
+		expect(active?.item.label).toBe("API Keys");
+		expect(active?.item.children?.map((child) => child.label)).toEqual(["Keys", "Key Security", "Trusted workloads"]);
+		expect(active?.item.children?.find((child) => isSettingsNavChildActive("/settings/trusted-workloads", child))?.badge).toBe("Beta");
+		const keys = (showWorkloadIdentity: boolean) => getSettingsSidebar({ showWorkloadIdentity }).flatMap((group) => group.items);
+		expect(keys(true).some((item) => item.href === "/settings/trusted-workloads")).toBe(false);
+		expect(keys(false).find((item) => item.href === "/settings/keys")?.children?.map((child) => child.label)).toEqual(["Keys", "Key Security"]);
+	});
+
 	it("exposes Auto Routing within the Routing section", () => {
 		const active = getActiveSettingsNav("/settings/routing/auto", { showAutoRouting: true });
 		expect(active?.item.label).toBe("Routing");

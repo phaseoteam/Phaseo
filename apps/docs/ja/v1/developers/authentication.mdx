@@ -12,6 +12,7 @@ icon: "key-round"
 
 - **Gateway API キー**は、ワークスペースで利用可能なモデル、プロバイダー、生成エンドポイントを呼び出します。
 - **管理 API キー**は、管理用 API を呼び出します。[管理 API キー](./management-api-keys.mdx)を参照してください。
+- **信頼済みワークロード**（ベータ版）を使うと、Vercel のデプロイや GitHub Actions のジョブが、保存したキーの代わりに有効期間の短い OIDC トークンで Gateway を呼び出せます。[信頼済みワークロード](./trusted-workloads.mdx)を参照してください。
 
 古い認証情報を無効にする前に、アプリケーションを代わりのキーに切り替えてキーローテーションを行います。[キーローテーションのエンドポイント](../api-reference/endpoint/keys-rotate.mdx)を参照してください。
 

@@ -1,0 +1,10 @@
+---
+title: "إنشاء سياسة حمل عمل موثوق"
+sidebarTitle: "إنشاء سياسة حمل عمل موثوق"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "ينشئ سياسة ثقة تتيح لعملية نشر على Vercel أو سير عمل في GitHub Actions استدعاء Phaseo برمز OIDC الخاص بها بدلًا من مفتاح API."
+---
+<Note>تتطلب نقطة النهاية هذه `keys:write` على مفتاح إدارة أو رمز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. ميزة أحمال العمل الموثوقة في المرحلة التجريبية، وتتلقى مساحات العمل التي لا تملكها `404`.</Note>
+
+راجع [أحمال العمل الموثوقة](../../developers/trusted-workloads.mdx) لمعرفة كيف تعمل السياسات وكيف تديرها باستخدام Terraform.

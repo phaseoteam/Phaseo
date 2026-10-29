@@ -1,0 +1,10 @@
+---
+title: "Richtlinie für vertrauenswürdige Workloads erstellen"
+sidebarTitle: "Richtlinie für vertrauenswürdige Workloads erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "Erstellt eine Vertrauensrichtlinie, damit ein Vercel-Deployment oder ein GitHub-Actions-Workflow Phaseo mit seinem OIDC-Token statt mit einem API-Schlüssel aufrufen kann."
+---
+<Note>Erfordert `keys:write` für einen Management-Schlüssel oder ein OAuth-Token oder einen Workspace-Inhaber oder -Admin. Vertrauenswürdige Workloads sind in der Beta; Workspaces ohne die Funktion erhalten `404`.</Note>
+
+Unter [Vertrauenswürdige Workloads](../../developers/trusted-workloads.mdx) erfährst du, wie Richtlinien funktionieren und wie du sie mit Terraform verwaltest.

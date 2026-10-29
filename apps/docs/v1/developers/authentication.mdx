@@ -13,6 +13,7 @@ Create a key with `phaseo keys create --name <name> --json` in the [Phaseo CLI](
 
 - **Gateway API keys** call model, provider, and generation endpoints available to your workspace.
 - **Management API keys** call administration APIs. See [Management API Keys](./management-api-keys.mdx).
+- **Trusted workloads** (beta) let Vercel deployments and GitHub Actions jobs call the Gateway with a short-lived OIDC token instead of a stored key. See [Trusted Workloads](./trusted-workloads.mdx).
 
 Rotate a key by updating your application to use its replacement before invalidating the old credential. See the [key rotation endpoint](../api-reference/endpoint/keys-rotate.mdx).
 

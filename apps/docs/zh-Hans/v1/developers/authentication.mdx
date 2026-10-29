@@ -12,6 +12,7 @@ icon: "key-round"
 
 - **Gateway API 密钥**用于调用工作区可用的模型、提供商和生成端点。
 - **管理 API 密钥**用于调用管理 API。请参阅[管理 API 密钥](./management-api-keys.mdx)。
+- **受信任的工作负载**（Beta）让 Vercel 部署和 GitHub Actions 作业使用短期 OIDC 令牌而不是已存储的密钥调用 Gateway。请参阅[受信任的工作负载](./trusted-workloads.mdx)。
 
 轮换密钥时，应先更新应用以使用替代密钥，再使旧凭据失效。参阅[密钥轮换端点](../api-reference/endpoint/keys-rotate.mdx)。
 
