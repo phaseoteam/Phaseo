@@ -21,7 +21,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-प्रतिक्रिया में `client_secret`, `connect.url`, `max_duration_seconds` और `idle_timeout_seconds` (API सत्रों के लिए हमेशा `null`) शामिल होते हैं। `api.phaseo.app` पर `connect.url` के लिए WebSocket सबप्रोटोकॉल `statsync-realtime` और `rtsec.<client_secret>` के साथ एक WebSocket खोलें। रिले `statsync-realtime` चुनता है; अगर आप केवल `rtsec.<client_secret>` देते हैं, तो कोई प्रोटोकॉल नहीं चुना जाता और ब्राउज़र तथा ज़्यादातर WebSocket लाइब्रेरी हैंडशेक में विफल हो जाती हैं। प्रदाता तैयार होते ही रिले `relay.connected` भेजता है, फिर माइक्रोफ़ोन ऑडियो को `{"type": "client.audio", "audio": "<base64 PCM16>"}` के रूप में स्वीकार करता है: OpenAI, xAI और ElevenLabs के लिए 24 kHz, Google के लिए 16 kHz।
+प्रतिक्रिया में `client_secret`, `connect.url`, `max_duration_seconds` और `idle_timeout_seconds` (API सत्रों के लिए हमेशा `null`) शामिल होते हैं। `api.phaseo.app` पर `connect.url` के लिए WebSocket सबप्रोटोकॉल `statsync-realtime` और `rtsec.<client_secret>` के साथ एक WebSocket खोलें। रिले `statsync-realtime` चुनता है; अगर आप केवल `rtsec.<client_secret>` देते हैं, तो कोई प्रोटोकॉल नहीं चुना जाता और ब्राउज़र तथा ज़्यादातर WebSocket लाइब्रेरी हैंडशेक में विफल हो जाती हैं। प्रदाता तैयार होते ही रिले `relay.connected` भेजता है, फिर माइक्रोफ़ोन ऑडियो को `{"type": "client.audio", "audio": "<base64 PCM16>"}` के रूप में स्वीकार करता है: OpenAI, xAI और ElevenLabs के लिए 24 kHz, Google और Mistral के लिए 16 kHz।
 
 सत्र शुरू होने पर Phaseo $5 का क्रेडिट रोककर रखता है और कॉल चलने के साथ-साथ इस रोकी गई राशि को बढ़ाता जाता है।
 
@@ -87,6 +87,23 @@ GPT Live कॉल का बिल आवाज़ के प्रति स�
 ElevenLabs Realtime के दो मॉडल हैं: `eleven-labs/eleven-realtime-v1-mini`, जो तेज़ और सस्ता डिफ़ॉल्ट है, और `eleven-labs/eleven-realtime-v1-max`, जो जवाब देने से पहले तर्क करता है और जटिल निर्देशों तथा कई चरणों वाले टूल उपयोग के लिए उपयुक्त है। दोनों OpenAI जैसा ही निर्माण अनुरोध और रिले उपयोग करते हैं, 24 kHz ऑडियो के साथ। Phaseo अपनी कुंजी से ElevenLabs से कनेक्ट करता है; आपके क्लाइंट को केवल रिले दिखता है।
 
 ElevenLabs कॉल के जुड़े रहने के हर सेकंड का बिल बनाता है, साथ ही उसके द्वारा उपयोग किए गए भाषा-मॉडल टोकन का भी, और कॉल के दौरान उपयोग की जानकारी नहीं देता। कॉल चलते समय रिले जुड़े रहने का समय मापता है, इसलिए रोकी गई राशि और ओवरड्राफ़्ट सीमा दूसरे प्रदाताओं की तरह ही काम करती हैं। कॉल खत्म होने पर Phaseo बातचीत के लिए ElevenLabs का बिल पढ़ता है और उसमें तथा अपनी सूची-मूल्य वाली कुल राशि में से जो बड़ी हो, वह वसूलता है। इसमें आम तौर पर कुछ सेकंड लगते हैं। अगर इससे ज़्यादा समय लगता है, तो `session.ended` `billing_status: "pending"` और एक `final_bill` अनुरोध के साथ आता है, और ElevenLabs के बिल बताते ही उसका निपटान हो जाता है, आम तौर पर कुछ मिनटों में। तब तक आपकी रोकी गई राशि बनी रहती है। अगर 24 घंटे बाद भी ElevenLabs ने बिल नहीं बताया है, तो सत्र को केवल जुड़े रहने के समय के लिए शुल्क लेने के बजाय बिलिंग समीक्षा में भेज दिया जाता है।
+
+### स्ट्रीमिंग ट्रांसक्रिप्शन
+
+Mistral के Voxtral Realtime मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`। ये बोलकर जवाब नहीं देते, इसलिए सत्र `voice` के बिना बनाएँ:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+उसी तरह कनेक्ट करें और 16 kHz PCM16 को `client.audio` के रूप में स्ट्रीम करें। Mistral के इवेंट बिना बदलाव के आगे भेजे जाते हैं: `session.created`, फिर हर नए टेक्स्ट टुकड़े के साथ `transcription.text.delta`, और जब Mistral भेजे तब `transcription.language` और `transcription.segment`। ट्रांसक्रिप्शन सेटिंग बदलने के लिए `{"type": "session.update", "session": {...}}` भेजें, जिसमें `language`, `target_streaming_delay_ms` (80 से 2,400), `context_bias`, `diarize` और `turn_detection` में से कोई भी हो। ऑडियो फ़ॉर्मैट सहित अन्य फ़ील्ड `relay.client_event_rejected` के साथ अस्वीकार किए जाते हैं।
+
+जब आप `session.end` भेजते हैं, तो रिले Mistral की ऑडियो स्ट्रीम समाप्त करता है और पूरा ट्रांसक्रिप्ट लाने वाले `transcription.done` के लिए 10 सेकंड तक प्रतीक्षा करता है, फिर बिल तय करके `session.ended` भेजता है। आपके द्वारा पहले से भेजा गया ऑडियो इस्तेमाल होता है; कुछ भी छोड़ा नहीं जाता।
+
+स्ट्रीमिंग ट्रांसक्रिप्शन का बिल आपके भेजे गए ऑडियो के प्रति मिनट के हिसाब से बनता है (Voxtral Mini Transcribe Realtime 3 के लिए $0.008 प्रति मिनट), जिसे रिले मापता है। `transcription.done` में Mistral की अपनी गिनती न्यूनतम शुल्क है। पहले से मौजूद रिकॉर्डिंग के लिए इसके बजाय [ऑडियो ट्रांसक्रिप्शन](/hi/v1/api-reference/endpoint/audio-transcriptions) का उपयोग करें।
 
 ## सत्र समाप्त करें
 
@@ -213,6 +230,7 @@ API सत्र निष्क्रिय रहने के कारण �
 | Google Live | 60 मिनट, उन सभी कनेक्शनों को मिलाकर जिन्हें रिले पुनरारंभ करता है। अगर आपका क्लाइंट लगभग 150 सेकंड तक ऑडियो भेजना बंद कर दे, तो भी कॉल समाप्त हो जाती है। |
 | GPT Live | 25 मिनट |
 | ElevenLabs Realtime | 30 मिनट |
+| Mistral स्ट्रीमिंग ट्रांसक्रिप्शन | 60 मिनट |
 | ओवरड्राफ़्ट सीमा | आपकी रोकी गई राशि और मुक्त शेष राशि से $1 अधिक |
 | पहुँच खोना | कुंजी रद्द हो जाती है, उसकी अवधि समाप्त हो जाती है या उसे रोक दिया जाता है, या वर्कस्पेस हटा दिया जाता है। लगभग एक मिनट के भीतर इसका पता चलता है, फिर कॉल बिना किसी छूट अवधि के समाप्त हो जाती है। |
 | नीति में बदलाव | `policy_blocked` चेतावनी के 30 सेकंड बाद, अगर नीति अब भी कॉल को रोकती है |

@@ -21,7 +21,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-تتضمن الاستجابة `client_secret` و`connect.url` و`max_duration_seconds` و`idle_timeout_seconds` (قيمته دائمًا `null` في جلسات API). افتح اتصال WebSocket إلى `connect.url` على `api.phaseo.app` باستخدام البروتوكولين الفرعيين لـ WebSocket ‏`statsync-realtime` و`rtsec.<client_secret>`. يختار المرحّل `statsync-realtime`؛ وتفشل المصافحة في المتصفحات ومعظم مكتبات WebSocket إذا عرضت `rtsec.<client_secret>` وحده، لأنه لا يُختار أي بروتوكول. يرسل المرحّل `relay.connected` عندما يصبح المزوّد جاهزًا، ثم يقبل صوت الميكروفون بالشكل `{"type": "client.audio", "audio": "<base64 PCM16>"}`: بتردد 24 kHz لـ OpenAI وxAI وElevenLabs، وبتردد 16 kHz لـ Google.
+تتضمن الاستجابة `client_secret` و`connect.url` و`max_duration_seconds` و`idle_timeout_seconds` (قيمته دائمًا `null` في جلسات API). افتح اتصال WebSocket إلى `connect.url` على `api.phaseo.app` باستخدام البروتوكولين الفرعيين لـ WebSocket ‏`statsync-realtime` و`rtsec.<client_secret>`. يختار المرحّل `statsync-realtime`؛ وتفشل المصافحة في المتصفحات ومعظم مكتبات WebSocket إذا عرضت `rtsec.<client_secret>` وحده، لأنه لا يُختار أي بروتوكول. يرسل المرحّل `relay.connected` عندما يصبح المزوّد جاهزًا، ثم يقبل صوت الميكروفون بالشكل `{"type": "client.audio", "audio": "<base64 PCM16>"}`: بتردد 24 kHz لـ OpenAI وxAI وElevenLabs، وبتردد 16 kHz لـ Google وMistral.
 
 يحجز Phaseo رصيدًا قدره $5 عند بدء الجلسة، ويمدّد الحجز مع استمرار المكالمة.
 
@@ -87,6 +87,23 @@ curl https://api.phaseo.app/v1/live/sessions \
 يتوفر ElevenLabs Realtime في نموذجين: `eleven-labs/eleven-realtime-v1-mini`، وهو الخيار الافتراضي الأسرع والأرخص، و`eleven-labs/eleven-realtime-v1-max`، الذي يستدل قبل أن يجيب ويناسب التعليمات المعقدة واستخدام الأدوات متعدد الخطوات. يستخدم كلاهما طلب الإنشاء نفسه والمرحّل نفسه المستخدمين مع OpenAI، بصوت بتردد 24 kHz. يتصل Phaseo بـ ElevenLabs بمفتاحه الخاص؛ ولا يرى عميلك سوى المرحّل.
 
 يفوتر ElevenLabs المكالمة عن كل ثانية اتصال، إضافةً إلى رموز النموذج اللغوي التي تستخدمها، ولا يبلّغ عن الاستخدام أثناء المكالمة. يقيس المرحّل زمن الاتصال أثناء المكالمة، لذا تعمل الحجوزات وسقف السحب على المكشوف كما مع المزوّدين الآخرين. عند انتهاء المكالمة، يقرأ Phaseo فاتورة ElevenLabs للمحادثة ويحتسب المبلغ الأكبر بينها وبين إجماليه الخاص وفق سعر القائمة. يستغرق ذلك عادةً بضع ثوانٍ. إذا استغرق وقتًا أطول، يصل `session.ended` مع `billing_status: "pending"` وطلب `final_bill`، وتُسوّى الفاتورة فور إبلاغ ElevenLabs عنها، عادةً في غضون بضع دقائق. تبقى حجوزاتك قائمة حتى ذلك الحين. إذا لم يبلّغ ElevenLabs عن الفاتورة بعد 24 ساعة، تنتقل الجلسة إلى مراجعة الفوترة بدلًا من احتسابها على زمن الاتصال وحده.
+
+### النسخ المتدفق
+
+تنسخ نماذج Voxtral Realtime من Mistral الصوت المباشر فور وصوله: `mistral/voxtral-mini-transcribe-realtime-3` و`mistral/voxtral-mini-transcribe-realtime`. وهي لا ترد بالصوت، لذا أنشئ الجلسة دون `voice`:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+اتصل بالطريقة نفسها وأرسل PCM16 بتردد 16 kHz بصيغة `client.audio`. تُمرَّر أحداث Mistral دون تغيير: `session.created`، ثم `transcription.text.delta` مع كل جزء جديد من النص، و`transcription.language` و`transcription.segment` عندما ترسلها Mistral. لتغيير إعدادات النسخ، أرسل `{"type": "session.update", "session": {...}}` مع أي من `language` و`target_streaming_delay_ms` (من 80 إلى 2,400) و`context_bias` و`diarize` و`turn_detection`. تُرفض الحقول الأخرى، ومنها تنسيق الصوت، مع `relay.client_event_rejected`.
+
+عندما ترسل `session.end`، ينهي المرحّل تدفق الصوت إلى Mistral وينتظر حتى 10 ثوانٍ وصول `transcription.done` الذي يحمل النص الكامل، ثم يسوّي الفاتورة ويرسل `session.ended`. يُستخدم الصوت الذي أرسلته بالفعل؛ ولا يُهمَل منه شيء.
+
+يُحاسَب النسخ المتدفق على كل دقيقة من الصوت الذي ترسله (0.008 $ للدقيقة في Voxtral Mini Transcribe Realtime 3)، ويقيسها المرحّل. وعدد Mistral نفسه في `transcription.done` هو الحد الأدنى للمبلغ المحتسب. لتسجيل موجود لديك بالفعل، استخدم [نسخ الصوت](/ar/v1/api-reference/endpoint/audio-transcriptions) بدلًا من ذلك.
 
 ## إنهاء جلسة
 
@@ -213,6 +230,7 @@ curl https://api.phaseo.app/v1/live/sessions \
 | Google Live | 60 دقيقة، عبر الاتصالات التي يستأنفها المرحّل. وتنتهي المكالمة أيضًا إذا توقف عميلك عن إرسال الصوت لمدة 150 ثانية تقريبًا. |
 | GPT Live | 25 دقيقة |
 | ElevenLabs Realtime | 30 دقيقة |
+| النسخ المتدفق من Mistral | 60 دقيقة |
 | سقف السحب على المكشوف | $1 بما يتجاوز حجوزاتك ورصيدك المتاح |
 | فقدان الوصول | أُلغي المفتاح أو انتهت صلاحيته أو أُوقف مؤقتًا، أو أُزيلت مساحة العمل. يُكتشف ذلك خلال دقيقة تقريبًا، ثم تنتهي المكالمة دون فترة سماح. |
 | تغيير السياسة | بعد 30 ثانية من تحذير `policy_blocked`، إذا ظلت السياسة تحظر المكالمة |

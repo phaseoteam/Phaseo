@@ -21,7 +21,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-Die Antwort enthält `client_secret`, `connect.url`, `max_duration_seconds` und `idle_timeout_seconds` (bei API-Sitzungen immer `null`). Öffne einen WebSocket zu `connect.url` auf `api.phaseo.app` mit den WebSocket-Subprotokollen `statsync-realtime` und `rtsec.<client_secret>`. Das Relay wählt `statsync-realtime` aus; Browser und die meisten WebSocket-Bibliotheken lassen den Handshake scheitern, wenn du nur `rtsec.<client_secret>` anbietest, weil dann kein Protokoll ausgewählt wird. Das Relay sendet `relay.connected`, sobald der Anbieter bereit ist, und nimmt danach Mikrofon-Audio als `{"type": "client.audio", "audio": "<base64 PCM16>"}` an: 24 kHz für OpenAI, xAI und ElevenLabs, 16 kHz für Google.
+Die Antwort enthält `client_secret`, `connect.url`, `max_duration_seconds` und `idle_timeout_seconds` (bei API-Sitzungen immer `null`). Öffne einen WebSocket zu `connect.url` auf `api.phaseo.app` mit den WebSocket-Subprotokollen `statsync-realtime` und `rtsec.<client_secret>`. Das Relay wählt `statsync-realtime` aus; Browser und die meisten WebSocket-Bibliotheken lassen den Handshake scheitern, wenn du nur `rtsec.<client_secret>` anbietest, weil dann kein Protokoll ausgewählt wird. Das Relay sendet `relay.connected`, sobald der Anbieter bereit ist, und nimmt danach Mikrofon-Audio als `{"type": "client.audio", "audio": "<base64 PCM16>"}` an: 24 kHz für OpenAI, xAI und ElevenLabs, 16 kHz für Google und Mistral.
 
 Phaseo reserviert beim Start der Sitzung $5 Guthaben und erweitert die Reservierung, während der Anruf läuft.
 
@@ -87,6 +87,23 @@ Ein GPT-Live-Anruf wird pro Sekunde Sprache abgerechnet ($0.05 pro Minute, auf B
 ElevenLabs Realtime gibt es in zwei Modellen: `eleven-labs/eleven-realtime-v1-mini`, der schnellere und günstigere Standard, und `eleven-labs/eleven-realtime-v1-max`, das vor der Antwort nachdenkt und sich für komplexe Anweisungen und mehrstufige Tool-Nutzung eignet. Beide verwenden dieselbe Erstellungsanfrage und dasselbe Relay wie OpenAI, mit 24-kHz-Audio. Phaseo verbindet sich mit einem eigenen Schlüssel mit ElevenLabs; dein Client sieht immer nur das Relay.
 
 ElevenLabs rechnet einen Anruf für jede verbundene Sekunde ab, plus die verwendeten Sprachmodell-Token, und meldet die Nutzung nicht während des Anrufs. Das Relay misst die verbundene Zeit, während der Anruf läuft, sodass Reservierungen und das Überziehungslimit wie bei anderen Anbietern funktionieren. Wenn der Anruf endet, liest Phaseo die Abrechnung von ElevenLabs für die Unterhaltung und berechnet den höheren Betrag aus dieser und der eigenen Summe zu Listenpreisen. Das dauert meist einige Sekunden. Dauert es länger, kommt `session.ended` mit `billing_status: "pending"` und einer `final_bill`-Anfrage an, und die Abrechnung wird abgeschlossen, sobald ElevenLabs sie meldet, normalerweise innerhalb weniger Minuten. Deine Reservierungen bleiben bis dahin bestehen. Hat ElevenLabs die Abrechnung nach 24 Stunden nicht gemeldet, geht die Sitzung in die Abrechnungsprüfung, statt nur für die verbundene Zeit belastet zu werden.
+
+### Streaming-Transkription
+
+Mistrals Voxtral-Realtime-Modelle transkribieren Live-Audio, während es ankommt: `mistral/voxtral-mini-transcribe-realtime-3` und `mistral/voxtral-mini-transcribe-realtime`. Sie antworten nicht mit Sprache, also erstelle die Sitzung ohne `voice`:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+Verbinde dich auf dieselbe Weise und streame 16-kHz-PCM16 als `client.audio`. Mistrals Events werden unverändert weitergeleitet: `session.created`, dann `transcription.text.delta` mit jedem neuen Textstück sowie `transcription.language` und `transcription.segment`, wenn Mistral sie sendet. Um die Transkriptionseinstellungen zu ändern, sende `{"type": "session.update", "session": {...}}` mit beliebigen der Felder `language`, `target_streaming_delay_ms` (80 bis 2.400), `context_bias`, `diarize` und `turn_detection`. Andere Felder, auch das Audioformat, werden mit `relay.client_event_rejected` abgelehnt.
+
+Wenn du `session.end` sendest, beendet das Relay Mistrals Audiostream und wartet bis zu 10 Sekunden auf `transcription.done` mit dem vollständigen Transkript, bevor es abrechnet und `session.ended` sendet. Bereits gesendetes Audio wird verwendet; nichts wird verworfen.
+
+Streaming-Transkription wird pro Minute gesendeten Audios abgerechnet (0,008 $ pro Minute für Voxtral Mini Transcribe Realtime 3), gemessen vom Relay. Mistrals eigene Zählung in `transcription.done` ist der Mindestbetrag. Für eine vorhandene Aufnahme verwende stattdessen [Audio-Transkriptionen](/de/v1/api-reference/endpoint/audio-transcriptions).
 
 ## Sitzung beenden
 
@@ -213,6 +230,7 @@ API-Sitzungen werden nie wegen Inaktivität beendet, und Ausgabenlimits lösen n
 | Google Live | 60 Minuten, über die Verbindungen hinweg, die das Relay wiederaufnimmt. Der Anruf endet auch, wenn dein Client etwa 150 Sekunden lang kein Audio mehr sendet. |
 | GPT Live | 25 Minuten |
 | ElevenLabs Realtime | 30 Minuten |
+| Mistral-Streaming-Transkription | 60 Minuten |
 | Überziehungslimit | $1 über deine Reservierungen und dein freies Guthaben hinaus |
 | Verlorener Zugriff | Der Schlüssel wird widerrufen, läuft ab oder wird pausiert, oder der Workspace wird entfernt. Wird innerhalb von etwa einer Minute erkannt, danach endet der Anruf ohne Karenzzeit. |
 | Richtlinienänderung | 30 Sekunden nach einer `policy_blocked`-Warnung, wenn die Richtlinie den Anruf weiterhin blockiert |

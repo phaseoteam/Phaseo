@@ -21,7 +21,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-响应包含 `client_secret`、`connect.url`、`max_duration_seconds` 和 `idle_timeout_seconds`（API 会话中始终为 `null`）。在 `api.phaseo.app` 上向 `connect.url` 打开一个 WebSocket，并使用 WebSocket 子协议 `statsync-realtime` 和 `rtsec.<client_secret>`。中继会选择 `statsync-realtime`；如果只提供 `rtsec.<client_secret>`，由于没有选中任何协议，浏览器和大多数 WebSocket 库都会握手失败。供应商就绪后，中继会发送 `relay.connected`，然后以 `{"type": "client.audio", "audio": "<base64 PCM16>"}` 的形式接收麦克风音频：OpenAI、xAI 和 ElevenLabs 使用 24 kHz，Google 使用 16 kHz。
+响应包含 `client_secret`、`connect.url`、`max_duration_seconds` 和 `idle_timeout_seconds`（API 会话中始终为 `null`）。在 `api.phaseo.app` 上向 `connect.url` 打开一个 WebSocket，并使用 WebSocket 子协议 `statsync-realtime` 和 `rtsec.<client_secret>`。中继会选择 `statsync-realtime`；如果只提供 `rtsec.<client_secret>`，由于没有选中任何协议，浏览器和大多数 WebSocket 库都会握手失败。供应商就绪后，中继会发送 `relay.connected`，然后以 `{"type": "client.audio", "audio": "<base64 PCM16>"}` 的形式接收麦克风音频：OpenAI、xAI 和 ElevenLabs 使用 24 kHz，Google 和 Mistral 使用 16 kHz。
 
 会话开始时，Phaseo 会预留 $5 的额度，并在通话进行过程中延长预留。
 
@@ -87,6 +87,23 @@ GPT Live 通话按语音秒数计费（每分钟 $0.05，依据 GPT Live 自己�
 ElevenLabs Realtime 有两个模型：`eleven-labs/eleven-realtime-v1-mini` 是更快、更便宜的默认模型；`eleven-labs/eleven-realtime-v1-max` 会先推理再回答，适合复杂指令和多步骤工具使用。两者都使用与 OpenAI 相同的创建请求和中继，音频为 24 kHz。Phaseo 使用自己的密钥连接 ElevenLabs；你的客户端只会看到中继。
 
 ElevenLabs 按通话连接的每一秒计费，另加其使用的语言模型 token，并且在通话期间不报告用量。中继会在通话进行时计量连接时长，因此预留和透支上限的工作方式与其他供应商相同。通话结束后，Phaseo 会读取 ElevenLabs 对该对话的账单，并按该账单与 Phaseo 自身按标价计算的总额中较大者收费。这通常需要几秒钟。如果耗时更长，`session.ended` 会带着 `billing_status: "pending"` 和一个 `final_bill` 请求到达，账单会在 ElevenLabs 报告后立即结算，通常在几分钟内。在此之前，你的预留会保持不变。如果 24 小时后 ElevenLabs 仍未报告账单，该会话会转入账单审核，而不是仅按连接时长收费。
+
+### 流式转录
+
+Mistral 的 Voxtral Realtime 模型会在音频到达时实时转录：`mistral/voxtral-mini-transcribe-realtime-3` 和 `mistral/voxtral-mini-transcribe-realtime`。它们不会用语音回复，因此创建会话时不要传 `voice`：
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+以同样的方式连接，并以 `client.audio` 发送 16 kHz PCM16。Mistral 的事件会原样转发：先是 `session.created`，然后每段新文本对应一个 `transcription.text.delta`，Mistral 发送时还会有 `transcription.language` 和 `transcription.segment`。要更改转录设置，请发送 `{"type": "session.update", "session": {...}}`，其中可包含 `language`、`target_streaming_delay_ms`（80 到 2,400）、`context_bias`、`diarize` 和 `turn_detection` 中的任意字段。其他字段（包括音频格式）会以 `relay.client_event_rejected` 拒绝。
+
+发送 `session.end` 后，中继会结束发往 Mistral 的音频流，并最多等待 10 秒以接收包含完整转录文本的 `transcription.done`，然后结算并发送 `session.ended`。已发送的音频都会被使用，不会丢弃。
+
+流式转录按你发送的音频分钟数计费（Voxtral Mini Transcribe Realtime 3 为每分钟 $0.008），由中继计量。`transcription.done` 中 Mistral 自己的计数为最低收费。对于已有的录音，请改用[音频转录](/zh-Hans/v1/api-reference/endpoint/audio-transcriptions)。
 
 ## 结束会话
 
@@ -213,6 +230,7 @@ API 会话永远不会因为空闲而被结束，支出上限也只会发出警�
 | Google Live | 60 分钟，跨中继恢复的所有连接累计。如果你的客户端约 150 秒停止发送音频，通话也会结束。 |
 | GPT Live | 25 分钟 |
 | ElevenLabs Realtime | 30 分钟 |
+| Mistral 流式转录 | 60 分钟 |
 | 透支上限 | 超出你的预留和可用余额 $1 |
 | 失去访问权限 | 密钥被撤销、过期或暂停，或工作区被删除。会在约一分钟内检测到，随后通话立即结束，没有宽限期。 |
 | 策略变更 | 在 `policy_blocked` 警告 30 秒后，如果策略仍然阻止该通话 |
