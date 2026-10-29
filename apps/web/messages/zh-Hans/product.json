@@ -1688,7 +1688,7 @@
 		"hideAllRuns": "隐藏所有运行",
 		"yourGateway": "你的 Gateway",
 		"yourGatewayTtft": "你的 Gateway（TTFT）",
-		"yourGatewayThroughput": "你的 Gateway（token/秒）",
+		"yourGatewayThroughput": "你的 Gateway（tps）",
 		"tie": "平局",
 		"latestProvider": "最新结果：{provider}",
 		"requestFailed": "请求未能完成。请检查端点和凭据后重试。",
@@ -1734,7 +1734,7 @@
 		"throughput": "吞吐量",
 		"responsePlaceholder": "响应将显示在此处……",
 		"gatewayLabel": "网关",
-		"openaiThroughput": "OpenAI API（词元/秒）"
+		"openaiThroughput": "OpenAI API（tps）"
 	},
 	"gatewayBenchmark": {
 		"title": "网关性能对比",

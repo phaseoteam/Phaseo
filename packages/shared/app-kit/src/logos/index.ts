@@ -369,3 +369,4 @@ export function mergeLogoData(base: LogoData, extra: LogoData): LogoData {
 }
 
 export { logoManifest } from "./manifest";
+export { phaseoMarkPath } from "./phaseoMark";

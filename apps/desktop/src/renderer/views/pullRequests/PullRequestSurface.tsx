@@ -1,3 +1,4 @@
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Sparkles, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
 import { samePullRequest, type PullRequestMergeMethod, type PullRequestReactionContent, type PullRequestUpdateMethod, type PullRequestView } from "../../../shared/pullRequestView";
@@ -18,7 +19,7 @@ import { CodeTab } from "./CodeTab";
 import { GuideTab } from "./GuideTab";
 import { Composer } from "./Composer";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullRequestGlyph, pullRequestStatePresentation, ReviewOutcomeIcon, REVIEW_OUTCOME_PRESENTATION, Tip } from "./presentation";
-import { approvalCount, baseFreshness, behindSummary, checksRollup, checksStale, isWorkflowApproval, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
+import { approvalCount, baseFreshness, behindSummary, checksRollup, checksStale, isWorkflowApproval, mergeMethodLabels, primaryAction, summarizeChecks } from "./pullRequestLogic";
 import { PullRequestDetailGhost, UnavailableState } from "./PullRequestGhosts";
 import { segmentedGroup, segmentedItem } from "./segmented";
 import { StackedBaseGlyph, StackMenu } from "./StackMenu";
@@ -207,7 +208,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<div className={cn("col-span-2 grid", condensed ? "grid-rows-[1fr]" : "grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none")}>
 				<div className={cn("min-h-0 overflow-hidden transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none", condensed ? "translate-y-0 opacity-100 delay-50" : "translate-y-1 opacity-0 duration-100")} inert={!condensed}>
 					<div className="flex min-w-0 items-center gap-2 px-4 pt-1 pb-2 text-xs text-muted-foreground">
-						<span className="flex min-w-0 shrink items-center gap-1.5 overflow-hidden"><ActorLabel actor={view.authorActor} variant="avatar" className="shrink-0" /><span className="shrink-0">{relativeTime(view.updatedAt)}</span></span>
+						<span className="flex min-w-0 shrink items-center gap-1.5 overflow-hidden"><ActorLabel actor={view.authorActor} variant="avatar" className="shrink-0" /><span className="shrink-0">{formatRelativeTime(view.updatedAt)}</span></span>
 						<span aria-hidden className="h-3 w-px shrink-0 bg-border/70" />
 						{branchLine(true)}
 						<span className="ml-auto inline-flex shrink-0 items-center justify-end gap-2 text-2xs"><span className="inline-flex items-center gap-1 tabular-nums" aria-label={`${view.changedFiles} changed ${view.changedFiles === 1 ? "file" : "files"}`}><FileDiff aria-hidden className="size-3" />{view.changedFiles}</span><DiffStat additions={view.additions} deletions={view.deletions} className="shrink-0 font-mono text-2xs" /></span>
@@ -225,7 +226,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 							<div className="flex justify-end gap-2"><Button size="xs" variant="ghost" disabled={pending === "title"} onClick={() => setTitleDraft(null)}>Cancel</Button><Button size="xs" variant="outline" disabled={busy || !titleDraft.trim()} onClick={() => void saveTitle()}>{pending === "title" ? "Saving…" : "Save"}</Button></div>
 						</div>}
 						<div className="mt-2 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
-							<MetaLine className="min-w-0 whitespace-nowrap"><ActorLabel key="author" actor={view.authorActor} /><span key="updated">updated {relativeTime(view.updatedAt)}</span></MetaLine>
+							<MetaLine className="min-w-0 whitespace-nowrap"><ActorLabel key="author" actor={view.authorActor} /><span key="updated">updated {formatRelativeTime(view.updatedAt)}</span></MetaLine>
 							{view.state === "OPEN" && <span className="ml-auto flex min-w-0 items-center gap-2"><CopyableCode value={`gh pr checkout ${view.number}`} label="Copy checkout command" />
 									<DropdownMenu>
 										<Tip label="Check out this pull request"><DropdownMenuTrigger disabled={handoff.pending !== undefined} render={<Button size="xs" variant="outline" aria-label={handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"} data-pull-request-checkout="" />}>

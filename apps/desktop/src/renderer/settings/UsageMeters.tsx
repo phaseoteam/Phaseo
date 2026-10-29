@@ -1,3 +1,4 @@
+import { formatDateParts, formatTime, formatUsd, MONEY_LOCALE } from "@phaseo/app-kit/format";
 import type { AccountStatus, UsageWindow } from "../../shared/workspace";
 import { cn } from "../lib/utils";
 import { RedactedText } from "../components/RedactedText";
@@ -18,7 +19,7 @@ export function resetText(resetsAt: number | null, now = Date.now()) {
 	const minutes = Math.max(0, Math.round((resetsAt * 1000 - now) / 60000));
 	if (minutes < 60) return `Resets in ${minutes}m`;
 	if (minutes < 1440) return `Resets in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-	return `Resets ${new Date(resetsAt * 1000).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}`;
+	return `Resets ${formatDateParts(resetsAt * 1000, { weekday: "short", day: "numeric", month: "short" })}`;
 }
 
 export function UsageMeter({ label, window, compact }: { label: string; window: UsageWindow | null; compact?: boolean }) {
@@ -38,7 +39,8 @@ export function UsageMeter({ label, window, compact }: { label: string; window: 
 	</div>;
 }
 
-const money = (value: number | null, currency = "USD") => value === null ? "unknown" : new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value);
+/** Dollars as the website's budgets show them; another currency in the same US style ("€12.50"). */
+const money = (value: number | null, currency = "USD") => value === null ? "unknown" : currency === "USD" ? formatUsd(value) : new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency }).format(value);
 
 /** A native login's plan and limit windows, as the agent reported them. */
 export function UsageMeters({ status }: { status: AccountStatus }) {
@@ -59,6 +61,6 @@ export function UsageMeters({ status }: { status: AccountStatus }) {
 		</div>)}
 		{status.extraUsage?.enabled && <p className="text-xs text-muted-foreground">Extra usage: {money(status.extraUsage.used, status.extraUsage.currency)} used{status.extraUsage.limit !== null ? ` of ${money(status.extraUsage.limit, status.extraUsage.currency)} this month` : ""}</p>}
 		{status.usageError && <p className="text-xs text-muted-foreground">{status.usageError}</p>}
-		<p className="text-[11px] text-muted-foreground/80">Checked {new Date(status.checkedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</p>
+		<p className="text-[11px] text-muted-foreground/80">Checked {formatTime(status.checkedAt)}</p>
 	</div>;
 }

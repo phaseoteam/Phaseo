@@ -1,3 +1,4 @@
+import { formatTime } from "@phaseo/app-kit/format";
 import { ArrowUp, ChevronRight, CircleAlert, Square, SquarePen, Wrench } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { ChatMessage, FactorySnapshot, WorkItem } from "../../../shared/types";
@@ -5,7 +6,6 @@ import { AgentPicker } from "../../components/AgentPicker";
 import { AgentMark } from "../../components/Marks";
 import { Markdown } from "../../components/Markdown";
 import { Button } from "../../components/ui/button";
-import { clock } from "../../lib/format";
 import { factory } from "../../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { errorText } from "../../components/AddRepo";
@@ -97,7 +97,7 @@ export function ChatView({ item, snapshot }: { item: WorkItem; snapshot: Factory
 					<AgentMark agent={snapshot.agents.find((candidate) => candidate.id === chat.agentId) ?? agent} className="mt-0.5 size-5" />
 					<div className="min-w-0 flex-1">
 						<Markdown source={entry.text} repo={item.repo} />
-						<p className="mt-1 text-2xs text-muted-foreground tabular-nums">{clock(entry.at)}</p>
+						<p className="mt-1 text-2xs text-muted-foreground tabular-nums">{formatTime(entry.at, { includeSeconds: true })}</p>
 					</div>
 				</div>;
 			})}

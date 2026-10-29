@@ -7,7 +7,7 @@ import { InlineMarkdown } from "../components/Markdown";
 import { Group, SettingsPage } from "../components/Settings";
 import { Button } from "../components/ui/button";
 import { Tip } from "../components/ui/tooltip";
-import { since } from "../lib/format";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { factory, useNow } from "../lib/useFactory";
 import { cn } from "../lib/utils";
 
@@ -80,8 +80,8 @@ function NoteRow({ note, place, home, agent, now }: { note: RepoNote; place: str
 				<p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-2xs text-muted-foreground">
 					{note.pinned && <span className="flex items-center gap-1 font-medium text-foreground/80"><Pin className="size-3" />Pinned</span>}
 					{note.pinned && <span>·</span>}
-					<span>{source} · {since(note.updatedAt ?? note.at, now)}</span>
-					{(note.confirmations ?? 0) > 0 && <span>· held up {note.confirmations === 1 ? "once" : `${note.confirmations} times`}{note.confirmedAt ? `, last ${since(note.confirmedAt, now)}` : ""}</span>}
+					<span>{source} · {formatRelativeTime(note.updatedAt ?? note.at, now)}</span>
+					{(note.confirmations ?? 0) > 0 && <span>· held up {note.confirmations === 1 ? "once" : `${note.confirmations} times`}{note.confirmedAt ? `, last ${formatRelativeTime(note.confirmedAt, now)}` : ""}</span>}
 					{note.checked && <span className="min-w-0">· checked: <InlineMarkdown source={note.checked} /></span>}
 					{note.evidence && <span className="min-w-0">· last seen: <InlineMarkdown source={note.evidence} /></span>}
 					{note.previous && <Tip label={`Was: ${note.previous}`}><span className="underline decoration-dotted underline-offset-2">· corrected</span></Tip>}
