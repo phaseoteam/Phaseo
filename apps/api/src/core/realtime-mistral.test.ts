@@ -13,6 +13,7 @@ import {
 	canonicalModel,
 	normalizeRealtimeUsage,
 	priceRealtimeUsage,
+	realtimeBilledMeters,
 	providerFromModel,
 	realtimeMaxDurationSeconds,
 } from "./realtime-sessions";
@@ -139,7 +140,10 @@ describe("Mistral realtime billing", () => {
 
 	it("prices per input audio minute and needs no token meters", () => {
 		const usage = normalizeRealtimeUsage({ input_audio_ms: 8_740 });
-		const priced = (priceRealtimeUsage(usage, card).pricing as any).total_nanos;
+		// Session creation refuses a card missing any billed meter, so Mistral's must be the audio minutes it is priced on.
+		expect(realtimeBilledMeters("mistral")).toEqual(["input_audio_minutes"]);
+		expect(realtimeBilledMeters("mistral").every((meter) => card.rules.some((rule: any) => rule.meter === meter))).toBe(true);
+		const priced = (priceRealtimeUsage(usage, card, "mistral").pricing as any).total_nanos;
 		// 8.74 s at $0.008 per minute.
 		expect(priced).toBeGreaterThanOrEqual(1_165_333);
 		expect(priced).toBeLessThanOrEqual(1_165_334);

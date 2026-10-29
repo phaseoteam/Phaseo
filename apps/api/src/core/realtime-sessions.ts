@@ -936,6 +936,8 @@ export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCa
 export function realtimeBilledMeters(provider: RealtimeProvider): string[] {
 	if (provider === ELEVENLABS_PROVIDER) return ["audio_minutes", "input_text_tokens", "output_text_tokens"];
 	if (isDurationBilledRealtimeProvider(provider)) return ["audio_minutes"];
+	// Streaming transcription: the audio the relay forwarded, per minute.
+	if (provider === MISTRAL_REALTIME_PROVIDER) return ["input_audio_minutes"];
 	return ["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"];
 }
 
