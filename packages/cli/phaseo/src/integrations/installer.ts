@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
 import { access } from "node:fs/promises";
-import { delimiter, isAbsolute, join } from "node:path";
+import { delimiter, isAbsolute, join, win32 } from "node:path";
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
 import { detectInstalledPackageManager, type PackageManager } from "../installation.js";
@@ -180,10 +180,22 @@ async function availableManager(): Promise<AvailablePackageManager> {
 	throw new Error("A Node.js package manager is required to install coding harnesses");
 }
 
+/**
+ * Absolute path to cmd.exe: ComSpec when it is an absolute path, otherwise System32 under SystemRoot.
+ * A bare "cmd.exe" would be looked up by the parent process, which can search the current directory.
+ */
+export function windowsCommandInterpreter(env: NodeJS.ProcessEnv = process.env): string {
+	const comSpec = env.ComSpec ?? env.COMSPEC;
+	if (comSpec && win32.isAbsolute(comSpec) && /^[A-Za-z]:[\\/]/.test(comSpec)) return comSpec;
+	const systemRoot = env.SystemRoot ?? env.SYSTEMROOT ?? env.windir ?? env.WINDIR;
+	const root = systemRoot && /^[A-Za-z]:[\\/]/.test(systemRoot) ? systemRoot : "C:\\Windows";
+	return win32.join(root, "System32", "cmd.exe");
+}
+
 export function packageManagerChildInvocation(
 	invocation: InstallInvocation,
 	platform: NodeJS.Platform = process.platform,
-	commandInterpreter = process.env.ComSpec || "cmd.exe",
+	commandInterpreter = windowsCommandInterpreter(),
 ): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
 	const executable = invocation.executable ?? invocation.command;
 	if (platform !== "win32" || !/\.cmd$/i.test(executable)) return { command: executable, args: invocation.args };

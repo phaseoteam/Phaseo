@@ -137,9 +137,11 @@ function parseSession(raw: string): Session | null {
 	}
 }
 
-async function runCommand(file: string, args: string[], input?: string): Promise<string> {
+export async function runCommand(file: string, args: string[], input?: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const child = spawn(file, args, { stdio: "pipe" });
+		// A helper that exits before reading stdin raises EPIPE here; the exit code reports the failure.
+		child.stdin.on("error", () => undefined);
 		let stdout = "";
 		let stderr = "";
 		child.stdout.setEncoding("utf8");

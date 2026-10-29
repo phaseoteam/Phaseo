@@ -31,7 +31,7 @@ import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "./integrations/credential.js";
-import { findPackageManagerExecutable, packageManagerChildEnv, packageManagerChildInvocation } from "./integrations/installer.js";
+import { findPackageManagerExecutable, packageManagerChildEnv, packageManagerChildInvocation, windowsCommandInterpreter } from "./integrations/installer.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -594,7 +594,7 @@ export async function updateChildInvocation(
 	manager: PackageManager,
 	env: NodeJS.ProcessEnv = process.env,
 	platform: NodeJS.Platform = process.platform,
-	commandInterpreter = env.ComSpec || "cmd.exe",
+	commandInterpreter = windowsCommandInterpreter(env),
 ) {
 	const executable = await findPackageManagerExecutable(manager, env, platform);
 	if (!executable) throw new Error(`Could not find ${manager} on PATH. Run: ${updateCommandFor(manager)}`);

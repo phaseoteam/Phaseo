@@ -22,7 +22,7 @@ import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getInte
 import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
-import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation } from "../src/integrations/installer.js";
+import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
 import { updateChildInvocation } from "../src/index.js";
 
 test("Codex profile uses the Responses API without embedding a credential", () => {
@@ -1002,6 +1002,11 @@ test("Hermes re-setup updates the managed block in place so later references sti
 test("typical Hermes .env files are supported, including CRLF", () => {
 	const typical = [
 		"# Hermes Agent provider keys",
+		// Comment lines in the style of Hermes' own .env.example: quotes, backticks and non-ASCII.
+		"# Use 'hermes model' or 'hermes setup' to change it.",
+		"# Backend type: \"local\", \"docker\", or a plugin (`hermes plugins install singularity`).",
+		"# Register a bot: https://dev.botframework.com/ → \"Register a bot\" — then paste C:\\path here",
+		"  # indented comment with Docker's driver",
 		"",
 		"ANTHROPIC_API_KEY=sk-ant-example_123",
 		"export OPENROUTER_API_KEY=sk-or-v1-abc",
@@ -1021,7 +1026,7 @@ test("typical Hermes .env files are supported, including CRLF", () => {
 
 test("Hermes .env files outside the allowlist are refused and left unchanged", async () => {
 	for (const unsupported of [
-		'A="open', "A='it\\'s'", "A=`cmd`", "# don't", 'A="x\\"y"', "A='x\\y'", "WIN=C:\\dir", "A=two words",
+		'A="open', "A='it\\'s'", "A=`cmd`", 'A="x\\"y"', "﻿# comment after a byte-order mark", "# comment\rOPENAI_API_KEY=hidden", "A='x\\y'", "WIN=C:\\dir", "A=two words",
 		"A=1 # it's", "1BAD=x", "A.B=x", "A=1\rB=2","\ufeffA=1", "A=caf\u00e9", "A=\u000bB", "export=1 x",
 	]) {
 		assert.notEqual(firstUnsupportedHermesEnvLine(`${unsupported}\n`), null, JSON.stringify(unsupported));
@@ -1144,4 +1149,15 @@ test("Hermes .env writes are atomic, private, keep other lines and refuse symlin
 	} finally {
 		await rm(root, { recursive: true, force: true });
 	}
+});
+
+test("cmd.exe is always an absolute path, even without ComSpec", () => {
+	assert.equal(windowsCommandInterpreter({ ComSpec: String.raw`D:\Windows\system32\cmd.exe` }), String.raw`D:\Windows\system32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({ SystemRoot: String.raw`D:\Windows` }), String.raw`D:\Windows\System32\cmd.exe`);
+	// A relative ComSpec would be searched for by the parent process, so it is not used.
+	assert.equal(windowsCommandInterpreter({ ComSpec: "cmd.exe", SystemRoot: String.raw`D:\Windows` }), String.raw`D:\Windows\System32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({ ComSpec: String.raw`\\server\share\cmd.exe` }), String.raw`C:\Windows\System32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({}), String.raw`C:\Windows\System32\cmd.exe`);
+	const invocation = packageManagerChildInvocation({ command: "npm", executable: String.raw`C:\nodejs\npm.cmd`, args: ["--version"] }, "win32", windowsCommandInterpreter({}));
+	assert.equal(invocation.command, String.raw`C:\Windows\System32\cmd.exe`);
 });

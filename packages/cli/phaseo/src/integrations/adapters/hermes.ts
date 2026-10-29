@@ -104,23 +104,27 @@ function withoutLegacyLine(text: string, legacyKey: string | undefined): string 
 }
 
 const BLANK_LINE = /^[ \t]*$/;
-const COMMENT_LINE = /^[ \t]*#[^'"`\\]*$/;
+/**
+ * python-dotenv ends a full-line comment only at CR or LF, so any other text (quotes, backticks,
+ * backslashes, non-ASCII such as the dashes and arrows in Hermes' own .env.example) is safe there.
+ */
+const FULL_LINE_COMMENT = /^[ \t]*#[^\r\n]*$/;
 /** NAME=VALUE where VALUE is unquoted (no spaces, quotes, backslashes or #) or quoted on one line without escapes. */
 const ASSIGNMENT_LINE = /^[ \t]*(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*=[ \t]*(?:[^'"`\\#\s]*|"[^"\\]*"|'[^'\\]*')[ \t]*(?:#[^'"`\\]*)?$/;
 
 /**
  * Hermes reads .env with python-dotenv, whose rules for quoting, escapes, multiline values and
- * newlines are hard to mirror exactly. Phaseo only edits files where every line is blank, a comment
- * or a single-line NAME=VALUE assignment, in printable ASCII with LF or CRLF line endings. Returns
- * the 1-based number of the first other line, or null when the whole file is supported. For
- * supported files the line-based edits and the OPENAI_API_KEY check below are exact.
+ * newlines are hard to mirror exactly. Phaseo only edits files with LF or CRLF line endings where
+ * every line is a full-line comment, or is blank or a single-line NAME=VALUE assignment in
+ * printable ASCII. Returns the 1-based number of the first other line, or null when the whole file
+ * is supported. For supported files the line-based edits and the OPENAI_API_KEY check below are exact.
  */
 export function firstUnsupportedHermesEnvLine(text: string): number | null {
 	const lines = text.split("\n");
 	for (const [index, raw] of lines.entries()) {
 		// A CR is allowed only as part of CRLF; python-dotenv treats a lone CR as a newline.
 		const line = index < lines.length - 1 && raw.endsWith("\r") ? raw.slice(0, -1) : raw;
-		const supported = /^[\t\x20-\x7e]*$/.test(line) && (BLANK_LINE.test(line) || COMMENT_LINE.test(line) || ASSIGNMENT_LINE.test(line));
+		const supported = FULL_LINE_COMMENT.test(line) || (/^[\t\x20-\x7e]*$/.test(line) && (BLANK_LINE.test(line) || ASSIGNMENT_LINE.test(line)));
 		if (!supported) return index + 1;
 	}
 	return null;
