@@ -113,10 +113,14 @@ describe("Mistral realtime transcription models", () => {
 	});
 
 	it("lets a client change transcription settings but never the audio format the relay meters", () => {
+		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { language: "fr", target_streaming_delay_ms: 480 } }))
+			.toEqual({ type: "session.update", session: { language: "fr", target_streaming_delay_ms: 480 } });
+		// A mixed update is rejected whole, so a client never thinks its sample rate changed.
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: {
-			language: "fr", target_streaming_delay_ms: 480, audio_format: { encoding: "pcm_s16le", sample_rate: 8000 },
-		} })).toEqual({ type: "session.update", session: { language: "fr", target_streaming_delay_ms: 480 } });
+			language: "fr", audio_format: { encoding: "pcm_s16le", sample_rate: 8000 },
+		} })).toBeNull();
 		expect(sanitizeMistralSessionUpdate({ type: "session.update", session: { audio_format: {} } })).toBeNull();
+		expect(sanitizeMistralSessionUpdate({ type: "session.update" })).toBeNull();
 	});
 });
 
@@ -193,6 +197,22 @@ describe("Mistral realtime relay", () => {
 		await vi.advanceTimersByTimeAsync(10_000);
 		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
 		expect(mocks.settleRealtimeSession.mock.calls[0][0]).toMatchObject({ usage: { input_audio_ms: 300 } });
+	});
+
+	it("flushes and waits for the final transcript when the 60-minute cap is reached", async () => {
+		vi.useFakeTimers();
+		const { object, storage } = relay();
+		await play(object, [created]);
+		await speak(object, 10);
+		// The duration alarm only acts on a session this object holds.
+		storage.data.set("session_id", "rt_test");
+		await object.alarm();
+		expect(upstreamSent(object).slice(-2)).toEqual([{ type: "input_audio.flush" }, { type: "input_audio.end" }]);
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+		await play(object, [done]);
+		expect(sentOfType(object, "transcription.done")).toHaveLength(1);
+		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
+		expect(mocks.settleRealtimeSession.mock.calls[0][0]).toMatchObject({ status: "expired", disconnectReason: "realtime_max_duration" });
 	});
 
 	it("settles at once when no audio was sent", async () => {

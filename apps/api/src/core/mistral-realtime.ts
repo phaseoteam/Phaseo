@@ -62,14 +62,17 @@ export function mistralProviderModel(model: string): string {
 }
 
 /**
- * A client session.update, reduced to the fields a client may set. Returns
- * null when nothing allowed is left.
+ * A client session.update with only the fields a client may set. Returns null,
+ * so the whole update is rejected, when it sets anything else (such as the
+ * audio format the relay meters) or nothing at all.
  */
 export function sanitizeMistralSessionUpdate(message: Record<string, unknown>): Record<string, unknown> | null {
-	const session = message.session && typeof message.session === "object" ? message.session as Record<string, unknown> : {};
+	if (!message.session || typeof message.session !== "object" || Array.isArray(message.session)) return null;
 	const allowed: Record<string, unknown> = {};
-	for (const field of MISTRAL_CLIENT_SESSION_FIELDS) {
-		if (session[field] !== undefined) allowed[field] = session[field];
+	for (const [field, value] of Object.entries(message.session as Record<string, unknown>)) {
+		if (value === undefined) continue;
+		if (!(MISTRAL_CLIENT_SESSION_FIELDS as readonly string[]).includes(field)) return null;
+		allowed[field] = value;
 	}
 	return Object.keys(allowed).length > 0 ? { type: "session.update", session: allowed } : null;
 }

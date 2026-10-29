@@ -1711,6 +1711,14 @@ export class RealtimeRelayDurableObject {
 		this.usage.assistant_response_in_flight = true;
 	}
 
+	/**
+	 * Mistral transcribes audio it already has after the stream is ended, so
+	 * every end path flushes it and waits for transcription.done.
+	 */
+	private mistralFinishPending(): boolean {
+		return !!this.session && providerFromSession(this.session) === MISTRAL_REALTIME_PROVIDER && this.receivedAudioMs > 0;
+	}
+
 	private hasPendingBilling(): boolean {
 		if (!this.session || isDurationBilledRealtimeProvider(providerFromSession(this.session))) return false;
 		return this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive;
@@ -1924,9 +1932,7 @@ export class RealtimeRelayDurableObject {
 		if (this.pendingSettlement?.phase === "authoritative") return;
 		const provider = providerFromSession(this.session);
 		this.cancelResponsesOnDrain = true;
-		// Mistral transcribes audio it already has after the stream is ended, so
-		// the caller still gets the final transcript.
-		const mistralFinishing = provider === MISTRAL_REALTIME_PROVIDER && this.receivedAudioMs > 0;
+		const mistralFinishing = this.mistralFinishPending();
 		if (
 			isDurationBilledRealtimeProvider(provider) ||
 			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear && !mistralFinishing) ||
@@ -2575,7 +2581,7 @@ export class RealtimeRelayDurableObject {
 			await this.forceAuthoritativeUsage(pending.status, pending.reason, { statusFromResponses: pending.statusFromResponses });
 			return;
 		}
-		if (!pending && (this.hasPendingBilling() || this.waitingForOpenAIInputClear)) {
+		if (!pending && (this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.mistralFinishPending())) {
 			await this.forceAuthoritativeUsage("expired", "realtime_max_duration");
 			return;
 		}
