@@ -127,6 +127,23 @@ test("macOS keychain stores only a data key; any session size is kept in an AES-
 	});
 });
 
+test("session file decryption pins the GCM nonce and tag lengths", () => {
+	const key = Buffer.alloc(32, 7);
+	const session = { accessToken: "a", refreshToken: "r", expiresAt: 1, apiUrl: "https://api.phaseo.app" };
+	const payload = JSON.parse(encryptSessionPayload(session, key));
+	assert.equal(Buffer.from(payload.iv, "base64").length, 12);
+	assert.equal(Buffer.from(payload.tag, "base64").length, 16);
+	assert.deepEqual(decryptSessionPayload(JSON.stringify(payload), key), session);
+	for (const bytes of [4, 8, 12, 15]) {
+		const truncated = { ...payload, tag: Buffer.from(payload.tag, "base64").subarray(0, bytes).toString("base64") };
+		assert.equal(decryptSessionPayload(JSON.stringify(truncated), key), null, `${bytes}-byte tag rejected`);
+	}
+	const longNonce = { ...payload, iv: Buffer.alloc(16).toString("base64") };
+	assert.equal(decryptSessionPayload(JSON.stringify(longNonce), key), null);
+	const shortNonce = { ...payload, iv: Buffer.alloc(8).toString("base64") };
+	assert.equal(decryptSessionPayload(JSON.stringify(shortNonce), key), null);
+});
+
 test("macOS keychain migrates a whole-session item from older versions on first read", async () => {
 	await withConfigDir(async () => {
 		const security = fakeSecurity();

@@ -229,6 +229,8 @@ async function clearDpapiSession(): Promise<void> {
 
 const SESSION_KEY_SERVICE = "phaseo-cli-session-key";
 const KEYCHAIN_FILE_AAD = Buffer.from("phaseo-cli-session-v1");
+const GCM_NONCE_BYTES = 12;
+const GCM_TAG_BYTES = 16;
 
 export type SecurityCommand = (args: string[], input?: string) => Promise<string>;
 
@@ -249,8 +251,8 @@ export function keychainAddCommand(service: string, value: string): { args: stri
 }
 
 export function encryptSessionPayload(session: Session, key: Buffer): string {
-	const iv = randomBytes(12);
-	const cipher = createCipheriv("aes-256-gcm", key, iv);
+	const iv = randomBytes(GCM_NONCE_BYTES);
+	const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: GCM_TAG_BYTES });
 	cipher.setAAD(KEYCHAIN_FILE_AAD);
 	const data = Buffer.concat([cipher.update(JSON.stringify(session), "utf8"), cipher.final()]);
 	return `${JSON.stringify({ version: 1, iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: data.toString("base64") })}\n`;
@@ -260,9 +262,13 @@ export function decryptSessionPayload(payload: string, key: Buffer): Session | n
 	try {
 		const parsed = JSON.parse(payload) as { version?: unknown; iv?: unknown; tag?: unknown; data?: unknown };
 		if (parsed.version !== 1 || typeof parsed.iv !== "string" || typeof parsed.tag !== "string" || typeof parsed.data !== "string") return null;
-		const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(parsed.iv, "base64"));
+		const iv = Buffer.from(parsed.iv, "base64");
+		const tag = Buffer.from(parsed.tag, "base64");
+		// GCM accepts truncated tags unless the length is pinned, which weakens authentication.
+		if (iv.length !== GCM_NONCE_BYTES || tag.length !== GCM_TAG_BYTES) return null;
+		const decipher = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: GCM_TAG_BYTES });
 		decipher.setAAD(KEYCHAIN_FILE_AAD);
-		decipher.setAuthTag(Buffer.from(parsed.tag, "base64"));
+		decipher.setAuthTag(tag);
 		const plain = Buffer.concat([decipher.update(Buffer.from(parsed.data, "base64")), decipher.final()]);
 		return parseSession(plain.toString("utf8"));
 	} catch {

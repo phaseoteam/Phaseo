@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { getIntegrationGatewayCredential } from "../credential.js";
+import { readSession } from "../../session.js";
 import { isCommandAvailable } from "../files.js";
 import type { IntegrationAdapter, IntegrationOptions } from "../types.js";
 
@@ -12,7 +13,8 @@ const KEYS = ["model.provider", "model.base_url", "model.default"] as const;
 
 type PreviousValue = { present: boolean; value?: unknown };
 /** envPath records the resolved .env file so removal cleans the file setup wrote, even if HERMES_HOME changes. */
-type HermesState = { version: 1; values: Record<string, PreviousValue>; envPath?: string };
+/** keyFormat "managed-block" marks states whose key is in Phaseo's delimited .env block. */
+type HermesState = { version: 1; values: Record<string, PreviousValue>; envPath?: string; keyFormat?: "managed-block" };
 
 async function readState(options: IntegrationOptions): Promise<HermesState | null> {
 	try {
@@ -68,7 +70,8 @@ export function resolveHermesHome(options: IntegrationOptions, env: NodeJS.Proce
 	const configured = env.HERMES_HOME?.trim();
 	if (!configured) return join(options.homeDir, ".hermes");
 	const expanded = expandVariables(configured, env, platform);
-	const home = expanded === "~" ? options.homeDir : /^~[\/]/.test(expanded) ? join(options.homeDir, expanded.slice(2)) : expanded;
+	const separator = platform === "win32" ? /^~[\\/]/ : /^~\//;
+	const home = expanded === "~" ? options.homeDir : separator.test(expanded) ? join(options.homeDir, expanded.slice(2)) : expanded;
 	return resolve(home);
 }
 
@@ -76,23 +79,83 @@ export function hermesEnvPath(options: IntegrationOptions, env: NodeJS.ProcessEn
 	return join(resolveHermesHome(options, env, platform), ".env");
 }
 
-const OPENAI_KEY_LINE = /^\s*(?:export\s+)?OPENAI_API_KEY\s*=/;
+export const HERMES_BLOCK_START = "# >>> phaseo managed (do not edit)";
+export const HERMES_BLOCK_END = "# <<< phaseo managed";
+const OPENAI_API_KEY = "OPENAI_API_KEY";
 
-function envLines(before: string | null): string[] {
-	return (before ?? "").split(/\r?\n/).filter((line, index, all) => !(index === all.length - 1 && line === ""));
+const bareLine = (line: string) => line.replace(/\r$/, "");
+
+/** Removes Phaseo's managed block(s), leaving every other line byte-for-byte. */
+function withoutManagedBlock(text: string): string {
+	let lines = text.split("\n");
+	for (;;) {
+		const start = lines.findIndex((line) => bareLine(line) === HERMES_BLOCK_START);
+		if (start === -1) return lines.join("\n");
+		const end = lines.findIndex((line, index) => index > start && bareLine(line) === HERMES_BLOCK_END);
+		if (end === -1) throw new Error("Hermes' .env has an unterminated Phaseo-managed block; fix or remove it by hand, then retry");
+		lines = [...lines.slice(0, start), ...lines.slice(end + 1)];
+	}
 }
 
-/** Sets OPENAI_API_KEY in Hermes' .env contents, replacing an existing assignment. */
-export function renderHermesEnv(before: string | null, key: string): string {
-	if (/[\r\n]/.test(key)) throw new Error("Phaseo returned an invalid gateway credential");
-	const kept = envLines(before).filter((line) => !OPENAI_KEY_LINE.test(line));
-	return `${[...kept, `OPENAI_API_KEY=${key}`].join("\n")}\n`;
+/** Removes the exact `OPENAI_API_KEY=<key>` line an earlier Phaseo version wrote, if present. */
+function withoutLegacyLine(text: string, legacyKey: string | undefined): string {
+	if (!legacyKey) return text;
+	return text.split("\n").filter((line) => bareLine(line) !== `${OPENAI_API_KEY}=${legacyKey}`).join("\n");
 }
 
-/** Removes OPENAI_API_KEY from Hermes' .env contents, keeping every other line. */
-export function renderHermesEnvWithoutKey(before: string): string {
-	const kept = envLines(before).filter((line) => !OPENAI_KEY_LINE.test(line));
-	return kept.length ? `${kept.join("\n")}\n` : "";
+/** Index just past the closing quote, or -1 when the quoted value continues onto later lines. */
+function closingQuote(text: string, from: number, quote: string): number {
+	for (let index = from; index < text.length; index += 1) {
+		if (quote === "\"" && text[index] === "\\") index += 1;
+		else if (text[index] === quote) return index + 1;
+	}
+	return -1;
+}
+
+/**
+ * True when the .env text assigns OPENAI_API_KEY, including `export` and quoted-name forms.
+ * Multiline quoted values are skipped, and any other line mentioning the name counts as a
+ * definition, so unclear cases refuse rather than overwrite.
+ */
+export function hermesEnvDefinesOpenAIKey(text: string): boolean {
+	let openQuote: string | null = null;
+	for (const raw of text.split("\n")) {
+		const line = bareLine(raw);
+		if (openQuote) {
+			if (closingQuote(line, 0, openQuote) !== -1) openQuote = null;
+			continue;
+		}
+		if (/^\s*(?:#|$)/.test(line)) continue;
+		const match = /^\s*(?:export\s+)?(?:"([^"]*)"|'([^']*)'|([^\s=#"']+))\s*=\s*(.*)$/.exec(line);
+		if (!match) {
+			if (line.includes(OPENAI_API_KEY)) return true;
+			continue;
+		}
+		if ((match[1] ?? match[2] ?? match[3]) === OPENAI_API_KEY) return true;
+		const value = match[4] ?? "";
+		const quote = value[0];
+		if ((quote === "\"" || quote === "'") && closingQuote(value, 1, quote) === -1) openQuote = quote;
+	}
+	return false;
+}
+
+/**
+ * Writes Phaseo's key as a delimited managed block, replacing only an earlier Phaseo block (or the
+ * exact line an earlier version wrote). Other lines are never edited.
+ */
+export function renderHermesEnv(before: string | null, key: string, legacyKey?: string): string {
+	if (!/^[A-Za-z0-9_.-]+$/.test(key)) throw new Error("Phaseo returned an invalid gateway credential");
+	const outside = withoutLegacyLine(withoutManagedBlock(before ?? ""), legacyKey);
+	if (hermesEnvDefinesOpenAIKey(outside)) {
+		throw new Error("Hermes' .env already defines OPENAI_API_KEY outside the Phaseo-managed block; remove it before Phaseo setup so it is not overwritten");
+	}
+	const separator = outside === "" || outside.endsWith("\n") ? "" : "\n";
+	return `${outside}${separator}${HERMES_BLOCK_START}\n${OPENAI_API_KEY}=${key}\n${HERMES_BLOCK_END}\n`;
+}
+
+/** Removes only Phaseo's managed block (and the exact line an earlier version wrote, if known). */
+export function renderHermesEnvWithoutKey(before: string, legacyKey?: string): string {
+	return withoutLegacyLine(withoutManagedBlock(before), legacyKey);
 }
 
 async function lstatIfExists(path: string) {
@@ -134,15 +197,23 @@ export async function writeEnvFileSafely(path: string, contents: string): Promis
 }
 
 /** Writes the key to Hermes' .env file directly, so it never appears in a process argument list. */
-export async function writeHermesKey(path: string, key: string): Promise<void> {
-	await writeEnvFileSafely(path, renderHermesEnv(await readEnvFileSafely(path), key));
+export async function writeHermesKey(path: string, key: string, legacyKey?: string): Promise<void> {
+	await writeEnvFileSafely(path, renderHermesEnv(await readEnvFileSafely(path), key, legacyKey));
 }
 
-export async function removeHermesKey(path: string): Promise<void> {
+/** Removes Phaseo's block; returns false if an OPENAI_API_KEY written by an earlier version could not be identified. */
+export async function removeHermesKey(path: string, legacy?: { key?: string }): Promise<boolean> {
 	const before = await readEnvFileSafely(path);
-	if (before === null) return;
-	const after = renderHermesEnvWithoutKey(before);
+	if (before === null) return true;
+	const after = renderHermesEnvWithoutKey(before, legacy?.key);
 	if (after !== before) await writeEnvFileSafely(path, after);
+	return !legacy || !hermesEnvDefinesOpenAIKey(after);
+}
+
+/** States from before the managed block wrote a bare OPENAI_API_KEY line holding the session's Hermes key. */
+async function legacyKeyFor(state: HermesState): Promise<{ key?: string } | undefined> {
+	if (state.keyFormat === "managed-block") return undefined;
+	return { key: (await readSession())?.integrationGatewayCredentials?.hermes?.key };
 }
 
 async function restore(state: HermesState, options: IntegrationOptions): Promise<void> {
@@ -151,7 +222,10 @@ async function restore(state: HermesState, options: IntegrationOptions): Promise
 		if (previous?.present) await set(key, previous.value);
 		else await run(["config", "unset", key]);
 	}
-	await removeHermesKey(state.envPath ?? hermesEnvPath(options));
+	const envPath = state.envPath ?? hermesEnvPath(options);
+	if (!await removeHermesKey(envPath, await legacyKeyFor(state))) {
+		process.stderr.write(`Phaseo could not identify the OPENAI_API_KEY line an earlier Phaseo version wrote to ${envPath}. Remove it by hand if it is no longer needed.\n`);
+	}
 }
 
 export const hermesAdapter: IntegrationAdapter = {
@@ -181,7 +255,18 @@ export const hermesAdapter: IntegrationAdapter = {
 		if (managed) {
 			// Already managed (for example after the key expired): write the current key and model
 			// settings again, keeping the original restore state.
-			await writeHermesKey(managed.envPath ?? hermesEnvPath(options), await getIntegrationGatewayCredential("hermes"));
+			const envPath = managed.envPath ?? hermesEnvPath(options);
+			// Read the stored key before getIntegrationGatewayCredential can replace an expired one.
+			const legacy = await legacyKeyFor(managed);
+			try {
+				await writeHermesKey(envPath, await getIntegrationGatewayCredential("hermes"), legacy?.key);
+			} catch (error) {
+				if (legacy && error instanceof Error && /outside the Phaseo-managed block/.test(error.message)) {
+					throw new Error(`${envPath} has an OPENAI_API_KEY line from an earlier Phaseo version that could not be matched to the stored key. Remove that line, then run phaseo setup hermes again.`);
+				}
+				throw error;
+			}
+			if (legacy) await writeFile(statePath(options), `${JSON.stringify({ ...managed, envPath, keyFormat: "managed-block" }, null, 2)}\n`, { mode: 0o600 });
 			await set("model.provider", "custom");
 			await set("model.base_url", BASE_URL);
 			await set("model.default", options.model ?? DEFAULT_MODEL);
@@ -191,7 +276,7 @@ export const hermesAdapter: IntegrationAdapter = {
 		if (existingKey.present && existingKey.value) throw new Error("Hermes already defines OPENAI_API_KEY; remove it before Phaseo setup so it is not overwritten");
 		const values: Record<string, PreviousValue> = {};
 		for (const key of KEYS) values[key] = await get(key);
-		const state: HermesState = { version: 1, values, envPath: hermesEnvPath(options) };
+		const state: HermesState = { version: 1, values, envPath: hermesEnvPath(options), keyFormat: "managed-block" };
 		const path = statePath(options);
 		await mkdir(join(options.homeDir, ".config", "phaseo", "integrations"), { recursive: true });
 		await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });

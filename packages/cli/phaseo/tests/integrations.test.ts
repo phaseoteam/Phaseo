@@ -19,7 +19,7 @@ import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
 import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
-import { hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
+import { HERMES_BLOCK_END, HERMES_BLOCK_START, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
 import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation } from "../src/integrations/installer.js";
@@ -931,14 +931,49 @@ test("re-login keeps integration keys only for the same API, account and workspa
 	});
 });
 
-test("Hermes key is written to its env file instead of a process argument", () => {
-	assert.equal(renderHermesEnv(null, "phaseo_v1_sk_x"), "OPENAI_API_KEY=phaseo_v1_sk_x\n");
-	assert.equal(
-		renderHermesEnv("ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=\n# note\n", "phaseo_v1_sk_x"),
-		"ANTHROPIC_API_KEY=a\n# note\nOPENAI_API_KEY=phaseo_v1_sk_x\n",
-	);
-	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=x\nB=2\n"), "A=1\nB=2\n");
+const block = (key: string) => `${HERMES_BLOCK_START}\nOPENAI_API_KEY=${key}\n${HERMES_BLOCK_END}\n`;
+
+test("Hermes key is written to its env file as a delimited Phaseo block", () => {
+	assert.equal(renderHermesEnv(null, "phaseo_v1_sk_x"), block("phaseo_v1_sk_x"));
+	assert.equal(renderHermesEnv("A=1", "phaseo_v1_sk_x"), `A=1\n${block("phaseo_v1_sk_x")}`);
+	// Re-setup replaces only the block; CRLF lines elsewhere stay byte-for-byte.
+	const withBlock = `A=1\r\n${block("phaseo_v1_sk_old")}B=2\r\n`;
+	assert.equal(renderHermesEnv(withBlock, "phaseo_v1_sk_new"), `A=1\r\nB=2\r\n${block("phaseo_v1_sk_new")}`);
+	assert.equal(renderHermesEnvWithoutKey(withBlock), "A=1\r\nB=2\r\n");
+	assert.throws(() => renderHermesEnv(`${HERMES_BLOCK_START}\nOPENAI_API_KEY=x\n`, "phaseo_v1_sk_x"), /unterminated Phaseo-managed block/);
 	assert.throws(() => renderHermesEnv(null, "bad\nINJECTED=1"), /invalid gateway credential/);
+	assert.throws(() => renderHermesEnv(null, "bad key"), /invalid gateway credential/);
+});
+
+test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_API_KEY", () => {
+	// A multiline quoted value that happens to contain the name is user data, not a definition.
+	const multiline = 'OTHER="first\nOPENAI_API_KEY=embedded\nlast"\nKEEP=1\n';
+	assert.equal(hermesEnvDefinesOpenAIKey(multiline), false);
+	const written = renderHermesEnv(multiline, "phaseo_v1_sk_x");
+	assert.equal(written, `${multiline}${block("phaseo_v1_sk_x")}`);
+	assert.equal(renderHermesEnvWithoutKey(written), multiline);
+
+	for (const definition of [
+		"OPENAI_API_KEY=secret",
+		"  export OPENAI_API_KEY = secret",
+		"'OPENAI_API_KEY'=secret",
+		'"OPENAI_API_KEY"="secret"',
+		"OPENAI_API_KEY=",
+		"OPENAI_API_KEY: secret",
+	]) {
+		assert.equal(hermesEnvDefinesOpenAIKey(`A=1\n${definition}\n`), true, definition);
+		assert.throws(() => renderHermesEnv(`A=1\n${definition}\n`, "phaseo_v1_sk_x"), /outside the Phaseo-managed block/, definition);
+	}
+	assert.equal(hermesEnvDefinesOpenAIKey("# OPENAI_API_KEY=commented\nOPENAI_API_KEY_OLD=1\n"), false);
+
+	// Continuation lines of a user's multiline value are left exactly as they were.
+	const continued = 'NOTE="line one\n  line two"\n';
+	assert.equal(renderHermesEnvWithoutKey(renderHermesEnv(continued, "phaseo_v1_sk_x")), continued);
+
+	// The bare line an earlier Phaseo version wrote is migrated only when it matches the stored key exactly.
+	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}`);
+	assert.throws(() => renderHermesEnv("OPENAI_API_KEY=phaseo_v1_sk_other\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), /outside the Phaseo-managed block/);
+	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_old"), "A=1\n");
 });
 
 test("Hermes home is resolved like Hermes does, expanding ~ and environment variables", () => {
@@ -954,6 +989,15 @@ test("Hermes home is resolved like Hermes does, expanding ~ and environment vari
 	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "win32"), join(base, "hermes", ".env"));
 	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "linux"), join(resolve("%DATA%/hermes"), ".env"));
 	assert.equal(resolveHermesHome(options, { HERMES_HOME: "relative-hermes" }), resolve("relative-hermes"));
+	// On other platforms, as in Python's expanduser, "~\\" is not a home prefix.
+	assert.equal(resolveHermesHome(options, { HERMES_HOME: "~\\agents" }, "linux"), resolve("~\\agents"));
+});
+
+test("Hermes home accepts ~\\ on Windows", { skip: process.platform !== "win32" }, () => {
+	const homeDir = resolve("home-user");
+	const options = { homeDir } as Parameters<typeof hermesEnvPath>[0];
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~\\agents\\hermes" }, "win32"), join(homeDir, "agents", "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~/agents/hermes" }, "win32"), join(homeDir, "agents", "hermes", ".env"));
 });
 
 test("Hermes .env writes are atomic, private, keep other lines and refuse symlinks", async () => {
@@ -962,16 +1006,22 @@ test("Hermes .env writes are atomic, private, keep other lines and refuse symlin
 		const home = join(root, "hermes");
 		const envPath = join(home, ".env");
 		await writeHermesKey(envPath, "phaseo_v1_sk_first");
-		assert.equal(await readFile(envPath, "utf8"), "OPENAI_API_KEY=phaseo_v1_sk_first\n");
-		await writeFile(envPath, "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=old\n", { mode: 0o644 });
+		assert.equal(await readFile(envPath, "utf8"), block("phaseo_v1_sk_first"));
+		await writeFile(envPath, `ANTHROPIC_API_KEY=a\n${block("phaseo_v1_sk_first")}`, { mode: 0o644 });
 		await writeHermesKey(envPath, "phaseo_v1_sk_second");
-		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_second\n");
+		assert.equal(await readFile(envPath, "utf8"), `ANTHROPIC_API_KEY=a\n${block("phaseo_v1_sk_second")}`);
 		if (process.platform !== "win32") {
 			assert.equal((await stat(envPath)).mode & 0o777, 0o600);
 			assert.equal((await stat(home)).mode & 0o777, 0o700);
 		}
 		assert.deepEqual((await readdir(home)).sort(), [".env"], "no temporary files left behind");
-		await removeHermesKey(envPath);
+		assert.equal(await removeHermesKey(envPath), true);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\n");
+		// A legacy line that cannot be matched to the stored key is left in place and reported.
+		await writeFile(envPath, "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_unknown\n");
+		assert.equal(await removeHermesKey(envPath, { key: "phaseo_v1_sk_other" }), false);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_unknown\n");
+		assert.equal(await removeHermesKey(envPath, { key: "phaseo_v1_sk_unknown" }), true);
 		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\n");
 
 		const target = join(root, "elsewhere.env");
