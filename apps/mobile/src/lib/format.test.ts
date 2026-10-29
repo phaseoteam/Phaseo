@@ -1,4 +1,4 @@
-import { formatBytes, formatSeconds, formatSpeed, formatTokenCount, formatTokens, formatUsd, formatUsdAxis, modalityLabel } from "./format";
+import { formatBytes, formatSeconds, formatSpeed, formatTokenCount, formatTokens, formatUsd, modalityLabel } from "./format";
 
 describe("formatUsd", () => {
   it("uses US money formatting, never US$", () => {
@@ -16,12 +16,6 @@ describe("modalityLabel", () => {
 
   it("keeps unknown values readable", () => {
     expect(modalityLabel("video_edit")).toBe("Video edit");
-  });
-});
-
-describe("formatUsdAxis", () => {
-  it("keeps axis money short and US-styled", () => {
-    expect([0, 0.0025, 0.5, 2.5, 40, 1200, 15000].map(formatUsdAxis)).toEqual(["$0", "$0.0025", "$0.5", "$2.5", "$40", "$1.2K", "$15K"]);
   });
 });
 

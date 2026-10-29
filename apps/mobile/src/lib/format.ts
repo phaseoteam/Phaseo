@@ -26,14 +26,6 @@ export function formatPrice(value: number | null | undefined) {
 
 export const nanosToUsd = (nanos: number | null | undefined) => (nanos == null ? null : nanos / 1_000_000_000);
 
-/** Short money for chart axes: $0, $0.005, $2.5, $40, $1.2K. */
-export function formatUsdAxis(value: number) {
-  if (!Number.isFinite(value) || value === 0) return "$0";
-  const abs = Math.abs(value);
-  const text = abs >= 1000 ? `${Number((abs / 1000).toFixed(abs % 1000 ? 1 : 0))}K` : abs >= 1 ? String(Number(abs.toFixed(2))) : String(Number(abs.toPrecision(2)));
-  return `${value < 0 ? "-" : ""}$${text}`;
-}
-
 /** File sizes: 0 B, 512 B, 4.2 KB, 12.3 MB, 1.05 GB (1 KB = 1,024 bytes). */
 export function formatBytes(bytes: number | null | undefined) {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "—";

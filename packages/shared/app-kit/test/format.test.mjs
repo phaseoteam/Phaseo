@@ -7,6 +7,7 @@ import { formatCompactAxisTick, formatRoundedCount } from "../src/format/counts.
 import { formatDuration } from "../src/format/duration.ts";
 import { formatUsd, formatUsdCost, formatUsdHeadlinePrice, formatUsdPrice } from "../src/format/money.ts";
 import { formatLatency, formatTokenCount, formatTokenCountShort, formatTps } from "../src/format/units.ts";
+import { formatUsageDeltaPercent, formatUsageNumber, formatUsagePercent, formatUsageUsd, formatUsageUsdAxis, usageDeltaPercent } from "../src/format/usage.ts";
 import {
 	formatAgoShort,
 	formatCalendarDate,
@@ -261,4 +262,13 @@ test("token limits: in full, or short where space is tight", () => {
 	assert.equal(formatTokenCount(1_048_576, "de-DE"), "1.048.576 tokens");
 	const cases = [[512, "512"], [8_192, "8K"], [131_072, "131K"], [200_000, "200K"], [1_048_576, "1M"], [2_000_000, "2M"]];
 	for (const [value, expected] of cases) assert.equal(formatTokenCountShort(value), expected, `formatTokenCountShort(${value})`);
+});
+
+test("usage dashboard formats: the website's usage page", () => {
+	assert.deepEqual([999, 12_345, 99_999, 100_000, 1_234_567].map(formatUsageNumber), ["999", "12,345", "99,999", "100K", "1.2M"]);
+	assert.deepEqual([0, 0.00412, 0.5, 12.5, 99.99, 1_234.5].map(formatUsageUsd), ["$0.00", "$0.00412", "$0.50", "$12.50", "$99.99", "$1,235"]);
+	assert.deepEqual([0, 0.005, 2.5, 1_200].map(formatUsageUsdAxis), ["$0.00", "$0.005", "$2.50", "$1,200"]);
+	assert.equal(formatUsagePercent(0.1234), "12.3%");
+	assert.equal(formatUsageDeltaPercent(-12.34), "12.3");
+	assert.deepEqual([[150, 100], [50, 100], [5, 0], [0, 0]].map(([current, previous]) => usageDeltaPercent(current, previous)), [50, -50, 100, null]);
 });
