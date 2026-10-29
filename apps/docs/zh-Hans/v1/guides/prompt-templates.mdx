@@ -279,7 +279,7 @@ curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
 
 ### 回滚
 
-要回滚，请把标签移到较早的版本：在该版本上选择**将 production 移到这里**，或发送同样的请求并使用 `"version": "v2"`。固定到 `production` 的请求会重新运行 v2，你的应用无需任何更改。
+要回滚，请把标签移到较早的版本：在**版本和标签**中，从该标签的版本选择器里选择那个版本，或发送同样的请求并使用 `"version": "v2"`。固定到 `production` 的请求会重新运行 v2，你的应用无需任何更改。
 
 与其他预设更改一样，标签移动会在约两分钟内生效。
 

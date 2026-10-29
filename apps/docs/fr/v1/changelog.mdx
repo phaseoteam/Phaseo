@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![Le journal des modifications avec le filtre Produit activé et la liste des dates à côté](/images/changelog/2026-10-28--changelog-filters.png)
 
 - Le journal des modifications couvre désormais les changements du produit et de l'API en plus des sorties de modèles, avec des filtres **Produit**, **API et SDK** et **Modèles** qui conservent la liste des dates ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- L'éditeur de préréglages ajoute **Publier** à côté de **Enregistrer le brouillon**, et **Versions et libellés** donne à chaque libellé un sélecteur de version : choisir une version antérieure revient en arrière ; voir [Modèles de prompt](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Ouvrir une version publiée d'un préréglage affiche ses modèles et messages de modèle, les lignes qui diffèrent de la version par défaut et un bouton **Exécuter** pour l'essayer ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produit</p>
 
 - La section **Versions and labels** de l'éditeur de presets fait pointer des libellés nommés vers des versions publiées : déplacer un libellé revient en arrière en un clic ; voir [Modèles de prompt](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- Le sélecteur de modèles des préréglages ne propose que les modèles que la passerelle sert encore ; avant, il listait aussi des modèles retirés que les requêtes ne pouvaient pas atteindre ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Exécuter un préréglage dans un espace de travail sans crédits l'indique et renvoie vers **Ajouter des crédits** ; avant, une erreur générique s'affichait ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Les pages qui chargent le catalogue complet des modèles, comme l'éditeur de préréglages, le reçoivent du cache ; avant, chaque chargement prenait environ 3 secondes et certains échouaient ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Tous les espaces de travail peuvent utiliser le routage des modèles retirés : les propriétaires et administrateurs l'activent dans **Paramètres -> Routage -> Routage des modèles retirés**, et les requêtes vont au remplaçant approuvé ; voir [Dépréciation et retrait des modèles](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - Le routage des modèles retirés n'utilise un remplaçant approuvé que s'il ne coûte pas plus que le modèle retiré, sauf si les propriétaires et administrateurs autorisent un prix plus élevé ; un remplaçant qu'ils choisissent eux-mêmes est utilisé quel que soit son prix ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- La liste et l'éditeur de préréglages s'ouvrent même si le catalogue complet des modèles ne se charge pas ; avant, la page affichait une erreur ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Les politiques de limites de débit appliquent `concurrent_requests` et renvoient `429` avec le motif `policy_concurrent_requests` et `Retry-After: 1` lorsque tous les emplacements sont pris ; voir [Limites de requêtes](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Les politiques strictes (`fail_closed`) vérifient leurs limites par minute avant d'envoyer la requête à un fournisseur ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Les requêtes envoyées via les passerelles régionales UE et US atteignent désormais les destinations Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Les requêtes vers la plupart des modèles aboutissent de nouveau ; le 23 octobre, après une mise à jour de la politique de données des fournisseurs, elles renvoyaient `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
 
 </div>
 

@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![उत्पाद फ़िल्टर चालू किया हुआ चेंजलॉग और उसके बगल में तारीखों की सूची](/images/changelog/2026-10-28--changelog-filters.png)
 
 - चेंजलॉग में अब मॉडल रिलीज़ के साथ प्रोडक्ट और API बदलाव भी दिखते हैं, और **उत्पाद**, **API और SDK** और **मॉडल** फ़िल्टर तारीखों की सूची बनाए रखते हैं ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261))।
+- प्रीसेट एडिटर में **ड्राफ़्ट सहेजें** के पास **प्रकाशित करें** जुड़ा है, और **संस्करण और लेबल** में हर लेबल के साथ संस्करण चुनने का विकल्प है, इसलिए पुराना संस्करण चुनना रोलबैक है; देखें [प्रॉम्प्ट टेम्पलेट](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))।
+- प्रकाशित प्रीसेट संस्करण खोलने पर उसके मॉडल और टेम्पलेट संदेश, डिफ़ॉल्ट संस्करण से अलग पंक्तियाँ और उसे आज़माने के लिए **चलाएँ** बटन दिखता है ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))।
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">उत्पाद</p>
 
 - प्रीसेट एडिटर का **Versions and labels** सेक्शन नामित लेबल को प्रकाशित संस्करणों से जोड़ता है, इसलिए लेबल को दूसरे संस्करण पर ले जाकर एक क्लिक में अनुरोध पिछले संस्करण पर लौटाए जा सकते हैं; देखें [प्रॉम्प्ट टेम्पलेट](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))।
+- प्रीसेट का मॉडल चयनकर्ता अब सिर्फ़ वे मॉडल दिखाता है जिन्हें गेटवे अभी भी सर्व करता है; पहले इसमें वे रिटायर मॉडल भी दिखते थे जिन तक अनुरोध नहीं पहुँच सकते थे ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260))।
+- बिना क्रेडिट वाले वर्कस्पेस में प्रीसेट चलाने पर यही बताया जाता है और **क्रेडिट जोड़ें** का लिंक मिलता है; पहले एक सामान्य त्रुटि दिखती थी ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276))।
+- पूरा मॉडल कैटलॉग लोड करने वाले पेज, जैसे प्रीसेट एडिटर, उसे कैश से लेते हैं; पहले हर लोड में लगभग 3 सेकंड लगते थे और कुछ विफल हो जाते थे ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278))।
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - हर वर्कस्पेस सेवानिवृत्त मॉडल रूटिंग इस्तेमाल कर सकता है: मालिक और एडमिन इसे **सेटिंग्स -> रूटिंग -> सेवानिवृत्त मॉडल रूटिंग** में चालू करते हैं, और अनुरोध स्वीकृत विकल्प पर जाते हैं; देखें [मॉडल का अप्रचलन और सेवानिवृत्ति](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))।
 - सेवानिवृत्त मॉडल रूटिंग केवल ऐसा स्वीकृत विकल्प इस्तेमाल करती है जो सेवानिवृत्त मॉडल से महँगा न हो, जब तक मालिक और एडमिन ज़्यादा कीमत की अनुमति न दें; उनका खुद चुना हुआ विकल्प कीमत की परवाह किए बिना इस्तेमाल होता है ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))।
+- पूरा मॉडल कैटलॉग लोड न होने पर भी प्रीसेट सूची और एडिटर खुलते हैं; पहले पेज पर त्रुटि दिखती थी ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))।
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - रेट लिमिट नीतियाँ `concurrent_requests` लागू करती हैं और सभी स्लॉट भरे होने पर कारण `policy_concurrent_requests` और `Retry-After: 1` के साथ `429` लौटाती हैं; देखें [अनुरोध सीमाएँ](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))।
 - सख्त नीतियाँ (`fail_closed`) अनुरोध को प्रदाता तक भेजने से पहले अपनी प्रति-मिनट सीमाएँ जाँचती हैं ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))।
 - EU और US क्षेत्रीय गेटवे से भेजे गए अनुरोध अब Broadcast गंतव्यों तक पहुँचते हैं ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))।
+- ज़्यादातर मॉडलों को भेजे गए अनुरोध फिर से सफल होते हैं; 23 अक्टूबर को प्रदाताओं की डेटा नीति के अपडेट के बाद वे `500 gateway_context_failed` लौटा रहे थे ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206))।
 
 </div>
 
