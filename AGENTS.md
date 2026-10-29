@@ -52,15 +52,15 @@ Each of these has already caused damage here.
 ## Hit Every Surface
 The most common defect here is a change that works on the path you tested and is missing everywhere else. Before calling work done, walk this list and say in the PR which entries applied:
 
-- **Entry points.** A capability in the dashboard is often also reachable through the API, SDKs, CLI (`packages/cli`), MCP server (`apps/mcp`), desktop and mobile apps, and scheduled jobs. Fixing one entry point is not fixing the feature.
+- **Entry points.** A capability in the dashboard is often also reachable through the API, SDKs, CLI (`packages/cli`), MCP server (`apps/mcp`), Slack agent (`apps/slack`), desktop and mobile apps, and scheduled jobs. Fixing one entry point is not fixing the feature.
 - **Endpoints and protocols.** Request-handling changes usually apply to every endpoint family (Chat Completions, Responses, Anthropic Messages, embeddings, moderations, rerank, images, audio, realtime, video, music, OCR and parsing, files, batches, async operations) and to both streaming and non-streaming paths. Decide for each, even if the decision is "not supported", and reject unsupported input explicitly.
 - **Providers.** Provider-shaped behaviour needs a decision per executor. Do not assume one provider's behaviour holds for all.
 - **Public contract.** An API change means `apps/docs/openapi/v1/openapi.yaml`, then `pnpm openapi:gen` for all nine SDKs (TypeScript, Python, Go, C#, Java, PHP, Ruby, C++, Rust), the agent SDKs, guides and examples, and a changeset.
 - **Languages.** Docs ship in nine languages (English plus `ar`, `de`, `es`, `fr`, `hi`, `ja`, `pt-BR`, `zh-Hans`). New OpenAPI descriptions need entries in `apps/docs/openapi/localized-copy.json`. Web copy lives in `apps/web/messages` for every locale, and help articles in `apps/web/src/content/help` have locale copies. English pages must stay English.
-- **Data.** Catalogue changes reach the web app, gateway routing, OpenAPI enums (`pnpm openapi:sync-enums`), and public exports.
+- **Data.** Catalogue data lives only in the production database. A change reaches the web app, gateway routing, and `/v1/models` through separate caches, so check each one after the change.
 - **Billing.** Every new billable path needs a price, a reservation, settlement, a usage and ledger record, and a refund on failure.
 - **Reverse states.** If you add a way in, add the way out and the way to see it: enable needs disable, opt-in needs opt-out, create needs delete.
-- **Skills and docs.** The agent skills listed in `PUBLIC_SKILLS` in `apps/docs/scripts/sync-skills.mjs` are published from `.agents/skills` to the docs site. Check whether your change makes a skill, guide, or example wrong.
+- **Skills and docs.** Skills are edited in `.agents/skills`. `pnpm skills:sync` publishes the public ones (listed in `scripts/skills/public-skills.mjs`) to the docs site and the Phaseo plugin, and copies every skill to `.claude/skills`; run it after editing a skill. Check whether your change makes a skill, guide, or example wrong.
 
 ## Database Schema Changes
 - Desired database definitions live in `supabase/schemas/`. Read `supabase/AGENTS.md` and `supabase/DECLARATIVE-SCHEMAS.md` before schema work.
@@ -86,10 +86,10 @@ The most common defect here is a change that works on the path you tested and is
 - Use the smallest proof that the change works: the tests for the area you touched, plus lint and typecheck for the package you changed. The verification skill in `.agents/skills/verify-phaseo-change` lists the commands and evidence for each surface.
 - Do not run monorepo-wide checks (`pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all`) unless asked; they exhaust the shared machine.
 - Do not rely on CI to run your tests. It runs only a small part of the suites:
-  - `apps/api`: CI runs lint, typecheck, a Wrangler dry-run build, the AIMock matrix, and one unit-test file. Run the unit tests for the directories you touched yourself: `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>`.
-  - `apps/web`: CI runs the i18n checks, four Jest files, and a compile-only build, with no typecheck or ESLint. Run `pnpm --filter @phaseo/web typecheck`, ESLint on the files you changed, and the Jest tests for the area you touched.
+  - `apps/api`: CI runs lint, typecheck, a Wrangler dry-run build, the AIMock matrix, the provider simulator tests, and one of about 800 unit-test files. Run the unit tests for the directories you touched yourself: `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>`.
+  - `apps/web`: CI runs the i18n checks, typecheck, three of about 430 Jest files, and a compile-only build, with no ESLint. Run ESLint on the files you changed and the Jest tests for the area you touched.
   - TypeScript and Python SDKs: CI builds and packs them but does not run their tests. Run `pnpm test:sdk-ts` or `pnpm test:sdk-py`.
-  - `apps/web-api`, `apps/mcp`, the other seven SDKs' lifecycle tests, all agent SDK tests, and the docs checks do run in full.
+  - `apps/web-api`, `apps/mcp`, `apps/slack`, the other seven SDKs' lifecycle tests, all agent SDK tests, and the docs checks do run in full.
 - Some unit tests already fail on `main`, especially on Windows. Before blaming your change for a failure, run the same test against `origin/main`.
 - Test behaviour a customer or caller can observe. Do not add tests that only mirror the implementation or assert that a callback was wired.
 - Never make a test wait on sleeps or polling. Await the event, promise, or state that marks the milestone; a test that needs a timeout to pass is wrong.
