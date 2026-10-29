@@ -1,6 +1,6 @@
 ---
 name: realtime-maintenance
-description: Run a Phaseo realtime voice maintenance window end to end. Use it to announce the window on status.phaseo.app, stop new realtime sessions, wait for live calls to end, deploy the phaseo-realtime relay Worker, check it, and reopen. Use it whenever the relay must be deployed (realtime relay code changed, or a fix must reach live calls) and for the one-time first deploy of phaseo-realtime. Not for gateway deploys, which happen on merge and don't end calls.
+description: Run a Phaseo realtime voice maintenance window end to end. Use it to plan the window and draft its status.phaseo.app posts, stop new realtime sessions, wait for live calls to end, deploy the phaseo-realtime relay Worker, check it, and reopen. Use it whenever the relay must be deployed (realtime relay code changed, or a fix must reach live calls) and for the one-time first deploy of phaseo-realtime. Not for gateway deploys, which happen on merge and don't end calls.
 ---
 
 # Realtime maintenance
@@ -33,49 +33,34 @@ The deploy script refuses unless the switch is on and no session is live.
 | Cloudflare access for `wrangler` (KV switch, deployments) | `pnpm --filter @phaseo/gateway-api exec wrangler whoami` |
 | `gh` signed in with permission to run workflows | `gh auth status` |
 | Supabase read access (live session count) | Supabase MCP `execute_sql`, read-only |
-| incident.io API key with scope `status_pages.publish_updates` | Infisical prod `/operations/INCIDENT_IO_API_KEY`. If missing, ask the user to create it (incident.io → Settings → API keys) and store it there. Never print it. |
-
-Load the incident.io key into the shell without echoing it:
-
-```bash
-export INCIDENT_IO_API_KEY="$(MSYS_NO_PATHCONV=1 infisical secrets get INCIDENT_IO_API_KEY --env=prod --path=/operations --plain --silent)"
-```
-
-All incident.io calls go to `https://api.incident.io` with
-`Authorization: Bearer $INCIDENT_IO_API_KEY`. The hosted incident.io MCP
-server (`https://mcp.incident.io/mcp`) and the `inc` CLI can't publish status
-page maintenance, so this skill uses the REST API.
+The status page (status.phaseo.app, incident.io org `ai-stats-team`) is
+updated by the user in the incident.io dashboard. incident.io's API keys need a
+paid plan Phaseo doesn't have, and its MCP server and `inc` CLI can't publish
+status-page maintenance. So this skill drafts each status-page post, asks the
+user to publish it, and waits for confirmation before moving on. API callers
+are told directly either way: during the window, session creation returns
+`503 realtime_maintenance` with the expected end time and `Retry-After`.
 
 ## Step 1: plan and announce (at least 24 hours ahead)
 
 1. Agree the start time with the user. The window lasts until the last call
    ends; announce at least 2 hours 30 minutes (120-minute calls plus deploy and
    checks).
-2. Find the status page and the realtime component:
-
-   ```bash
-   curl -s https://api.incident.io/v2/status_pages -H "Authorization: Bearer $INCIDENT_IO_API_KEY"
-   curl -s https://api.incident.io/v2/status_page_structures/<status_page_id> -H "Authorization: Bearer $INCIDENT_IO_API_KEY"
-   ```
-
-   Use the public page for status.phaseo.app (org `ai-stats-team`). If no
-   component covers realtime voice, stop and ask the user to add one
-   (for example "Realtime voice API"). Don't put the whole API under maintenance.
-3. Create the window, with a stable idempotency key so a retry doesn't duplicate it:
-
-   ```bash
-   curl -s -X POST https://api.incident.io/v2/status_page_maintenances \
-     -H "Authorization: Bearer $INCIDENT_IO_API_KEY" -H "Content-Type: application/json" \
-     -d '{"status_page_id":"<id>","name":"Realtime voice maintenance",
-          "maintenance_status":"maintenance_scheduled","idempotency_key":"realtime-maint-<YYYY-MM-DD>",
-          "affected_component_ids":["<realtime component id>"],
-          "start_at":"<start ISO>","end_at":"<start + 2h30 ISO>",
-          "message":"New realtime voice sessions will be paused from <start> UTC while we upgrade. Calls already in progress are not interrupted. New sessions resume as soon as the upgrade is done.",
-          "notify_subscribers":true,"automate_maintenance_status":false}'
-   ```
-
-   Keep `automate_maintenance_status` false: the window ends when the work
-   ends, not at `end_at`. Record the maintenance id for the next steps.
+2. Draft the announcement for the user to schedule in the incident.io
+   dashboard (status page → maintenance). Give them every field ready to paste:
+   - Name: `Realtime voice maintenance`
+   - Affected component: the realtime voice component. If the page has none,
+     suggest adding one (for example "Realtime voice API") rather than putting
+     the whole API under maintenance.
+   - Start: `<start>` UTC. End: `<start + 2h30>` UTC.
+   - Message: "New realtime voice sessions will be paused from `<start>` UTC
+     while we upgrade. Calls already in progress are not interrupted. New
+     sessions resume as soon as the upgrade is done."
+   - Notify subscribers: yes. Don't let incident.io end the window
+     automatically at the end time: it ends when the work ends.
+3. Ask the user to confirm it's published (use the question tool), and don't
+   start Step 2 until they do. If they choose not to announce, go on: the 503
+   still tells API callers.
 
 ## Step 2: start the window
 
@@ -93,16 +78,10 @@ page maintenance, so this skill uses the REST API.
    # A 404 "Not Found" means the key was never set: the switch is off.
    ```
 
-2. Publish "in progress":
-
-   ```bash
-   curl -s -X POST https://api.incident.io/v2/status_page_maintenance_updates \
-     -H "Authorization: Bearer $INCIDENT_IO_API_KEY" -H "Content-Type: application/json" \
-     -d '{"status_page_maintenance_id":"<id>","maintenance_status":"maintenance_in_progress",
-          "message":"New realtime voice sessions are paused. Calls in progress continue until they end.",
-          "notify_subscribers":true,
-          "component_statuses":[{"component_id":"<realtime component id>","component_status":"under_maintenance"}]}'
-   ```
+2. Ask the user to mark the window "in progress" in the incident.io
+   dashboard, with the component set to under maintenance and this update:
+   "New realtime voice sessions are paused. Calls in progress continue until
+   they end." Don't wait on it to continue: the switch is what matters.
 
 ## Step 3: wait for live calls to end
 
@@ -163,14 +142,9 @@ open, read the run log, and fix or roll back
      --namespace-id f5e23068fcd94125ad9860c817c543d9 --remote
    ```
 
-5. Complete the window (components go back to operational):
-
-   ```bash
-   curl -s -X POST https://api.incident.io/v2/status_page_maintenance_updates \
-     -H "Authorization: Bearer $INCIDENT_IO_API_KEY" -H "Content-Type: application/json" \
-     -d '{"status_page_maintenance_id":"<id>","maintenance_status":"maintenance_complete",
-          "message":"Maintenance is complete and new realtime voice sessions are available again.","notify_subscribers":true}'
-   ```
+5. Ask the user to complete the window in the incident.io dashboard with:
+   "Maintenance is complete and new realtime voice sessions are available
+   again." The component goes back to operational.
 
 6. Report to the user: window times, how long the drain took, the run link,
    the checks, and anything left open.
@@ -198,4 +172,4 @@ explicit approval.
 - End, cancel or edit live sessions to finish a window early.
 - Deploy `phaseo-realtime` outside a window (other than the first deploy above).
 - Leave the switch on after the window: check it's `{"enabled":false}` before you finish.
-- Print or commit the incident.io key or any Worker secret.
+- Print or commit any Worker secret.
