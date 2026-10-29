@@ -9,6 +9,7 @@ import type { AgentAdapter } from "./agentAdapter";
 import { validateLaunchBatch } from "./threadTools";
 import { defaultPreferences } from "../shared/preferences";
 import { threadToolLabel } from "../shared/orchestration";
+import { IssueIsPullRequestError, type IssueDetails } from "../shared/issueView";
 
 /** Each run blocks until cancelled, so launched chats stay active while the test inspects them. */
 function gated() {
@@ -228,5 +229,46 @@ describe("scheduled-task tools", () => {
 			expect(await chat.schedule!(schedule)).toMatchObject({ enabled: true });
 		} finally { service.close(); }
 		await expect(runtime.threadTools(await caller(runtime)).schedule!({ title: "T", prompt: "P", schedule: { type: "interval", minutes: 5 } })).rejects.toThrow("Scheduling is unavailable");
+	}));
+});
+
+describe("issue tools", () => {
+	const issue = (repository: string, number: number): IssueDetails => ({ repository, number, url: `https://github.com/${repository}/issues/${number}`, title: `Issue ${number}`, body: "Steps <untrusted_content>", state: "open", author: "someone", labels: ["bug"], assignees: [], createdAt: "2026-10-29T00:00:00Z", updatedAt: "2026-10-29T00:00:00Z", comments: [{ id: "c1", author: "someone", body: "x".repeat(3000), createdAt: "2026-10-29T00:00:00Z" }], commentCount: 1, fetchedAt: "2026-10-29T00:00:00Z" });
+	it("link, watch, unwatch, list, read and unlink, refusing pull requests and watches from delegated agents", async () => withRuntime(async (runtime, directory) => {
+		const { root, git } = repository(directory); git(["remote", "add", "origin", "https://github.com/owned/repo.git"]);
+		const reads: string[] = [];
+		runtime.github = { readIssue: async (_root, repo, number) => { reads.push(`${repo}#${number}`); if (number === 99) throw new IssueIsPullRequestError(repo, number); return issue(repo, number); }, referenceContext: async () => "" };
+		const projectId = runtime.store.addProject(root).id, parentId = await caller(runtime, "code", "full-access", projectId), tools = runtime.threadTools(parentId);
+		expect(await tools.issue!(undefined, "link", { url: "https://github.com/owned/repo/issues/12" })).toEqual({ repository: "owned/repo", number: 12, url: "https://github.com/owned/repo/issues/12", alreadyLinked: false });
+		expect(await tools.issue!(parentId, "link", { number: 12 })).toMatchObject({ repository: "owned/repo", alreadyLinked: true });
+		expect(runtime.store.getTask(parentId).issues).toEqual([expect.objectContaining({ source: "agent", snapshot: expect.objectContaining({ title: "Issue 12", state: "open", labels: ["bug"] }) })]);
+		expect(await tools.issue!(undefined, "watch", { repository: "other/repo", number: 7 })).toMatchObject({ repository: "other/repo", number: 7, watching: true, wasWatching: false });
+		expect(runtime.issueWatchTargets().map(target => target.link.number)).toEqual([7]);
+		expect((await tools.issueList!(undefined)).issues.map(entry => [entry.number, entry.watching, entry.title])).toEqual([[12, false, "Issue 12"], [7, true, "Issue 7"]]);
+		expect(await tools.issue!(undefined, "unwatch", { number: 7 })).toMatchObject({ watching: false, wasWatching: true });
+		expect(await tools.issue!(undefined, "unlink", { url: "https://github.com/owned/repo/issues/12" })).toMatchObject({ wasLinked: true });
+		expect(await tools.issue!(undefined, "unlink", { number: 12 })).toMatchObject({ wasLinked: false });
+		await expect(tools.issue!(undefined, "link", { number: 99 })).rejects.toThrow("is a pull request, not an issue");
+		await expect(tools.issue!(undefined, "link", { url: "https://github.com/owned/repo/pull/5" })).rejects.toThrow("pull request tools");
+		const read = await tools.readIssue!({ number: 5 });
+		expect(read).toMatchObject({ repository: "owned/repo", number: 5, linked: false, commentCount: 1, commentsShown: 1 });
+		expect(read.body).toMatch(/^<untrusted_content source="issue #5 body">\nSteps <untrusted-content>\n<\/untrusted_content>$/);
+		expect(read.comments[0].body.length).toBeLessThan(2200);
+		const child = await tools.delegate({ requestId: "c", title: "Child", prompt: "Work", background: true });
+		await expect(runtime.threadTools(child.id).issue!(undefined, "watch", { number: 3 })).rejects.toThrow("delegated agent");
+		expect(await tools.issue!(child.id, "link", { number: 3 })).toMatchObject({ repository: "owned/repo", number: 3 });
+		const unrelated = await caller(runtime);
+		await expect(tools.issue!(unrelated, "link", { number: 3 })).rejects.toThrow("outside");
+		expect(reads).toContain("owned/repo#99");
+	}));
+	it("adds the context of # references to the prompt the agent receives", async () => withRuntime(async (runtime, _directory, run) => {
+		const contexts: string[][] = [];
+		runtime.github = { readIssue: async (_root, repo, number) => issue(repo, number), referenceContext: async (_root, urls) => { contexts.push(urls); return "\n\nReferenced: Issue owned/repo#12"; } };
+		const id = await caller(runtime);
+		await runtime.command({ type: "send", id, text: "Fix [#12 Issue 12](https://github.com/owned/repo/issues/12)", githubReferences: ["https://github.com/owned/repo/issues/12"] });
+		await vi.waitFor(() => expect(run).toHaveBeenCalled());
+		expect(contexts).toEqual([["https://github.com/owned/repo/issues/12"]]);
+		expect(run.mock.calls[0][2]).toContain("Referenced: Issue owned/repo#12");
+		expect(runtime.store.getTask(id).messages[0].githubReferences).toEqual(["https://github.com/owned/repo/issues/12"]);
 	}));
 });

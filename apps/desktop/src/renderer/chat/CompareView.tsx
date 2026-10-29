@@ -50,7 +50,7 @@ export function CompareView({ group }: { group: CompareGroup }) {
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);
-			const results = await Promise.all(ids.map(id => command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}) })));
+			const results = await Promise.all(ids.map(id => command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) })));
 			if (results.every(Boolean)) setText("");
 		} finally { setBusy(false); }
 	}

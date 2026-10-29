@@ -37,6 +37,7 @@ import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
+import { IssueBadge } from "../views/issues/IssueBadge";
 import { RewindDialog } from "./RewindDialog";
 import { ContextMeter } from "./ContextMeter";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
@@ -215,7 +216,7 @@ function ChatComposer({ task }: { task: Task }) {
 		try {
 			const prepared = await menu.prepare(message.text);
 			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: message.attachments,
-				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
+				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
 				rememberModel(selection); recordPrompt(draft.text); draft.clear(); return true;
 			}
 		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
@@ -273,6 +274,7 @@ function ChatComposer({ task }: { task: Task }) {
 			footer={<ChatSpend taskId={task.id} />}
 			model={<>
 				{task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
+				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
 				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
 			</>}

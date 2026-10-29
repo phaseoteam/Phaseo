@@ -131,7 +131,7 @@ export function NewChat() {
 		setBusy(true);
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
-			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, nativeAction: prepared.nativeAction };
+			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, githubReferences: message.githubReferences, nativeAction: prepared.nativeAction };
 			if (compare) {
 				const ids: string[] = [];
 				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }

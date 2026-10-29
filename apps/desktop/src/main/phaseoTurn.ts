@@ -19,6 +19,7 @@ export const coreThreadToolIds = ["list_agents", "delegate_task", "wait_thread",
 export const phaseoToolsets: Record<string, { description: string; match: (id: string) => boolean }> = {
 	threads: { description: "manage chats: send, steer, fork, hand off, rename, queue, merge, interrupt, organise, launch separate chats, list projects and models", match: id => /^(handoff|rename|steer|read|edit|fork|send|merge|interrupt|organize)_thread(_queue|_context)?$|^launch_threads?$|^list_(projects|models)$|^edit_thread_queue$|^read_thread_queue$/.test(id) },
 	pull_requests: { description: "link, watch and review pull requests", match: id => /pull_request/.test(id) },
+	issues: { description: "link, read and watch GitHub issues", match: id => /(^|_)issues?(_|$)/.test(id) },
 	scheduling: { description: "create and manage scheduled tasks", match: id => /scheduled_task|^schedule_task$/.test(id) },
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
 };

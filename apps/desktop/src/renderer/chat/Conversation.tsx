@@ -69,8 +69,8 @@ function WatchNotice({ message }: { message: Message }) {
 	const [open, setOpen] = useState(false), notice = message.notice!;
 	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
 		<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/notice flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-muted-foreground hover:text-foreground">
-			<GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />
-			<span className="min-w-0 truncate font-medium text-foreground/85">Pull request {notice.summary}</span>
+			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
+			<span className="min-w-0 truncate font-medium text-foreground/85">{notice.kind === "issue" ? notice.summary : `Pull request ${notice.summary}`}</span>
 			<span className="shrink-0 text-[11px]">{formatTime(message.createdAt)}</span>
 			<ChevronRight aria-hidden className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/notice:opacity-100", open && "rotate-90 opacity-100")} />
 		</button>

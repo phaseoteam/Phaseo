@@ -11,6 +11,7 @@ import type { PullRequestFilesPage, PullRequestFilesQuery, PullRequestFilesViewe
 import type { BranchPullRequest, CreatedPullRequestResult, ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import type { PullRequestDirectoryQuery, PullRequestDirectoryResult } from "./pullRequestDirectory";
 import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestActionResult, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
+import { parseIssueReference, validGithubReferences, type GithubReferenceSearch, type TaskIssueLink } from "./issueView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -45,9 +46,9 @@ export type Account = { id: string; name: string; harness: Harness; kind: "nativ
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-export type MessageNotice = { kind: "pull-request"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
-export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
+export type MessageNotice = { kind: "pull-request" | "issue"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
@@ -119,6 +120,8 @@ export type Task = {
 	missionId?: string;
 	/** Pull requests linked to this chat, after T3 Code's thread pull requests. */
 	pullRequests?: TaskPullRequestLink[];
+	/** GitHub issues linked to this chat, beside its pull requests. */
+	issues?: TaskIssueLink[];
 	/** Started in a new worktree from the new-chat composer: its setup, shown until the agent starts (shared/worktreeChat.ts). */
 	worktreeSetup?: WorktreeSetup;
 	/** A Claude or Codex turn stopped on a plan limit (status "limited"); see shared/usageLimitRecovery.ts. */
@@ -167,6 +170,10 @@ export type WorkspaceCommand =
 	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only in the main process (agent tools, pull requests this chat created); the renderer's links are manual. */ source?: "agent" | "created" }
 	| { type: "unlink-pull-request"; id: string; repository: string; number: number }
 	| { type: "watch-pull-request"; id: string; repository: string; number: number; watching: boolean }
+	/** `reference` is a GitHub issue URL, `owner/repo#12`, `#12` or `12`; the main process resolves it against the chat's project and reads the issue. */
+	| { type: "link-issue"; id: string; reference: string; repository?: string; number?: number; /** Set only in the main process (agent tools). */ source?: "agent" }
+	| { type: "unlink-issue"; id: string; repository: string; number: number }
+	| { type: "watch-issue"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
@@ -174,7 +181,7 @@ export type WorkspaceCommand =
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null } }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
-	| { type: "send"; id: string; text: string; threadReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
+	| { type: "send"; id: string; text: string; threadReferences?: string[]; /** Issue and pull request URLs from `#` chips. */ githubReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
 	| { type: "steer"; id: string; text: string; attachments?: string[]; /** Sends this queued message into the running turn instead; it returns to the queue if the agent refuses it. */ queuedId?: string }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
@@ -300,6 +307,8 @@ export type WorkspaceApi = {
 	pullRequestThreads: (projectId: string, query: PullRequestThreadsQuery) => Promise<PullRequestThreadsPage>;
 	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
+	/** The project's issues and pull requests for the composer's `#` menu, open ones first. */
+	githubReferences: (projectId: string, query: string) => Promise<GithubReferenceSearch>;
 	/** Every project's pull requests for the Pull requests page, searched on GitHub. */
 	pullRequestDirectory: (query: PullRequestDirectoryQuery) => Promise<PullRequestDirectoryResult>;
 	/** One pull request with its checks, reviews, comments, commits and review threads. */
@@ -430,6 +439,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			case "send": case "steer":
 				if (command.threadReferences !== undefined && (command.type !== "send" || !Array.isArray(command.threadReferences) || command.threadReferences.length > 10 || command.threadReferences.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)))) throw new Error("Invalid chat references.");
+				if (command.githubReferences !== undefined && (command.type !== "send" || !validGithubReferences(command.githubReferences))) throw new Error("Invalid issue or pull request references.");
 				string("text", true, 100000);
 				if (command.queuedId !== undefined && (command.type !== "steer" || typeof command.queuedId !== "string" || !command.queuedId || command.queuedId.length > 100)) throw new Error("Invalid queued message.");
 				if (command.nativeAction !== undefined) { if (command.type !== "send") throw new Error("Native actions cannot steer a turn."); const action = validateNativeAction(command.nativeAction); if (nativeActionText(action) !== command.text) throw new Error("Native action does not match this message."); command.nativeAction = action; }
@@ -478,6 +488,14 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "unlink-pull-request": case "watch-pull-request":
 				if (!validRepository(command.repository) || !Number.isSafeInteger(command.number) || Number(command.number) < 1 || Number(command.number) > 2147483647) throw new Error("Invalid pull request.");
 				if (command.type === "watch-pull-request" && typeof command.watching !== "boolean") throw new Error("Invalid watch setting.");
+				break;
+			case "link-issue":
+				if (typeof command.reference !== "string" || command.reference.length > 500 || !parseIssueReference(command.reference)) throw new Error("Paste a GitHub issue URL or a number like #12.");
+				// The main process fills these in from the reference.
+				delete command.repository; delete command.number; delete command.source; break;
+			case "unlink-issue": case "watch-issue":
+				if (!validRepository(command.repository) || !Number.isSafeInteger(command.number) || Number(command.number) < 1 || Number(command.number) > 2147483647) throw new Error("Invalid issue.");
+				if (command.type === "watch-issue" && typeof command.watching !== "boolean") throw new Error("Invalid watch setting.");
 				break;
 			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;

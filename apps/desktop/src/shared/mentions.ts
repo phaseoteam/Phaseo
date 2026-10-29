@@ -3,15 +3,17 @@
  * `@[label](kind:ref)`, with the ref URI-encoded. Files and chats keep a token in the sent message
  * so the message can show them as chips; attachments travel as attachment ids instead.
  */
+import { maximumGithubReferences, parseGithubReferenceUrl } from "./issueView";
+
 /** Drag data for a chat dragged from the sidebar: `{ id, title }` as JSON. */
 export const chatDragType = "application/x-phaseo-chat";
 
-/** A pull request chip's ref is its GitHub URL and its label "#N title" (T3's `#` composer context). */
-export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image" | "pull-request";
+/** A pull request or issue chip's ref is its GitHub URL and its label "#N title" (the composer's `#` menu). */
+export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image" | "pull-request" | "issue";
 export type Mention = { kind: MentionKind; ref: string; label: string };
 export type Segment = string | Mention;
 
-const kinds = "file|folder|chat|attachment|image|pull-request";
+const kinds = "file|folder|chat|attachment|image|pull-request|issue";
 const tokenPattern = () => new RegExp(`@\\[([^\\]\\n]*)\\]\\((${kinds}):([^)\\s]+)\\)`, "g");
 
 export function mentionToken(mention: Mention) {
@@ -35,21 +37,25 @@ export function parseMentions(text: string): Segment[] {
 
 /**
  * What a draft sends: files become `@path` for the agent to open, chats keep their token (the agent
- * gets the id; the message shows a chip) and are listed as references, attachments become ids. A pull request becomes a
- * Markdown link to it, which the agent can read and the message shows as a pull request chip.
+ * gets the id; the message shows a chip) and are listed as references, attachments become ids. A pull request or issue becomes a
+ * Markdown link to it, which the message shows as a link, and is listed in `githubReferences` so the agent gets its context.
  */
 export function composeMessage(draft: string) {
-	const threadReferences: string[] = [], attachments: string[] = [], images: string[] = [];
+	const threadReferences: string[] = [], githubReferences: string[] = [], attachments: string[] = [], images: string[] = [];
 	const text = parseMentions(draft).map(segment => {
 		if (typeof segment === "string") return segment;
 		if (segment.kind === "file") return `@${segment.ref}`;
 		if (segment.kind === "folder") return `@${segment.ref}/`;
 		if (segment.kind === "chat") { if (!threadReferences.includes(segment.ref)) threadReferences.push(segment.ref); return mentionToken(segment); }
-		if (segment.kind === "pull-request") return /^https:\/\/github\.com\//.test(segment.ref) ? `[${segment.label.replace(/[[\]]/g, "")}](${segment.ref})` : segment.label;
+		if (segment.kind === "pull-request" || segment.kind === "issue") {
+			if (!/^https:\/\/github\.com\//.test(segment.ref)) return segment.label;
+			if (!githubReferences.includes(segment.ref)) githubReferences.push(segment.ref);
+			return `[${segment.label.replace(/[[\]]/g, "")}](${segment.ref})`;
+		}
 		(segment.kind === "attachment" ? attachments : images).push(segment.ref);
 		return "";
 	}).join("").replace(/[ \t]+\n/g, "\n").trim();
-	return { text, threadReferences: threadReferences.slice(0, 10), attachments, images };
+	return { text, threadReferences: threadReferences.slice(0, 10), githubReferences: githubReferences.filter(url => parseGithubReferenceUrl(url)).slice(0, maximumGithubReferences), attachments, images };
 }
 
 /** Plain text for previews and titles: chips read as their label. */

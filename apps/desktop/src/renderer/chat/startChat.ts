@@ -14,6 +14,8 @@ export type StartChat = {
 	images?: File[];
 	/** Chats mentioned with `@`, which the agent can read. */
 	threadReferences?: string[];
+	/** Issues and pull requests mentioned with `#`, whose context the agent gets. */
+	githubReferences?: string[];
 	nativeAction?: NativeAction;
 	/** Creates the chat another way, such as in a new worktree (WorktreeTarget); returns its id. */
 	create?: (command: Extract<WorkspaceCommand, { type: "create-task" }>, text: string) => Promise<string | undefined>;
@@ -51,7 +53,7 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	const text = input.nativeAction ? input.text : input.text.trim() || "Please review the attached files.";
 	// A failed first send leaves the message in the new chat's composer so it can be retried.
 	const sent = await command({ type: "send", id, text, attachments,
-		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });
+		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.githubReferences?.length ? { githubReferences: input.githubReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });
 	if (!sent && input.text.trim()) keepDraft(id, input.text);
 	return id;
 }

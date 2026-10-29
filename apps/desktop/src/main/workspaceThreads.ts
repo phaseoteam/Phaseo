@@ -11,6 +11,31 @@ import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
 import type { PullRequestGuideOutcome, PullRequestToolTarget, ThreadPullRequestEntry } from "../shared/orchestration";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
+import { isPullRequestUrl, issueUrl, parseIssueReference, sameIssue, validateIssueLinks, type IssueDetails, type TaskIssueLink } from "../shared/issueView";
+import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orchestration";
+import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
+
+/** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
+function issueToolReference(target: IssueToolTarget) {
+	if (target.url && (target.repository || target.number)) throw new Error("Pass either url, or repository and number, not both.");
+	if (target.url && isPullRequestUrl(target.url)) throw new Error("This is a pull request, not an issue. Use the pull request tools (link_pull_request, watch_pull_request) for it.");
+	const parsed = parseIssueReference(target.url ?? (target.repository ? `${target.repository}#${target.number}` : `#${target.number}`));
+	if (!parsed) throw new Error("This is not a GitHub issue. Pass its URL, or repository and number.");
+	return parsed;
+}
+const issueBodyLimit = 8000, issueCommentLimit = 2000;
+const shorten = (value: string, limit: number) => value.length <= limit ? { text: value, truncated: false } : { text: `${value.slice(0, limit - 3)}...`, truncated: true };
+/** read_issue's answer: GitHub's text fenced as third-party, long bodies and comments shortened. */
+export function issueRead(issue: IssueDetails, linked: boolean): IssueRead {
+	const body = shorten(issue.body.replace(/<!--[\s\S]*?-->/g, "").trim(), issueBodyLimit);
+	return {
+		repository: issue.repository, number: issue.number, url: issue.url, title: issue.title, state: issue.state, stateReason: issue.stateReason ?? null, author: issue.author,
+		labels: issue.labels, assignees: issue.assignees, createdAt: issue.createdAt, updatedAt: issue.updatedAt, closedAt: issue.closedAt ?? null, linked, notice: untrustedNotice,
+		body: body.text ? untrustedBlock(`issue #${issue.number} body`, body.text) : "", bodyTruncated: body.truncated,
+		comments: issue.comments.map(comment => ({ author: comment.author, createdAt: comment.createdAt, url: comment.url ?? null, body: untrustedBlock(`issue comment by ${comment.author ?? "someone"}`, shorten(comment.body.trim(), issueCommentLimit).text) })),
+		commentCount: issue.commentCount, commentsShown: issue.comments.length,
+	};
+}
 
 type Host = {
 	store: WorkspaceStore;
@@ -28,6 +53,8 @@ type Host = {
 	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
 	modelDiscoveries: Set<Promise<unknown>>;
 	/** Review guides, once the app has its guide store: write starts a run without waiting for it. */
+	/** One GitHub issue with its latest comments, read through gh in `root`. */
+	readIssue?: (root: string, repository: string, number: number) => Promise<IssueDetails>;
 	pullRequestGuides?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 };
 const failure = (error: unknown) => error instanceof Error ? error.message.slice(0, 500) : "Could not write the guide.";
@@ -58,9 +85,9 @@ export class WorkspaceThreads {
 	private installations?: { checkedAt: number; value: Promise<{ harness: Harness; installed: boolean; error?: string }[]> };
 	constructor(private readonly host: Host, private readonly maxActiveAgents: () => number = () => 32) {}
 	changed() { for (const listener of [...this.listeners]) listener(); }
-	/** Called when a parent's turn ends: foreground children it can no longer wait for deliver their results instead. */
+	/** Called when a parent's turn ends: foreground children it can no longer wait for deliver their results instead. Factory's stage runs never do: their results go to the work item. */
 	releaseForeground(parentId: string) {
-		for (const task of this.host.store.getOverview().tasks) if (task.delegation?.parentTaskId === parentId && !task.delegation.background && active(task.status)) this.host.store.requestDelegationWake(task.id);
+		for (const task of this.host.store.getOverview().tasks) if (task.delegation?.parentTaskId === parentId && !task.delegation.background && task.delegation.kind !== "stage" && active(task.status)) this.host.store.requestDelegationWake(task.id);
 	}
 	private usableAccounts(harness: Harness): Account[] {
 		return this.host.store.getAccounts().filter(account => account.harness === harness && account.configured && !account.archived && !(account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()));
@@ -333,7 +360,7 @@ export class WorkspaceThreads {
 						if (!abandoned && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
 						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
-						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation);
+						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
 						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}) });
 					};
@@ -396,6 +423,48 @@ export class WorkspaceThreads {
 				if (action === "link") return { ...result(link), alreadyLinked: before.length > 0 };
 				await this.host.command({ type: "watch-pull-request", id, repository: link.repository, number: link.number, watching: true });
 				return { ...result(link), watching: true, wasWatching: Boolean(link.watching) };
+			},
+			issue: async (requested, action, target) => {
+				const id = requested ?? parentId, task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
+				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+				if (action === "watch" && task.delegation?.parentTaskId) throw new Error("This chat is a delegated agent, so it cannot watch issues. Its parent chat owns the issue: finish your task and report back instead.");
+				const parsed = issueToolReference(target);
+				const links = () => validateIssueLinks(this.host.store.getTask(id).issues) ?? [];
+				const find = (repository?: string) => links().filter(link => link.number === parsed.number && (!repository || sameIssue(link, { repository, number: parsed.number })));
+				const before = find(parsed.repository);
+				const result = (link: TaskIssueLink) => ({ repository: link.repository, number: link.number, url: link.url });
+				if (action === "unlink" || action === "unwatch") {
+					// Idempotent: an issue that is not linked (or not watched) is already in the asked-for state.
+					if (before.length > 1) throw new Error("Several linked issues have this number. Pass repository or url.");
+					const link = before[0];
+					if (!link) return { repository: parsed.repository ?? "", number: parsed.number, url: parsed.repository ? issueUrl(parsed.repository, parsed.number) : "", ...(action === "unlink" ? { wasLinked: false } : { watching: false, wasWatching: false }) };
+					await this.host.command(action === "unlink" ? { type: "unlink-issue", id, repository: link.repository, number: link.number } : { type: "watch-issue", id, repository: link.repository, number: link.number, watching: false });
+					return { ...result(link), ...(action === "unlink" ? { wasLinked: true } : { watching: false, wasWatching: Boolean(link.watching) }) };
+				}
+				// The runtime resolves a bare number against the chat's project, reads the issue and fills in the repository.
+				const command: Extract<WorkspaceCommand, { type: "link-issue" }> = { type: "link-issue", id, reference: parsed.repository ? `${parsed.repository}#${parsed.number}` : `#${parsed.number}`, source: "agent" };
+				await this.host.command(command);
+				const link = find(command.repository)[0];
+				if (!link) throw new Error("Could not link the issue.");
+				if (action === "link") return { ...result(link), alreadyLinked: before.length > 0 };
+				await this.host.command({ type: "watch-issue", id, repository: link.repository, number: link.number, watching: true });
+				return { ...result(link), watching: true, wasWatching: Boolean(link.watching) };
+			},
+			issueList: async requested => {
+				const id = requested ?? parentId, task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
+				return { issues: (validateIssueLinks(task.issues) ?? []).map((link): ThreadIssueEntry => ({ repository: link.repository, number: link.number, url: link.url, source: link.source, watching: Boolean(link.watching), state: link.snapshot?.state ?? null, title: link.snapshot?.title ?? null, labels: link.snapshot?.labels ?? [] })) };
+			},
+			readIssue: async target => {
+				if (!this.host.readIssue) throw new Error("Issue tools are unavailable.");
+				const parsed = issueToolReference(target), task = this.host.store.getTask(parentId);
+				const project = this.host.store.getProjects().find(value => value.id === task.projectId && !value.worktree?.removedAt);
+				let repository = parsed.repository;
+				if (!repository) {
+					if (!project) throw new Error("This chat has no project. Pass the issue's URL, or repository and number.");
+					try { repository = githubRepository(await git(project.directory, ["remote", "get-url", "origin"])); } catch { throw new Error("This chat's project has no GitHub origin. Pass the issue's URL instead."); }
+				}
+				const issue = await this.host.readIssue(project?.directory ?? process.cwd(), repository, parsed.number);
+				return issueRead(issue, (validateIssueLinks(task.issues) ?? []).some(link => sameIssue(link, issue)));
 			},
 			pullRequestList: async requested => {
 				const id = requested ?? parentId, task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);

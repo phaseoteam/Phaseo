@@ -82,6 +82,12 @@ import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
+import { FactoryService, factoryDataFolder } from "./factory/service";
+import { factoryBroadcaster, registerFactoryIpc } from "./factory/ipc";
+import { legacyFactoryFolder } from "./factory/persistence";
+import { IssueWatcher } from "./issueWatcher";
+import { searchGithubReferences } from "./projectIssues";
+import { issueLinkSnapshot, validateGithubReferenceQuery } from "../shared/issueView";
 import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
 import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
 import { git } from "./gitProcess";
@@ -115,6 +121,8 @@ const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmen
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
 let pullRequestGuides: PullRequestGuides;
+/** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */
+let factoryService: FactoryService | undefined;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
@@ -138,6 +146,7 @@ let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
 const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
+let issueWatcher: IssueWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
 let harnessModelCache: HarnessModelCache;
 /** Ends model discovery still running at quit, such as a background refresh of a harness's list. */
@@ -433,6 +442,7 @@ app.on("before-quit", event => {
 	if (worktreeCleanupTimer) clearInterval(worktreeCleanupTimer);
 	if (phaseoSignInTimer) clearInterval(phaseoSignInTimer);
 	void pullRequestWatcher?.close();
+	void issueWatcher?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -446,7 +456,9 @@ app.on("before-quit", event => {
 	for (const window of BrowserWindow.getAllWindows()) window.destroy();
 	// A hung shutdown (a process that won't die, a stuck run) must not leave an invisible app holding the database.
 	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
-	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
+	// Factory saves its running stages as interrupted before the runtime stops their threads.
+	const factoryClosed = (factoryService?.shutdown() ?? Promise.resolve()).catch(() => { console.error("Factory shutdown failed."); });
+	void Promise.allSettled([factoryClosed.then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -589,6 +601,7 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 });
 ipcMain.handle("workspace:git-review", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.review", undefined, () => gitReview(root)); });
 ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => { const root = projectRoot(event, id); return span("gh.pull-requests", { page: cursor !== undefined }, () => projectPullRequests(root, cursor)); });
+ipcMain.handle("workspace:github-references", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id), text = validateGithubReferenceQuery(query); return span("gh.github-references", undefined, () => searchGithubReferences(root, text)); });
 // Projects being removed or not yet available are left out rather than failing the whole page.
 ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
@@ -972,6 +985,7 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
 const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
 let browserRecordings: BrowserRecordings;
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
@@ -1121,6 +1135,9 @@ app.whenReady().then(() => {
 	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
+	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()) });
+	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
+	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
@@ -1166,6 +1183,9 @@ app.whenReady().then(() => {
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
 	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
 	pullRequestWatcher.start();
+	workspaceRuntime.onIssueNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome === "failed"); };
+	issueWatcher = new IssueWatcher({ targets: () => workspaceRuntime.issueWatchTargets(), read: (cwd, repository, number) => workspaceRuntime.github.readIssue(cwd, repository, number), record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordIssueWatch(taskId, link, startedAt, next, update), snapshot: issue => workspaceRuntime.syncIssueSnapshot(issue.repository, issue.number, issueLinkSnapshot(issue)) });
+	issueWatcher.start();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

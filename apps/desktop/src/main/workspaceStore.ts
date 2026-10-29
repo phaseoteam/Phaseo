@@ -25,6 +25,8 @@ import { conversationFindLimit, validateConversationFindQuery, validateMessageSe
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
+import { issueUrl, maximumIssueLinks, sameIssue, sameIssueSnapshot, unwatchedIssue, validateIssueLinks, type IssueLinkSnapshot } from "../shared/issueView";
+import { newIssueWatch, type IssueWatchMessage, type IssueWatchState } from "../shared/issueWatch";
 import { recordIfSlow } from "./diagnostics/tracer";
 import { untrustedBlock, untrustedLabel } from "../shared/untrustedContent";
 import { AgentRuns, agentRunsSchema } from "./agentRuns";
@@ -132,6 +134,9 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			-- Factory (Code ▸ Factory): its settings, runs and notes (state), the GitHub items it read (items), and whether the
+			-- old Factory app's file was imported (imported). See main/factory/persistence.ts.
+			CREATE TABLE IF NOT EXISTS factory_state (key TEXT PRIMARY KEY, data TEXT NOT NULL);
 			-- Autopilot's decisions across chats, for the Inbox; each is also an activity in its chat.
 			CREATE TABLE IF NOT EXISTS autopilot_log (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, title TEXT NOT NULL, text TEXT NOT NULL);
 			CREATE TRIGGER IF NOT EXISTS autopilot_log_removed AFTER DELETE ON tasks BEGIN DELETE FROM autopilot_log WHERE task_id = old.id; END;
@@ -432,6 +437,42 @@ export class WorkspaceStore {
 		task.pullRequests = links.map(unwatched);
 		this.saveTask(task, true); return true;
 	}
+	/** Records what GitHub last said about an issue on every chat linking it. True when anything changed. */
+	syncIssueSnapshot(repository: string, number: number, snapshot: IssueLinkSnapshot): boolean {
+		const rows = this.statement(`SELECT id FROM tasks WHERE EXISTS (SELECT 1 FROM json_each(tasks.data, '$.issues') AS item WHERE lower(json_extract(item.value, '$.repository')) = lower(?) AND json_extract(item.value, '$.number') = ?)`).all(repository, number);
+		let changed = false;
+		for (const row of rows) {
+			const task = this.getTask(row.id as string), links = validateIssueLinks(task.issues) ?? [];
+			const index = links.findIndex(link => sameIssue(link, { repository, number }));
+			if (index < 0 || sameIssueSnapshot(links[index].snapshot, snapshot)) continue;
+			links[index] = { ...links[index], snapshot }; task.issues = links;
+			this.saveTask(task, true); changed = true;
+		}
+		return changed;
+	}
+	/**
+	 * Records what an issue watch pass saw (null ends the watch) and queues its update for the agent. Applies only while the
+	 * same watch is on, so a stop or restart that lands during the GitHub read wins. True when an update was queued.
+	 */
+	recordIssueWatch(taskId: string, target: { repository: string; number: number }, startedAt: string, next: IssueWatchState | null, update?: IssueWatchMessage): boolean {
+		let task: Task; try { task = this.getTask(taskId); } catch { return false; }
+		const links = validateIssueLinks(task.issues) ?? [], index = links.findIndex(link => sameIssue(link, target));
+		if (index < 0 || links[index].watch?.startedAt !== startedAt) return false;
+		const inactive = task.archived || task.settledOverride === "settled" || Boolean(task.delegation?.parentTaskId);
+		if (next && !(update && inactive)) links[index] = { ...links[index], watching: true, watch: next };
+		else links[index] = unwatchedIssue(links[index]);
+		task.issues = links;
+		if (!update || inactive) { this.saveTask(task, true); return false; }
+		task.queue.push({ id: randomUUID(), text: update.text, notice: { kind: "issue", summary: update.summary, outcome: update.outcome, url: links[index].url }, createdAt: new Date().toISOString() });
+		this.saveTask(task); return true;
+	}
+	/** Ends every issue watch on a chat, as stopping it ends its pull request watches. */
+	endIssueWatches(taskId: string): boolean {
+		const task = this.getTask(taskId), links = validateIssueLinks(task.issues) ?? [];
+		if (!links.some(link => link.watching)) return false;
+		task.issues = links.map(unwatchedIssue);
+		this.saveTask(task, true); return true;
+	}
 	getTaskView(id: string): Task {
 		const { task, key } = this.getHead(id), page = this.entries.page(key, { taskId: id, kind: "messages", limit: 50 }, task.revision ?? 0);
 		task.conversationCounts = { messages: this.entries.count(key, 0), activities: this.entries.count(key, 1) };
@@ -709,6 +750,10 @@ export class WorkspaceStore {
 	saveAccount(account: Account) {
 		this.statement("INSERT INTO accounts (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(account.id, JSON.stringify(account));
 	}
+	/** One of Factory's saved values (main/factory/persistence.ts). */
+	factoryState(key: string): string | undefined { return (this.statement("SELECT data FROM factory_state WHERE key = ?").get(key) as { data: string } | undefined)?.data; }
+	/** Saves several of Factory's values together: a save is one transaction, so a crash keeps all of it or none. */
+	saveFactoryState(entries: Record<string, string>) { this.batch(() => { for (const [key, data] of Object.entries(entries)) this.statement("INSERT INTO factory_state (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data=excluded.data").run(key, data); }); }
 	deleteProject(id: string) { this.statement("DELETE FROM projects WHERE id=?").run(id); }
 	saveProject(project: Project) { this.statement("INSERT INTO projects (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(project.id, JSON.stringify(project)); }
 	saveAgent(agent: AgentConnection) { this.statement("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
@@ -831,7 +876,7 @@ export class WorkspaceStore {
 				if (task.archived) throw new Error("Restore this task before sending a message.");
 				{
 					const attachments = command.attachments?.map(id => { const attachment = this.getAttachment(id); if (!attachment || attachment.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return attachment; });
-					task.queue.push({ id: randomUUID(), text: command.text, ...(command.threadReferences?.length ? { threadReferences: [...new Set(command.threadReferences)] } : {}), ...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
+					task.queue.push({ id: randomUUID(), text: command.text, ...(command.threadReferences?.length ? { threadReferences: [...new Set(command.threadReferences)] } : {}), ...(command.githubReferences?.length ? { githubReferences: [...new Set(command.githubReferences)] } : {}),...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
 				}
 				if (task.title === "New task") task.title = mentionPlainText(command.text).trim().slice(0, 80);
 				// Running again ends a usage-limit pause and the offer to continue after a quit.
@@ -861,6 +906,8 @@ export class WorkspaceStore {
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
 			case "link-pull-request": case "unlink-pull-request": case "watch-pull-request":
 				applyPullRequestLink(task, command); this.saveTask(task, true); return task;
+			case "link-issue": case "unlink-issue": case "watch-issue":
+				applyIssueLink(task, command); this.saveTask(task, true); return task;
 			case "settle": case "unsettle": case "wake": case "mark-unread": case "snooze": case "visit": case "auto-settle":
 				applyLifecycle(task, command); this.saveTask(task, true); return task;
 			case "inbox-read":
@@ -896,6 +943,32 @@ export class WorkspaceStore {
 	getPreferences(): WorkspacePreferences { const row = this.statement("SELECT data FROM preferences WHERE id='workspace'").get(); return row ? validatePreferences({ ...defaultPreferences, ...JSON.parse(row.data as string) }) : { ...defaultPreferences }; }
 	savePreferences(value: WorkspacePreferences) { const preferences = validatePreferences(value); this.statement("INSERT INTO preferences (id, data) VALUES ('workspace', ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(JSON.stringify(preferences)); return preferences; }
 	close() { this.db.close(); }
+}
+
+type IssueLinkCommand = Extract<WorkspaceCommand, { type: "link-issue" | "unlink-issue" | "watch-issue" }>;
+/** Chat to issue links, as for pull requests. Linking is not activity, so the chat keeps its place. */
+function applyIssueLink(task: Task, command: IssueLinkCommand) {
+	const links = validateIssueLinks(task.issues) ?? [];
+	if (command.type === "link-issue") {
+		if (!validRepository(command.repository) || !Number.isSafeInteger(command.number)) throw new Error("Choose a GitHub issue to link.");
+		const target = { repository: command.repository, number: command.number! };
+		if (!links.some(link => sameIssue(link, target))) {
+			if (links.length >= maximumIssueLinks) throw new Error(`A chat can link up to ${maximumIssueLinks} issues.`);
+			links.push({ ...target, url: issueUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source: command.source ?? "user" });
+		}
+	} else {
+		const index = links.findIndex(link => sameIssue(link, command));
+		if (index < 0) throw new Error("This issue is not linked to this chat.");
+		if (command.type === "unlink-issue") links.splice(index, 1);
+		else if (!command.watching) links[index] = unwatchedIssue(links[index]);
+		else if (!links[index].watching) {
+			// A watch wakes the chat's agent, so a chat that takes no wakes cannot start one.
+			if (task.delegation?.parentTaskId) throw new Error("This chat is a delegated agent; its parent chat watches issues.");
+			if (task.archived || task.settledOverride === "settled") throw new Error("Restore this chat before watching an issue.");
+			links[index] = { ...links[index], watching: true, watch: newIssueWatch(new Date().toISOString()) };
+		}
+	}
+	task.issues = links.length ? links : undefined;
 }
 
 type PullRequestLinkCommand = Extract<WorkspaceCommand, { type: "link-pull-request" | "unlink-pull-request" | "watch-pull-request" }>;
