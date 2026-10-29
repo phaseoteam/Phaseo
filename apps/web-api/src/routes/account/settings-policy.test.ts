@@ -564,7 +564,14 @@ describe("account policy settings routes", () => {
 });
 
 describe("successor routing settings", () => {
-	function stub(role: string, writes: Array<{ url: string; method: string; body: unknown }>, models: string[] = ["lab/old", "lab/new"]) {
+	const overviewRow = {
+		model: "lab/old", name: "Old", status: "retired", deprecated_at: null, retired_at: "2026-09-01T00:00:00+00:00",
+		unserved_since: "2026-10-20T00:00:00+00:00", last_used_at: "2026-10-28T00:00:00+00:00", requests: 12,
+		suggested_replacement: "lab/new", approved: true, workspace_override: false, replacement: "lab/new", replacement_name: "New",
+		target: "lab/new", reason: "eligible", price_ratio: "1.25", price_comparable: true, price_skipped_meters: ["native_web_search_requests"],
+		served_by: [{ model: "lab/new", requests: 3, last_at: "2026-10-28T00:00:00+00:00" }],
+	};
+	function stub(role: string, writes: Array<{ url: string; method: string; body: unknown }>, models: string[] = ["lab/old", "lab/new"], overview: Response | null = null) {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : new Request(input, init);
 			const url = request.url;
@@ -573,6 +580,7 @@ describe("successor routing settings", () => {
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
 			if (request.method !== "GET" && request.method !== "HEAD") {
 				const text = await request.text();
+				if (url.includes("/rpc/get_workspace_model_successor_overview")) return overview ?? new Response(JSON.stringify([overviewRow]), { status: 200 });
 				writes.push({ url, method: request.method, body: text ? JSON.parse(text) : null });
 				return new Response(null, { status: 201 });
 			}
@@ -603,8 +611,22 @@ describe("successor routing settings", () => {
 			pricePolicy: "limit",
 			maxPriceIncreasePercent: 20,
 			replacements: [{ model: "lab/old", successor: null, updatedAt: "2026-10-12T00:00:00Z" }],
+			models: [{
+				model: "lab/old", name: "Old", status: "retired", retiredAt: "2026-09-01T00:00:00+00:00", unservedSince: "2026-10-20T00:00:00+00:00",
+				lastUsedAt: "2026-10-28T00:00:00+00:00", requests: 12, suggestedReplacement: "lab/new", replacement: "lab/new", replacementName: "New",
+				workspaceOverride: false, reason: "eligible", priceRatio: 1.25, priceComparable: true, priceSkippedMeters: ["native_web_search_requests"],
+				servedBy: [{ model: "lab/new", requests: 3, lastAt: "2026-10-28T00:00:00+00:00" }],
+			}],
+			modelsAvailable: true,
 			workspaceId: "workspace-1",
 		});
+	});
+
+	it("still returns the settings when the affected models cannot be loaded", async () => {
+		stub("admin", [], undefined, new Response(JSON.stringify({ message: "timeout" }), { status: 500 }));
+		const response = await app.request("https://phaseo.app/api/account/settings/routing/successor?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ canManage: true, enabled: true, models: [], modelsAvailable: false });
 	});
 
 	it("lets admins save the setting and validates it", async () => {

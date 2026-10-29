@@ -22,6 +22,13 @@ import {
 	elevenLabsProviderModel,
 	fetchElevenLabsConversationCost,
 } from "./elevenlabs-realtime";
+import {
+	MISTRAL_REALTIME_MAX_DURATION_SECONDS,
+	MISTRAL_REALTIME_PROVIDER,
+	isMistralRealtimeModel,
+	mistralCanonicalModel,
+	mistralProviderModel,
+} from "./mistral-realtime";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -49,6 +56,7 @@ export const REALTIME_DURATION_WARNING_SECONDS = [120, 30] as const;
 export const REALTIME_IDLE_TIMEOUT_SECONDS = 5 * 60;
 // A session whose relay is never claimed is reaped after this long.
 export const REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS = 2 * 60;
+export const REALTIME_RELAY_CHECK_AFTER_SECONDS = 60;
 export const REALTIME_MAX_WORKSPACE_SESSIONS = 8;
 export const REALTIME_MAX_KEY_SESSIONS = 4;
 export const REALTIME_MAX_USER_SESSIONS = 1;
@@ -61,7 +69,7 @@ const GOOGLE_AUTH_TOKENS_URL = "https://generativelanguage.googleapis.com/v1alph
 const GOOGLE_LIVE_CONSTRAINED_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
-export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs";
+export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs" | "mistral";
 
 /**
  * Providers that bill a relayed session by connected time rather than by
@@ -69,6 +77,15 @@ export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-stud
  */
 export function isDurationBilledRealtimeProvider(provider: string | null | undefined): boolean {
 	return provider === "x-ai" || provider === "spacex-ai" || provider === ELEVENLABS_PROVIDER;
+}
+
+/**
+ * Providers the relay bills from its own meters (connected time, or audio
+ * forwarded for streaming transcription) rather than per-turn usage events,
+ * so a session's stored usage can always be settled.
+ */
+export function isRelayMeteredRealtimeProvider(provider: string | null | undefined): boolean {
+	return isDurationBilledRealtimeProvider(provider) || provider === MISTRAL_REALTIME_PROVIDER;
 }
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
@@ -108,6 +125,7 @@ export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: s
 	if (provider === "google-ai-studio") return GOOGLE_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === "x-ai" || provider === "spacex-ai") return XAI_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === ELEVENLABS_PROVIDER) return ELEVENLABS_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === MISTRAL_REALTIME_PROVIDER) return MISTRAL_REALTIME_MAX_DURATION_SECONDS;
 	if (model && isLiveModel(model)) return LIVE_MAX_DURATION_SECONDS;
 	return OPENAI_REALTIME_MAX_DURATION_SECONDS;
 }
@@ -331,17 +349,20 @@ export function providerFromModel(model: string, explicitProvider?: string | nul
 	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
 	if (provider === ELEVENLABS_PROVIDER || provider === "eleven-labs") return ELEVENLABS_PROVIDER;
+	if (provider === MISTRAL_REALTIME_PROVIDER || provider === "mistralai") return MISTRAL_REALTIME_PROVIDER;
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
 	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
 	if (/^(eleven-labs|elevenlabs)\//.test(normalized)) return ELEVENLABS_PROVIDER;
+	if (isMistralRealtimeModel(normalized)) return MISTRAL_REALTIME_PROVIDER;
 	return null;
 }
 
 export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsCanonicalModel(trimmed);
+	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralCanonicalModel(trimmed);
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
 		if (provider === "x-ai" || provider === "spacex-ai") return `spacex-ai/${trimmed}`;
@@ -354,6 +375,7 @@ export function canonicalModel(provider: RealtimeProvider, model: string): strin
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsProviderModel(canonical);
+	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralProviderModel(canonical);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
 	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
 	return canonical.replace(/^google\//, "");
@@ -856,7 +878,7 @@ export function assertRealtimeBillingMetersPresent(args: {
 	costNanos: number;
 	estimated?: boolean;
 }) {
-	if (isDurationBilledRealtimeProvider(args.provider)) return;
+	if (isRelayMeteredRealtimeProvider(args.provider)) return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
@@ -887,8 +909,13 @@ export function assertRealtimeBillingMetersPresent(args: {
  * Price a realtime session. Image and video input on a card without its own row for them is
  * billed on the matching text meter rather than dropped (or failing on an unpriced cache meter).
  */
-export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCard): Record<string, any> {
+export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCard, provider?: RealtimeProvider): Record<string, any> {
 	const hasRule = (meter: string) => card.rules.some((rule) => rule.meter === meter);
+	// The engine skips a meter the card has no rule for. For a provider's billed
+	// meters that would be free usage, so it fails and the session goes to review.
+	const unpriced = (provider ? realtimeBilledMeters(provider) : [])
+		.filter((meter) => (toFiniteNumber(usage[meter]) ?? 0) > 0 && !hasRule(meter));
+	if (unpriced.length > 0) throw new Error(`realtime_price_rule_missing:${unpriced.join(",")}`);
 	const folded: Record<string, unknown> = { ...usage };
 	const fold = (meter: string, into: string) => {
 		if (hasRule(meter)) return;
@@ -902,12 +929,39 @@ export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCa
 	return computeBill(folded, card, { endpoint: "audio.realtime" });
 }
 
+/**
+ * Meters each provider charges for. Others in the usage (audio minutes on a
+ * token-billed provider, tokens on a minute-billed one) are informational.
+ */
+export function realtimeBilledMeters(provider: RealtimeProvider): string[] {
+	if (provider === ELEVENLABS_PROVIDER) return ["audio_minutes", "input_text_tokens", "output_text_tokens"];
+	if (isDurationBilledRealtimeProvider(provider)) return ["audio_minutes"];
+	return ["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"];
+}
+
 async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string) {
 	const card = await loadPriceCard(provider, modelId, "audio.realtime");
 	if (!card || !Array.isArray(card.rules) || card.rules.length === 0) {
 		throw new Error("realtime_price_card_missing");
 	}
+	// A call is refused up front rather than billed $0 for a meter with no price.
+	const missing = realtimeBilledMeters(provider).filter((meter) => !card.rules.some((rule) => rule.meter === meter));
+	if (missing.length > 0) throw new Error("realtime_price_card_missing");
 	return card;
+}
+
+/**
+ * The price card saved when the session was created, so a price change during
+ * a call neither reprices it nor fails its settlement. Sessions created before
+ * cards were saved load the current card.
+ */
+export async function realtimeSessionPriceCard(
+	provider: RealtimeProvider,
+	session: { model_id: string; metadata?: Record<string, unknown> | null },
+): Promise<PriceCard> {
+	const saved = session.metadata?.price_card as PriceCard | undefined;
+	if (saved && typeof saved === "object" && Array.isArray(saved.rules) && saved.rules.length > 0) return saved;
+	return requireRealtimePriceCard(provider, session.model_id);
 }
 
 /** Reasons that end a call on every source: the caller lost access. */
@@ -1060,7 +1114,11 @@ export async function createRealtimeSession(args: {
 		providerModelId === "gemini-3.8-live-extended-thinking"
 			? args.thinkingLevel ?? "low"
 			: null;
-	const voice = defaultVoice(provider, args.voice);
+	// Streaming transcription has no voice or instructions: nothing is spoken back.
+	if (provider === MISTRAL_REALTIME_PROVIDER && (args.voice || args.instructions)) {
+		throw new Error("realtime_transcription_option_not_supported");
+	}
+	const voice = provider === MISTRAL_REALTIME_PROVIDER ? null : defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
 	// GPT Live runs only through the relay (it owns billing). Playground sessions
 	// also need the signed-in user; API sessions are authorised by the key.
@@ -1069,7 +1127,7 @@ export async function createRealtimeSession(args: {
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
 	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
-	if (!live) await requireRealtimePriceCard(provider, modelId);
+	const priceCard = live ? null : await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
@@ -1078,7 +1136,9 @@ export async function createRealtimeSession(args: {
 
 	const useRelay = args.relay !== false || !args.auth.internal;
 	// ElevenLabs is only reachable through the relay: its key never leaves the gateway.
-	if (provider === ELEVENLABS_PROVIDER && !useRelay) throw new Error("realtime_relay_required");
+	if ((provider === ELEVENLABS_PROVIDER || provider === MISTRAL_REALTIME_PROVIDER) && !useRelay) {
+		throw new Error("realtime_relay_required");
+	}
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
 	const secretHash = relaySecret ? await sha256Hex(relaySecret) : null;
 	const submissionSpanId = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
@@ -1093,6 +1153,8 @@ export async function createRealtimeSession(args: {
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
 		live: liveSettings,
+		// Rates are fixed for the call, like GPT Live's (see realtimeSessionPriceCard).
+		price_card: priceCard,
 		...(useRelay
 			? {
 					relay: true,
@@ -1346,7 +1408,7 @@ export async function updateRealtimeSessionUsage(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
+		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1426,9 +1488,11 @@ export async function realtimeConfirmedCostNanos(args: {
 			const value = toFiniteNumber(confirmed[meter]);
 			if (value != null) confirmed[meter] = Math.max(0, value - (toFiniteNumber(confirmed[estimate]) ?? 0));
 		}
-		const priced = computeBill(normalizeRealtimeUsage(confirmed), await requireRealtimePriceCard(provider, args.modelId), {
-			endpoint: "audio.realtime",
-		});
+		const priced = priceRealtimeUsage(
+			normalizeRealtimeUsage(confirmed),
+			await realtimeSessionPriceCard(provider, { model_id: args.modelId, metadata: args.metadata }),
+			provider,
+		);
 		return pricedTotalNanos(priced);
 	} catch (error) {
 		console.error("realtime_confirmed_cost_failed", {
@@ -1437,6 +1501,38 @@ export async function realtimeConfirmedCostNanos(args: {
 		});
 		return 0;
 	}
+}
+
+/**
+ * A billing review's quote for a non-GPT-Live session: its recorded usage
+ * priced exactly as settlement would have priced it, including the relay's
+ * metered-audio estimates. Complete means the review can settle without an
+ * admin: the relay had its final usage and only settlement kept failing,
+ * nothing is still in flight, and an ElevenLabs bill (when there is one) has
+ * arrived. Other reviews (relay state lost, usage still pending) may hold a
+ * stale checkpoint, so they stay with an admin.
+ */
+export async function quoteRealtimeSessionRecovery(session: {
+	model_id: string;
+	provider: string | null;
+	usage: Record<string, unknown> | null;
+	metadata: Record<string, unknown> | null;
+	disconnect_reason?: string | null;
+}) {
+	const provider = providerFromModel(session.model_id, session.provider);
+	if (!provider) throw new Error("recovery_provider_not_supported");
+	const usage = normalizeRealtimeUsage(session.usage ?? {});
+	const priced = priceRealtimeUsage(usage, await realtimeSessionPriceCard(provider, session), provider);
+	const costNanos = Math.max(pricedTotalNanos(priced), Math.round(toFiniteNumber(usage.provider_cost_nanos) ?? 0));
+	if (!Number.isSafeInteger(costNanos) || costNanos < 0) throw new Error("recovery_cost_invalid");
+	let complete = session.disconnect_reason === "realtime_settlement_retry_exhausted"
+		&& !(provider === ELEVENLABS_PROVIDER && usage.provider_cost_status !== "reconciled");
+	try {
+		assertRealtimeBillingMetersPresent({ provider, usage, costNanos, estimated: usage.billing_estimated === true });
+	} catch {
+		complete = false;
+	}
+	return { costNanos, lines: pricingLines(priced), complete, billableUsage: usage };
 }
 
 export async function markRealtimeSessionBillingUnresolved(args: {
@@ -1524,7 +1620,7 @@ export async function settleRealtimeSession(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
+		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
@@ -1676,7 +1772,11 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 	const startedAt = new Date().toISOString();
 	const supabase = getSupabaseAdmin();
 	const now = new Date().toISOString();
-	const idleCutoff = new Date(Date.now() - REALTIME_IDLE_TIMEOUT_SECONDS * 1000).toISOString();
+	// A relay knows whether its call is alive, so it is asked after a minute of
+	// quiet: a deploy drops calls without warning, and this is how they settle.
+	const idleCutoff = new Date(
+		Date.now() - (args?.relay ? REALTIME_RELAY_CHECK_AFTER_SECONDS : REALTIME_IDLE_TIMEOUT_SECONDS) * 1000,
+	).toISOString();
 	// Sessions whose relay was never claimed hold credit for nothing.
 	const unclaimedCutoff = new Date(Date.now() - REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS * 1000).toISOString();
 	const { data: sessions, error } = await supabase
@@ -1716,6 +1816,13 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 					// are not stuck; the relay settles them itself.
 					if (result.healthy) {
 						sessionsHealthy += 1;
+						// Moves a live call to the back of the queue so long calls can't
+						// keep a dropped one from being checked.
+						const touched = new Date().toISOString();
+						await supabase.from("gateway_realtime_sessions")
+							.update({ last_event_at: touched, updated_at: touched })
+							.eq("session_id", session.session_id)
+							.in("status", ["created", "connecting", "connected", "ending"]);
 						continue;
 					}
 					if (!result.settled) throw new Error("realtime_relay_reconciliation_pending");
@@ -1728,7 +1835,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 			const relayed = session.metadata?.relay === true;
 			if (session.status !== "created" && !(relayed && session.status === "connecting")) {
 				const provider = providerFromModel(session.model_id, session.provider);
-				if (!isDurationBilledRealtimeProvider(provider)) {
+				if (!isRelayMeteredRealtimeProvider(provider)) {
 					await markRealtimeSessionBillingUnresolved({
 						auth: {
 							requestId: `realtime_reconcile_unresolved:${session.session_id}`,
@@ -1788,7 +1895,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		}
 	}
 
-	await refreshRealtimeBillingReviews().catch((error) => {
+	await refreshRealtimeBillingReviews(25, quoteRealtimeSessionRecovery).catch((error) => {
 		console.error("realtime_billing_review_refresh_failed", { error });
 	});
 	await syncRealtimeBillingReviewSummaries().catch((error) => {

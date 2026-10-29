@@ -31,7 +31,9 @@ GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS = "60000"
 # the tier publisher reports a complete backfill.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
 CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "true"
-GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+# Shadow: the spend-limit coordinator decides beside the legacy key-limit check and logs
+# spend_limit_shadow_divergence when they differ; it never changes what a request gets.
+GATEWAY_SPEND_LIMIT_DO_MODE = "shadow"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"

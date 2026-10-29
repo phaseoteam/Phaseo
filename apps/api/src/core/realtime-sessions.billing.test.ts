@@ -9,6 +9,8 @@ import {
 	normalizeRealtimeUsage,
 	pcm16Base64DurationMs,
 	priceRealtimeUsage,
+	quoteRealtimeSessionRecovery,
+	realtimeSessionPriceCard,
 	realtimeMaxDurationSeconds,
 	resolveRealtimeFinalCostNanos,
 } from "./realtime-sessions";
@@ -485,5 +487,58 @@ describe("realtime voice billing simulation", () => {
 			output_audio_tokens: 300,
 		});
 		expect(totalNanos(priced)).toBe(85_000_000);
+	});
+});
+
+describe("realtime price cards", () => {
+	const tokenRules = (["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"] as const)
+		.map((meter) => ({ meter, unit: "token" as const, unit_size: 1_000_000, price_per_unit: "10" }));
+	const openaiCard = makeCard({ provider: "openai", model: "openai/gpt-realtime-2.1", rules: tokenRules });
+
+	it("fails instead of billing a provider's charged meter at $0 when its card has no price for it", () => {
+		const card = makeCard({ provider: "openai", model: "openai/gpt-realtime-2.1", rules: tokenRules.slice(0, 3) });
+		expect(() => priceRealtimeUsage({ output_audio_tokens: 1_000 }, card, "openai"))
+			.toThrow("realtime_price_rule_missing:output_audio_tokens");
+		// Meters the provider doesn't charge for (minutes on a token-billed call) stay informational.
+		expect(totalNanos(priceRealtimeUsage({ input_audio_tokens: 1_000_000, audio_minutes: 2 }, openaiCard, "openai")))
+			.toBe(10_000_000_000);
+		const xaiCard = makeCard({ provider: "spacex-ai", model: "spacex-ai/grok-voice-3.0", rules: [
+			{ meter: "audio_minutes", unit: "minute", unit_size: 1, price_per_unit: "0.05" }] });
+		expect(totalNanos(priceRealtimeUsage({ audio_minutes: 2, output_text_tokens: 500 }, xaiCard, "spacex-ai")))
+			.toBe(100_000_000);
+	});
+
+	it("bills with the card saved when the call started, not today's card", async () => {
+		const saved = await realtimeSessionPriceCard("openai", { model_id: "openai/gpt-realtime-2.1", metadata: { price_card: openaiCard } });
+		expect(saved).toBe(openaiCard);
+	});
+
+	it("quotes a review from recorded usage and marks it complete only when nothing is outstanding", async () => {
+		const session = { model_id: "openai/gpt-realtime-2.1", provider: "openai", metadata: { price_card: openaiCard },
+			disconnect_reason: "realtime_settlement_retry_exhausted" };
+		const done = await quoteRealtimeSessionRecovery({ ...session, usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000 } });
+		expect(done).toMatchObject({ costNanos: 3_000_000_000, complete: true });
+		const inFlight = await quoteRealtimeSessionRecovery({ ...session,
+			usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000, assistant_response_in_flight: true } });
+		expect(inFlight.complete).toBe(false);
+		// A lost relay leaves only the last checkpoint, which can look clean
+		// between turns; it is priced for an admin but never settled on its own.
+		const lostRelay = await quoteRealtimeSessionRecovery({ ...session,
+			disconnect_reason: "realtime_relay_state_missing_during_reconciliation",
+			usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000 } });
+		expect(lostRelay).toMatchObject({ costNanos: 3_000_000_000, complete: false });
+
+		const elevenCard = makeCard({ provider: "elevenlabs", model: "eleven-labs/eleven-realtime-v1-mini", rules: [
+			{ meter: "audio_minutes", unit: "minute", unit_size: 1, price_per_unit: "0.08" },
+			{ meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.2" },
+			{ meter: "output_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "6" }] });
+		const eleven = { model_id: "eleven-labs/eleven-realtime-v1-mini", provider: "elevenlabs", metadata: { price_card: elevenCard },
+			disconnect_reason: "realtime_settlement_retry_exhausted" };
+		// Until ElevenLabs reports the conversation, an admin decides.
+		expect((await quoteRealtimeSessionRecovery({ ...eleven, usage: { session_audio_ms: 60_000, audio_ms: 60_000 } })).complete).toBe(false);
+		// Its reported charge is a floor, as in normal settlement.
+		const reported = await quoteRealtimeSessionRecovery({ ...eleven, usage: { session_audio_ms: 60_000, audio_ms: 60_000,
+			provider_cost_status: "reconciled", provider_cost_nanos: 150_000_000 } });
+		expect(reported).toMatchObject({ complete: true, costNanos: 150_000_000 });
 	});
 });

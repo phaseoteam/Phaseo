@@ -85,11 +85,22 @@ Lorsqu’elle est activée, une requête n’est envoyée à un remplaçant que 
 - Le remplaçant passe les mêmes vérifications que toute requête : restrictions de modèles de l’espace de travail, restrictions de clés, garde-fous et prise en charge du point de terminaison. Un remplaçant n’est jamais ajouté à une liste d’autorisation à votre place.
 - La requête désigne directement un modèle. Les requêtes vers `phaseo/auto` ou vers un identifiant de modèle qualifié par fournisseur ne sont pas redirigées.
 
+<span id="see-which-of-your-models-are-affected"></span>
+
+### Voir lesquels de vos modèles sont concernés
+
+Sous **Vos modèles concernés**, dans la même section de paramètres, Phaseo liste les modèles utilisés par votre espace de travail ces 90 derniers jours qui sont retirés ou ne sont plus servis. Pour chacun, vous voyez le remplaçant, l’écart de prix et si ses requêtes seraient redirigées avec vos paramètres actuels, et sinon pourquoi. Vous voyez aussi combien de ses requêtes un autre modèle a traitées ces 30 derniers jours. Choisissez **Choisir un remplaçant** sur un modèle pour définir votre propre remplaçant.
+
 <span id="choose-a-price-policy"></span>
 
 ### Choisir une politique de prix
 
-La politique de prix de l’espace de travail détermine si un remplaçant plus cher peut traiter la requête. La comparaison porte sur les prix facturés par les deux modèles.
+La politique de prix de l’espace de travail détermine si un remplaçant plus cher peut traiter la requête. La comparaison porte sur les prix par token facturés par les deux modèles. Si l’ancien modèle n’a plus de prix en vigueur, Phaseo utilise ses derniers prix publiés. Lorsque seul le remplaçant facture quelque chose :
+
+- les lectures en cache ne sont pas comparées, car elles coûtent moins que le prix d’entrée, qui est comparé ;
+- les écritures en cache, ainsi que les entrées image, audio ou vidéo que l’ancien modèle facturait comme des entrées ordinaires, sont comparées au prix d’entrée de l’ancien modèle ;
+- la recherche web, ainsi que les entrées ou sorties dans une modalité que l’ancien modèle n’avait pas, ne sont pas comparées. Une requête qui les utilise n’est pas redirigée, sauf si la politique est `any` ou si vous avez choisi vous-même le remplaçant ;
+- tout autre frais rend les prix non comparables.
 
 | `model_successor_price_policy` | Comportement |
 | --- | --- |
@@ -150,8 +161,11 @@ Vérifiez que :
 - le modèle n’est plus servi depuis au moins 72 heures ;
 - le modèle a un remplaçant approuvé, ou vous en avez défini un vous-même ;
 - le remplaçant ne coûte pas plus que ce que permet votre politique de prix ;
+- la requête n’utilise pas la recherche web ni un type d’entrée ou de sortie que seul le remplaçant facture ;
 - le modèle n’est pas gratuit avec un remplaçant payant ;
 - le remplaçant est autorisé par les restrictions de modèles de votre espace de travail et de votre clé ;
 - la requête n’utilise pas un identifiant de modèle qualifié par fournisseur ni `phaseo/auto`.
+
+**Vos modèles concernés**, dans la même section de paramètres, indique lequel de ces points s’applique à chacun de vos modèles.
 
 **Un autre modèle que celui demandé a répondu.** Recherchez l’en-tête `X-Phaseo-Model-Substitution`. Pour empêcher le remplacement d’un modèle, ajoutez-le avec **Ne jamais rediriger** sous **Vos propres remplaçants**, ou désactivez le remplacement automatique.

@@ -28,7 +28,9 @@ GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
 # Fail over when a streaming provider sends no response headers within 60 s.
 # Never applied to non-streaming requests, whose headers wait for the generation.
 GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS = "60000"
-GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+# Shadow: the spend-limit coordinator decides beside the legacy key-limit check and logs
+# spend_limit_shadow_divergence when they differ; it never changes what a request gets.
+GATEWAY_SPEND_LIMIT_DO_MODE = "shadow"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"

@@ -18,6 +18,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![The changelog with the Product filter on and the date list beside it](../images/changelog/2026-10-28--changelog-filters.png)
 
 - The changelog now lists product and API changes alongside model releases, with **Product**, **API & SDKs** and **Models** filters that keep the date list ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- The preset editor adds **Publish** next to **Save Draft**, and **Versions and labels** gives each label a version picker, so choosing an earlier version rolls back; see [Prompt Templates](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Opening a published preset version shows its models and template messages, the lines that differ from the default version, and a **Run** button to try it ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
 
 </div>
 
@@ -40,6 +42,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Product</p>
 
 - The preset editor's **Versions and labels** section points named labels at published versions, so moving a label rolls requests back in one click; see [Prompt Templates](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- The preset model picker offers only models the gateway still serves; before, it also listed retired models that requests could not reach ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Running a preset in a workspace with no credits says so and links to **Add credits**; before, it showed a generic error ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Pages that load the full model catalogue, such as the preset editor, get it from cache; before, each load took about 3 seconds and some failed ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -86,6 +91,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Every workspace can use retired model routing: owners and admins turn it on in **Settings -> Routing -> Retired model routing**, and requests go to the approved replacement; see [Model Deprecation and Retirement](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - Retired model routing uses an approved replacement only when it costs no more than the retired model, unless owners and admins allow a higher price; a replacement they choose themselves is used whatever it costs ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- The presets list and editor open even when the full model catalogue fails to load; before, the page showed an error ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -125,6 +131,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Rate limit policies enforce `concurrent_requests`, returning `429` with reason `policy_concurrent_requests` and `Retry-After: 1` when every slot is taken; see [Rate Limits](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Strict rate limit policies (`fail_closed`) check their per-minute limits before the request is sent to a provider ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Requests sent through the EU and US regional gateways now reach Broadcast destinations ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Requests to most models succeed again; on October 23, after a provider data policy update, they returned `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
 
 </div>
 

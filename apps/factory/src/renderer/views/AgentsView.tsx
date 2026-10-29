@@ -164,6 +164,18 @@ export function AgentsSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 		else delete agentEfforts[agentId];
 		update({ agentEfforts });
 	};
+	/** A connection's models, each with how hard it thinks. Nothing until the connection is ready. */
+	const models = (connection: Connection | undefined, description: string) => {
+		const agents = agentsOn(connection);
+		if (!connection || connection.status !== "ready" || !agents.length) return null;
+		return <Group key={`${connection.id}-models`} title={`${connection.label} models`} description={description}>
+			{agents.map((agent) => <Row key={agent.id} mark={connection.kind === "hub" ? <AgentMark agent={agent} className="size-5" /> : undefined} title={<span className="flex items-center gap-2">{agent.label}{agent.isDefault && <span className="rounded-[4px] border px-1.5 text-2xs font-normal text-muted-foreground">Default</span>}</span>} description={agent.description ?? (agent.model ? `--model ${agent.model}` : "")}>
+				{agent.efforts?.length
+					? <Choice<string> value={snapshot.settings.agentEfforts[agent.id] ?? ""} options={[{ value: "", label: agent.defaultEffort ? `Default (${effortLabel(agent.defaultEffort)})` : "Default" }, ...agent.efforts.map((effort) => ({ value: effort, label: effortLabel(effort) }))]} onChange={(effort) => setEffort(agent.id, effort)} />
+					: <span className="text-xs text-muted-foreground">No effort levels</span>}
+			</Row>)}
+		</Group>;
+	};
 
 	return <SettingsPage title="Agents" description="Factory runs agents with the subscriptions already signed in on this computer. Nothing is billed by Phaseo unless you add an API key.">
 		<Group title="Subscriptions on this computer" description="Detected from the command line tools on your PATH.">
@@ -178,23 +190,22 @@ export function AgentsSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 
 		{(["claude-cli", "codex-cli"] as const).map((kind) => {
 			const connection = byKind(kind);
-			const agents = agentsOn(connection);
-			if (!connection || connection.status !== "ready" || !agents.length) return null;
-			return <Group key={`${kind}-models`} title={`${connection.label} models`} description={`What ${connection.label} ${connection.version ?? ""} on this computer offers, as it describes them. Choose how hard each one thinks; unset uses ${connection.label}'s own default.`.replace("  ", " ")}>
-				{agents.map((agent) => <Row key={agent.id} title={<span className="flex items-center gap-2">{agent.label}{agent.isDefault && <span className="rounded-[4px] border px-1.5 text-2xs font-normal text-muted-foreground">Default</span>}</span>} description={agent.description ?? (agent.model ? `--model ${agent.model}` : "")}>
-					{agent.efforts?.length
-						? <Choice<string> value={snapshot.settings.agentEfforts[agent.id] ?? ""} options={[{ value: "", label: agent.defaultEffort ? `Default (${effortLabel(agent.defaultEffort)})` : "Default" }, ...agent.efforts.map((effort) => ({ value: effort, label: effortLabel(effort) }))]} onChange={(effort) => setEffort(agent.id, effort)} />
-						: <span className="text-xs text-muted-foreground">No effort levels</span>}
-				</Row>)}
-			</Group>;
+			return models(connection, `What ${connection?.label} ${connection?.version ?? ""} on this computer offers, as it describes them. Choose how hard each one thinks; unset uses ${connection?.label}'s own default.`.replace("  ", " "));
 		})}
 
-		<Group title="Hubs" description="A local proxy that pools several accounts. Agents are pointed at it with ANTHROPIC_BASE_URL or OPENAI_BASE_URL.">
-			{byKind("hub") && <Row title="CLI proxy hub" description={byKind("hub")!.detail}>
-				<StatusText connection={byKind("hub")!} />
-				<Field value={snapshot.settings.hubUrl} placeholder="http://127.0.0.1:8317" mono onSave={(hubUrl) => update({ hubUrl })} />
-			</Row>}
+		<Group title="Hubs" description="A local proxy that pools several accounts. Claude Code and Codex run as usual, pointed at the hub with its key.">
+			{byKind("hub") && <>
+				<Row title="CLI proxy hub" description={byKind("hub")!.detail}>
+					<StatusText connection={byKind("hub")!} />
+					<Field value={snapshot.settings.hubUrl} placeholder="http://127.0.0.1:8317" mono onSave={(hubUrl) => update({ hubUrl })} />
+				</Row>
+				<Row title="Key" description="One of the API keys in the hub's settings. Saved encrypted on this computer.">
+					<Field value={snapshot.settings.hubKey} placeholder="Hub API key" mono secret onSave={(hubKey) => update({ hubKey })} />
+				</Row>
+			</>}
 		</Group>
+
+		{models(byKind("hub"), "Claude Code's and Codex's models that the hub serves, run through the hub. Choose how hard each one thinks; unset uses the tool's own default.")}
 
 		<Group title="Phaseo API" description="Run hundreds of models on pay-as-you-go credits when a subscription is busy or out of its window.">
 			<Row mark={<AgentMark agent={{ harness: "phaseo" }} className="size-8" />} title="Phaseo API key" description="Used as overflow, and for models no subscription covers.">

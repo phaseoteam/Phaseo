@@ -42,13 +42,15 @@ export function agentEnvironment(extra: Record<string, string> = {}): NodeJS.Pro
 	return env;
 }
 
-async function probeHub(baseUrl: string): Promise<Pick<Connection, "status" | "detail">> {
+/** Asks the hub which models it serves, with its key, the way agents' runs will reach it. */
+export async function probeHub(baseUrl: string, key: string): Promise<Pick<Connection, "status" | "detail" | "models">> {
 	try {
-		const response = await fetch(new URL("/v1/models", baseUrl), { signal: AbortSignal.timeout(2_000) });
-		if (response.status === 401 || response.status === 403) return { status: "ready", detail: "Reachable; asks for a key" };
+		const response = await fetch(new URL("/v1/models", baseUrl), { headers: key ? { Authorization: `Bearer ${key}` } : {}, signal: AbortSignal.timeout(2_000) });
+		if (response.status === 401 || response.status === 403) return { status: "error", detail: key ? "Turned down this key" : "Asks for a key. Add the hub's key below." };
 		if (!response.ok) return { status: "error", detail: `Answered ${response.status}` };
-		const body = (await response.json()) as { data?: unknown[] };
-		return { status: "ready", detail: `${body.data?.length ?? 0} models available` };
+		const body = (await response.json()) as { data?: { id?: unknown }[] };
+		const models = (body.data ?? []).map((model) => model.id).filter((id): id is string => typeof id === "string");
+		return { status: "ready", detail: `${models.length} models available`, models };
 	} catch {
 		return { status: "missing", detail: "Not reachable" };
 	}
@@ -56,7 +58,7 @@ async function probeHub(baseUrl: string): Promise<Pick<Connection, "status" | "d
 
 /** The tools on this computer, and the models each one offers. */
 export async function detectConnections(settings: FactorySettings): Promise<{ connections: Connection[]; catalog: ModelCatalog }> {
-	const [claude, codex, hub] = await Promise.all([version("claude"), version("codex"), probeHub(settings.hubUrl)]);
+	const [claude, codex, hub] = await Promise.all([version("claude"), version("codex"), probeHub(settings.hubUrl, settings.hubKey)]);
 	const catalog = await modelCatalog({ claude: claude ?? undefined, codex: codex ?? undefined });
 	const connections: Connection[] = [
 		{ id: "claude-cli", kind: "claude-cli", label: "Claude Code", status: claude ? "ready" : "missing", detail: claude ? claudeSignIn(catalog.claudeAccount) ?? "Uses the subscription Claude Code is signed in with" : "Install Claude Code and sign in", version: claude ?? undefined, slots: 3 },
@@ -94,6 +96,22 @@ export function agentsFor(connections: Connection[], catalog: ModelCatalog = {},
 		add({ id: "codex-default", harness: "codex", label: fallback?.label ?? "Codex", model: "", billing: "subscription", connectionId: "codex-cli", description: fallback ? `Codex's default. ${fallback.description ?? ""}`.trim() : "Whatever model Codex is set to use", efforts: fallback?.efforts, defaultEffort: fallback?.defaultEffort, isDefault: true });
 		for (const model of models.filter((entry) => !entry.isDefault)) add({ id: `codex-${model.id}`, harness: "codex", label: model.label, model: model.id, billing: "subscription", connectionId: "codex-cli", description: model.description, efforts: model.efforts, defaultEffort: model.defaultEffort });
 	}
-	if (ready.has("hub") && ready.has("claude-cli")) add({ id: "hub-sonnet", harness: "claude", label: catalog.claude?.find((model) => model.id === "sonnet")?.label ?? "Sonnet", model: "sonnet", billing: "hub", connectionId: "hub", efforts: catalog.claude?.find((model) => model.id === "sonnet")?.efforts });
+	// A hub runs the same tools pointed at it, so it offers each of their models that it serves.
+	const hub = connections.find((connection) => connection.id === "hub" && connection.status === "ready");
+	if (hub) {
+		const serves = new Set(hub.models ?? []);
+		if (ready.has("claude-cli")) {
+			for (const model of catalog.claude ?? CLAUDE_FALLBACK) {
+				if (model.resolved && !serves.has(model.resolved)) continue;
+				add({ id: `hub-${model.id.replace(/^claude-/, "")}`, harness: "claude", label: model.label, model: model.id, billing: "hub", connectionId: "hub", description: model.description, efforts: model.efforts, defaultEffort: model.defaultEffort });
+			}
+		}
+		if (ready.has("codex-cli")) {
+			for (const model of catalog.codex ?? []) {
+				if (!serves.has(model.id)) continue;
+				add({ id: `hub-codex-${model.id}`, harness: "codex", label: model.label, model: model.id, billing: "hub", connectionId: "hub", description: model.description, efforts: model.efforts, defaultEffort: model.defaultEffort });
+			}
+		}
+	}
 	return agents;
 }

@@ -37,8 +37,15 @@ interface ItemOverlay {
 	stages?: WorkItem["stages"];
 }
 
+/** Encrypts secrets for saving, with a key only this user on this computer has (Electron's safeStorage). */
+export interface Sealer {
+	seal(text: string): string;
+	open(sealed: string): string;
+}
+
 interface SavedState {
-	settings: FactorySettings;
+	/** `hubKeySealed`: the hub's key, encrypted, when it could be. */
+	settings: FactorySettings & { hubKeySealed?: string };
 	overlays: Record<string, ItemOverlay>;
 	runs: Run[];
 	notes?: Record<string, RepoNote[]>;
@@ -123,6 +130,7 @@ export class FactoryStore {
 		private readonly dataDir: string,
 		private readonly demo: boolean,
 		private readonly broadcast: (snapshot: FactorySnapshot) => void,
+		private readonly sealer?: Sealer,
 	) {
 		const now = Date.now();
 		this.snapshot = demo
@@ -148,8 +156,9 @@ export class FactoryStore {
 		if (loaded.from === "unreadable") this.loadProblem = `Factory couldn't read its saved settings and had no backup, so it started fresh. The unreadable file is kept at ${loaded.keptAt}.`;
 		if (loaded.value) {
 			const saved = loaded.value;
-			const { repo, repoPath, ...settings } = saved.settings;
+			const { repo, repoPath, hubKeySealed, ...settings } = saved.settings;
 			delete settings.liveUpdates;
+			if (hubKeySealed) settings.hubKey = this.openHubKey(hubKeySealed);
 			// Factory used to work on one repository.
 			if (!settings.repos) settings.repos = repo ? [{ repo, path: repoPath ?? "", addedAt: 0 }] : [];
 			this.snapshot.settings = { ...this.snapshot.settings, ...settings, playbooks: withPlaybookDefaults(saved.settings) };
@@ -251,6 +260,9 @@ export class FactoryStore {
 		const settings = this.snapshot.settings;
 		const known = this.snapshot.github.login ? { login: this.snapshot.github.login, avatar: this.snapshot.github.avatar } : null;
 		const [{ connections, catalog }, version, user] = await Promise.all([detectConnections(settings), ghVersion(), known ?? githubLogin(), ...settings.repos.map((repo) => this.sync(repo.repo))]);
+		// The hub's address or key changed while this looked: what it found is about the old ones, so look again.
+		const now = this.snapshot.settings;
+		if (now.hubUrl !== settings.hubUrl || now.hubKey !== settings.hubKey) return this.refresh();
 		this.catalog = catalog;
 		this.snapshot = { ...this.snapshot, connections, agents: agentsFor(connections, catalog, settings), loadedAt: Date.now(), github: { version, attach: supportsAttach(version), login: user?.login, avatar: user?.avatar } };
 		this.rebuildItems();
@@ -409,7 +421,7 @@ export class FactoryStore {
 		this.snapshot = { ...this.snapshot, settings, agents: patch.agentEfforts && !this.demo ? agentsFor(this.snapshot.connections, this.catalog, settings) : this.snapshot.agents };
 		this.changed();
 		if (patch.pollMinutes !== undefined) this.schedulePoll();
-		if (patch.hubUrl !== undefined) return this.refresh();
+		if (patch.hubUrl !== undefined || patch.hubKey !== undefined) return this.refresh();
 		return this.snapshot;
 	}
 
@@ -1476,9 +1488,29 @@ export class FactoryStore {
 		this.saveTimer = setTimeout(() => void this.save(), 500);
 	}
 
+	/** The settings as saved: the hub's key encrypted when this computer can, as typed when it can't. */
+	private savedSettings(): SavedState["settings"] {
+		const { settings } = this.snapshot;
+		if (!settings.hubKey || !this.sealer) return settings;
+		try {
+			return { ...settings, hubKey: "", hubKeySealed: this.sealer.seal(settings.hubKey) };
+		} catch {
+			return settings;
+		}
+	}
+
+	private openHubKey(sealed: string): string {
+		try {
+			return this.sealer?.open(sealed) ?? "";
+		} catch {
+			// Encrypted by another user or computer: it has to be typed again.
+			return "";
+		}
+	}
+
 	private savedState(): string {
 		const chats = [...this.snapshot.chats].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, MAX_CHATS).map((chat) => ({ ...chat, messages: chat.messages.slice(-MAX_CHAT_MESSAGES) }));
-		const state: SavedState = { settings: this.snapshot.settings, overlays: this.overlays, runs: this.snapshot.runs.slice(0, MAX_SAVED_RUNS), notes: this.snapshot.notes, chats };
+		const state: SavedState = { settings: this.savedSettings(), overlays: this.overlays, runs: this.snapshot.runs.slice(0, MAX_SAVED_RUNS), notes: this.snapshot.notes, chats };
 		return JSON.stringify(state);
 	}
 

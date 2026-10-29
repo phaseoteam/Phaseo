@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![سجل التغييرات مع تفعيل عامل تصفية المنتج وقائمة التواريخ بجانبه](/images/changelog/2026-10-28--changelog-filters.png)
 
 - يعرض سجل التغييرات الآن تغييرات المنتج وواجهة API إلى جانب إصدارات النماذج، مع عوامل تصفية **المنتج** و**API وحزم SDK** و**النماذج** تُبقي قائمة التواريخ ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- يضيف محرر الإعدادات المسبقة زر **نشر** بجانب **حفظ المسودة**، ويمنح قسم **الإصدارات والتسميات** كل تسمية منتقي إصدار، فاختيار إصدار سابق هو تراجع؛ راجع [قوالب المطالبات](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- يعرض فتح إصدار منشور من إعداد مسبق نماذجه ورسائل قالبه، والأسطر التي تختلف عن الإصدار الافتراضي، وزر **تشغيل** لتجربته ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - يربط قسم **Versions and labels** في محرر الإعدادات المسبقة تسميات مسمّاة بإصدارات منشورة، فيكفي نقل التسمية لإرجاع الطلبات إلى إصدار سابق بنقرة واحدة؛ راجع [قوالب المطالبات](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- لا يعرض منتقي النماذج في الإعدادات المسبقة إلا النماذج التي ما زالت البوابة تقدّمها؛ وكان يعرض قبل ذلك نماذج متقاعدة لا تصل إليها الطلبات ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- يوضّح تشغيل إعداد مسبق في مساحة عمل بلا رصيد ذلك ويقدّم رابطًا إلى **إضافة رصيد**؛ وكان يعرض قبل ذلك خطأً عامًا ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- تحصل الصفحات التي تحمّل فهرس النماذج الكامل، مثل محرر الإعدادات المسبقة، عليه من ذاكرة التخزين المؤقت؛ وكان كل تحميل يستغرق نحو 3 ثوانٍ ويفشل بعضه ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - يمكن لكل مساحات العمل استخدام توجيه النماذج المتوقفة: يفعّله المالكون والمسؤولون من **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة**، فتذهب الطلبات إلى البديل المعتمد؛ راجع [إهمال النماذج وإيقافها](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - لا يستخدم توجيه النماذج المتوقفة إلا بديلًا معتمدًا لا تزيد تكلفته على النموذج المتوقف، ما لم يسمح المالكون والمسؤولون بسعر أعلى؛ أما البديل الذي يختارونه بأنفسهم فيُستخدم أيًا كان سعره ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- تُفتح قائمة الإعدادات المسبقة ومحررها حتى عندما يتعذّر تحميل فهرس النماذج الكامل؛ وكانت الصفحة تعرض خطأً قبل ذلك ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - تطبّق سياسات حدود المعدل `concurrent_requests`، وتُرجع `429` مع السبب `policy_concurrent_requests` و`Retry-After: 1` عندما تكون كل الخانات مشغولة؛ راجع [حدود الطلبات](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - تتحقق السياسات الصارمة (`fail_closed`) من حدودها في الدقيقة قبل إرسال الطلب إلى المزوّد ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - تصل الطلبات المرسلة عبر البوابتين الإقليميتين في الاتحاد الأوروبي والولايات المتحدة الآن إلى وجهات Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- تنجح الطلبات إلى معظم النماذج من جديد؛ ففي 23 أكتوبر، بعد تحديث سياسة البيانات لدى المزوّدين، كانت تُرجع `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
 
 </div>
 
