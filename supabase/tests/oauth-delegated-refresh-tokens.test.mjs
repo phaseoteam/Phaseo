@@ -19,6 +19,11 @@ const functionBody = (sql) => {
   const start = sql.indexOf('$function$');
   return normalize(sql.slice(start, sql.indexOf('$function$', start + 10) + 10));
 };
+// A later generated migration may replace a function again, so each body is checked against the newest
+// migration that defines it.
+const migrationFiles = (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort();
+const migrationSql = new Map();
+for (const file of migrationFiles) migrationSql.set(file, normalize(await read(`../migrations/${file}`)));
 for (const name of [
   'consume_oauth_code_and_issue_delegated_grant',
   'rotate_oauth_delegated_refresh_token',
@@ -27,8 +32,10 @@ for (const name of [
   'revoke_oauth_grant_on_authorization_revoke',
   'revoke_oauth_delegated_refresh_on_scope_loss',
 ]) {
+  const defines = new RegExp(`create or replace function\\s+"?public"?\\."?${name}"?\\s*\\(`, 'i');
+  const newest = migrationFiles.filter((file) => defines.test(migrationSql.get(file))).at(-1);
   const body = functionBody(await read(`../schemas/public/functions/${name}.sql`));
-  assert(body.length > 20 && normalize(migration).includes(body), `the migration ships the schema body of ${name}`);
+  assert(body.length > 20 && newest && migrationSql.get(newest).includes(body), `the newest migration defining ${name} ships its schema body`);
 }
 const tableSql = normalize(await read('../schemas/public/tables/oauth_refresh_tokens.sql'));
 assert(tableSql.includes('"key_id"       uuid,') && tableSql.includes('REFERENCES public.keys(id) ON DELETE CASCADE'), 'the table definition has key_id');
@@ -116,8 +123,11 @@ try {
     insert into public.workspace_members values ('${WS}', '${USER}');
   `);
   await db.exec(migration);
-  // The CLI's rotation, unchanged here, for logout-versus-replay ordering.
+  // Functions a later migration replaced again run as their schema files define them (checked above
+  // against the newest migration that defines each): the CLI's rotation, for logout-versus-replay
+  // ordering, and the scope-loss trigger.
   await db.exec(await read('../schemas/public/functions/rotate_oauth_refresh_token.sql'));
+  await db.exec(await read('../schemas/public/functions/revoke_oauth_delegated_refresh_on_scope_loss.sql'));
 
   // The exchange issues the key and a refresh token bound to it, once.
   await authorize('partner_app', ['gateway:access', 'models:read']);
@@ -167,16 +177,20 @@ try {
   assert.deepEqual(narrowed.scopes, ['gateway:access']);
   assert.deepEqual((await key('kidAAAAAAAAA')).oauth_scopes, ['gateway:access']);
 
-  // Losing gateway:access ends a credit-spending key's refresh tokens for good: granting it again revives nothing.
-  await db.exec(`update public.oauth_authorizations set scopes = array['models:read'] where client_id = 'partner_app'`);
-  const scopeLost = await token('refresh-4');
+  // Losing gateway:access ends a credit-spending key and its refresh tokens for good, so its current
+  // access token stops spending too; granting the scope again revives nothing.
+  await authorize('scope_loss_app', ['gateway:access', 'models:read']);
+  assert.equal((await exchange('scope_loss_app', ['gateway:access', 'models:read'], 'kidSSSSSSSSS', 'loss-1')).result.status, 'issued');
+  await db.exec(`update public.oauth_authorizations set scopes = array['models:read'] where client_id = 'scope_loss_app'`);
+  const scopeLost = await token('loss-1');
   assert.ok(scopeLost.revoked_at, 'the authorization change ends the live refresh token at once');
   assert.equal(scopeLost.last_used_at, null, 'ended, not spent, so presenting it again is not reuse');
-  assert.equal((await rotate('refresh-4', 'refresh-5', 'hash-5')).status, 'invalid');
-  await db.exec(`update public.oauth_authorizations set scopes = array['gateway:access'] where client_id = 'partner_app'`);
-  assert.equal((await rotate('refresh-4', 'refresh-5', 'hash-5')).status, 'invalid', 'restoring the scope does not revive the token');
-  assert.equal((await key('kidAAAAAAAAA')).hash, 'hash-4');
-  assert.equal((await key('kidAAAAAAAAA')).status, 'active', 'the key itself is left alone');
+  assert.equal((await key('kidSSSSSSSSS')).status, 'revoked', 'the key stops too');
+  assert.equal((await rotate('loss-1', 'loss-2', 'hash-s2')).status, 'invalid');
+  await db.exec(`update public.oauth_authorizations set scopes = array['gateway:access'] where client_id = 'scope_loss_app'`);
+  assert.equal((await rotate('loss-1', 'loss-2', 'hash-s2')).status, 'invalid', 'restoring the scope does not revive the token');
+  assert.equal((await key('kidSSSSSSSSS')).status, 'revoked', 'nor the key');
+  assert.equal(await token('loss-2'), undefined);
 
   // A refresh that meets a missing required scope ends the chain too (here with the trigger off, as if it raced).
   await authorize('narrowed_app', ['gateway:access']);
