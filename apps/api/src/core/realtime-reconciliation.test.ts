@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import { runRealtimeSessionReconciliationJob } from "./realtime-sessions";
 
-const state = vi.hoisted(() => ({ rows: [] as any[], filters: [] as string[], rpc: vi.fn() }));
+const state = vi.hoisted(() => ({ rows: [] as any[], filters: [] as string[], updates: [] as any[], rpc: vi.fn() }));
 vi.mock("./realtime-billing-review", () => ({
 	quoteRealtimeRecovery: vi.fn(),
 	refreshRealtimeBillingReviews: vi.fn(async () => 0),
@@ -15,6 +15,7 @@ vi.mock("@/runtime/env", () => ({
 			const query: any = {
 				then: (resolve: any) => resolve({ data: state.rows, count: 0, error: null }),
 				or: (filter: string) => { state.filters.push(filter); return query; },
+				update: (values: unknown) => { state.updates.push(values); return query; },
 			};
 			for (const method of ["select", "in", "eq", "lte", "order", "limit"]) query[method] = () => query;
 			return query;
@@ -34,6 +35,22 @@ it("leaves relays with open sockets and recent traffic alone", async () => {
 	expect(relay.fetch).toHaveBeenCalledOnce();
 	expect(summary).toMatchObject({ sessionsScanned: 1, sessionsHealthy: 1, sessionsErrored: 0, sessionsExpired: 0 });
 	expect(state.rpc).not.toHaveBeenCalled();
+	// A live call moves to the back of the queue so it can't crowd out dropped ones.
+	expect(state.updates.at(-1)).toMatchObject({ last_event_at: expect.any(String), updated_at: expect.any(String) });
+});
+
+it("asks a relay after a minute of quiet, but waits five minutes without one", async () => {
+	state.rows = [];
+	state.filters = [];
+	await runRealtimeSessionReconciliationJob({ relay: relayNamespace({ active: false }).namespace });
+	await runRealtimeSessionReconciliationJob();
+	const quietSeconds = state.filters.map((filter) => {
+		const cutoff = /last_event_at\.lte\.([^,]+)/.exec(filter)?.[1];
+		return Math.round((Date.now() - Date.parse(cutoff ?? "")) / 1000);
+	});
+	expect(quietSeconds[0]).toBeGreaterThanOrEqual(59);
+	expect(quietSeconds[0]).toBeLessThanOrEqual(61);
+	expect(quietSeconds[1]).toBeGreaterThanOrEqual(299);
 });
 
 it("never reaps a quiet API session for idleness, but still reaps a quiet playground session", async () => {
