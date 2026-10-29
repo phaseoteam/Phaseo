@@ -46,7 +46,10 @@ export function registerFactoryIpc(ipcMain: IpcMain, factory: () => FactoryServi
 	};
 	// Saved state loads after the window opens: anything but a snapshot waits for it, or loading would overwrite the change.
 	const handle = (channel: string, run: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown) => ipcMain.handle(`factory:${channel}`, async (event, ...args) => {
-		if (channel !== "snapshot") await factory()?.start().catch(() => undefined);
+		if (channel !== "snapshot") {
+			await factory()?.start().catch(() => undefined);
+			factory()?.activate();
+		}
 		return run(event, ...args);
 	});
 	const images = new Map<string, string>();

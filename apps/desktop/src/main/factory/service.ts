@@ -41,16 +41,26 @@ export class FactoryService {
 		});
 	}
 
-	/** Imports the old app's state the first time, then loads and reads GitHub. The window can ask for a snapshot meanwhile. */
+	/**
+	 * Imports the old app's state the first time, then loads it. Reading GitHub and finding agents start processes (gh,
+	 * and each harness's model list), so that only begins at launch when Factory has repositories; otherwise when the
+	 * window first asks Factory to do something (activate). The window can ask for a snapshot meanwhile.
+	 */
 	start(): Promise<void> {
 		this.started ??= (async () => {
 			if (!this.options.demo) await importLegacyOnce(this.runtime.store, this.options.legacyFolder, () => this.discover(), this.options.dataDir).catch(() => undefined);
 			await this.store.load();
 			this.loaded = true;
-			void this.store.start().catch(() => undefined);
+			if (this.options.demo || this.store.get().settings.repos.length) this.activate();
 		})();
 		return this.started;
 	}
+
+	/** Starts reading GitHub and finding agents, once. */
+	activate() {
+		this.working ??= this.store.start().catch(() => undefined);
+	}
+	private working?: Promise<void>;
 
 	/** Runs going are saved as interrupted, to carry on at the next start; call before the runtime closes. */
 	async shutdown() {
