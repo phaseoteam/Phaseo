@@ -23,7 +23,10 @@ export function formatRoundedCount(value: number, locale?: string): string {
 	for (const [threshold, suffix] of COUNT_UNITS) {
 		if (value >= threshold) {
 			if (locale && !locale.startsWith("en")) return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2, roundingMode: "floor" }).format(value);
-			const rounded = new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 2, roundingMode: "floor" }).format(value / threshold);
+			// Floored here as well as by roundingMode, which Hermes (the mobile app's engine) ignores. toPrecision drops
+			// the float error in, say, 1.15 * 100 = 114.999…, which would otherwise floor to 1.14.
+			const floored = Math.floor(Number(((value / threshold) * 100).toPrecision(15))) / 100;
+			const rounded = new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 2, roundingMode: "floor" }).format(floored);
 			return `${rounded}${suffix}`;
 		}
 	}
