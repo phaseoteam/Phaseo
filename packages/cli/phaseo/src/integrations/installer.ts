@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
 import { access } from "node:fs/promises";
-import { delimiter, join } from "node:path";
+import { delimiter, isAbsolute, join, win32 } from "node:path";
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
 import { detectInstalledPackageManager, type PackageManager } from "../installation.js";
@@ -136,19 +136,35 @@ export function packageManagerCandidates(manager: PackageManager, platform: Node
 	return platform === "win32" ? [`${manager}.cmd`, `${manager}.exe`, manager] : [manager];
 }
 
-async function findPackageManagerExecutable(manager: PackageManager): Promise<string | null> {
-	const candidates = packageManagerCandidates(manager);
-	for (const directory of (process.env.PATH || "").split(delimiter)) {
-		if (!directory) continue;
+/**
+ * Resolves the package manager to an absolute path from absolute PATH entries only. Returning the
+ * bare name would let `cmd.exe` pick up a same-named script from the current directory first.
+ */
+export async function findPackageManagerExecutable(
+	manager: PackageManager,
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+): Promise<string | null> {
+	const candidates = packageManagerCandidates(manager, platform);
+	for (const directory of (env.PATH ?? env.Path ?? "").split(delimiter)) {
+		if (!directory || !isAbsolute(directory)) continue;
 		for (const candidate of candidates) {
 			const path = join(directory, candidate);
 			try {
 				await access(path, constants.F_OK);
-				return candidate;
+				return path;
 			} catch {}
 		}
 	}
 	return null;
+}
+
+/** Child environment for package-manager processes: on Windows, never search the current directory. */
+export function packageManagerChildEnv(
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+): NodeJS.ProcessEnv {
+	return platform === "win32" ? { ...env, NoDefaultCurrentDirectoryInExePath: "1" } : env;
 }
 
 async function availableManager(): Promise<AvailablePackageManager> {
@@ -164,20 +180,34 @@ async function availableManager(): Promise<AvailablePackageManager> {
 	throw new Error("A Node.js package manager is required to install coding harnesses");
 }
 
+/**
+ * Absolute path to cmd.exe: ComSpec when it is an absolute path, otherwise System32 under SystemRoot.
+ * A bare "cmd.exe" would be looked up by the parent process, which can search the current directory.
+ */
+export function windowsCommandInterpreter(env: NodeJS.ProcessEnv = process.env): string {
+	const comSpec = env.ComSpec ?? env.COMSPEC;
+	if (comSpec && win32.isAbsolute(comSpec) && /^[A-Za-z]:[\\/]/.test(comSpec)) return comSpec;
+	const systemRoot = env.SystemRoot ?? env.SYSTEMROOT ?? env.windir ?? env.WINDIR;
+	const root = systemRoot && /^[A-Za-z]:[\\/]/.test(systemRoot) ? systemRoot : "C:\\Windows";
+	return win32.join(root, "System32", "cmd.exe");
+}
+
 export function packageManagerChildInvocation(
 	invocation: InstallInvocation,
 	platform: NodeJS.Platform = process.platform,
-	commandInterpreter = process.env.ComSpec || "cmd.exe",
-): { command: string; args: string[] } {
+	commandInterpreter = windowsCommandInterpreter(),
+): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
 	const executable = invocation.executable ?? invocation.command;
 	if (platform !== "win32" || !/\.cmd$/i.test(executable)) return { command: executable, args: invocation.args };
-	const tokens = [executable, ...invocation.args];
-	if (tokens.some((value) => !/^[A-Za-z0-9@._/+,:=-]+$/.test(value))) {
+	// The shim path is quoted for cmd.exe, so it may contain spaces but not quotes, % or control characters.
+	if (/["%\u0000-\u001f]/.test(executable) || invocation.args.some((value) => !/^[A-Za-z0-9@._/+,:=-]+$/.test(value))) {
 		throw new Error("Package-manager installation contains an unsupported Windows command token");
 	}
 	return {
 		command: commandInterpreter,
-		args: ["/d", "/s", "/c", tokens.join(" ")],
+		// With /s, cmd.exe strips only the outer pair of quotes, leaving the quoted shim path intact.
+		args: ["/d", "/s", "/c", `""${executable}" ${invocation.args.join(" ")}"`],
+		windowsVerbatimArguments: true,
 	};
 }
 
@@ -193,9 +223,11 @@ async function commandOutput(invocation: InstallInvocation): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const childInvocation = packageManagerChildInvocation(invocation);
 		const child = spawn(childInvocation.command, childInvocation.args, {
+			env: packageManagerChildEnv(),
 			shell: false,
 			stdio: "pipe",
 			windowsHide: true,
+			windowsVerbatimArguments: childInvocation.windowsVerbatimArguments,
 		});
 		let stdout = "";
 		let stderr = "";
@@ -267,10 +299,13 @@ async function packageInstallInvocationForRunner(runner: RunnerInstallId): Promi
 export async function installHarness(invocation: InstallInvocation, options: { quiet?: boolean; capture?: boolean } = {}): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
 		const packageManagers = new Set(["npm", "pnpm", "yarn", "bun"]);
-		const childInvocation = packageManagers.has(invocation.command)
+		const isPackageManager = packageManagers.has(invocation.command);
+		const childInvocation: { command: string; args: string[]; windowsVerbatimArguments?: boolean } = isPackageManager
 			? packageManagerChildInvocation(invocation)
 			: invocation;
 		const child = spawn(childInvocation.command, childInvocation.args, {
+			...(isPackageManager ? { env: packageManagerChildEnv() } : {}),
+			windowsVerbatimArguments: childInvocation.windowsVerbatimArguments,
 			stdio: options.quiet ? "ignore" : options.capture ? "pipe" : "inherit",
 			shell: false,
 			windowsHide: true,
