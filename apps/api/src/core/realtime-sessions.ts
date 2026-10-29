@@ -22,6 +22,13 @@ import {
 	elevenLabsProviderModel,
 	fetchElevenLabsConversationCost,
 } from "./elevenlabs-realtime";
+import {
+	MISTRAL_REALTIME_MAX_DURATION_SECONDS,
+	MISTRAL_REALTIME_PROVIDER,
+	isMistralRealtimeModel,
+	mistralCanonicalModel,
+	mistralProviderModel,
+} from "./mistral-realtime";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -61,7 +68,7 @@ const GOOGLE_AUTH_TOKENS_URL = "https://generativelanguage.googleapis.com/v1alph
 const GOOGLE_LIVE_CONSTRAINED_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
-export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs";
+export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs" | "mistral";
 
 /**
  * Providers that bill a relayed session by connected time rather than by
@@ -69,6 +76,15 @@ export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-stud
  */
 export function isDurationBilledRealtimeProvider(provider: string | null | undefined): boolean {
 	return provider === "x-ai" || provider === "spacex-ai" || provider === ELEVENLABS_PROVIDER;
+}
+
+/**
+ * Providers the relay bills from its own meters (connected time, or audio
+ * forwarded for streaming transcription) rather than per-turn usage events,
+ * so a session's stored usage can always be settled.
+ */
+export function isRelayMeteredRealtimeProvider(provider: string | null | undefined): boolean {
+	return isDurationBilledRealtimeProvider(provider) || provider === MISTRAL_REALTIME_PROVIDER;
 }
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
@@ -108,6 +124,7 @@ export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: s
 	if (provider === "google-ai-studio") return GOOGLE_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === "x-ai" || provider === "spacex-ai") return XAI_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === ELEVENLABS_PROVIDER) return ELEVENLABS_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === MISTRAL_REALTIME_PROVIDER) return MISTRAL_REALTIME_MAX_DURATION_SECONDS;
 	if (model && isLiveModel(model)) return LIVE_MAX_DURATION_SECONDS;
 	return OPENAI_REALTIME_MAX_DURATION_SECONDS;
 }
@@ -331,17 +348,20 @@ export function providerFromModel(model: string, explicitProvider?: string | nul
 	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
 	if (provider === ELEVENLABS_PROVIDER || provider === "eleven-labs") return ELEVENLABS_PROVIDER;
+	if (provider === MISTRAL_REALTIME_PROVIDER || provider === "mistralai") return MISTRAL_REALTIME_PROVIDER;
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
 	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
 	if (/^(eleven-labs|elevenlabs)\//.test(normalized)) return ELEVENLABS_PROVIDER;
+	if (isMistralRealtimeModel(normalized)) return MISTRAL_REALTIME_PROVIDER;
 	return null;
 }
 
 export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsCanonicalModel(trimmed);
+	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralCanonicalModel(trimmed);
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
 		if (provider === "x-ai" || provider === "spacex-ai") return `spacex-ai/${trimmed}`;
@@ -354,6 +374,7 @@ export function canonicalModel(provider: RealtimeProvider, model: string): strin
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsProviderModel(canonical);
+	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralProviderModel(canonical);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
 	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
 	return canonical.replace(/^google\//, "");
@@ -856,7 +877,7 @@ export function assertRealtimeBillingMetersPresent(args: {
 	costNanos: number;
 	estimated?: boolean;
 }) {
-	if (isDurationBilledRealtimeProvider(args.provider)) return;
+	if (isRelayMeteredRealtimeProvider(args.provider)) return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
@@ -1060,7 +1081,11 @@ export async function createRealtimeSession(args: {
 		providerModelId === "gemini-3.8-live-extended-thinking"
 			? args.thinkingLevel ?? "low"
 			: null;
-	const voice = defaultVoice(provider, args.voice);
+	// Streaming transcription has no voice or instructions: nothing is spoken back.
+	if (provider === MISTRAL_REALTIME_PROVIDER && (args.voice || args.instructions)) {
+		throw new Error("realtime_transcription_option_not_supported");
+	}
+	const voice = provider === MISTRAL_REALTIME_PROVIDER ? null : defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
 	// GPT Live runs only through the relay (it owns billing). Playground sessions
 	// also need the signed-in user; API sessions are authorised by the key.
@@ -1078,7 +1103,9 @@ export async function createRealtimeSession(args: {
 
 	const useRelay = args.relay !== false || !args.auth.internal;
 	// ElevenLabs is only reachable through the relay: its key never leaves the gateway.
-	if (provider === ELEVENLABS_PROVIDER && !useRelay) throw new Error("realtime_relay_required");
+	if ((provider === ELEVENLABS_PROVIDER || provider === MISTRAL_REALTIME_PROVIDER) && !useRelay) {
+		throw new Error("realtime_relay_required");
+	}
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
 	const secretHash = relaySecret ? await sha256Hex(relaySecret) : null;
 	const submissionSpanId = crypto.randomUUID().replaceAll("-", "").slice(0, 16);
@@ -1728,7 +1755,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 			const relayed = session.metadata?.relay === true;
 			if (session.status !== "created" && !(relayed && session.status === "connecting")) {
 				const provider = providerFromModel(session.model_id, session.provider);
-				if (!isDurationBilledRealtimeProvider(provider)) {
+				if (!isRelayMeteredRealtimeProvider(provider)) {
 					await markRealtimeSessionBillingUnresolved({
 						auth: {
 							requestId: `realtime_reconcile_unresolved:${session.session_id}`,
