@@ -892,10 +892,10 @@ function getRoutingHealthSummary(
 	return null;
 }
 
-/** "131,072 tokens": token limits in full in the provider details, worded as the /models cards word them. */
-function formatTokenLimit(value: number | null | undefined, locale: string, tokens: (count: string) => string): string {
+/** "131,072 tokens": token limits in full in the provider details, in the reader's language. */
+function formatTokenLimit(value: number | null | undefined, tokens: (count: number) => string): string {
 	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
-	return tokens(value.toLocaleString(locale, { maximumFractionDigits: 0 }));
+	return tokens(value);
 }
 
 
@@ -1892,7 +1892,8 @@ export default function ProviderCard({
 	isSummaryActive?: boolean;
 }) {
 	const tx = useTranslations();
-	const tokenCount = (count: string) => tx("Catalogue.models.tokenCountDisplay", { count });
+	// The provider catalogue's "{count, number} tokens", which the model page already loads.
+	const tokenCount = (count: number) => tx("SettingsUI.providerCatalogCopy.tokens", { count });
 	const tPolicy = useTranslations("Common.ui.localisationGaps");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
@@ -2257,14 +2258,14 @@ export default function ProviderCard({
 				? {
 						key: "totalContext",
 						label: tSections("totalContext"),
-						value: formatTokenLimit(maxContextTokens, locale, tokenCount),
+						value: formatTokenLimit(maxContextTokens, tokenCount),
 				}
 				: null,
 			maxOutputTokens !== null
 				? {
 						key: "maxOutput",
 						label: tSections("maxOutput"),
-						value: formatTokenLimit(maxOutputTokens, locale, tokenCount),
+						value: formatTokenLimit(maxOutputTokens, tokenCount),
 				}
 				: null,
 		].filter(
