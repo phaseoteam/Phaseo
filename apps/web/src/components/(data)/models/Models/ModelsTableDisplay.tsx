@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-	useEffect,
 	useMemo,
 	useRef,
 	useState,
@@ -94,6 +93,7 @@ import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatus
 import { Slider } from "@/components/ui/slider";
 import TableSettings from "@/components/(gateway)/usage/TableSettings";
 import { useTablePreferences } from "@/components/(gateway)/usage/useTablePreferences";
+import { useStickyToolbarOffsets } from "@/components/layout/useStickyToolbarOffsets";
 
 type OptionCount = {
 	value: string;
@@ -678,48 +678,7 @@ export default function ModelsTableDisplay({
 	});
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 	const toolbarRef = useRef<HTMLDivElement | null>(null);
-	const [stickyOffsets, setStickyOffsets] = useState({
-		toolbarTop: 60,
-		tableHeaderTop: 60,
-	});
-
-	useEffect(() => {
-		const toolbar = toolbarRef.current;
-		if (!toolbar || typeof window === "undefined") return;
-
-		const siteHeader = document.querySelector<HTMLElement>(
-			"#dashboard-shell > header",
-		);
-		const mediumViewport = window.matchMedia("(min-width: 768px)");
-		const updateOffsets = () => {
-			const toolbarTop = Math.ceil(
-				siteHeader?.getBoundingClientRect().height ?? 60,
-			);
-			const toolbarHeight = mediumViewport.matches
-				? Math.ceil(toolbar.getBoundingClientRect().height)
-				: 0;
-			const tableHeaderTop = toolbarTop + toolbarHeight;
-			setStickyOffsets((current) =>
-				current.toolbarTop === toolbarTop &&
-				current.tableHeaderTop === tableHeaderTop
-					? current
-					: { toolbarTop, tableHeaderTop },
-			);
-		};
-
-		updateOffsets();
-		const resizeObserver = new ResizeObserver(updateOffsets);
-		resizeObserver.observe(toolbar);
-		if (siteHeader) resizeObserver.observe(siteHeader);
-		mediumViewport.addEventListener("change", updateOffsets);
-		window.addEventListener("resize", updateOffsets);
-
-		return () => {
-			resizeObserver.disconnect();
-			mediumViewport.removeEventListener("change", updateOffsets);
-			window.removeEventListener("resize", updateOffsets);
-		};
-	}, []);
+	const stickyOffsets = useStickyToolbarOffsets(toolbarRef);
 
 	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [] as string[],
@@ -1678,7 +1637,7 @@ export default function ModelsTableDisplay({
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
 						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
 					</ScrollArea>
