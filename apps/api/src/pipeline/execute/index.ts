@@ -1330,6 +1330,12 @@ async function attemptProviderWithIR(
 			}
 			const completedLatencyMs = ctx.meta.latency_ms ?? selectedProviderDurationMs;
 			const completedGenerationMs = ctx.meta.generation_ms ?? 0;
+			// A buffered text response ends when the selected provider's body has been read,
+			// so its provider duration is the generation time. Set after the health inputs
+			// above: routing throughput stays based on streamed generation only.
+			if (isTextGenerate && executorResult.upstream.ok && selectedUpstreamTiming) {
+				ctx.meta.generation_ms ??= selectedProviderDurationMs;
+			}
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
 				credentialSource: executorResult.keySource ?? credentialLog.key_source,

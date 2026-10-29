@@ -26,7 +26,7 @@ import { applyDataContributionDiscount } from "../pricing/data-contribution-disc
 import { getBaseModel } from "../execute/utils";
 import { cachedDroppedParams, droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
-import { resolveNonStreamLatencyMs } from "./timing";
+import { resolveFailoverMs, resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import {
     maybeWriteStickyRoutingFromUsage,
@@ -590,6 +590,7 @@ async function handleNonStreamResponse(
 		// output speed is unavailable; full-response throughput remains available.
         providerTtftMs: null,
         gatewayE2eMs: endToEndMs,
+        failoverMs: resolveFailoverMs(ctx),
     });
     payload.meta = {
         ...payload.meta,

@@ -12,6 +12,7 @@ import { errorCodeOf, withErrorObject, withErrorObjectResponse } from "@core/err
 import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
 import { gatewayTraceFor } from "./telemetry/gateway-trace";
+import { requestReceivedAtMs } from "./telemetry/request-receipt";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
 import { DecisionsSchema, ResponsesSchema } from "@core/schemas";
@@ -279,7 +280,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
     };
 
     async function handleRequest(req: Request, concurrency: ConcurrencyLeases): Promise<Response> {
-        const timer = new Timer();
+        const timer = new Timer(undefined, requestReceivedAtMs(req));
+        // Receipt to pipeline entry: admission middleware, chiefly authentication.
+        timer.between("admission", "request_start");
         const gatewayTrace = gatewayTraceFor(req);
         gatewayTrace?.mark("pipeline_entry");
         const timing: PipelineTiming = {
