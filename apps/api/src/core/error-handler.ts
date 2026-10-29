@@ -885,6 +885,13 @@ export async function handleError({
         }
         if (typeof body?.limit_value === "number") errorPayload.limit_value = body.limit_value;
     }
+    if (errCode === "key_limit_exceeded") {
+        // Tells the caller which key limit or budget refused the request and when it resets, and for
+        // a department budget which department.
+        for (const field of ["reason", "reset_at", "department_id", "department_name"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")
