@@ -28,6 +28,7 @@ import {
 	createConcurrencyLeases, releaseConcurrencyAfter, releaseConcurrencyLeases, type ConcurrencyLeases,
 } from "@core/customer-rate-limits";
 import { rejectedBySpendBlockForEveryModel, withSpendWarningHeader } from "@core/spend-blocks";
+import { releaseSpend } from "@core/spend-limits";
 import type { PipelineContext } from "./before/types";
 
 // Admission headers on every response: rate limit policy headers and the spend rule warning.
@@ -385,6 +386,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				}
 				if (attemptedModels.has(modelFallbackAttemptKey(fallbackPre.ctx))) {
 					attempts.push({ model: fallbackPre.ctx.model, status: null, stage: "skipped" });
+					// Never executed: free its spend-limit admission (enforce mode; no-op without one).
+					releaseSpend(fallbackPre.ctx.spendAdmission);
 					continue;
 				}
 				attemptedModels.add(modelFallbackAttemptKey(fallbackPre.ctx));
