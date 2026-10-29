@@ -504,9 +504,12 @@ describe("management key routes", () => {
 			expect(state.updatePayloads).toEqual([]);
 		});
 
-		it("can't change any key's limits, its own or another's", async () => {
+		it("can only rename a key: no limits, status or expiry, on its own key or another's", async () => {
 			for (const key of [appKey, personKey]) {
-				for (const body of [{ limit: null }, { limit: 500, limit_reset: "monthly" }, { limits: { monthly: { cost: 1000 } } }, { soft_blocked: false }]) {
+				for (const body of [
+					{ limit: null }, { limit: 500, limit_reset: "monthly" }, { limits: { monthly: { cost: 1000 } } }, { soft_blocked: false },
+					{ disabled: false }, { disabled: true }, { expires_at: "2099-01-01T00:00:00.000Z" }, { name: "Renamed", expires_at: null },
+				]) {
 					state.guardManagementAuthResult = oauthAuth("partner_app");
 					state.membershipRows.push({ role: "admin" });
 					state.keyRows.push({ ...key });
@@ -514,12 +517,12 @@ describe("management key routes", () => {
 					const response = await request(`https://example.com/${key.hash}`, "PATCH", body);
 
 					expect(response.status, `${key.id} ${JSON.stringify(body)}`).toBe(403);
-					expect(await response.json()).toMatchObject({ error: "forbidden", message: expect.stringContaining("can't change API key limits") });
+					expect(await response.json()).toMatchObject({ error: "forbidden", message: expect.stringContaining("can only rename API keys") });
 				}
 			}
 			expect(state.updatePayloads).toEqual([]);
 
-			// Other fields follow the usual keys:write rules.
+			// Renaming follows the usual keys:write rules.
 			state.guardManagementAuthResult = oauthAuth("partner_app");
 			state.membershipRows.push({ role: "admin" });
 			state.keyRows.push({ ...appKey }, { ...appKey, name: "Renamed" });

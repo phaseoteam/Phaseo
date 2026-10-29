@@ -15,7 +15,7 @@ import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import { publishSpendBlockEntry } from "@core/spend-blocks";
 import { formatSpendBlock, formatSpendBlocks, isSpendRuleUuid, parseSpendBlockListQuery, spendBlockLiftError } from "@/core/spend-rules";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -26,6 +26,9 @@ async function authorize(req: Request, access: "read" | "write") {
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, access === "read" ? CAPABILITIES.SPEND_RULES_READ : CAPABILITIES.SPEND_RULES_WRITE);
 	if (scopeError) return { response: scopeError } as const;
+	// Lifting a block lets spending resume: apps can read blocks but not lift them.
+	const appError = access === "read" ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't lift spend blocks. The person can lift one under Settings, Spend rules.");
+	if (appError) return { response: appError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
 	return { auth: auth.value as Auth } as const;

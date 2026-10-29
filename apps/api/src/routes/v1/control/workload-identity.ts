@@ -17,7 +17,15 @@ import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { authenticateDashboardSession } from "./dashboard-session";
-import { internalServerError, isResponse, parsePathId, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import {
+	internalServerError,
+	isResponse,
+	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
+	requireCapability,
+	requireJsonBody,
+	requireOAuthWorkspaceRole,
+} from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const SCOPES = [CAPABILITIES.KEYS_READ, CAPABILITIES.KEYS_WRITE];
@@ -80,9 +88,10 @@ type PolicyAuth = { workspaceId: string; userId?: string | null };
 /**
  * Settings → Trusted workloads uses a dashboard session; Terraform and scripts
  * use a management key or OAuth token with the keys:* scope for the method,
- * since every policy owns a key. OAuth users must be owners or admins.
+ * since every policy owns a key. OAuth users must be owners or admins. Apps that sign in with Phaseo
+ * can't create or change policies (appRefusal), since a policy's key has no spending limit.
  */
-async function authorize(req: Request, capability: string): Promise<{ auth: PolicyAuth } | { response: Response }> {
+async function authorize(req: Request, capability: string, appRefusal?: string): Promise<{ auth: PolicyAuth } | { response: Response }> {
 	let auth: PolicyAuth;
 	const session = await authenticateDashboardSession(req, SCOPES);
 	if (session instanceof Response) return { response: session };
@@ -96,6 +105,8 @@ async function authorize(req: Request, capability: string): Promise<{ auth: Poli
 		if (scopeError) return { response: scopeError };
 		const roleError = await requireOAuthWorkspaceRole(management.value, management.value.workspaceId, ["owner", "admin"]);
 		if (roleError) return { response: roleError };
+		const appError = appRefusal ? rejectThirdPartyOAuthSpendingChange(management.value, appRefusal) : null;
+		if (appError) return { response: appError };
 		auth = management.value;
 	}
 	// Outside the rollout the feature does not exist for the workspace.
@@ -199,7 +210,11 @@ async function handleGet(req: Request) {
 }
 
 async function handleCreate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
+	const authorization = await authorize(
+		req,
+		CAPABILITIES.KEYS_WRITE,
+		"Apps that use Sign in with Phaseo can't create trusted workloads. The person can add one under Settings, Trusted workloads.",
+	);
 	if ("response" in authorization) return authorization.response;
 	const { auth } = authorization;
 	const body = await requireJsonBody(req);
@@ -248,7 +263,11 @@ async function handleCreate(req: Request) {
 }
 
 async function handleUpdate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.KEYS_WRITE);
+	const authorization = await authorize(
+		req,
+		CAPABILITIES.KEYS_WRITE,
+		"Apps that use Sign in with Phaseo can't change trusted workloads. The person can change them under Settings, Trusted workloads.",
+	);
 	if ("response" in authorization) return authorization.response;
 	const { auth } = authorization;
 	const id = pathId(req);
