@@ -75,7 +75,6 @@
 		"data:sync-epoch-eci": "tsx scripts/sync-epoch-eci-benchmarks.ts",
 		"data:sync-aa-progress-index": "tsx scripts/sync-artificial-analysis-progress-index.ts",
 		"data:check-new-models": "tsx scripts/model-discovery/run.ts",
-		"data:check-new-models:internal-public": "tsx scripts/model-discovery/run-internal-public.ts",
 		"data:test-public-model-announcement": "tsx scripts/model-discovery/send-public-announcement-test.ts",
 		"data:check-new-models:hf-private": "tsx scripts/model-discovery/run-hf-private.ts",
 		"data:probe-model-endpoints": "node internal/fetch-provider-model-endpoints.mjs",
