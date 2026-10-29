@@ -244,8 +244,11 @@ jobs:
               run: pnpm --filter "@phaseo/agent-sdk..." build
 
             # These apps have no CI build job; TypeScript 7 checks each in seconds.
-            - name: Typecheck desktop, mobile, perf-upstream and the shared UI package
-              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream --filter @phaseo/ui run typecheck
+            - name: Typecheck desktop, mobile, perf-upstream and the shared packages
+              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream --filter @phaseo/ui --filter @phaseo/app-kit run typecheck
+
+            - name: Test the shared app-kit package
+              run: pnpm --filter @phaseo/app-kit test
 
     check-paths:
         name: Check changed paths

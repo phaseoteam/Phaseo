@@ -1,6 +1,6 @@
 # @phaseo/app-kit
 
-Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`) and the mobile app (`apps/mobile`). These files used to live in the website, and the other apps reached into `apps/web` for them.
+Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`), the mobile app (`apps/mobile`) and Factory (`apps/factory`). These files used to live in the website, and the other apps reached into `apps/web` for them.
 
 | Import | What it is |
 |---|---|
@@ -8,6 +8,7 @@ Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop 
 | `@phaseo/app-kit/provider-offers` | Provider display names and logo IDs for offers such as regional or fast routes. |
 | `@phaseo/app-kit/gateway-status` | Gateway route statuses: normalising, ranking and choosing between them. |
 | `@phaseo/app-kit/benchmarks/epoch` | Epoch AI benchmark helpers (the Capabilities Index and its confidence intervals). |
+| `@phaseo/app-kit/format` | Display formatters: money (`formatUsd`, `formatUsdCost`, `formatUsdPrice`), counts (`formatRoundedCount`) and relative times (`formatRelativeTime`, `formatAgoShort`). |
 
 ## Rules
 
@@ -24,3 +25,18 @@ To add a logo:
 2. Add the ID to `src/logos/manifest.ts`.
 
 Every app picks it up from there.
+
+## Formatters
+
+The website is the reference. Each formatter is the website's own style for that kind of figure, so a figure reads the same in every app:
+
+| Figure | Formatter | Looks like | Website original |
+|---|---|---|---|
+| A balance, spend, budget or usage total | `formatUsd` | $0.00 · $0.0035 · $12.50 · $1,234.50 | The budgets pages (`useSpendUsd`) |
+| What one request, message or chat cost | `formatUsdCost` | $0 · $0.00004 · $0.1234 · $0.5 | Chat message costs |
+| A unit price, such as per million tokens | `formatUsdPrice` | $0.035 · $2.5 · $1,234.5 | The /models list |
+| A count of tokens or requests | `formatRoundedCount` | 999 · 1.15K · 1.23M (rounded down) | Rankings and usage |
+| A time | `formatRelativeTime` | now · 5 minutes ago · yesterday | Timestamps |
+| A time in a narrow list | `formatAgoShort` | now · 5m · 3h · 2d | None: the same units, abbreviated |
+
+Money always uses `MONEY_LOCALE` (`en-US`), so it shows `$12.50` and never `US$12.50`. Tests: `pnpm --filter @phaseo/app-kit test`.

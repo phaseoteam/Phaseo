@@ -16,6 +16,7 @@ import {
 	useMessageScroller,
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { formatUsdCost } from "@phaseo/app-kit/format";
 import { Streamdown } from "streamdown";
 import { ChatAnswerContent } from "./openui/ChatAnswerContent";
 import { OPENUI_FORMAT } from "./openui/openuiHelpers";
@@ -224,24 +225,6 @@ function formatGenerationDuration(value: unknown): string | null {
 		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
 	}
 	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
-}
-
-function formatUsdCost(value: unknown): string | null {
-	const amount =
-		typeof value === "number"
-			? value
-			: typeof value === "string"
-				? Number.parseFloat(value)
-				: NaN;
-	if (!Number.isFinite(amount) || amount < 0) return null;
-	if (amount === 0) return "$0";
-	if (amount >= 0.01) {
-		return `$${amount.toFixed(4).replace(/\.?0+$/, "")}`;
-	}
-	if (amount >= 0.00001) {
-		return `$${amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
-	}
-	return `$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
 }
 
 function formatMessageSentAt(value: string): string | null {
