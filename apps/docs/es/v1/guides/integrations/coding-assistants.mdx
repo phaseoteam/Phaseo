@@ -33,7 +33,7 @@ phaseo codex
 
 Los nombres de integración admitidos son `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` y `zed`. Los ejecutores aislados de la CLI son `cline`, `kilo`, `omp`, `muse` y `minimax`.
 
-La CLI crea una clave de API independiente, sin caducidad y con el nombre de cada asistente. Configura Aider y Continue automáticamente en instalaciones limpias y también escribe los ajustes de proveedor/modelo de Zed. Para asistentes que guardan secretos exclusivamente en la interfaz del editor, muestra los campos que faltan, enlaza la guía correspondiente y permite copiar solo la clave de ese asistente:
+La CLI crea una clave de API independiente con el nombre de cada asistente, que caduca a los 90 días y tiene un límite de gasto mensual de $100. Configura Aider y Continue automáticamente en instalaciones limpias y también escribe los ajustes de proveedor/modelo de Zed. Para asistentes que guardan secretos exclusivamente en la interfaz del editor, muestra los campos que faltan, enlaza la guía correspondiente y permite copiar solo la clave de ese asistente:
 
 ```bash
 phaseo integrations credential codex
@@ -146,7 +146,7 @@ Aider suele esperar que los modelos personalizados compatibles con OpenAI lleven
 
 `phaseo pi` añade una extensión de proveedor dedicada que obtiene la clave desde Phaseo CLI en tiempo de ejecución. `phaseo prime-agent` escribe un proveedor respaldado por un comando en `~/.prime/agent/models.json`. Ambos reciben el catálogo de modelos compatibles de Phaseo. `phaseo openclaw` registra el catálogo compatible y una SecretRef respaldada por exec, sin guardar la clave de API en `openclaw.json`.
 
-`phaseo hermes` ofrece ejecutar el instalador oficial de Nous Research si Hermes no está instalado y, después, configura el agente instalado. Guarda los ajustes anteriores del modelo de Hermes, configura Phaseo como endpoint personalizado y usa el comando oficial `hermes config set` para guardar la clave dedicada en `~/.hermes/.env` como `OPENAI_API_KEY`. Hermes usa deliberadamente este archivo de texto sin cifrar para las credenciales del proveedor; protégelo como cualquier otro archivo de claves de API. Al eliminarlo, restaura los ajustes anteriores del modelo, elimina `OPENAI_API_KEY`, borra el estado de recuperación de Phaseo y revoca la clave.
+`phaseo hermes` ofrece ejecutar el instalador oficial de Nous Research si Hermes no está instalado y, después, configura el agente instalado. Guarda los ajustes anteriores del modelo de Hermes, configura Phaseo como endpoint personalizado y escribe la clave dedicada como `OPENAI_API_KEY` en el archivo `~/.hermes/.env` de Hermes (o en el `.env` de `HERMES_HOME`), dentro de un bloque marcado con `# >>> phaseo managed (do not edit)`, de modo que la clave nunca se pasa en una línea de comandos y el resto de tus líneas no se modifica. Hermes usa deliberadamente este archivo de texto sin cifrar para las credenciales del proveedor; protégelo como cualquier otro archivo de claves de API. Al eliminarlo, restaura los ajustes anteriores del modelo, elimina `OPENAI_API_KEY`, borra el estado de recuperación de Phaseo y revoca la clave.
 
 ## MiniMax Code
 
