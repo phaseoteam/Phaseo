@@ -126,7 +126,7 @@ preview_bucket_name = "phaseo-data-contributions-preview"
 [[durable_objects.bindings]]
 name = "REALTIME_RELAY"
 class_name = "RealtimeRelayDurableObject"
-script_name = "phaseo-gateway"
+script_name = "phaseo-realtime"
 
 [[durable_objects.bindings]]
 name = "PROVIDER_RATE_LIMITS"
