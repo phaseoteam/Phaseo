@@ -54,5 +54,8 @@
   "publishConfig": {
     "access": "public",
     "tag": "ai-sdk-v5"
+  },
+  "overrides": {
+    "undici": "^6.29.1"
   }
 }
