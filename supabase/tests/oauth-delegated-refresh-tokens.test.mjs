@@ -385,6 +385,19 @@ try {
   assert.ok((await token('cli-b2')).revoked_at);
   assert.equal(await revoke('cli-b1'), 'revoked', 'a logout after the replay still succeeds');
 
+  // A Worker from before delegated refresh tokens rotates through the CLI's function: it refuses a
+  // key-bound token and writes nothing, so no successor ever loses its key.
+  await authorize('legacy_worker_app', ['gateway:access']);
+  await exchange('legacy_worker_app', ['gateway:access'], 'kidWWWWWWWWW', 'legacy-1');
+  assert.equal((await one(
+    `select public.rotate_oauth_refresh_token('legacy-1', 'legacy-2', now() + interval '90 days', array['gateway:access']) r`)).r, 'invalid');
+  assert.equal(await token('legacy-2'), undefined, 'no successor without a key');
+  const legacyToken = await token('legacy-1');
+  assert.equal(legacyToken.revoked_at, null);
+  assert.equal(legacyToken.last_used_at, null);
+  assert.equal((await rotate('legacy-1', 'legacy-3', 'hash-w2')).status, 'rotated', 'the delegated rotation still renews it');
+  assert.equal((await token('legacy-3')).key_id, (await key('kidWWWWWWWWW')).id);
+
   // Revocation locks the grant's authorization row before any key or token, like every rotation and the
   // exchange. A replay holds the authorization and its token while it revokes the family, so a logout that
   // locked family tokens first could deadlock with it; now the logout waits for the authorization instead.
