@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -61,10 +61,15 @@ describe("importing the old Factory app", () => {
 			const file = path.join(folder, "factory.json"), items = path.join(folder, "items.json");
 			await writeFile(file, JSON.stringify(legacy));
 			await writeFile(items, JSON.stringify({ repos: { "acme/app": { items: [] } } }));
+			const shot = path.join(folder, "attachments", "acme-app-3", "shot.png"), dataDir = path.join(folder, "new");
+			await mkdir(path.dirname(shot), { recursive: true }); await writeFile(shot, "png");
 			const before = { text: await readFile(file, "utf8"), modified: (await stat(file)).mtimeMs };
 			const saved = new Map<string, string>();
 			const store = { factoryState: (key: string) => saved.get(key), saveFactoryState: (entries: Record<string, string>) => { for (const [key, value] of Object.entries(entries)) saved.set(key, value); } };
-			expect(await importLegacyOnce(store, folder, async () => agents)).toBe("imported");
+			expect(await importLegacyOnce(store, folder, async () => agents, dataDir)).toBe("imported");
+			// Attached images are copied over; the old ones stay.
+			expect(await readFile(path.join(dataDir, "attachments", "acme-app-3", "shot.png"), "utf8")).toBe("png");
+			expect(await readFile(shot, "utf8")).toBe("png");
 			expect(JSON.parse(saved.get("state")!).settings.repos[0].repo).toBe("acme/app");
 			expect(JSON.parse(saved.get("items")!)).toEqual({ repos: { "acme/app": { items: [] } } });
 			expect(JSON.parse(saved.get("imported")!)).toMatchObject({ found: true });

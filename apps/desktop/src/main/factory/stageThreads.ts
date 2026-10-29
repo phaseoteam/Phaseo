@@ -153,6 +153,9 @@ export class StageThreads implements FactoryThreads {
 			// A reply, or carrying on after an interruption: the same conversation goes on.
 			threadId = previous.id;
 			baseUsage = previous.usageTotals ?? baseUsage;
+			// The effort may have changed since the thread last ran: the carried-on turn uses the one chosen now.
+			const effort = effortSettings(agent);
+			if (effort.reasoningEffort || effort.modelOptions) await this.host.command({ type: "update-task", id: threadId, ...(effort.reasoningEffort ? { reasoningEffort: effort.reasoningEffort } : {}), ...(effort.modelOptions ? { modelOptions: { ...previous.modelOptions, ...effort.modelOptions } } : {}) });
 			await this.host.command({ type: "send", id: threadId, text: prompt });
 			startId = this.host.store.getTask(threadId).queue.findLast((message) => message.text === prompt)?.id
 				?? this.host.store.getTask(threadId).messages.findLast((message) => message.role === "user" && message.text === prompt)?.id;
@@ -178,6 +181,10 @@ export class StageThreads implements FactoryThreads {
 				void this.host.command({ type: "cancel", id: threadId }).catch(() => undefined).finally(() => this.check(watch));
 			},
 		};
+	}
+
+	canResume(threadId: string, agent: AgentProfile) {
+		return Boolean(this.reusable(threadId, agent));
 	}
 
 	/** The run's thread, when it can carry on: still there, not archived, and on the same harness and account. */

@@ -44,7 +44,7 @@ export class FactoryService {
 	/** Imports the old app's state the first time, then loads and reads GitHub. The window can ask for a snapshot meanwhile. */
 	start(): Promise<void> {
 		this.started ??= (async () => {
-			if (!this.options.demo) await importLegacyOnce(this.runtime.store, this.options.legacyFolder, () => this.discover()).catch(() => undefined);
+			if (!this.options.demo) await importLegacyOnce(this.runtime.store, this.options.legacyFolder, () => this.discover(), this.options.dataDir).catch(() => undefined);
 			await this.store.load();
 			this.loaded = true;
 			void this.store.start().catch(() => undefined);

@@ -54,6 +54,8 @@ export interface FactoryThreads extends StageRunner {
 	ensureParent(item: WorkItem, agent: AgentProfile | undefined, workspace: StageWorkspace | undefined): Promise<string>;
 	/** Links the item (and the pull request that fixes it) to its thread again, after Factory opened that pull request. */
 	linkItem?(threadId: string, item: WorkItem): Promise<void>;
+	/** Whether a run's thread can carry on a reply: still there and on this agent. Otherwise the reply needs the whole brief. */
+	canResume?(threadId: string, agent: AgentProfile): boolean;
 }
 
 export interface FactoryDeps {
@@ -557,13 +559,16 @@ export class FactoryStore {
 			const changedBefore = await changedFiles(dir);
 			// Preparing takes a while; Stop may have been pressed meanwhile. Then no agent starts.
 			if (this.stopped(run.id)) return run;
-			const prompt = options.resume?.sessionId && options.message
+			// A reply carries on the same thread, when it's the same agent's and the thread is still there; otherwise it starts
+			// a new thread, which needs the whole brief with the reply as a note.
+			const resumeId = options.message && options.resume?.agentId === agent.id ? options.resume.sessionId : undefined;
+			const resume = resumeId && (this.deps.threads.canResume?.(resumeId, agent) ?? true) ? resumeId : undefined;
+			const prompt = resume && options.message
 				? replyPrompt(options.message, input.stage, proof)
 				: [stagePrompt(item, input.stage, playbook, { proofDir: proof, brief: options.brief, fixes: item.kind === "pull" ? linkedItem(item, this.snapshot.items) : undefined, inputs, replies, notes, similar, similarBodies, uncommitted: changedBefore, pulls: pullsFor(item, this.snapshot.items) }), ...(options.message ? ["", `A note from the person running this: ${options.message}`] : [])].join("\n");
 			const session = await this.deps.threads.start({
 				item: this.item(item.id), runId: run.id, agent, stage: input.stage, workspace: { dir, branch, clone: checkout }, proof, prompt,
-				// A reply carries on the same thread, when it's the same agent's.
-				resume: options.message && options.resume?.agentId === agent.id ? options.resume.sessionId : undefined,
+				resume,
 				changedBefore,
 				handlers: {
 					log: (line) => this.log(run.id, line),

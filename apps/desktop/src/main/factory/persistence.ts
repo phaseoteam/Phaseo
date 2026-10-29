@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { cp, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentProfile, FactorySettings, Playbook, PlaybookRule, RepoNote, Run, StageId, WorkKind } from "../../shared/factory/types";
 import type { WorkspaceStore } from "../workspaceStore";
@@ -95,11 +95,13 @@ export function importLegacyState(raw: unknown, agents: AgentProfile[], now = Da
  * Once, on the first start with nothing saved: the old Factory app's state, if it left any. Records that it looked, so
  * it never imports twice, and never over state this app already has.
  */
-export async function importLegacyOnce(store: Pick<WorkspaceStore, "factoryState" | "saveFactoryState">, folder: string, agents: () => Promise<AgentProfile[]>): Promise<"imported" | "none" | "skipped"> {
+export async function importLegacyOnce(store: Pick<WorkspaceStore, "factoryState" | "saveFactoryState">, folder: string, agents: () => Promise<AgentProfile[]>, dataDir?: string): Promise<"imported" | "none" | "skipped"> {
 	if (store.factoryState("imported") !== undefined || store.factoryState("state") !== undefined) return "skipped";
 	const legacy = await readLegacyFactory(folder);
 	const state = legacy.state ? importLegacyState(legacy.state, await agents().catch(() => [])) : undefined;
 	const record = JSON.stringify({ at: new Date().toISOString(), from: path.join(folder, "factory.json"), found: Boolean(state) });
+	// Issues' attached images come too, copied: items refer to them by name under the attachments folder.
+	if (state && dataDir) await cp(path.join(folder, "attachments"), path.join(dataDir, "attachments"), { recursive: true, force: false }).catch(() => undefined);
 	store.saveFactoryState({ imported: record, ...(state ? { state: JSON.stringify(state) } : {}), ...(state && legacy.items ? { items: legacy.items } : {}) });
 	return state ? "imported" : "none";
 }

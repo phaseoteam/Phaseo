@@ -110,6 +110,23 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("carries a reply on at the effort chosen now, and an archived thread can't carry one on", async () => {
+		const { runtime, finished, handlers, start, threads, close, worktree, clone } = setup(async (_task, callbacks) => { callbacks.onDelta?.("answer", "Summary: Done.\nVerdict: No findings"); });
+		try {
+			await start("run-11");
+			await vi.waitFor(() => expect(finished).toHaveLength(1));
+			const threadId = vi.mocked(handlers.session).mock.calls[0]![0];
+			expect(runtime.store.getTask(threadId).reasoningEffort).toBe("high");
+			const lower = { ...agent, effort: "low" };
+			expect(threads.canResume(threadId, lower)).toBe(true);
+			await threads.start({ item, runId: "run-12", agent: lower, stage: "review", workspace: { dir: worktree, branch: "factory/pr-3", clone }, proof: path.join(worktree, "proof"), prompt: "Again, lightly.", resume: threadId, changedBefore: [], handlers });
+			await vi.waitFor(() => expect(finished).toHaveLength(2));
+			expect(runtime.store.getTask(threadId).reasoningEffort).toBe("low");
+			await runtime.command({ type: "update-task", id: threadId, archived: true });
+			expect(threads.canResume(threadId, lower)).toBe(false);
+		} finally { await close(); }
+	});
+
 	it("tells a stop of the queued brief apart from the interruption before it", async () => {
 		// A thread interrupted earlier, whose new brief stays queued: the stand-in host never starts it.
 		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false } as unknown as Task;
