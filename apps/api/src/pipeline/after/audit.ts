@@ -7,6 +7,7 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { recordShadowSpend, releaseSpend, settleEnforcedSpend } from "@core/spend-limits";
 import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
@@ -695,7 +696,7 @@ export async function handleSuccessAudit(
 
 	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
 	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
-	if (rowWritten && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+	if (rowWritten && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef) && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
 		recordShadowSpend({
 			workspaceId: ctx.workspaceId,
 			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
@@ -707,7 +708,7 @@ export async function handleSuccessAudit(
 	}
 	// Enforce mode only: count the charge with the coordinator (or release the admission when no
 	// row was written). Independent of the legacy key-limit state.
-	if (ctx.meta.authMethod !== "oauth") {
+	if (!keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) {
 		settleEnforcedSpend({
 			admission: ctx.spendAdmission,
 			rowWritten,

@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
 import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
@@ -615,8 +616,8 @@ async function runBeforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
-		shadowSpendLimit: a.value.authMethod !== "oauth",
-		spendLimit: a.value.authMethod !== "oauth" ? spendLimit : null,
+		shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+		spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -1011,8 +1012,8 @@ async function runBeforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
-                    shadowSpendLimit: a.value.authMethod !== "oauth",
-                    spendLimit: a.value.authMethod !== "oauth" ? spendLimit : null,
+                    shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+                    spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -1766,9 +1767,11 @@ async function runBeforeRequest(
         stream,
         req,
         rawBody: rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : null,
-        authMethod: apiKeyRef?.startsWith("oauth_") ? "oauth" : "api_key",
-        oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
-        oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
+        // Delegated OAuth keys authenticate as `kid_…` but belong to an OAuth app, so their
+        // requests are attributed to the app and its user like OAuth access tokens are.
+        authMethod: a.value.authMethod === "oauth" ? "oauth" : "api_key",
+        oauthClientId: a.value.authMethod === "oauth" ? (a.value.oauthClientId ?? null) : null,
+        oauthUserId: a.value.authMethod === "oauth" ? (userId ?? null) : null,
         returnMeta,
         returnRoutingDiagnostics,
         debug,

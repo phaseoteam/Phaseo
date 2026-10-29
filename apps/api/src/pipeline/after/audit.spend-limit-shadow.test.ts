@@ -95,9 +95,14 @@ describe("handleSuccessAudit spend-limit shadow", () => {
 		});
 	});
 
-	it("skips keys without limits, OAuth requests, unpersisted testing requests and failed row writes", async () => {
+	it("counts a capped delegated OAuth key, which is a real key attributed to its app", async () => {
+		await audit({ meta: { authMethod: "oauth", apiKeyRef: "kid_delegated", oauthClientId: "client_1" } });
+		expect(recordShadowSpendMock).toHaveBeenCalledWith(expect.objectContaining({ keyId: KEY }));
+	});
+
+	it("skips keys without limits, OAuth access tokens, unpersisted testing requests and failed row writes", async () => {
 		await audit({ keyLimit: { ok: true, reason: null, resetAt: null, buckets: null, budgets: [] } });
-		await audit({ meta: { authMethod: "oauth" } });
+		await audit({ meta: { authMethod: "oauth", apiKeyRef: "oauth_client_1" } });
 		await audit({ testingMode: true });
 		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		auditSuccessMock.mockRejectedValueOnce(new Error("database unavailable"));
@@ -117,13 +122,16 @@ describe("handleSuccessAudit spend-limit shadow", () => {
 			admission: ADMISSION, rowWritten: true, workspaceId: "ws_1", keyId: KEY, billingRequestId: "bill_1", requestId: "req_1",
 			costNanos: 12_345, internal: false,
 		});
-		// Without a row the admission is released (settleEnforcedSpend decides); OAuth requests have none.
+		// Without a row the admission is released (settleEnforcedSpend decides); OAuth access tokens have none.
 		settleEnforcedSpendMock.mockClear();
 		await audit({ spendAdmission: ADMISSION, testingMode: true });
 		expect(settleEnforcedSpendMock).toHaveBeenCalledWith(expect.objectContaining({ admission: ADMISSION, rowWritten: false }));
 		settleEnforcedSpendMock.mockClear();
-		await audit({ meta: { authMethod: "oauth" } });
+		await audit({ meta: { authMethod: "oauth", apiKeyRef: "oauth_client_1" } });
 		expect(settleEnforcedSpendMock).not.toHaveBeenCalled();
+		// A delegated OAuth key is a key: its admission is settled like any other.
+		await audit({ spendAdmission: ADMISSION, meta: { authMethod: "oauth", apiKeyRef: "kid_delegated", oauthClientId: "client_1" } });
+		expect(settleEnforcedSpendMock).toHaveBeenCalledWith(expect.objectContaining({ admission: ADMISSION, keyId: KEY }));
 	});
 
 	it("releases the enforce-mode admission when the request fails", async () => {

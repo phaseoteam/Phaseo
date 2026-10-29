@@ -1140,6 +1140,7 @@ async function attemptProviderWithIR(
 					requestUserId: ctx.meta.requestUserId ?? null,
 					trace: ctx.meta.trace ?? null,
 					testId: ctx.meta.testId ?? null,
+					apiKeyRef: ctx.meta.apiKeyRef ?? null,
 					authMethod: ctx.meta.authMethod ?? "api_key",
 					oauthClientId: ctx.meta.oauthClientId ?? null,
 					oauthUserId: ctx.meta.oauthUserId ?? null,

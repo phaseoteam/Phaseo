@@ -110,12 +110,12 @@ const plan: RateLimitPlan = {
 };
 
 let sequence = 0;
-function ctx(overrides: Partial<PipelineContext> & { authMethod?: "api_key" | "oauth"; endUser?: string | null } = {}): PipelineContext {
-	const { authMethod = "api_key", endUser = null, ...rest } = overrides;
+function ctx(overrides: Partial<PipelineContext> & { authMethod?: "api_key" | "oauth"; apiKeyRef?: string; endUser?: string | null } = {}): PipelineContext {
+	const { authMethod = "api_key", apiKeyRef = "kid_key", endUser = null, ...rest } = overrides;
 	return {
 		workspaceId: WS, keyId: "key-1", quotaUserId: "user-2", activeGuardrailIds: [],
 		billingRequestId: `billing-${++sequence}`, requestId: `request-${sequence}`, internal: false,
-		meta: { authMethod, requestUserId: endUser },
+		meta: { authMethod, apiKeyRef, requestUserId: endUser },
 		...rest,
 	} as unknown as PipelineContext;
 }
@@ -305,7 +305,7 @@ describe("applicable rate limits", () => {
 		expect(scopes({ keyId: "key-ops", userId: "user-both" })).toEqual([]);
 		// Other keys count toward every department of their creator; OAuth requests toward their user's.
 		expect(scopes({ keyId: "key-2", userId: "user-both" })).toEqual(["department:dept-legal", "department:dept-sales"]);
-		expect(scopes({ keyId: "key-linked", userId: "user-both", authMethodIsOAuth: true })).toEqual(["department:dept-legal", "department:dept-sales"]);
+		expect(scopes({ keyId: "key-linked", userId: "user-both", keyIdIsOAuthClient: true })).toEqual(["department:dept-legal", "department:dept-sales"]);
 		expect(scopes({ keyId: "key-2", userId: "user-9" })).toEqual([]);
 		expect(applicableRateLimits(departmentPlan, { keyId: "key-linked" })).toContainEqual(
 			{ policyId: STRICT, name: "Strict", targetType: "department", rpm: 2, tpm: null, scopeKey: "department:dept-sales" },
@@ -320,7 +320,7 @@ describe("applicable rate limits", () => {
 		expect(applicableRateLimits(plan, { keyId: "key-3", guardrailIds: ["guard-1"] })[0].scopeKey).toBe("guardrail:guard-1:key:key-3");
 		// OAuth requests carry the client ID in keyId; it never matches a key assignment.
 		const oauth = applicableRateLimits({ ...plan, keys: { client: STRICT } }, {
-			keyId: "client", userId: "user-1", authMethodIsOAuth: true, guardrailIds: ["guard-1"],
+			keyId: "client", userId: "user-1", keyIdIsOAuthClient: true, guardrailIds: ["guard-1"],
 		});
 		expect(oauth.map((limit) => limit.scopeKey)).toEqual(["member:user-1", "guardrail:guard-1:user:user-1"]);
 	});
@@ -339,6 +339,21 @@ describe("rate limit policy enforcement", () => {
 			[`rate-limit-policy:v1:${WS}:${LOOSE}:end-user:customer-42`, "minute", request.billingRequestId, { requestsPerMinute: 100 }],
 		]);
 		expect(mocks.getByName).toHaveBeenCalledWith(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
+	});
+
+	it("counts a delegated OAuth key's requests against the key, but never an OAuth access token's client ID", async () => {
+		publishPlan(plan);
+		// Delegated OAuth keys record authMethod "oauth" for app attribution, yet are real keys.
+		const delegated = ctx({ authMethod: "oauth", apiKeyRef: "kid_delegated" });
+		expect(await guardRateLimitPolicies(delegated)).toBeNull();
+		await settle();
+		expect(mocks.admit.mock.calls.map(([scope]) => scope)).toContain(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
+
+		mocks.admit.mockClear();
+		const accessToken = ctx({ authMethod: "oauth", apiKeyRef: "oauth_key-1" });
+		expect(await guardRateLimitPolicies(accessToken)).toBeNull();
+		await settle();
+		expect(mocks.admit.mock.calls.map(([scope]) => scope)).not.toContain(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
 	});
 
 	it("does not count a request classifier's own call against the caller's policies", async () => {
@@ -424,7 +439,7 @@ describe("rate limit policy enforcement", () => {
 			description: "This request's department reached the \"Sales cap\" rate limit policy's 2 requests per minute. Retry after 20 seconds.",
 		});
 		// So do the member's OAuth requests; requests outside the department do not.
-		expect((await guardRateLimitPolicies(ctx({ keyId: "client", quotaUserId: "user-sales", authMethod: "oauth" })))?.status).toBe(429);
+		expect((await guardRateLimitPolicies(ctx({ keyId: "client", quotaUserId: "user-sales", authMethod: "oauth", apiKeyRef: "oauth_client" })))?.status).toBe(429);
 		expect(await guardRateLimitPolicies(ctx({ keyId: "key-3", quotaUserId: "user-other" }))).toBeNull();
 	});
 
