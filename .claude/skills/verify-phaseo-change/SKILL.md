@@ -99,8 +99,9 @@ last two sections:
 ## Docs
 
 1. Run the checks that need no Mintlify: `pnpm --filter @phaseo/docs openapi:locales:check`,
-   `validate:locales`, `translation:freshness:check`, `skills:check`, and
-   `pnpm docs:public-safety`. Run `pnpm --filter @phaseo/web docs:search:index`
+   `pnpm --filter @phaseo/docs validate:locales`,
+   `pnpm --filter @phaseo/docs translation:freshness:check`,
+   `pnpm --filter @phaseo/docs skills:check`, and `pnpm docs:public-safety`. Run `pnpm --filter @phaseo/web docs:search:index`
    after title, description or heading changes.
 2. Run `pnpm docs:links`, or `mint broken-links` with the current CLI on Windows.
 3. Preview the page locally (see Development) and screenshot it in English and

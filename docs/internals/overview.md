@@ -60,8 +60,11 @@ per-endpoint surface and an after stage inside a model-fallback loop. Paths are 
    service tiers narrow the candidates. [`capabilityValidation.ts`](../../apps/api/src/pipeline/before/capabilityValidation.ts)
    rejects unsupported parameters before any provider is called ([parameter support](../../apps/api/docs/params-jsonb-schema.md)).
 6. **Unserved models.** If no provider serves the model, the request's `models` list is tried
-   first. An approved successor ([`modelSuccessor.ts`](../../apps/api/src/pipeline/before/modelSuccessor.ts))
-   stands in only for the last model tried, and only if the workspace turned redirects on.
+   first. A successor ([`modelSuccessor.ts`](../../apps/api/src/pipeline/before/modelSuccessor.ts))
+   stands in only for the last model tried, and only if the workspace turned redirects on. It is
+   either an admin-approved replacement that the workspace's price policy allows, or the workspace's
+   own replacement, which needs no approval and ignores the price policy. Both keep the 72-hour
+   grace period and never swap a free model for a paid one.
 7. **Surface.** [`registry.ts`](../../apps/api/src/pipeline/registry.ts) picks a runner in
    [`pipeline/surfaces`](../../apps/api/src/pipeline/surfaces). Chat Completions, Responses and
    Messages share [`text-generate.ts`](../../apps/api/src/pipeline/surfaces/text-generate.ts): decode
@@ -148,8 +151,9 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
   [`_cluster/misc.sql`](../../supabase/schemas/_cluster/misc.sql) refresh rollups and health and
   create partitions. GitHub Actions run the provider catalogue, model status and benchmark syncs.
 - **Durable Objects and queues.** `phaseo-gateway` owns five Durable Objects (realtime relay,
-  provider and customer rate limits, spend limits, routing health); the regional and jobs Workers
-  bind them by `script_name`. The realtime relay holds the provider WebSocket so a client disconnect cannot skip
+  provider and customer rate limits, spend limits, routing health). Other Workers bind them by
+  `script_name`: the regional Workers bind all but the realtime relay, and the jobs Worker binds all
+  but customer rate limits. The realtime relay holds the provider WebSocket so a client disconnect cannot skip
   final usage. The `phaseo-broadcast` queue feeds [`broadcast-queue.ts`](../../apps/api/src/observability/broadcast-queue.ts).
 - **Batches and async operations.** Video, batch and music jobs are `gateway_async_operations` rows
   ([`core/async-operations.ts`](../../apps/api/src/core/async-operations.ts)). The cron polls
@@ -162,8 +166,9 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
 
 - **Workers runtime.** The gateway enables `nodejs_als` but not `nodejs_compat` (the Web API, MCP
   and Slack agent Workers enable it), so gateway code cannot use Node built-ins.
-  `global_fetch_strictly_public` blocks private addresses. An invocation gets six concurrent
-  outbound connections; KV takes about one write per second per key.
+  `global_fetch_strictly_public` blocks private addresses. An invocation can have at most six
+  outbound connections (fetch, KV, cache, R2, queue sends) waiting for response headers at once;
+  further ones queue until headers arrive. KV takes about one write per second per key.
 - **Background work belongs to its request.** Use `dispatchBackground` from
   [`runtime/env.ts`](../../apps/api/src/runtime/env.ts). Workers cancel pending I/O when its request
   ends, so billing or audit work attached to another request can be dropped.

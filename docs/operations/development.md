@@ -26,7 +26,7 @@ Other toolchains are only needed for the matching SDK or check. Versions are the
 pnpm install --frozen-lockfile
 ```
 
-A cold install takes several minutes and a lot of memory. `pnpm-workspace.yaml` holds back any dependency version published less than seven days ago (`minimumReleaseAge`), so a brand-new release will not resolve yet.
+A cold install takes several minutes and a lot of memory. By default `pnpm-workspace.yaml` holds back dependency versions published less than seven days ago (`minimumReleaseAge`), so a brand-new release will not resolve yet. Packages listed in `minimumReleaseAgeExclude`, such as Next.js, Expo, React Native and Hono, skip the hold.
 
 ## Run one app
 
@@ -42,7 +42,7 @@ Start only the app you need. `pnpm dev` starts every workspace's dev server at o
 | Slack agent Worker (`apps/slack`) | `pnpm --filter @phaseo/slack-agent dev` | 8789 |
 | Docs (`apps/docs`) | `pnpm --filter @phaseo/docs dev` | 3101 |
 
-- Without `WEB_API_ORIGIN`, local `next dev` proxies `/api/_web` to production (`apps/web/next.config.mjs`), so the page shows live public data. To use your local Web API Worker, set `WEB_API_ORIGIN=http://127.0.0.1:8788`; `pnpm dev:cloudflare-web` does this for you.
+- Without `WEB_API_ORIGIN`, local `next dev` proxies `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` to production (`apps/web/next.config.mjs`). Pages show live data, and anything you do while signed in, such as saving settings or sending a chat, happens on production. To use your local Web API Worker, set `WEB_API_ORIGIN=http://127.0.0.1:8788`; `pnpm dev:cloudflare-web` does this for you.
 - The gateway and MCP Workers share a default port. To pick one, run Wrangler from `apps/api`: `pnpm exec wrangler dev --local --ip 127.0.0.1 --port 8795 --show-interactive-dev-session=false`.
 - If an embedded browser reload-loops on the web app, open `http://localhost:3100` instead of `127.0.0.1`.
 - For the desktop app, see [apps/desktop/README.md](../../apps/desktop/README.md), and for Factory, [apps/factory/README.md](../../apps/factory/README.md). The mobile app runs with `pnpm --filter @phaseo/mobile dev` (Expo).
@@ -119,10 +119,12 @@ node scripts/validate-supabase-migrations.mjs origin/main
 ```sh
 pnpm test:sdk-ts
 pnpm test:sdk-py
-pnpm test:sdk-<go|csharp|java|php|ruby|rust|cpp>
-pnpm test:agent-sdk-<ts|py|go|csharp|java|php|ruby|rust>
-pnpm openapi:gen:<ts|py|go|csharp|php|ruby|java|cpp|rust>
+pnpm test:sdk-go
+pnpm test:agent-sdk-go
+pnpm openapi:gen:go
 ```
+
+- Each script exists per language. `test:sdk-*` covers `ts`, `py`, `go`, `csharp`, `java`, `php`, `ruby`, `rust` and `cpp`; `test:agent-sdk-*` covers the same list without `cpp`; `openapi:gen:*` covers all nine.
 
 - `test:sdk-py` uses `uv` when it is installed. Otherwise create a virtual environment, run `pip install pytest -e "packages/sdk/sdk-py[realtime]"` in it, and set `PHASEO_PYTHON` to its interpreter.
 - `pnpm openapi:gen` regenerates all nine SDKs and is slow; use one language while iterating. Making an OpenAPI field optional changes typed SDKs (Go turns it into a pointer), so run that language's tests.

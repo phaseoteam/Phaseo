@@ -31,7 +31,7 @@ Never fetch rows to sum, count or bucket them in a Worker or the browser. PostgR
 
 The Supabase catalogue is the source of truth for models, providers, pricing, aliases and benchmarks. The repository holds no catalogue JSON, so no repository check validates live catalogue data.
 
-- Change catalogue data only when asked, with targeted operations on the affected rows through the Supabase tooling or the admin catalogue editor.
+- Change catalogue data only when asked, with targeted operations on the affected rows. Agents use the connected Supabase tooling as the onboarding skill describes; maintainers can also use the admin catalogue editor (`/internal/data`), which writes to the same database.
 - Read the rows back afterwards and include the readback in your report or pull request.
 
 See the [model and provider onboarding skill](../../.agents/skills/phaseo-model-provider-onboarding/SKILL.md).

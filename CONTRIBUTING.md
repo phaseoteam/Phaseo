@@ -49,7 +49,7 @@ Run the checks for the packages you changed, and make sure they pass. Do not run
 - **Gateway API:** `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>` and `pnpm --filter @phaseo/gateway-api lint` (ESLint and typecheck).
 - **Web app:** `pnpm --filter @phaseo/web test --runTestsByPath <files>`, `pnpm --filter @phaseo/web typecheck`, ESLint on the files you changed, and `pnpm --filter @phaseo/web validate:i18n` when you change interface copy.
 - **Database:** `pnpm db:schema:check` and the relevant SQL tests (see [supabase/AGENTS.md](./supabase/AGENTS.md)).
-- **API contract and SDKs:** edit `apps/docs/openapi/v1/openapi.yaml`, run `pnpm openapi:gen`, and run the tests for the SDKs you touched (`pnpm test:sdk-<language>`).
+- **API contract and SDKs:** edit `apps/docs/openapi/v1/openapi.yaml`, run `pnpm openapi:gen`, commit the regenerated SDK directories (CI fails if they differ from the spec), and run the tests for the SDKs you touched (`pnpm test:sdk-<language>`).
 - **Docs:** `pnpm docs:links` and `pnpm docs:build`.
 
 ## Pull requests
@@ -58,7 +58,7 @@ Run the checks for the packages you changed, and make sure they pass. Do not run
 - **Description:** fill in every section of the [pull request template](./.github/PULL_REQUEST_TEMPLATE.md): what changed, why (with the evidence that prompted it), how, before and after (measured the same way, side by side), and verification (commands with their results, and anything you could not check). "Tests pass" alone is not enough.
 - **UI changes:** include before and after screenshots, and a short recording when motion or timing matters. Attach them to the pull request; do not commit screenshots to the repository.
 - **Agent-written changes:** you are responsible for them like any other code. End the description with the model and harness that did the work, as described in [AGENTS.md](./AGENTS.md#model-line).
-- Add or update tests when you change behaviour, and add a changeset when a published package or API changes (see [Releases](./docs/operations/release.md)).
+- Add or update tests when you change behaviour, and add a changeset when a change should version a published package, the API, or the web app (see [Releases](./docs/operations/release.md)).
 
 ## Review SLAs
 

@@ -17,7 +17,7 @@ How a change gets from a branch to users. The root `AGENTS.md` has the short ver
 Every push to `main` runs [CI](../../.github/workflows/ci.yml) again. Production releases share one concurrency group, so they never overlap.
 
 1. **Database.** "Validate database migration policy" runs, then "Apply production database migrations" in the protected `production-database` environment: a dry run, `supabase db push`, then the security smoke SQL. See [Production database migrations](../../.github/PRODUCTION_DATABASE_MIGRATIONS.md).
-2. **Deploy.** The `deploy` matrix starts only after the Apps jobs and the migration job succeed:
+2. **Deploy.** The `deploy` matrix starts once the Apps and `check-paths` jobs succeed and the migration job has either succeeded or, when production migrations are switched off (`ENABLE_PRODUCTION_DB_MIGRATIONS`) and no migration changed, been skipped:
    - `deploy (api, Deploy API)`, `(api-eu, …)` and `(api-us, …)` deploy the gateway Workers with `apps/api/scripts/deploy-global.ps1` and `deploy-regional.ps1`.
    - `deploy (web-api, …)`, `deploy (mcp, …)` and `deploy (slack, …)` deploy the Web API, MCP and Slack agent Workers.
    - `deploy (web, Deploy Web)` runs `vercel deploy --prod`. It skips the deploy when nothing the web build reads has changed since the commit production serves.
@@ -57,7 +57,7 @@ Do not run `pnpm changeset:version` or publish from your machine. CI does both, 
 
 The "Handle Versions" job runs on every push to `main`, after SDK generation, package builds, lifecycle tests, Agent SDK tests and the Apps jobs pass.
 
-1. `changeset:ensure-sdk-autorelease` adds a patch changeset for the SDK packages when OpenAPI or SDK sources changed without one.
+1. `changeset:ensure-sdk-autorelease` adds a patch changeset for the seven core SDKs (`@phaseo/sdk`, `py-sdk`, `go-sdk`, `csharp-sdk`, `java-sdk`, `php-sdk` and `ruby-sdk`) when their generated or entry-point sources changed without one. The Agent SDKs and the C++ and Rust SDKs need a changeset by hand when they should release.
 2. `changeset:validate-sdk-semver` checks the SDK semver policy.
 3. `changesets/action` opens or updates the "Version Packages" pull request on `changeset-release/main`. It runs `pnpm run changeset:version`: `changeset version`, then `sdk-py:sync-version` for `pyproject.toml` and `sdk:sync-language-manifests` for the C#, Java and Ruby manifests.
 4. Merging that pull request releases. `pnpm run changeset:publish` publishes the npm packages. The job then publishes `@phaseo/cli`, `@phaseo/sdk`, `@phaseo/agent-sdk` and the Python SDK when their committed versions are missing from npm or PyPI, and `release-from-changelogs` creates a GitHub release per published package.
