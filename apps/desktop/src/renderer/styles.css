@@ -1,7 +1,8 @@
 /* Use the web app's owned font assets and semantic palette offline. */
 
-/* The legacy views' own token set. index.css imports this file into the "legacy" layer, and its
-   :root and .dark sit outside any layer, so they win over the tokens both define: --background,
+/* The legacy views' own token set. index.css imports this file into the "legacy" layer, and the
+   theme's :root and .dark (theme-tokens.generated.css) outside any layer, so those win over the
+   tokens both define: --background,
    --sidebar, --border, --ring, --input, --primary, --primary-foreground and --radius. Those values
    here, including the old primary oklch(0.5 0.134 242.749), never show. The rest (--surface*,
    --text*, --primary-text, --primary-hover, --primary-soft, --border-strong, --shadow,

@@ -1,12 +1,14 @@
 // Keeps each app's CSS tokens equal to packages/shared/app-kit/src/theme/tokens.ts. Plain Node, no
 // dependencies: `node --experimental-strip-types --test` (pnpm --filter @phaseo/app-kit test).
 //
-// Every shared token an app declares must hold the shared value. The differences that exist on
-// purpose, or haven't been settled yet, are listed per app below with the value they hold today, so
-// changing one fails here until the list is updated too.
+// scripts/sync-theme-tokens.mjs writes most of these values. This test also covers what stays
+// hand-written (the website's accent blocks, the radius scales, the first-paint script) and fails when
+// hand-written CSS declares a generated token again. Every shared token an app declares must hold the
+// shared value; differences on purpose are listed per app with the value they hold, so changing one
+// fails here until the list is updated too.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -27,28 +29,46 @@ const WEB = "apps/web/src/app/globals.css";
 const DESKTOP = "apps/desktop/src/renderer/index.css";
 const FACTORY = "apps/factory/src/renderer/index.css";
 const MOBILE = "apps/mobile/global.css";
+// Each app's generated token file, then its hand-written CSS.
+const WEB_CSS = ["apps/web/src/app/theme-tokens.generated.css", WEB];
+const DESKTOP_CSS = ["apps/desktop/src/renderer/theme-tokens.generated.css", DESKTOP];
+const FACTORY_CSS = ["apps/factory/src/renderer/theme-tokens.generated.css", FACTORY];
 
 const read = (file) => readFileSync(path.join(root, file), "utf8").replace(/\r\n/g, "\n");
 const css = (file) => read(file).replace(/\/\*[\s\S]*?\*\//g, "");
 const clean = (value) => value?.replace(/\s+/g, " ").trim().toLowerCase();
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** The custom properties declared directly in the block whose selector is exactly `selector`, without the leading `--`. */
-function declarations(file, selector) {
-	const source = css(file);
-	const match = new RegExp(`(?:^|[{};])\\s*${escape(selector)}\\s*\\{`).exec(source);
-	assert.ok(match, `${file} has no "${selector} {" block`);
-	let depth = 0;
-	let own = "";
-	for (let index = match.index + match[0].length; index < source.length; index += 1) {
-		const char = source[index];
-		if (char === "{") depth += 1;
-		else if (char === "}") {
-			if (depth === 0) break;
-			depth -= 1;
-		} else if (depth === 0) own += char;
+/**
+ * The custom properties declared directly in every block whose selector is exactly `selector`, across
+ * `files`, without the leading `--`. A property declared in more than one of those blocks fails.
+ */
+function declarations(files, selector) {
+	const list = [files].flat();
+	const declared = {};
+	let blocks = 0;
+	for (const file of list) {
+		const source = css(file);
+		for (const match of source.matchAll(new RegExp(`(?:^|[{};])\\s*${escape(selector)}\\s*\\{`, "g"))) {
+			blocks += 1;
+			let depth = 0;
+			let own = "";
+			for (let index = match.index + match[0].length; index < source.length; index += 1) {
+				const char = source[index];
+				if (char === "{") depth += 1;
+				else if (char === "}") {
+					if (depth === 0) break;
+					depth -= 1;
+				} else if (depth === 0) own += char;
+			}
+			for (const [, name, value] of own.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) {
+				assert.equal(declared[name], undefined, `--${name} is declared twice for "${selector}" in ${list.join(" and ")}`);
+				declared[name] = value.trim();
+			}
+		}
 	}
-	return Object.fromEntries([...own.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map((found) => [found[1], found[2].trim()]));
+	assert.ok(blocks > 0, `${list.join(" and ")} has no "${selector} {" block`);
+	return declared;
 }
 
 /**
@@ -107,18 +127,18 @@ test("the website's palettes are the shared ones", () => {
 	// accent, so those aren't compared. sidebar-primary, sidebar-ring and chart-axis-color are the
 	// website's own.
 	for (const [scheme, selector] of [["light", ":root"], ["dark", ".dark"]]) {
-		compare(`${WEB} ${selector}`, declarations(WEB, selector), { ...palette[scheme], ...STATUS_COLOURS[scheme] }, {
+		compare(`${WEB} ${selector}`, declarations(WEB_CSS, selector), { ...palette[scheme], ...STATUS_COLOURS[scheme] }, {
 			// destructive-foreground is the mobile app's: the other apps tint destructive buttons instead of filling them.
 			absent: ["destructive-foreground"],
 		});
 	}
 	for (const name of LIGHT_PALETTES.filter((name) => name !== "phaseo")) {
 		const selector = `:root[data-light-palette="${name}"]:not(.dark)`;
-		compare(`${WEB} ${selector}`, declarations(WEB, selector), PALETTE_TOKENS.light[name]);
+		compare(`${WEB} ${selector}`, declarations(WEB_CSS, selector), PALETTE_TOKENS.light[name]);
 	}
 	for (const name of DARK_PALETTES.filter((name) => name !== "phaseo")) {
 		const selector = `:root.dark[data-dark-palette="${name}"]`;
-		compare(`${WEB} ${selector}`, declarations(WEB, selector), PALETTE_TOKENS.dark[name]);
+		compare(`${WEB} ${selector}`, declarations(WEB_CSS, selector), PALETTE_TOKENS.dark[name]);
 	}
 });
 
@@ -133,12 +153,12 @@ test("the website derives primary, ring and charts from the shared accents", () 
 		for (const [token, { mixWith, accentWeight }] of Object.entries(ACCENT_CHART_MIXES)) {
 			expected[token] = accentWeight === 1 ? userAccent : `color-mix(in oklch, ${userAccent} ${Math.round(accentWeight * 100)}%, var(--${mixWith}))`;
 		}
-		compare(`${WEB} ${selector}`, declarations(WEB, selector), expected);
+		compare(`${WEB} ${selector}`, declarations(WEB_CSS, selector), expected);
 	}
 });
 
 test("the website's radius scale is the shared one", () => {
-	const base = radiusPx(declarations(WEB, ":root").radius, 0);
+	const base = radiusPx(declarations(WEB_CSS, ":root").radius, 0);
 	assert.equal(base, RADIUS_BASE_PX);
 	// 3xl and 4xl are the website's own.
 	compareRadii(`${WEB} @theme inline`, declarations(WEB, "@theme inline"), base);
@@ -152,10 +172,10 @@ test("the website's first-paint script knows the shared palettes", () => {
 	assert.deepEqual(list("dp"), [...DARK_PALETTES]);
 });
 
-for (const [app, file] of [["desktop app", DESKTOP], ["Factory", FACTORY]]) {
+for (const [app, file, files] of [["desktop app", DESKTOP, DESKTOP_CSS], ["Factory", FACTORY, FACTORY_CSS]]) {
 	test(`the ${app}'s tokens are the shared ones`, () => {
-		const light = declarations(file, ":root");
-		const dark = declarations(file, ".dark");
+		const light = declarations(files, ":root");
+		const dark = declarations(files, ".dark");
 		// No charts, and no destructive-foreground (see the website's test).
 		const own = { absent: ["destructive-foreground", "chart-1", "chart-2", "chart-3", "chart-4", "chart-5"] };
 		compare(`${file} :root`, light, { ...palette.light, ...STATUS_COLOURS.light, ...accentTokens("light") }, own);
@@ -174,4 +194,19 @@ test("the mobile app's tokens are the shared ones", () => {
 		compare(`${MOBILE} @variant ${scheme}`, declared, { ...palette[scheme], ...STATUS_COLOURS[scheme], ...accentTokens(scheme) });
 	}
 	compareRadii(`${MOBILE} @theme`, declarations(MOBILE, "@theme"), RADIUS_BASE_PX);
+});
+
+test("each app scans the class recipes it uses", () => {
+	// Tailwind and Uniwind only generate classes from the files they scan, and src/ui-recipes is outside
+	// the apps, so without these @source lines the recipes' classes silently disappear.
+	for (const [file, source, recipes] of [
+		[WEB, "../../../../packages/shared/app-kit/src/ui-recipes/callout.ts", ["callout"]],
+		[MOBILE, "../../packages/shared/app-kit/src/ui-recipes", ["badge", "callout", "text"]],
+	]) {
+		assert.ok(css(file).includes(`@source "${source}";`), `${file} needs @source "${source}";`);
+		for (const recipe of recipes) {
+			const target = path.join(root, path.dirname(file), source, source.endsWith(".ts") ? "" : `${recipe}.ts`);
+			assert.ok(existsSync(target), `${file}'s @source "${source}" doesn't reach ui-recipes/${recipe}.ts`);
+		}
+	}
 });
