@@ -118,7 +118,7 @@ describe("spend rules management API", () => {
 		});
 
 		it("lets OAuth members read but not write", async () => {
-			state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", scopes: [...ALL_SCOPES], oauthScopes: [], userId: USER };
+			state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", oauthClientId: "phaseo_cli", scopes: [...ALL_SCOPES], oauthScopes: [], userId: USER };
 			expect((await call("/")).status).toBe(200);
 			expect((await call(`/${RULE}/preview`)).status).toBe(200);
 			const write = await call(`/${RULE}`, "PATCH", { enabled: false });

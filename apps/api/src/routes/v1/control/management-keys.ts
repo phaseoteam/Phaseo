@@ -22,6 +22,7 @@ import {
 	parseOffset,
 	parsePathId,
 	parsePositiveInt,
+	rejectThirdPartyOAuthSpendingChange,
 	requireJsonBody,
 	requireCapability,
 	requireOAuthWorkspaceRole,
@@ -263,6 +264,12 @@ async function handleCreateManagementKey(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	// A management key with keys:write can mint API keys with no limit, outside the app's consent limit.
+	const appError = rejectThirdPartyOAuthSpendingChange(
+		auth.value,
+		"Apps that use Sign in with Phaseo can't create management keys. The person can create one under Settings, Management Keys.",
+	);
+	if (appError) return appError;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
 	const validationMessage = validateManagementKeyFields(body);
@@ -372,6 +379,14 @@ async function handleUpdateManagementKey(req: Request) {
 		}
 		if (Object.keys(patch).length === 0) {
 			return json({ error: "bad_request", message: "No supported management key fields were provided" }, 400, { "Cache-Control": "no-store" });
+		}
+		// Scopes, limits, pausing and resuming, and expiry are the person's; an app may only rename.
+		if (Object.keys(patch).some((field) => field !== "name")) {
+			const appError = rejectThirdPartyOAuthSpendingChange(
+				auth.value,
+				"Apps that use Sign in with Phaseo can only rename management keys. The person can change a key's scopes, limits, status and expiry under Settings, Management Keys.",
+			);
+			if (appError) return appError;
 		}
 		const existing = await findManagementKey(auth.value.workspaceId, id);
 		if (!existing) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });

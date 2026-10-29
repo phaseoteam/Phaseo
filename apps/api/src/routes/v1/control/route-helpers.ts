@@ -1,3 +1,4 @@
+import { isFirstPartyOAuthClient } from "@/lib/oauth/clientIds";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { json } from "@/routes/utils";
 
@@ -6,7 +7,34 @@ export type ManagementRouteAuth = {
 	userId?: string | null;
 	oauthScopes?: string[];
 	scopes?: string[];
+	oauthClientId?: string | null;
+	apiKeyRef?: string;
 };
+
+/**
+ * Whether the caller is an app that signs in with Phaseo OAuth: any OAuth client except Phaseo's own CLI
+ * and desktop app. Dashboard sessions (the person in Settings) are OAuth-shaped but carry no client; any
+ * other OAuth caller without a client counts as an app, so a missing ID fails closed.
+ */
+export function isThirdPartyOAuthApp(auth: ManagementRouteAuth): boolean {
+	if (auth.authMethod !== "oauth") return false;
+	const clientId = String(auth.oauthClientId ?? "").trim();
+	if (!clientId) return auth.apiKeyRef !== "dashboard";
+	return !isFirstPartyOAuthClient(clientId);
+}
+
+/**
+ * An app that signs in with Phaseo may not create, mint, re-enable or change anything that can spend the
+ * workspace's money, or change a limit on that spending, whatever scopes and role it holds: API keys,
+ * management keys, trusted workloads, members, invites and identity providers, and budgets, guardrails,
+ * rate limits and spend rules. Otherwise a credential it made or reshaped would escape the monthly limit
+ * the person set on the consent screen. The person makes these changes in Settings. API keys, management
+ * keys, dashboard sessions and Phaseo's own apps are unaffected.
+ */
+export function rejectThirdPartyOAuthSpendingChange(auth: ManagementRouteAuth, message: string): Response | null {
+	if (!isThirdPartyOAuthApp(auth)) return null;
+	return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
+}
 
 export function parsePositiveInt(raw: string | null, fallback: number, max: number): number {
 	if (!raw) return fallback;
