@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقياسا forecast وspike، وفترات الإنفاق rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق. تُقيَّم قواعد balance.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: الوضع الحالي لقاعدة الإنفاق. القواعد التي ليس لها فترة تقويمية تكون فيها period وvalue وalert بقيمة null.
+      description: وضع قاعدة الإنفاق الآن. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما القواعد الأخرى التي ليس لها فترة تقويمية فتكون فيها period وvalue وalert فارغة (null).
       required:
         - rule_id
         - metric
@@ -24469,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -24479,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقياسا forecast وspike، وفترات الإنفاق rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق. تُقيَّم قواعد balance.
         computed_at:
           type: string
           format: date-time
@@ -24594,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'قواعد balance: تكون false بعد التنبيه حتى يعود الرصيد فوق الحد.'
+        balance:
+          type: object
+          nullable: true
+          description: 'لقواعد balance فقط: وضع الرصيد كما يراه التقييم. تكون null للقواعد الأخرى.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'الرصيد مطروحًا منه الرصيد المحجوز: وهو ما تُقبل الطلبات على أساسه.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: عدد الأيام التي يكفيها الرصيد المتاح بمعدل الاستهلاك. تكون null عند عدم وجود إنفاق في النافذة.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: الشحن التلقائي مفعّل ويعمل، لذا يُسجَّل الانخفاض دون تنبيه.
         alert:
           type: object
           nullable: true

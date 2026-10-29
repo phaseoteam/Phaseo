@@ -3,8 +3,9 @@ import { publishSpendBlockEntries } from "@core/spend-blocks";
 
 // Spend rule alerts and blocks. Every 5 minutes, after the analytics outbox has rebuilt the usage
 // rollups, public.sweep_spend_rules evaluates the workspaces whose spend changed (the rollup marks
-// them), those whose rule periods rolled over or whose blocks reached their reset, and an hourly
-// slice of the rest. Every value is summed in the database. Each rule that crosses a threshold
+// them), those whose rule periods rolled over or whose blocks reached their reset, an hourly
+// slice of the rest, and a 15-minute slice of workspaces with balance rules (a balance moves
+// without usage: reservations, refunds, top-ups). Every value is summed in the database. Each rule that crosses a threshold
 // queues one spend_alert event in email_outbox; the routed delivery job later in the same tick
 // sends it to the rule's destinations (or the workspace's spend_alert routes), and the mobile
 // push job sends it as a money push.
@@ -15,7 +16,8 @@ import { publishSpendBlockEntries } from "@core/spend-blocks";
 
 export const SPEND_RULES_SWEEP_LIMIT = 100;
 
-export type SpendRuleSweepEvent = { workspaceId: string; ruleId: string; eventId: string; dedupeKey: string; threshold: number | null };
+/** threshold: the percent or amount crossed; for balance rules the balance amount (trigger "balance") or runway days (trigger "runway"). */
+export type SpendRuleSweepEvent = { workspaceId: string; ruleId: string; eventId: string; dedupeKey: string; threshold: number | null; trigger?: "balance" | "runway" };
 
 export type SpendRuleSweepBlockChange = {
 	workspaceId: string;
@@ -30,6 +32,8 @@ export type SpendRuleSweepSummary = {
 	dirty: number;
 	rollover: number;
 	periodic: number;
+	/** Workspaces with balance rules taken by the 15-minute balance slice. */
+	balance: number;
 	evaluated: number;
 	rules: number;
 	fired: number;
@@ -52,6 +56,7 @@ export function parseSpendRuleSweepSummary(data: unknown): SpendRuleSweepSummary
 		dirty: count(result.dirty),
 		rollover: count(result.rollover),
 		periodic: count(result.periodic),
+		balance: count(result.balance),
 		evaluated: count(result.evaluated),
 		rules: count(result.rules),
 		fired: count(result.fired),
@@ -63,6 +68,7 @@ export function parseSpendRuleSweepSummary(data: unknown): SpendRuleSweepSummary
 			eventId: String(event.event_id ?? ""),
 			dedupeKey: String(event.dedupe_key ?? ""),
 			threshold: event.threshold == null || !Number.isFinite(Number(event.threshold)) ? null : Number(event.threshold),
+			...(event.trigger === "balance" || event.trigger === "runway" ? { trigger: event.trigger } : {}),
 		})),
 		blocks: blocks.map((block) => ({
 			workspaceId: String(block.workspace_id ?? ""),

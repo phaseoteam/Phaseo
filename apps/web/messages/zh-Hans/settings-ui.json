@@ -3601,7 +3601,7 @@
 		"lowBalanceDescription": "当工作区额度达到配置的阈值时发出警报。",
 		"enableLowBalance": "启用低余额警报",
 		"creditThreshold": "额度阈值",
-		"thresholdDescription": "余额达到或低于此金额时发出警报。每六小时最多发送一封邮件。",
+		"thresholdDescription": "余额达到或低于此金额时发出警报：余额每次降到此金额时发送一封邮件，每六小时最多一封；自动充值正在补充余额时不发送。",
 		"thresholdInvalid": "使用最多两位小数的非负金额。",
 		"autoTopUpFailed": "自动充值失败",
 		"autoTopUpDescription": "自动充值扣款失败时发出警报。",
@@ -7499,7 +7499,8 @@
 			"view": "查看",
 			"history": "历史",
 			"sendTest": "发送测试",
-			"delete": "删除"
+			"delete": "删除",
+			"runway": "约可用 {days} 天"
 		},
 		"preview": {
 			"ofBase": "当前 {value} / {base}（{percent}）",
@@ -7508,7 +7509,9 @@
 			"disabled": "开启警报后可查看当前值。",
 			"unavailable": "当前值暂时不可用。",
 			"afterSave": "保存后将显示当前值。",
-			"savedRuleNote": "基于已保存的警报。保存更改后会更新。"
+			"savedRuleNote": "基于已保存的警报。保存更改后会更新。",
+			"balance": "余额 {balance}，每天支出 {burn}：约可用 {days} 天",
+			"balanceNoSpend": "余额 {balance}，过去 {hours} 小时内无支出"
 		},
 		"editor": {
 			"createTitle": "添加支出警报",
@@ -7602,7 +7605,8 @@
 			"save": "保存",
 			"create": "添加警报",
 			"saving": "正在保存…",
-			"blockingOff": "拦截尚未启用。在此之前，此警报只发送通知。"
+			"blockingOff": "拦截尚未启用。在此之前，此警报只发送通知。",
+			"balanceEmailNote": "此警报独立于上方的余额不足邮件。余额警报还可以监控剩余的可用天数，并使用自己的通知目标和冷却时间。自动充值正在补充余额时，两者都不会发出警报。"
 		},
 		"issues": {
 			"nameRequired": "请输入不超过 100 个字符的名称。",

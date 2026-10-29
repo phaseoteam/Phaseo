@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast, spike et balance, périodes rolling et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.
+          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast et spike, périodes rolling de dépenses et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure. Les règles balance sont évaluées.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: L’état actuel d’une règle de dépenses. Les règles sans période calendaire ont period, value et alert à null.
+      description: Où en est une règle de dépenses à présent. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les autres règles sans période calendaire ont period, value et alert à null.
       required:
         - rule_id
         - metric
@@ -24469,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -24479,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast, spike et balance, périodes rolling et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.
+          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast et spike, périodes rolling de dépenses et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure. Les règles balance sont évaluées.
         computed_at:
           type: string
           format: date-time
@@ -24594,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'Règles balance : false après une alerte, jusqu’à ce que le solde repasse au-dessus du seuil.'
+        balance:
+          type: object
+          nullable: true
+          description: 'Règles balance uniquement : où en est le solde, tel que l’évaluation le voit. Vaut null pour les autres règles.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'Solde moins le crédit réservé : ce sur quoi les requêtes sont admises.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: Nombre de jours que dure le solde disponible au rythme de consommation. Vaut null sans dépense dans la fenêtre.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: 'La recharge automatique est activée et fonctionne : une baisse est enregistrée sans alerte.'
         alert:
           type: object
           nullable: true

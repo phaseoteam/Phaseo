@@ -8663,6 +8663,9 @@ public sealed class SpendRulePreview
 	[JsonPropertyName("alert")]
 	public Dictionary<string, object>? Alert { get; set; }
 
+	[JsonPropertyName("balance")]
+	public Dictionary<string, object>? Balance { get; set; }
+
 	[JsonPropertyName("base_kind")]
 	public string? BaseKind { get; set; }
 

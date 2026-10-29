@@ -3601,7 +3601,7 @@
 		"lowBalanceDescription": "Alerte lorsque le crédit de l'espace de travail atteint le montant configuré seuil.",
 		"enableLowBalance": "Activer les alertes de solde faible",
 		"creditThreshold": "Seuil de crédit",
-		"thresholdDescription": "Alerte égale ou inférieure à ce solde. Limité à un e-mail toutes les six heures.",
+		"thresholdDescription": "Alerte lorsque le solde atteint ce montant ou passe en dessous : un e-mail chaque fois que le solde descend jusqu'ici, au plus toutes les six heures, et aucun tant que la recharge automatique le réapprovisionne.",
 		"thresholdInvalid": "Utilisez un montant non négatif avec jusqu'à deux décimales.",
 		"autoTopUpFailed": "Échec de la recharge automatique",
 		"autoTopUpDescription": "Alerte en cas d'échec d'un débit de crédit automatique.",
@@ -7499,7 +7499,8 @@
 			"view": "Afficher",
 			"history": "Historique",
 			"sendTest": "Envoyer un test",
-			"delete": "Supprimer"
+			"delete": "Supprimer",
+			"runway": "environ {days} jours restants"
 		},
 		"preview": {
 			"ofBase": "Actuellement {value} sur {base} ({percent})",
@@ -7508,7 +7509,9 @@
 			"disabled": "Activez l'alerte pour voir sa valeur actuelle.",
 			"unavailable": "La valeur actuelle n'est pas disponible pour le moment.",
 			"afterSave": "La valeur actuelle s'affiche après l'enregistrement.",
-			"savedRuleNote": "Basé sur l'alerte enregistrée. Enregistrez vos modifications pour le mettre à jour."
+			"savedRuleNote": "Basé sur l'alerte enregistrée. Enregistrez vos modifications pour le mettre à jour.",
+			"balance": "Solde {balance}, dépenses de {burn} par jour : environ {days} jours restants",
+			"balanceNoSpend": "Solde {balance}, aucune dépense au cours des {hours} dernières heures"
 		},
 		"editor": {
 			"createTitle": "Ajouter une alerte de dépenses",
@@ -7602,7 +7605,8 @@
 			"save": "Enregistrer",
 			"create": "Ajouter l'alerte",
 			"saving": "Enregistrement…",
-			"blockingOff": "Le blocage n'est pas encore activé. D'ici là, cette alerte se contente de notifier."
+			"blockingOff": "Le blocage n'est pas encore activé. D'ici là, cette alerte se contente de notifier.",
+			"balanceEmailNote": "Indépendant de l'e-mail de solde bas ci-dessus. Une alerte de solde peut aussi surveiller le nombre de jours de crédit restants, avec ses propres destinations et son propre délai. Aucune des deux n'alerte tant que la recharge automatique réapprovisionne le solde."
 		},
 		"issues": {
 			"nameRequired": "Saisissez un nom de 100 caractères maximum.",

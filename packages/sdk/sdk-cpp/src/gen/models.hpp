@@ -3600,6 +3600,7 @@ using SpendRulePeriod = std::any;
 
 struct SpendRulePreview {
 	std::optional<std::map<std::string, std::any>> alert;
+	std::optional<std::map<std::string, std::any>> balance;
 	std::optional<std::any> base_kind;
 	std::optional<int> base_nanos;
 	std::optional<std::any> base_ref;

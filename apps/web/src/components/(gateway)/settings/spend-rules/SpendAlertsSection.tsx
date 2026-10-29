@@ -27,7 +27,7 @@ import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget }
 import { SpendBlocksList } from "./SpendBlocksList";
 import { SpendRuleHistorySheet } from "./SpendRuleHistorySheet";
 import { SpendWorkspaceSettings, type DepartmentSpendAttribution } from "./SpendWorkspaceSettings";
-import { useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { useBalanceSummary, useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SPEND_ALERT_ANCHOR, prefillFromSearchParams, previewSummary } from "./spendRuleDraft";
 import type { SpendBlock, SpendRule } from "./spendRules";
 
@@ -182,6 +182,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 	const format = useDisplayFormatters();
 	const usd = useSpendUsd();
 	const percentText = useSpendPercent();
+	const balanceSummary = useBalanceSummary();
 	const scopeLabel = useScopeLabel(data.options);
 	const summarize = useRuleSummary();
 	const actionError = useSpendActionError();
@@ -243,6 +244,11 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 						</p>
 					) : summary?.kind === "value" ? (
 						<p className="text-sm font-medium">{usd(summary.valueUsd)}</p>
+					) : summary?.kind === "balance" ? (
+						<p className="text-sm font-medium" title={balanceSummary.text(summary)}>
+							{usd(summary.availableUsd)}
+							{summary.runwayDays !== null ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{balanceSummary.runway(summary.runwayDays)}</span> : null}
+						</p>
 					) : null}
 					{rule.evaluated && rule.enabled ? (
 						<p className="text-muted-foreground">

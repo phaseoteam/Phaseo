@@ -33,7 +33,7 @@ import { Link } from "@/i18n/navigation";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
 import { createSpendRule, testSpendRule, updateSpendRule, type SpendRuleActionError } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { OptionTiles, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { OptionTiles, useBalanceSummary, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SpendRuleDestinationPicker } from "./SpendRuleDestinationPicker";
 import {
 	PRESET_THRESHOLDS,
@@ -140,6 +140,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 	const write = useSettingsWrite();
 	const usd = useSpendUsd();
 	const percentText = useSpendPercent();
+	const balanceSummary = useBalanceSummary();
 	const actionError = useSpendActionError();
 	const canManage = data.canManageSpendRules;
 	const rule = target.mode === "edit" ? target.rule : null;
@@ -272,7 +273,12 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 									<SelectContent>{SPEND_RULE_SCOPES.map((scope) => <SelectItem key={scope} value={scope} disabled={draft.metric === "balance" && scope !== "workspace"}>{t(`scope.${scope}`)}</SelectItem>)}</SelectContent>
 								</Select>
 							</Field>
-							{draft.metric === "balance" ? <p className="text-xs text-muted-foreground">{t("editor.balanceWorkspaceOnly")}</p> : null}
+							{draft.metric === "balance" ? (
+								<>
+									<p className="text-xs text-muted-foreground">{t("editor.balanceWorkspaceOnly")}</p>
+									<p className="text-xs text-muted-foreground">{t("editor.balanceEmailNote")}</p>
+								</>
+							) : null}
 							{draft.scopeType === "model" ? (
 								<Field label={t("editor.scopeModel")} htmlFor="spend-rule-scope-id" help={t("editor.scopeModelHelp")} error={issueText("scopeId")}>
 									<Input id="spend-rule-scope-id" className="rounded-md font-mono text-sm" value={draft.scopeId} placeholder="openai/gpt-5" onChange={(event) => update({ scopeId: event.target.value })} />
@@ -498,6 +504,8 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 								? t("preview.ofBase", { value: usd(summary.valueUsd), base: usd(summary.baseUsd), percent: percentText(summary.percent) })
 								: summary?.kind === "value"
 									? t("preview.value", { value: usd(summary.valueUsd) })
+									: summary?.kind === "balance"
+										? balanceSummary.text(summary)
 									: rule && !rule.evaluated
 										? t("preview.notEvaluated")
 										: rule && !rule.enabled

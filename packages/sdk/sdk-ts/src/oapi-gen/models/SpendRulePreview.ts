@@ -1,11 +1,25 @@
 /**
- * Where a spend rule stands now. Rules without a calendar period have period, value and alert null.
+ * Where a spend rule stands now. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Other rules without a calendar period have period, value and alert null.
  */
 export interface SpendRulePreview {
   alert: {
     message: string;
     scope_label: string;
     title: string;
+  } | null;
+  balance: {
+    armed: boolean;
+    auto_top_up_covers: boolean;
+    available_nanos: number;
+    available_usd: number;
+    balance_usd: number;
+    burn_per_day_usd: number;
+    burn_usd: number;
+    low_balance: boolean;
+    low_runway: boolean;
+    reserved_usd: number;
+    runway_days_left: number | null;
+    window_hours: number;
   } | null;
   base_kind:
     "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
@@ -32,6 +46,7 @@ export interface SpendRulePreview {
   rule_id: string;
   state: {
     amount_fired_at: string | null;
+    armed?: boolean;
     fire_count: number;
     highest_percent_fired: number | null;
     last_fired_at: string | null;

@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।
+      description: खर्च नियम अभी कहाँ है। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। कैलेंडर अवधि के बिना अन्य नियमों में period, value और alert null होते हैं।
       required:
         - rule_id
         - metric
@@ -24469,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -24479,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।
         computed_at:
           type: string
           format: date-time
@@ -24594,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'balance नियम: अलर्ट के बाद false, जब तक बैलेंस फिर से सीमा से ऊपर न आ जाए।'
+        balance:
+          type: object
+          nullable: true
+          description: 'केवल balance नियम: बैलेंस कहाँ है, जैसा मूल्यांकन उसे देखता है। अन्य नियमों के लिए null।'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'बैलेंस में से आरक्षित क्रेडिट घटाकर: जिसके आधार पर अनुरोध स्वीकार किए जाते हैं।'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: खर्च की दर पर उपलब्ध बैलेंस कितने दिन चलेगा। विंडो में कोई खर्च न होने पर null।
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: ऑटो टॉप-अप चालू है और काम कर रहा है, इसलिए गिरावट बिना अलर्ट के दर्ज की जाती है।
         alert:
           type: object
           nullable: true

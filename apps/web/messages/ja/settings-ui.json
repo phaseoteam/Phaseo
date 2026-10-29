@@ -3601,7 +3601,7 @@
 		"lowBalanceDescription": "ワークスペースのクレジット残高が設定したしきい値に達したときに通知します。",
 		"enableLowBalance": "残高低下アラートを有効にする",
 		"creditThreshold": "クレジット残高のしきい値",
-		"thresholdDescription": "残高がこの額以下になったときに通知します。メール通知は6時間に1回までです。",
+		"thresholdDescription": "残高がこの額以下になったときに通知します。残高がここまで下がるたびにメールを1通送信します（6時間に1回まで）。自動チャージで補充されている間は送信しません。",
 		"thresholdInvalid": "金額は0以上で、小数点以下2桁まで入力してください。",
 		"autoTopUpFailed": "自動チャージに失敗しました",
 		"autoTopUpDescription": "自動クレジット請求に失敗したときに通知します。",
@@ -7499,7 +7499,8 @@
 			"view": "表示",
 			"history": "履歴",
 			"sendTest": "テストを送信",
-			"delete": "削除"
+			"delete": "削除",
+			"runway": "残り約 {days} 日"
 		},
 		"preview": {
 			"ofBase": "現在 {value} / {base}（{percent}）",
@@ -7508,7 +7509,9 @@
 			"disabled": "現在の値を見るにはアラートをオンにしてください。",
 			"unavailable": "現在の値は今は取得できません。",
 			"afterSave": "現在の値は保存後に表示されます。",
-			"savedRuleNote": "保存済みのアラートに基づきます。更新するには変更を保存してください。"
+			"savedRuleNote": "保存済みのアラートに基づきます。更新するには変更を保存してください。",
+			"balance": "残高 {balance}、1日あたりの支出 {burn}：残り約 {days} 日",
+			"balanceNoSpend": "残高 {balance}、過去 {hours} 時間の支出なし"
 		},
 		"editor": {
 			"createTitle": "支出アラートを追加",
@@ -7602,7 +7605,8 @@
 			"save": "保存",
 			"create": "アラートを追加",
 			"saving": "保存中…",
-			"blockingOff": "ブロックはまだ有効になっていません。それまでこのアラートは通知のみです。"
+			"blockingOff": "ブロックはまだ有効になっていません。それまでこのアラートは通知のみです。",
+			"balanceEmailNote": "上の残高不足メールとは別のアラートです。残高アラートでは残りのクレジット日数も監視でき、独自の通知先とクールダウンを使います。自動チャージで残高が補充されている間は、どちらも通知しません。"
 		},
 		"issues": {
 			"nameRequired": "100文字以内で名前を入力してください。",

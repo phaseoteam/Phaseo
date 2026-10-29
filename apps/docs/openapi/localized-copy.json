@@ -9414,16 +9414,6 @@
 			"zh-Hans": "支出规则：针对某个范围和周期、以美元或百分比表示的阈值，用于通知，或先通知再拦截。金额以纳美元和美元两种形式返回。",
 			"ar": "قاعدة إنفاق: حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تُرسل تنبيهًا، أو تنبه ثم تحظر. تُعاد المبالغ بالنانودولار وبالدولار الأمريكي."
 		},
-		"False for rules the evaluator does not handle yet (forecast, spike and balance metrics, rolling periods and previous_period bases). They are saved and fire from a later release.": {
-			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.",
-			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast, spike et balance, périodes rolling et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.",
-			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.",
-			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast, spike e balance, períodos rolling e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura.",
-			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।",
-			"ja": "評価がまだ対応していないルール（forecast・spike・balance の指標、rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。",
-			"zh-Hans": "对于评估尚未支持的规则（forecast、spike 和 balance 指标、rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。",
-			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق."
-		},
 		"Null for the workspace scope; otherwise a key id, a member's user id, a department id, a model id or a provider id.": {
 			"es": "Null para el ámbito del espacio de trabajo; en otro caso, el ID de una clave, el ID de usuario de un miembro, el ID de un departamento, el ID de un modelo o el ID de un proveedor.",
 			"fr": "Null pour le périmètre de l’espace de travail ; sinon l’ID d’une clé, l’ID utilisateur d’un membre, l’ID d’un département, l’ID d’un modèle ou l’ID d’un fournisseur.",
@@ -9523,16 +9513,6 @@
 			"ja": "作成する支出ルール。name、metric、period は必須です。spike ルールの既定値は倍率 3x、下限 $5 です。",
 			"zh-Hans": "要创建的支出规则。name、metric 和 period 为必填项。spike 规则默认倍数为 3x，下限为 5 美元。",
 			"ar": "قاعدة إنفاق مراد إنشاؤها. الحقول name وmetric وperiod مطلوبة. تستخدم قواعد spike افتراضيًا مضاعفًا قدره 3x وحدًا أدنى قدره 5 دولارات."
-		},
-		"Where a spend rule stands now. Rules without a calendar period have period, value and alert null.": {
-			"es": "La situación actual de una regla de gasto. Las reglas sin periodo natural tienen period, value y alert en null.",
-			"fr": "L’état actuel d’une règle de dépenses. Les règles sans période calendaire ont period, value et alert à null.",
-			"de": "Der aktuelle Stand einer Ausgabenregel. Bei Regeln ohne Kalenderzeitraum sind period, value und alert null.",
-			"pt-BR": "A situação atual de uma regra de gastos. Regras sem período de calendário têm period, value e alert como null.",
-			"hi": "खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।",
-			"ja": "支出ルールの現在の状況。暦期間のないルールでは period、value、alert が null になります。",
-			"zh-Hans": "支出规则的当前状态。没有日历周期的规则，其 period、value 和 alert 为 null。",
-			"ar": "الوضع الحالي لقاعدة الإنفاق. القواعد التي ليس لها فترة تقويمية تكون فيها period وvalue وalert بقيمة null."
 		},
 		"The next threshold the value has not reached: a percent of the base (null for amount thresholds) and its amount.": {
 			"es": "El siguiente umbral que el valor aún no ha alcanzado: un porcentaje de la base (null para umbrales de importe) y su importe.",
@@ -11693,6 +11673,76 @@
 			"ja": "信頼済みワークロードのポリシーを削除しました",
 			"zh-Hans": "已删除受信任的工作负载策略",
 			"ar": "تم حذف سياسة حمل العمل الموثوق"
+		},
+		"False for rules the evaluator does not handle yet (forecast and spike metrics, rolling spend periods and previous_period bases). They are saved and fire from a later release. Balance rules are evaluated.": {
+			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast y spike, periodos rolling de gasto y bases previous_period). Se guardan y empezarán a activarse en una versión posterior. Las reglas balance sí se evalúan.",
+			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast et spike, périodes rolling de dépenses et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure. Les règles balance sont évaluées.",
+			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.",
+			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast e spike, períodos rolling de gastos e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura. Regras balance são avaliadas.",
+			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।",
+			"ja": "評価がまだ対応していないルール（forecast・spike の指標、支出の rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。balance ルールは評価されます。",
+			"zh-Hans": "对于评估尚未支持的规则（forecast 和 spike 指标、支出的 rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。balance 规则会被评估。",
+			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقياسا forecast وspike، وفترات الإنفاق rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق. تُقيَّم قواعد balance."
+		},
+		"Where a spend rule stands now. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Other rules without a calendar period have period, value and alert null.": {
+			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las demás reglas sin periodo de calendario tienen period, value y alert en null.",
+			"fr": "Où en est une règle de dépenses à présent. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les autres règles sans période calendaire ont period, value et alert à null.",
+			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Andere Regeln ohne Kalenderzeitraum haben period, value und alert null.",
+			"pt-BR": "A situação atual de uma regra de gastos. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. As demais regras sem período de calendário têm period, value e alert nulos.",
+			"hi": "खर्च नियम अभी कहाँ है। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। कैलेंडर अवधि के बिना अन्य नियमों में period, value और alert null होते हैं।",
+			"ja": "支出ルールの現在の状況です。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。暦の期間を持たないその他のルールでは period、value、alert は null です。",
+			"zh-Hans": "支出规则当前的状态。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。其他没有日历周期的规则，其 period、value 和 alert 为 null。",
+			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما القواعد الأخرى التي ليس لها فترة تقويمية فتكون فيها period وvalue وalert فارغة (null)."
+		},
+		"Balance rules only: where the balance stands, as the evaluator sees it. Null for other rules.": {
+			"es": "Solo reglas balance: dónde se encuentra el saldo, tal como lo ve la evaluación. Es null para las demás reglas.",
+			"fr": "Règles balance uniquement : où en est le solde, tel que l’évaluation le voit. Vaut null pour les autres règles.",
+			"de": "Nur Regeln vom Typ balance: wo das Guthaben steht, so wie die Auswertung es sieht. Null für andere Regeln.",
+			"pt-BR": "Somente regras balance: a situação do saldo, como a avaliação o vê. Nulo para as demais regras.",
+			"hi": "केवल balance नियम: बैलेंस कहाँ है, जैसा मूल्यांकन उसे देखता है। अन्य नियमों के लिए null।",
+			"ja": "balance ルールのみ：評価から見た残高の状況です。その他のルールでは null です。",
+			"zh-Hans": "仅限 balance 规则：评估所看到的余额状态。其他规则为 null。",
+			"ar": "لقواعد balance فقط: وضع الرصيد كما يراه التقييم. تكون null للقواعد الأخرى."
+		},
+		"Balance minus reserved credit: what requests are admitted against.": {
+			"es": "Saldo menos el crédito reservado: lo que se usa para admitir las solicitudes.",
+			"fr": "Solde moins le crédit réservé : ce sur quoi les requêtes sont admises.",
+			"de": "Guthaben abzüglich reserviertem Guthaben: der Betrag, gegen den Anfragen zugelassen werden.",
+			"pt-BR": "Saldo menos o crédito reservado: o valor usado para admitir as solicitações.",
+			"hi": "बैलेंस में से आरक्षित क्रेडिट घटाकर: जिसके आधार पर अनुरोध स्वीकार किए जाते हैं।",
+			"ja": "残高から予約済みクレジットを引いた額です。リクエストはこの額に基づいて受け付けられます。",
+			"zh-Hans": "余额减去预留额度：请求按此金额准入。",
+			"ar": "الرصيد مطروحًا منه الرصيد المحجوز: وهو ما تُقبل الطلبات على أساسه."
+		},
+		"Days the available balance lasts at the burn rate. Null without spend in the window.": {
+			"es": "Días que dura el saldo disponible al ritmo de consumo. Es null si no hubo gasto en la ventana.",
+			"fr": "Nombre de jours que dure le solde disponible au rythme de consommation. Vaut null sans dépense dans la fenêtre.",
+			"de": "Tage, die das verfügbare Guthaben beim aktuellen Verbrauch reicht. Null ohne Ausgaben im Fenster.",
+			"pt-BR": "Dias que o saldo disponível dura no ritmo de consumo. Nulo sem gastos na janela.",
+			"hi": "खर्च की दर पर उपलब्ध बैलेंस कितने दिन चलेगा। विंडो में कोई खर्च न होने पर null।",
+			"ja": "現在の消費ペースで利用可能残高が持つ日数です。期間内に支出がない場合は null です。",
+			"zh-Hans": "按当前消耗速率，可用余额可维持的天数。窗口内无支出时为 null。",
+			"ar": "عدد الأيام التي يكفيها الرصيد المتاح بمعدل الاستهلاك. تكون null عند عدم وجود إنفاق في النافذة."
+		},
+		"Auto Top-Up is on and working, so a drop is recorded without an alert.": {
+			"es": "La recarga automática está activada y funciona, así que una caída se registra sin alerta.",
+			"fr": "La recharge automatique est activée et fonctionne : une baisse est enregistrée sans alerte.",
+			"de": "Die automatische Aufladung ist aktiv und funktioniert, daher wird ein Rückgang ohne Warnung erfasst.",
+			"pt-BR": "A recarga automática está ativada e funcionando, então uma queda é registrada sem alerta.",
+			"hi": "ऑटो टॉप-अप चालू है और काम कर रहा है, इसलिए गिरावट बिना अलर्ट के दर्ज की जाती है।",
+			"ja": "自動チャージが有効で正常に機能しているため、残高の低下はアラートなしで記録されます。",
+			"zh-Hans": "自动充值已开启且运行正常，因此余额下降只会被记录，不会发出警报。",
+			"ar": "الشحن التلقائي مفعّل ويعمل، لذا يُسجَّل الانخفاض دون تنبيه."
+		},
+		"Balance rules: false after an alert until the balance is back above the threshold.": {
+			"es": "Reglas balance: false después de una alerta hasta que el saldo vuelve a superar el umbral.",
+			"fr": "Règles balance : false après une alerte, jusqu’à ce que le solde repasse au-dessus du seuil.",
+			"de": "Regeln vom Typ balance: false nach einer Warnung, bis das Guthaben wieder über dem Schwellenwert liegt.",
+			"pt-BR": "Regras balance: false após um alerta até o saldo voltar a ficar acima do limite.",
+			"hi": "balance नियम: अलर्ट के बाद false, जब तक बैलेंस फिर से सीमा से ऊपर न आ जाए।",
+			"ja": "balance ルール：アラート後、残高がしきい値を再び上回るまで false です。",
+			"zh-Hans": "balance 规则：发出警报后为 false，直到余额重新高于阈值。",
+			"ar": "قواعد balance: تكون false بعد التنبيه حتى يعود الرصيد فوق الحد."
 		}
 	},
 	"GET /apps": {

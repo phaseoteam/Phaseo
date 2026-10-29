@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.
+          description: Es false para las reglas que la evaluación aún no admite (métricas forecast y spike, periodos rolling de gasto y bases previous_period). Se guardan y empezarán a activarse en una versión posterior. Las reglas balance sí se evalúan.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: La situación actual de una regla de gasto. Las reglas sin periodo natural tienen period, value y alert en null.
+      description: Dónde se encuentra ahora una regla de gasto. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las demás reglas sin periodo de calendario tienen period, value y alert en null.
       required:
         - rule_id
         - metric
@@ -24469,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -24479,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.
+          description: Es false para las reglas que la evaluación aún no admite (métricas forecast y spike, periodos rolling de gasto y bases previous_period). Se guardan y empezarán a activarse en una versión posterior. Las reglas balance sí se evalúan.
         computed_at:
           type: string
           format: date-time
@@ -24594,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'Reglas balance: false después de una alerta hasta que el saldo vuelve a superar el umbral.'
+        balance:
+          type: object
+          nullable: true
+          description: 'Solo reglas balance: dónde se encuentra el saldo, tal como lo ve la evaluación. Es null para las demás reglas.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'Saldo menos el crédito reservado: lo que se usa para admitir las solicitudes.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: Días que dura el saldo disponible al ritmo de consumo. Es null si no hubo gasto en la ventana.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: La recarga automática está activada y funciona, así que una caída se registra sin alerta.
         alert:
           type: object
           nullable: true

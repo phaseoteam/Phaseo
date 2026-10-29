@@ -235,20 +235,22 @@ describe("spend rules management API", () => {
 			expect(args.p_destination_ids).toEqual([]);
 		});
 
-		it("accepts every metric the table allows; later metrics come back with evaluated false", async () => {
+		it("accepts every metric the table allows; later metrics come back with evaluated false, balance rules with true", async () => {
 			const spike = await call("/", "POST", { name: "Spike", metric: "spike", period: "rolling", window_hours: 6 });
 			expect(spike.status).toBe(201);
 			expect(state.rpc.mock.calls[0][1].p_rule).toMatchObject({ spike_multiplier: 3, spike_floor_nanos: 5_000_000_000, cooldown_minutes: 360 });
 			expect((await spike.json() as any).data).toMatchObject({ evaluated: false, spike_floor_usd: 5 });
 			for (const body of [
 				{ name: "Forecast", metric: "forecast", period: "month", base_kind: "previous_period", threshold_percents: [120] },
-				{ name: "Balance", metric: "balance", period: "rolling", window_hours: 168, runway_days: 7 },
 				{ name: "Rolling", metric: "spend", period: "rolling", window_hours: 24, threshold_amount_usd: 50, cooldown_minutes: 60 },
 			]) {
 				const response = await call("/", "POST", body);
 				expect(response.status).toBe(201);
 				expect((await response.json() as any).data.evaluated).toBe(false);
 			}
+			const balance = await call("/", "POST", { name: "Balance", metric: "balance", period: "rolling", window_hours: 168, runway_days: 7 });
+			expect(balance.status).toBe(201);
+			expect((await balance.json() as any).data.evaluated).toBe(true);
 		});
 
 		it("maps database errors to 400 and 409", async () => {

@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: Der aktuelle Stand einer Ausgabenregel. Bei Regeln ohne Kalenderzeitraum sind period, value und alert null.
+      description: Wo eine Ausgabenregel gerade steht. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Andere Regeln ohne Kalenderzeitraum haben period, value und alert null.
       required:
         - rule_id
         - metric
@@ -24469,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -24479,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.
         computed_at:
           type: string
           format: date-time
@@ -24594,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'Regeln vom Typ balance: false nach einer Warnung, bis das Guthaben wieder über dem Schwellenwert liegt.'
+        balance:
+          type: object
+          nullable: true
+          description: 'Nur Regeln vom Typ balance: wo das Guthaben steht, so wie die Auswertung es sieht. Null für andere Regeln.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'Guthaben abzüglich reserviertem Guthaben: der Betrag, gegen den Anfragen zugelassen werden.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: Tage, die das verfügbare Guthaben beim aktuellen Verbrauch reicht. Null ohne Ausgaben im Fenster.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: Die automatische Aufladung ist aktiv und funktioniert, daher wird ein Rückgang ohne Warnung erfasst.
         alert:
           type: object
           nullable: true
