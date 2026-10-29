@@ -13,7 +13,9 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
 SPEND_RULE_BLOCKS_ENABLED = "false"
-GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+# Shadow: the spend-limit coordinator decides beside the legacy key-limit check and logs
+# spend_limit_shadow_divergence when they differ; it never changes what a request gets.
+GATEWAY_SPEND_LIMIT_DO_MODE = "shadow"
 ENV = "staging"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"

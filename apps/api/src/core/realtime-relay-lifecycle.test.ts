@@ -422,6 +422,22 @@ describe("Realtime relay lifecycle", () => {
 		expect(object.settle).toHaveBeenCalledWith("expired", "realtime_max_duration");
 	});
 
+	it("bills a duration-priced call cut by a deploy up to the provider's last activity, not until cleanup", async () => {
+		const connectedAt = Date.now() - 10 * 60_000;
+		const storage = relay("spacex-ai").state.storage;
+		await storage.put({ session_id: "rt_test", usage: {
+			provider_connected_at_ms: connectedAt, provider_last_seen_ms: connectedAt + 90_000 } });
+		// A new instance after the deploy: no sockets, nothing in memory.
+		const restored = new RealtimeRelayDurableObject({ waitUntil: vi.fn(), storage } as any, {} as any) as any;
+		mocks.getRealtimeSessionForInternal.mockResolvedValueOnce({ session_id: "rt_test", provider: "spacex-ai",
+			model_id: "spacex-ai/grok-voice-3.0", usage: {} });
+		await restored.restoreStateIfEvicted("rt_test");
+		restored.markProviderClosed();
+		restored.refreshProviderSessionDuration();
+		expect(restored.usage.provider_closed_at_ms).toBe(connectedAt + 90_000);
+		expect(restored.usage.session_audio_ms).toBe(90_000);
+	});
+
 	it("never sends an extra billed closing response when the budget runs out", async () => {
 		const object = relay();
 		await object.beginBudgetClose("realtime_budget_threshold");

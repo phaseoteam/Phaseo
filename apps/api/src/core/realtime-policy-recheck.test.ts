@@ -10,8 +10,9 @@ const card: PriceCard = {
 	effective_to: null,
 	currency: "USD",
 	version: null,
-	rules: [{ pricing_plan: "standard", currency: "USD", match: [], priority: 100, meter: "output_audio_tokens",
-		unit: "token", unit_size: 1_000_000, price_per_unit: "64" } as PriceRule],
+	rules: (["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"] as const).map((meter) => ({
+		pricing_plan: "standard", currency: "USD", match: [], priority: 100, meter,
+		unit: "token", unit_size: 1_000_000, price_per_unit: "64" }) as PriceRule),
 };
 
 const state = vi.hoisted(() => ({

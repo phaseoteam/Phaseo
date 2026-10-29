@@ -1067,6 +1067,12 @@ export class RealtimeRelayDurableObject {
 			this.inputSinceLastResponse = true;
 			this.usage.input_audio_pending = true;
 		}
+		// Duration-billed providers charge while connected, and a quiet provider
+		// sends nothing: forwarding audio is the evidence the connection was up.
+		if (isDurationBilledRealtimeProvider(provider) && this.upstream?.readyState === WebSocket.OPEN
+			&& this.usage.provider_connected_at_ms) {
+			this.usage.provider_last_seen_ms = Date.now();
+		}
 		this.resetIdleTimer();
 		await this.checkpointUsage(!pendingBefore && this.inputSinceLastResponse);
 		void this.maybePersistUsage();
@@ -2570,6 +2576,13 @@ export class RealtimeRelayDurableObject {
 		if (inMemory) return;
 		this.session = await getRealtimeSessionForInternal(sessionId);
 		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? this.session.usage ?? {};
+		// The provider connection died with the old instance (a deploy or an
+		// eviction), so it ended at its last recorded activity, not whenever this
+		// object was woken. Billing the gap would charge for a dead connection.
+		if (this.usage.provider_connected_at_ms && !this.usage.provider_closed_at_ms) {
+			this.usage.provider_closed_at_ms = toNumber(this.usage.provider_last_seen_ms)
+				|| toNumber(this.usage.provider_connected_at_ms);
+		}
 		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;
 		this.responseInFlight = this.usage.assistant_response_in_flight === true;
 		this.providerCompletedResponseSeen = this.usage.provider_response_completed === true;
