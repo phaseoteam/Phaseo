@@ -13,7 +13,7 @@ What to do when production breaks: how bad it is, who acts, what to check first,
 - When unsure, pick the higher level. Lower it once you know more.
 - Anything touching billing or API keys starts at SEV1 until you know how many workspaces it reached.
 - SEV3 doesn't go on the status page. Fix it, and answer customers who ask through support. If several customers ask about the same SEV3, post it after all.
-- The first-update targets apply around the clock where possible. One person runs Phaseo, so outside waking hours they depend on the outage alert reaching the maintainer.
+- The first-update targets apply around the clock where possible. One person runs Phaseo, so outside waking hours they depend on the incident.io page reaching the maintainer (see [Outage alerts](#outage-alerts)).
 
 ## Roles
 
@@ -25,7 +25,7 @@ If a backup is added later, they need access to every service Phaseo runs on: Gi
 
 1. **Confirm it's real.** Call `curl https://api.phaseo.app/v1/health`, load `https://phaseo.app`, and repeat the failing request yourself. A single failed request is not an incident; check its request ID first.
 2. **Set the severity** using the table above. Start a running timeline (UTC times and what you did) in a Linear issue. If the observability bridge already opened one, use that.
-3. **Post on the status page** for SEV1 and SEV2, using the "Investigating" template below. The site footer reads from it, and the docs and Trust page link to it.
+3. **Post on the status page** for SEV1 and SEV2, using the "Investigating" template below. If an Instatus alert already posted one for the same component (see [Outage alerts](#outage-alerts)), update that post instead of creating a second one. The site footer reads from it, and the docs and Trust page link to it.
 4. **Check what changed.** Look at the latest `deploy (…)` jobs of [CI](../../.github/workflows/ci.yml) on `main`, the latest production migration, and catalogue edits made today. Most incidents follow a change.
 5. **Find the cause:**
    - Gateway errors and latency: Axiom, dataset set by `AXIOM_WIDE_DATASET` (sampled; see [axiom.ts](../../apps/api/src/observability/axiom.ts) and the `AXIOM_*_SAMPLE_RATE` settings in [wrangler.toml](../../apps/api/wrangler.toml)).
@@ -121,6 +121,7 @@ When Phaseo gives money back:
 | Gateway events | Axiom, `AXIOM_WIDE_DATASET`; [axiom.ts](../../apps/api/src/observability/axiom.ts) |
 | Website errors | PostHog EU, project 81404 |
 | Alerts to Linear | `POST /internal/observability-incidents` on the gateway turns PostHog and Axiom alerts into deduplicated Linear Triage issues (not yet tested end to end with a real alert from either); [observability-incidents.ts](../../apps/api/src/routes/internal/observability-incidents.ts), setup in the [API README](../../apps/api/README.md#observability-incident-triage) |
+| Uptime monitors | Instatus, alerting through incident.io; see [Outage alerts](#outage-alerts) |
 | Public probes | "Phaseo Health Pilot" workflow, run by hand; [health-pilot.yml](../../.github/workflows/health-pilot.yml). It creates no incidents. |
 | Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts) |
 | Route switches | `/internal/data/models/edit/<model id>` |
@@ -128,7 +129,14 @@ When Phaseo gives money back:
 | Key leak response | `/internal/key-incidents` |
 | Credit codes | `/internal/credits` |
 | Deploys | [ci.yml](../../.github/workflows/ci.yml) `deploy (…)` jobs; Vercel for the web app; Cloudflare for the Workers |
-| Discord webhooks | `DISCORD_SIGNUP_WEBHOOK_URL` (signups, deletions, Slack agent installs) and `DISCORD_BILLING_WEBHOOK_URL` (checkouts, purchases). Neither sends outage alerts. |
+| Discord webhooks | `DISCORD_SIGNUP_WEBHOOK_URL` (signups, deletions, Slack agent installs) and `DISCORD_BILLING_WEBHOOK_URL` (checkouts, purchases). Neither sends outage alerts; those come from incident.io. |
 | Support | `support@phaseo.app`, `https://phaseo.app/help` |
 
-There is no automatic outage alert to a phone or chat channel today: the Linear bridge files issues, and the health pilot runs only by hand. An outage alert on `/v1/health` is planned, sent to Discord or to incident.io alerts.
+## Outage alerts
+
+Instatus runs the uptime monitors. When one fails, it sends an alert to incident.io through the "Instatus monitoring" alert route. incident.io opens a Triage incident and pages the "Phaseo Primary Escalation" path. Workflows then post an "Investigating" incident on the status page for the Models, Homepage and Docs components, with subscriber notifications switched off in those workflows, so these automatic posts don't email subscribers. When the monitor recovers, the route declines the incident, and the workflows are set to resolve the status page post (untested, see below). This is all configured in the Instatus and incident.io dashboards, not in the repo.
+
+- A short blip still opens an incident and a public post. Check the monitor's other regions before treating it as real.
+- If you resolve a status page post by hand, it records impact up to the moment you resolve it. Correct the start and end times afterwards.
+- Not yet tested: whether a declined incident resolves its status page post automatically. incident.io documents that declined incidents are left out of workflows, so check the post after each blip and resolve it by hand if it is still open.
+- The Instatus page `phaseo.instatus.com` still exists, but the site reads only `status.phaseo.app`.
