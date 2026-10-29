@@ -35,6 +35,12 @@ describe("phaseo-realtime (the relay Worker)", () => {
 		expect(cacheId(realtime)).toBe(cacheId(config("wrangler.toml")));
 	});
 
+	it("is where phaseo-gateway and phaseo-jobs send relay connections", () => {
+		for (const name of ["wrangler.toml", "wrangler.jobs.toml"]) {
+			expect(config(name)).toMatch(/name = "REALTIME_RELAY"\s+class_name = "RealtimeRelayDurableObject"\s+script_name = "phaseo-realtime"/);
+		}
+	});
+
 	it("reaches the gateway's other Durable Objects in phaseo-gateway", () => {
 		for (const name of ["PROVIDER_RATE_LIMITS", "ROUTING_HEALTH", "CUSTOMER_RATE_LIMITS", "SPEND_LIMITS"]) {
 			expect(realtime).toMatch(new RegExp(`name = "${name}"\\s+class_name = "\\w+"\\s+script_name = "phaseo-gateway"`));

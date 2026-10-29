@@ -184,9 +184,13 @@ namespace_id = "41003"
 limit = 60
 period = 60
 
+# The relay runs in phaseo-realtime (wrangler.realtime.toml) so gateway deploys
+# don't end live calls. This Worker still exports the class and keeps its
+# migration, leaving its old, unused namespace in place.
 [[durable_objects.bindings]]
 name = "REALTIME_RELAY"
 class_name = "RealtimeRelayDurableObject"
+script_name = "phaseo-realtime"
 
 [[durable_objects.bindings]]
 name = "PROVIDER_RATE_LIMITS"
