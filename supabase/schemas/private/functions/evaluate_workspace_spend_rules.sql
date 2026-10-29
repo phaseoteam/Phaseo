@@ -10,10 +10,11 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
   AS $function$
 -- Evaluates a workspace's enabled spend rules at p_now, queues an alert for each rule that
 -- crossed a threshold, and starts or lifts the blocks of rules with action = 'block'.
---   * Rules: private.spend_rule_evaluable (spend and budget_percent over a calendar day, Monday
---     week or month, and balance rules); other metrics are left for later. Each calendar rule's
---     period is in its own time zone, or the workspace's billing_time_zone (private.spend_rule_period).
---   * Spend: v2_private_usage_15m from the period start up to p_now, plus successful async jobs
+--   * Rules: private.spend_rule_evaluable (spend, budget_percent and forecast over a calendar day,
+--     Monday week or month; spend and budget_percent over a rolling window; balance rules);
+--     spike is left for later. Each calendar rule's period is in its own time zone, or the
+--     workspace's billing_time_zone (private.spend_rule_period).
+--   * Spend: v2_private_usage_15m from the period (or window) start up to p_now, plus successful async jobs
 --     and realtime sessions from gateway_requests (as sweep_spend_limit_warnings adds them).
 --     The rollup is read as it stands: hours the outbox has yet to rebuild count once it marks
 --     the workspace dirty again. Values come from private.spend_rule_values and the text from
@@ -22,13 +23,24 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 --     department (private.spend_scope_departments, read now, so moving someone moves their
 --     spend for the current period); model (model_id); provider (the route's provider_slug,
 --     or gateway_requests.provider for async jobs).
---   * Bases for budget_percent: amount (base_amount_nanos), workspace_budget (the
---     workspace_budgets row for base_ref) and key_limit (the key's *_limit_cost_nanos). A rule
---     whose budget or limit is missing or 0 does not fire.
+--   * Bases for budget_percent and forecast: amount (base_amount_nanos), workspace_budget (the
+--     workspace_budgets row for base_ref), key_limit (the key's *_limit_cost_nanos) and
+--     previous_period (spend at the same point in the previous period, the window before a
+--     rolling one, or the whole previous period for a forecast). A rule whose base is missing
+--     or 0 does not fire.
+--   * Forecast: projected period-end spend (private.spend_rule_values: the usage dashboard's
+--     straight line from the period start, ready 3 hours into a day, 24 into a week and 72 into
+--     a month) against threshold_amount_nanos or threshold_percents of the base. It fires only
+--     once the projection is ready and at least a cent has been spent this period.
 --   * Firing: each threshold at most once per period. Several crossed at once make one event
 --     naming the highest. A spend rule fires once per period at threshold_amount_nanos.
+--     Rolling rules use cooldown_minutes instead (state row period_start '-infinity'): while
+--     over a threshold they fire again once the cooldown since the last alert ends, and within
+--     it only for a higher threshold.
 --   * Each event is an email_outbox row of kind spend_alert, deduped by
---     spend_alert:<rule id>:<period start, UTC ISO>:<threshold percent, or amount-<nanos>>, with
+--     spend_alert:<rule id>:<period start, UTC ISO>:<threshold percent, amount-<nanos>,
+--     projected-<percent> or projected-amount-<nanos>> (rolling rules:
+--     spend_alert:<rule id>:cooldown:<epoch / cooldown>:<threshold>), with
 --     its text in payload.title / payload.message and a payload.push for the mobile app. The
 --     routed delivery job sends it to the rule's destinations, or else the workspace's
 --     spend_alert routes; mobile push picks it up as a money push.
@@ -37,7 +49,9 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 --   * Blocks (grace margin): a block rule's block point is block_at_amount_nanos (spend rules) or
 --     block_at_percent of the base (budget_percent rules). Once spend this period reaches it, a
 --     workspace_spend_blocks row starts, unless the rule already has an active block or an
---     admin lifted one manually this period (a manual lift holds until the period resets).
+--     admin lifted one manually this period (a manual lift holds until the period resets, or
+--     for one window of a rolling rule). A rolling rule's block has no reset (resets_at null)
+--     and lifts once spend over the window is below the block point.
 --     Blocks start only when p_blocks is true (SPEND_RULE_BLOCKS_ENABLED) and p_now is within
 --     15 minutes of the database clock, so a late or replayed evaluation never starts one; a
 --     failed evaluation rolls back. Active blocks are lifted, whatever p_blocks says, when the
@@ -92,26 +106,51 @@ begin
     select * from private.spend_rule_values(p_workspace_id, p_now)
   ),
   decided as (
-    select valued.*, state.rule_id is not null as has_state, state.highest_percent_fired, state.amount_fired_at,
-      crossed.highest as crossed_percent
+    -- A rolling rule's state is its '-infinity' row, and what it fired counts only within
+    -- cooldown_minutes of the last alert: within it only a higher threshold fires, after it the
+    -- rule fires again while it is still over.
+    select valued.*, valued.period = 'rolling' as rolling, state.rule_id is not null as has_state,
+      case when valued.period <> 'rolling' or cooling.active then state.highest_percent_fired end as highest_percent_fired,
+      case when valued.period <> 'rolling' or cooling.active then state.amount_fired_at end as amount_fired_at,
+      crossed.highest as crossed_percent,
+      -- A forecast fires only once the projection is ready and at least a cent has been spent.
+      valued.metric = 'forecast' and valued.projected_nanos is not null and valued.value_nanos >= 10000000 as forecast_ready
     from valued
     left join public.workspace_spend_rule_state state
-      on state.rule_id = valued.id and state.period_start = valued.period_start
+      on state.rule_id = valued.id
+      and state.period_start = case when valued.period = 'rolling' then '-infinity'::timestamptz else valued.period_start end
+    cross join lateral (
+      select coalesce(state.last_fired_at > p_now - make_interval(mins => valued.cooldown_minutes), false) as active
+    ) cooling
     cross join lateral (
       select max(threshold) as highest
       from unnest(valued.threshold_percents) threshold
-      where valued.metric = 'budget_percent'
-        and valued.base_nanos > 0
-        and valued.value_nanos * 100 >= threshold::numeric * valued.base_nanos
+      where valued.base_nanos > 0
+        and case valued.metric
+          when 'budget_percent' then valued.value_nanos * 100 >= threshold::numeric * valued.base_nanos
+          when 'forecast' then valued.projected_nanos is not null and valued.value_nanos >= 10000000
+            and valued.projected_nanos * 100 >= threshold::numeric * valued.base_nanos
+          else false
+        end
     ) crossed
   ),
   firing as (
     select decided.*,
-      case when decided.metric = 'spend' then 'amount-' || decided.threshold_amount_nanos else decided.crossed_percent::text end as threshold_key,
-      to_char(decided.period_start at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as period_key
+      case
+        when decided.metric = 'spend' then 'amount-' || decided.threshold_amount_nanos
+        when decided.metric = 'forecast' and decided.threshold_amount_nanos is not null then 'projected-amount-' || decided.threshold_amount_nanos
+        when decided.metric = 'forecast' then 'projected-' || decided.crossed_percent
+        else decided.crossed_percent::text
+      end as threshold_key,
+      case
+        when decided.rolling then 'cooldown:' || floor(extract(epoch from p_now) / (decided.cooldown_minutes * 60))::bigint
+        else to_char(decided.period_start at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+      end as period_key
     from decided
     where (decided.metric = 'spend' and decided.amount_fired_at is null and decided.value_nanos >= decided.threshold_amount_nanos)
-      or (decided.metric = 'budget_percent' and decided.crossed_percent > coalesce(decided.highest_percent_fired, 0))
+      or (decided.metric in ('budget_percent', 'forecast') and decided.crossed_percent > coalesce(decided.highest_percent_fired, 0))
+      or (decided.metric = 'forecast' and decided.threshold_amount_nanos is not null and decided.amount_fired_at is null
+        and decided.forecast_ready and decided.projected_nanos >= decided.threshold_amount_nanos)
   ),
   rendered as (
     select firing.*, alert.scope_label, alert.title, alert.message,
@@ -121,7 +160,7 @@ begin
       v_workspace.name, firing.name, firing.metric, firing.scope_type, firing.scope_id, firing.scope_key_id,
       firing.scope_user_id, firing.scope_department_id, firing.period, firing.period_end, firing.time_zone,
       firing.base_kind, firing.base_ref, firing.base_nanos, firing.threshold_percents, firing.threshold_amount_nanos,
-      firing.value_nanos, firing.crossed_percent
+      firing.value_nanos, firing.crossed_percent, firing.window_hours, firing.projected_nanos, firing.reaches_at
     ) alert
   ),
   queued as (
@@ -149,25 +188,37 @@ begin
           'user_id', rendered.scope_user_id,
           'department_id', rendered.scope_department_id
         )),
-        'period', jsonb_build_object(
+        'period', jsonb_strip_nulls(jsonb_build_object(
           'kind', rendered.period,
           'start', rendered.period_start,
           'end', rendered.period_end,
-          'time_zone', rendered.time_zone
-        ),
+          'time_zone', rendered.time_zone,
+          'window_hours', rendered.window_hours
+        )),
         'value_nanos', rendered.value_nanos,
         'base_kind', rendered.base_kind,
         'base_ref', rendered.base_ref,
         'base_nanos', rendered.base_nanos,
+        'previous_period', case when rendered.previous_start is not null then jsonb_build_object(
+          'start', rendered.previous_start, 'end', rendered.previous_end) end,
         'percent', case when rendered.base_nanos > 0 then round(rendered.value_nanos * 100 / rendered.base_nanos, 1) end,
         'threshold_percent', rendered.crossed_percent,
         'threshold_percents', to_jsonb(rendered.threshold_percents),
-        'thresholds_crossed', case when rendered.metric = 'budget_percent' then (
+        'thresholds_crossed', case when rendered.metric in ('budget_percent', 'forecast') and rendered.crossed_percent is not null then (
           select coalesce(jsonb_agg(threshold order by threshold), '[]'::jsonb)
           from unnest(rendered.threshold_percents) threshold
           where threshold <= rendered.crossed_percent and threshold > coalesce(rendered.highest_percent_fired, 0)
         ) end,
         'threshold_amount_nanos', rendered.threshold_amount_nanos,
+        'forecast', case when rendered.metric = 'forecast' then jsonb_build_object(
+          'projected_nanos', rendered.projected_nanos,
+          'projected_percent', case when rendered.base_nanos > 0 then round(rendered.projected_nanos * 100 / rendered.base_nanos, 1) end,
+          'by', rendered.period_end,
+          'limit_nanos', rendered.limit_nanos,
+          'reaches_at', rendered.reaches_at,
+          'from', rendered.forecast_from
+        ) end,
+        'cooldown_minutes', case when rendered.rolling then rendered.cooldown_minutes end,
         'evaluated_at', p_now,
         'url', 'https://phaseo.app/settings/notifications',
         'push', jsonb_build_object(
@@ -183,16 +234,20 @@ begin
     returning id, dedupe_key, payload
   ),
   saved as (
-    -- A fired rule records what it sent; a rule seen for the first time this period gets its
-    -- rollover row. Rules already recorded this period that fire nothing are not written.
+    -- A fired rule records what it sent; a calendar rule seen for the first time this period
+    -- gets its rollover row. Rules already recorded this period that fire nothing are not
+    -- written. A rolling rule has one '-infinity' row, written only when it fires, which then
+    -- holds what this alert named (the cooldown starts again).
     insert into public.workspace_spend_rule_state as state (
       rule_id, workspace_id, period_start, period_end, highest_percent_fired, amount_fired_at, last_fired_at,
       fire_count, last_value_nanos, last_base_nanos, last_dedupe_key
     )
     select
-      decided.id, p_workspace_id, decided.period_start, decided.period_end,
+      decided.id, p_workspace_id,
+      case when decided.rolling then '-infinity'::timestamptz else decided.period_start end,
+      case when decided.rolling then null else decided.period_end end,
       case when rendered.id is not null then rendered.crossed_percent end,
-      case when rendered.id is not null and decided.metric = 'spend' then p_now end,
+      case when rendered.id is not null and decided.threshold_amount_nanos is not null and decided.metric in ('spend', 'forecast') then p_now end,
       case when rendered.id is not null then p_now end,
       case when rendered.id is not null then 1 else 0 end,
       case when rendered.id is not null then round(decided.value_nanos)::bigint end,
@@ -200,10 +255,15 @@ begin
       rendered.dedupe_key
     from decided
     left join rendered on rendered.id = decided.id
-    where rendered.id is not null or not decided.has_state
+    where rendered.id is not null or not (decided.has_state or decided.rolling)
     on conflict (rule_id, period_start) do update set
-      highest_percent_fired = greatest(state.highest_percent_fired, excluded.highest_percent_fired),
-      amount_fired_at = coalesce(state.amount_fired_at, excluded.amount_fired_at),
+      -- A rolling rule fires within its cooldown only past what it last named, so the new
+      -- values are the ones to keep.
+      highest_percent_fired = case when state.period_start = '-infinity'::timestamptz then excluded.highest_percent_fired
+        else greatest(state.highest_percent_fired, excluded.highest_percent_fired) end,
+      amount_fired_at = case when state.period_start = '-infinity'::timestamptz
+        then coalesce(excluded.amount_fired_at, state.amount_fired_at)
+        else coalesce(state.amount_fired_at, excluded.amount_fired_at) end,
       last_fired_at = coalesce(excluded.last_fired_at, state.last_fired_at),
       fire_count = state.fire_count + excluded.fire_count,
       last_value_nanos = coalesce(excluded.last_value_nanos, state.last_value_nanos),
@@ -220,16 +280,20 @@ begin
         'event_id', queued.id,
         'rule_id', queued.payload ->> 'rule_id',
         'dedupe_key', queued.dedupe_key,
-        'threshold', coalesce(queued.payload -> 'threshold_percent', queued.payload -> 'threshold_amount_nanos')
+        'threshold', coalesce(nullif(queued.payload -> 'threshold_percent', 'null'::jsonb), queued.payload -> 'threshold_amount_nanos')
       ) order by queued.dedupe_key)
       from queued
     ), '[]'::jsonb),
     -- The block point and spend of each block rule, for the block statements below.
     'block_rules', coalesce((
+      -- A rolling rule's block covers the window it started in and has no reset: it lifts once
+      -- spend over the window is below the block point again.
       select jsonb_agg(jsonb_build_object(
         'rule_id', valued.id,
+        'rolling', valued.period = 'rolling',
+        'window_hours', valued.window_hours,
         'period_start', valued.period_start,
-        'period_end', valued.period_end,
+        'period_end', case when valued.period <> 'rolling' then valued.period_end end,
         'value_nanos', valued.value_nanos,
         'limit_nanos', case valued.metric
           when 'spend' then rule.block_at_amount_nanos
@@ -388,7 +452,7 @@ begin
   for v_block in
     with block_rule as (
       select * from jsonb_to_recordset(v_block_rules) as x(
-        rule_id uuid, period_start timestamptz, period_end timestamptz, value_nanos numeric, limit_nanos bigint,
+        rule_id uuid, rolling boolean, period_start timestamptz, period_end timestamptz, value_nanos numeric, limit_nanos bigint,
         scope_type text, scope_id text, block_free_models boolean)
     ),
     decided as (
@@ -396,7 +460,8 @@ begin
           when block.rule_id is null or rule.id is null or rule.deleted_at is not null then 'rule_deleted'
           when not rule.enabled then 'rule_disabled'
           when rule.action <> 'block' or block_rule.rule_id is null then 'rule_changed'
-          when block.period_start <> block_rule.period_start then
+          when block_rule.rolling and block.resets_at is not null then 'rule_changed'
+          when not block_rule.rolling and block.period_start <> block_rule.period_start then
             case when block.resets_at is not null and block.resets_at <= p_now then 'period_reset' else 'rule_changed' end
           when block.scope_type <> block_rule.scope_type or block.scope_id is distinct from block_rule.scope_id then 'rule_changed'
           when block_rule.limit_nanos is null or block_rule.value_nanos < block_rule.limit_nanos then
@@ -443,20 +508,24 @@ begin
       select p_workspace_id, block_rule.rule_id, block_rule.scope_type, block_rule.scope_id, block_rule.block_free_models,
         block_rule.period_start, block_rule.period_end, round(block_rule.value_nanos)::bigint, block_rule.limit_nanos, p_now
       from jsonb_to_recordset(v_block_rules) as block_rule(
-        rule_id uuid, period_start timestamptz, period_end timestamptz, value_nanos numeric, limit_nanos bigint,
-        scope_type text, scope_id text, block_free_models boolean)
+        rule_id uuid, rolling boolean, window_hours integer, period_start timestamptz, period_end timestamptz, value_nanos numeric,
+        limit_nanos bigint, scope_type text, scope_id text, block_free_models boolean)
       where block_rule.limit_nanos > 0
         and block_rule.value_nanos >= block_rule.limit_nanos
-        and p_now < block_rule.period_end
+        and (block_rule.rolling or p_now < block_rule.period_end)
         and not exists (
           select 1 from public.workspace_spend_blocks active
           where active.rule_id = block_rule.rule_id and active.lifted_at is null
         )
+        -- A manual lift holds for the rest of the period, or for one window of a rolling rule.
         and not exists (
           select 1 from public.workspace_spend_blocks lifted
           where lifted.rule_id = block_rule.rule_id
-            and lifted.period_start = block_rule.period_start
             and lifted.lift_reason = 'manual'
+            and case when block_rule.rolling
+              then lifted.lifted_at > p_now - make_interval(hours => block_rule.window_hours)
+              else lifted.period_start = block_rule.period_start
+            end
         )
       on conflict do nothing
       returning block.id, block.rule_id
@@ -475,7 +544,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend and budget_percent rules over their calendar period at p_now: queues one spend_alert event per rule that crossed a new threshold (the highest one) and per balance rule whose balance or runway dropped to its threshold (armed/unarmed with a cooldown, never while auto top-up is working), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
+COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend, budget_percent and forecast rules over their calendar period (or rolling window, with a cooldown) at p_now: queues one spend_alert event per rule that crossed, or is projected to cross, a new threshold (the highest one) and per balance rule whose balance or runway dropped to its threshold (armed/unarmed with a cooldown, never while auto top-up is working), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
 
 REVOKE ALL ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) FROM PUBLIC;
 

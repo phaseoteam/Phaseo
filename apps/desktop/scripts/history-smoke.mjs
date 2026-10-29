@@ -84,7 +84,7 @@ window.webContents.send = function (channel, ...args) {
 };
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 await installChatNavigation(window);
-  const run = async expression => { try { return await window.webContents.executeJavaScript(expression); } catch(error) { console.error("FAILED_HISTORY_SCRIPT", expression); throw error; } };
+  const run = async expression => { try { return await window.webContents.executeJavaScript(expression).catch(error=>{if(/could not be cloned/.test(error?.message))return true;throw error}); } catch(error) { console.error("FAILED_HISTORY_SCRIPT", expression); throw error; } };
 async function wait(expression, label) {
   for (let attempt = 0; attempt < 100; attempt++) {
     if (await run(expression)) return;

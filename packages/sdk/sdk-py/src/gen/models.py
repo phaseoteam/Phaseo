@@ -3218,10 +3218,12 @@ class SpendRulePreview(TypedDict):
 	block_at_usd: Optional[float]
 	computed_at: str
 	evaluated: bool
+	forecast: Optional[Dict[str, Any]]
 	metric: Literal["spend", "budget_percent", "forecast", "spike", "balance"]
 	next_threshold: Optional[Dict[str, Any]]
 	percent: Optional[float]
 	period: Optional[Dict[str, Any]]
+	previous_period: Optional[Dict[str, Any]]
 	reached_threshold_percent: Optional[int]
 	rule_id: str
 	state: Optional[Dict[str, Any]]

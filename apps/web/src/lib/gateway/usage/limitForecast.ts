@@ -14,7 +14,7 @@ const DAY_MS = 24 * HOUR_MS;
  * Projections from a very short slice of a window swing wildly, so wait until
  * enough of it has passed for the pace to mean something.
  */
-const MIN_ELAPSED_MS: Record<LimitWindow, number> = {
+export const MIN_ELAPSED_MS: Record<LimitWindow, number> = {
 	day: 3 * HOUR_MS,
 	week: DAY_MS,
 	month: 3 * DAY_MS,
@@ -68,7 +68,31 @@ export function forecastLimitWindow({
 	limit: number;
 	now: number;
 }): LimitWindowForecast | null {
-	const { start, end } = utcLimitWindow(window, now);
+	return forecastCalendarWindow({ window, ...utcLimitWindow(window, now), used, limit, now });
+}
+
+/**
+ * {@link forecastLimitWindow} over any day, week or month, such as one in a
+ * spend rule's own time zone (`start` and `end` are its instants, so a day
+ * across a clock change lasts 23 or 25 hours). Spend rule forecasts compute
+ * the same in SQL (`private.spend_rule_values`); the shared fixture in
+ * `__fixtures__/spend-forecast-parity.json` keeps the two in step.
+ */
+export function forecastCalendarWindow({
+	window,
+	start,
+	end,
+	used,
+	limit,
+	now,
+}: {
+	window: LimitWindow;
+	start: number;
+	end: number;
+	used: number;
+	limit: number;
+	now: number;
+}): LimitWindowForecast | null {
 	const elapsed = now - start;
 	if (elapsed < MIN_ELAPSED_MS[window]) return null;
 	if (!(used > 0)) return { projected: 0, reachesLimitAt: null };

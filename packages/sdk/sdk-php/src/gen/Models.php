@@ -6345,6 +6345,8 @@ class SpendRulePreview
 	public $computed_at;
 	/** @var bool */
 	public $evaluated;
+	/** @var array<string, mixed>|null */
+	public $forecast;
 	/** @var string */
 	public $metric;
 	/** @var array<string, mixed>|null */
@@ -6353,6 +6355,8 @@ class SpendRulePreview
 	public $percent;
 	/** @var array<string, mixed>|null */
 	public $period;
+	/** @var array<string, mixed>|null */
+	public $previous_period;
 	/** @var int|null */
 	public $reached_threshold_percent;
 	/** @var string */

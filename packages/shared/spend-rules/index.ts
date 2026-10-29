@@ -29,11 +29,20 @@ export const SPEND_RULE_ACTIONS = ["notify", "block"] as const;
  * allows is accepted and saved; rules outside these lists are returned with evaluated: false
  * and fire nothing until a later release widens both this and the SQL function.
  */
-export const EVALUATED_METRICS = ["spend", "budget_percent"] as const;
+export const EVALUATED_METRICS = ["spend", "budget_percent", "forecast"] as const;
 export const EVALUATED_PERIODS = ["day", "week", "month"] as const;
-export const EVALUATED_BASE_KINDS = ["amount", "workspace_budget", "key_limit"] as const;
+export const EVALUATED_BASE_KINDS = ["amount", "workspace_budget", "key_limit", "previous_period"] as const;
+/** Metrics evaluated over a rolling window (window_hours), firing at most once per cooldown_minutes while over. */
+export const EVALUATED_WINDOW_METRICS = ["spend", "budget_percent"] as const;
+/** The bases a rolling spend or budget_percent rule can use (previous_period: the window before). */
+export const EVALUATED_WINDOW_BASE_KINDS = ["amount", "previous_period"] as const;
 /** Metrics evaluated over a rolling window with no base (balance: window_hours is the burn-rate lookback). */
 export const EVALUATED_ROLLING_METRICS = ["balance"] as const;
+/**
+ * How far into a period a forecast waits before projecting: 3 hours of a day, a day of a week
+ * and 3 days of a month, as the usage dashboard's key limit forecast does (at least about 10%).
+ */
+export const FORECAST_MIN_ELAPSED_HOURS = { day: 3, week: 24, month: 72 } as const;
 
 export type SpendRuleMetric = (typeof SPEND_RULE_METRICS)[number];
 export type SpendRuleScope = (typeof SPEND_RULE_SCOPES)[number];
@@ -156,6 +165,9 @@ function nanosOrNull(value: unknown): number | null {
 /** True for rules the evaluator fires on today (private.spend_rule_evaluable). */
 export function isSpendRuleEvaluated(rule: { metric: string; period: string; base_kind: string | null }): boolean {
 	if (oneOf(EVALUATED_ROLLING_METRICS, rule.metric)) return rule.period === "rolling" && rule.base_kind === null;
+	if (rule.period === "rolling") {
+		return oneOf(EVALUATED_WINDOW_METRICS, rule.metric) && (rule.base_kind === null || oneOf(EVALUATED_WINDOW_BASE_KINDS, rule.base_kind));
+	}
 	return oneOf(EVALUATED_METRICS, rule.metric)
 		&& oneOf(EVALUATED_PERIODS, rule.period)
 		&& (rule.base_kind === null || oneOf(EVALUATED_BASE_KINDS, rule.base_kind));
@@ -599,13 +611,19 @@ export type SpendRulePreview = {
 	evaluated: boolean;
 	computed_at: string;
 	time_zone: string;
-	period: { kind: SpendRulePeriod; start: string; end: string } | null;
+	/** A calendar period, or a rolling rule's window (start = now - window_hours, end = now). */
+	period: { kind: SpendRulePeriod; start: string; end: string; window_hours?: number } | null;
 	value_nanos: number | null;
 	value_usd: number | null;
 	base_kind: SpendRuleBaseKind | null;
 	base_ref: SpendRuleBaseRef | null;
+	/** For previous_period: the previous period's spend over previous_period. */
 	base_nanos: number | null;
 	base_usd: number | null;
+	/** previous_period bases only: the stretch of the previous period the base covers. */
+	previous_period: { start: string; end: string } | null;
+	/** Forecast rules only: the projection to the end of the period. */
+	forecast: SpendRuleForecastPreview | null;
 	percent: number | null;
 	threshold_percents: number[] | null;
 	threshold_amount_nanos: number | null;
@@ -639,6 +657,40 @@ export type SpendRuleBalancePreview = {
 	auto_top_up_covers: boolean;
 };
 
+export type SpendRuleForecastPreview = {
+	/** False until enough of the period has passed to project (see FORECAST_MIN_ELAPSED_HOURS). */
+	ready: boolean;
+	/** When the projection starts. */
+	from: string | null;
+	/** Spend at the end of the period if the pace so far continues; null until ready. */
+	projected_nanos: number | null;
+	projected_usd: number | null;
+	/** The projection as a percentage of the base, for percent forecasts. */
+	projected_percent: number | null;
+	/** The period end the projection is for. */
+	by: string;
+	/** What the forecast is measured against: the amount threshold, else the base. */
+	limit_nanos: number | null;
+	limit_usd: number | null;
+	/** When the pace so far reaches the limit, if it does before the period ends. */
+	reaches_at: string | null;
+};
+
+function formatForecastPreview(raw: Json | null | undefined): SpendRuleForecastPreview | null {
+	if (!raw || typeof raw !== "object") return null;
+	return {
+		ready: raw.ready === true,
+		from: (raw.from ?? null) as string | null,
+		projected_nanos: nanosOrNull(raw.projected_nanos),
+		projected_usd: spendNanosToUsd(raw.projected_nanos),
+		projected_percent: raw.projected_percent === null || raw.projected_percent === undefined ? null : Number(raw.projected_percent),
+		by: String(raw.by ?? ""),
+		limit_nanos: nanosOrNull(raw.limit_nanos),
+		limit_usd: spendNanosToUsd(raw.limit_nanos),
+		reaches_at: (raw.reaches_at ?? null) as string | null,
+	};
+}
+
 function formatBalancePreview(raw: Json | null | undefined): SpendRuleBalancePreview | null {
 	if (!raw || typeof raw !== "object") return null;
 	return {
@@ -664,19 +716,27 @@ export function formatSpendRulePreview(raw: Json): SpendRulePreview {
 	const state = raw.state as Json | null | undefined;
 	const alert = raw.alert as Json | null | undefined;
 	const period = raw.period as Json | null | undefined;
+	const previous = raw.previous_period as Json | null | undefined;
 	return {
 		rule_id: String(raw.rule_id ?? ""),
 		metric: raw.metric as SpendRuleMetric,
 		evaluated: raw.evaluated === true,
 		computed_at: String(raw.computed_at ?? ""),
 		time_zone: String(raw.time_zone ?? "UTC"),
-		period: period ? { kind: period.kind as SpendRulePeriod, start: String(period.start), end: String(period.end) } : null,
+		period: period ? {
+			kind: period.kind as SpendRulePeriod,
+			start: String(period.start),
+			end: String(period.end),
+			...(typeof period.window_hours === "number" ? { window_hours: period.window_hours } : {}),
+		} : null,
 		value_nanos: nanosOrNull(raw.value_nanos),
 		value_usd: spendNanosToUsd(raw.value_nanos),
 		base_kind: (raw.base_kind ?? null) as SpendRuleBaseKind | null,
 		base_ref: (raw.base_ref ?? null) as SpendRuleBaseRef | null,
 		base_nanos: nanosOrNull(raw.base_nanos),
 		base_usd: spendNanosToUsd(raw.base_nanos),
+		previous_period: previous ? { start: String(previous.start), end: String(previous.end) } : null,
+		forecast: formatForecastPreview(raw.forecast as Json | null | undefined),
 		percent: raw.percent === null || raw.percent === undefined ? null : Number(raw.percent),
 		threshold_percents: Array.isArray(raw.threshold_percents) ? (raw.threshold_percents as unknown[]).map(Number) : null,
 		threshold_amount_nanos: nanosOrNull(raw.threshold_amount_nanos),
