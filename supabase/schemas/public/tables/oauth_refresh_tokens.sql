@@ -17,7 +17,9 @@ CREATE TABLE "public"."oauth_refresh_tokens" (
   CONSTRAINT "oauth_refresh_tokens_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT "oauth_refresh_tokens_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
   "key_id"       uuid,
-  CONSTRAINT "oauth_refresh_tokens_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE
+  CONSTRAINT "oauth_refresh_tokens_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE,
+  "revoked_reason" text,
+  CONSTRAINT "oauth_refresh_tokens_revoked_reason_check" CHECK (((revoked_reason IS NULL) OR ((revoked_reason = 'superseded'::text) AND (revoked_at IS NOT NULL))))
 );
 
 ALTER TABLE "public"."oauth_refresh_tokens"
@@ -48,3 +50,5 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 REVOKE ALL ON TABLE "public"."oauth_refresh_tokens" FROM "anon", "authenticated";
 
 COMMENT ON COLUMN "public"."oauth_refresh_tokens"."key_id" IS 'The delegated gateway key a third-party app''s refresh token renews. Refreshing rotates that key''s secret; revoking, disabling or deleting the key ends its refresh tokens. NULL for tokens that renew a session JWT (the Phaseo CLI).';
+
+COMMENT ON COLUMN "public"."oauth_refresh_tokens"."revoked_reason" IS 'superseded: approving the same app again renewed this token''s key with a new refresh-token family and retired this one. Presenting a superseded token is just refused, never treated as reuse, so it can''t end the renewed key or the family that replaced it. NULL for every other token, revoked or not.';

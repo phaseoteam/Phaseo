@@ -21,7 +21,8 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- Read identity without a row lock, then lock in the member-delete trigger's order:
+  -- Read identity without a row lock, then lock in the order every OAuth grant change uses (the
+  -- member-delete trigger, the code exchange, revoke_oauth_refresh_token_grant):
   -- membership -> authorization -> key -> token.
   select * into token_identity
   from public.oauth_refresh_tokens
@@ -78,6 +79,12 @@ begin
   end if;
 
   if current_token.revoked_at is not null then
+    -- Approving the app again retired this token's family and renewed the key with a new one. That
+    -- sign-in is over, so its token is just refused: the key and the family that replaced it stay.
+    if current_token.revoked_reason = 'superseded' then
+      return jsonb_build_object('status', 'invalid');
+    end if;
+
     update public.oauth_refresh_tokens
     set revoked_at = coalesce(revoked_at, now())
     where family_id = current_token.family_id;
@@ -169,7 +176,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
+COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key; a token from a family that re-approving the app superseded is just invalid. Returns {status: rotated|reused|invalid, ...}.';
 
 GRANT EXECUTE ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) TO "service_role";
 
