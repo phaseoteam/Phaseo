@@ -162,6 +162,27 @@ function AutopilotBar({ item, running }: { item: WorkItem; running?: StageId }) 
 
 /** Height of the bar that takes the title's place once it scrolls away. */
 const BAR_HEIGHT = 44;
+/** Height of the tabs, which stay under the bar. */
+const TABS_HEIGHT = 40;
+/** Where the details column stays: under the bar and the tabs, with the same gap as above it. */
+const DETAILS_TOP = BAR_HEIGHT + TABS_HEIGHT + 24;
+
+/** True while `element` fits in `viewport` below `top`, so keeping it on screen hides none of it. */
+function useFitsBelow(viewport: RefObject<HTMLElement | null>, element: RefObject<HTMLElement | null>, top: number, key: string) {
+	const [fits, setFits] = useState(false);
+	useEffect(() => {
+		const root = viewport.current;
+		const target = element.current;
+		if (!root || !target) return;
+		const measure = () => setFits(target.offsetHeight + top + 16 <= root.clientHeight);
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(root);
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [viewport, element, top, key]);
+	return fits;
+}
 
 /** True once `target` has scrolled up under the top of `viewport`, where the bar covers it. */
 function useScrolledPast(viewport: RefObject<HTMLElement | null>, target: RefObject<HTMLElement | null>, key: string) {
@@ -187,6 +208,8 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 	const viewport = useRef<HTMLDivElement>(null);
 	const titleRef = useRef<HTMLHeadingElement>(null);
 	const scrolled = useScrolledPast(viewport, titleRef, item.id);
+	const detailsRef = useRef<HTMLDListElement>(null);
+	const detailsFit = useFitsBelow(viewport, detailsRef, DETAILS_TOP, `${item.id}:${route.tab ?? "overview"}`);
 	const [openRunId, setOpenRunId] = useState<string | undefined>();
 	const tab = route.tab ?? "overview";
 	const body = useItemBody(item);
@@ -280,7 +303,7 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 		<div className="@container px-4 pt-6 pb-16 @xl:px-6 @3xl:px-8">
 			{/* Takes no room: the bar floats over the top of the view once the title has scrolled away. */}
 			<div className="sticky top-0 z-20 h-0">
-				<div inert={!scrolled} style={{ height: BAR_HEIGHT }} className={cn("absolute inset-x-0 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 shadow-xs backdrop-blur transition-all duration-200 @xl:-mx-6 @xl:px-6 @3xl:-mx-8 @3xl:px-8", scrolled ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0")}>
+				<div inert={!scrolled} style={{ height: BAR_HEIGHT }} className={cn("absolute inset-x-0 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 backdrop-blur transition-all duration-200 @xl:-mx-6 @xl:px-6 @3xl:-mx-8 @3xl:px-8", scrolled ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0")}>
 					<button type="button" onClick={() => viewport.current?.scrollTo({ top: 0, behavior: "smooth" })} className="-ml-1.5 flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-accent/60" aria-label="Back to the top">
 						<ItemMark item={item} className="size-4 shrink-0" />
 						<span className="shrink-0 text-sm font-medium text-muted-foreground tabular-nums">#{item.number}</span>
@@ -346,10 +369,13 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 				<Pipeline item={item} snapshot={snapshot} onRun={(stage) => void run(stage)} onCancel={(target) => void factory().cancelRun(target.id)} onOpenRun={showRun} />
 			</div>
 
-			<nav className="mt-8 flex gap-5 border-b">
+			{/* Stays under the bar once scrolled to, covering the page edge to edge so nothing shows behind it. */}
+			<nav style={{ top: BAR_HEIGHT, height: TABS_HEIGHT }} className="sticky z-10 -mx-4 mt-6 flex items-end bg-background px-4 @xl:-mx-6 @xl:px-6 @3xl:-mx-8 @3xl:px-8">
+				<div className="flex flex-1 gap-5 border-b">
 				{tabs.map((entry) => <a key={entry.id} href={href({ page: "work", item: item.id, tab: entry.id })} className={cn("relative -mb-px flex items-center gap-1.5 pb-2.5 text-sm", tab === entry.id ? "border-b-2 border-foreground font-medium text-foreground" : "text-muted-foreground hover:text-foreground")}>
 					{entry.label}{entry.count ? <span className="text-xs text-muted-foreground tabular-nums">{entry.count}</span> : null}
 				</a>)}
+				</div>
 			</nav>
 
 			{tab === "overview" && <div className="mt-6 grid gap-10 @4xl:grid-cols-[minmax(0,1fr)_288px]">
@@ -383,7 +409,8 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 						{body === null ? <p className="text-sm text-muted-foreground">Loading…</p> : <Markdown source={body || "_No description._"} repo={item.repo} />}
 					</DescriptionEditor>
 				</div>
-				<dl className="self-start border-t pt-6 @4xl:border-t-0 @4xl:pt-0">
+				{/* Beside the content, it stays in view while the content scrolls, unless it's too tall to show whole. */}
+				<dl ref={detailsRef} style={detailsFit ? { top: DETAILS_TOP } : undefined} className={cn("self-start border-t pt-6 @4xl:border-t-0 @4xl:pt-0", detailsFit && "@4xl:sticky")}>
 					<h2 className="mb-2 text-sm font-semibold">Details</h2>
 					<Detail label="Agent">{assignee ? <>
 						<span className="flex items-center gap-2"><AgentMark agent={assignee} className="size-4" />{assignee.label}</span>
