@@ -524,7 +524,7 @@ const REALTIME_MODELS: RealtimeModel[] = [
 
 const GPT_LIVE_MODEL: RealtimeModel = {
 	id: "openai:gpt-live-1", label: "OpenAI GPT Live 1", provider: "openai", providerLabel: "OpenAI",
-	logoId: "openai", model: "openai/gpt-live-1", releaseDate: null, defaultVoice: "marin",
+	logoId: "openai", model: "openai/gpt-live-1", releaseDate: "2026-07-08T00:00:00", defaultVoice: "marin",
 	voices: LIVE_VOICE_OPTIONS,
 	transport: "WebSocket", billing: "Live duration + backend tokens",
 };
@@ -1444,7 +1444,7 @@ function buildRealtimeModels(
 		seen.add(model.id);
 		return true;
 	});
-	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1")).sort(compareRealtimeModelsByRelease)];
+	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1"))].sort(compareRealtimeModelsByRelease);
 }
 
 type RealtimeRoomProps = {
