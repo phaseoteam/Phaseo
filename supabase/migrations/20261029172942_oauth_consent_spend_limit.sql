@@ -1,35 +1,21 @@
--- Monthly spending limit on the OAuth consent screen.
--- * oauth_authorization_codes.key_monthly_limit_cost_nanos: the limit the person approved for a
---   third-party app with this consent (0 = no limit), stored with the code when they approve.
--- * public.consume_oauth_code_and_issue_delegated_grant: the code exchange applies that limit to the
---   app's delegated key, as the key's monthly cost limit (which the gateway already enforces), both
---   when it issues a new key and when it renews the existing one. Renewing keeps the key's id, so the
---   month's spend stays counted; the person can change the limit later under Settings, API Keys.
--- Hand-written: the declarative sync needs a local Postgres runtime (Docker), which is not
--- available where this was authored. It matches the definitions in schemas/.
 SET local check_function_bodies = off;
 
 ALTER TABLE "public"."oauth_authorization_codes"
   ADD COLUMN "key_monthly_limit_cost_nanos" bigint;
 
-ALTER TABLE "public"."oauth_authorization_codes"
-  ADD CONSTRAINT "oauth_authorization_codes_key_monthly_limit_cost_nanos_check" CHECK (((key_monthly_limit_cost_nanos IS NULL) OR (key_monthly_limit_cost_nanos >= 0)));
-
-COMMENT ON COLUMN "public"."oauth_authorization_codes"."key_monthly_limit_cost_nanos" IS 'Monthly spending limit the person approved for a third-party app on this consent, in nanodollars; 0 means no limit. The code exchange applies it to the app''s delegated key, whether the key is new or renewed. NULL for first-party apps and for codes issued before the consent screen asked.';
-
 CREATE OR REPLACE FUNCTION public.consume_oauth_code_and_issue_delegated_grant (
-  p_code_id              uuid,
-  p_key_hash             text,
-  p_key_kid              text,
-  p_key_prefix           text,
-  p_key_name             text,
-  p_user_id              uuid,
-  p_workspace_id         uuid,
-  p_client_id            text,
-  p_scopes               text[],
-  p_resource             text,
-  p_refresh_token_hash   text,
-  p_refresh_expires_at   timestamp with time zone
+  p_code_id            uuid,
+  p_key_hash           text,
+  p_key_kid            text,
+  p_key_prefix         text,
+  p_key_name           text,
+  p_user_id            uuid,
+  p_workspace_id       uuid,
+  p_client_id          text,
+  p_scopes             text[],
+  p_resource           text,
+  p_refresh_token_hash text,
+  p_refresh_expires_at timestamp with time zone
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -62,8 +48,8 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- Lock order, as in rotate_oauth_delegated_refresh_token and the member-delete trigger:
-  -- membership -> authorization -> key -> refresh tokens.
+  -- Lock order, as in both refresh-token rotations, revoke_oauth_refresh_token_grant and the
+  -- member-delete trigger: membership -> authorization -> key -> refresh tokens.
   perform 1
   from public.workspace_members member
   where member.user_id = p_user_id
@@ -135,11 +121,13 @@ begin
       return jsonb_build_object('status', 'key_inactive');
     end if;
 
-    -- The earlier sign-in's refresh tokens end here; the new secret ends its access token.
+    -- Every earlier sign-in's refresh-token family is retired here, spent tokens included, and the
+    -- new secret ends its access token. Presenting a retired token later is just refused, never
+    -- treated as reuse, so it can't end this key or the family issued below.
     update public.oauth_refresh_tokens
-    set revoked_at = now()
+    set revoked_at = coalesce(revoked_at, now()), revoked_reason = 'superseded'
     where key_id = existing_key.id
-      and revoked_at is null;
+      and revoked_reason is null;
 
     -- The monthly limit the person just approved on the consent screen wins; a code from before the
     -- screen asked keeps the key's limit. Spend already counted this month stays counted.
@@ -180,14 +168,10 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, and never turns a paused key back on. The monthly spending limit approved with the code becomes the key''s monthly cost limit, on a new or a renewed key. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
+ALTER TABLE "public"."oauth_authorization_codes"
+  ADD CONSTRAINT "oauth_authorization_codes_key_monthly_limit_cost_nanos_check" CHECK (((key_monthly_limit_cost_nanos IS NULL) OR (key_monthly_limit_cost_nanos >= 0)));
 
-GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "service_role";
+COMMENT ON COLUMN "public"."oauth_authorization_codes"."key_monthly_limit_cost_nanos" IS 'Monthly spending limit the person approved for a third-party app on this consent, in nanodollars; 0 means no limit. The code exchange applies it to the app''s delegated key, whether the key is new or renewed. NULL for first-party apps and for codes issued before the consent screen asked.';
 
-REVOKE ALL ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "postgres";
-
-REVOKE ALL
-  ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone)
-  FROM PUBLIC, "anon", "authenticated";
+COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp
+  with time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. The monthly spending limit approved with the code becomes the key''s monthly cost limit, on a new or a renewed key. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
