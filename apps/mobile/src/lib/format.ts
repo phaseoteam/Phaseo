@@ -1,33 +1,26 @@
-const compact = new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 });
+import { formatRoundedCount, formatUsdPrice } from "@phaseo/app-kit/format";
+
+// Money, counts and unit prices are the website's styles, shared through @phaseo/app-kit/format.
+export { formatUsd, formatUsdCost, MONEY_LOCALE } from "@phaseo/app-kit/format";
+
 const whole = new Intl.NumberFormat("en-GB");
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const shortDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
 const monthYear = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
 
+/** Counts of tokens or requests, as the website shows them: 999, 1.15K, 1.23M (rounded down). */
 export function formatCompact(value: number | null | undefined) {
-  return value == null || !Number.isFinite(value) ? "—" : compact.format(value);
+  return value == null || !Number.isFinite(value) ? "—" : formatRoundedCount(value, "en-US");
 }
 
 export function formatNumber(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) ? "—" : whole.format(Math.round(value));
 }
 
-/** Price per million tokens: $0.14, $2, $0.0042. */
+/** Price per million tokens, as the website's /models list shows it: $0.035, $2.5, $1,234.5; "Free" at zero. */
 export function formatPrice(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
   if (value === 0) return "Free";
-  const digits = value >= 100 ? 0 : value >= 1 ? 2 : value >= 0.01 ? 3 : 4;
-  return `$${Number(value.toFixed(digits)).toString()}`;
-}
-
-/** Money is always shown in the US style ("$1,234.50"), never "US$". */
-export const MONEY_LOCALE = "en-US";
-
-export function formatUsd(value: number | null | undefined, { precise = false }: { precise?: boolean } = {}) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const abs = Math.abs(value);
-  const digits = precise || abs < 1 ? (abs > 0 && abs < 0.01 ? 4 : 2) : 2;
-  return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+  return formatUsdPrice(value) ?? "—";
 }
 
 export const nanosToUsd = (nanos: number | null | undefined) => (nanos == null ? null : nanos / 1_000_000_000);
