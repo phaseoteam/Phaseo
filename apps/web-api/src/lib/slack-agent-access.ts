@@ -7,8 +7,12 @@ type DataClient = ReturnType<typeof getDataClient>;
 // Statsig gate slack_agent passes for the signed-in user, or for Phaseo admins
 // (slackAgentSettingsEnabled in apps/web/src/lib/flags/index.ts), so installing asks
 // the same: a workspace admin outside the rollout can't install by calling the API
-// directly. It asks Statsig for the user the web app identifies (their ID and email,
-// with the workspace as a custom ID). Like the gateway's gates, a failed check is a no.
+// directly. Statsig is asked about the user the web app identifies
+// (buildAuthenticatedStatsigUser in apps/web/src/lib/statsig/shared.ts, with the
+// profile /api/account/auth/statsig returns, and the selected workspace), so a rule
+// on their email, Supabase ID, beta opt-in or beta features decides both the same
+// way. Only the browser's stable ID can't be sent from here. Like the gateway's
+// gates, a failed check is a no.
 
 const SLACK_AGENT_GATE = "slack_agent";
 const GATE_TIMEOUT_MS = 2_000;
@@ -19,13 +23,29 @@ export type SlackAgentInstaller = {
 	workspaceId: string;
 };
 
+type Profile = { isAdmin: boolean; betaOptIn: boolean; betaFeatureKeys: string[] };
+
 function statsigEnvironmentTier(env: Env): "production" | "staging" | "development" {
 	if (env.ENV === "production") return "production";
 	if (env.ENV === "preview" || env.ENV === "staging") return "staging";
 	return "development";
 }
 
-async function slackAgentGatePasses(env: Env, installer: SlackAgentInstaller): Promise<boolean> {
+/** The user's Phaseo role and beta profile, as /api/account/auth/statsig gives the web app. Unreadable counts as no admin and no betas. */
+async function installerProfile(client: DataClient, userId: string): Promise<Profile> {
+	const { data, error } = await client.from("users").select("role,beta_opt_in,beta_features").eq("user_id", userId).maybeSingle();
+	if (error || !data) return { isAdmin: false, betaOptIn: false, betaFeatureKeys: [] };
+	const isAdmin = String(data.role ?? "").toLowerCase() === "admin";
+	const features = data.beta_features && typeof data.beta_features === "object" && !Array.isArray(data.beta_features)
+		? Object.entries(data.beta_features as Record<string, unknown>).filter(([, enabled]) => enabled === true).map(([key]) => key)
+		: [];
+	// The web app's profile turns the realtime voice beta on for admins only.
+	const betaFeatureKeys = features.filter((key) => key !== "chat_realtime_voice");
+	if (isAdmin) betaFeatureKeys.push("chat_realtime_voice");
+	return { isAdmin, betaOptIn: Boolean(data.beta_opt_in) || isAdmin, betaFeatureKeys };
+}
+
+async function slackAgentGatePasses(env: Env, installer: SlackAgentInstaller, profile: Profile): Promise<boolean> {
 	const statsigKey = env.STATSIG_SERVER_KEY?.trim();
 	// Local development without Statsig can install, as the web app's admins can.
 	if (!statsigKey) return env.ENV === "development";
@@ -38,8 +58,8 @@ async function slackAgentGatePasses(env: Env, installer: SlackAgentInstaller): P
 				user: {
 					userID: installer.userId,
 					...(installer.email ? { email: installer.email } : {}),
-					customIDs: { workspaceID: installer.workspaceId },
-					custom: { workspace_id: installer.workspaceId },
+					customIDs: { supabaseUserID: installer.userId, workspaceID: installer.workspaceId },
+					custom: { betaOptIn: profile.betaOptIn, betaFeatureKeys: profile.betaFeatureKeys, workspace_id: installer.workspaceId },
 					statsigEnvironment: { tier: statsigEnvironmentTier(env) },
 				},
 			}),
@@ -55,15 +75,9 @@ async function slackAgentGatePasses(env: Env, installer: SlackAgentInstaller): P
 	}
 }
 
-/** Whether the user is a Phaseo admin (users.role), who sees Settings → Slack outside the rollout. */
-async function isPhaseoAdmin(client: DataClient, userId: string): Promise<boolean> {
-	const { data, error } = await client.from("users").select("role").eq("user_id", userId).maybeSingle();
-	if (error) return false;
-	return String(data?.role ?? "").toLowerCase() === "admin";
-}
-
-/** Whether this user may install the Slack agent: a Phaseo admin, or inside the slack_agent rollout. */
+/** Whether this user may install the Slack agent: a Phaseo admin (users.role), or inside the slack_agent rollout. */
 export async function slackAgentInstallAllowed(env: Env, client: DataClient, installer: SlackAgentInstaller): Promise<boolean> {
-	if (await isPhaseoAdmin(client, installer.userId)) return true;
-	return slackAgentGatePasses(env, installer);
+	const profile = await installerProfile(client, installer.userId);
+	if (profile.isAdmin) return true;
+	return slackAgentGatePasses(env, installer, profile);
 }

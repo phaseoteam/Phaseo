@@ -84,6 +84,8 @@ type Fixture = {
 	slackGate?: boolean | "error";
 	/** The installer's Phaseo role (users.role); "admin" installs outside the rollout. */
 	phaseoRole?: string | null;
+	/** The installer's beta profile (users.beta_opt_in, users.beta_features). */
+	beta?: { beta_opt_in: boolean; beta_features: Record<string, unknown> };
 	/** The agent key's created_by (default user-a, the installer). */
 	keyCreatedBy?: string | null;
 	/** Public catalogue models (v2_models, not hidden or disabled), or "error" when the catalogue can't be read. */
@@ -124,7 +126,7 @@ function database(fixture: Fixture = {}) {
 			if (fixture.autoRouting === "error") return new Response("unavailable", { status: 503 });
 			return Response.json({ name: "gateway_auto_routing", value: fixture.autoRouting ?? false });
 		}
-		if (path.endsWith("/users")) return rows(fixture.phaseoRole ? [{ role: fixture.phaseoRole }] : []);
+		if (path.endsWith("/users")) return rows(fixture.phaseoRole || fixture.beta ? [{ role: fixture.phaseoRole ?? null, ...(fixture.beta ?? {}) }] : []);
 		if (path.endsWith("/auth/v1/user")) {
 			const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
 			const id = TOKENS[token];
@@ -413,8 +415,8 @@ describe("Slack agent install", () => {
 		expect(rolloutChecks(requests)[0].body.user).toEqual({
 			userID: "user-a",
 			email: "user-a@example.com",
-			customIDs: { workspaceID: WORKSPACE },
-			custom: { workspace_id: WORKSPACE },
+			customIDs: { supabaseUserID: "user-a", workspaceID: WORKSPACE },
+			custom: { betaOptIn: false, betaFeatureKeys: [], workspace_id: WORKSPACE },
 			statsigEnvironment: { tier: "production" },
 		});
 
@@ -425,6 +427,13 @@ describe("Slack agent install", () => {
 		requests = database({ role: "admin", slackGate: true });
 		expect((await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) })).status).toBe(200);
 		expect(rolloutChecks(requests)).toHaveLength(1);
+	});
+
+	it("asks with the beta profile the web app sends, so rules on beta opt-in or features agree", async () => {
+		const requests = database({ role: "admin", beta: { beta_opt_in: true, beta_features: { models_catalogue_v2: true, other: false, chat_realtime_voice: true, junk: "yes" } } });
+		expect((await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) })).status).toBe(200);
+		// Only enabled features, and realtime voice only for Phaseo admins, as /api/account/auth/statsig does.
+		expect(rolloutChecks(requests)[0].body.user.custom).toEqual({ betaOptIn: true, betaFeatureKeys: ["models_catalogue_v2"], workspace_id: WORKSPACE });
 	});
 
 	it("lets Phaseo admins install outside the rollout, as Settings → Slack shows them", async () => {

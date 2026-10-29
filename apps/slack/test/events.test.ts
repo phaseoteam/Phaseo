@@ -408,10 +408,36 @@ describe("events: choosing a model per message", () => {
 
 	it("says privately that Compare is off when model choice is off, rather than answering with one model", async () => {
 		await install({ model: "openai/gpt-6-luna", model_choice_enabled: false, allowed_models: [] });
-		await expect(run(mention({ text: "<@U0BOT00001> compare claude opus, auto: hi" }))).resolves.toBe("model_refused");
+		await expect(run(mention({ text: "<@U0BOT00001> compare Claude Opus 5.5, gpt-6-luna: hi" }))).resolves.toBe("model_refused");
 		expect(world.slack.ephemerals().map((call) => String(call.args.text))).toEqual([COMPARE_OFF_TEXT]);
 		expect(world.turns.created).toEqual([]);
 		expect(meter().usage(NOW)).toMatchObject({ people: 0, answers: 0, pending: 0 });
+	});
+
+	it("answers a Compare as written while model choice is off unless every name is a whole catalogue model", async () => {
+		await install({ model: "openai/gpt-6-luna", model_choice_enabled: false, allowed_models: [] });
+		world.db.tables.v2_models.push({ model_slug: "amazon/nova-pro-v1", name: "Amazon: Nova Pro 1.0", hidden: false });
+		const answered = [
+			// "A" is only the start of "Amazon: Nova Pro 1.0".
+			"Compare A, B: which design should we ship?",
+			// One real model is not enough: the other name is ordinary text.
+			"compare Claude Opus 5.5, our current setup: which is cheaper?",
+			"compare claude opus, auto: hi",
+		];
+		for (const [index, text] of answered.entries()) {
+			await expect(run(mention({ text: `<@U0BOT00001> ${text}`, ts: `1792600000.00030${index}` })), text).resolves.toBe("started");
+		}
+		expect(world.slack.ephemerals()).toEqual([]);
+
+		// A catalogue that can't be read answers the message too.
+		const select = world.db.select.bind(world.db);
+		world.db.select = async <T,>(table: string, query: Record<string, string>) => {
+			if (table === "v2_models" && query.limit === "5") throw new Error("db_error_503");
+			return select<T>(table, query);
+		};
+		await expect(run(mention({ text: "<@U0BOT00001> compare Claude Opus 5.5, gpt-6-luna: hi", ts: "1792600000.000400" }))).resolves.toBe("started");
+		world.db.select = select;
+		expect(world.slack.ephemerals()).toEqual([]);
 	});
 });
 
