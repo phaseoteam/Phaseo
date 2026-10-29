@@ -130,7 +130,7 @@ function cardIsTokenPriced(card: SweepCard): boolean {
 // ---------------------------------------------------------------------------
 // Conditions
 
-/** Accepts the catalogue's alternate condition spellings ({field|key, operator}) that some fixtures use. */
+/** Accepts the catalogue's alternate condition spellings ({field|key, operator}) that some SKU rows use. */
 export function normaliseCondition(condition: Record<string, any>): CalcCondition {
 	return {
 		path: condition.path ?? condition.field ?? condition.key,

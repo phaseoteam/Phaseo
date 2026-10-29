@@ -1,5 +1,5 @@
 // Purpose: Refresh the cached provider API specs used by the provider simulator.
-// Why: This is the only part of the simulator that touches the network; everything else runs offline.
+// Why: This and the catalogue load (src/catalogue.ts, database SELECTs) are the only network access; everything else runs offline.
 // How: Fetches each public spec in specs/sources.json (OpenAPI 3.x, Swagger 2 or a Google discovery
 //      document), keeps only the text operations and the schemas they reference, and writes
 //      specs/<id>.json with the source URL, fetch time and a SHA-256 of the original document.
