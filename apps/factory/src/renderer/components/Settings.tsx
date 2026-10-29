@@ -48,10 +48,10 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (on: bo
 }
 
 /** A text input that saves when it loses focus or on Enter. */
-export function Field({ value, placeholder, onSave, mono, className }: { value: string; placeholder: string; onSave: (value: string) => void; mono?: boolean; className?: string }) {
+export function Field({ value, placeholder, onSave, mono, secret, className }: { value: string; placeholder: string; onSave: (value: string) => void; mono?: boolean; secret?: boolean; className?: string }) {
 	const [draft, setDraft] = useState(value);
 	useEffect(() => setDraft(value), [value]);
-	return <input value={draft} placeholder={placeholder} onChange={(event) => setDraft(event.target.value)} onBlur={() => draft !== value && onSave(draft.trim())} onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()} className={cn("h-8 w-72 rounded-md border bg-background px-2.5 text-sm outline-none focus:border-ring", mono && "font-mono text-xs", className)} />;
+	return <input type={secret ? "password" : "text"} autoComplete="off" value={draft} placeholder={placeholder} onChange={(event) => setDraft(event.target.value)} onBlur={() => draft !== value && onSave(draft.trim())} onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()} className={cn("h-8 w-72 rounded-md border bg-background px-2.5 text-sm outline-none focus:border-ring", mono && "font-mono text-xs", className)} />;
 }
 
 /** A multi-line field that saves when it loses focus. */

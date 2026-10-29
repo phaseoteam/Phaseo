@@ -22,9 +22,9 @@ const ready = (id: string, kind: Connection["kind"]): Connection => ({ id, kind,
 describe("model catalog", () => {
 	it("names Claude models the way Claude Code describes them, and marks the default once", () => {
 		expect(claudeModels(CLAUDE)).toEqual([
-			{ id: "opus", label: "Opus 5.5", description: "Best for everyday, complex tasks · $4/$20 per Mtok", efforts: ["low", "medium", "high", "xhigh", "max"], isDefault: true },
-			{ id: "fable", label: "Fable 5.1", description: "Most capable for your hardest and longest-running tasks · $10/$50 per Mtok", efforts: ["low", "high"], isDefault: undefined },
-			{ id: "sonnet", label: "Sonnet 5.5", description: "Efficient for routine tasks · $2/$10 per Mtok", efforts: ["low", "medium", "high"], isDefault: undefined },
+			{ id: "opus", label: "Opus 5.5", description: "Best for everyday, complex tasks · $4/$20 per Mtok", efforts: ["low", "medium", "high", "xhigh", "max"], isDefault: true, resolved: "claude-opus-5-5" },
+			{ id: "fable", label: "Fable 5.1", description: "Most capable for your hardest and longest-running tasks · $10/$50 per Mtok", efforts: ["low", "high"], isDefault: undefined, resolved: "claude-fable-5-1" },
+			{ id: "sonnet", label: "Sonnet 5.5", description: "Efficient for routine tasks · $2/$10 per Mtok", efforts: ["low", "medium", "high"], isDefault: undefined, resolved: "claude-sonnet-5-5" },
 		]);
 		// Claude Code on a Team plan: the name is displayName, and pinned versions come by their full id.
 		expect(claudeModels([
@@ -60,6 +60,17 @@ describe("model catalog", () => {
 		// An effort the model doesn't offer is ignored rather than sent.
 		expect(agents.find((agent) => agent.id === "codex-gpt-6-astra")?.effort).toBeUndefined();
 		expect(agents.find((agent) => agent.id === "codex-default")).toMatchObject({ model: "", efforts: ["low", "high", "ultra"] });
+	});
+
+	it("offers the tools' models that a hub serves, through the hub", () => {
+		const hub: Connection = { ...ready("hub", "hub"), models: ["claude-opus-5-5", "claude-sonnet-5-5", "gpt-6-astra", "gpt-image-2"] };
+		const agents = agentsFor([ready("claude-cli", "claude-cli"), ready("codex-cli", "codex-cli"), hub], { claude: claudeModels(CLAUDE), codex: codexModels(CODEX) });
+		const onHub = agents.filter((agent) => agent.billing === "hub");
+		// Fable isn't served, and GPT-6.1-Sol isn't either; the old hub-sonnet id carries on.
+		expect(onHub.map((agent) => `${agent.id}=${agent.label}`)).toEqual(["hub-opus=Opus 5.5", "hub-sonnet=Sonnet 5.5", "hub-codex-gpt-6-astra=GPT-6-Astra"]);
+		expect(onHub.find((agent) => agent.id === "hub-codex-gpt-6-astra")).toMatchObject({ harness: "codex", model: "gpt-6-astra", connectionId: "hub" });
+		// A hub that's down or turned down the key offers nothing.
+		expect(agentsFor([ready("claude-cli", "claude-cli"), { ...hub, status: "error" }], { claude: claudeModels(CLAUDE) }).some((agent) => agent.billing === "hub")).toBe(false);
 	});
 
 	it("falls back to Opus and Sonnet when Claude Code doesn't say", () => {

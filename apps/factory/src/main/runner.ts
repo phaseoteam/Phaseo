@@ -185,21 +185,39 @@ const SAFE_MODEL = /^[\w.:/-]*$/;
 const SAFE_EFFORT = /^[a-z]+$/;
 const SAFE_SESSION = /^[\w-]+$/;
 
-/** What an agent's runs add to the environment: the hub's address when it bills through the hub. */
+/** Where Codex finds the hub's key: in the environment, so it never goes on the command line. */
+const HUB_KEY_VARIABLE = "FACTORY_HUB_KEY";
+/** The hub's address goes on Codex's command line, so only a plain http(s) address. */
+const SAFE_HUB_URL = /^https?:\/\/[\w.:-]+(\/[\w.-]*)*$/;
+
+/**
+ * What an agent's runs add to the environment when they go through the hub: for Claude, the hub's
+ * address and key in place of whatever this computer's environment points Claude at; for Codex, the key.
+ */
 export function agentVariables(agent: AgentProfile, settings: FactorySettings): Record<string, string> {
 	if (agent.billing !== "hub") return {};
-	return agent.harness === "claude" ? { ANTHROPIC_BASE_URL: settings.hubUrl } : { OPENAI_BASE_URL: `${settings.hubUrl.replace(/\/$/, "")}/v1` };
+	const key = settings.hubKey ? { [agent.harness === "claude" ? "ANTHROPIC_AUTH_TOKEN" : HUB_KEY_VARIABLE]: settings.hubKey } : {};
+	return agent.harness === "claude" ? { ANTHROPIC_BASE_URL: settings.hubUrl, ...key } : key;
+}
+
+/** Codex settings that send its requests to the hub, as a provider of its own, instead of to OpenAI. */
+function hubProvider(settings: Pick<FactorySettings, "hubUrl" | "hubKey">): string[] {
+	const url = `${settings.hubUrl.replace(/\/+$/, "")}/v1`;
+	if (!SAFE_HUB_URL.test(url)) throw new Error(`Unsupported hub address: ${settings.hubUrl}`);
+	const provider = "model_providers.factory_hub";
+	return ["-c", `${provider}.name=Hub`, "-c", `${provider}.base_url=${url}`, "-c", `${provider}.wire_api=responses`, ...(settings.hubKey ? ["-c", `${provider}.env_key=${HUB_KEY_VARIABLE}`] : []), "-c", "model_provider=factory_hub"];
 }
 
 /** The Codex command line. `chat`: a conversation, which reads like a read-only stage. Claude runs through the Agent SDK instead. */
-export function commandFor(agent: AgentProfile, stage: StageId | "chat", resume?: string): { command: string; args: string[] } {
+export function commandFor(agent: AgentProfile, stage: StageId | "chat", resume?: string, settings?: Pick<FactorySettings, "hubUrl" | "hubKey">): { command: string; args: string[] } {
 	if (agent.harness !== "codex") throw new Error(agent.harness === "claude" ? "Claude runs through the Agent SDK" : "Phaseo API agents are not wired up yet");
+	if (agent.billing === "hub" && !settings) throw new Error("Hub agents need the hub's settings");
 	if (!SAFE_MODEL.test(agent.model)) throw new Error(`Unsupported model id: ${agent.model}`);
 	if (agent.effort && !SAFE_EFFORT.test(agent.effort)) throw new Error(`Unsupported effort: ${agent.effort}`);
 	if (resume && !SAFE_SESSION.test(resume)) throw new Error("Unsupported session id");
 	const access = stage === "chat" ? "read" : stageDefinition(stage).access;
 	const sandbox = access === "read" ? "read-only" : "workspace-write";
-	const model = [...(agent.model ? ["--model", agent.model] : []), ...(agent.effort ? ["-c", `model_reasoning_effort=${agent.effort}`] : [])];
+	const model = [...(agent.billing === "hub" ? hubProvider(settings!) : []), ...(agent.model ? ["--model", agent.model] : []), ...(agent.effort ? ["-c", `model_reasoning_effort=${agent.effort}`] : [])];
 	// `exec resume` has no --sandbox flag; the config override does the same.
 	const args = resume
 		? ["exec", "resume", "--json", "-c", `sandbox_mode=${sandbox}`, ...model, resume, "-"]
@@ -332,15 +350,16 @@ export function launchAgent(input: {
 	};
 }): AgentProcess {
 	const { agent, stage, cwd, settings, prompt, resume, handlers } = input;
-	const base = agentEnvironment({ ...agentVariables(agent, settings), ...input.variables });
-	const env = agent.harness === "claude" && agent.billing === "subscription" ? onClaudePlan(base) : base;
+	const base = agentEnvironment(input.variables);
+	// Claude on a plan or a hub drops this computer's own Claude address and keys first, so neither goes elsewhere.
+	const env = { ...(agent.harness === "claude" && agent.billing !== "api" ? onClaudePlan(base) : base), ...agentVariables(agent, settings) };
 	if (agent.harness === "claude") {
 		return startClaude({
 			agent, stage, cwd, prompt, resume, env,
 			handlers: { message: (message) => handlers.parsed(parseEvent("claude", message as Json)), stderr: handlers.stderr, exit: ({ code, signal, error }) => handlers.exit(code, signal, error) },
 		});
 	}
-	const { command, args } = commandFor(agent, stage, resume);
+	const { command, args } = commandFor(agent, stage, resume, settings);
 	// The prompt goes in on stdin, so nothing the issue author wrote reaches the shell.
 	const child = spawn(command, args, { cwd, shell: true, windowsHide: true, env, ...OWN_GROUP });
 	const reader = lineReader((line) => handlers.parsed(parseLine(agent.harness, line)));

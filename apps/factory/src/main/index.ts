@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, shell } from "electron";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -169,7 +169,9 @@ function registerIpc() {
 
 export async function startFactory(options: { createMainWindow?: boolean } = {}) {
 	await app.whenReady();
-	store = new FactoryStore(app.getPath("userData"), demo, broadcastSoon);
+	// Without system encryption (some Linux desktops), the hub's key is saved as typed.
+	const sealer = safeStorage.isEncryptionAvailable() ? { seal: (text: string) => safeStorage.encryptString(text).toString("base64"), open: (sealed: string) => safeStorage.decryptString(Buffer.from(sealed, "base64")) } : undefined;
+	store = new FactoryStore(app.getPath("userData"), demo, broadcastSoon, sealer);
 	registerIpc();
 	protocol.handle("factory-image", async (request) => {
 		const target = new URL(request.url).searchParams.get("url") ?? "";

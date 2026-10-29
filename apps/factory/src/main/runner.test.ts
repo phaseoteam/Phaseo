@@ -7,7 +7,7 @@ import type { WorkItem } from "../shared/types";
 import { mkdir, writeFile } from "node:fs/promises";
 import { claudeOptions, userTurn } from "./claude";
 import { onClaudePlan } from "./connections";
-import { commandFor, git, parseEvent, parseLine, prepareWorktree, startAgent, withoutNoise } from "./runner";
+import { agentVariables, commandFor, git, parseEvent, parseLine, prepareWorktree, startAgent, withoutNoise } from "./runner";
 
 describe("parseLine", () => {
 	it("reads Claude's Agent SDK messages", () => {
@@ -86,6 +86,18 @@ describe("commandFor", () => {
 	it("resumes Codex sessions with the sandbox as a config override", () => {
 		expect(commandFor(codex, "fix", "t-1").args).toEqual(["exec", "resume", "--json", "-c", "sandbox_mode=workspace-write", "--model", "gpt-5.5-codex", "t-1", "-"]);
 		expect(() => commandFor(codex, "fix", "t-1; rm -rf /")).toThrow("Unsupported session id");
+	});
+
+	it("sends hub runs to the hub, with its key kept off the command line", () => {
+		const viaHub = { ...codex, billing: "hub" as const, connectionId: "hub" };
+		const settings = { ...DEMO_SETTINGS, hubKey: "secret-key" };
+		const args = commandFor(viaHub, "fix", undefined, settings).args.join(" ");
+		expect(args).toContain("-c model_providers.factory_hub.base_url=http://127.0.0.1:8317/v1 -c model_providers.factory_hub.wire_api=responses -c model_providers.factory_hub.env_key=FACTORY_HUB_KEY -c model_provider=factory_hub --model gpt-5.5-codex");
+		expect(args).not.toContain("secret-key");
+		expect(agentVariables(viaHub, settings)).toEqual({ FACTORY_HUB_KEY: "secret-key" });
+		expect(agentVariables({ ...viaHub, harness: "claude" }, settings)).toEqual({ ANTHROPIC_BASE_URL: "http://127.0.0.1:8317", ANTHROPIC_AUTH_TOKEN: "secret-key" });
+		// The address goes on a shell command line.
+		expect(() => commandFor(viaHub, "fix", undefined, { ...settings, hubUrl: "http://x & calc" })).toThrow("Unsupported hub address");
 	});
 });
 

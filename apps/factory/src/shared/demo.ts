@@ -31,6 +31,7 @@ export const DEMO_SETTINGS: FactorySettings = {
 	repos: [{ repo: DEMO_REPO, path: "E:/phaseo", addedAt: 0 }, { repo: SKILLS_REPO, path: "E:/skills", addedAt: 0 }],
 	showRepo: "",
 	hubUrl: "http://127.0.0.1:8317",
+	hubKey: "",
 	independentReview: true,
 	agentEfforts: {},
 	pollMinutes: 2,
