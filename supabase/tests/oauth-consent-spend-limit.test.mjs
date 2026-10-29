@@ -37,21 +37,22 @@ const keyOf = async (clientId) => (await db.query(
 let sequence = 0;
 
 // What /oauth/authorize/approve stores with each code: the approved amount, 0 for "No limit", or nothing
-// (NULL) for a first-party app or a code issued before the consent screen asked.
-async function approve(clientId, monthlyLimit) {
+// (NULL) for a first-party app or a code issued before the consent screen asked. The resource is the one
+// the app asked for (none: an unbound key).
+async function approve(clientId, monthlyLimit, resource = null) {
   const codeId = `40000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`;
   await db.query(
-    `insert into public.oauth_authorization_codes (id, user_id, workspace_id, client_id, scopes, expires_at, key_monthly_limit_cost_nanos)
-     values ($1, $2, $3, $4, array['gateway:access'], now() + interval '10 minutes', $5)`,
-    [codeId, user, workspace, clientId, monthlyLimit],
+    `insert into public.oauth_authorization_codes (id, user_id, workspace_id, client_id, scopes, resource, expires_at, key_monthly_limit_cost_nanos)
+     values ($1, $2, $3, $4, array['gateway:access'], $5, now() + interval '10 minutes', $6)`,
+    [codeId, user, workspace, clientId, resource, monthlyLimit],
   );
   return codeId;
 }
-async function exchange(codeId, clientId) {
+async function exchange(codeId, clientId, resource = null) {
   const kid = `kid${String(sequence).padStart(9, '0')}${clientId.length}`;
   return value(
-    `select public.consume_oauth_code_and_issue_delegated_grant($1, $2, $3, $4, $5, $6, $7, $8, array['gateway:access'], null, $9, now() + interval '90 days') as value`,
-    [codeId, `hash-${codeId}`, kid, kid.slice(0, 6), `OAuth: ${clientId}`, user, workspace, clientId, `refresh-${codeId}`],
+    `select public.consume_oauth_code_and_issue_delegated_grant($1, $2, $3, $4, $5, $6, $7, $8, array['gateway:access'], $10, $9, now() + interval '90 days') as value`,
+    [codeId, `hash-${codeId}`, kid, kid.slice(0, 6), `OAuth: ${clientId}`, user, workspace, clientId, `refresh-${codeId}`, resource],
   );
 }
 const spend = (keyId, costNanos, success = true) => db.query(
@@ -108,7 +109,10 @@ try {
       ('${user}', 'capped_app', '${workspace}', array['gateway:access']),
       ('${user}', 'unlimited_app', '${workspace}', array['gateway:access']),
       ('${user}', 'legacy_app', '${workspace}', array['gateway:access']),
-      ('${user}', 'two_tabs_app', '${workspace}', array['gateway:access']);
+      ('${user}', 'two_tabs_app', '${workspace}', array['gateway:access']),
+      ('${user}', 'paused_app', '${workspace}', array['gateway:access']),
+      ('${user}', 'spelling_app', '${workspace}', array['gateway:access']),
+      ('${user}', 'mcp_app', '${workspace}', array['gateway:access']);
   `);
   await assert.rejects(approve('capped_app', -1), /check/, 'a negative limit is refused');
 
@@ -175,6 +179,48 @@ try {
   // The person can change it later where key limits are edited; the next check uses the new value.
   await db.query(`update public.keys set status = 'active', monthly_limit_cost_nanos = 100000000000 where id = $1`, [capped.id]);
   assert.equal((await keyLimit(capped.id)).ok, true);
+
+  // Reproduced: the owner pauses an app's unbound key, and the app asks for consent again naming the Gateway's
+  // resource. A paused key of the app blocks the exchange whatever resource either was issued for, so no fresh
+  // key with a fresh month appears beside it.
+  const codeSpent = async (codeId) => value('select used_at is not null as value from public.oauth_authorization_codes where id = $1', [codeId]);
+  assert.equal((await exchange(await approve('paused_app', 20_000_000_000), 'paused_app')).status, 'issued');
+  const [pausedApp] = await keyOf('paused_app');
+  assert.equal(pausedApp.oauth_resource, null, 'an unbound key');
+  await spend(pausedApp.id, 20_000_000_000);
+  await db.query(`update public.keys set status = 'paused' where id = $1`, [pausedApp.id]);
+  for (const resource of ['https://api.phaseo.app/v1', 'https://api.phaseo.app/v1/', 'https://api.phaseo.app:443/v1', null]) {
+    const codeId = await approve('paused_app', 0, resource);
+    assert.equal((await exchange(codeId, 'paused_app', resource)).status, 'key_inactive', `consent again for ${resource ?? 'no resource'} is refused`);
+    assert.equal(await codeSpent(codeId), true, 'the code is spent');
+  }
+  const afterPause = await keyOf('paused_app');
+  assert.deepEqual(afterPause.map((key) => [key.id, key.status]), [[pausedApp.id, 'paused']], 'no second key, nothing active');
+  assert.equal(Number(afterPause[0].monthly_limit_cost_nanos), 20_000_000_000, 'the paused key keeps its limit');
+
+  // Turned back on in Settings, any spelling of the Gateway's resource renews that same key, spend and all.
+  await db.query(`update public.keys set status = 'active' where id = $1`, [pausedApp.id]);
+  const respelled = await exchange(await approve('paused_app', 20_000_000_000, 'https://api.phaseo.app/v1/'), 'paused_app', 'https://api.phaseo.app/v1/');
+  assert.deepEqual(respelled, { status: 'renewed', kid: pausedApp.kid });
+  assert.equal((await keyOf('paused_app')).length, 1);
+  assert.equal((await keyLimit(pausedApp.id)).reason, 'monthly_cost_limit_reached', 'the month is not restarted');
+
+  // Renewal finds the key whichever spelling issued it, and an unbound request finds a Gateway-bound key.
+  assert.equal((await exchange(await approve('spelling_app', 5_000_000_000, 'https://api.phaseo.app:443/v1/'), 'spelling_app', 'https://api.phaseo.app:443/v1/')).status, 'issued');
+  const [spelled] = await keyOf('spelling_app');
+  for (const resource of [null, 'https://API.phaseo.app/v1', 'https://api.phaseo.app/v1']) {
+    assert.deepEqual(await exchange(await approve('spelling_app', 5_000_000_000, resource), 'spelling_app', resource), { status: 'renewed', kid: spelled.kid });
+  }
+  assert.deepEqual((await keyOf('spelling_app')).map((key) => key.id), [spelled.id]);
+
+  // A paused key bound to another resource (an MCP server) blocks a Gateway key for the app too; a revoked one doesn't.
+  assert.equal((await exchange(await approve('mcp_app', 0, 'https://mcp.example.com/mcp'), 'mcp_app', 'https://mcp.example.com/mcp')).status, 'issued');
+  const [mcpKey] = await keyOf('mcp_app');
+  await db.query(`update public.keys set status = 'disabled' where id = $1`, [mcpKey.id]);
+  assert.equal((await exchange(await approve('mcp_app', 20_000_000_000), 'mcp_app')).status, 'key_inactive');
+  assert.deepEqual((await keyOf('mcp_app')).map((key) => key.status), ['disabled']);
+  await db.query(`update public.keys set status = 'revoked' where id = $1`, [mcpKey.id]);
+  assert.equal((await exchange(await approve('mcp_app', 20_000_000_000), 'mcp_app')).status, 'issued');
 
   console.log('oauth-consent-spend-limit: all assertions passed');
 } finally {
