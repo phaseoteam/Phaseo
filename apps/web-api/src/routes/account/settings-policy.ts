@@ -18,6 +18,7 @@ import {
 	parseSuccessorSettings,
 	successorModelSlug,
 	successorReplacementCatalogueError,
+	successorOverviewFromRows,
 	successorSettingsFromRow,
 } from "./workspace-routing-settings";
 
@@ -222,7 +223,7 @@ accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
 	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [settingsResult, replacementsResult] = await Promise.all([
+	const [settingsResult, replacementsResult, overviewResult] = await Promise.all([
 		context.client.from("workspace_settings")
 			.select("model_successor_redirect_enabled,model_successor_price_policy,model_successor_max_price_increase_percent")
 			.eq("workspace_id", workspaceId)
@@ -232,6 +233,8 @@ accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
 			.eq("workspace_id", workspaceId)
 			.order("model_slug")
 			.limit(MAX_SUCCESSOR_REPLACEMENTS),
+		// The workspace's affected models and what routing does for each; not essential, so a failure leaves it empty.
+		context.client.rpc("get_workspace_model_successor_overview", { p_workspace_id: workspaceId }),
 	]);
 	if (settingsResult.error || replacementsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({
@@ -242,6 +245,8 @@ accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
 			successor: typeof row.successor_model_slug === "string" ? row.successor_model_slug : null,
 			updatedAt: row.updated_at ?? null,
 		})),
+		models: overviewResult.error ? [] : successorOverviewFromRows(overviewResult.data),
+		modelsAvailable: !overviewResult.error,
 		workspaceId,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
