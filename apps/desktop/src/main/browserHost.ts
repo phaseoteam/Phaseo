@@ -1,4 +1,4 @@
-import { BrowserWindow, clipboard, screen, session, WebContentsView } from "electron";
+import { BrowserWindow, clipboard, ClipboardItem, screen, session, WebContentsView } from "electron";
 import { browserCommand, browserDeviceFrame, browserUrl, stepBrowserZoom, type BrowserCapture, type BrowserColorScheme, type BrowserController, type BrowserFailure, type BrowserKey, type BrowserPick, type BrowserSlot, type BrowserState, type BrowserViewport } from "../shared/browser";
 import { browserAgentIdleMs, browserHumanInputMs, browserTabOfChat } from "../shared/browserAgent";
 import { matchesKey } from "../shared/keybindings";
@@ -112,9 +112,10 @@ export class BrowserHost {
 		const view = this.owned(owner, id);
 		const image = await view.webContents.capturePage();
 		if (image.isEmpty()) throw new Error("The page has nothing to capture yet.");
-		clipboard.writeImage(image);
+		const png = image.toPNG();
+		await clipboard.write([new ClipboardItem({ "image/png": new Blob([new Uint8Array(png)], { type: "image/png" }) })]);
 		const size = image.getSize();
-		return { png: image.toPNG().toString("base64"), width: size.width, height: size.height, url: view.webContents.getURL(), title: view.webContents.getTitle() };
+		return { png: png.toString("base64"), width: size.width, height: size.height, url: view.webContents.getURL(), title: view.webContents.getTitle() };
 	}
 	/** A stream id the app window can record the page with (getUserMedia, chromeMediaSource "tab"); valid for ten seconds. */
 	mediaSource(owner: BrowserWindow, id: string): string { return this.owned(owner, id).webContents.getMediaSourceId(owner.webContents); }
