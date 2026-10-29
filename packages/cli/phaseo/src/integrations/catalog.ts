@@ -3,7 +3,7 @@ import type { IntegrationId, IntegrationModel } from "./types.js";
 
 const PAGE_SIZE = 250;
 const MAX_CATALOG_MODELS = 5000;
-const CATALOG_INTEGRATIONS = new Set<IntegrationId>(["opencode", "deepseek-harness", "pi", "prime-agent", "openclaw"]);
+const CATALOG_INTEGRATIONS = new Set<IntegrationId>(["opencode", "fx", "deepseek-harness", "pi", "prime-agent", "openclaw"]);
 
 type GatewayModel = {
 	id?: unknown;

@@ -138,7 +138,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		description: "Phaseo CLI",
 		usage: [
 			"phaseo login [--api-url <url> [--allow-custom-api-url]] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"phaseo <codex|claude-code|hermes|opencode|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
+			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
 			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",

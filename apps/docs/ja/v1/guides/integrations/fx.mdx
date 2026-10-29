@@ -1,0 +1,81 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "カスタムモデル接続を使ってVercel LabsのfxコーディングエージェントをPhaseo Gatewayに接続します。"
+---
+
+[fx](https://fx.sh)はVercel Labsが開発するオープンソースのコーディングエージェントです。名前付きのカスタム接続を通じて任意のOpenAI互換Chat Completionsエンドポイントを呼び出せるため、Phaseoをモデルゲートウェイとして使えます。fxはmacOSとLinuxで動作します。
+
+## 1) fxを設定する
+
+Phaseo CLIで接続を追加し、互換性のあるPhaseoモデルを同期して、Phaseoをfxのアクティブなプロバイダーにします。
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+対話型ターミナルでfxが未インストールの場合、Phaseoは公式インストーラーのコマンドを表示し、実行前に確認します。その後、このコマンドは次の処理を行います。
+
+- 他の設定や接続を保持したまま、`~/.fx/settings.json`に`phaseo`接続を追加します。
+- fxが受け付ける上限である最大256個の互換Phaseoモデルを、コンテキストと出力の上限値とともに同期します。
+- `phaseo`をfxのアクティブなプロバイダーに設定し、削除時に復元できるよう以前のプロバイダーを記録します。
+- 90日で期限切れになり、月額100ドルの利用上限が設定された`Phaseo CLI: fx API Key`を作成し、所有者のみがアクセスできるファイル`~/.config/phaseo/integrations/fx.env`に保存します。期限切れのキーを置き換えるには、`phaseo fx`をもう一度実行します。
+
+選択したモデルだけを設定するには`--catalog default`を、ファイル変更をプレビューするには`--dry-run`を使います。
+
+## 2) シェルでキーを読み込む
+
+fxはカスタム接続のキーを環境変数からのみ読み込み、設定ファイルからは読み込みません。次の行を`~/.zshrc`または`~/.bashrc`に一度だけ追加し、新しいターミナルを開きます。
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+この行はファイルが存在する場合に`PHASEO_FX_API_KEY`を設定し、連携を削除した後は何もしません。
+
+## 3) fxを起動する
+
+```bash
+fx
+```
+
+モデルは`/model`で切り替えるか、`FX_MODEL=<id> fx`で1回の実行に任意のPhaseoモデルIDを指定します。別のプロバイダーに戻すには`fx provider <name>`を使います。
+
+## 手動設定
+
+`~/.fx/settings.json`に接続を追加します。fxはプロジェクトの`.fx.json`ではカスタム接続を受け付けません。
+
+```json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+その後、`PHASEO_API_KEY`をエクスポートして`fx`を実行します。`context_window`がないとfxは会話を圧縮するタイミングを判断できないため、使用するモデルの上限値を宣言してください。上記の上限値は例です。実際の値は[Modelsエンドポイント](../../api-reference/endpoint/models.mdx)で確認してください。
+
+## 削除する
+
+```bash
+phaseo integrations remove fx
+```
+
+`phaseo`接続とモデルを削除し、Phaseoがまだアクティブな場合は以前のfxプロバイダーを復元して、キーファイルを削除し、キーを失効させます。
+
+## 動作確認
+
+- `fx status --json`を実行して、アクティブなプロバイダー、エンドポイント、モデルを確認します。
+- ファイル編集作業の前に、`fx ask "Summarize README.md"`のような簡単なプロンプトを実行します。
+- fxが資格情報の不足を報告した場合は、新しいターミナルを開くか、シェルプロファイルの行があることを確認します。
+- ゲートウェイのWeb検索やクレジット確認など、AI Gateway専用のfx機能はカスタム接続では利用できません。

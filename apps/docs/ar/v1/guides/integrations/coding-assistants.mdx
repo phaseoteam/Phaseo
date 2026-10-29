@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-يتحقق هذا الأمر من تثبيت البيئة. إذا لم تكن مثبتة في طرفية تفاعلية، يعرض Phaseo أمر التثبيت المدعوم ويطلب التأكيد قبل تشغيله. ثم ينشئ Phaseo مفتاحًا مخصصًا للبيئة ويكتب إعداداتها. تعرض عمليات التشغيل غير التفاعلية إرشادات تثبيت قابلة للتنفيذ دون إجراء تغييرات على النظام دون إشراف. ويحصل OpenCode وDeepSeek Harness وPi وPrime Agent وOpenClaw أيضًا على جميع نماذج النص النشطة المتوافقة مع Chat Completions. استخدم `--skip-install` أو `--catalog default` أو `--dry-run` لتضييق نطاق السلوك.
+يتحقق هذا الأمر من تثبيت البيئة. إذا لم تكن مثبتة في طرفية تفاعلية، يعرض Phaseo أمر التثبيت المدعوم ويطلب التأكيد قبل تشغيله. ثم ينشئ Phaseo مفتاحًا مخصصًا للبيئة ويكتب إعداداتها. تعرض عمليات التشغيل غير التفاعلية إرشادات تثبيت قابلة للتنفيذ دون إجراء تغييرات على النظام دون إشراف. ويحصل OpenCode وfx وDeepSeek Harness وPi وPrime Agent وOpenClaw أيضًا على جميع نماذج النص النشطة المتوافقة مع Chat Completions. استخدم `--skip-install` أو `--catalog default` أو `--dry-run` لتضييق نطاق السلوك.
 
 استخدم الأمر المسمّى باسم المنتج لأي تكامل دائم:
 
@@ -31,7 +31,7 @@ phaseo codex
 phaseo codex
 ```
 
-أسماء التكاملات المدعومة هي `codex` و`claude-code` و`opencode` و`deepseek-harness` و`pi` و`openclaw` و`hermes` و`aider` و`cline` و`roo-code` و`kilo-code` و`continue` و`cursor` و`zed`. مشغّلات CLI المعزولة هي `cline` و`kilo` و`omp` و`muse` و`minimax`.
+أسماء التكاملات المدعومة هي `codex` و`claude-code` و`opencode` و`fx` و`deepseek-harness` و`pi` و`openclaw` و`hermes` و`aider` و`cline` و`roo-code` و`kilo-code` و`continue` و`cursor` و`zed`. مشغّلات CLI المعزولة هي `cline` و`kilo` و`omp` و`muse` و`minimax`.
 
 تنشئ CLI مفتاح API مستقلًا باسم كل مساعد، تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100. وتضبط Aider وContinue تلقائيًا في التثبيتات النظيفة، كما تكتب إعدادات مزود/نموذج Zed تلقائيًا. أما المساعدون الذين يحتفظون بالأسرار حصريًا في واجهة المحرر، فتعرض CLI الحقول المتبقية بدقة، وتربط بالدليل المخصص، وتتيح نسخ مفتاح ذلك المساعد فقط:
 
@@ -176,6 +176,10 @@ wire_api = "responses"
 ## OpenCode
 
 استخدم [دليل OpenCode المخصص](./opencode.mdx) إذا أردت أن يستدعي OpenCode Phaseo عبر مزود مخصص متوافق مع OpenAI.
+
+## fx
+
+استخدم [دليل fx المخصص](./fx.mdx) لإضافة Phaseo كاتصال نماذج مخصص في وكيل البرمجة fx من Vercel Labs.
 
 ## Claude Code
 

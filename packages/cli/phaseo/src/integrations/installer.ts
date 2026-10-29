@@ -10,7 +10,7 @@ import type { IntegrationId } from "./types.js";
 
 export type RunnerInstallId = "cline" | "kilo" | "omp" | "muse" | "minimax";
 
-export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
+export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "fx", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
 
 const PACKAGES: Partial<Record<(typeof PRIMARY_HARNESSES)[number], string>> = {
 	codex: "@openai/codex",
@@ -25,6 +25,7 @@ const COMMANDS: Record<(typeof PRIMARY_HARNESSES)[number], string[]> = {
 	codex: ["codex", "codex.exe", "codex.cmd", "codex.ps1"],
 	"claude-code": ["claude", "claude.exe", "claude.cmd", "claude.ps1"],
 	opencode: ["opencode", "opencode.exe", "opencode.cmd", "opencode.ps1"],
+	fx: ["fx"],
 	"deepseek-harness": ["dsh", "dsh.exe", "dsh.cmd", "dsh.ps1"],
 	pi: ["pi", "pi.exe", "pi.cmd", "pi.ps1"],
 	"prime-agent": ["prime-agent", "prime-agent.exe", "prime-agent.cmd"],
@@ -61,6 +62,9 @@ export function installInvocationFor(
 ): InstallInvocation {
 	if (integration === "prime-agent") {
 		return { command: "sh", args: ["-c", "curl -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh"] };
+	}
+	if (integration === "fx") {
+		return { command: "sh", args: ["-c", "curl -fsSL https://fx.sh/setup.sh | bash"] };
 	}
 	if (integration === "hermes") {
 		return process.platform === "win32"
@@ -257,6 +261,13 @@ export async function harnessInstallPlan(integration: IntegrationId): Promise<In
 		if (process.platform === "win32") throw new Error("Prime Agent supports macOS and Linux. Run Phaseo setup inside WSL, or use --skip-install for a separately managed installation.");
 		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"])) {
 			throw new Error("Prime Agent installation requires sh and curl");
+		}
+		return installInvocationFor(integration, "npm");
+	}
+	if (integration === "fx") {
+		if (process.platform === "win32") throw new Error("fx supports macOS and Linux. Run Phaseo setup inside WSL, or use --skip-install for a separately managed installation.");
+		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"]) || !await isCommandAvailable(["bash"])) {
+			throw new Error("fx installation requires sh, bash, and curl");
 		}
 		return installInvocationFor(integration, "npm");
 	}

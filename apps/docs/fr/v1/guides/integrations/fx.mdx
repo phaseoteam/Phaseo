@@ -1,0 +1,81 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "Connectez l’agent de codage fx de Vercel Labs à Phaseo Gateway avec une connexion de modèle personnalisée."
+---
+
+[fx](https://fx.sh) est un agent de codage open source de Vercel Labs. Il peut appeler n’importe quel endpoint Chat Completions compatible avec OpenAI via une connexion personnalisée nommée, ce qui permet à Phaseo de servir de passerelle de modèles. fx fonctionne sous macOS et Linux.
+
+## 1) Configurer fx
+
+Utilisez la CLI Phaseo pour ajouter la connexion, synchroniser les modèles Phaseo compatibles et faire de Phaseo le fournisseur actif de fx :
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+Si fx est absent dans un terminal interactif, Phaseo affiche la commande d’installation officielle et demande confirmation avant de l’exécuter. La commande ensuite :
+
+- ajoute une connexion `phaseo` à `~/.fx/settings.json`, en conservant vos autres paramètres et connexions ;
+- synchronise jusqu’à 256 modèles Phaseo compatibles, le maximum accepté par fx, avec leurs limites de contexte et de sortie ;
+- définit `phaseo` comme fournisseur actif de fx et enregistre le fournisseur précédent afin que la suppression puisse le restaurer ;
+- crée une `Phaseo CLI: fx API Key`, qui expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de 100 $, et l’enregistre dans le fichier `~/.config/phaseo/integrations/fx.env`, accessible uniquement à son propriétaire. Exécute à nouveau `phaseo fx` pour remplacer une clé expirée.
+
+Utilisez `--catalog default` pour configurer uniquement le modèle sélectionné, ou `--dry-run` pour prévisualiser les modifications de fichiers.
+
+## 2) Charger la clé dans votre shell
+
+fx lit les clés des connexions personnalisées uniquement depuis des variables d’environnement, jamais depuis son fichier de paramètres. Ajoutez cette ligne à `~/.zshrc` ou `~/.bashrc` une seule fois, puis ouvrez un nouveau terminal :
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+La ligne définit `PHASEO_FX_API_KEY` lorsque le fichier existe et ne fait rien une fois l’intégration supprimée.
+
+## 3) Démarrer fx
+
+```bash
+fx
+```
+
+Changez de modèle avec `/model`, ou choisissez n’importe quel identifiant de modèle Phaseo pour une seule exécution avec `FX_MODEL=<id> fx`. Revenez à un autre fournisseur avec `fx provider <name>`.
+
+## Configuration manuelle
+
+Ajoutez la connexion à `~/.fx/settings.json`. fx n’accepte pas les connexions personnalisées dans un `.fx.json` de projet.
+
+```json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+Exportez ensuite `PHASEO_API_KEY` et exécutez `fx`. Sans `context_window`, fx ne peut pas déterminer quand compacter la conversation : déclarez donc les limites des modèles que vous utilisez. Les limites ci-dessus sont des exemples ; récupérez les valeurs réelles depuis le [endpoint Models](../../api-reference/endpoint/models.mdx).
+
+## Supprimer
+
+```bash
+phaseo integrations remove fx
+```
+
+Cette commande supprime la connexion et le modèle `phaseo`, restaure votre fournisseur fx précédent si Phaseo est toujours actif, supprime le fichier de clé et révoque la clé.
+
+## Vérification
+
+- Exécutez `fx status --json` pour confirmer le fournisseur actif, l’endpoint et le modèle.
+- Lancez une requête simple, par exemple `fx ask "Summarize README.md"`, avant de modifier des fichiers.
+- Si fx signale un identifiant manquant, ouvrez un nouveau terminal ou vérifiez que la ligne du profil du shell est présente.
+- Les fonctionnalités de fx propres à AI Gateway, comme la recherche web de la passerelle et les vérifications de crédit, ne sont pas disponibles via les connexions personnalisées.

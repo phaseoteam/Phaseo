@@ -2,6 +2,7 @@ export type IntegrationId =
 	| "codex"
 	| "claude-code"
 	| "opencode"
+	| "fx"
 	| "deepseek-harness"
 	| "pi"
 	| "prime-agent"

@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-このコマンドはハーネスのインストール状態を確認します。対話型ターミナルで未インストールの場合、Phaseo は対応するインストールコマンドを表示し、実行前に確認します。その後、ハーネス専用のキーを作成して設定を書き込みます。非対話型の実行では、無人でシステムを変更せず、具体的なインストール手順を表示します。OpenCode、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions 対応の有効なテキストモデルもすべて追加されます。動作範囲を絞るには `--skip-install`、`--catalog default`、`--dry-run` を使います。
+このコマンドはハーネスのインストール状態を確認します。対話型ターミナルで未インストールの場合、Phaseo は対応するインストールコマンドを表示し、実行前に確認します。その後、ハーネス専用のキーを作成して設定を書き込みます。非対話型の実行では、無人でシステムを変更せず、具体的なインストール手順を表示します。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions 対応の有効なテキストモデルもすべて追加されます。動作範囲を絞るには `--skip-install`、`--catalog default`、`--dry-run` を使います。
 
 永続的な連携には製品名のコマンドを使います。
 
@@ -31,7 +31,7 @@ phaseo codex
 phaseo codex
 ```
 
-対応している連携名は `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。分離された CLI ランナーは `cline`、`kilo`、`omp`、`muse`、`minimax` です。
+対応している連携名は `codex`、`claude-code`、`opencode`、`fx`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。分離された CLI ランナーは `cline`、`kilo`、`omp`、`muse`、`minimax` です。
 
 CLI はアシスタントごとに専用の API キーを作成します。キーは 90 日で失効し、月 $100 の支出上限が設定されます。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
 
@@ -176,6 +176,10 @@ Codex のカスタムプロバイダーは Responses ワイヤープロトコル
 ## OpenCode
 
 OpenCode から OpenAI 互換のカスタムプロバイダー経由で Phaseo を呼び出す場合は、[OpenCode 専用ガイド](./opencode.mdx)をご覧ください。
+
+## fx
+
+Vercel Labs の fx コーディングエージェントに Phaseo をカスタムモデル接続として追加する場合は、[fx 専用ガイド](./fx.mdx)をご覧ください。
 
 ## Claude Code
 
