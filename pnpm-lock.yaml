@@ -404,6 +404,9 @@ importers:
       '@base-ui/react':
         specifier: 1.6.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@phaseo/app-kit':
+        specifier: workspace:*
+        version: link:../../packages/shared/app-kit
       '@phaseo/ui':
         specifier: workspace:*
         version: link:../../packages/shared/ui
@@ -825,6 +828,9 @@ importers:
       '@phaseo/app-kit':
         specifier: workspace:*
         version: link:../../packages/shared/app-kit
+      '@phaseo/ui':
+        specifier: workspace:*
+        version: link:../../packages/shared/ui
       '@posthog/nextjs-config':
         specifier: ^1.11.3
         version: 1.11.3(next@16.4.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@26.2.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(posthog-js@1.399.2)(webpack@5.109.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(postcss@8.5.26))
@@ -1770,6 +1776,9 @@ importers:
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
+      cmdk:
+        specifier: 1.1.1
+        version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: ^1.17.0
         version: 1.24.0(react@19.3.0)

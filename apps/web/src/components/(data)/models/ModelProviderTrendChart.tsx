@@ -21,7 +21,6 @@ import {
 	TableSortButton,
 	type TableSortDirection,
 } from "@/components/ui/table-sort-button";
-import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
 import { ModelMetricInfo } from "./ModelMetricInfo";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
@@ -165,6 +164,9 @@ type MetricConfig = {
 		| "cachedInputPct";
 };
 
+// Latencies read in seconds; overhead and per-token timings stay in milliseconds.
+const isSecondsMetric = (metric: MetricKey) => metric === "latency" || metric === "endToEnd" || metric === "generation";
+
 const METRICS: Record<MetricKey, MetricConfig> = {
 	throughput: {
 		labelKey: "throughput",
@@ -181,7 +183,7 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 	latency: {
 		labelKey: "latency",
 		descriptionKey: "metricDescriptions.latency",
-		axisLabelKey: "axisMilliseconds",
+		axisLabelKey: "axisDuration",
 		valueKey: "avgLatencyMs",
 	},
 	endToEnd: {
@@ -349,12 +351,8 @@ export default function ModelProviderTrendChart({
 	const metricConfig = { ...metricDefinition, label: t(metricDefinition.labelKey as never), description: t(metricDefinition.descriptionKey as never), axisLabel: metricAxisLabel ?? t(metricDefinition.axisLabelKey as never) };
 	const formatMetricValue = (value: number | null) => {
 		if (value == null || !Number.isFinite(value)) return "-";
-		if (metric === "throughput" || metric === "outputSpeed") {
-			return `${format.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} t/s`;
-		}
-		if (metric === "endToEnd" || metric === "generation") {
-			return formatProviderDuration(value, format.number);
-		}
+		if (metric === "throughput" || metric === "outputSpeed") return format.tps(value) ?? "-";
+		if (isSecondsMetric(metric)) return format.latency(value) ?? "-";
 		if (metric === "cachedInput") {
 			return `${format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 		}
@@ -366,9 +364,7 @@ export default function ModelProviderTrendChart({
 		if (metric === "cachedInput") {
 			return `${format.number(value, { maximumFractionDigits: 0 })}%`;
 		}
-		if (metric === "endToEnd" || metric === "generation") {
-			return formatProviderDuration(value, format.number);
-		}
+		if (isSecondsMetric(metric)) return format.latency(value) ?? "";
 		return format.number(value, { maximumFractionDigits: 2 });
 	};
 	const observedData = data.filter(

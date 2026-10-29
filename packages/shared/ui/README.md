@@ -17,13 +17,24 @@ Each app keeps its own `components/ui/*.tsx` files as one-line re-exports, so co
 | `@phaseo/ui/base-ui-compat` | `renderAsChild`, which turns an `asChild` prop into Base UI's `render` prop |
 | `@phaseo/ui/badge` | `Badge`, `badgeVariants` |
 | `@phaseo/ui/button` | `Button`, `buttonVariants` |
+| `@phaseo/ui/checkbox` | `Checkbox` |
+| `@phaseo/ui/collapsible` | `Collapsible` and its parts |
+| `@phaseo/ui/command` | `Command`, `CommandDialog` and their parts (needs `cmdk`) |
+| `@phaseo/ui/dialog` | `Dialog` and its parts. `DialogContent`, `DialogFooter` take `closeLabel` |
 | `@phaseo/ui/dropdown-menu` | `DropdownMenu` and its parts |
 | `@phaseo/ui/input` | `Input` |
+| `@phaseo/ui/input-group` | `InputGroup` and its parts |
 | `@phaseo/ui/kbd` | `Kbd`, `KbdGroup` |
 | `@phaseo/ui/popover` | `Popover` and its parts |
 | `@phaseo/ui/scroll-area` | `ScrollArea`, `ScrollBar` |
+| `@phaseo/ui/select` | `Select` and its parts |
 | `@phaseo/ui/separator` | `Separator` |
+| `@phaseo/ui/skeleton` | `Skeleton` |
+| `@phaseo/ui/switch` | `Switch` |
 | `@phaseo/ui/tabs` | `Tabs` and its parts |
+| `@phaseo/ui/textarea` | `Textarea` |
+| `@phaseo/ui/toggle` | `Toggle`, `toggleVariants` |
+| `@phaseo/ui/toggle-group` | `ToggleGroup`, `ToggleGroupItem` |
 | `@phaseo/ui/tooltip` | `Tooltip` and its parts, plus `Tip` for a one-line tooltip |
 
 ## Rules
@@ -37,7 +48,7 @@ Each app keeps its own `components/ui/*.tsx` files as one-line re-exports, so co
 
 ## Using it in an app
 
-1. Add `"@phaseo/ui": "workspace:*"` to the app's dependencies. The app also needs the peer dependencies: `react`, `react-dom`, `@base-ui/react`, `class-variance-authority` and `lucide-react`.
+1. Add `"@phaseo/ui": "workspace:*"` to the app's dependencies. The app also needs the peer dependencies: `react`, `react-dom`, `@base-ui/react`, `class-variance-authority` and `lucide-react`, plus `cmdk` if it uses `@phaseo/ui/command`.
 2. Point Tailwind at the package source from the app's main CSS file, or the classes used only here are left out of the build:
 
    ```css
