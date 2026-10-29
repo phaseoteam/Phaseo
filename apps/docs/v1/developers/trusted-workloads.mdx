@@ -6,7 +6,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Trusted workloads is in beta and is rolling out to workspaces gradually. If **Settings → Trusted workloads** doesn't appear in your dashboard, your workspace doesn't have it yet.
+Trusted workloads is in beta and is rolling out to workspaces gradually. If **Settings → API Keys → Trusted workloads** doesn't appear in your dashboard, your workspace doesn't have it yet.
 </Note>
 
 Vercel and GitHub Actions give each deployment or job a signed token that says who it is, such as "this is the `website` project's production deployment" or "this is a workflow in `acme/app`". The token expires within hours. With trusted workloads, you tell Phaseo which of these workloads to trust, and they send that token instead of an API key. Nothing long-lived has to be stored in your project settings or CI secrets.
@@ -17,7 +17,7 @@ API keys keep working. Use trusted workloads for code that runs on Vercel or in 
 
 ## How it works
 
-1. A workspace owner or admin creates a **trust policy** in **Settings → Trusted workloads**. The policy names the platform, your Vercel team or GitHub owner, and optional conditions such as a project, repository, branch or environment.
+1. A workspace owner or admin creates a **trust policy** in **Settings → API Keys → Trusted workloads**. The policy names the platform, your Vercel team or GitHub owner, and optional conditions such as a project, repository, branch or environment.
 2. Your code requests a token from the platform for the audience `https://api.phaseo.app` and sends it as `Authorization: Bearer <token>`.
 3. Phaseo checks the token's signature and expiry, then looks for exactly one active policy that matches it.
 4. The request runs as that policy's key. It gets the same rate limits, budgets, logs and billing as a request made with an API key.
@@ -32,7 +32,7 @@ Tokens must be issued for the audience `https://api.phaseo.app`. By default, Ver
 
 <Steps>
 <Step title="Open Trusted workloads">
-Go to **Settings → Trusted workloads** and select **New policy**. Only workspace owners and admins can manage policies.
+Go to **Settings → API Keys → Trusted workloads** and select **New policy**. Only workspace owners and admins can manage policies.
 </Step>
 <Step title="Choose the platform and fill in the IDs">
 <Tabs>
@@ -95,6 +95,8 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -H "Content-Type: application/json" \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
+
+The [API reference](../api-reference/endpoint/trusted-workloads-create.mdx) lists every field and response.
 
 ---
 

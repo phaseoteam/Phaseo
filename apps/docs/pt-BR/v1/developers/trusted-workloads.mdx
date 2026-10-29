@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Os workloads confiáveis estão em beta e estão sendo liberados gradualmente para os espaços de trabalho. Se **Configurações → Workloads confiáveis** não aparece no seu painel, seu espaço de trabalho ainda não tem o recurso.
+Os workloads confiáveis estão em beta e estão sendo liberados gradualmente para os espaços de trabalho. Se **Configurações → Chaves de API → Workloads confiáveis** não aparece no seu painel, seu espaço de trabalho ainda não tem o recurso.
 </Note>
 
 A Vercel e o GitHub Actions dão a cada deployment ou job um token assinado que diz quem ele é, como "este é o deployment de produção do projeto `website`" ou "este é um workflow em `acme/app`". O token expira em poucas horas. Com os workloads confiáveis, você informa ao Phaseo em quais desses workloads confiar, e eles enviam esse token em vez de uma chave de API. Nada de longa duração precisa ficar guardado nas configurações do projeto ou nos secrets de CI.
@@ -16,7 +16,7 @@ As chaves de API continuam funcionando. Use workloads confiáveis para código q
 
 ## Como funciona
 
-1. Um proprietário ou administrador do espaço de trabalho cria uma **política de confiança** em **Configurações → Workloads confiáveis**. A política indica a plataforma, sua equipe da Vercel ou seu proprietário no GitHub e condições opcionais, como um projeto, um repositório, uma branch ou um ambiente.
+1. Um proprietário ou administrador do espaço de trabalho cria uma **política de confiança** em **Configurações → Chaves de API → Workloads confiáveis**. A política indica a plataforma, sua equipe da Vercel ou seu proprietário no GitHub e condições opcionais, como um projeto, um repositório, uma branch ou um ambiente.
 2. Seu código pede à plataforma um token para a audiência `https://api.phaseo.app` e o envia como `Authorization: Bearer <token>`.
 3. O Phaseo verifica a assinatura e a validade do token e depois procura exatamente uma política ativa que corresponda a ele.
 4. A solicitação é executada como a chave dessa política. Ela recebe os mesmos limites de taxa, orçamentos, logs e cobrança de uma solicitação feita com uma chave de API.
@@ -31,7 +31,7 @@ Os tokens precisam ser emitidos para a audiência `https://api.phaseo.app`. Por 
 
 <Steps>
 <Step title="Abra Workloads confiáveis">
-Acesse **Configurações → Workloads confiáveis** e selecione **Nova política**. Somente proprietários e administradores do espaço de trabalho podem gerenciar políticas.
+Acesse **Configurações → Chaves de API → Workloads confiáveis** e selecione **Nova política**. Somente proprietários e administradores do espaço de trabalho podem gerenciar políticas.
 </Step>
 <Step title="Escolha a plataforma e preencha os IDs">
 <Tabs>
@@ -94,6 +94,8 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -H "Content-Type: application/json" \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
+
+A [referência da API](../api-reference/endpoint/trusted-workloads-create.mdx) descreve todos os campos e respostas.
 
 ---
 

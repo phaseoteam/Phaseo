@@ -12,6 +12,7 @@ Erstelle einen Schlüssel mit `phaseo keys create --name <name> --json` in der [
 
 - **Gateway-API-Schlüssel** rufen Modell-, Anbieter- und Generierungsendpunkte auf, die für deinen Workspace verfügbar sind.
 - **Management-API-Schlüssel** rufen Verwaltungs-APIs auf. Siehe [Management-API-Schlüssel](./management-api-keys.mdx).
+- **Vertrauenswürdige Workloads** (Beta) erlauben Vercel-Deployments und GitHub-Actions-Jobs, das Gateway mit einem kurzlebigen OIDC-Token statt mit einem gespeicherten Schlüssel aufzurufen. Siehe [Vertrauenswürdige Workloads](./trusted-workloads.mdx).
 
 Rotiere einen Schlüssel, indem du deine Anwendung vor dem Ungültigmachen der alten Zugangsdaten auf den Ersatzschlüssel umstellst. Siehe den [Endpunkt zur Schlüsselrotation](../api-reference/endpoint/keys-rotate.mdx).
 

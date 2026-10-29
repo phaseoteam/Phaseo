@@ -27,7 +27,6 @@ import {
 	SlidersHorizontal,
 	Tags,
 	Gauge,
-	FingerprintPattern,
 	Wallet,
 } from "lucide-react";
 
@@ -169,13 +168,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/rate-limits"],
 			},
 			{
-				href: "/settings/trusted-workloads",
-				label: "Trusted workloads",
-				icon: FingerprintPattern,
-				badge: "Beta",
-				match: ["/settings/trusted-workloads"],
-			},
-			{
 				href: "/settings/classifiers",
 				label: "Classifiers",
 				icon: Tags,
@@ -253,10 +245,11 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/keys",
 				label: "API Keys",
 				icon: KeyRound,
-				match: ["/settings/keys", "/settings/security"],
+				match: ["/settings/keys", "/settings/security", "/settings/trusted-workloads"],
 				children: [
 					{ href: "/settings/keys", label: "Keys" },
 					{ href: "/settings/security", label: "Key Security" },
+					{ href: "/settings/trusted-workloads", label: "Trusted workloads", badge: "Beta" },
 				],
 			},
 			{
@@ -371,7 +364,6 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/routing",
 	"/settings/guardrails",
 	"/settings/rate-limits",
-	"/settings/trusted-workloads",
 	"/settings/classifiers",
 	"/settings/privacy",
 	"/settings/presets",
@@ -412,7 +404,6 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
 				(showClassifiers ? true : item.href !== "/settings/classifiers") &&
-				(showWorkloadIdentity ? true : item.href !== "/settings/trusted-workloads") &&
 				(showSlackAgent ? true : item.href !== "/settings/slack") &&
 				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
@@ -421,7 +412,8 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				children: item.children?.filter((child) =>
 					(showBroadcast ? true : !child.href.startsWith("/settings/broadcast")) &&
 					(showWebhooks ? true : !child.href.startsWith("/settings/webhooks")) &&
-					(showAutoRouting ? true : child.href !== "/settings/routing/auto"),
+					(showAutoRouting ? true : child.href !== "/settings/routing/auto") &&
+					(showWorkloadIdentity ? true : child.href !== "/settings/trusted-workloads"),
 				),
 			})),
 	})).filter((group) => group.items.length > 0);

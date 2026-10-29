@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Les workloads de confiance sont en bêta et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Workloads de confiance** n'apparaît pas dans votre tableau de bord, votre espace de travail n'y a pas encore accès.
+Les workloads de confiance sont en bêta et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Clés API → Workloads de confiance** n'apparaît pas dans votre tableau de bord, votre espace de travail n'y a pas encore accès.
 </Note>
 
 Vercel et GitHub Actions donnent à chaque déploiement ou job un jeton signé qui indique qui il est, par exemple « ceci est le déploiement de production du projet `website` » ou « ceci est un workflow de `acme/app` ». Le jeton expire en quelques heures. Avec les workloads de confiance, vous indiquez à Phaseo à quels workloads faire confiance, et ceux-ci envoient ce jeton au lieu d'une clé API. Rien de durable n'a besoin d'être stocké dans les paramètres de votre projet ni dans les secrets de CI.
@@ -16,7 +16,7 @@ Les clés API continuent de fonctionner. Utilisez les workloads de confiance pou
 
 ## Fonctionnement
 
-1. Un propriétaire ou un administrateur de l'espace de travail crée une **règle de confiance** dans **Paramètres → Workloads de confiance**. La règle indique la plateforme, votre équipe Vercel ou votre propriétaire GitHub, ainsi que des conditions facultatives comme un projet, un dépôt, une branche ou un environnement.
+1. Un propriétaire ou un administrateur de l'espace de travail crée une **règle de confiance** dans **Paramètres → Clés API → Workloads de confiance**. La règle indique la plateforme, votre équipe Vercel ou votre propriétaire GitHub, ainsi que des conditions facultatives comme un projet, un dépôt, une branche ou un environnement.
 2. Votre code demande à la plateforme un jeton pour l'audience `https://api.phaseo.app` et l'envoie sous la forme `Authorization: Bearer <token>`.
 3. Phaseo vérifie la signature et l'expiration du jeton, puis recherche exactement une règle active qui lui correspond.
 4. La requête s'exécute avec la clé de cette règle. Elle reçoit les mêmes limites de débit, budgets, journaux et facturation qu'une requête faite avec une clé API.
@@ -31,7 +31,7 @@ Les jetons doivent être émis pour l'audience `https://api.phaseo.app`. Par dé
 
 <Steps>
 <Step title="Ouvrez Workloads de confiance">
-Accédez à **Paramètres → Workloads de confiance** et sélectionnez **Nouvelle règle**. Seuls les propriétaires et les administrateurs de l'espace de travail peuvent gérer les règles.
+Accédez à **Paramètres → Clés API → Workloads de confiance** et sélectionnez **Nouvelle règle**. Seuls les propriétaires et les administrateurs de l'espace de travail peuvent gérer les règles.
 </Step>
 <Step title="Choisissez la plateforme et renseignez les ID">
 <Tabs>
@@ -94,6 +94,8 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -H "Content-Type: application/json" \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
+
+La [référence de l’API](../api-reference/endpoint/trusted-workloads-create.mdx) décrit tous les champs et toutes les réponses.
 
 ---
 

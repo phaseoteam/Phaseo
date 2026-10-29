@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: Lister les règles de workloads de confiance
+      description: 'Liste les règles de workloads de confiance de l’espace de travail : les déploiements Vercel et les workflows GitHub Actions autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.'
       responses:
         '200':
-          description: Trusted workload policies
+          description: Règles de workloads de confiance
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Créer une règle de workload de confiance
+      description: Crée une règle et sa clé sans secret. Les jetons doivent être émis pour l’audience https://api.phaseo.app et correspondre au propriétaire épinglé et à toutes les conditions sur les claims. Un espace de travail peut avoir jusqu’à 50 règles ; au-delà, la réponse est 409 limit_reached. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: Règle de workload de confiance créée
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: ID de la règle de workload de confiance.
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Obtenir une règle de workload de confiance
+      description: Renvoie une règle de workload de confiance. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
       responses:
         '200':
-          description: Trusted workload policy
+          description: Règle de workload de confiance
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Modifier une règle de workload de confiance
+      description: Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: Règle de workload de confiance modifiée
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Supprimer une règle de workload de confiance
+      description: Révoque la clé de la règle, puis supprime la règle. Les jetons correspondants sont refusés en moins d’une minute. Les requêtes passées conservent leur clé dans les journaux et l’utilisation. Nécessite keys:delete sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: Règle de workload de confiance supprimée
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: La plateforme qui émet les jetons OIDC.
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 'Un workload de confiance : les jetons de cet émetteur, pour le propriétaire épinglé et satisfaisant toutes les conditions sur les claims, s’authentifient avec la clé de la règle.'
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: Émetteur du jeton, par exemple https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: L’ID de l’équipe Vercel épinglée (claim owner_id) ou l’ID de l’organisation ou de l’utilisateur GitHub (claim repository_owner_id).
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Durée de vie maximale du jeton (exp moins iat ou nbf) acceptée par la règle.
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: L’audience pour laquelle les jetons doivent être émis.
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: La clé de la règle. Les requêtes, l’utilisation et les limites lui sont rattachées.
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'Obligatoire pour Vercel : https://oidc.vercel.com/ suivi du slug de l’équipe, ou https://oidc.vercel.com pour l’émetteur global. Pour GitHub Actions, la valeur par défaut est https://token.actions.githubusercontent.com.'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: L’ID de l’équipe Vercel ou de l’organisation ou de l’utilisateur GitHub à épingler.
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Durée de vie maximale du jeton (exp moins iat ou nbf) acceptée par la règle.
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Durée de vie maximale du jeton (exp moins iat ou nbf) acceptée par la règle.
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: L’audience pour laquelle les jetons doivent être émis.
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

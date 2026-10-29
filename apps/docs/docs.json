@@ -698,7 +698,12 @@
                       "v1/api-reference/endpoint/keys-invalidate",
                       "v1/api-reference/endpoint/keys-delete",
                       "v1/api-reference/endpoint/keys-list",
-                      "v1/api-reference/endpoint/security-report-leaked-key"
+                      "v1/api-reference/endpoint/security-report-leaked-key",
+                      "v1/api-reference/endpoint/trusted-workloads-list",
+                      "v1/api-reference/endpoint/trusted-workloads-create",
+                      "v1/api-reference/endpoint/trusted-workloads-get",
+                      "v1/api-reference/endpoint/trusted-workloads-update",
+                      "v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -2387,7 +2392,12 @@
                       "es/v1/api-reference/endpoint/keys-invalidate",
                       "es/v1/api-reference/endpoint/keys-delete",
                       "es/v1/api-reference/endpoint/keys-list",
-                      "es/v1/api-reference/endpoint/security-report-leaked-key"
+                      "es/v1/api-reference/endpoint/security-report-leaked-key",
+                      "es/v1/api-reference/endpoint/trusted-workloads-list",
+                      "es/v1/api-reference/endpoint/trusted-workloads-create",
+                      "es/v1/api-reference/endpoint/trusted-workloads-get",
+                      "es/v1/api-reference/endpoint/trusted-workloads-update",
+                      "es/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -4110,7 +4120,12 @@
                       "fr/v1/api-reference/endpoint/keys-invalidate",
                       "fr/v1/api-reference/endpoint/keys-delete",
                       "fr/v1/api-reference/endpoint/keys-list",
-                      "fr/v1/api-reference/endpoint/security-report-leaked-key"
+                      "fr/v1/api-reference/endpoint/security-report-leaked-key",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-list",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-create",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-get",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-update",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -5833,7 +5848,12 @@
                       "de/v1/api-reference/endpoint/keys-invalidate",
                       "de/v1/api-reference/endpoint/keys-delete",
                       "de/v1/api-reference/endpoint/keys-list",
-                      "de/v1/api-reference/endpoint/security-report-leaked-key"
+                      "de/v1/api-reference/endpoint/security-report-leaked-key",
+                      "de/v1/api-reference/endpoint/trusted-workloads-list",
+                      "de/v1/api-reference/endpoint/trusted-workloads-create",
+                      "de/v1/api-reference/endpoint/trusted-workloads-get",
+                      "de/v1/api-reference/endpoint/trusted-workloads-update",
+                      "de/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -7556,7 +7576,12 @@
                       "pt-BR/v1/api-reference/endpoint/keys-invalidate",
                       "pt-BR/v1/api-reference/endpoint/keys-delete",
                       "pt-BR/v1/api-reference/endpoint/keys-list",
-                      "pt-BR/v1/api-reference/endpoint/security-report-leaked-key"
+                      "pt-BR/v1/api-reference/endpoint/security-report-leaked-key",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-list",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-create",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-get",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-update",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -9279,7 +9304,12 @@
                       "ja/v1/api-reference/endpoint/keys-invalidate",
                       "ja/v1/api-reference/endpoint/keys-delete",
                       "ja/v1/api-reference/endpoint/keys-list",
-                      "ja/v1/api-reference/endpoint/security-report-leaked-key"
+                      "ja/v1/api-reference/endpoint/security-report-leaked-key",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-list",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-create",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-get",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-update",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -11002,7 +11032,12 @@
                       "zh-Hans/v1/api-reference/endpoint/keys-invalidate",
                       "zh-Hans/v1/api-reference/endpoint/keys-delete",
                       "zh-Hans/v1/api-reference/endpoint/keys-list",
-                      "zh-Hans/v1/api-reference/endpoint/security-report-leaked-key"
+                      "zh-Hans/v1/api-reference/endpoint/security-report-leaked-key",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-list",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-create",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-get",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-update",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -12725,7 +12760,12 @@
                       "hi/v1/api-reference/endpoint/keys-invalidate",
                       "hi/v1/api-reference/endpoint/keys-delete",
                       "hi/v1/api-reference/endpoint/keys-list",
-                      "hi/v1/api-reference/endpoint/security-report-leaked-key"
+                      "hi/v1/api-reference/endpoint/security-report-leaked-key",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-list",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-create",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-get",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-update",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -14448,7 +14488,12 @@
                       "ar/v1/api-reference/endpoint/keys-invalidate",
                       "ar/v1/api-reference/endpoint/keys-delete",
                       "ar/v1/api-reference/endpoint/keys-list",
-                      "ar/v1/api-reference/endpoint/security-report-leaked-key"
+                      "ar/v1/api-reference/endpoint/security-report-leaked-key",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-list",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-create",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-get",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-update",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {

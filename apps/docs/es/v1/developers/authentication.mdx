@@ -12,6 +12,7 @@ Crea una clave con `phaseo keys create --name <name> --json` en la [CLI de Phase
 
 - **Claves de API de Gateway**: permiten llamar a los endpoints de modelos, proveedores y generaciones disponibles en tu espacio de trabajo.
 - **Claves de API de administración**: permiten llamar a las API de administración. Consulta [Claves de API de administración](./management-api-keys.mdx).
+- **Cargas de trabajo de confianza** (beta): permiten que los despliegues de Vercel y los trabajos de GitHub Actions llamen al Gateway con un token OIDC de corta duración en lugar de una clave guardada. Consulta [Cargas de trabajo de confianza](./trusted-workloads.mdx).
 
 Rota una clave actualizando tu aplicación para usar la nueva antes de invalidar la credencial anterior. Consulta el [endpoint de rotación de claves](../api-reference/endpoint/keys-rotate.mdx).
 

@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-受信任的工作负载目前处于 Beta 阶段，正在逐步向各工作区开放。如果你的控制台中没有出现 **设置 → 受信任的工作负载**，说明你的工作区还没有开通。
+受信任的工作负载目前处于 Beta 阶段，正在逐步向各工作区开放。如果你的控制台中没有出现 **设置 → API 密钥 → 受信任的工作负载**，说明你的工作区还没有开通。
 </Note>
 
 Vercel 和 GitHub Actions 会为每个部署或作业签发一个带签名的令牌，说明它的身份，例如“这是 `website` 项目的生产部署”或“这是 `acme/app` 中的一个工作流”。该令牌会在几小时内过期。借助受信任的工作负载，你可以告诉 Phaseo 信任哪些工作负载，这些工作负载就会发送该令牌，而不是 API 密钥。你无需在项目设置或 CI 密钥中保存任何长期有效的凭据。
@@ -16,7 +16,7 @@ API 密钥依然可用。在 Vercel 或 GitHub Actions 中运行的代码可以�
 
 ## 工作原理
 
-1. 工作区所有者或管理员在 **设置 → 受信任的工作负载** 中创建一条 **信任策略**。策略会指定平台、你的 Vercel 团队或 GitHub 所有者，以及可选条件，例如项目、仓库、分支或环境。
+1. 工作区所有者或管理员在 **设置 → API 密钥 → 受信任的工作负载** 中创建一条 **信任策略**。策略会指定平台、你的 Vercel 团队或 GitHub 所有者，以及可选条件，例如项目、仓库、分支或环境。
 2. 你的代码向平台请求一个受众为 `https://api.phaseo.app` 的令牌，并以 `Authorization: Bearer <token>` 的形式发送。
 3. Phaseo 检查令牌的签名和有效期，然后查找恰好一条与之匹配的已启用策略。
 4. 请求以该策略的密钥身份运行，与使用 API 密钥发出的请求一样，适用相同的速率限制、预算、日志和计费。
@@ -31,7 +31,7 @@ API 密钥依然可用。在 Vercel 或 GitHub Actions 中运行的代码可以�
 
 <Steps>
 <Step title="打开受信任的工作负载">
-前往 **设置 → 受信任的工作负载**，然后选择 **新建策略**。只有工作区所有者和管理员可以管理策略。
+前往 **设置 → API 密钥 → 受信任的工作负载**，然后选择 **新建策略**。只有工作区所有者和管理员可以管理策略。
 </Step>
 <Step title="选择平台并填写 ID">
 <Tabs>
@@ -94,6 +94,8 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -H "Content-Type: application/json" \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
+
+[API 参考](../api-reference/endpoint/trusted-workloads-create.mdx)列出了所有字段和响应。
 
 ---
 

@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: 信頼済みワークロードのポリシー一覧を取得
+      description: ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       responses:
         '200':
-          description: Trusted workload policies
+          description: 信頼済みワークロードのポリシー
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 信頼済みワークロードのポリシーを作成
+      description: ポリシーと、シークレットを持たないキーを作成します。トークンはオーディエンス https://api.phaseo.app 向けに発行され、固定したオーナーとすべてのクレーム条件に一致する必要があります。1 つのワークスペースで作成できるポリシーは最大 50 件で、超えると 409 limit_reached が返ります。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: 信頼済みワークロードのポリシーを作成しました
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: 信頼済みワークロードのポリシー ID。
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 信頼済みワークロードのポリシーを取得
+      description: 信頼済みワークロードのポリシーを 1 件返します。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       responses:
         '200':
-          description: Trusted workload policy
+          description: 信頼済みワークロードのポリシー
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 信頼済みワークロードのポリシーを更新
+      description: ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: 信頼済みワークロードのポリシーを更新しました
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 信頼済みワークロードのポリシーを削除
+      description: ポリシーのキーを失効させてから、ポリシーを削除します。一致するトークンは 1 分以内に拒否されるようになります。過去のリクエストは、ログと使用状況でそのキーを保持します。管理キーと OAuth トークンでは keys:delete、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: 信頼済みワークロードのポリシーを削除しました
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: OIDC トークンを発行するプラットフォーム。
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: '信頼済みワークロード: この発行者のトークンのうち、固定したオーナー向けで、すべてのクレーム条件に一致するものが、ポリシーのキーとして認証されます。'
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: 'トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。'
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: 固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: ポリシーが受け入れるトークンの最大有効期間（exp から iat または nbf を引いた値）。
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: トークンの発行先として必要なオーディエンス。
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: ポリシーのキー。リクエスト、使用量、上限はこのキーに記録されます。
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: 固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: ポリシーが受け入れるトークンの最大有効期間（exp から iat または nbf を引いた値）。
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 'トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。'
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: ポリシーが受け入れるトークンの最大有効期間（exp から iat または nbf を引いた値）。
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: トークンの発行先として必要なオーディエンス。
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

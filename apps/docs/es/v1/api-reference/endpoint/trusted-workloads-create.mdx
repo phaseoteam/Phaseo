@@ -1,0 +1,10 @@
+---
+title: "Crear una política de carga de trabajo de confianza"
+sidebarTitle: "Crear una política de carga de trabajo de confianza"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "Crea una política de confianza para que un despliegue de Vercel o un flujo de trabajo de GitHub Actions llame a Phaseo con su token OIDC en lugar de una clave de API."
+---
+<Note>Requiere `keys:write` en una clave de administración o un token OAuth, o un propietario o administrador del espacio de trabajo. Las cargas de trabajo de confianza están en beta; los espacios de trabajo que no las tienen reciben `404`.</Note>
+
+Consulta [Cargas de trabajo de confianza](../../developers/trusted-workloads.mdx) para saber cómo funcionan las políticas y cómo gestionarlas con Terraform.

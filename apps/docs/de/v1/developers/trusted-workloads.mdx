@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Vertrauenswürdige Workloads sind in der Beta und werden schrittweise für Workspaces freigeschaltet. Wenn **Einstellungen → Vertrauenswürdige Workloads** in deinem Dashboard nicht erscheint, hat dein Workspace die Funktion noch nicht.
+Vertrauenswürdige Workloads sind in der Beta und werden schrittweise für Workspaces freigeschaltet. Wenn **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** in deinem Dashboard nicht erscheint, hat dein Workspace die Funktion noch nicht.
 </Note>
 
 Vercel und GitHub Actions geben jedem Deployment und jedem Job ein signiertes Token, das angibt, wer er ist, zum Beispiel „das ist das Produktions-Deployment des Projekts `website`“ oder „das ist ein Workflow in `acme/app`“. Das Token läuft innerhalb weniger Stunden ab. Mit vertrauenswürdigen Workloads legst du fest, welchen dieser Workloads Phaseo vertraut, und sie senden dieses Token statt eines API-Schlüssels. In deinen Projekteinstellungen oder CI-Secrets muss nichts Langlebiges gespeichert werden.
@@ -16,7 +16,7 @@ API-Schlüssel funktionieren weiterhin. Nutze vertrauenswürdige Workloads für 
 
 ## So funktioniert es
 
-1. Ein Workspace-Inhaber oder -Admin erstellt unter **Einstellungen → Vertrauenswürdige Workloads** eine **Vertrauensrichtlinie**. Die Richtlinie nennt die Plattform, dein Vercel-Team oder deinen GitHub-Inhaber sowie optionale Bedingungen wie ein Projekt, ein Repository, einen Branch oder eine Umgebung.
+1. Ein Workspace-Inhaber oder -Admin erstellt unter **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** eine **Vertrauensrichtlinie**. Die Richtlinie nennt die Plattform, dein Vercel-Team oder deinen GitHub-Inhaber sowie optionale Bedingungen wie ein Projekt, ein Repository, einen Branch oder eine Umgebung.
 2. Dein Code fordert bei der Plattform ein Token für die Audience `https://api.phaseo.app` an und sendet es als `Authorization: Bearer <token>`.
 3. Phaseo prüft Signatur und Ablauf des Tokens und sucht dann genau eine aktive Richtlinie, die dazu passt.
 4. Die Anfrage läuft mit dem Schlüssel dieser Richtlinie. Sie erhält dieselben Ratenlimits, Budgets, Logs und dieselbe Abrechnung wie eine Anfrage mit einem API-Schlüssel.
@@ -31,7 +31,7 @@ Tokens müssen für die Audience `https://api.phaseo.app` ausgestellt sein. Stan
 
 <Steps>
 <Step title="Vertrauenswürdige Workloads öffnen">
-Öffne **Einstellungen → Vertrauenswürdige Workloads** und wähle **Neue Richtlinie**. Nur Workspace-Inhaber und -Admins können Richtlinien verwalten.
+Öffne **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** und wähle **Neue Richtlinie**. Nur Workspace-Inhaber und -Admins können Richtlinien verwalten.
 </Step>
 <Step title="Plattform wählen und IDs eintragen">
 <Tabs>
@@ -94,6 +94,8 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -H "Content-Type: application/json" \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
+
+Die [API-Referenz](../api-reference/endpoint/trusted-workloads-create.mdx) beschreibt alle Felder und Antworten.
 
 ---
 
