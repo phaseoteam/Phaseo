@@ -546,6 +546,7 @@
 			"spendLimitSummary": "このアプリは月に最大 {amount} まで使えます。",
 			"spendLimitNoLimitHelp": "このアプリはアクティブなチームの残高をすべて使えます。",
 			"spendLimitInvalid": "{min} から {max} までの金額を入力するか、「上限なし」を選んでください。",
+			"spendLimitFormat": "金額は 20.00 や 1,000.50 のように米国式の形式で入力してください。",
 			"deny": "拒否",
 			"authorizing": "承認しています…",
 			"authorizePermissions": "{count} 件の権限を承認",

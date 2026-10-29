@@ -546,6 +546,7 @@
 			"spendLimitSummary": "यह ऐप हर महीने {amount} तक ख़र्च कर सकता है।",
 			"spendLimitNoLimitHelp": "यह ऐप सक्रिय टीम का पूरा बैलेंस ख़र्च कर सकता है।",
 			"spendLimitInvalid": "{min} से {max} तक की राशि डालें, या “कोई सीमा नहीं” चुनें।",
+			"spendLimitFormat": "राशि US फ़ॉर्मैट में डालें, जैसे 20.00 या 1,000.50।",
 			"deny": "अस्वीकार करें",
 			"authorizing": "अनुमति दी जा रही है…",
 			"authorizePermissions": "{count} अनुमतियों को मंज़ूरी दें",

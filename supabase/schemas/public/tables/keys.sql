@@ -62,12 +62,6 @@ CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (
 CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);
 
-CREATE TRIGGER apply_oauth_consent_spend_limit
-  BEFORE INSERT ON public.keys
-  FOR EACH ROW
-  WHEN (((new.key_kind = 'oauth_delegated'::text) AND (new.issued_via = 'oauth_pkce'::text)))
-  EXECUTE FUNCTION public.apply_oauth_consent_spend_limit();
-
 CREATE TRIGGER keys_set_updated_at
   BEFORE UPDATE ON public.keys
   FOR EACH ROW

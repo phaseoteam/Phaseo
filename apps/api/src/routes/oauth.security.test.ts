@@ -16,7 +16,6 @@ const state = vi.hoisted(() => ({
 	pollStatus: "ok" as string,
 	displayName: null as string | null,
 	memberships: [] as Array<{ workspace_id: string }>,
-	authorizationUpdates: [] as Array<{ payload: Record<string, unknown>; filters: Record<string, unknown> }>,
 	insertedCodes: [] as Array<Record<string, unknown>>,
 }));
 
@@ -80,17 +79,6 @@ vi.mock("@/runtime/env", () => ({
 			}
 			if (table === "oauth_authorizations") {
 				return {
-					update: (payload: Record<string, unknown>) => {
-						const filters: Record<string, unknown> = {};
-						state.authorizationUpdates.push({ payload, filters });
-						const chain = {
-							eq(column: string, value: unknown) {
-								filters[column] = value;
-								return Object.keys(filters).length >= 3 ? Promise.resolve({ error: null }) : chain;
-							},
-						};
-						return chain;
-					},
 					select: () => ({
 						eq: () => ({
 							eq: () => ({
@@ -255,7 +243,6 @@ describe("OAuth route security", () => {
 		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
 		state.memberships = [];
-		state.authorizationUpdates.length = 0;
 		state.insertedCodes.length = 0;
 		vi.resetModules();
 	});
@@ -702,24 +689,29 @@ describe("OAuth route security", () => {
 			state.memberships = [{ workspace_id: "ws_1" }];
 		});
 
-		it("stores the chosen limit on the app's authorization for the active workspace", async () => {
+		it("stores the chosen limit with this consent's authorization code, for the active workspace", async () => {
 			const response = await approve({ monthly_limit_cost_nanos: 35_000_000_000 });
 
 			expect(response.status).toBe(200);
-			expect(state.authorizationUpdates).toEqual([{
-				payload: { key_monthly_limit_cost_nanos: 35_000_000_000 },
-				filters: { user_id: "user_1", workspace_id: "ws_1", client_id: "partner_app" },
-			}]);
-			expect(state.insertedCodes).toHaveLength(1);
+			expect(state.insertedCodes).toEqual([expect.objectContaining({
+				client_id: "partner_app",
+				user_id: "user_1",
+				workspace_id: "ws_1",
+				key_monthly_limit_cost_nanos: 35_000_000_000,
+			})]);
+		});
+
+		it("keeps each approval's amount with its own code when two are in flight", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 10_000_000_000 })).status).toBe(200);
+			expect((await approve({ monthly_limit_cost_nanos: 30_000_000_000 })).status).toBe(200);
+
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([10_000_000_000, 30_000_000_000]);
 		});
 
 		it("stores no limit as 0, and $20 a month when the consent page sent none", async () => {
 			expect((await approve({ monthly_limit_cost_nanos: 0 })).status).toBe(200);
 			expect((await approve({})).status).toBe(200);
-			expect(state.authorizationUpdates.map((update) => update.payload)).toEqual([
-				{ key_monthly_limit_cost_nanos: 0 },
-				{ key_monthly_limit_cost_nanos: 20_000_000_000 },
-			]);
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([0, 20_000_000_000]);
 		});
 
 		it("rejects a limit that isn't a whole number of nanodollars in range, before granting anything", async () => {
@@ -731,7 +723,6 @@ describe("OAuth route security", () => {
 				expect(await response.json()).toMatchObject({ error: "invalid_request" });
 			}
 			expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
-			expect(state.authorizationUpdates).toEqual([]);
 			expect(state.insertedCodes).toEqual([]);
 		});
 
@@ -740,7 +731,8 @@ describe("OAuth route security", () => {
 			const response = await approve({ scopes: ["openid", "models:read"] });
 
 			expect(response.status).toBe(200);
-			expect(state.authorizationUpdates).toEqual([]);
+			expect(state.insertedCodes).toHaveLength(1);
+			expect(state.insertedCodes[0]).not.toHaveProperty("key_monthly_limit_cost_nanos");
 		});
 	});
 

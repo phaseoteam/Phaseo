@@ -13,7 +13,7 @@ import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.h
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { loadOAuthClient } from "@/lib/oauth/service";
+import { DESKTOP_CLIENT_ID, isFirstPartyCliClient, loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
 
@@ -345,6 +345,22 @@ function resolveScopedWorkspaceId(args: {
 	return { ok: true, workspaceId: requested };
 }
 
+/**
+ * Third-party apps (anything signed in with Phaseo OAuth except Phaseo's own CLI and desktop app) can't
+ * create, rotate or replace keys, or change any key's limits, whatever scopes they hold: a key an app made
+ * or reshaped would escape the monthly spending limit the person set on the consent screen. API keys and
+ * Phaseo's own apps are unaffected.
+ */
+function rejectThirdPartyOAuthKeyChange(
+	auth: ManagementRouteAuth & { oauthClientId?: string | null },
+	message: string,
+): Response | null {
+	if (auth.authMethod !== "oauth") return null;
+	const clientId = String(auth.oauthClientId ?? "").trim();
+	if (isFirstPartyCliClient(clientId) || clientId === DESKTOP_CLIENT_ID) return null;
+	return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
+}
+
 async function requireOAuthWorkspaceAdmin(auth: ManagementRouteAuth, workspaceId: string): Promise<Response | null> {
 	if (auth.authMethod !== "oauth") return null;
 	const userId = auth.userId?.trim();
@@ -588,6 +604,11 @@ async function handleCreateKey(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthKeyChange(
+		auth.value,
+		"Apps that use Sign in with Phaseo can't create API keys. The person can create one under Settings, API Keys.",
+	);
+	if (appError) return appError;
 
 	const url = new URL(req.url);
 	const workspaceScope = resolveScopedWorkspaceId({
@@ -799,7 +820,7 @@ async function handleUpdateKey(req: Request) {
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase
 			.from("keys")
-			.select(`${KEY_WITH_KID_COLUMNS}, key_kind, oauth_client_id`)
+			.select(KEY_WITH_KID_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
 			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
@@ -867,19 +888,13 @@ async function handleUpdateKey(req: Request) {
 		if (detailedLimits.ok === false) {
 			return json({ error: "bad_request", message: detailedLimits.message }, 400, { "Cache-Control": "no-store" });
 		}
-		// The spending limit a person sets for an OAuth app (on the consent screen or later) is theirs:
-		// the app can't change its own key's limits, even with keys:write.
-		if (
-			auth.value.authMethod === "oauth" &&
-			existing.key_kind === "oauth_delegated" &&
-			existing.oauth_client_id === auth.value.oauthClientId &&
-			Object.keys(updatePayload).some((field) => field.includes("_limit_") || field === "soft_blocked")
-		) {
-			return json(
-				{ error: "forbidden", message: "An OAuth app can't change its own key's limits. The person who authorized it can change them under Settings, API Keys." },
-				403,
-				{ "Cache-Control": "no-store" },
+		// Limits are the person's, on any key: an app's own key, or another key it could reshape instead.
+		if (Object.keys(updatePayload).some((field) => field.includes("_limit_") || field === "soft_blocked")) {
+			const appError = rejectThirdPartyOAuthKeyChange(
+				auth.value,
+				"Apps that use Sign in with Phaseo can't change API key limits. The person can change them under Settings, API Keys.",
 			);
+			if (appError) return appError;
 		}
 		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in updatePayload);
 		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...updatePayload })) {
@@ -998,6 +1013,12 @@ async function handleRotateKey(req: Request) {
 	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
 	const keyId = segments.at(-2)?.trim();
 	if (!keyId) return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
+	// A rotation mints a replacement key, which would start its own month with no consent limit behind it.
+	const appError = rejectThirdPartyOAuthKeyChange(
+		auth.value,
+		"Apps that use Sign in with Phaseo can't rotate or replace API keys. The person can rotate a key under Settings, API Keys.",
+	);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
 	if (roleError) return roleError;
 	let body: Record<string, unknown> = {};
