@@ -546,6 +546,7 @@
 			"spendLimitSummary": "Este aplicativo pode gastar até {amount} por mês.",
 			"spendLimitNoLimitHelp": "Este aplicativo pode gastar todo o saldo da equipe ativa.",
 			"spendLimitInvalid": "Digite um valor de {min} a {max} ou escolha Sem limite.",
+			"spendLimitFormat": "Digite o valor no formato dos EUA, como 20.00 ou 1,000.50.",
 			"deny": "Negar",
 			"authorizing": "Autorizando…",
 			"authorizePermissions": "Autorizar {count} permissões",

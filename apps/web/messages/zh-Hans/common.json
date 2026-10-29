@@ -546,6 +546,7 @@
 			"spendLimitSummary": "此应用每月最多可花费 {amount}。",
 			"spendLimitNoLimitHelp": "此应用可以花光当前团队的全部余额。",
 			"spendLimitInvalid": "请输入 {min} 到 {max} 之间的金额，或选择“不设上限”。",
+			"spendLimitFormat": "请按美国格式输入金额，例如 20.00 或 1,000.50。",
 			"deny": "拒绝",
 			"authorizing": "正在授权…",
 			"authorizePermissions": "授权 {count} 项权限",
