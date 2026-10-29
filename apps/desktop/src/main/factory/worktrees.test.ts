@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { realpathSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -22,7 +23,10 @@ describe("prepareWorktree", { timeout: 90_000 }, () => {
 			const issue = { repo: "o/r", number: 1, title: "Prices", kind: "issue" } as WorkItem;
 			const fixed = await prepareWorktree(root, clone, issue);
 			const pull = { repo: "o/r", number: 2, title: "Fix prices", kind: "pull", branch: fixed.branch } as WorkItem;
-			expect(await prepareWorktree(root, clone, pull)).toMatchObject({ dir: fixed.dir, branch: fixed.branch });
+			const carried = await prepareWorktree(root, clone, pull);
+			// The same folder, however Windows spells it (git reports long names; a temp folder can be a short one).
+			expect(realpathSync.native(carried.dir)).toBe(realpathSync.native(fixed.dir));
+			expect(carried.branch).toBe(fixed.branch);
 		} finally {
 			await rm(base, { recursive: true, force: true });
 		}

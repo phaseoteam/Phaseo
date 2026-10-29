@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { proofKind } from "../../shared/factory/report";
@@ -110,16 +110,18 @@ async function catchUp(dir: string, number: number): Promise<string | undefined>
 	return `Brought up to date with the pull request's latest commit, ${latest.slice(0, 7)}`;
 }
 
-const inside = (root: string, dir: string) => path.resolve(dir).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep);
+/** Real paths, so a short Windows name (C:\Users\RUNNER~1) and the long one git reports compare equal. */
+const real = (value: string) => { try { return realpathSync.native(value); } catch { return path.resolve(value); } };
+const inside = (root: string, dir: string) => real(dir).toLowerCase().startsWith(real(root).toLowerCase() + path.sep);
 
 /** The worktree that has a branch checked out, if one does and it's still there. */
 async function worktreeWith(checkout: string, branch: string): Promise<{ dir: string; clone: boolean } | null> {
 	const list = await git(checkout, ["worktree", "list", "--porcelain"]).catch(() => "");
-	const clone = path.resolve(checkout).toLowerCase();
+	const clone = real(checkout).toLowerCase();
 	for (const entry of list.split(/\r?\n\r?\n/)) {
 		const dir = entry.match(/^worktree (.+)$/m)?.[1];
 		if (!dir || !entry.split(/\r?\n/).includes(`branch refs/heads/${branch}`)) continue;
-		if (path.resolve(dir).toLowerCase() === clone || existsSync(dir)) return { dir: path.normalize(dir), clone: path.resolve(dir).toLowerCase() === clone };
+		if (real(dir).toLowerCase() === clone || existsSync(dir)) return { dir: path.normalize(dir), clone: real(dir).toLowerCase() === clone };
 	}
 	return null;
 }
