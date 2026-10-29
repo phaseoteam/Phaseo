@@ -128,11 +128,6 @@ import type {
 	UpdateCardProps,
 } from "@/lib/fetchers/updates/types";
 type ModelUpdateCardProps = UpdateCardProps;
-import type {
-	MonitorHistoryDbPage,
-	MonitorHistoryInitialData,
-	MonitorHistoryPageFilters,
-} from "@/lib/fetchers/monitor/getMonitorHistory";
 
 export type FrontendLandingStats = {
 	db: DbStats;
@@ -255,22 +250,6 @@ export async function fetchFrontendGatewayShowcase(args: {
 	return fetchPublicWebApi<FrontendGatewayShowcaseData>(
 		`/api/_web/landing/gateway-showcase?hours=${24 * 30}&top_models_limit=${encodeURIComponent(String(topModelsLimit))}&top_apps_limit=${encodeURIComponent(String(topAppsLimit))}`,
 	);
-}
-
-export async function fetchFrontendMonitorHistoryInitialData(): Promise<MonitorHistoryInitialData> {
-	return fetchPublicWebApi<MonitorHistoryInitialData>("/api/_web/monitor/history/initial");
-}
-
-export async function fetchFrontendMonitorHistoryPage(
-	filters: MonitorHistoryPageFilters = {},
-): Promise<MonitorHistoryDbPage> {
-	const query = new URLSearchParams();
-	if (filters.changeType) query.set("change_type", filters.changeType);
-	if (filters.commitLimit != null) query.set("commit_limit", String(filters.commitLimit));
-	if (filters.commitOffset != null) query.set("commit_offset", String(filters.commitOffset));
-	if (filters.model) query.set("model", filters.model);
-	if (filters.provider) query.set("provider", filters.provider);
-	return fetchPublicWebApi<MonitorHistoryDbPage>(`/api/_web/monitor/history?${query.toString()}`);
 }
 
 export async function fetchFrontendModelOverview(
