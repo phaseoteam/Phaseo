@@ -19,7 +19,7 @@ import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
 import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
-import { HERMES_BLOCK_END, HERMES_BLOCK_START, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
+import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, hermesEnvDefinesOpenAIKey, hermesEnvHasComplexQuoting, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
 import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation } from "../src/integrations/installer.js";
@@ -946,12 +946,11 @@ test("Hermes key is written to its env file as a delimited Phaseo block", () => 
 });
 
 test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_API_KEY", () => {
-	// A multiline quoted value that happens to contain the name is user data, not a definition.
-	const multiline = 'OTHER="first\nOPENAI_API_KEY=embedded\nlast"\nKEEP=1\n';
-	assert.equal(hermesEnvDefinesOpenAIKey(multiline), false);
-	const written = renderHermesEnv(multiline, "phaseo_v1_sk_x");
-	assert.equal(written, `${multiline}${block("phaseo_v1_sk_x")}`);
-	assert.equal(renderHermesEnvWithoutKey(written), multiline);
+	// Single-line files: user lines stay byte-for-byte.
+	const plain = "KEEP=1\n# a comment\nQUOTED=\"two words\"\nSINGLE='x y'\n";
+	const written = renderHermesEnv(plain, "phaseo_v1_sk_x");
+	assert.equal(written, `${plain}${block("phaseo_v1_sk_x")}`);
+	assert.equal(renderHermesEnvWithoutKey(written), plain);
 
 	for (const definition of [
 		"OPENAI_API_KEY=secret",
@@ -966,14 +965,53 @@ test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_AP
 	}
 	assert.equal(hermesEnvDefinesOpenAIKey("# OPENAI_API_KEY=commented\nOPENAI_API_KEY_OLD=1\n"), false);
 
-	// Continuation lines of a user's multiline value are left exactly as they were.
-	const continued = 'NOTE="line one\n  line two"\n';
-	assert.equal(renderHermesEnvWithoutKey(renderHermesEnv(continued, "phaseo_v1_sk_x")), continued);
-
 	// The bare line an earlier Phaseo version wrote is migrated only when it matches the stored key exactly.
 	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}`);
 	assert.throws(() => renderHermesEnv("OPENAI_API_KEY=phaseo_v1_sk_other\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), /outside the Phaseo-managed block/);
 	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_old"), "A=1\n");
+});
+
+test("Hermes .env files with multiline or complex quoting are refused and left unchanged", async () => {
+	assert.equal(hermesEnvHasComplexQuoting("A=1\nB=\"x\"\nC='y'\n"), false);
+	for (const complex of ['A="open', "A='it\\'s'", "A=`cmd`", "# don't"]) {
+		assert.equal(hermesEnvHasComplexQuoting(`${complex}\n`), true, complex);
+	}
+
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-quoting-"));
+	try {
+		const cases = {
+			// python-dotenv reads `\'` as an escaped quote, so OPENAI_API_KEY below is a real definition.
+			escapedSingleQuote: "OTHER='don\\'t'\nOPENAI_API_KEY=user-secret\n",
+			// Literal block markers inside a user's multiline value.
+			markersInMultiline: `NOTE="before\n${HERMES_BLOCK_START}\nOPENAI_API_KEY=user-data\n${HERMES_BLOCK_END}\nafter"\n`,
+			// An exact legacy line inside a user's multiline value.
+			legacyLineInMultiline: "NOTE=\"before\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\"\n",
+		};
+		for (const [name, contents] of Object.entries(cases)) {
+			const envPath = join(root, name, ".env");
+			await mkdir(join(root, name));
+			await writeFile(envPath, contents);
+			await assert.rejects(writeHermesKey(envPath, "phaseo_v1_sk_new", "phaseo_v1_sk_old"), (error: Error) => {
+				assert.ok(error instanceof HermesEnvQuotingError, name);
+				assert.match(error.message, /will not edit .*multiline or complex quoting.*OPENAI_API_KEY=<key>.*phaseo integrations credential hermes/);
+				assert.doesNotMatch(error.message, /phaseo_v1_sk_new/, "the key is never printed");
+				return true;
+			});
+			await assert.rejects(removeHermesKey(envPath, { key: "phaseo_v1_sk_old" }), /Remove the OPENAI_API_KEY line Phaseo added .* by hand/);
+			await assert.rejects(assertHermesEnvEditable(envPath, "setup"), HermesEnvQuotingError);
+			await assert.rejects(assertHermesEnvEditable(envPath, "remove"), HermesEnvQuotingError);
+			assert.throws(() => renderHermesEnvWithoutKey(contents, "phaseo_v1_sk_old"), HermesEnvQuotingError);
+			assert.equal(await readFile(envPath, "utf8"), contents, `${name} unchanged`);
+			assert.deepEqual(await readdir(join(root, name)), [".env"]);
+		}
+
+		const simple = join(root, "simple.env");
+		await writeFile(simple, "A=1\n");
+		await assertHermesEnvEditable(simple, "setup");
+		await assertHermesEnvEditable(join(root, "missing.env"), "remove");
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
 });
 
 test("Hermes home is resolved like Hermes does, expanding ~ and environment variables", () => {

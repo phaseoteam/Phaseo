@@ -103,38 +103,42 @@ function withoutLegacyLine(text: string, legacyKey: string | undefined): string 
 	return text.split("\n").filter((line) => bareLine(line) !== `${OPENAI_API_KEY}=${legacyKey}`).join("\n");
 }
 
-/** Index just past the closing quote, or -1 when the quoted value continues onto later lines. */
-function closingQuote(text: string, from: number, quote: string): number {
-	for (let index = from; index < text.length; index += 1) {
-		if (quote === "\"" && text[index] === "\\") index += 1;
-		else if (text[index] === quote) return index + 1;
-	}
-	return -1;
+/**
+ * True when any line has an odd number of `"` or `'` characters (escapes are not considered) or a
+ * backtick. Such files may hold multiline quoted values, so Phaseo does not edit them; every other
+ * file has single-line values only, and the line-based edits below are exact.
+ */
+export function hermesEnvHasComplexQuoting(text: string): boolean {
+	return text.split("\n").some((line) => {
+		if (line.includes("`")) return true;
+		const count = (quote: string) => line.split(quote).length - 1;
+		return count("\"") % 2 === 1 || count("'") % 2 === 1;
+	});
+}
+
+export class HermesEnvQuotingError extends Error {}
+
+const QUOTING_REASON = "it has multiline or complex quoting (a line with an odd number of \" or ' characters, or a backtick)";
+
+function setupQuotingMessage(path: string): string {
+	return `Phaseo will not edit ${path}: ${QUOTING_REASON}. Add this line to it by hand: ${OPENAI_API_KEY}=<key>. Print the key with \`phaseo integrations credential hermes\`, then run phaseo setup hermes again after simplifying the file, or set Hermes' model settings yourself.`;
+}
+
+function removeQuotingMessage(path: string): string {
+	return `Phaseo will not edit ${path}: ${QUOTING_REASON}. Remove the ${OPENAI_API_KEY} line Phaseo added (and the ${HERMES_BLOCK_START} / ${HERMES_BLOCK_END} markers, if present) by hand, then run phaseo integrations remove hermes again.`;
 }
 
 /**
- * True when the .env text assigns OPENAI_API_KEY, including `export` and quoted-name forms.
- * Multiline quoted values are skipped, and any other line mentioning the name counts as a
- * definition, so unclear cases refuse rather than overwrite.
+ * True when the .env text assigns OPENAI_API_KEY, including `export` and quoted-name forms. Any
+ * other line mentioning the name counts as a definition, so unclear cases refuse rather than
+ * overwrite. Callers reject files with complex quoting first, so every value is on one line.
  */
 export function hermesEnvDefinesOpenAIKey(text: string): boolean {
-	let openQuote: string | null = null;
 	for (const raw of text.split("\n")) {
 		const line = bareLine(raw);
-		if (openQuote) {
-			if (closingQuote(line, 0, openQuote) !== -1) openQuote = null;
-			continue;
-		}
 		if (/^\s*(?:#|$)/.test(line)) continue;
-		const match = /^\s*(?:export\s+)?(?:"([^"]*)"|'([^']*)'|([^\s=#"']+))\s*=\s*(.*)$/.exec(line);
-		if (!match) {
-			if (line.includes(OPENAI_API_KEY)) return true;
-			continue;
-		}
-		if ((match[1] ?? match[2] ?? match[3]) === OPENAI_API_KEY) return true;
-		const value = match[4] ?? "";
-		const quote = value[0];
-		if ((quote === "\"" || quote === "'") && closingQuote(value, 1, quote) === -1) openQuote = quote;
+		const match = /^\s*(?:export\s+)?(?:"([^"]*)"|'([^']*)'|([^\s=#"']+))\s*=/.exec(line);
+		if (match ? (match[1] ?? match[2] ?? match[3]) === OPENAI_API_KEY : line.includes(OPENAI_API_KEY)) return true;
 	}
 	return false;
 }
@@ -145,6 +149,7 @@ export function hermesEnvDefinesOpenAIKey(text: string): boolean {
  */
 export function renderHermesEnv(before: string | null, key: string, legacyKey?: string): string {
 	if (!/^[A-Za-z0-9_.-]+$/.test(key)) throw new Error("Phaseo returned an invalid gateway credential");
+	if (before && hermesEnvHasComplexQuoting(before)) throw new HermesEnvQuotingError(setupQuotingMessage("Hermes' .env"));
 	const outside = withoutLegacyLine(withoutManagedBlock(before ?? ""), legacyKey);
 	if (hermesEnvDefinesOpenAIKey(outside)) {
 		throw new Error("Hermes' .env already defines OPENAI_API_KEY outside the Phaseo-managed block; remove it before Phaseo setup so it is not overwritten");
@@ -155,6 +160,7 @@ export function renderHermesEnv(before: string | null, key: string, legacyKey?: 
 
 /** Removes only Phaseo's managed block (and the exact line an earlier version wrote, if known). */
 export function renderHermesEnvWithoutKey(before: string, legacyKey?: string): string {
+	if (hermesEnvHasComplexQuoting(before)) throw new HermesEnvQuotingError(removeQuotingMessage("Hermes' .env"));
 	return withoutLegacyLine(withoutManagedBlock(before), legacyKey);
 }
 
@@ -198,13 +204,24 @@ export async function writeEnvFileSafely(path: string, contents: string): Promis
 
 /** Writes the key to Hermes' .env file directly, so it never appears in a process argument list. */
 export async function writeHermesKey(path: string, key: string, legacyKey?: string): Promise<void> {
-	await writeEnvFileSafely(path, renderHermesEnv(await readEnvFileSafely(path), key, legacyKey));
+	const before = await readEnvFileSafely(path);
+	if (before && hermesEnvHasComplexQuoting(before)) throw new HermesEnvQuotingError(setupQuotingMessage(path));
+	await writeEnvFileSafely(path, renderHermesEnv(before, key, legacyKey));
+}
+
+/** Refuses up front, before any Hermes setting or Phaseo state changes, if the .env cannot be edited safely. */
+export async function assertHermesEnvEditable(path: string, operation: "setup" | "remove"): Promise<void> {
+	const before = await readEnvFileSafely(path);
+	if (before && hermesEnvHasComplexQuoting(before)) {
+		throw new HermesEnvQuotingError(operation === "setup" ? setupQuotingMessage(path) : removeQuotingMessage(path));
+	}
 }
 
 /** Removes Phaseo's block; returns false if an OPENAI_API_KEY written by an earlier version could not be identified. */
 export async function removeHermesKey(path: string, legacy?: { key?: string }): Promise<boolean> {
 	const before = await readEnvFileSafely(path);
 	if (before === null) return true;
+	if (hermesEnvHasComplexQuoting(before)) throw new HermesEnvQuotingError(removeQuotingMessage(path));
 	const after = renderHermesEnvWithoutKey(before, legacy?.key);
 	if (after !== before) await writeEnvFileSafely(path, after);
 	return !legacy || !hermesEnvDefinesOpenAIKey(after);
@@ -252,6 +269,7 @@ export const hermesAdapter: IntegrationAdapter = {
 	async applySetup(options) {
 		if (!await isCommandAvailable(["hermes", "hermes.exe"])) throw new Error("Hermes Agent is not installed or is not on PATH");
 		const managed = await readState(options);
+		await assertHermesEnvEditable(managed?.envPath ?? hermesEnvPath(options), "setup");
 		if (managed) {
 			// Already managed (for example after the key expired): write the current key and model
 			// settings again, keeping the original restore state.
@@ -295,6 +313,7 @@ export const hermesAdapter: IntegrationAdapter = {
 		const path = statePath(options);
 		let state: HermesState;
 		try { state = JSON.parse(await readFile(path, "utf8")) as HermesState; } catch { return; }
+		await assertHermesEnvEditable(state.envPath ?? hermesEnvPath(options), "remove");
 		await restore(state, options);
 		await rm(path, { force: true });
 	},
