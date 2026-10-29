@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent } from "../shared/actions";
+import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../shared/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../shared/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoConnections, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../shared/demo";
 import { agentForStage, defaultPlaybooks, withPlaybookDefaults } from "../shared/intake";
@@ -25,6 +25,7 @@ import { chatPrompt, demoChatReply } from "../shared/chat";
 /** What Factory adds on top of GitHub, saved per item. GitHub stays the source of truth for the rest. */
 interface ItemOverlay {
 	assigneeId?: string;
+	effort?: string;
 	loggedHere?: boolean;
 	duplicateOf?: number;
 	ci?: WorkItem["ci"];
@@ -428,7 +429,7 @@ export class FactoryStore {
 	private withOverlay(item: WorkItem): WorkItem {
 		const overlay = this.overlays[item.id];
 		if (!overlay) return item;
-		return { ...item, assigneeId: overlay.assigneeId, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: staleChecks(item, { ...emptyStages(), ...overlay.stages }) };
+		return { ...item, assigneeId: overlay.assigneeId, effort: overlay.effort, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: staleChecks(item, { ...emptyStages(), ...overlay.stages }) };
 	}
 
 	private item(itemId: string): WorkItem {
@@ -440,7 +441,7 @@ export class FactoryStore {
 	private patchItem(itemId: string, patch: (item: WorkItem) => WorkItem) {
 		this.snapshot = { ...this.snapshot, items: this.snapshot.items.map((item) => (item.id === itemId ? patch(item) : item)) };
 		const item = this.snapshot.items.find((candidate) => candidate.id === itemId);
-		if (item) this.overlays[itemId] = { assigneeId: item.assigneeId, loggedHere: item.loggedHere, duplicateOf: item.duplicateOf, ci: item.ci, attachments: item.attachments, branch: item.branch, linked: item.linked, revisions: item.revisions, asked: item.asked, autopilot: item.autopilot, stages: item.stages };
+		if (item) this.overlays[itemId] = { assigneeId: item.assigneeId, effort: item.effort, loggedHere: item.loggedHere, duplicateOf: item.duplicateOf, ci: item.ci, attachments: item.attachments, branch: item.branch, linked: item.linked, revisions: item.revisions, asked: item.asked, autopilot: item.autopilot, stages: item.stages };
 		this.changed();
 	}
 
@@ -457,6 +458,12 @@ export class FactoryStore {
 		this.patchItem(itemId, (item) => ({ ...item, assigneeId: agentId ?? undefined }));
 	}
 
+	/** Effort levels go to the tools on their command lines and in their options, so only plain words. */
+	setEffort(itemId: string, effort: string | null) {
+		if (effort !== null && !/^[a-z]+$/.test(effort)) throw new Error(`Unsupported effort: ${effort}`);
+		this.patchItem(itemId, (item) => ({ ...item, effort: effort ?? undefined }));
+	}
+
 
 	private agent(agentId: string): AgentProfile {
 		const agent = this.snapshot.agents.find((candidate) => candidate.id === agentId);
@@ -470,7 +477,7 @@ export class FactoryStore {
 
 	private async launch(input: StartRunInput, options: LaunchOptions): Promise<Run> {
 		const item = this.item(input.itemId);
-		const agent = this.agent(input.agentId);
+		const agent = withItemEffort(this.agent(input.agentId), item);
 		const running = this.snapshot.runs.filter((run) => run.status === "running" && this.agentOrNull(run.agentId)?.connectionId === agent.connectionId).length;
 		const slots = this.snapshot.connections.find((connection) => connection.id === agent.connectionId)?.slots ?? 1;
 		if (running >= slots) throw new Error(`All ${slots} ${agent.label} slots are busy`);

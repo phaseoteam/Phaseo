@@ -257,10 +257,12 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 		{ id: "chat", label: "Chat", count: snapshot.chats.find((chat) => chat.itemId === item.id)?.messages.filter((message) => message.role === "you").length },
 	];
 
-	/** Who works on it, GitHub, and the next stage with every other stage under it: in the header, and in the bar once it's scrolled away. */
+	/** Who works on it and how hard it thinks, GitHub, and the next stage with every other stage under it: in the header, and in the bar once it's scrolled away. */
 	const controls = (size: "sm" | "default") => <>
 		{/* In the bar, the agent goes first when there isn't room for it and the title. */}
-		<span className={size === "sm" ? "hidden @2xl:contents" : "contents"}><AgentPicker snapshot={snapshot} value={item.assigneeId} allowNone onChange={(agentId) => void factory().assign(item.id, agentId)} /></span>
+		<span className={size === "sm" ? "hidden @2xl:contents" : "contents"}>
+			<AgentPicker snapshot={snapshot} value={item.assigneeId} allowNone effort={{ value: item.effort, onChange: (effort) => void factory().setEffort(item.id, effort).catch((cause: unknown) => setError(errorText(cause))) }} onChange={(agentId) => void factory().assign(item.id, agentId)} />
+		</span>
 		<GithubMenu item={item} />
 		<div className="flex">
 			{lead && !liveRun
