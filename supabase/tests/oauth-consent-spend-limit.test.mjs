@@ -16,8 +16,11 @@ const migrations = await readdir(new URL('../migrations/', import.meta.url));
 const migrationOf = async (suffix) => normalize(await read(`../migrations/${migrations.find((name) => name.endsWith(suffix))}`));
 const refreshMigration = await migrationOf('_oauth_delegated_refresh_tokens.sql');
 const migration = await migrationOf('_oauth_consent_spend_limit.sql');
-assert(migration.includes(normalize(await read('../schemas/public/functions/consume_oauth_code_and_issue_delegated_grant.sql'))),
-  'the migration ships the schema definition of consume_oauth_code_and_issue_delegated_grant');
+// The declarative sync generates the migration: it reformats the signature but keeps the body as written.
+const exchangeSql = await read('../schemas/public/functions/consume_oauth_code_and_issue_delegated_grant.sql');
+const exchangeBody = normalize(exchangeSql.slice(exchangeSql.indexOf('$function$'), exchangeSql.lastIndexOf('$function$') + 10));
+assert(exchangeBody.length > 20 && migration.includes(exchangeBody),
+  'the migration ships the schema body of consume_oauth_code_and_issue_delegated_grant');
 const codesSql = normalize(await read('../schemas/public/tables/oauth_authorization_codes.sql'));
 assert(codesSql.includes('"key_monthly_limit_cost_nanos" bigint,'), 'the codes table definition has the column');
 assert(!normalize(await read('../schemas/public/tables/oauth_authorizations.sql')).includes('key_monthly_limit_cost_nanos'),
