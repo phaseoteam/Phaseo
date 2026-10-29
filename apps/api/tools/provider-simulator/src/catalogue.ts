@@ -42,6 +42,8 @@ export type CatalogueCapabilityRow = {
 	params: Record<string, any> | string[];
 	maxInputTokens: number | null;
 	maxOutputTokens: number | null;
+	effectiveFrom: string | null;
+	effectiveTo: string | null;
 	/** metadata.reasoning, or a `reasoning` entry in params. */
 	reasoning: boolean;
 };
@@ -190,7 +192,7 @@ async function fetchCatalogue(): Promise<CatalogueData> {
 			.range(from, to)),
 		readAll<any>("v2_route_capabilities", (from, to) => db
 			.from("v2_route_capabilities")
-			.select("provider_model_id,capability_id,status,params,max_input_tokens,max_output_tokens,reasoning:metadata->reasoning")
+			.select("provider_model_id,capability_id,status,params,max_input_tokens,max_output_tokens,effective_from,effective_to,reasoning:metadata->reasoning")
 			.order("provider_model_id")
 			.order("capability_id")
 			.range(from, to)),
@@ -214,6 +216,8 @@ async function fetchCatalogue(): Promise<CatalogueData> {
 			params: row.params && typeof row.params === "object" ? row.params : {},
 			maxInputTokens: typeof row.max_input_tokens === "number" ? row.max_input_tokens : null,
 			maxOutputTokens: typeof row.max_output_tokens === "number" ? row.max_output_tokens : null,
+			effectiveFrom: row.effective_from ?? null,
+			effectiveTo: row.effective_to ?? null,
 			reasoning: hasReasoning(row.params, row.reasoning),
 		});
 		capabilitiesByRoute.set(row.provider_model_id, entries);
@@ -271,6 +275,11 @@ function inWindow(from: string | null, to: string | null, nowMs: number): boolea
 	return (!from || Date.parse(from) <= nowMs) && (!to || nowMs < Date.parse(to));
 }
 
+/** Served like the public catalogue: not disabled and inside the capability effective window. */
+export function capabilityIsServed(capability: CatalogueCapabilityRow, nowMs = Date.now()): boolean {
+	return capability.status !== "disabled" && inWindow(capability.effectiveFrom, capability.effectiveTo, nowMs);
+}
+
 /** Routable like loadPriceCard's route filter: routing enabled, status active or degraded, in its effective window. */
 export function routeIsActive(route: CatalogueRouteRow, nowMs = Date.now()): boolean {
 	return route.routingEnabled && (route.status === "active" || route.status === "degraded") && inWindow(route.effectiveFrom, route.effectiveTo, nowMs);
@@ -318,7 +327,7 @@ export function loadCatalogueRoutes(capability = "text.generate"): Map<string, C
 	const rows = [...catalogueData().routes].sort((a, b) => Number(routeIsActive(b)) - Number(routeIsActive(a)) || a.routeId.localeCompare(b.routeId));
 	for (const row of rows) {
 		const cap = row.capabilities.find((entry) => entry.capabilityId === capability);
-		if (!cap || cap.status === "disabled") continue;
+		if (!cap || !capabilityIsServed(cap)) continue;
 		// One entry per provider and model, preferring an active route.
 		const key = `${row.providerId}|${row.apiModelId}`;
 		if (seen.has(key)) continue;

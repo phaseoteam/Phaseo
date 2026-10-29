@@ -9,7 +9,7 @@
 //      when a card spans several routes), so expectations name a price by its database identity.
 
 import type { PriceCard, PriceRule } from "@pipeline/pricing/types";
-import { catalogueData, catalogueSkus, routeIsActive, type CatalogueSkuRow } from "../src/catalogue";
+import { capabilityIsServed, catalogueData, catalogueSkus, routeIsActive, type CatalogueSkuRow } from "../src/catalogue";
 
 /** The sweep's clock: SIM_PRICING_NOW, else the start of the run's minute. Effective dates are judged against it. */
 export const SWEEP_NOW_ISO = process.env.SIM_PRICING_NOW ?? new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString();
@@ -63,7 +63,7 @@ export function loadActiveRoutes(): SweepRoute[] {
 	for (const row of catalogueData().routes) {
 		if (!routeIsActive(row, SWEEP_NOW_MS)) continue;
 		for (const capability of row.capabilities) {
-			if (capability.status === "disabled") continue;
+			if (!capabilityIsServed(capability, SWEEP_NOW_MS)) continue;
 			const key = `${row.providerId}:${row.apiModelId}:${capability.capabilityId}`;
 			if (byKey.has(key)) continue;
 			byKey.set(key, {
