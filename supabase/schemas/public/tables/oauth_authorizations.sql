@@ -10,9 +10,7 @@ CREATE TABLE "public"."oauth_authorizations" (
   CONSTRAINT "oauth_authorizations_pkey" PRIMARY KEY (id),
   CONSTRAINT "oauth_authorizations_user_client_workspace_unique" UNIQUE (user_id, client_id, workspace_id),
   CONSTRAINT "oauth_authorizations_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
-  CONSTRAINT "oauth_authorizations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  "key_monthly_limit_cost_nanos" bigint,
-  CONSTRAINT "oauth_authorizations_key_monthly_limit_cost_nanos_check" CHECK (((key_monthly_limit_cost_nanos IS NULL) OR (key_monthly_limit_cost_nanos >= 0)))
+  CONSTRAINT "oauth_authorizations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
 
 ALTER TABLE "public"."oauth_authorizations"
@@ -70,8 +68,6 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."oauth_authorizations" TO "service_role";
 
 COMMENT ON TABLE "public"."oauth_authorizations" IS 'User authorizations to OAuth applications. Tracks consent, usage, and revocation.';
-
-COMMENT ON COLUMN "public"."oauth_authorizations"."key_monthly_limit_cost_nanos" IS 'Monthly spending limit the person chose for this app on the consent screen, in nanodollars; 0 means no limit. Copied to the app''s delegated key when it is issued (apply_oauth_consent_spend_limit). NULL for authorizations made before the consent screen asked, and for first-party apps.';
 
 REVOKE ALL ON TABLE "public"."oauth_authorizations" FROM "authenticated";
 

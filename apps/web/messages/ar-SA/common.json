@@ -546,6 +546,7 @@
 			"spendLimitSummary": "يمكن لهذا التطبيق إنفاق ما يصل إلى {amount} شهريًا.",
 			"spendLimitNoLimitHelp": "يمكن لهذا التطبيق إنفاق رصيد الفريق النشط بالكامل.",
 			"spendLimitInvalid": "أدخل مبلغًا من {min} إلى {max}، أو اختر «بلا حد».",
+			"spendLimitFormat": "أدخل المبلغ بالتنسيق الأمريكي، مثل 20.00 أو 1,000.50.",
 			"deny": "رفض",
 			"authorizing": "جارٍ التفويض…",
 			"authorizePermissions": "تفويض {count} من الأذونات",

@@ -20,6 +20,7 @@ CREATE OR REPLACE FUNCTION public.consume_oauth_code_and_issue_delegated_grant (
 declare
   granted_scopes text[];
   granted_resource text;
+  approved_monthly_limit bigint;
   resource_is_gateway boolean;
   existing_key public.keys%rowtype;
   issued_key_id uuid;
@@ -86,8 +87,8 @@ begin
     )
     and coalesce(authorization_code.scopes, array[]::text[]) <@ coalesce(p_scopes, array[]::text[])
     and coalesce(p_scopes, array[]::text[]) <@ coalesce(authorization_code.scopes, array[]::text[])
-  returning authorization_code.scopes, authorization_code.resource
-    into granted_scopes, granted_resource;
+  returning authorization_code.scopes, authorization_code.resource, authorization_code.key_monthly_limit_cost_nanos
+    into granted_scopes, granted_resource, approved_monthly_limit;
 
   if not found then
     return jsonb_build_object('status', 'invalid');
@@ -123,22 +124,28 @@ begin
     where key_id = existing_key.id
       and revoked_reason is null;
 
+    -- The monthly limit the person just approved on the consent screen wins; a code from before the
+    -- screen asked keeps the key's limit. Spend already counted this month stays counted.
     update public.keys
     set hash = p_key_hash,
       oauth_scopes = granted_scopes,
-      expires_at = now() + interval '7 days'
+      expires_at = now() + interval '7 days',
+      monthly_limit_cost_nanos = coalesce(approved_monthly_limit, existing_key.monthly_limit_cost_nanos)
     where id = existing_key.id;
 
     issued_key_id := existing_key.id;
     issued_kid := existing_key.kid;
     outcome := 'renewed';
   else
+    -- The gateway enforces the approved amount like any key's monthly cost limit (0 is no limit).
     insert into public.keys (
       workspace_id, name, hash, prefix, status, scopes, created_by, kid,
-      key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at
+      key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at,
+      monthly_limit_cost_nanos
     ) values (
       p_workspace_id, p_key_name, p_key_hash, p_key_prefix, 'active', '[]', p_user_id, p_key_kid,
-      'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce', now() + interval '7 days'
+      'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce', now() + interval '7 days',
+      coalesce(approved_monthly_limit, 0)
     )
     returning id, kid into issued_key_id, issued_kid;
     outcome := 'issued';
@@ -156,7 +163,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
+COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. The monthly spending limit approved with the code becomes the key''s monthly cost limit, on a new or a renewed key. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
 
 GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "service_role";
 

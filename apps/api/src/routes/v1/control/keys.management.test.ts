@@ -374,6 +374,7 @@ describe("management key routes", () => {
 				apiKeyId: "oauth_1",
 				internal: false,
 				authMethod: "oauth",
+				oauthClientId: "phaseo_cli",
 				userId: "user_member",
 				scopes: ["keys:write"],
 			} as any,
@@ -456,45 +457,99 @@ describe("management key routes", () => {
 		});
 	});
 
-	it("never lets an OAuth app change its own key's spending limit", async () => {
-		const appAuth = {
+	describe("apps that use Sign in with Phaseo", () => {
+		const oauthAuth = (oauthClientId: string) => ({
 			ok: true,
 			value: {
 				workspaceId: "ws_1", apiKeyId: "key_app", internal: false, authMethod: "oauth",
-				oauthClientId: "partner_app", userId: "user_admin", scopes: ["keys:write"], oauthScopes: ["keys:write"],
+				oauthClientId, userId: "user_admin", scopes: ["keys:write"], oauthScopes: ["keys:write"],
 			} as any,
-		} as GuardOk;
+		} as GuardOk);
 		const appKey = {
 			id: "key_app", hash: "hash_app", workspace_id: "ws_1", kid: "kid_app", name: "OAuth: partner_app", prefix: "phaseo_v1_sk_app",
-			status: "active", soft_blocked: false, expires_at: null, monthly_limit_cost_nanos: 20_000_000_000,
+			status: "active", scopes: "[]", soft_blocked: false, expires_at: null, monthly_limit_cost_nanos: 20_000_000_000,
 			key_kind: "oauth_delegated", oauth_client_id: "partner_app",
 		};
-		const { keysRoutes } = await import("./keys");
-		const patch = (body: Record<string, unknown>) => keysRoutes.request("https://example.com/hash_app", {
-			method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+		const personKey = { ...appKey, id: "key_person", hash: "hash_person", name: "Production", key_kind: "standard", oauth_client_id: null };
+		const request = async (url: string, method: string, body?: Record<string, unknown>) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request(url, {
+				method, headers: { "content-type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}),
+			});
+		};
+
+		it("can't create a key, even with keys:write", async () => {
+			state.guardManagementAuthResult = oauthAuth("partner_app");
+			state.membershipRows.push({ role: "owner" });
+
+			const response = await request("https://example.com/", "POST", { name: "Unlimited" });
+
+			expect(response.status).toBe(403);
+			expect(await response.json()).toMatchObject({ error: "forbidden", message: expect.stringContaining("can't create API keys") });
+			expect(state.insertPayloads).toEqual([]);
 		});
 
-		for (const body of [{ limit: null }, { limit: 500, limit_reset: "monthly" }, { limits: { monthly: { cost: 1000 } } }, { soft_blocked: false }]) {
-			state.guardManagementAuthResult = appAuth;
-			state.membershipRows.push({ role: "admin" });
-			state.keyRows.push({ ...appKey });
-			const response = await patch(body);
-			expect(response.status).toBe(403);
-			expect(await response.json()).toMatchObject({ error: "forbidden" });
-		}
-		expect(state.updatePayloads).toEqual([]);
+		it("can't rotate its own key or any other key into a fresh one", async () => {
+			for (const key of [appKey, personKey]) {
+				state.guardManagementAuthResult = oauthAuth("partner_app");
+				state.membershipRows.push({ role: "owner" });
+				state.keyRows.push({ ...key });
 
-		// It can still rename its key, and other keys follow the usual keys:write rules.
-		state.guardManagementAuthResult = appAuth;
-		state.membershipRows.push({ role: "admin" });
-		state.keyRows.push({ ...appKey }, { ...appKey, name: "Renamed" });
-		expect((await patch({ name: "Renamed" })).status).toBe(200);
-		state.guardManagementAuthResult = appAuth;
-		state.membershipRows.push({ role: "admin" });
-		const personKey = { ...appKey, id: "key_person", key_kind: "standard", oauth_client_id: null };
-		state.keyRows.push(personKey, { ...personKey, monthly_limit_cost_nanos: 0 });
-		expect((await patch({ limit: null })).status).toBe(200);
-		expect(state.updatePayloads).toEqual([{ name: "Renamed" }, { daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 }]);
+				const response = await request(`https://example.com/${key.hash}/rotate`, "POST");
+
+				expect(response.status, key.id).toBe(403);
+				expect(await response.json()).toMatchObject({ error: "forbidden", message: expect.stringContaining("can't rotate or replace API keys") });
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
+		});
+
+		it("can't change any key's limits, its own or another's", async () => {
+			for (const key of [appKey, personKey]) {
+				for (const body of [{ limit: null }, { limit: 500, limit_reset: "monthly" }, { limits: { monthly: { cost: 1000 } } }, { soft_blocked: false }]) {
+					state.guardManagementAuthResult = oauthAuth("partner_app");
+					state.membershipRows.push({ role: "admin" });
+					state.keyRows.push({ ...key });
+
+					const response = await request(`https://example.com/${key.hash}`, "PATCH", body);
+
+					expect(response.status, `${key.id} ${JSON.stringify(body)}`).toBe(403);
+					expect(await response.json()).toMatchObject({ error: "forbidden", message: expect.stringContaining("can't change API key limits") });
+				}
+			}
+			expect(state.updatePayloads).toEqual([]);
+
+			// Other fields follow the usual keys:write rules.
+			state.guardManagementAuthResult = oauthAuth("partner_app");
+			state.membershipRows.push({ role: "admin" });
+			state.keyRows.push({ ...appKey }, { ...appKey, name: "Renamed" });
+			expect((await request("https://example.com/hash_app", "PATCH", { name: "Renamed" })).status).toBe(200);
+			expect(state.updatePayloads).toEqual([{ name: "Renamed" }]);
+		});
+
+		it("leaves Phaseo's own CLI and desktop app able to create keys and change limits", async () => {
+			state.guardManagementAuthResult = oauthAuth("phaseo_cli");
+			state.membershipRows.push({ role: "owner" });
+			state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the CLI" });
+			expect((await request("https://example.com/", "POST", { name: "From the CLI" })).status).toBe(201);
+			expect(state.insertPayloads).toHaveLength(1);
+
+			for (const clientId of ["phaseo_cli", "phaseo_desktop"]) {
+				state.guardManagementAuthResult = oauthAuth(clientId);
+				state.membershipRows.push({ role: "admin" });
+				state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
+				expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status, clientId).toBe(200);
+			}
+			expect(state.updatePayloads).toEqual([
+				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
+				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
+			]);
+		});
+
+		it("leaves API keys and other management tokens as they were", async () => {
+			state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
+			expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status).toBe(200);
+		});
 	});
 
 	it("rechecks the API key limit before reactivating a paused key", async () => {

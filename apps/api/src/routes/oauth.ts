@@ -735,17 +735,6 @@ oauthRouter.post(
 			clientId: client.id,
 			scopes,
 		});
-		// A third-party app's key spends the active workspace's credits. The limit the person chose
-		// becomes that key's monthly cost limit when it is issued (apply_oauth_consent_spend_limit).
-		if (!client.is_first_party) {
-			const spendLimit = await supabase
-				.from("oauth_authorizations")
-				.update({ key_monthly_limit_cost_nanos: monthlyLimitNanos })
-				.eq("user_id", actor.userId)
-				.eq("workspace_id", workspaceId)
-				.eq("client_id", client.id);
-			if (spendLimit.error) return oauthStorageError("oauth.authorization.spend_limit", spendLimit.error);
-		}
 		const code = createOpaqueCode();
 		const insert = await supabase.from("oauth_authorization_codes").insert({
 			code_hash: await hashOAuthSecret(code),
@@ -757,6 +746,10 @@ oauthRouter.post(
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
 			...(resource ? { resource } : {}),
+			// A third-party app's key spends the active workspace's credits. The limit chosen on this
+			// consent travels with this code, and its exchange makes it the key's monthly cost limit,
+			// so another approval in flight for the same app can't swap in its amount.
+			...(client.is_first_party ? {} : { key_monthly_limit_cost_nanos: monthlyLimitNanos }),
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthStorageError("oauth.authorization_code.insert", insert.error);

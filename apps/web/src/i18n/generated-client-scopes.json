@@ -131,6 +131,7 @@
     "Common.authFlows.oauthConsent.selectedAndActive",
     "Common.authFlows.oauthConsent.selectedForAccess",
     "Common.authFlows.oauthConsent.spendLimitDescription",
+    "Common.authFlows.oauthConsent.spendLimitFormat",
     "Common.authFlows.oauthConsent.spendLimitInvalid",
     "Common.authFlows.oauthConsent.spendLimitNoLimit",
     "Common.authFlows.oauthConsent.spendLimitNoLimitHelp",
