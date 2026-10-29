@@ -105,22 +105,6 @@ export function calculatePeriodChange(current: number, previous: number): number
 	return ((current - previous) / previous) * 100
 }
 
-export function formatCompactNumber(value: number, locale = "en"): string {
-	return new Intl.NumberFormat(locale, {
-		maximumFractionDigits: value >= 100 ? 0 : 1,
-		notation: value >= 1000 ? "compact" : "standard",
-	}).format(value)
-}
-
-export function formatUsdFromNanos(nanos: number, locale = "en"): string {
-	return new Intl.NumberFormat(locale, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 4,
-		maximumFractionDigits: 4,
-	}).format(nanos / 1_000_000_000)
-}
-
 export function buildHeatmapDays(
 	dayTotals: Map<string, { requests: number; tokens: number; spendNanos?: number }>,
 	now: Date = new Date(),
