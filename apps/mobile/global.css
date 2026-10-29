@@ -1,12 +1,11 @@
 @import "tailwindcss";
 @import "uniwind";
+/* Class recipes shared with the website (callout and badge tones, the type scale). Uniwind only
+   generates classes it finds, and the package is outside this app. */
+@source "../../packages/shared/app-kit/src/ui-recipes";
 
-/* Tokens mirror apps/web/src/app/globals.css (:root and .dark) so the app
-   reads as the same product. Keep both themes defining the same variables.
-   These are the Phaseo theme. At launch src/lib/theme/store.ts replaces the
-   surface, primary, ring, link and chart tokens with the chosen palettes and
-   accents (src/lib/theme/model.ts); a test keeps these values equal to its
-   Phaseo output. */
+/* The app's fonts and radii. The radii match the website's scale (packages/shared/app-kit/src/theme/tokens.ts,
+   checked by its test/theme.test.mjs). */
 @theme {
   --font-sans: Montserrat;
   --radius-sm: 6px;
@@ -16,6 +15,9 @@
   --radius-2xl: 18px;
 }
 
+/* Generated from packages/shared/app-kit/src/theme/tokens.ts by scripts/sync-theme-tokens.mjs.
+   Do not edit: change tokens.ts, then run `pnpm run theme:sync-tokens`.
+   src/lib/theme/store.ts replaces the surface, primary, ring, link and chart colours at launch. */
 @layer theme {
   :root {
     @variant light {
@@ -25,33 +27,33 @@
       --color-card-foreground: oklch(0.145 0 0);
       --color-popover: oklch(1 0 0);
       --color-popover-foreground: oklch(0.145 0 0);
-      /* The accent tokens, derived from the light accent #0069a8 as the website does. */
-      --color-primary: #0069a8;
-      --color-primary-foreground: #ffffff;
-      --color-link: #0069a8;
       --color-secondary: oklch(0.967 0.001 286.375);
       --color-secondary-foreground: oklch(0.21 0.006 285.885);
       --color-muted: oklch(0.97 0 0);
       --color-muted-foreground: oklch(0.556 0 0);
       --color-accent: oklch(0.97 0 0);
       --color-accent-foreground: oklch(0.205 0 0);
-      --color-destructive: oklch(0.577 0.245 27.325);
-      --color-destructive-foreground: #ffffff;
-      --color-success: oklch(0.596 0.145 163.225);
-      --color-warning: oklch(0.666 0.179 58.318);
       --color-border: oklch(0.922 0 0);
       --color-input: oklch(0.922 0 0);
-      --color-ring: #0069a8;
       --color-sidebar: oklch(0.985 0 0);
       --color-sidebar-foreground: oklch(0.145 0 0);
       --color-sidebar-accent: oklch(0.97 0 0);
       --color-sidebar-accent-foreground: oklch(0.205 0 0);
       --color-sidebar-border: oklch(0.922 0 0);
+      --color-primary: #0069a8;
+      --color-primary-foreground: #ffffff;
+      --color-ring: #0069a8;
+      --color-link: #0069a8;
       --color-chart-1: #9fbfdc;
       --color-chart-2: #7ba7ce;
       --color-chart-3: #5690c0;
       --color-chart-4: #0069a8;
       --color-chart-5: #0f5281;
+      --color-destructive: oklch(0.577 0.245 27.325);
+      --color-destructive-foreground: #ffffff;
+      --color-success: oklch(0.596 0.145 163.225);
+      --color-warning: oklch(0.666 0.179 58.318);
+      --color-info: oklch(0.588 0.158 241.966);
     }
 
     @variant dark {
@@ -61,34 +63,34 @@
       --color-card-foreground: oklch(0.985 0 0);
       --color-popover: oklch(0.205 0 0);
       --color-popover-foreground: oklch(0.985 0 0);
-      /* Derived from the dark accent #0078b8 (the website's dark primary). The
-         link is the accent lifted to 7:1 on dark surfaces, lighter than the fill. */
-      --color-primary: #0078b8;
-      --color-primary-foreground: #ffffff;
-      --color-link: #4baaed;
       --color-secondary: oklch(0.274 0.006 286.033);
       --color-secondary-foreground: oklch(0.985 0 0);
       --color-muted: oklch(0.269 0 0);
       --color-muted-foreground: oklch(0.708 0 0);
       --color-accent: oklch(0.269 0 0);
       --color-accent-foreground: oklch(0.985 0 0);
-      --color-destructive: oklch(0.704 0.191 22.216);
-      --color-destructive-foreground: #ffffff;
-      --color-success: oklch(0.696 0.17 162.48);
-      --color-warning: oklch(0.769 0.188 70.08);
       --color-border: oklch(1 0 0 / 10%);
       --color-input: oklch(1 0 0 / 15%);
-      --color-ring: #0078b8;
       --color-sidebar: oklch(0.205 0 0);
       --color-sidebar-foreground: oklch(0.985 0 0);
       --color-sidebar-accent: oklch(0.269 0 0);
       --color-sidebar-accent-foreground: oklch(0.985 0 0);
       --color-sidebar-border: oklch(1 0 0 / 10%);
+      --color-primary: #0078b8;
+      --color-primary-foreground: #ffffff;
+      --color-ring: #0078b8;
+      --color-link: #4baaed;
       --color-chart-1: #15344c;
       --color-chart-2: #154668;
       --color-chart-3: #135985;
       --color-chart-4: #0078b8;
       --color-chart-5: #5095c8;
+      --color-destructive: oklch(0.704 0.191 22.216);
+      --color-destructive-foreground: #ffffff;
+      --color-success: oklch(0.696 0.17 162.48);
+      --color-warning: oklch(0.769 0.188 70.08);
+      --color-info: oklch(0.746 0.16 232.661);
     }
   }
 }
+/* End of generated tokens. */

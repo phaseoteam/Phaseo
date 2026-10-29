@@ -1,12 +1,18 @@
 import { relativeUnit } from "@phaseo/app-kit/format";
+import { DARK_PALETTES, DEFAULT_THEME, LIGHT_PALETTES } from "@phaseo/app-kit/theme";
+
+// The theme model (palettes, accents, presets) lives in packages/shared/app-kit so the mobile app
+// reads the same one.
+export { readableForegroundForAccent } from "@phaseo/app-kit/theme/colour";
+
 
 export const DISPLAY_LOCALES = ["system", "en-GB", "en-US"] as const;
 export const DISPLAY_DATE_STYLES = ["short", "medium", "long", "iso"] as const;
 export const DISPLAY_HOUR_CYCLES = ["system", "12h", "24h"] as const;
 export const DISPLAY_RELATIVE_TIMES = ["contextual", "relative", "absolute"] as const;
 export const DISPLAY_NUMBER_NOTATIONS = ["standard", "compact"] as const;
-export const DISPLAY_LIGHT_PALETTES = ["phaseo", "paper", "warm"] as const;
-export const DISPLAY_DARK_PALETTES = ["phaseo", "slate", "midnight"] as const;
+export const DISPLAY_LIGHT_PALETTES = LIGHT_PALETTES;
+export const DISPLAY_DARK_PALETTES = DARK_PALETTES;
 export const DISPLAY_DENSITIES = ["comfortable", "compact"] as const;
 export const DISPLAY_CODE_LANGUAGES = ["typescript", "python", "curl"] as const;
 export const DISPLAY_LANDING_PAGES = ["home", "models", "chat"] as const;
@@ -48,10 +54,10 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	hourCycle: "system",
 	relativeTime: "contextual",
 	numberNotation: "standard",
-	lightPalette: "phaseo",
-	darkPalette: "phaseo",
-	lightAccent: "#0069a8",
-	darkAccent: "#0078b8",
+	lightPalette: DEFAULT_THEME.lightPalette,
+	darkPalette: DEFAULT_THEME.darkPalette,
+	lightAccent: DEFAULT_THEME.lightAccent,
+	darkAccent: DEFAULT_THEME.darkAccent,
 	density: "comfortable",
 	codeLanguage: "typescript",
 	landingPage: "home",
@@ -75,17 +81,6 @@ export function isValidTimeZone(value: unknown): value is string {
 
 export function isValidAccentColor(value: unknown): value is string {
 	return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
-}
-
-export function readableForegroundForAccent(value: string): "#ffffff" | "#0b0b0b" {
-	const channels = [1, 3, 5].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16) / 255);
-	const [red, green, blue] = channels.map((channel) =>
-		channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-	);
-	const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
-	const whiteContrast = 1.05 / (luminance + 0.05);
-	const darkContrast = (luminance + 0.05) / 0.052;
-	return whiteContrast >= darkContrast ? "#ffffff" : "#0b0b0b";
 }
 
 export function normalizeDisplayPreferences(value: unknown): DisplayPreferences {

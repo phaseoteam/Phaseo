@@ -7,6 +7,9 @@
 /* Styles for views that have not moved to Tailwind yet. Layered below the
    utilities so they never override new components. */
 @import "./styles.css" layer(legacy);
+/* The theme's colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
+@import "./theme-tokens.generated.css";
+
 /* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
 @source "../../../../packages/shared/ui/src";
 
@@ -52,65 +55,6 @@
 	--text-2xs--line-height: calc(1 / 0.6875);
 	--text-3xs: 0.625rem;
 	--text-3xs--line-height: calc(0.875 / 0.625);
-}
-
-:root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: #0069a8;
-	--primary-foreground: #ffffff;
-	--secondary: oklch(0.967 0.001 286.375);
-	--secondary-foreground: oklch(0.21 0.006 285.885);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
-	--success: oklch(0.6 0.15 150);
-	--warning: oklch(0.7 0.15 70);
-	--info: oklch(0.546 0.245 262.881);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: #0069a8;
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-accent: oklch(0.95 0 0);
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-}
-
-.dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: #0078b8;
-	--primary-foreground: #ffffff;
-	--secondary: oklch(0.274 0.006 286.033);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--success: oklch(0.72 0.17 150);
-	--warning: oklch(0.8 0.15 80);
-	--info: oklch(0.707 0.165 254.624);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: #0078b8;
-	--sidebar: oklch(0.17 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.25 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 8%);
 }
 
 @layer base {
